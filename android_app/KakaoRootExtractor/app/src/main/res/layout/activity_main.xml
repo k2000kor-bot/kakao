@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#f5f5f5"
+    tools:context=".MainActivity">
+
+    <!-- 헤더 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/primary_blue"
+        android:padding="20dp"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔓 루팅폰 카카오톡 추출기"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="실시간 카카오톡 대화 자동 추출 및 전송"
+            android:textSize="14sp"
+            android:textColor="#e0e0e0"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- 상태 표시 영역 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/background_light"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📊 시스템 상태"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="앱 초기화 중..."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:background="#f9f9f9"
+            android:padding="12dp"
+            android:fontFamily="monospace" />
+
+    </LinearLayout>
+
+    <!-- 대화방 선택 영역 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/background_white"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="💬 대화방 선택"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="12dp" />
+
+        <!-- 대화방 목록 버튼 -->
+        <Button
+            android:id="@+id/selectRoomsButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="📋 대화방 목록 보기 (전체)"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:background="@color/button_select"
+            android:layout_marginBottom="8dp" />
+
+        <!-- 선택된 대화방 표시 -->
+        <TextView
+            android:id="@+id/selectedRoomsText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="선택된 대화방: 전체 (자동 감지)"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:background="#f9f9f9"
+            android:padding="8dp" />
+
+    </LinearLayout>
+
+    <!-- 제어 버튼들 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/card_background"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎮 제어 패널"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="16dp" />
+
+        <!-- 모니터링 시작 버튼 -->
+        <Button
+            android:id="@+id/startButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="🚀 실시간 모니터링 시작"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            android:background="@color/button_start"
+            android:layout_marginBottom="12dp"
+            android:elevation="4dp" />
+
+        <!-- 모니터링 중지 버튼 -->
+        <Button
+            android:id="@+id/stopButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="⏹️ 모니터링 중지"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            android:background="@color/button_stop"
+            android:layout_marginBottom="12dp"
+            android:elevation="4dp" />
+
+        <!-- 동기화 버튼 -->
+        <Button
+            android:id="@+id/syncButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="🔄 서버 동기화"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            android:background="@color/button_sync"
+            android:elevation="4dp" />
+
+    </LinearLayout>
+
+    <!-- 정보 영역 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/background_gray"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ℹ️ 사용 안내"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. 루트 권한이 필요합니다\n2. 카카오톡이 설치되어 있어야 합니다\n3. 서버 주소를 정확히 설정하세요\n4. WiFi 연결을 확인하세요"
+            android:textSize="13sp"
+            android:textColor="#666666"
+            android:lineSpacingExtra="4dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#e0e0e0"
+            android:layout_marginVertical="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚠️ 개인정보 보호를 위해 민감한 대화는 제외하고 사용하세요"
+            android:textSize="12sp"
+            android:textColor="#ff6b6b"
+            android:textStyle="italic" />
+
+    </LinearLayout>
+
+</LinearLayout> 

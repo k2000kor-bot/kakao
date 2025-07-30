@@ -1,0 +1,21 @@
+INFO:     Started server process [5537]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8007 (Press CTRL+C to quit)
+🚀 대응메시지 생성 서버 시작
+==================================================
+📍 서버 주소: http://localhost:8007
+📖 API 문서: http://localhost:8007/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-response - 대응메시지 생성
+   GET /api/response-strategies - 전략 목록
+   POST /api/add-strategy - 전략 추가
+   GET /api/response-history - 히스토리 조회
+   POST /api/feedback - 피드백 제출
+
+✅ 대응메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:49908 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5537]

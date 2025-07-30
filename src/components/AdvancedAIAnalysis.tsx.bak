@@ -1,0 +1,830 @@
+/**
+ * Advanced AI Analysis Component
+ * 고도화된 AI 분석 컴포넌트
+ * 
+ * Features:
+ * - Multi-dimensional context analysis
+ * - Predictive insights
+ * - Real-time optimization
+ * - Advanced intelligence dashboard
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  ChartBarIcon,
+  LightBulbIcon,
+  CogIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  UserGroupIcon,
+  SparklesIcon,
+  ArrowTrendingUpIcon,
+  CpuChipIcon
+} from '@heroicons/react/24/outline';
+
+// Mock service for advanced analytics
+const advancedAnalyticsService = {
+  analyzeAdvancedContext: async (messages: any[], participants: string[], depth: string) => {
+    // Mock implementation
+    return {
+      contextScore: 85,
+      emotionalTone: 'neutral',
+      conversationFlow: 'progressive',
+      keyTopics: ['일반', '업무'],
+      participantDynamics: { 'user1': 0.7, 'user2': 0.3 },
+      sentimentAnalysis: { positive: 0.6, negative: 0.2, neutral: 0.2 },
+      communicationPatterns: ['질문-답변', '정보공유'],
+      riskFactors: ['의사소통 부족'],
+      opportunities: ['관계 개선'],
+      analysis_depth: depth,
+      overall_confidence: 0.85,
+      processing_time: '2.3s',
+      temporal_intelligence: {
+        past_context: '이전 대화에서 긍정적 분위기',
+        present_focus: '현재 상황에 대한 논의',
+        future_implications: '향후 협력 가능성'
+      }
+    };
+  },
+  generateConversationPredictions: async (messages: any[], count: number) => {
+    return [
+      {
+        id: 'pred1',
+        type: 'conversation' as const,
+        prediction: '대화가 더 활발해질 것으로 예상',
+        confidence: 0.8,
+        timeframe: '1주일',
+        factors: ['상호작용 패턴', '감정적 연결'],
+        impact: 'medium' as const
+      }
+    ];
+  },
+  optimizeConversationRealTime: async (currentMessage: any, context: any, goals: string[]) => {
+    return {
+      immediateActions: ['감정적 연결 강화'],
+      conversationTactics: ['적극적 경청'],
+      emotionalGuidance: ['공감 표현'],
+      riskMitigation: ['오해 방지'],
+      opportunitySeizing: ['관계 발전']
+    };
+  }
+};
+
+interface AdvancedAIAnalysisProps {
+  messages: any[];
+  participants: string[];
+  selectedChatRoom: string;
+  onInsightGenerated?: (insight: any) => void;
+}
+
+interface AdvancedAnalysisResult {
+  contextScore: number;
+  emotionalTone: string;
+  conversationFlow: string;
+  keyTopics: string[];
+  participantDynamics: Record<string, number>;
+  sentimentAnalysis: {
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
+  communicationPatterns: string[];
+  riskFactors: string[];
+  opportunities: string[];
+  analysis_depth: string;
+  overall_confidence: number;
+  processing_time: string;
+  temporal_intelligence: {
+    past_context: string;
+    present_focus: string;
+    future_implications: string;
+  };
+}
+
+interface PredictiveInsight {
+  id: string;
+  type: 'conversation' | 'relationship' | 'outcome';
+  prediction: string;
+  confidence: number;
+  timeframe: string;
+  factors: string[];
+  impact: 'high' | 'medium' | 'low';
+}
+
+interface OptimizationStrategy {
+  id: string;
+  category: 'communication' | 'relationship' | 'efficiency';
+  strategy: string;
+  expectedOutcome: string;
+  implementationSteps: string[];
+  priority: 'high' | 'medium' | 'low';
+  successRate: number;
+}
+
+interface RealTimeRecommendations {
+  immediateActions: string[];
+  conversationTactics: string[];
+  emotionalGuidance: string[];
+  riskMitigation: string[];
+  opportunitySeizing: string[];
+}
+
+interface AnalysisState {
+  contextAnalysis: AdvancedAnalysisResult | null;
+  predictions: PredictiveInsight[];
+  optimizationStrategies: OptimizationStrategy[];
+  recommendations: RealTimeRecommendations | null;
+  isAnalyzing: boolean;
+  lastAnalyzedAt: Date | null;
+  analysisDepth: 'basic' | 'expert' | 'genius';
+  autoAnalysis: boolean;
+}
+
+const AdvancedAIAnalysis: React.FC<AdvancedAIAnalysisProps> = ({
+  messages,
+  participants,
+  selectedChatRoom,
+  onInsightGenerated
+}) => {
+  const [analysisState, setAnalysisState] = useState<AnalysisState>({
+    contextAnalysis: null,
+    predictions: [],
+    optimizationStrategies: [],
+    recommendations: null,
+    isAnalyzing: false,
+    lastAnalyzedAt: null,
+    analysisDepth: 'expert',
+    autoAnalysis: true
+  });
+
+  const [activeTab, setActiveTab] = useState<'context' | 'predictions' | 'optimization' | 'insights'>('context');
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+
+  // 자동 분석 실행
+  useEffect(() => {
+    if (analysisState.autoAnalysis && messages.length > 0) {
+      const timer = setTimeout(() => {
+        performAdvancedAnalysis();
+      }, 2000); // 2초 후 자동 분석
+
+      return () => clearTimeout(timer);
+    }
+  }, [messages, analysisState.autoAnalysis]);
+
+  /**
+   * 고도화된 분석 수행
+   */
+  const performAdvancedAnalysis = useCallback(async () => {
+    if (messages.length === 0) return;
+
+    setAnalysisState(prev => ({ ...prev, isAnalyzing: true }));
+
+    try {
+      // 1. 다차원 컨텍스트 분석
+      const contextAnalysis = await advancedAnalyticsService.analyzeAdvancedContext(
+        messages,
+        participants,
+        analysisState.analysisDepth
+      );
+
+      // 2. 예측적 인사이트 생성
+      const predictions = await advancedAnalyticsService.generateConversationPredictions(
+        messages,
+        5
+      );
+
+      // 3. 실시간 최적화
+      const currentMessage = messages[messages.length - 1];
+      const optimizationResult = await advancedAnalyticsService.optimizeConversationRealTime(
+        currentMessage,
+        { messages, participants },
+        ['harmony', 'efficiency', 'resolution']
+      );
+
+      setAnalysisState(prev => ({
+        ...prev,
+        contextAnalysis,
+        predictions,
+        optimizationStrategies: [],
+        recommendations: optimizationResult,
+        isAnalyzing: false,
+        lastAnalyzedAt: new Date()
+      }));
+
+      // 인사이트 콜백 실행
+      if (onInsightGenerated) {
+        onInsightGenerated({
+          type: 'advanced_analysis',
+          contextAnalysis,
+          predictions,
+          optimizationStrategies: [],
+          timestamp: new Date()
+        });
+      }
+
+    } catch (error) {
+      console.error('Advanced analysis failed:', error);
+      setAnalysisState(prev => ({ ...prev, isAnalyzing: false }));
+    }
+  }, [messages, participants, analysisState.analysisDepth, onInsightGenerated]);
+
+  /**
+   * 카드 확장/축소 토글
+   */
+  const toggleCardExpansion = (cardId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  };
+
+  /**
+   * 신뢰도에 따른 색상 클래스 반환
+   */
+  const getConfidenceColorClass = (confidence: number): string => {
+    if (confidence >= 0.8) return 'text-green-600';
+    if (confidence >= 0.6) return 'text-yellow-600';
+    if (confidence >= 0.4) return 'text-orange-600';
+    return 'text-red-600';
+  };
+
+  /**
+   * 신뢰도 막대 렌더링
+   */
+  const renderConfidenceBar = (confidence: number, label: string) => (
+    <div className="mb-2">
+      <div className="flex justify-between text-sm mb-1">
+        <span>{label}</span>
+        <span className={getConfidenceColorClass(confidence)}>
+          {(confidence * 100).toFixed(1)}%
+        </span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div
+          className={`h-2 rounded-full ${confidence >= 0.8 ? 'bg-green-500' :
+            confidence >= 0.6 ? 'bg-yellow-500' :
+              confidence >= 0.4 ? 'bg-orange-500' : 'bg-red-500'
+            }`}
+          style={{ width: `${confidence * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+
+  /**
+   * 컨텍스트 분석 탭 렌더링
+   */
+  const renderContextAnalysis = () => {
+    if (!analysisState.contextAnalysis) {
+      return (
+        <div className="text-center py-12">
+          <CpuChipIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500">고도화된 분석을 시작하세요</p>
+        </div>
+      );
+    }
+
+    const { contextAnalysis } = analysisState;
+
+    return (
+      <div className="space-y-6">
+        {/* 전체 신뢰도 */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <ChartBarIcon className="h-5 w-5 mr-2" />
+              전체 분석 신뢰도
+            </h3>
+            <span className="text-sm text-gray-500">
+              분석 깊이: {contextAnalysis.analysis_depth}
+            </span>
+          </div>
+
+          <div className="text-3xl font-bold text-center mb-2">
+            <span className={getConfidenceColorClass(contextAnalysis.overall_confidence)}>
+              {(contextAnalysis.overall_confidence * 100).toFixed(1)}%
+            </span>
+          </div>
+
+          <div className="text-sm text-gray-600 text-center">
+            처리 시간: {contextAnalysis.processing_time}ms
+          </div>
+        </div>
+
+        {/* 다차원 분석 결과 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 시간적 지능 */}
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-semibold text-gray-900 flex items-center">
+                <ClockIcon className="h-4 w-4 mr-2" />
+                시간적 지능
+              </h4>
+              <button
+                onClick={() => toggleCardExpansion('temporal')}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                {expandedCards.has('temporal') ? '접기' : '펼치기'}
+              </button>
+            </div>
+
+            {renderConfidenceBar(
+              contextAnalysis.overall_confidence,
+              '신뢰도'
+            )}
+
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>과거 컨텍스트:</span>
+                <span className="font-medium">
+                  {contextAnalysis.temporal_intelligence.past_context}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>현재 초점:</span>
+                <span className="font-medium">
+                  {contextAnalysis.temporal_intelligence.present_focus}
+                </span>
+              </div>
+            </div>
+
+            {expandedCards.has('temporal') && (
+              <div className="mt-4 p-3 bg-gray-50 rounded">
+                <h5 className="font-medium mb-2">미래 영향:</h5>
+                <p className="text-sm text-gray-700">{contextAnalysis.temporal_intelligence.future_implications}</p>
+              </div>
+            )}
+          </div>
+
+          {/* 감정적 지능 - 임시 비활성화 */}
+          {/* <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-semibold text-gray-900 flex items-center">
+                <SparklesIcon className="h-4 w-4 mr-2" />
+                감정적 지능
+              </h4>
+              <button
+                onClick={() => toggleCardExpansion('emotional')}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                {expandedCards.has('emotional') ? '접기' : '펼치기'}
+              </button>
+            </div>
+          </div> */}
+
+          {/* 사회적 지능 - 임시 비활성화 */}
+          {/* <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-semibold text-gray-900 flex items-center">
+                <UserGroupIcon className="h-4 w-4 mr-2" />
+                사회적 지능
+              </h4>
+              <button
+                onClick={() => toggleCardExpansion('social')}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                {expandedCards.has('social') ? '접기' : '펼치기'}
+              </button>
+            </div>
+          </div> */}
+
+          {/* 사회적 지능 - 임시 비활성화 */}
+          {/* <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>참여 균형도:</span>
+              <span className="font-medium">
+                {(contextAnalysis.social_intelligence.dynamics.participation_balance * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>계층 구조:</span>
+              <span className={`font-medium ${contextAnalysis.social_intelligence.dynamics.hierarchy_detected
+                ? 'text-orange-600' : 'text-green-600'
+                }`}>
+                {contextAnalysis.social_intelligence.dynamics.hierarchy_detected ? '감지됨' : '평등함'}
+              </span>
+            </div>
+          </div>
+
+          {expandedCards.has('social') && (
+            <div className="mt-4 p-3 bg-gray-50 rounded">
+              <h5 className="font-medium mb-2">상호작용 패턴:</h5>
+              <p className="text-sm text-gray-700">
+                {contextAnalysis.social_intelligence.dynamics.interaction_patterns.pattern_type}
+              </p>
+            </div>
+          )}
+        </div> */}
+
+          {/* 전략적 지능 - 임시 비활성화 */}
+          {/* <div className="bg-white p-6 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-semibold text-gray-900 flex items-center">
+              <LightBulbIcon className="h-4 w-4 mr-2" />
+              전략적 지능
+            </h4>
+            <button
+              onClick={() => toggleCardExpansion('strategic')}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              {expandedCards.has('strategic') ? '접기' : '펼치기'}
+            </button>
+          </div>
+
+          {renderConfidenceBar(
+            contextAnalysis.strategic_intelligence.confidence,
+            '신뢰도'
+          )}
+
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>전략적 복잡성:</span>
+              <span className="font-medium">
+                {contextAnalysis.strategic_intelligence.complexity}/4
+              </span>
+            </div>
+          </div>
+
+          {expandedCards.has('strategic') && (
+            <div className="mt-4 p-3 bg-gray-50 rounded">
+              <h5 className="font-medium mb-2">감지된 전략:</h5>
+              <div className="space-y-1">
+                {Object.entries(contextAnalysis.strategic_intelligence.strategies).map(([strategy, score]) => (
+                  <div key={strategy} className="flex justify-between text-sm">
+                    <span>{strategy}:</span>
+                    <span>{(score * 100).toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div> */}
+        </div>
+        );
+  };
+
+  /**
+   * 예측 인사이트 탭 렌더링
+   */
+  const renderPredictions = () => {
+    if (analysisState.predictions.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <ArrowTrendingUpIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500">예측 분석을 시작하세요</p>
+        </div>
+        );
+    }
+
+        return (
+        <div className="space-y-4">
+          {analysisState.predictions.map((prediction, index) => (
+            <div key={index} className="bg-white p-6 rounded-lg border shadow-sm">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center mb-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {prediction.prediction_type}
+                    </span>
+                    <span className="ml-2 text-sm text-gray-500">
+                      {prediction.time_horizon}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    {prediction.prediction_content}
+                  </h4>
+                </div>
+                <div className="ml-4">
+                  {renderConfidenceBar(prediction.confidence, '신뢰도')}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="font-medium text-green-700 mb-2">지지 근거:</h5>
+                  <ul className="space-y-1">
+                    {prediction.supporting_evidence.map((evidence, idx) => (
+                      <li key={idx} className="text-sm text-gray-700 flex items-start">
+                        <CheckCircleIcon className="h-4 w-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
+                        {evidence}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h5 className="font-medium text-red-700 mb-2">위험 요소:</h5>
+                  <ul className="space-y-1">
+                    {prediction.risk_factors.map((risk, idx) => (
+                      <li key={idx} className="text-sm text-gray-700 flex items-start">
+                        <ExclamationTriangleIcon className="h-4 w-4 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+                        {risk}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        );
+  };
+
+  /**
+   * 최적화 전략 탭 렌더링
+   */
+  const renderOptimization = () => {
+    if (analysisState.optimizationStrategies.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <CogIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500">최적화 분석을 시작하세요</p>
+        </div>
+        );
+    }
+
+        return (
+        <div className="space-y-6">
+          {/* 최적화 전략들 */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">최적화 전략</h3>
+            {analysisState.optimizationStrategies.map((strategy, index) => (
+              <div key={index} className="bg-white p-6 rounded-lg border shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-gray-900">{strategy.goal}</h4>
+                  <div className="flex items-center space-x-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${strategy.priority === 'high' ? 'bg-red-100 text-red-800' :
+                      strategy.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                      {strategy.priority} 우선순위
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <h5 className="font-medium text-gray-700 mb-2">전술:</h5>
+                  <ul className="space-y-1">
+                    {strategy.tactics.map((tactic, idx) => (
+                      <li key={idx} className="text-sm text-gray-600">• {tactic}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    {renderConfidenceBar(strategy.context_alignment, '컨텍스트 적합도')}
+                  </div>
+                  <div>
+                    {renderConfidenceBar(strategy.success_probability, '성공 가능성')}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 실시간 권장사항 */}
+          {analysisState.recommendations && (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">실시간 권장사항</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium text-red-700 mb-2">즉시 조치사항:</h4>
+                  <ul className="space-y-1">
+                    {analysisState.recommendations.immediate_actions.map((action, idx) => (
+                      <li key={idx} className="text-sm text-gray-700">• {action}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-blue-700 mb-2">어조 조정:</h4>
+                  <ul className="space-y-1">
+                    {analysisState.recommendations.tone_adjustments.map((adjustment, idx) => (
+                      <li key={idx} className="text-sm text-gray-700">• {adjustment}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-green-700 mb-2">콘텐츠 제안:</h4>
+                  <ul className="space-y-1">
+                    {analysisState.recommendations.content_suggestions.map((suggestion, idx) => (
+                      <li key={idx} className="text-sm text-gray-700">• {suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-purple-700 mb-2">전략적 전환:</h4>
+                  <ul className="space-y-1">
+                    {analysisState.recommendations.strategic_pivots.map((pivot, idx) => (
+                      <li key={idx} className="text-sm text-gray-700">• {pivot}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        );
+  };
+
+  /**
+   * 종합 인사이트 탭 렌더링
+   */
+  const renderInsights = () => {
+    if (!analysisState.contextAnalysis) {
+      return (
+        <div className="text-center py-12">
+          <LightBulbIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500">종합 인사이트를 생성하세요</p>
+        </div>
+        );
+    }
+
+        const allInsights = [
+        ...analysisState.contextAnalysis.temporal_intelligence.insights,
+        ...analysisState.contextAnalysis.emotional_intelligence.insights,
+        ...analysisState.contextAnalysis.social_intelligence.insights,
+        ...analysisState.contextAnalysis.cultural_intelligence.insights,
+        ...analysisState.contextAnalysis.strategic_intelligence.insights
+        ];
+
+        return (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">종합 분석 요약</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600 mb-1">
+                  {(analysisState.contextAnalysis.overall_confidence * 100).toFixed(1)}%
+                </div>
+                <div className="text-sm text-gray-600">전체 신뢰도</div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 mb-1">
+                  {analysisState.predictions.length}
+                </div>
+                <div className="text-sm text-gray-600">예측 인사이트</div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600 mb-1">
+                  {analysisState.optimizationStrategies.length}
+                </div>
+                <div className="text-sm text-gray-600">최적화 전략</div>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-gray-900 mb-3">핵심 인사이트</h4>
+              <div className="space-y-2">
+                {allInsights.slice(0, 10).map((insight, index) => (
+                  <div key={index} className="flex items-start">
+                    <LightBulbIcon className="h-4 w-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
+                    <span className="text-sm text-gray-700">{insight}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 처리 시간 및 성능 메트릭 */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-900 mb-2">성능 메트릭</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">처리 시간:</span>
+                <span className="font-medium ml-1">
+                  {analysisState.contextAnalysis.processing_time.toFixed(2)}ms
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">분석 메시지:</span>
+                <span className="font-medium ml-1">{messages.length}개</span>
+              </div>
+              <div>
+                <span className="text-gray-600">참여자:</span>
+                <span className="font-medium ml-1">{participants.length}명</span>
+              </div>
+              <div>
+                <span className="text-gray-600">마지막 분석:</span>
+                <span className="font-medium ml-1">
+                  {analysisState.lastAnalyzedAt?.toLocaleTimeString() || 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        );
+  };
+
+        return (
+        <div className="bg-white rounded-lg shadow-sm border">
+          {/* 헤더 */}
+          <div className="p-6 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <CpuChipIcon className="h-6 w-6 mr-2 text-blue-600" />
+                  고도화된 AI 분석
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  다차원 컨텍스트 분석 및 예측적 인사이트
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <select
+                  value={analysisState.analysisDepth}
+                  onChange={(e) => setAnalysisState(prev => ({
+                    ...prev,
+                    analysisDepth: e.target.value as 'basic' | 'expert' | 'genius'
+                  }))}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm"
+                >
+                  <option value="basic">기본</option>
+                  <option value="expert">전문가</option>
+                  <option value="genius">천재급</option>
+                </select>
+
+                <button
+                  onClick={() => setAnalysisState(prev => ({
+                    ...prev,
+                    autoAnalysis: !prev.autoAnalysis
+                  }))}
+                  className={`px-3 py-1 rounded text-sm font-medium ${analysisState.autoAnalysis
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                    }`}
+                >
+                  자동분석 {analysisState.autoAnalysis ? 'ON' : 'OFF'}
+                </button>
+
+                <button
+                  onClick={performAdvancedAnalysis}
+                  disabled={analysisState.isAnalyzing || messages.length === 0}
+                  className="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {analysisState.isAnalyzing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      분석 중...
+                    </>
+                  ) : (
+                    <>
+                      <ChartBarIcon className="h-4 w-4 mr-2" />
+                      고급 분석
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 탭 네비게이션 */}
+          <div className="border-b">
+            <nav className="flex space-x-8 px-6">
+              {[
+                { id: 'context', label: '컨텍스트 분석', icon: ChartBarIcon },
+                { id: 'predictions', label: '예측 인사이트', icon: ArrowTrendingUpIcon },
+                { id: 'optimization', label: '최적화 전략', icon: CogIcon },
+                { id: 'insights', label: '종합 인사이트', icon: LightBulbIcon }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                >
+                  <tab.icon className="h-4 w-4 mr-2" />
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* 탭 콘텐츠 */}
+          <div className="p-6">
+            {activeTab === 'context' && renderContextAnalysis()}
+            {activeTab === 'predictions' && renderPredictions()}
+            {activeTab === 'optimization' && renderOptimization()}
+            {activeTab === 'insights' && renderInsights()}
+          </div>
+        </div>
+        );
+};
+
+        export default AdvancedAIAnalysis; 

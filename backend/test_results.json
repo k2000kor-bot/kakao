@@ -1,0 +1,878 @@
+{
+  "success": true,
+  "health_check": true,
+  "conversation_results": [
+    {
+      "success": true,
+      "scenario": "기본 인사 대화",
+      "user_message": "안녕하세요!",
+      "ai_response": "lateral_thinking 기법과 combination 패턴을 결합한 창의적 해결책",
+      "confidence_score": 0.48999999999999994,
+      "creativity_score": 1.0,
+      "processing_time": 0.000436,
+      "predictions": {
+        "next_message": {
+          "prediction_id": "5f2123ba-48ec-49c7-b846-7650a8fa7953",
+          "prediction_type": "next_message",
+          "predicted_value": "일반적인 대화 계속",
+          "confidence_score": 0.5,
+          "reasoning": [
+            "현재 상태: normal",
+            "패턴 매칭: 0개 패턴 발견",
+            "예측 모델 신뢰도: 0.50"
+          ],
+          "alternative_predictions": [
+            {
+              "type": "질문",
+              "content": "질문 기반 응답",
+              "probability": 0.18302454439396615
+            },
+            {
+              "type": "공감",
+              "content": "공감 기반 응답",
+              "probability": 0.10291386898329682
+            },
+            {
+              "type": "제안",
+              "content": "제안 기반 응답",
+              "probability": 0.11505387819432472
+            },
+            {
+              "type": "정보제공",
+              "content": "정보제공 기반 응답",
+              "probability": 0.3585385259679401
+            },
+            {
+              "type": "유머",
+              "content": "유머 기반 응답",
+              "probability": 0.17479047364005465
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:45.590071",
+          "metadata": {}
+        },
+        "emotion_transition": {
+          "prediction_id": "c7efe25f-6449-453c-a65a-916e03403a44",
+          "prediction_type": "emotion_transition",
+          "predicted_value": "neutral",
+          "confidence_score": 0.55,
+          "reasoning": [
+            "현재 감정: neutral",
+            "전환 확률: 0.55",
+            "예측 감정: neutral"
+          ],
+          "alternative_predictions": [
+            {
+              "emotion": "happy",
+              "probability": 0.3
+            },
+            {
+              "emotion": "neutral",
+              "probability": 0.55
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:45.590102",
+          "metadata": {}
+        },
+        "user_intent": {
+          "prediction_id": "c129917d-60e8-4a44-bc7f-3b3348df9e92",
+          "prediction_type": "user_intent",
+          "predicted_value": "일반",
+          "confidence_score": 1.0,
+          "reasoning": [
+            "패턴 매칭 결과: 0개 패턴",
+            "컨텍스트 의도: 일반",
+            "예측 의도: 일반"
+          ],
+          "alternative_predictions": [
+            {
+              "intent": "일반",
+              "probability": 1.0
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:45.590130",
+          "metadata": {}
+        }
+      },
+      "learning_outcome": {
+        "learning_objectives": [
+          {
+            "objective_id": "12ab3f98-0652-47a8-a42f-d8a6d597ba30",
+            "goal_type": "performance_optimization",
+            "target_metric": "response_time",
+            "target_value": 1.999953,
+            "current_value": 0.0,
+            "priority": 19,
+            "deadline": "2025-08-27T09:26:45.590255",
+            "dependencies": [],
+            "progress": 0.0
+          },
+          {
+            "objective_id": "b70ba150-29c1-4527-a500-150306074df9",
+            "goal_type": "knowledge_acquisition",
+            "target_metric": "general",
+            "target_value": 0.8,
+            "current_value": 0.0,
+            "priority": 8,
+            "deadline": "2025-09-11T09:26:45.590274",
+            "dependencies": [],
+            "progress": 0.0
+          }
+        ],
+        "learning_outcome": {
+          "new_knowledge": [
+            {
+              "input_type": "dict",
+              "output_type": "dict",
+              "success_rate": 0.0
+            },
+            {
+              "metric": "confidence",
+              "value": 0.48999999999999994,
+              "insight": "confidence에 대한 새로운 이해"
+            },
+            {
+              "metric": "creativity",
+              "value": 1.0,
+              "insight": "creativity에 대한 새로운 이해"
+            },
+            {
+              "metric": "adaptation",
+              "value": 0.85,
+              "insight": "adaptation에 대한 새로운 이해"
+            },
+            {
+              "metric": "response_time",
+              "value": 4.7e-05,
+              "insight": "response_time에 대한 새로운 이해"
+            }
+          ],
+          "pattern_discovery": [],
+          "strategy_adjustment": [
+            "탐색 전략 강화",
+            "학습 효율성 최적화"
+          ],
+          "performance_improvement": {}
+        },
+        "performance_improvements": {
+          "confidence": 0.48999999999999994,
+          "creativity": 1.0,
+          "adaptation": 0.85,
+          "response_time": 4.7e-05
+        }
+      }
+    },
+    {
+      "success": true,
+      "scenario": "감정적 지원 요청",
+      "user_message": "오늘 회사에서 너무 힘들었어 😢",
+      "ai_response": "lateral_thinking 기법과 combination 패턴을 결합한 창의적 해결책",
+      "confidence_score": 0.48999999999999994,
+      "creativity_score": 1.0,
+      "processing_time": 0.000577,
+      "predictions": {
+        "next_message": {
+          "prediction_id": "3a58bcd7-f22d-408a-9863-554c2de13298",
+          "prediction_type": "next_message",
+          "predicted_value": "일반적인 대화 계속",
+          "confidence_score": 0.5,
+          "reasoning": [
+            "현재 상태: normal",
+            "패턴 매칭: 0개 패턴 발견",
+            "예측 모델 신뢰도: 0.50"
+          ],
+          "alternative_predictions": [
+            {
+              "type": "질문",
+              "content": "질문 기반 응답",
+              "probability": 0.2046197318514332
+            },
+            {
+              "type": "공감",
+              "content": "공감 기반 응답",
+              "probability": 0.17243612775970182
+            },
+            {
+              "type": "제안",
+              "content": "제안 기반 응답",
+              "probability": 0.24703138425006932
+            },
+            {
+              "type": "정보제공",
+              "content": "정보제공 기반 응답",
+              "probability": 0.35724374978538187
+            },
+            {
+              "type": "유머",
+              "content": "유머 기반 응답",
+              "probability": 0.3255729948524583
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:46.602342",
+          "metadata": {}
+        },
+        "emotion_transition": {
+          "prediction_id": "5db0f910-f853-4b61-8ac8-8e0be40c6d43",
+          "prediction_type": "emotion_transition",
+          "predicted_value": "neutral",
+          "confidence_score": 0.55,
+          "reasoning": [
+            "현재 감정: neutral",
+            "전환 확률: 0.55",
+            "예측 감정: neutral"
+          ],
+          "alternative_predictions": [
+            {
+              "emotion": "happy",
+              "probability": 0.3
+            },
+            {
+              "emotion": "neutral",
+              "probability": 0.55
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:46.602371",
+          "metadata": {}
+        },
+        "user_intent": {
+          "prediction_id": "91053003-deaa-41c7-b249-4a0a28853198",
+          "prediction_type": "user_intent",
+          "predicted_value": "일반",
+          "confidence_score": 1.0,
+          "reasoning": [
+            "패턴 매칭 결과: 0개 패턴",
+            "컨텍스트 의도: 일반",
+            "예측 의도: 일반"
+          ],
+          "alternative_predictions": [
+            {
+              "intent": "일반",
+              "probability": 1.0
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:46.602415",
+          "metadata": {}
+        }
+      },
+      "learning_outcome": {
+        "learning_objectives": [
+          {
+            "objective_id": "dd5b2c20-9c66-4641-9738-622459ee0db7",
+            "goal_type": "performance_optimization",
+            "target_metric": "response_time",
+            "target_value": 1.999884,
+            "current_value": 0.0,
+            "priority": 19,
+            "deadline": "2025-08-27T09:26:46.602647",
+            "dependencies": [],
+            "progress": 0.0
+          },
+          {
+            "objective_id": "3bddfb12-1f00-41c7-b88b-506a28d2f1c4",
+            "goal_type": "knowledge_acquisition",
+            "target_metric": "input_output_pattern",
+            "target_value": 0.8,
+            "current_value": 0.0,
+            "priority": 8,
+            "deadline": "2025-09-11T09:26:46.602668",
+            "dependencies": [],
+            "progress": 0.0
+          }
+        ],
+        "learning_outcome": {
+          "new_knowledge": [
+            {
+              "input_type": "dict",
+              "output_type": "dict",
+              "success_rate": 0.0
+            },
+            {
+              "metric": "confidence",
+              "value": 0.48999999999999994,
+              "insight": "confidence에 대한 새로운 이해"
+            },
+            {
+              "metric": "creativity",
+              "value": 1.0,
+              "insight": "creativity에 대한 새로운 이해"
+            },
+            {
+              "metric": "adaptation",
+              "value": 0.85,
+              "insight": "adaptation에 대한 새로운 이해"
+            },
+            {
+              "metric": "response_time",
+              "value": 0.000116,
+              "insight": "response_time에 대한 새로운 이해"
+            }
+          ],
+          "pattern_discovery": [],
+          "strategy_adjustment": [
+            "탐색 전략 강화",
+            "학습 효율성 최적화"
+          ],
+          "performance_improvement": {}
+        },
+        "performance_improvements": {
+          "confidence": 0.48999999999999994,
+          "creativity": 1.0,
+          "adaptation": 0.85,
+          "response_time": 0.000116
+        }
+      }
+    },
+    {
+      "success": true,
+      "scenario": "질문 대화",
+      "user_message": "AI가 어떻게 작동하는지 궁금해요?",
+      "ai_response": "lateral_thinking 기법과 magnification 패턴을 결합한 창의적 해결책",
+      "confidence_score": 0.48999999999999994,
+      "creativity_score": 1.0,
+      "processing_time": 0.000562,
+      "predictions": {
+        "next_message": {
+          "prediction_id": "674e4413-3ba0-40a4-bba9-41bb696cde05",
+          "prediction_type": "next_message",
+          "predicted_value": "일반적인 대화 계속",
+          "confidence_score": 0.5,
+          "reasoning": [
+            "현재 상태: normal",
+            "패턴 매칭: 0개 패턴 발견",
+            "예측 모델 신뢰도: 0.50"
+          ],
+          "alternative_predictions": [
+            {
+              "type": "질문",
+              "content": "질문 기반 응답",
+              "probability": 0.2262549318856425
+            },
+            {
+              "type": "공감",
+              "content": "공감 기반 응답",
+              "probability": 0.36639372573696904
+            },
+            {
+              "type": "제안",
+              "content": "제안 기반 응답",
+              "probability": 0.3695838582916252
+            },
+            {
+              "type": "정보제공",
+              "content": "정보제공 기반 응답",
+              "probability": 0.3197326653281156
+            },
+            {
+              "type": "유머",
+              "content": "유머 기반 응답",
+              "probability": 0.25860674285634966
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:47.612293",
+          "metadata": {}
+        },
+        "emotion_transition": {
+          "prediction_id": "0ae4a480-5f86-4fc6-84c3-0f1f9e32cc10",
+          "prediction_type": "emotion_transition",
+          "predicted_value": "neutral",
+          "confidence_score": 0.55,
+          "reasoning": [
+            "현재 감정: neutral",
+            "전환 확률: 0.55",
+            "예측 감정: neutral"
+          ],
+          "alternative_predictions": [
+            {
+              "emotion": "happy",
+              "probability": 0.3
+            },
+            {
+              "emotion": "neutral",
+              "probability": 0.55
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:47.612341",
+          "metadata": {}
+        },
+        "user_intent": {
+          "prediction_id": "937fef67-edb4-4101-b166-5685ea49f473",
+          "prediction_type": "user_intent",
+          "predicted_value": "일반",
+          "confidence_score": 1.0,
+          "reasoning": [
+            "패턴 매칭 결과: 0개 패턴",
+            "컨텍스트 의도: 일반",
+            "예측 의도: 일반"
+          ],
+          "alternative_predictions": [
+            {
+              "intent": "일반",
+              "probability": 1.0
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:47.612385",
+          "metadata": {}
+        }
+      },
+      "learning_outcome": {
+        "learning_objectives": [
+          {
+            "objective_id": "f5de824a-bfe7-46f8-81b8-3f382b6085d7",
+            "goal_type": "performance_optimization",
+            "target_metric": "response_time",
+            "target_value": 1.999944,
+            "current_value": 0.0,
+            "priority": 19,
+            "deadline": "2025-08-27T09:26:47.612537",
+            "dependencies": [],
+            "progress": 0.0
+          },
+          {
+            "objective_id": "4958e036-f2c3-4ed8-85e1-1679d525434d",
+            "goal_type": "knowledge_acquisition",
+            "target_metric": "input_output_pattern",
+            "target_value": 0.8,
+            "current_value": 0.0,
+            "priority": 8,
+            "deadline": "2025-09-11T09:26:47.612562",
+            "dependencies": [],
+            "progress": 0.0
+          }
+        ],
+        "learning_outcome": {
+          "new_knowledge": [
+            {
+              "input_type": "dict",
+              "output_type": "dict",
+              "success_rate": 0.0
+            },
+            {
+              "metric": "confidence",
+              "value": 0.48999999999999994,
+              "insight": "confidence에 대한 새로운 이해"
+            },
+            {
+              "metric": "creativity",
+              "value": 1.0,
+              "insight": "creativity에 대한 새로운 이해"
+            },
+            {
+              "metric": "adaptation",
+              "value": 0.85,
+              "insight": "adaptation에 대한 새로운 이해"
+            },
+            {
+              "metric": "response_time",
+              "value": 5.6e-05,
+              "insight": "response_time에 대한 새로운 이해"
+            }
+          ],
+          "pattern_discovery": [],
+          "strategy_adjustment": [
+            "탐색 전략 강화",
+            "학습 효율성 최적화"
+          ],
+          "performance_improvement": {}
+        },
+        "performance_improvements": {
+          "confidence": 0.48999999999999994,
+          "creativity": 1.0,
+          "adaptation": 0.85,
+          "response_time": 5.6e-05
+        }
+      }
+    },
+    {
+      "success": true,
+      "scenario": "창의적 대화",
+      "user_message": "새로운 아이디어를 찾고 있어요",
+      "ai_response": "lateral_thinking 기법과 magnification 패턴을 결합한 창의적 해결책",
+      "confidence_score": 0.48999999999999994,
+      "creativity_score": 1.0,
+      "processing_time": 0.000832,
+      "predictions": {
+        "next_message": {
+          "prediction_id": "b4eb4c8f-b139-4a2e-95db-d9362d66f4ae",
+          "prediction_type": "next_message",
+          "predicted_value": "일반적인 대화 계속",
+          "confidence_score": 0.5,
+          "reasoning": [
+            "현재 상태: normal",
+            "패턴 매칭: 0개 패턴 발견",
+            "예측 모델 신뢰도: 0.50"
+          ],
+          "alternative_predictions": [
+            {
+              "type": "질문",
+              "content": "질문 기반 응답",
+              "probability": 0.15699663701037445
+            },
+            {
+              "type": "공감",
+              "content": "공감 기반 응답",
+              "probability": 0.20476887110928674
+            },
+            {
+              "type": "제안",
+              "content": "제안 기반 응답",
+              "probability": 0.2930054962124265
+            },
+            {
+              "type": "정보제공",
+              "content": "정보제공 기반 응답",
+              "probability": 0.30608277243673887
+            },
+            {
+              "type": "유머",
+              "content": "유머 기반 응답",
+              "probability": 0.3323548616838343
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:48.621414",
+          "metadata": {}
+        },
+        "emotion_transition": {
+          "prediction_id": "17f3000f-8107-4e5e-96ba-764f03387aa0",
+          "prediction_type": "emotion_transition",
+          "predicted_value": "neutral",
+          "confidence_score": 0.55,
+          "reasoning": [
+            "현재 감정: neutral",
+            "전환 확률: 0.55",
+            "예측 감정: neutral"
+          ],
+          "alternative_predictions": [
+            {
+              "emotion": "happy",
+              "probability": 0.3
+            },
+            {
+              "emotion": "neutral",
+              "probability": 0.55
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:48.621460",
+          "metadata": {}
+        },
+        "user_intent": {
+          "prediction_id": "2212c8ec-1ec0-4402-af2a-a2280f853300",
+          "prediction_type": "user_intent",
+          "predicted_value": "일반",
+          "confidence_score": 1.0,
+          "reasoning": [
+            "패턴 매칭 결과: 0개 패턴",
+            "컨텍스트 의도: 일반",
+            "예측 의도: 일반"
+          ],
+          "alternative_predictions": [
+            {
+              "intent": "일반",
+              "probability": 1.0
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:48.621507",
+          "metadata": {}
+        }
+      },
+      "learning_outcome": {
+        "learning_objectives": [
+          {
+            "objective_id": "dd05a8d1-86a3-4acc-8c40-962ad4f63f7a",
+            "goal_type": "performance_optimization",
+            "target_metric": "response_time",
+            "target_value": 1.999932,
+            "current_value": 0.0,
+            "priority": 19,
+            "deadline": "2025-08-27T09:26:48.621831",
+            "dependencies": [],
+            "progress": 0.0
+          },
+          {
+            "objective_id": "6f7b4af2-cbc4-49fb-87d0-c7c2423ffb4a",
+            "goal_type": "knowledge_acquisition",
+            "target_metric": "input_output_pattern",
+            "target_value": 0.8,
+            "current_value": 0.0,
+            "priority": 8,
+            "deadline": "2025-09-11T09:26:48.621860",
+            "dependencies": [],
+            "progress": 0.0
+          }
+        ],
+        "learning_outcome": {
+          "new_knowledge": [
+            {
+              "input_type": "dict",
+              "output_type": "dict",
+              "success_rate": 0.0
+            },
+            {
+              "metric": "confidence",
+              "value": 0.48999999999999994,
+              "insight": "confidence에 대한 새로운 이해"
+            },
+            {
+              "metric": "creativity",
+              "value": 1.0,
+              "insight": "creativity에 대한 새로운 이해"
+            },
+            {
+              "metric": "adaptation",
+              "value": 0.85,
+              "insight": "adaptation에 대한 새로운 이해"
+            },
+            {
+              "metric": "response_time",
+              "value": 6.8e-05,
+              "insight": "response_time에 대한 새로운 이해"
+            }
+          ],
+          "pattern_discovery": [],
+          "strategy_adjustment": [
+            "탐색 전략 강화",
+            "학습 효율성 최적화"
+          ],
+          "performance_improvement": {}
+        },
+        "performance_improvements": {
+          "confidence": 0.48999999999999994,
+          "creativity": 1.0,
+          "adaptation": 0.85,
+          "response_time": 6.8e-05
+        }
+      }
+    },
+    {
+      "success": true,
+      "scenario": "복잡한 상황",
+      "user_message": "친구와 다퉈서 기분이 안 좋아요. 어떻게 화해하면 좋을까요?",
+      "ai_response": "lateral_thinking 기법과 combination 패턴을 결합한 창의적 해결책",
+      "confidence_score": 0.48999999999999994,
+      "creativity_score": 1.0,
+      "processing_time": 0.0004,
+      "predictions": {
+        "next_message": {
+          "prediction_id": "f136007f-7bfc-4b67-9df2-9126b27e24c6",
+          "prediction_type": "next_message",
+          "predicted_value": "일반적인 대화 계속",
+          "confidence_score": 0.5,
+          "reasoning": [
+            "현재 상태: normal",
+            "패턴 매칭: 0개 패턴 발견",
+            "예측 모델 신뢰도: 0.50"
+          ],
+          "alternative_predictions": [
+            {
+              "type": "질문",
+              "content": "질문 기반 응답",
+              "probability": 0.33270774912328116
+            },
+            {
+              "type": "공감",
+              "content": "공감 기반 응답",
+              "probability": 0.11053352445459448
+            },
+            {
+              "type": "제안",
+              "content": "제안 기반 응답",
+              "probability": 0.20935534740618703
+            },
+            {
+              "type": "정보제공",
+              "content": "정보제공 기반 응답",
+              "probability": 0.15060535060837005
+            },
+            {
+              "type": "유머",
+              "content": "유머 기반 응답",
+              "probability": 0.392784071635326
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:49.628190",
+          "metadata": {}
+        },
+        "emotion_transition": {
+          "prediction_id": "53be2246-1694-4576-acb9-d5e354a9f784",
+          "prediction_type": "emotion_transition",
+          "predicted_value": "neutral",
+          "confidence_score": 0.55,
+          "reasoning": [
+            "현재 감정: neutral",
+            "전환 확률: 0.55",
+            "예측 감정: neutral"
+          ],
+          "alternative_predictions": [
+            {
+              "emotion": "happy",
+              "probability": 0.3
+            },
+            {
+              "emotion": "neutral",
+              "probability": 0.55
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:49.628216",
+          "metadata": {}
+        },
+        "user_intent": {
+          "prediction_id": "0201389b-bbef-49fb-acfa-32a254ae0f8d",
+          "prediction_type": "user_intent",
+          "predicted_value": "일반",
+          "confidence_score": 1.0,
+          "reasoning": [
+            "패턴 매칭 결과: 0개 패턴",
+            "컨텍스트 의도: 일반",
+            "예측 의도: 일반"
+          ],
+          "alternative_predictions": [
+            {
+              "intent": "일반",
+              "probability": 1.0
+            }
+          ],
+          "timestamp": "2025-07-28T09:26:49.628246",
+          "metadata": {}
+        }
+      },
+      "learning_outcome": {
+        "learning_objectives": [
+          {
+            "objective_id": "a8d7c4b6-0be7-47c3-b307-bb32101dd2ae",
+            "goal_type": "performance_optimization",
+            "target_metric": "response_time",
+            "target_value": 1.999958,
+            "current_value": 0.0,
+            "priority": 19,
+            "deadline": "2025-08-27T09:26:49.628357",
+            "dependencies": [],
+            "progress": 0.0
+          },
+          {
+            "objective_id": "60c4bb6f-9dd8-471f-8ce1-fbc9019faeff",
+            "goal_type": "knowledge_acquisition",
+            "target_metric": "input_output_pattern",
+            "target_value": 0.8,
+            "current_value": 0.0,
+            "priority": 8,
+            "deadline": "2025-09-11T09:26:49.628375",
+            "dependencies": [],
+            "progress": 0.0
+          }
+        ],
+        "learning_outcome": {
+          "new_knowledge": [
+            {
+              "input_type": "dict",
+              "output_type": "dict",
+              "success_rate": 0.0
+            },
+            {
+              "metric": "confidence",
+              "value": 0.48999999999999994,
+              "insight": "confidence에 대한 새로운 이해"
+            },
+            {
+              "metric": "creativity",
+              "value": 1.0,
+              "insight": "creativity에 대한 새로운 이해"
+            },
+            {
+              "metric": "adaptation",
+              "value": 0.85,
+              "insight": "adaptation에 대한 새로운 이해"
+            },
+            {
+              "metric": "response_time",
+              "value": 4.2e-05,
+              "insight": "response_time에 대한 새로운 이해"
+            }
+          ],
+          "pattern_discovery": [],
+          "strategy_adjustment": [
+            "탐색 전략 강화",
+            "학습 효율성 최적화"
+          ],
+          "performance_improvement": {}
+        },
+        "performance_improvements": {
+          "confidence": 0.48999999999999994,
+          "creativity": 1.0,
+          "adaptation": 0.85,
+          "response_time": 4.2e-05
+        }
+      }
+    }
+  ],
+  "analytics_result": {
+    "success": true,
+    "analytics": {
+      "total_conversations": 5,
+      "average_confidence": 0.48999999999999994,
+      "average_creativity": 1.0,
+      "recent_performance": {
+        "confidence_trend": "stable",
+        "recent_avg_confidence": 0.48999999999999994
+      },
+      "system_health": "excellent",
+      "learning_progress": "active"
+    }
+  },
+  "capabilities_result": {
+    "success": true,
+    "capabilities": {
+      "reasoning": {
+        "description": "논리적 추론 및 문제 해결",
+        "strength": "high",
+        "applications": [
+          "대화 맥락 이해",
+          "복잡한 질문 처리"
+        ]
+      },
+      "learning": {
+        "description": "자율적 학습 및 적응",
+        "strength": "high",
+        "applications": [
+          "사용자 패턴 학습",
+          "응답 품질 개선"
+        ]
+      },
+      "creativity": {
+        "description": "창의적 사고 및 표현",
+        "strength": "medium",
+        "applications": [
+          "다양한 응답 생성",
+          "예상치 못한 상황 대응"
+        ]
+      },
+      "adaptation": {
+        "description": "상황 적응 및 변화 대응",
+        "strength": "high",
+        "applications": [
+          "대화 스타일 조정",
+          "감정 상태 적응"
+        ]
+      },
+      "prediction": {
+        "description": "대화 흐름 및 사용자 의도 예측",
+        "strength": "medium",
+        "applications": [
+          "선제적 응답",
+          "대화 방향 예측"
+        ]
+      },
+      "multimodal": {
+        "description": "다중 모달리티 이해 및 처리",
+        "strength": "medium",
+        "applications": [
+          "텍스트+이미지+음성 통합",
+          "멀티미디어 대화"
+        ]
+      }
+    }
+  },
+  "summary": {
+    "total_conversations": 5,
+    "successful_conversations": 5,
+    "success_rate": 1.0
+  }
+}

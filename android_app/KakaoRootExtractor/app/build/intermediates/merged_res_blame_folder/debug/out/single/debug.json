@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.rootextractor.kakao.app-merged_res-38:/layout_activity_main.xml.flat",
+        "source": "com.rootextractor.kakao.app-main-40:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.rootextractor.kakao.app-merged_res-38:/layout_item_chatroom.xml.flat",
+        "source": "com.rootextractor.kakao.app-main-40:/layout/item_chatroom.xml"
+    },
+    {
+        "merged": "com.rootextractor.kakao.app-merged_res-38:/xml_backup_rules.xml.flat",
+        "source": "com.rootextractor.kakao.app-main-40:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.rootextractor.kakao.app-merged_res-38:/layout_activity_chatroom_selection.xml.flat",
+        "source": "com.rootextractor.kakao.app-main-40:/layout/activity_chatroom_selection.xml"
+    },
+    {
+        "merged": "com.rootextractor.kakao.app-merged_res-38:/xml_data_extraction_rules.xml.flat",
+        "source": "com.rootextractor.kakao.app-main-40:/xml/data_extraction_rules.xml"
+    }
+]

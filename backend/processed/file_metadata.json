@@ -1,0 +1,119 @@
+{
+  "files": {
+    "union_policy_조합총회.txt": {
+      "filename": "조합총회.txt",
+      "original_path": "uploads/조합총회.txt",
+      "size": 31,
+      "created_time": "2025-07-18T21:46:55.332147",
+      "modified_time": "2025-07-18T21:46:55.332147",
+      "file_extension": ".txt",
+      "mime_type": "text/plain",
+      "file_hash": "b2af269beb12413b8ee804c725249d13",
+      "new_path": "processed/union_policy/조합총회.txt",
+      "content_category": "union_policy",
+      "organized_time": "2025-07-18T21:47:00.340467",
+      "auto_classified": true
+    },
+    "labor_law_노무관리.txt": {
+      "filename": "노무관리.txt",
+      "original_path": "uploads/노무관리.txt",
+      "size": 30,
+      "created_time": "2025-07-18T21:46:55.332000",
+      "modified_time": "2025-07-18T21:46:55.332000",
+      "file_extension": ".txt",
+      "mime_type": "text/plain",
+      "file_hash": "c0ef2b1846776c5d8f4b8c3379fb1b61",
+      "new_path": "processed/labor_law/노무관리.txt",
+      "content_category": "labor_law",
+      "organized_time": "2025-07-18T21:47:00.341758",
+      "auto_classified": true
+    },
+    "safety_guidelines_안전교육자료.txt": {
+      "filename": "안전교육자료.txt",
+      "original_path": "uploads/안전교육자료.txt",
+      "size": 36,
+      "created_time": "2025-07-18T21:46:55.331694",
+      "modified_time": "2025-07-18T21:46:55.331694",
+      "file_extension": ".txt",
+      "mime_type": "text/plain",
+      "file_hash": "2fc9150da5aed698c38460e1268bdb2e",
+      "new_path": "processed/safety_guidelines/안전교육자료.txt",
+      "content_category": "safety_guidelines",
+      "organized_time": "2025-07-18T21:47:00.348000",
+      "auto_classified": true
+    },
+    "training_materials_도시 및 주거환경정비법 시행규칙(국토교통부령)(제01500호)(20250604).doc": {
+      "filename": "도시 및 주거환경정비법 시행규칙(국토교통부령)(제01500호)(20250604).doc",
+      "original_path": "uploads/도시 및 주거환경정비법 시행규칙(국토교통부령)(제01500호)(20250604).doc",
+      "size": 140751,
+      "created_time": "2025-07-18T22:11:44.268980",
+      "modified_time": "2025-07-18T22:11:44.268609",
+      "file_extension": ".doc",
+      "mime_type": "application/msword",
+      "file_hash": "5b4c959c1da4e1fcba4e5bdbd6d8619a",
+      "new_path": "processed/training_materials/도시 및 주거환경정비법 시행규칙(국토교통부령)(제01500호)(20250604).doc",
+      "content_category": "training_materials",
+      "organized_time": "2025-07-18T22:12:14.900217",
+      "auto_classified": true
+    },
+    "labor_law_노무관리규정.txt": {
+      "filename": "노무관리규정.txt",
+      "original_path": "uploads/노무관리규정.txt",
+      "size": 52,
+      "created_time": "2025-07-18T22:13:32.715691",
+      "modified_time": "2025-07-18T22:13:32.715691",
+      "file_extension": ".txt",
+      "mime_type": "text/plain",
+      "file_hash": "ed95a1a38d1d6d8d52de4e52185af0e3",
+      "new_path": "processed/labor_law/노무관리규정.txt",
+      "content_category": "labor_law",
+      "organized_time": "2025-07-18T22:13:47.872331",
+      "auto_classified": true
+    },
+    "training_materials_250701_개포우성7_교육자료_가계대책관련_3.pdf": {
+      "filename": "250701_개포우성7_교육자료_가계대책관련_3.pdf",
+      "original_path": "uploads/250701_개포우성7_교육자료_가계대책관련_3.pdf",
+      "size": 570126,
+      "created_time": "2025-07-18T22:12:36.272600",
+      "modified_time": "2025-07-18T22:12:36.272193",
+      "file_extension": ".pdf",
+      "mime_type": "application/pdf",
+      "file_hash": "a9af6b81fa5fe793aba8dae10666461e",
+      "new_path": "processed/training_materials/250701_개포우성7_교육자료_가계대책관련_3.pdf",
+      "content_category": "training_materials",
+      "organized_time": "2025-07-18T22:13:47.877576",
+      "auto_classified": true
+    },
+    "safety_guidelines_안전관리지침.txt": {
+      "filename": "안전관리지침.txt",
+      "original_path": "uploads/안전관리지침.txt",
+      "size": 94,
+      "created_time": "2025-07-18T22:13:26.564987",
+      "modified_time": "2025-07-18T22:13:26.564987",
+      "file_extension": ".txt",
+      "mime_type": "text/plain",
+      "file_hash": "a2326fc2bffeb70ef5d43c58e31f8088",
+      "new_path": "processed/safety_guidelines/안전관리지침.txt",
+      "content_category": "safety_guidelines",
+      "organized_time": "2025-07-18T22:13:47.879431",
+      "auto_classified": true
+    }
+  },
+  "statistics": {
+    "total_files": 7,
+    "categories": {
+      "labor_law": 2,
+      "union_policy": 1,
+      "safety_guidelines": 2,
+      "welfare_info": 0,
+      "negotiation_materials": 0,
+      "training_materials": 2
+    },
+    "file_types": {
+      ".txt": 5,
+      ".doc": 1,
+      ".pdf": 1
+    },
+    "last_updated": "2025-07-18T22:13:47.879444"
+  }
+}

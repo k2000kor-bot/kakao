@@ -1,0 +1,628 @@
+Traceback (most recent call last):
+  File "/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py", line 2161, in <module>
+    def generate_advanced_message_samples_endpoint(req: AdvancedMessageSampleRequest):
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'AdvancedMessageSampleRequest' is not defined. Did you mean: 'AdvancedMessageRequest'?
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [92026]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+ERROR:__main__:고도화된 메시지 생성 오류: 'AdvancedMessageRequest' object has no attribute 'ai_model_preference'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:51513 - "POST /api/generate-advanced-message HTTP/1.1" 500 Internal Server Error
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [92026]
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [93236]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+ERROR:__main__:고도화된 메시지 생성 오류: 'AdvancedMessageRequest' object has no attribute 'include_data'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:51664 - "POST /api/generate-advanced-message HTTP/1.1" 500 Internal Server Error
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [93236]
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [94404]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+ERROR:__main__:고도화된 메시지 생성 오류: 'AdvancedMessageRequest' object has no attribute 'personalization_level'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:51754 - "POST /api/generate-advanced-message HTTP/1.1" 500 Internal Server Error
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [94404]
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [95621]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:2095: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:51826 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [95621]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [97234]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+ERROR:__main__:고도화된 메시지 생성 오류: 'AIModelSimulator' object has no attribute '_improve_korean_expression'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:52135 - "POST /api/generate-advanced-message HTTP/1.1" 500 Internal Server Error
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [97234]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [98609]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:1961: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:52338 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [98609]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [1158]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:1961: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:52985 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1158]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [2450]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:1965: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:53095 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2450]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [3706]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:1971: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:53217 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53230 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3706]
+nohup: python: No such file or directory
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [6083]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:1985: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:53312 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [6083]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [7300]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:1988: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:53395 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53566 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [7300]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [9292]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:2389: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:53922 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53935 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53954 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53969 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54230 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54245 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [9292]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [15190]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:2428: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:54307 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [15190]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [16334]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:2404: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:54379 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54390 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54402 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16334]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [19144]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:2414: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:54504 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54534 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54547 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54562 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55637 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55649 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55661 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [19144]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [28106]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [28106]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [28698]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+ERROR:__main__:고도화된 메시지 생성 오류: 'AIModelSimulator' object has no attribute '_improve_korean_expression'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:55940 - "POST /api/generate-advanced-message HTTP/1.1" 500 Internal Server Error
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [28698]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:대화 분석 완료: 0개 메시지
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [29835]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:2319: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:56010 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56029 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56045 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56057 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56068 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [29835]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [34316]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+/Users/aD/kakao-frontend/backend/advanced_message_generation_server.py:2382: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  "message": message.dict()
+⚠️ 메시지를 파싱할 수 없습니다: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:56197 - "POST /api/generate-advanced-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [34316]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [36103]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+ERROR:__main__:카카오 메시지 생성 오류: 'AdvancedMessageGenerator' object has no attribute '_generate_realistic_kakao_response'
+❌ 대화 분석 오류: 'speaker'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:56644 - "POST /api/generate-kakao-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [36103]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [37234]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+ERROR:__main__:카카오 메시지 생성 오류: 'AdvancedMessageGenerator' object has no attribute '_generate_realistic_kakao_response'
+❌ 대화 분석 오류: 'speaker'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:56741 - "POST /api/generate-kakao-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [37234]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [38344]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+❌ 대화 분석 오류: 'speaker'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:56830 - "POST /api/generate-kakao-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56916 - "POST /api/generate-kakao-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56929 - "POST /api/generate-kakao-message HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [38344]
+INFO:__main__:대화 파일 분석 중: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:__main__:✅ 고도화된 메시지 시스템 데이터베이스 초기화 완료
+INFO:     Started server process [42649]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+❌ 대화 분석 오류: 'speaker'
+🚀 고도화된 메시지 생성 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8011
+📖 API 문서: http://localhost:8011/docs
+🎯 주요 엔드포인트:
+   POST /api/generate-advanced-message - 고도화된 메시지 생성
+   POST /api/update-user-profile - 사용자 프로필 업데이트
+   POST /api/learning-feedback - 학습 피드백
+   GET /api/performance-analysis - 성능 분석
+   GET /api/ai-model-performance - AI 모델 성능
+   GET /api/user-profile/{id} - 사용자 프로필
+
+✅ 고도화된 메시지 데이터베이스 초기화 완료
+INFO:     127.0.0.1:57659 - "GET /api/message-formats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57669 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57687 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57700 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57711 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57723 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57958 - "GET /api/message-formats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58248 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58259 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58273 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58285 - "POST /api/generate-formatted-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60210 - "GET /api/message-formats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60466 - "POST /api/analyze-conversation-enhanced HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60492 - "POST /api/analyze-conversation-enhanced HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60625 - "POST /api/generate-context-aware-message HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60734 - "POST /api/generate-context-aware-message HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [42649]

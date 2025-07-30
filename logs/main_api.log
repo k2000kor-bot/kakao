@@ -1,0 +1,51 @@
+INFO:__main__:⚠️ 환경변수에서 API 키를 찾을 수 없어 테스트 키를 사용합니다.
+INFO:__main__:✅ OpenAI 클라이언트 초기화 완료
+/Users/aD/kakao-frontend/backend/advanced_api_server.py:781: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:integrated_ai_system:🚀 통합 AI 시스템 v7.0 초기화 시작...
+INFO:integrated_ai_system:발견된 채팅방 파일: 2개
+INFO:advanced_kakao_parser:카카오톡 대화 파일 파싱 시작: chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt
+INFO:advanced_kakao_parser:파싱 완료: 4913개 메시지 (새로운: 0개, 중복: 4913개), 74명 참여자
+INFO:conversation_learner:대화 학습 시작: [인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화
+WARNING:integrated_ai_system:학습 실패 chat_rooms/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화/[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화.txt: missing ), unterminated subpattern at position 20
+INFO:advanced_kakao_parser:카카오톡 대화 파일 파싱 시작: chat_rooms/테스트 카카오톡 대화 파일 님과 카카오톡 대화/test_chat.txt
+INFO:advanced_kakao_parser:파싱 완료: 0개 메시지 (새로운: 0개, 중복: 0개), 0명 참여자
+INFO:conversation_learner:대화 학습 시작: 테스트 카카오톡 대화 파일 님과 카카오톡 대화
+INFO:conversation_learner:학습 완료: 0명의 프로필 생성
+INFO:integrated_ai_system:✅ 학습 완료: test_chat.txt
+INFO:integrated_ai_system:🏆 통합 AI 시스템 초기화 완료!
+INFO:     Started server process [2652]
+INFO:     Waiting for application startup.
+INFO:__main__:🚀 고도화된 카카오 AI API 서버 v7.0 시작...
+INFO:integrated_ai_system:🚀 통합 AI 시스템 v7.0 초기화 시작...
+INFO:integrated_ai_system:발견된 채팅방 파일: 1개
+INFO:advanced_kakao_parser:카카오톡 대화 파일 파싱 시작: ../chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt
+INFO:advanced_kakao_parser:파싱 완료: 5265개 메시지 (새로운: 5265개, 중복: 0개), 77명 참여자
+INFO:conversation_learner:대화 학습 시작: [인증]행복한소유☆개포우성7차 113 님과 카카오톡 대화
+WARNING:integrated_ai_system:학습 실패 ../chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt: missing ), unterminated subpattern at position 20
+INFO:integrated_ai_system:🏆 통합 AI 시스템 초기화 완료!
+INFO:__main__:✅ 통합 AI 시스템 초기화 완료
+INFO:__main__:✅ 정치인 스타일 API 초기화 완료
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)
+🚀 고도화된 카카오 AI API 서버 v7.0 시작
+============================================================
+📍 서버 주소: http://localhost:8003
+📖 API 문서: http://localhost:8003/docs
+🎯 주요 엔드포인트:
+   GET /api/v7/status - 시스템 상태
+   GET /api/v7/chat-rooms - 채팅방 목록
+   GET /api/v7/chat-messages/{id} - 메시지 조회
+   POST /api/v7/upload-chat - 채팅 파일 업로드
+   POST /api/v7/sync - 수동 동기화
+   GET /api/v7/sync-status - 동기화 상태
+
+✅ 데이터베이스 초기화 완료
+✅ 통합 AI 시스템 초기화 완료
+INFO:     127.0.0.1:49708 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49710 - "GET /health HTTP/1.1" 200 OK

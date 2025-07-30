@@ -1,0 +1,21 @@
+INFO:     Started server process [5533]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+🚀 동기화 서버 시작
+==================================================
+📍 서버 주소: http://localhost:8002
+📖 API 문서: http://localhost:8002/docs
+🎯 주요 엔드포인트:
+   GET /api/chat-rooms - 채팅방 목록
+   GET /api/chat-messages/{id} - 메시지 조회
+   GET /api/media-files/{id} - 미디어 파일 조회
+   POST /api/sync - 수동 동기화
+   GET /api/sync-status - 동기화 상태
+
+✅ 동기화 데이터베이스 초기화 완료
+INFO:     127.0.0.1:49900 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5533]

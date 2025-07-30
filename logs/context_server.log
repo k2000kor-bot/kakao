@@ -1,0 +1,20 @@
+INFO:     Started server process [5538]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8008 (Press CTRL+C to quit)
+🚀 컨텍스트 분석 서버 시작
+==================================================
+📍 서버 주소: http://localhost:8008
+📖 API 문서: http://localhost:8008/docs
+🎯 주요 엔드포인트:
+   POST /api/analyze-context - 컨텍스트 분석
+   GET /api/situation-patterns - 상황 패턴 목록
+   POST /api/add-pattern - 패턴 추가
+   GET /api/context-history/{id} - 분석 히스토리
+
+✅ 컨텍스트 데이터베이스 초기화 완료
+INFO:     127.0.0.1:49910 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5538]

@@ -1,0 +1,16 @@
+2025-07-30 08:00:36,016 - __main__ - INFO - WebSocket 서버 시작 중...
+2025-07-30 08:00:36,016 - __main__ - INFO - FastAPI 서버 시작 중 (포트 8004)...
+2025-07-30 08:00:36,023 - websockets.server - INFO - server listening on 127.0.0.1:8004
+2025-07-30 08:00:36,023 - websockets.server - INFO - server listening on [::1]:8004
+2025-07-30 08:00:36,023 - __main__ - INFO - WebSocket 서버가 ws://localhost:8004에서 실행 중
+INFO:     Started server process [2665]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('127.0.0.1', 8004): [errno 48] address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2025-07-30 08:00:36,069 - asyncio - ERROR - Task was destroyed but it is pending!
+task: <Task pending name='Task-4' coro=<cleanup_task() running at /Users/aD/kakao-frontend/backend/advanced_websocket_server.py:338>>
+/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/base_events.py:750: RuntimeWarning: coroutine 'cleanup_task' was never awaited
+  self._ready.clear()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback

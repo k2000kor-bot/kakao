@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Allow backup of all app data -->
+        <include domain="root" />
+        <!-- Exclude sensitive data -->
+        <exclude domain="database" path="kakao_extractor.db"/>
+        <exclude domain="sharedpref" path="auth_prefs.xml"/>
+    </cloud-backup>
+    <!--
+    <device-transfer>
+        <include domain="sharedpref" path="."/>
+        <exclude domain="sharedpref" path="device_specific_prefs.xml"/>
+    </device-transfer>
+    -->
+</data-extraction-rules> 

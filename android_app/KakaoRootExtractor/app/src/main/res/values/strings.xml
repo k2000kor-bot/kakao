@@ -1,0 +1,60 @@
+<resources>
+    <string name="app_name">카카오톡 루트 추출기</string>
+    <string name="app_description">루팅폰용 카카오톡 대화 자동 추출 도구</string>
+    
+    <!-- 메인 화면 -->
+    <string name="status_initializing">앱 초기화 중...</string>
+    <string name="status_ready">앱 초기화 완료</string>
+    <string name="status_monitoring_started">실시간 모니터링 시작됨</string>
+    <string name="status_monitoring_stopped">모니터링 중지됨</string>
+    <string name="status_root_required">루트 권한이 필요합니다</string>
+    
+    <!-- 버튼 텍스트 -->
+    <string name="btn_start_monitoring">실시간 모니터링 시작</string>
+    <string name="btn_stop_monitoring">모니터링 중지</string>
+    <string name="btn_sync_server">서버 동기화</string>
+    <string name="btn_select_rooms">대화방 목록 보기</string>
+    
+    <!-- 대화방 선택 -->
+    <string name="chatroom_selection_title">대화방 선택</string>
+    <string name="chatroom_selection_subtitle">모니터링할 대화방을 선택하세요</string>
+    <string name="btn_select_all">모두 선택</string>
+    <string name="btn_deselect_all">모두 해제</string>
+    <string name="btn_confirm">확인</string>
+    <string name="btn_cancel">취소</string>
+    
+    <!-- 대화방 타입 -->
+    <string name="room_type_direct">개인 대화</string>
+    <string name="room_type_group">그룹 대화</string>
+    <string name="room_type_openchat">오픈 채팅</string>
+    <string name="room_type_unknown">기타</string>
+    
+    <!-- 메시지 -->
+    <string name="message_count_format">%d개 메시지</string>
+    <string name="participant_count_format">%d명</string>
+    <string name="last_activity_format">마지막 활동: %s</string>
+    
+    <!-- 시간 표시 -->
+    <string name="time_just_now">방금 전</string>
+    <string name="time_minutes_ago">%d분 전</string>
+    <string name="time_hours_ago">%d시간 전</string>
+    <string name="time_days_ago">%d일 전</string>
+    <string name="time_long_ago">오래 전</string>
+    <string name="time_no_activity">활동 없음</string>
+    
+    <!-- 에러 메시지 -->
+    <string name="error_root_access">루트 권한 확인 실패</string>
+    <string name="error_db_access">데이터베이스 접근 실패</string>
+    <string name="error_network">네트워크 연결 실패</string>
+    <string name="error_server_connection">서버 연결 실패</string>
+    
+    <!-- 권한 관련 -->
+    <string name="permission_internet">인터넷 접근 권한</string>
+    <string name="permission_storage">저장공간 접근 권한</string>
+    <string name="permission_root">루트 접근 권한</string>
+    
+    <!-- 설정 -->
+    <string name="settings_server_url">서버 주소</string>
+    <string name="settings_auto_start">자동 시작</string>
+    <string name="settings_notifications">알림 설정</string>
+</resources> 

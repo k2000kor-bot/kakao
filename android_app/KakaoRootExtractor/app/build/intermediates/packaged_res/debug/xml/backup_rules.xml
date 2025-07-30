@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Include app preferences -->
+    <include domain="sharedpref" path="."/>
+    <!-- Include app files -->
+    <include domain="file" path="."/>
+    
+    <!-- Exclude sensitive data -->
+    <exclude domain="database" path="kakao_extractor.db"/>
+    <exclude domain="sharedpref" path="auth_prefs.xml"/>
+    <exclude domain="file" path="sensitive/"/>
+</full-backup-content> 

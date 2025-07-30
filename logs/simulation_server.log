@@ -1,0 +1,19 @@
+INFO:     Started server process [5535]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8005 (Press CTRL+C to quit)
+🚀 시뮬레이션 서버 시작
+==================================================
+📍 서버 주소: http://localhost:8005
+📖 API 문서: http://localhost:8005/docs
+🎯 주요 엔드포인트:
+   POST /api/simulate-response - 메시지 시뮬레이션
+   POST /api/predict-impact - 영향력 예측
+   GET /api/simulation-history - 시뮬레이션 히스토리
+
+✅ 시뮬레이션 데이터베이스 초기화 완료
+INFO:     127.0.0.1:49904 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5535]
