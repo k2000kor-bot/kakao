@@ -1,8 +1,5 @@
 // 대응 메시지 관련 컴포넌트들
-export { default as ResponseMessageGenerator } from './ResponseMessageGenerator';
 export { default as ResponseTemplateManager } from './ResponseTemplateManager';
-export { default as SmartResponseGenerator } from './SmartResponseGenerator';
-export { default as AdvancedResponseAnalyzer } from './AdvancedResponseAnalyzer';
 export { default as AIResponseQualityAnalyzer } from './AIResponseQualityAnalyzer';
 export { default as IntegratedMessageGenerator } from './IntegratedMessageGenerator';
 export { default as AdvancedMessageComposer } from './AdvancedMessageComposer';

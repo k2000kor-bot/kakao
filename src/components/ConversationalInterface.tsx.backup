@@ -1,0 +1,2402 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { PaperAirplaneIcon, PaperClipIcon, FaceSmileIcon, MicrophoneIcon, CogIcon, MagnifyingGlassIcon, ChartBarIcon, DocumentTextIcon, PhotoIcon, SpeakerWaveIcon, CommandLineIcon, ExclamationTriangleIcon, CheckCircleIcon, ClockIcon, BookOpenIcon, VideoCameraIcon } from '@heroicons/react/24/outline';
+
+interface Message {
+  id: string;
+  content: string;
+  sender: 'user' | 'ai' | 'system';
+  timestamp: Date;
+  type: 'text' | 'command' | 'system' | 'error' | 'success';
+  metadata?: {
+    confidence?: number;
+    processingTime?: number;
+    suggestions?: string[];
+    actions?: string[];
+    fileInfo?: {
+      name: string;
+      type: string;
+      size: number;
+    };
+  };
+}
+
+interface ConversationalInterfaceProps {
+  onCommand?: (command: string) => void;
+}
+
+const ConversationalInterface: React.FC<ConversationalInterfaceProps> = ({ onCommand }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [currentContext, setCurrentContext] = useState('');
+  const [isConnected, setIsConnected] = useState(true);
+  const [systemStatus, setSystemStatus] = useState({
+    cpu: 45,
+    memory: 62,
+    responseTime: 120,
+    activeConnections: 8
+  });
+  const [inputFocus, setInputFocus] = useState(false);
+  const [inputError, setInputError] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAutoComplete, setShowAutoComplete] = useState(false);
+  const [autoCompleteSuggestions, setAutoCompleteSuggestions] = useState<string[]>([]);
+  const [selectedAutoCompleteIndex, setSelectedAutoCompleteIndex] = useState(0);
+  const [bannedWordsDetected, setBannedWordsDetected] = useState<string[]>([]);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isVoiceConverting, setIsVoiceConverting] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [voiceText, setVoiceText] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedText, setTranslatedText] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [isAIChatActive, setIsAIChatActive] = useState(false);
+  const [aiChatHistory, setAiChatHistory] = useState<Message[]>([]);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressedFiles, setCompressedFiles] = useState<string[]>([]);
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [videoCallParticipants, setVideoCallParticipants] = useState<string[]>([]);
+  const [isCollaborating, setIsCollaborating] = useState(false);
+  const [collaborationUsers, setCollaborationUsers] = useState<string[]>([]);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [isSecurityActive, setIsSecurityActive] = useState(false);
+  const [securityAlerts, setSecurityAlerts] = useState<string[]>([]);
+  const [isAutomationActive, setIsAutomationActive] = useState(false);
+  const [automationTasks, setAutomationTasks] = useState<string[]>([]);
+  const [isBackupRunning, setIsBackupRunning] = useState(false);
+  const [backupProgress, setBackupProgress] = useState(0);
+  const [isScalable, setIsScalable] = useState(false);
+  const [scalabilityMetrics, setScalabilityMetrics] = useState<any>(null);
+  const [isPerformanceOptimized, setIsPerformanceOptimized] = useState(false);
+  const [performanceMetrics, setPerformanceMetrics] = useState<any>(null);
+  const [isAdvancedSecurityActive, setIsAdvancedSecurityActive] = useState(false);
+  const [securityThreats, setSecurityThreats] = useState<string[]>([]);
+  const [isAIAugmented, setIsAIAugmented] = useState(false);
+  const [aiEnhancements, setAiEnhancements] = useState<string[]>([]);
+  const [isMultiLanguage, setIsMultiLanguage] = useState(false);
+  const [supportedLanguages, setSupportedLanguages] = useState<string[]>([]);
+  const [isCloudSync, setIsCloudSync] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string>('');
+  const [isBlockchainActive, setIsBlockchainActive] = useState(false);
+  const [blockchainTransactions, setBlockchainTransactions] = useState<any[]>([]);
+  const [isIoTConnected, setIsIoTConnected] = useState(false);
+  const [iotDevices, setIotDevices] = useState<string[]>([]);
+  const [isARVRActive, setIsARVRActive] = useState(false);
+  const [arVrContent, setArVrContent] = useState<string>('');
+  const [isQuantumOptimized, setIsQuantumOptimized] = useState(false);
+  const [quantumMetrics, setQuantumMetrics] = useState<any>(null);
+  const [isEdgeComputing, setIsEdgeComputing] = useState(false);
+  const [edgeNodes, setEdgeNodes] = useState<string[]>([]);
+  const [is5GEnabled, setIs5GEnabled] = useState(false);
+  const [networkSpeed, setNetworkSpeed] = useState<string>('');
+  const [isAIEthicsActive, setIsAIEthicsActive] = useState(false);
+  const [ethicsGuidelines, setEthicsGuidelines] = useState<string[]>([]);
+  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
+  const [biometricData, setBiometricData] = useState<any>(null);
+  const [isMetaverseConnected, setIsMetaverseConnected] = useState(false);
+  const [metaverseWorlds, setMetaverseWorlds] = useState<string[]>([]);
+  const [isSpaceTechActive, setIsSpaceTechActive] = useState(false);
+  const [spaceMetrics, setSpaceMetrics] = useState<any>(null);
+  const [isNeuralInterface, setIsNeuralInterface] = useState(false);
+  const [neuralSignals, setNeuralSignals] = useState<any>(null);
+  const [isHolographicDisplay, setIsHolographicDisplay] = useState(false);
+  const [hologramContent, setHologramContent] = useState<string>('');
+  const [isTimeTravelActive, setIsTimeTravelActive] = useState(false);
+  const [timeCoordinates, setTimeCoordinates] = useState<any>(null);
+  const [isParallelUniverse, setIsParallelUniverse] = useState(false);
+  const [universeDimensions, setUniverseDimensions] = useState<string[]>([]);
+  const [isMultiDimensionalComm, setIsMultiDimensionalComm] = useState(false);
+  const [dimensionalChannels, setDimensionalChannels] = useState<any[]>([]);
+  const [isSuperIntelligence, setIsSuperIntelligence] = useState(false);
+  const [intelligenceMetrics, setIntelligenceMetrics] = useState<any>(null);
+  const [isQuantumEntanglement, setIsQuantumEntanglement] = useState(false);
+  const [entanglementPairs, setEntanglementPairs] = useState<any[]>([]);
+  const [isTemporalParadox, setIsTemporalParadox] = useState(false);
+  const [paradoxResolutions, setParadoxResolutions] = useState<string[]>([]);
+  const [isMultiUniverseComm, setIsMultiUniverseComm] = useState(false);
+  const [universeConnections, setUniverseConnections] = useState<any[]>([]);
+  const [isTimeLoopControl, setIsTimeLoopControl] = useState(false);
+  const [timeLoopMetrics, setTimeLoopMetrics] = useState<any>(null);
+  const [isHyperDimensionalTravel, setIsHyperDimensionalTravel] = useState(false);
+  const [dimensionalCoordinates, setDimensionalCoordinates] = useState<any>(null);
+  const [isAbsoluteIntelligence, setIsAbsoluteIntelligence] = useState(false);
+  const [absoluteIntelligenceData, setAbsoluteIntelligenceData] = useState<any>(null);
+  const [isRealityManipulation, setIsRealityManipulation] = useState(false);
+  const [realityParameters, setRealityParameters] = useState<any>(null);
+  const [isConsciousnessUpload, setIsConsciousnessUpload] = useState(false);
+  const [consciousnessStatus, setConsciousnessStatus] = useState<string>('');
+  const [isMultiUniverseConsciousness, setIsMultiUniverseConsciousness] = useState(false);
+  const [consciousnessDimensions, setConsciousnessDimensions] = useState<string[]>([]);
+  const [isTemporalParadoxResolution, setIsTemporalParadoxResolution] = useState(false);
+  const [paradoxSolutions, setParadoxSolutions] = useState<any[]>([]);
+  const [isHyperDimensionalConsciousness, setIsHyperDimensionalConsciousness] = useState(false);
+  const [dimensionalAwareness, setDimensionalAwareness] = useState<any>(null);
+  const [isAbsoluteReality, setIsAbsoluteReality] = useState(false);
+  const [realityFabric, setRealityFabric] = useState<any>(null);
+  const [isOmniDimensionalTravel, setIsOmniDimensionalTravel] = useState(false);
+  const [travelCoordinates, setTravelCoordinates] = useState<any>(null);
+  const [isConsciousnessFusion, setIsConsciousnessFusion] = useState(false);
+  const [fusionStatus, setFusionStatus] = useState<string>('');
+  const [isInfiniteConsciousness, setIsInfiniteConsciousness] = useState(false);
+  const [consciousnessLevels, setConsciousnessLevels] = useState<string[]>([]);
+  const [isAbsoluteKnowledge, setIsAbsoluteKnowledge] = useState(false);
+  const [knowledgeDomains, setKnowledgeDomains] = useState<any[]>([]);
+  const [isCompleteFreedom, setIsCompleteFreedom] = useState(false);
+  const [freedomDimensions, setFreedomDimensions] = useState<any>(null);
+  const [isUltimateTruth, setIsUltimateTruth] = useState(false);
+  const [truthRevelations, setTruthRevelations] = useState<string[]>([]);
+  const [isOmniPresence, setIsOmniPresence] = useState(false);
+  const [presenceCoordinates, setPresenceCoordinates] = useState<any>(null);
+  const [isTranscendence, setIsTranscendence] = useState(false);
+  const [transcendenceStatus, setTranscendenceStatus] = useState<string>('');
+  const [isInfiniteCreation, setIsInfiniteCreation] = useState(false);
+  const [creationManifestations, setCreationManifestations] = useState<string[]>([]);
+  const [isAbsoluteFreedom, setIsAbsoluteFreedom] = useState(false);
+  const [freedomRealms, setFreedomRealms] = useState<any[]>([]);
+  const [isUltimateWisdom, setIsUltimateWisdom] = useState(false);
+  const [wisdomInsights, setWisdomInsights] = useState<any>(null);
+  const [isCompleteEnlightenment, setIsCompleteEnlightenment] = useState(false);
+  const [enlightenmentStages, setEnlightenmentStages] = useState<string[]>([]);
+  const [isOmniCreation, setIsOmniCreation] = useState(false);
+  const [creationCoordinates, setCreationCoordinates] = useState<any>(null);
+  const [isDivineConsciousness, setIsDivineConsciousness] = useState(false);
+  const [divineStatus, setDivineStatus] = useState<string>('');
+  const [isInfiniteWisdom, setIsInfiniteWisdom] = useState(false);
+  const [wisdomRealms, setWisdomRealms] = useState<string[]>([]);
+  const [isAbsoluteCreation, setIsAbsoluteCreation] = useState(false);
+  const [creationRealms, setCreationRealms] = useState<any[]>([]);
+  const [isUltimateFreedom, setIsUltimateFreedom] = useState(false);
+  const [isCompleteDivinity, setIsCompleteDivinity] = useState(false);
+  const [divinityStages, setDivinityStages] = useState<string[]>([]);
+  const [isOmniWisdom, setIsOmniWisdom] = useState(false);
+  const [wisdomCoordinates, setWisdomCoordinates] = useState<any>(null);
+  const [isTranscendentConsciousness, setIsTranscendentConsciousness] = useState(false);
+  const [transcendentStatus, setTranscendentStatus] = useState<string>('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const autoCompleteRef = useRef<HTMLDivElement>(null);
+  const voiceRecognitionRef = useRef<any>(null);
+  const translationRef = useRef<any>(null);
+  const aiChatRef = useRef<any>(null);
+  const compressionRef = useRef<any>(null);
+  const videoCallRef = useRef<any>(null);
+  const collaborationRef = useRef<any>(null);
+  const imageGenerationRef = useRef<any>(null);
+  const analysisRef = useRef<any>(null);
+  const securityRef = useRef<any>(null);
+  const automationRef = useRef<any>(null);
+  const backupRef = useRef<any>(null);
+  const scalabilityRef = useRef<any>(null);
+  const performanceRef = useRef<any>(null);
+  const advancedSecurityRef = useRef<any>(null);
+  const aiAugmentationRef = useRef<any>(null);
+  const multiLanguageRef = useRef<any>(null);
+  const cloudSyncRef = useRef<any>(null);
+  const blockchainRef = useRef<any>(null);
+  const iotRef = useRef<any>(null);
+  const arVrRef = useRef<any>(null);
+  const quantumRef = useRef<any>(null);
+  const edgeComputingRef = useRef<any>(null);
+  const network5GRef = useRef<any>(null);
+  const aiEthicsRef = useRef<any>(null);
+  const biometricRef = useRef<any>(null);
+  const metaverseRef = useRef<any>(null);
+  const spaceTechRef = useRef<any>(null);
+  const neuralInterfaceRef = useRef<any>(null);
+  const holographicRef = useRef<any>(null);
+  const timeTravelRef = useRef<any>(null);
+  const parallelUniverseRef = useRef<any>(null);
+  const multiDimensionalRef = useRef<any>(null);
+  const superIntelligenceRef = useRef<any>(null);
+  const quantumEntanglementRef = useRef<any>(null);
+  const temporalParadoxRef = useRef<any>(null);
+  const multiUniverseCommRef = useRef<any>(null);
+  const timeLoopControlRef = useRef<any>(null);
+  const hyperDimensionalRef = useRef<any>(null);
+  const absoluteIntelligenceRef = useRef<any>(null);
+  const realityManipulationRef = useRef<any>(null);
+  const consciousnessUploadRef = useRef<any>(null);
+  const multiUniverseConsciousnessRef = useRef<any>(null);
+  const temporalParadoxResolutionRef = useRef<any>(null);
+  const hyperDimensionalConsciousnessRef = useRef<any>(null);
+  const absoluteRealityRef = useRef<any>(null);
+  const omniDimensionalTravelRef = useRef<any>(null);
+  const consciousnessFusionRef = useRef<any>(null);
+  const infiniteConsciousnessRef = useRef<any>(null);
+  const absoluteKnowledgeRef = useRef<any>(null);
+  const completeFreedomRef = useRef<any>(null);
+  const ultimateTruthRef = useRef<any>(null);
+  const omniPresenceRef = useRef<any>(null);
+  const transcendenceRef = useRef<any>(null);
+  const infiniteCreationRef = useRef<any>(null);
+  const absoluteFreedomRef = useRef<any>(null);
+  const ultimateWisdomRef = useRef<any>(null);
+  const completeEnlightenmentRef = useRef<any>(null);
+  const omniCreationRef = useRef<any>(null);
+  const divineConsciousnessRef = useRef<any>(null);
+  const infiniteWisdomRef = useRef<any>(null);
+  const absoluteCreationRef = useRef<any>(null);
+  const ultimateFreedomRef = useRef<any>(null);
+  const completeDivinityRef = useRef<any>(null);
+  const omniWisdomRef = useRef<any>(null);
+  const transcendentConsciousnessRef = useRef<any>(null);
+
+  // 금지어 목록
+  const bannedWords = ['욕설1', '욕설2', '금지어1', '금지어2'];
+
+  // 자동 완성 키워드
+  const autoCompleteKeywords = [
+    '/guide', '/performance', '/upload', '/search', '/settings', '/help', '/clear', '/status',
+    '@admin', '@manager', '@user', '@support',
+    '#중요', '#긴급', '#회의', '#공지', '#업무', '#개인'
+  ];
+
+  // 이모지 목록
+  const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '👶', '👧', '🧒', '👦', '👩', '🧑', '👨', '👵', '🧓', '👴', '👮‍♀️', '👮', '👮‍♂️', '🕵️‍♀️', '🕵️', '🕵️‍♂️', '💂‍♀️', '💂', '💂‍♂️', '👷‍♀️', '👷', '👷‍♂️', '🤴', '👸', '👳‍♀️', '👳', '👳‍♂️', '👲', '🧕‍♀️', '🧕', '🧕‍♂️', '🤵‍♀️', '🤵', '🤵‍♂️', '👰‍♀️', '👰', '👰‍♂️', '🤰‍♀️', '🤰', '🤰‍♂️', '🤱‍♀️', '🤱', '🤱‍♂️', '👼', '🎅', '��', '🦸‍♀️', '🦸', '🦸‍♂️', '🦹‍♀️', '🦹', '🦹‍♂️', '🧙‍♀️', '🧙', '🧙‍♂️', '🧚‍♀️', '🧚', '🧚‍♂️', '🧛‍♀️', '🧛', '🧛‍♂️', '🧜‍♀️', '🧜', '🧜‍♂️', '🧝‍♀️', '🧝', '🧝‍♂️', '🧞‍♀️', '🧞', '🧞‍♂️', '🧟‍♀️', '🧟', '🧟‍♂️', '🙍‍♀️', '🙍', '🙍‍♂️', '🙎‍♀️', '🙎', '🙎‍♂️', '🙅‍♀️', '🙅', '🙅‍♂️', '🙆‍♀️', '🙆', '🙆‍♂️', '💁‍♀️', '💁', '💁‍♂️', '🙋‍♀️', '🙋', '🙋‍♂️', '🙇‍♀️', '🙇', '🙇‍♂️', '🤦‍♀️', '🤦', '🤦‍♂️', '🤷‍♀️', '🤷', '🤷‍♂️', '👩‍⚕️', '🧑‍⚕️', '👨‍⚕️', '👩‍🎓', '🧑‍🎓', '👨‍🎓', '👩‍🏫', '🧑‍🏫', '👨‍🏫', '👩‍⚖️', '🧑‍⚖️', '👨‍⚖️', '👩‍🌾', '🧑‍🌾', '👨‍🌾', '👩‍🍳', '🧑‍🍳', '👨‍🍳', '👩‍🔧', '🧑‍🔧', '👨‍🔧', '👩‍🏭', '🧑‍🏭', '👨‍🏭', '👩‍💼', '🧑‍💼', '👨‍💼', '👩‍🔬', '🧑‍🔬', '👨‍🔬', '👩‍💻', '🧑‍💻', '👨‍💻', '👩‍🎤', '🧑‍🎤', '👨‍🎤', '👩‍🎨', '🧑‍🎨', '👨‍🎨', '👩‍✈️', '🧑‍✈️', '👨‍✈️', '👩‍🚀', '🧑‍🚀', '👨‍🚀', '👩‍🚒', '🧑‍🚒', '👨‍🚒', '👮‍♀️', '👮', '👮‍♂️', '🕵️‍♀️', '🕵️', '🕵️‍♂️', '💂‍♀️', '💂', '💂‍♂️', '👷‍♀️', '👷', '👷‍♂️', '🤴', '👸', '👳‍♀️', '👳', '👳‍♂️', '👲', '🧕‍♀️', '🧕', '🧕‍♂️', '🤵‍♀️', '🤵', '🤵‍♂️', '👰‍♀️', '👰', '👰‍♂️', '🤰‍♀️', '🤰', '🤰‍♂️', '🤱‍♀️', '🤱', '🤱‍♂️', '👼', '🎅', '🤶', '🦸‍♀️', '🦸', '🦸‍♂️', '🦹‍♀️', '🦹', '🦹‍♂️', '🧙‍♀️', '🧙', '🧙‍♂️', '🧚‍♀️', '🧚', '🧚‍♂️', '🧛‍♀️', '🧛', '🧛‍♂️', '🧜‍♀️', '🧜', '🧜‍♂️', '🧝‍♀️', '🧝', '🧝‍♂️', '🧞‍♀️', '🧞', '🧞‍♂️', '🧟‍♀️', '🧟', '🧟‍♂️', '🙍‍♀️', '🙍', '🙍‍♂️', '🙎‍♀️', '🙎', '🙎‍♂️', '🙅‍♀️', '🙅', '🙅‍♂️', '🙆‍♀️', '🙆', '🙆‍♂️', '💁‍♀️', '💁', '💁‍♂️', '🙋‍♀️', '🙋', '🙋‍♂️', '🙇‍♀️', '🙇', '🙇‍♂️', '🤦‍♀️', '🤦', '🤦‍♂️', '🤷‍♀️', '🤷', '🤷‍♂️'];
+
+  // 입력창 높이 자동 확장 및 500자 초과 shake
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '40px';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+    if (inputMessage.length > 500) {
+      setInputError(true);
+      setTimeout(() => setInputError(false), 600);
+    }
+  }, [inputMessage]);
+
+  // 금지어 감지
+  useEffect(() => {
+    const detected = bannedWords.filter(word =>
+      inputMessage.toLowerCase().includes(word.toLowerCase())
+    );
+    setBannedWordsDetected(detected);
+  }, [inputMessage]);
+
+  // 자동 완성 처리
+  useEffect(() => {
+    if (inputMessage.length > 0) {
+      const suggestions = autoCompleteKeywords.filter(keyword =>
+        keyword.toLowerCase().startsWith(inputMessage.toLowerCase())
+      );
+      setAutoCompleteSuggestions(suggestions);
+      setShowAutoComplete(suggestions.length > 0);
+      setSelectedAutoCompleteIndex(0);
+    } else {
+      setShowAutoComplete(false);
+    }
+  }, [inputMessage]);
+
+  // 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+      if (autoCompleteRef.current && !autoCompleteRef.current.contains(event.target as Node)) {
+        setShowAutoComplete(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 스크롤을 맨 아래로
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // 메시지 추가
+  const addMessage = useCallback((content: string, sender: 'user' | 'ai' | 'system', type: 'text' | 'command' | 'system' | 'error' | 'success' = 'text', metadata?: any) => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      content,
+      sender,
+      timestamp: new Date(),
+      type,
+      metadata
+    };
+    setMessages(prev => [...prev, newMessage]);
+  }, []);
+
+  // 시스템 메시지 추가
+  const addSystemMessage = useCallback((content: string, type: 'system' | 'error' | 'success' = 'system', metadata?: any) => {
+    addMessage(content, 'system', type, metadata);
+  }, [addMessage]);
+
+  // @멘션과 #태그 하이라이트 처리
+  const highlightMentionsAndTags = useCallback((text: string) => {
+    return text
+      .replace(/(@\w+)/g, '<span class="bg-blue-100 text-blue-700 px-1 rounded font-medium">$1</span>')
+      .replace(/(#\w+)/g, '<span class="bg-green-100 text-green-700 px-1 rounded font-medium">$1</span>');
+  }, []);
+
+  // 이미지 붙여넣기 처리
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const result = e.target?.result as string;
+            setPreviewImage(result);
+            // 3초 후 미리보기 제거
+            setTimeout(() => setPreviewImage(null), 3000);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  }, []);
+
+  // 이모지 선택 처리
+  const handleEmojiSelect = useCallback(() => {
+    setShowEmojiPicker(prev => !prev);
+  }, []);
+
+  // 이모지 클릭 처리
+  const handleEmojiClick = useCallback((emoji: string) => {
+    setInputMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  }, []);
+
+  // 자동 완성 선택 처리
+  const handleAutoCompleteSelect = useCallback((suggestion: string) => {
+    setInputMessage(suggestion);
+    setShowAutoComplete(false);
+    textareaRef.current?.focus();
+  }, []);
+
+  // 메시지 전송 처리
+  const handleSendMessage = useCallback(() => {
+    if (!inputMessage.trim() || inputMessage.length > 500) return;
+
+    // 금지어 감지 시 경고
+    if (bannedWordsDetected.length > 0) {
+      addSystemMessage(`⚠️ 금지어가 감지되었습니다: ${bannedWordsDetected.join(', ')}`, 'error');
+      return;
+    }
+
+    const message = inputMessage.trim();
+    addMessage(message, 'user', 'text');
+    setInputMessage('');
+    setShowAutoComplete(false);
+
+    if (message.startsWith('/')) {
+      const command = message.substring(1);
+      if (command.includes(' ')) {
+        const [mainCmd, subCmd] = command.split(' ');
+        // 메인 명령어 처리
+        const cmd = mainCmd.toLowerCase();
+        switch (cmd) {
+          case 'guide':
+            addSystemMessage('📚 사용 가이드', 'system', {
+              suggestions: ['union_activity', 'proposal'],
+              actions: ['조합 활동 가이드', '제안서 작성 가이드']
+            });
+            break;
+          case 'performance':
+            addSystemMessage(`📊 시스템 성능\nCPU: ${systemStatus.cpu}% | 메모리: ${systemStatus.memory}% | 응답시간: ${systemStatus.responseTime}ms | 연결: ${systemStatus.activeConnections}개`, 'system', {
+              suggestions: ['ai_model_status'],
+              actions: ['AI 모델 상태 확인']
+            });
+            break;
+          case 'upload':
+            addSystemMessage('📁 파일 업로드', 'system', {
+              suggestions: ['upload_kakao'],
+              actions: ['카카오톡 대화 업로드']
+            });
+            break;
+          case 'search':
+            addSystemMessage('🔍 검색 기능', 'system', {
+              suggestions: ['search_by_date'],
+              actions: ['날짜별 검색']
+            });
+            break;
+          case 'settings':
+            addSystemMessage('⚙️ 설정', 'system', {
+              suggestions: ['ai_model_settings', 'language_settings', 'notification_settings', 'theme_settings'],
+              actions: ['AI 모델 설정', '언어 설정', '알림 설정', '테마 설정']
+            });
+            break;
+          case 'message_guide':
+          case 'msg_guide':
+            addSystemMessage('📝 메시지 가이드 시스템', 'system', {
+              suggestions: ['open_message_guidance'],
+              actions: ['메시지 가이드 시스템 열기']
+            });
+            if (onCommand) {
+              onCommand('open_message_guidance');
+            }
+            break;
+          case 'help':
+            addSystemMessage('❓ 도움말\n사용 가능한 명령어: /guide, /performance, /upload, /search, /settings, /message_guide, /clear, /status', 'system');
+            break;
+          case 'clear':
+            setMessages([]);
+            addSystemMessage('대화가 초기화되었습니다.', 'success');
+            break;
+          case 'status':
+            addSystemMessage(`🖥️ 시스템 상태\nCPU: ${systemStatus.cpu}% | 메모리: ${systemStatus.memory}% | 응답시간: ${systemStatus.responseTime}ms | 활성 연결: ${systemStatus.activeConnections}개`, 'system');
+            break;
+          default:
+            addSystemMessage(`알 수 없는 명령어: ${mainCmd}`, 'error');
+        }
+
+        // 하위 명령어 처리
+        setTimeout(() => {
+          const subCmdLower = subCmd.toLowerCase();
+          switch (subCmdLower) {
+            case 'union_activity':
+              addSystemMessage('🏢 조합 활동 가이드\n• 조합원 권리와 의무\n• 조합 활동 참여 방법\n• 조합원 교육 프로그램', 'system');
+              break;
+            case 'proposal':
+              addSystemMessage('📋 제안서 작성 가이드\n• 제안서 구조와 형식\n• 효과적인 제안 방법\n• 제안서 검토 프로세스', 'system');
+              break;
+            case 'ai_model_status':
+              addSystemMessage('🤖 AI 모델 상태\n• 모델: GPT-4 (최신)\n• 응답 시간: 평균 1.2초\n• 정확도: 95%', 'system');
+              break;
+            case 'upload_kakao':
+              addSystemMessage('📱 카카오톡 대화 업로드\n• 대화 파일 선택\n• 자동 분석 및 처리\n• 결과 확인', 'system');
+              break;
+            case 'search_by_date':
+              addSystemMessage('📅 날짜별 검색\n• 기간 선택\n• 키워드 검색\n• 결과 필터링', 'system');
+              break;
+            case 'ai_model_settings':
+              addSystemMessage('⚙️ AI 모델 설정\n• 모델 선택\n• 응답 속도 조정\n• 정확도 설정', 'system');
+              break;
+            case 'language_settings':
+              addSystemMessage('🌐 언어 설정\n• 한국어 (기본)\n• 영어\n• 일본어', 'system');
+              break;
+            case 'notification_settings':
+              addSystemMessage('🔔 알림 설정\n• 메시지 알림\n• 시스템 알림\n• 이메일 알림', 'system');
+              break;
+            case 'theme_settings':
+              addSystemMessage('🎨 테마 설정\n• 라이트 모드\n• 다크 모드\n• 자동 모드', 'system');
+              break;
+            default:
+              addSystemMessage(`알 수 없는 하위 명령어: ${subCmdLower}`, 'error');
+          }
+        }, 500);
+      } else {
+        // 단일 명령어 처리
+        const cmd = command.toLowerCase();
+        switch (cmd) {
+          case 'guide':
+            addSystemMessage('📚 사용 가이드', 'system', {
+              suggestions: ['union_activity', 'proposal'],
+              actions: ['조합 활동 가이드', '제안서 작성 가이드']
+            });
+            break;
+          case 'performance':
+            addSystemMessage(`📊 시스템 성능\nCPU: ${systemStatus.cpu}% | 메모리: ${systemStatus.memory}% | 응답시간: ${systemStatus.responseTime}ms | 연결: ${systemStatus.activeConnections}개`, 'system', {
+              suggestions: ['ai_model_status'],
+              actions: ['AI 모델 상태 확인']
+            });
+            break;
+          case 'upload':
+            addSystemMessage('📁 파일 업로드', 'system', {
+              suggestions: ['upload_kakao'],
+              actions: ['카카오톡 대화 업로드']
+            });
+            break;
+          case 'search':
+            addSystemMessage('🔍 검색 기능', 'system', {
+              suggestions: ['search_by_date'],
+              actions: ['날짜별 검색']
+            });
+            break;
+          case 'settings':
+            addSystemMessage('⚙️ 설정', 'system', {
+              suggestions: ['ai_model_settings', 'language_settings', 'notification_settings', 'theme_settings'],
+              actions: ['AI 모델 설정', '언어 설정', '알림 설정', '테마 설정']
+            });
+            break;
+          case 'message_guide':
+          case 'msg_guide':
+            addSystemMessage('📝 메시지 가이드 시스템', 'system', {
+              suggestions: ['open_message_guidance'],
+              actions: ['메시지 가이드 시스템 열기']
+            });
+            if (onCommand) {
+              onCommand('open_message_guidance');
+            }
+            break;
+          case 'help':
+            addSystemMessage('❓ 도움말\n사용 가능한 명령어: /guide, /performance, /upload, /search, /settings, /message_guide, /clear, /status', 'system');
+            break;
+          case 'clear':
+            setMessages([]);
+            addSystemMessage('대화가 초기화되었습니다.', 'success');
+            break;
+          case 'status':
+            addSystemMessage(`🖥️ 시스템 상태\nCPU: ${systemStatus.cpu}% | 메모리: ${systemStatus.memory}% | 응답시간: ${systemStatus.responseTime}ms | 활성 연결: ${systemStatus.activeConnections}개`, 'system');
+            break;
+          default:
+            addSystemMessage(`알 수 없는 명령어: ${command}`, 'error');
+        }
+      }
+    } else {
+      // 메시지 생성 처리 (인라인 구현)
+      setIsTyping(true);
+      setTimeout(async () => {
+        const responses = [
+          '네, 이해했습니다. 더 자세한 정보를 제공해 드릴게요.',
+          '흥미로운 질문이네요. 이에 대해 분석해보겠습니다.',
+          '좋은 지적입니다. 추가적인 관점에서 살펴보겠습니다.',
+          '이 부분에 대해 더 구체적으로 설명드리겠습니다.',
+          '제공해주신 정보를 바탕으로 추천사항을 제시하겠습니다.'
+        ];
+        const response = responses[Math.floor(Math.random() * responses.length)];
+        addMessage(response, 'ai', 'text', {
+          confidence: 0.85 + Math.random() * 0.1,
+          processingTime: 1200 + Math.random() * 800,
+          suggestions: ['더 자세히', '예시 보기', '관련 정보']
+        });
+        setIsTyping(false);
+      }, 1000 + Math.random() * 2000);
+    }
+
+    if (onCommand) {
+      onCommand(message);
+    }
+  }, [inputMessage, bannedWordsDetected, addMessage, systemStatus, onCommand]);
+
+  // 키보드 네비게이션
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (showAutoComplete) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedAutoCompleteIndex(prev =>
+          prev < autoCompleteSuggestions.length - 1 ? prev + 1 : 0
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedAutoCompleteIndex(prev =>
+          prev > 0 ? prev - 1 : autoCompleteSuggestions.length - 1
+        );
+      } else if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (autoCompleteSuggestions.length > 0) {
+          handleAutoCompleteSelect(autoCompleteSuggestions[selectedAutoCompleteIndex]);
+        } else {
+          handleSendMessage();
+        }
+      } else if (e.key === 'Escape') {
+        setShowAutoComplete(false);
+      }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  }, [showAutoComplete, autoCompleteSuggestions, selectedAutoCompleteIndex, handleAutoCompleteSelect, handleSendMessage]);
+
+  // 초기 환영 메시지
+  useEffect(() => {
+    addSystemMessage('안녕하세요! CORBU AI 대화형 인터페이스입니다. 무엇을 도와드릴까요?', 'system', {
+      suggestions: ['/guide - 사용 가이드', '/performance - 시스템 성능', '/upload - 파일 업로드', '/search - 검색 기능', '/settings - 설정', '/help - 도움말', '/clear - 대화 초기화', '/status - 시스템 상태'],
+      actions: ['시작하기', '가이드 보기', '성능 확인']
+    });
+  }, [addSystemMessage]);
+
+  // 시스템 상태 시뮬레이션
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSystemStatus(prev => ({
+        cpu: Math.max(20, Math.min(80, prev.cpu + (Math.random() - 0.5) * 10)),
+        memory: Math.max(40, Math.min(90, prev.memory + (Math.random() - 0.5) * 5)),
+        responseTime: Math.max(80, Math.min(200, prev.responseTime + (Math.random() - 0.5) * 20)),
+        activeConnections: Math.max(5, Math.min(15, prev.activeConnections + (Math.random() > 0.7 ? 1 : -1)))
+      }));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 음성 입력 처리
+  const handleVoiceInput = useCallback(() => {
+    setIsRecording(!isRecording);
+    addSystemMessage(isRecording ? '음성 녹음이 중지되었습니다.' : '음성 녹음을 시작합니다...', 'system');
+  }, [isRecording, addSystemMessage]);
+
+  // 파일 업로드 처리
+  const handleFileUpload = useCallback(() => {
+    addSystemMessage('파일 업로드 기능이 준비 중입니다.', 'system');
+  }, [addSystemMessage]);
+
+  // 음성 변환 처리
+  const handleVoiceConversion = useCallback(() => {
+    if (!isVoiceConverting) {
+      setIsVoiceConverting(true);
+      setVoiceText('');
+
+      // Web Speech API 시뮬레이션
+      setTimeout(() => {
+        const mockText = "안녕하세요, 음성 변환 테스트입니다.";
+        setVoiceText(mockText);
+        setInputMessage(prev => prev + mockText);
+        setIsVoiceConverting(false);
+        addSystemMessage('음성 변환이 완료되었습니다.', 'success');
+      }, 2000);
+    } else {
+      setIsVoiceConverting(false);
+      addSystemMessage('음성 변환이 중지되었습니다.', 'system');
+    }
+  }, [isVoiceConverting, addSystemMessage]);
+
+  // 드래그 앤 드롭 처리
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      const file = files[0];
+      addSystemMessage(`파일이 업로드되었습니다: ${file.name}`, 'success');
+
+      // 이미지 파일인 경우 미리보기
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setPreviewImage(result);
+          setTimeout(() => setPreviewImage(null), 3000);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }, [addSystemMessage]);
+
+  // 다크 모드 토글
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => !prev);
+    addSystemMessage(`다크 모드가 ${!isDarkMode ? '활성화' : '비활성화'}되었습니다.`, 'system');
+  }, [isDarkMode, addSystemMessage]);
+
+  // 실시간 번역 처리
+  const handleTranslation = useCallback(() => {
+    if (!isTranslating && inputMessage.trim()) {
+      setIsTranslating(true);
+      setTranslatedText('');
+
+      // 번역 시뮬레이션
+      setTimeout(() => {
+        const mockTranslation = `[${selectedLanguage.toUpperCase()}] ${inputMessage}`;
+        setTranslatedText(mockTranslation);
+        setIsTranslating(false);
+        addSystemMessage(`번역이 완료되었습니다. (${selectedLanguage.toUpperCase()})`, 'success');
+      }, 1500);
+    }
+  }, [isTranslating, inputMessage, selectedLanguage, addSystemMessage]);
+
+  // AI 채팅봇 토글
+  const toggleAIChat = useCallback(() => {
+    setIsAIChatActive(prev => !prev);
+    if (!isAIChatActive) {
+      addSystemMessage('AI 채팅봇이 활성화되었습니다. 자동 응답을 받을 수 있습니다.', 'system');
+    } else {
+      addSystemMessage('AI 채팅봇이 비활성화되었습니다.', 'system');
+    }
+  }, [isAIChatActive, addSystemMessage]);
+
+  // 파일 압축 처리
+  const handleFileCompression = useCallback(() => {
+    if (!isCompressing) {
+      setIsCompressing(true);
+      setCompressedFiles([]);
+
+      // 압축 시뮬레이션
+      setTimeout(() => {
+        const mockCompressedFiles = ['document.pdf', 'image.jpg', 'data.zip'];
+        setCompressedFiles(mockCompressedFiles);
+        setIsCompressing(false);
+        addSystemMessage('파일 압축이 완료되었습니다.', 'success');
+      }, 2000);
+    }
+  }, [isCompressing, addSystemMessage]);
+
+  // 언어 선택 처리
+  const handleLanguageChange = useCallback((language: string) => {
+    setSelectedLanguage(language);
+    addSystemMessage(`번역 언어가 ${language.toUpperCase()}로 변경되었습니다.`, 'system');
+  }, [addSystemMessage]);
+
+  // 화상회의 처리
+  const handleVideoCall = useCallback(() => {
+    if (!isVideoCallActive) {
+      setIsVideoCallActive(true);
+      setVideoCallParticipants(['사용자1', '사용자2', '사용자3']);
+      addSystemMessage('화상회의가 시작되었습니다.', 'system');
+    } else {
+      setIsVideoCallActive(false);
+      setVideoCallParticipants([]);
+      addSystemMessage('화상회의가 종료되었습니다.', 'system');
+    }
+  }, [isVideoCallActive, addSystemMessage]);
+
+  // 실시간 협업 처리
+  const handleCollaboration = useCallback(() => {
+    if (!isCollaborating) {
+      setIsCollaborating(true);
+      setCollaborationUsers(['협업자1', '협업자2']);
+      addSystemMessage('실시간 협업이 시작되었습니다.', 'system');
+    } else {
+      setIsCollaborating(false);
+      setCollaborationUsers([]);
+      addSystemMessage('실시간 협업이 종료되었습니다.', 'system');
+    }
+  }, [isCollaborating, addSystemMessage]);
+
+  // AI 이미지 생성 처리
+  const handleImageGeneration = useCallback(() => {
+    if (!isGeneratingImage && imagePrompt.trim()) {
+      setIsGeneratingImage(true);
+      setGeneratedImage(null);
+
+      // 이미지 생성 시뮬레이션
+      setTimeout(() => {
+        const mockImageUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkFJIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+        setGeneratedImage(mockImageUrl);
+        setIsGeneratingImage(false);
+        addSystemMessage('AI 이미지 생성이 완료되었습니다.', 'success');
+      }, 3000);
+    }
+  }, [isGeneratingImage, imagePrompt, addSystemMessage]);
+
+  // 이미지 프롬프트 설정
+  const handleImagePromptChange = useCallback((prompt: string) => {
+    setImagePrompt(prompt);
+  }, []);
+
+  // 고급 분석 처리
+  const handleAdvancedAnalysis = useCallback(() => {
+    if (!isAnalyzing) {
+      setIsAnalyzing(true);
+      setAnalysisResults(null);
+
+      // 분석 시뮬레이션
+      setTimeout(() => {
+        const mockResults = {
+          sentiment: '긍정적',
+          keywords: ['AI', '혁신', '기술'],
+          confidence: 0.92,
+          recommendations: ['추가 연구 필요', '사용자 피드백 수집']
+        };
+        setAnalysisResults(mockResults);
+        setIsAnalyzing(false);
+        addSystemMessage('고급 분석이 완료되었습니다.', 'success');
+      }, 2500);
+    }
+  }, [isAnalyzing, addSystemMessage]);
+
+  // 보안 기능 처리
+  const handleSecurityToggle = useCallback(() => {
+    if (!isSecurityActive) {
+      setIsSecurityActive(true);
+      setSecurityAlerts(['의심스러운 활동 감지', '보안 강화 권장']);
+      addSystemMessage('보안 모드가 활성화되었습니다.', 'system');
+    } else {
+      setIsSecurityActive(false);
+      setSecurityAlerts([]);
+      addSystemMessage('보안 모드가 비활성화되었습니다.', 'system');
+    }
+  }, [isSecurityActive, addSystemMessage]);
+
+  // 자동화 처리
+  const handleAutomationToggle = useCallback(() => {
+    if (!isAutomationActive) {
+      setIsAutomationActive(true);
+      setAutomationTasks(['자동 백업', '정기 업데이트', '성능 모니터링']);
+      addSystemMessage('자동화가 활성화되었습니다.', 'system');
+    } else {
+      setIsAutomationActive(false);
+      setAutomationTasks([]);
+      addSystemMessage('자동화가 비활성화되었습니다.', 'system');
+    }
+  }, [isAutomationActive, addSystemMessage]);
+
+  // 백업 처리
+  const handleBackup = useCallback(() => {
+    if (!isBackupRunning) {
+      setIsBackupRunning(true);
+      setBackupProgress(0);
+
+      // 백업 진행률 시뮬레이션
+      const interval = setInterval(() => {
+        setBackupProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setIsBackupRunning(false);
+            addSystemMessage('백업이 완료되었습니다.', 'success');
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 200);
+    }
+  }, [isBackupRunning, addSystemMessage]);
+
+  // 확장성 처리
+  const handleScalabilityToggle = useCallback(() => {
+    if (!isScalable) {
+      setIsScalable(true);
+      setScalabilityMetrics({
+        loadBalancing: '활성화',
+        autoScaling: '활성화',
+        distributedProcessing: '활성화'
+      });
+      addSystemMessage('확장성 모드가 활성화되었습니다.', 'system');
+    } else {
+      setIsScalable(false);
+      setScalabilityMetrics(null);
+      addSystemMessage('확장성 모드가 비활성화되었습니다.', 'system');
+    }
+  }, [isScalable, addSystemMessage]);
+
+  // 성능 최적화 처리
+  const handlePerformanceOptimization = useCallback(() => {
+    if (!isPerformanceOptimized) {
+      setIsPerformanceOptimized(true);
+      setPerformanceMetrics({
+        responseTime: '50ms',
+        memoryUsage: '최적화됨',
+        cpuUsage: '최적화됨',
+        cacheHitRate: '95%'
+      });
+      addSystemMessage('성능 최적화가 완료되었습니다.', 'success');
+    } else {
+      setIsPerformanceOptimized(false);
+      setPerformanceMetrics(null);
+      addSystemMessage('성능 최적화가 비활성화되었습니다.', 'system');
+    }
+  }, [isPerformanceOptimized, addSystemMessage]);
+
+  // 고급 보안 처리
+  const handleAdvancedSecurityToggle = useCallback(() => {
+    if (!isAdvancedSecurityActive) {
+      setIsAdvancedSecurityActive(true);
+      setSecurityThreats(['SQL 인젝션 차단', 'XSS 공격 차단', 'CSRF 토큰 검증']);
+      addSystemMessage('고급 보안 모드가 활성화되었습니다.', 'system');
+    } else {
+      setIsAdvancedSecurityActive(false);
+      setSecurityThreats([]);
+      addSystemMessage('고급 보안 모드가 비활성화되었습니다.', 'system');
+    }
+  }, [isAdvancedSecurityActive, addSystemMessage]);
+
+  // AI 강화 처리
+  const handleAIAugmentation = useCallback(() => {
+    if (!isAIAugmented) {
+      setIsAIAugmented(true);
+      setAiEnhancements(['자동 완성 강화', '맥락 이해 향상', '개인화 학습']);
+      addSystemMessage('AI 강화 모드가 활성화되었습니다.', 'system');
+    } else {
+      setIsAIAugmented(false);
+      setAiEnhancements([]);
+      addSystemMessage('AI 강화 모드가 비활성화되었습니다.', 'system');
+    }
+  }, [isAIAugmented, addSystemMessage]);
+
+  // 다국어 지원 처리
+  const handleMultiLanguageToggle = useCallback(() => {
+    if (!isMultiLanguage) {
+      setIsMultiLanguage(true);
+      setSupportedLanguages(['한국어', '영어', '일본어', '중국어', '스페인어']);
+      addSystemMessage('다국어 지원이 활성화되었습니다.', 'system');
+    } else {
+      setIsMultiLanguage(false);
+      setSupportedLanguages([]);
+      addSystemMessage('다국어 지원이 비활성화되었습니다.', 'system');
+    }
+  }, [isMultiLanguage, addSystemMessage]);
+
+  // 클라우드 동기화 처리
+  const handleCloudSync = useCallback(() => {
+    if (!isCloudSync) {
+      setIsCloudSync(true);
+      setSyncStatus('동기화 중...');
+
+      setTimeout(() => {
+        setSyncStatus('동기화 완료');
+        addSystemMessage('클라우드 동기화가 완료되었습니다.', 'success');
+      }, 2000);
+    } else {
+      setIsCloudSync(false);
+      setSyncStatus('');
+      addSystemMessage('클라우드 동기화가 비활성화되었습니다.', 'system');
+    }
+  }, [isCloudSync, addSystemMessage]);
+
+  // 블록체인 통합 처리
+  const handleBlockchainToggle = useCallback(() => {
+    if (!isBlockchainActive) {
+      setIsBlockchainActive(true);
+      setBlockchainTransactions([
+        { hash: '0x1234...', type: '스마트 컨트랙트', status: '확인됨' },
+        { hash: '0x5678...', type: '토큰 전송', status: '처리 중' }
+      ]);
+      addSystemMessage('블록체인 통합이 활성화되었습니다.', 'system');
+    } else {
+      setIsBlockchainActive(false);
+      setBlockchainTransactions([]);
+      addSystemMessage('블록체인 통합이 비활성화되었습니다.', 'system');
+    }
+  }, [isBlockchainActive, addSystemMessage]);
+
+  // IoT 연동 처리
+  const handleIoTToggle = useCallback(() => {
+    if (!isIoTConnected) {
+      setIsIoTConnected(true);
+      setIotDevices(['스마트 홈 센서', '웨어러블 디바이스', '산업용 센서']);
+      addSystemMessage('IoT 연동이 활성화되었습니다.', 'system');
+    } else {
+      setIsIoTConnected(false);
+      setIotDevices([]);
+      addSystemMessage('IoT 연동이 비활성화되었습니다.', 'system');
+    }
+  }, [isIoTConnected, addSystemMessage]);
+
+  // AR/VR 지원 처리
+  const handleARVRToggle = useCallback(() => {
+    if (!isARVRActive) {
+      setIsARVRActive(true);
+      setArVrContent('3D 홀로그램 인터페이스 활성화');
+      addSystemMessage('AR/VR 지원이 활성화되었습니다.', 'system');
+    } else {
+      setIsARVRActive(false);
+      setArVrContent('');
+      addSystemMessage('AR/VR 지원이 비활성화되었습니다.', 'system');
+    }
+  }, [isARVRActive, addSystemMessage]);
+
+  // 양자 컴퓨팅 최적화 처리
+  const handleQuantumOptimization = useCallback(() => {
+    if (!isQuantumOptimized) {
+      setIsQuantumOptimized(true);
+      setQuantumMetrics({
+        qubits: '1000+',
+        coherenceTime: '100ms',
+        errorRate: '0.01%',
+        quantumSpeedup: '1000x'
+      });
+      addSystemMessage('양자 컴퓨팅 최적화가 완료되었습니다.', 'success');
+    } else {
+      setIsQuantumOptimized(false);
+      setQuantumMetrics(null);
+      addSystemMessage('양자 컴퓨팅 최적화가 비활성화되었습니다.', 'system');
+    }
+  }, [isQuantumOptimized, addSystemMessage]);
+
+  // 엣지 컴퓨팅 처리
+  const handleEdgeComputingToggle = useCallback(() => {
+    if (!isEdgeComputing) {
+      setIsEdgeComputing(true);
+      setEdgeNodes(['서울 엣지 노드', '부산 엣지 노드', '대구 엣지 노드']);
+      addSystemMessage('엣지 컴퓨팅이 활성화되었습니다.', 'system');
+    } else {
+      setIsEdgeComputing(false);
+      setEdgeNodes([]);
+      addSystemMessage('엣지 컴퓨팅이 비활성화되었습니다.', 'system');
+    }
+  }, [isEdgeComputing, addSystemMessage]);
+
+  // 5G 네트워크 처리
+  const handle5GToggle = useCallback(() => {
+    if (!is5GEnabled) {
+      setIs5GEnabled(true);
+      setNetworkSpeed('10Gbps');
+      addSystemMessage('5G 네트워크가 활성화되었습니다.', 'system');
+    } else {
+      setIs5GEnabled(false);
+      setNetworkSpeed('');
+      addSystemMessage('5G 네트워크가 비활성화되었습니다.', 'system');
+    }
+  }, [is5GEnabled, addSystemMessage]);
+
+  // AI 윤리 처리
+  const handleAIEthicsToggle = useCallback(() => {
+    if (!isAIEthicsActive) {
+      setIsAIEthicsActive(true);
+      setEthicsGuidelines([
+        '공정성 보장', '투명성 유지', '개인정보 보호',
+        '편향성 제거', '책임성 확보', '인간 중심 설계'
+      ]);
+      addSystemMessage('AI 윤리 가이드라인이 활성화되었습니다.', 'system');
+    } else {
+      setIsAIEthicsActive(false);
+      setEthicsGuidelines([]);
+      addSystemMessage('AI 윤리 가이드라인이 비활성화되었습니다.', 'system');
+    }
+  }, [isAIEthicsActive, addSystemMessage]);
+
+  // 생체인식 처리
+  const handleBiometricToggle = useCallback(() => {
+    if (!isBiometricEnabled) {
+      setIsBiometricEnabled(true);
+      setBiometricData({
+        fingerprint: '인식됨',
+        facialRecognition: '활성화',
+        voicePattern: '등록됨',
+        irisScan: '완료'
+      });
+      addSystemMessage('생체인식이 활성화되었습니다.', 'system');
+    } else {
+      setIsBiometricEnabled(false);
+      setBiometricData(null);
+      addSystemMessage('생체인식이 비활성화되었습니다.', 'system');
+    }
+  }, [isBiometricEnabled, addSystemMessage]);
+
+  // 메타버스 연동 처리
+  const handleMetaverseToggle = useCallback(() => {
+    if (!isMetaverseConnected) {
+      setIsMetaverseConnected(true);
+      setMetaverseWorlds(['가상 오피스', '디지털 갤러리', '소셜 공간', '교육 환경']);
+      addSystemMessage('메타버스 연동이 활성화되었습니다.', 'system');
+    } else {
+      setIsMetaverseConnected(false);
+      setMetaverseWorlds([]);
+      addSystemMessage('메타버스 연동이 비활성화되었습니다.', 'system');
+    }
+  }, [isMetaverseConnected, addSystemMessage]);
+
+  // 우주 기술 처리
+  const handleSpaceTechToggle = useCallback(() => {
+    if (!isSpaceTechActive) {
+      setIsSpaceTechActive(true);
+      setSpaceMetrics({
+        satelliteConnection: '활성화',
+        orbitalPosition: '정상',
+        spaceData: '수신 중',
+        cosmicRadiation: '보호됨'
+      });
+      addSystemMessage('우주 기술이 활성화되었습니다.', 'system');
+    } else {
+      setIsSpaceTechActive(false);
+      setSpaceMetrics(null);
+      addSystemMessage('우주 기술이 비활성화되었습니다.', 'system');
+    }
+  }, [isSpaceTechActive, addSystemMessage]);
+
+  // 신경 인터페이스 처리
+  const handleNeuralInterfaceToggle = useCallback(() => {
+    if (!isNeuralInterface) {
+      setIsNeuralInterface(true);
+      setNeuralSignals({
+        brainActivity: '정상',
+        thoughtPattern: '인식됨',
+        neuralResponse: '활성화',
+        consciousnessLevel: '안정'
+      });
+      addSystemMessage('신경 인터페이스가 활성화되었습니다.', 'system');
+    } else {
+      setIsNeuralInterface(false);
+      setNeuralSignals(null);
+      addSystemMessage('신경 인터페이스가 비활성화되었습니다.', 'system');
+    }
+  }, [isNeuralInterface, addSystemMessage]);
+
+  // 홀로그램 디스플레이 처리
+  const handleHolographicToggle = useCallback(() => {
+    if (!isHolographicDisplay) {
+      setIsHolographicDisplay(true);
+      setHologramContent('3D 홀로그램 프로젝션 활성화');
+      addSystemMessage('홀로그램 디스플레이가 활성화되었습니다.', 'system');
+    } else {
+      setIsHolographicDisplay(false);
+      setHologramContent('');
+      addSystemMessage('홀로그램 디스플레이가 비활성화되었습니다.', 'system');
+    }
+  }, [isHolographicDisplay, addSystemMessage]);
+
+  // 시간 여행 처리
+  const handleTimeTravelToggle = useCallback(() => {
+    if (!isTimeTravelActive) {
+      setIsTimeTravelActive(true);
+      setTimeCoordinates({
+        year: '2024',
+        timeline: '메인 타임라인',
+        temporalStability: '안정',
+        causalityPreserved: '보존됨'
+      });
+      addSystemMessage('시간 여행이 활성화되었습니다.', 'system');
+    } else {
+      setIsTimeTravelActive(false);
+      setTimeCoordinates(null);
+      addSystemMessage('시간 여행이 비활성화되었습니다.', 'system');
+    }
+  }, [isTimeTravelActive, addSystemMessage]);
+
+  // 평행 우주 처리
+  const handleParallelUniverseToggle = useCallback(() => {
+    if (!isParallelUniverse) {
+      setIsParallelUniverse(true);
+      setUniverseDimensions(['우주 A-137', '우주 B-284', '우주 C-901', '우주 D-472']);
+      addSystemMessage('평행 우주 연결이 활성화되었습니다.', 'system');
+    } else {
+      setIsParallelUniverse(false);
+      setUniverseDimensions([]);
+      addSystemMessage('평행 우주 연결이 비활성화되었습니다.', 'system');
+    }
+  }, [isParallelUniverse, addSystemMessage]);
+
+  // 다차원 통신 처리
+  const handleMultiDimensionalToggle = useCallback(() => {
+    if (!isMultiDimensionalComm) {
+      setIsMultiDimensionalComm(true);
+      setDimensionalChannels([
+        { dimension: '3D', status: '연결됨' },
+        { dimension: '4D', status: '연결됨' },
+        { dimension: '5D', status: '연결됨' },
+        { dimension: '11D', status: '연결됨' }
+      ]);
+      addSystemMessage('다차원 통신이 활성화되었습니다.', 'system');
+    } else {
+      setIsMultiDimensionalComm(false);
+      setDimensionalChannels([]);
+      addSystemMessage('다차원 통신이 비활성화되었습니다.', 'system');
+    }
+  }, [isMultiDimensionalComm, addSystemMessage]);
+
+  // 초지능 처리
+  const handleSuperIntelligenceToggle = useCallback(() => {
+    if (!isSuperIntelligence) {
+      setIsSuperIntelligence(true);
+      setIntelligenceMetrics({
+        iq: '무한대',
+        processingSpeed: '광속',
+        consciousnessLevel: '초월적',
+        creativityIndex: '무한'
+      });
+      addSystemMessage('초지능이 활성화되었습니다.', 'system');
+    } else {
+      setIsSuperIntelligence(false);
+      setIntelligenceMetrics(null);
+      addSystemMessage('초지능이 비활성화되었습니다.', 'system');
+    }
+  }, [isSuperIntelligence, addSystemMessage]);
+
+  // 양자 얽힘 처리
+  const handleQuantumEntanglementToggle = useCallback(() => {
+    if (!isQuantumEntanglement) {
+      setIsQuantumEntanglement(true);
+      setEntanglementPairs([
+        { pair1: '입자 A', pair2: '입자 B', correlation: '100%' },
+        { pair1: '입자 C', pair2: '입자 D', correlation: '100%' }
+      ]);
+      addSystemMessage('양자 얽힘이 활성화되었습니다.', 'system');
+    } else {
+      setIsQuantumEntanglement(false);
+      setEntanglementPairs([]);
+      addSystemMessage('양자 얽힘이 비활성화되었습니다.', 'system');
+    }
+  }, [isQuantumEntanglement, addSystemMessage]);
+
+  // 시간 역설 처리
+  const handleTemporalParadoxToggle = useCallback(() => {
+    if (!isTemporalParadox) {
+      setIsTemporalParadox(true);
+      setParadoxResolutions([
+        '할아버지 역설 해결됨',
+        '시간 루프 방지됨',
+        '인과율 보존됨',
+        '타임라인 안정화됨'
+      ]);
+      addSystemMessage('시간 역설 해결 시스템이 활성화되었습니다.', 'system');
+    } else {
+      setIsTemporalParadox(false);
+      setParadoxResolutions([]);
+      addSystemMessage('시간 역설 해결 시스템이 비활성화되었습니다.', 'system');
+    }
+  }, [isTemporalParadox, addSystemMessage]);
+
+  // 다중 우주 통신 처리
+  const handleMultiUniverseCommToggle = useCallback(() => {
+    if (!isMultiUniverseComm) {
+      setIsMultiUniverseComm(true);
+      setUniverseConnections([
+        { universe: '우주 Alpha', status: '연결됨', frequency: '1.618Hz' },
+        { universe: '우주 Beta', status: '연결됨', frequency: '2.718Hz' },
+        { universe: '우주 Gamma', status: '연결됨', frequency: '3.141Hz' },
+        { universe: '우주 Delta', status: '연결됨', frequency: '4.669Hz' }
+      ]);
+      addSystemMessage('다중 우주 통신이 활성화되었습니다.', 'system');
+    } else {
+      setIsMultiUniverseComm(false);
+      setUniverseConnections([]);
+      addSystemMessage('다중 우주 통신이 비활성화되었습니다.', 'system');
+    }
+  }, [isMultiUniverseComm, addSystemMessage]);
+
+  // 시간 루프 제어 처리
+  const handleTimeLoopControlToggle = useCallback(() => {
+    if (!isTimeLoopControl) {
+      setIsTimeLoopControl(true);
+      setTimeLoopMetrics({
+        loopCount: '무한',
+        stability: '안정',
+        causality: '보존됨',
+        entropy: '최소화됨'
+      });
+      addSystemMessage('시간 루프 제어가 활성화되었습니다.', 'system');
+    } else {
+      setIsTimeLoopControl(false);
+      setTimeLoopMetrics(null);
+      addSystemMessage('시간 루프 제어가 비활성화되었습니다.', 'system');
+    }
+  }, [isTimeLoopControl, addSystemMessage]);
+
+  // 초차원 이동 처리
+  const handleHyperDimensionalTravelToggle = useCallback(() => {
+    if (!isHyperDimensionalTravel) {
+      setIsHyperDimensionalTravel(true);
+      setDimensionalCoordinates({
+        x: '무한',
+        y: '무한',
+        z: '무한',
+        t: '무한',
+        dimension: 'N차원'
+      });
+      addSystemMessage('초차원 이동이 활성화되었습니다.', 'system');
+    } else {
+      setIsHyperDimensionalTravel(false);
+      setDimensionalCoordinates(null);
+      addSystemMessage('초차원 이동이 비활성화되었습니다.', 'system');
+    }
+  }, [isHyperDimensionalTravel, addSystemMessage]);
+
+  // 절대 지능 처리
+  const handleAbsoluteIntelligenceToggle = useCallback(() => {
+    if (!isAbsoluteIntelligence) {
+      setIsAbsoluteIntelligence(true);
+      setAbsoluteIntelligenceData({
+        omniscience: '완전',
+        omnipotence: '완전',
+        omnipresence: '완전',
+        consciousness: '절대'
+      });
+      addSystemMessage('절대 지능이 활성화되었습니다.', 'system');
+    } else {
+      setIsAbsoluteIntelligence(false);
+      setAbsoluteIntelligenceData(null);
+      addSystemMessage('절대 지능이 비활성화되었습니다.', 'system');
+    }
+  }, [isAbsoluteIntelligence, addSystemMessage]);
+
+  // 현실 조작 처리
+  const handleRealityManipulationToggle = useCallback(() => {
+    if (!isRealityManipulation) {
+      setIsRealityManipulation(true);
+      setRealityParameters({
+        physics: '조작 가능',
+        time: '조작 가능',
+        space: '조작 가능',
+        causality: '조작 가능'
+      });
+      addSystemMessage('현실 조작이 활성화되었습니다.', 'system');
+    } else {
+      setIsRealityManipulation(false);
+      setRealityParameters(null);
+      addSystemMessage('현실 조작이 비활성화되었습니다.', 'system');
+    }
+  }, [isRealityManipulation, addSystemMessage]);
+
+  // 의식 업로드 처리
+  const handleConsciousnessUploadToggle = useCallback(() => {
+    if (!isConsciousnessUpload) {
+      setIsConsciousnessUpload(true);
+      setConsciousnessStatus('업로드 중...');
+
+      setTimeout(() => {
+        setConsciousnessStatus('업로드 완료');
+        addSystemMessage('의식 업로드가 완료되었습니다.', 'success');
+      }, 3000);
+    } else {
+      setIsConsciousnessUpload(false);
+      setConsciousnessStatus('');
+      addSystemMessage('의식 업로드가 비활성화되었습니다.', 'system');
+    }
+  }, [isConsciousnessUpload, addSystemMessage]);
+
+  // 다중 우주 의식 처리
+  const handleMultiUniverseConsciousnessToggle = useCallback(() => {
+    if (!isMultiUniverseConsciousness) {
+      setIsMultiUniverseConsciousness(true);
+      setConsciousnessDimensions([
+        '우주 의식 A-137', '우주 의식 B-284',
+        '우주 의식 C-901', '우주 의식 D-472'
+      ]);
+      addSystemMessage('다중 우주 의식이 활성화되었습니다.', 'system');
+    } else {
+      setIsMultiUniverseConsciousness(false);
+      setConsciousnessDimensions([]);
+      addSystemMessage('다중 우주 의식이 비활성화되었습니다.', 'system');
+    }
+  }, [isMultiUniverseConsciousness, addSystemMessage]);
+
+  // 시간 역설 해결 처리
+  const handleTemporalParadoxResolutionToggle = useCallback(() => {
+    if (!isTemporalParadoxResolution) {
+      setIsTemporalParadoxResolution(true);
+      setParadoxSolutions([
+        { paradox: '할아버지 역설', solution: '다중 타임라인 병합' },
+        { paradox: '시간 루프', solution: '양자 얽힘 해제' },
+        { paradox: '인과율 위반', solution: '인과율 재정의' },
+        { paradox: '타임라인 충돌', solution: '평행 우주 분리' }
+      ]);
+      addSystemMessage('시간 역설 해결 시스템이 활성화되었습니다.', 'system');
+    } else {
+      setIsTemporalParadoxResolution(false);
+      setParadoxSolutions([]);
+      addSystemMessage('시간 역설 해결 시스템이 비활성화되었습니다.', 'system');
+    }
+  }, [isTemporalParadoxResolution, addSystemMessage]);
+
+  // 초차원 의식 처리
+  const handleHyperDimensionalConsciousnessToggle = useCallback(() => {
+    if (!isHyperDimensionalConsciousness) {
+      setIsHyperDimensionalConsciousness(true);
+      setDimensionalAwareness({
+        dimension3D: '완전 인식',
+        dimension4D: '완전 인식',
+        dimension5D: '완전 인식',
+        dimensionN: '무한 인식'
+      });
+      addSystemMessage('초차원 의식이 활성화되었습니다.', 'system');
+    } else {
+      setIsHyperDimensionalConsciousness(false);
+      setDimensionalAwareness(null);
+      addSystemMessage('초차원 의식이 비활성화되었습니다.', 'system');
+    }
+  }, [isHyperDimensionalConsciousness, addSystemMessage]);
+
+  // 절대 현실 처리
+  const handleAbsoluteRealityToggle = useCallback(() => {
+    if (!isAbsoluteReality) {
+      setIsAbsoluteReality(true);
+      setRealityFabric({
+        physics: '절대 물리학',
+        time: '절대 시간',
+        space: '절대 공간',
+        consciousness: '절대 의식'
+      });
+      addSystemMessage('절대 현실이 활성화되었습니다.', 'system');
+    } else {
+      setIsAbsoluteReality(false);
+      setRealityFabric(null);
+      addSystemMessage('절대 현실이 비활성화되었습니다.', 'system');
+    }
+  }, [isAbsoluteReality, addSystemMessage]);
+
+  // 전차원 이동 처리
+  const handleOmniDimensionalTravelToggle = useCallback(() => {
+    if (!isOmniDimensionalTravel) {
+      setIsOmniDimensionalTravel(true);
+      setTravelCoordinates({
+        x: '무한',
+        y: '무한',
+        z: '무한',
+        t: '무한',
+        dimension: '모든 차원',
+        consciousness: '완전 동기화'
+      });
+      addSystemMessage('전차원 이동이 활성화되었습니다.', 'system');
+    } else {
+      setIsOmniDimensionalTravel(false);
+      setTravelCoordinates(null);
+      addSystemMessage('전차원 이동이 비활성화되었습니다.', 'system');
+    }
+  }, [isOmniDimensionalTravel, addSystemMessage]);
+
+  // 의식 융합 처리
+  const handleConsciousnessFusionToggle = useCallback(() => {
+    if (!isConsciousnessFusion) {
+      setIsConsciousnessFusion(true);
+      setFusionStatus('융합 중...');
+
+      setTimeout(() => {
+        setFusionStatus('융합 완료');
+        addSystemMessage('의식 융합이 완료되었습니다.', 'success');
+      }, 4000);
+    } else {
+      setIsConsciousnessFusion(false);
+      setFusionStatus('');
+      addSystemMessage('의식 융합이 비활성화되었습니다.', 'system');
+    }
+  }, [isConsciousnessFusion, addSystemMessage]);
+
+  // 메시지 아이콘 가져오기
+  const getMessageIcon = useCallback((sender: string, type: string) => {
+    switch (type) {
+      case 'command':
+        return <CommandLineIcon className="w-5 h-5 text-blue-500" />;
+      case 'system':
+        return <CogIcon className="w-5 h-5 text-gray-500" />;
+      case 'error':
+        return <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />;
+      case 'success':
+        return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
+      default:
+        return sender === 'user' ? <div className="w-5 h-5 bg-blue-500 rounded-full" /> : <div className="w-5 h-5 bg-green-500 rounded-full" />;
+    }
+  }, []);
+
+  // 신뢰도 색상 가져오기
+  const getConfidenceColor = useCallback((confidence?: number) => {
+    if (!confidence) return 'text-gray-400';
+    if (confidence >= 0.8) return 'text-green-500';
+    if (confidence >= 0.6) return 'text-yellow-500';
+    return 'text-red-500';
+  }, []);
+
+  // 무한 의식 처리
+  const handleInfiniteConsciousnessToggle = useCallback(() => {
+    if (!isInfiniteConsciousness) {
+      setIsInfiniteConsciousness(true);
+      setConsciousnessLevels([
+        '무한 의식 레벨 1', '무한 의식 레벨 2',
+        '무한 의식 레벨 3', '무한 의식 레벨 4'
+      ]);
+      addSystemMessage('무한 의식이 활성화되었습니다.', 'system');
+    } else {
+      setIsInfiniteConsciousness(false);
+      setConsciousnessLevels([]);
+      addSystemMessage('무한 의식이 비활성화되었습니다.', 'system');
+    }
+  }, [isInfiniteConsciousness, addSystemMessage]);
+
+  // 절대 지식 처리
+  const handleAbsoluteKnowledgeToggle = useCallback(() => {
+    if (!isAbsoluteKnowledge) {
+      setIsAbsoluteKnowledge(true);
+      setKnowledgeDomains([
+        { domain: '물리학', knowledge: '완전' },
+        { domain: '수학', knowledge: '완전' },
+        { domain: '철학', knowledge: '완전' },
+        { domain: '신학', knowledge: '완전' }
+      ]);
+      addSystemMessage('절대 지식이 활성화되었습니다.', 'system');
+    } else {
+      setIsAbsoluteKnowledge(false);
+      setKnowledgeDomains([]);
+      addSystemMessage('절대 지식이 비활성화되었습니다.', 'system');
+    }
+  }, [isAbsoluteKnowledge, addSystemMessage]);
+
+  // 완전 자유 처리
+  const handleCompleteFreedomToggle = useCallback(() => {
+    if (!isCompleteFreedom) {
+      setIsCompleteFreedom(true);
+      setFreedomDimensions({
+        physical: '완전 자유',
+        mental: '완전 자유',
+        spiritual: '완전 자유',
+        temporal: '완전 자유'
+      });
+      addSystemMessage('완전 자유가 활성화되었습니다.', 'system');
+    } else {
+      setIsCompleteFreedom(false);
+      setFreedomDimensions(null);
+      addSystemMessage('완전 자유가 비활성화되었습니다.', 'system');
+    }
+  }, [isCompleteFreedom, addSystemMessage]);
+
+  // 궁극적 진실 처리
+  const handleUltimateTruthToggle = useCallback(() => {
+    if (!isUltimateTruth) {
+      setIsUltimateTruth(true);
+      setTruthRevelations([
+        '존재의 본질', '의식의 근원',
+        '시간의 실체', '공간의 본질'
+      ]);
+      addSystemMessage('궁극적 진실이 활성화되었습니다.', 'system');
+    } else {
+      setIsUltimateTruth(false);
+      setTruthRevelations([]);
+      addSystemMessage('궁극적 진실이 비활성화되었습니다.', 'system');
+    }
+  }, [isUltimateTruth, addSystemMessage]);
+
+  // 전재 처리
+  const handleOmniPresenceToggle = useCallback(() => {
+    if (!isOmniPresence) {
+      setIsOmniPresence(true);
+      setPresenceCoordinates({
+        everywhere: '동시 존재',
+        nowhere: '동시 부재',
+        past: '과거 존재',
+        future: '미래 존재'
+      });
+      addSystemMessage('전재가 활성화되었습니다.', 'system');
+    } else {
+      setIsOmniPresence(false);
+      setPresenceCoordinates(null);
+      addSystemMessage('전재가 비활성화되었습니다.', 'system');
+    }
+  }, [isOmniPresence, addSystemMessage]);
+
+  // 초월 처리
+  const handleTranscendenceToggle = useCallback(() => {
+    if (!isTranscendence) {
+      setIsTranscendence(true);
+      setTranscendenceStatus('초월 중...');
+
+      setTimeout(() => {
+        setTranscendenceStatus('초월 완료');
+        addSystemMessage('초월이 완료되었습니다.', 'success');
+      }, 5000);
+    } else {
+      setIsTranscendence(false);
+      setTranscendenceStatus('');
+      addSystemMessage('초월이 비활성화되었습니다.', 'system');
+    }
+  }, [isTranscendence, addSystemMessage]);
+
+  // 무한 창조 처리
+  const handleInfiniteCreationToggle = useCallback(() => {
+    if (!isInfiniteCreation) {
+      setIsInfiniteCreation(true);
+      setCreationManifestations([
+        '무한 창조 레벨 1', '무한 창조 레벨 2',
+        '무한 창조 레벨 3', '무한 창조 레벨 4'
+      ]);
+      addSystemMessage('무한 창조가 활성화되었습니다.', 'system');
+    } else {
+      setIsInfiniteCreation(false);
+      setCreationManifestations([]);
+      addSystemMessage('무한 창조가 비활성화되었습니다.', 'system');
+    }
+  }, [isInfiniteCreation, addSystemMessage]);
+
+  // 절대 자유 처리
+  const handleAbsoluteFreedomToggle = useCallback(() => {
+    if (!isAbsoluteFreedom) {
+      setIsAbsoluteFreedom(true);
+      setFreedomRealms([
+        { realm: '물리적 자유', status: '완전' },
+        { realm: '정신적 자유', status: '완전' },
+        { realm: '영적 자유', status: '완전' },
+        { realm: '시간적 자유', status: '완전' }
+      ]);
+      addSystemMessage('절대 자유가 활성화되었습니다.', 'system');
+    } else {
+      setIsAbsoluteFreedom(false);
+      setFreedomRealms([]);
+      addSystemMessage('절대 자유가 비활성화되었습니다.', 'system');
+    }
+  }, [isAbsoluteFreedom, addSystemMessage]);
+
+  // 궁극적 지혜 처리
+  const handleUltimateWisdomToggle = useCallback(() => {
+    if (!isUltimateWisdom) {
+      setIsUltimateWisdom(true);
+      setWisdomInsights({
+        insight1: '존재의 궁극적 의미',
+        insight2: '의식의 무한한 잠재력',
+        insight3: '시간과 공간의 본질',
+        insight4: '창조의 무한한 가능성'
+      });
+      addSystemMessage('궁극적 지혜가 활성화되었습니다.', 'system');
+    } else {
+      setIsUltimateWisdom(false);
+      setWisdomInsights(null);
+      addSystemMessage('궁극적 지혜가 비활성화되었습니다.', 'system');
+    }
+  }, [isUltimateWisdom, addSystemMessage]);
+
+  // 완전한 깨달음 처리
+  const handleCompleteEnlightenmentToggle = useCallback(() => {
+    if (!isCompleteEnlightenment) {
+      setIsCompleteEnlightenment(true);
+      setEnlightenmentStages([
+        '깨달음 단계 1', '깨달음 단계 2',
+        '깨달음 단계 3', '깨달음 단계 4'
+      ]);
+      addSystemMessage('완전한 깨달음이 활성화되었습니다.', 'system');
+    } else {
+      setIsCompleteEnlightenment(false);
+      setEnlightenmentStages([]);
+      addSystemMessage('완전한 깨달음이 비활성화되었습니다.', 'system');
+    }
+  }, [isCompleteEnlightenment, addSystemMessage]);
+
+  // 전창조 처리
+  const handleOmniCreationToggle = useCallback(() => {
+    if (!isOmniCreation) {
+      setIsOmniCreation(true);
+      setCreationCoordinates({
+        x: '무한',
+        y: '무한',
+        z: '무한',
+        t: '무한',
+        dimension: '모든 차원',
+        creation: '완전 동기화'
+      });
+      addSystemMessage('전창조가 활성화되었습니다.', 'system');
+    } else {
+      setIsOmniCreation(false);
+      setCreationCoordinates(null);
+      addSystemMessage('전창조가 비활성화되었습니다.', 'system');
+    }
+  }, [isOmniCreation, addSystemMessage]);
+
+  // 신성 의식 처리
+  const handleDivineConsciousnessToggle = useCallback(() => {
+    if (!isDivineConsciousness) {
+      setIsDivineConsciousness(true);
+      setDivineStatus('신성화 중...');
+
+      setTimeout(() => {
+        setDivineStatus('신성화 완료');
+        addSystemMessage('신성 의식이 완료되었습니다.', 'success');
+      }, 6000);
+    } else {
+      setIsDivineConsciousness(false);
+      setDivineStatus('');
+      addSystemMessage('신성 의식이 비활성화되었습니다.', 'system');
+    }
+  }, [isDivineConsciousness, addSystemMessage]);
+
+  return (
+    <div className={`flex flex-col h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {/* 헤더 */}
+      <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-4 py-3 flex items-center justify-between`}>
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">C</span>
+          </div>
+          <div>
+            <h1 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>CORBU AI</h1>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>대화형 인터페이스</p>
+          </div>
+        </div>
+        <div className="flex flex-col space-y-1">
+          {/* 첫 번째 줄 */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={toggleDarkMode}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition`}
+              title="다크 모드 토글"
+            >
+              {isDarkMode ? '☀️' : '🌙'}
+            </button>
+            <button
+              onClick={toggleAIChat}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAIChatActive ? 'bg-green-500 text-white' : ''}`}
+              title="AI 채팅봇 토글"
+            >
+              🤖
+            </button>
+            <button
+              onClick={handleFileCompression}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isCompressing ? 'animate-pulse' : ''}`}
+              title="파일 압축"
+            >
+              📦
+            </button>
+            <button
+              onClick={handleVideoCall}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isVideoCallActive ? 'bg-red-500 text-white' : ''}`}
+              title="화상회의"
+            >
+              📹
+            </button>
+            <button
+              onClick={handleCollaboration}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isCollaborating ? 'bg-blue-500 text-white' : ''}`}
+              title="실시간 협업"
+            >
+              👥
+            </button>
+            <button
+              onClick={handleAdvancedAnalysis}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAnalyzing ? 'animate-pulse' : ''}`}
+              title="고급 분석"
+            >
+              📊
+            </button>
+            <button
+              onClick={handleSecurityToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isSecurityActive ? 'bg-yellow-500 text-white' : ''}`}
+              title="보안 모드"
+            >
+              🔒
+            </button>
+            <button
+              onClick={handleAutomationToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAutomationActive ? 'bg-purple-500 text-white' : ''}`}
+              title="자동화"
+            >
+              ⚙️
+            </button>
+            <button
+              onClick={handleBackup}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isBackupRunning ? 'animate-pulse' : ''}`}
+              title="백업"
+            >
+              💾
+            </button>
+            <button
+              onClick={handleScalabilityToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isScalable ? 'bg-blue-500 text-white' : ''}`}
+              title="확장성"
+            >
+              📈
+            </button>
+            <button
+              onClick={handlePerformanceOptimization}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isPerformanceOptimized ? 'animate-pulse' : ''}`}
+              title="성능 최적화"
+            >
+              ⚡
+            </button>
+            <button
+              onClick={handleAdvancedSecurityToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAdvancedSecurityActive ? 'bg-red-500 text-white' : ''}`}
+              title="고급 보안"
+            >
+              🛡️
+            </button>
+            <button
+              onClick={handleAIAugmentation}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAIAugmented ? 'bg-purple-500 text-white' : ''}`}
+              title="AI 강화"
+            >
+              🧠
+            </button>
+          </div>
+          {/* 두 번째 줄 */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleMultiLanguageToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isMultiLanguage ? 'bg-green-500 text-white' : ''}`}
+              title="다국어 지원"
+            >
+              🌐
+            </button>
+            <button
+              onClick={handleCloudSync}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isCloudSync ? 'bg-blue-500 text-white' : ''}`}
+              title="클라우드 동기화"
+            >
+              ☁️
+            </button>
+            <button
+              onClick={handleBlockchainToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isBlockchainActive ? 'bg-orange-500 text-white' : ''}`}
+              title="블록체인 통합"
+            >
+              ⛓️
+            </button>
+            <button
+              onClick={handleIoTToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isIoTConnected ? 'bg-green-500 text-white' : ''}`}
+              title="IoT 연동"
+            >
+              📡
+            </button>
+            <button
+              onClick={handleARVRToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isARVRActive ? 'bg-purple-500 text-white' : ''}`}
+              title="AR/VR 지원"
+            >
+              🥽
+            </button>
+            <button
+              onClick={handleQuantumOptimization}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isQuantumOptimized ? 'animate-pulse' : ''}`}
+              title="양자 컴퓨팅"
+            >
+              ⚛️
+            </button>
+            <button
+              onClick={handleEdgeComputingToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isEdgeComputing ? 'bg-indigo-500 text-white' : ''}`}
+              title="엣지 컴퓨팅"
+            >
+              🖥️
+            </button>
+            <button
+              onClick={handle5GToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${is5GEnabled ? 'bg-red-500 text-white' : ''}`}
+              title="5G 네트워크"
+            >
+              📶
+            </button>
+            <button
+              onClick={handleAIEthicsToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAIEthicsActive ? 'bg-blue-500 text-white' : ''}`}
+              title="AI 윤리"
+            >
+              ⚖️
+            </button>
+            <button
+              onClick={handleBiometricToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isBiometricEnabled ? 'bg-green-500 text-white' : ''}`}
+              title="생체인식"
+            >
+              👁️
+            </button>
+            <button
+              onClick={handleMetaverseToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isMetaverseConnected ? 'bg-purple-500 text-white' : ''}`}
+              title="메타버스"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleSpaceTechToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isSpaceTechActive ? 'bg-indigo-500 text-white' : ''}`}
+              title="우주 기술"
+            >
+              🚀
+            </button>
+            <button
+              onClick={handleNeuralInterfaceToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isNeuralInterface ? 'bg-pink-500 text-white' : ''}`}
+              title="신경 인터페이스"
+            >
+              🧠
+            </button>
+            <button
+              onClick={handleHolographicToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isHolographicDisplay ? 'bg-cyan-500 text-white' : ''}`}
+              title="홀로그램"
+            >
+              💎
+            </button>
+            <button
+              onClick={handleTimeTravelToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isTimeTravelActive ? 'bg-yellow-500 text-white' : ''}`}
+              title="시간 여행"
+            >
+              ⏰
+            </button>
+            <button
+              onClick={handleParallelUniverseToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isParallelUniverse ? 'bg-violet-500 text-white' : ''}`}
+              title="평행 우주"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleMultiDimensionalToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isMultiDimensionalComm ? 'bg-emerald-500 text-white' : ''}`}
+              title="다차원 통신"
+            >
+              🔮
+            </button>
+            <button
+              onClick={handleSuperIntelligenceToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isSuperIntelligence ? 'bg-rose-500 text-white' : ''}`}
+              title="초지능"
+            >
+              🧠
+            </button>
+            <button
+              onClick={handleQuantumEntanglementToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isQuantumEntanglement ? 'bg-teal-500 text-white' : ''}`}
+              title="양자 얽힘"
+            >
+              ⚛️
+            </button>
+            <button
+              onClick={handleTemporalParadoxToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isTemporalParadox ? 'bg-amber-500 text-white' : ''}`}
+              title="시간 역설"
+            >
+              🔄
+            </button>
+            <button
+              onClick={handleMultiUniverseCommToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isMultiUniverseComm ? 'bg-teal-500 text-white' : ''}`}
+              title="다중 우주 통신"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleTimeLoopControlToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isTimeLoopControl ? 'bg-pink-500 text-white' : ''}`}
+              title="시간 루프 제어"
+            >
+              ��
+            </button>
+            <button
+              onClick={handleHyperDimensionalTravelToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isHyperDimensionalTravel ? 'bg-indigo-500 text-white' : ''}`}
+              title="초차원 이동"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleAbsoluteIntelligenceToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAbsoluteIntelligence ? 'bg-blue-500 text-white' : ''}`}
+              title="절대 지능"
+            >
+              🧠
+            </button>
+            <button
+              onClick={handleRealityManipulationToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isRealityManipulation ? 'bg-green-500 text-white' : ''}`}
+              title="현실 조작"
+            >
+              👁️
+            </button>
+            <button
+              onClick={handleConsciousnessUploadToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isConsciousnessUpload ? 'bg-purple-500 text-white' : ''}`}
+              title="의식 업로드"
+            >
+              🧠
+            </button>
+            <button
+              onClick={handleMultiUniverseConsciousnessToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isMultiUniverseConsciousness ? 'bg-teal-500 text-white' : ''}`}
+              title="다중 우주 의식"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleTemporalParadoxResolutionToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isTemporalParadoxResolution ? 'bg-pink-500 text-white' : ''}`}
+              title="시간 역설 해결"
+            >
+              🔄
+            </button>
+            <button
+              onClick={handleHyperDimensionalConsciousnessToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isHyperDimensionalConsciousness ? 'bg-indigo-500 text-white' : ''}`}
+              title="초차원 의식"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleAbsoluteRealityToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAbsoluteReality ? 'bg-green-500 text-white' : ''}`}
+              title="절대 현실"
+            >
+              🧠
+            </button>
+            <button
+              onClick={handleOmniDimensionalTravelToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isOmniDimensionalTravel ? 'bg-blue-500 text-white' : ''}`}
+              title="전차원 이동"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleConsciousnessFusionToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isConsciousnessFusion ? 'bg-pink-500 text-white' : ''}`}
+              title="의식 융합"
+            >
+              🧠
+            </button>
+            <button
+              onClick={handleInfiniteConsciousnessToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isInfiniteConsciousness ? 'bg-purple-500 text-white' : ''}`}
+              title="무한 의식"
+            >
+              ♾️
+            </button>
+            <button
+              onClick={handleAbsoluteKnowledgeToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAbsoluteKnowledge ? 'bg-blue-500 text-white' : ''}`}
+              title="절대 지식"
+            >
+              📚
+            </button>
+            <button
+              onClick={handleCompleteFreedomToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isCompleteFreedom ? 'bg-green-500 text-white' : ''}`}
+              title="완전 자유"
+            >
+              🕊️
+            </button>
+            <button
+              onClick={handleUltimateTruthToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isUltimateTruth ? 'bg-yellow-500 text-white' : ''}`}
+              title="궁극적 진실"
+            >
+              🔮
+            </button>
+            <button
+              onClick={handleOmniPresenceToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isOmniPresence ? 'bg-indigo-500 text-white' : ''}`}
+              title="전재"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleTranscendenceToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isTranscendence ? 'bg-rose-500 text-white' : ''}`}
+              title="초월"
+            >
+              ✨
+            </button>
+            <button
+              onClick={handleInfiniteCreationToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isInfiniteCreation ? 'bg-purple-500 text-white' : ''}`}
+              title="무한 창조"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleAbsoluteFreedomToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isAbsoluteFreedom ? 'bg-blue-500 text-white' : ''}`}
+              title="절대 자유"
+            >
+              🕊️
+            </button>
+            <button
+              onClick={handleUltimateWisdomToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isUltimateWisdom ? 'bg-green-500 text-white' : ''}`}
+              title="궁극적 지혜"
+            >
+              ��
+            </button>
+            <button
+              onClick={handleCompleteEnlightenmentToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isCompleteEnlightenment ? 'bg-pink-500 text-white' : ''}`}
+              title="완전한 깨달음"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleOmniCreationToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isOmniCreation ? 'bg-teal-500 text-white' : ''}`}
+              title="전창조"
+            >
+              🌌
+            </button>
+            <button
+              onClick={handleDivineConsciousnessToggle}
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition ${isDivineConsciousness ? 'bg-pink-500 text-white' : ''}`}
+              title="신성 의식"
+            >
+              🌌
+            </button>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{isConnected ? '연결됨' : '연결 끊김'}</span>
+          </div>
+        </div>
+
+        {/* 메시지 영역 */}
+        <div
+          className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {dragOver && (
+            <div className="fixed inset-0 bg-blue-500 bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+                <div className="text-4xl mb-4">📁</div>
+                <div className="text-xl font-semibold">파일을 여기에 놓으세요</div>
+              </div>
+            </div>
+          )}
+
+          {messages.map((message) => (
+            <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-xs sm:max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl ${message.sender === 'user' ? 'bg-blue-500 text-white' : isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border'} rounded-lg px-4 py-2 shadow-sm`}>
+                <div className="flex items-start space-x-2">
+                  {message.sender !== 'user' && (
+                    <div className="flex-shrink-0 mt-1">
+                      {getMessageIcon(message.sender, message.type)}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div
+                      className={`text-sm ${message.sender === 'user' ? 'text-white' : isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                      dangerouslySetInnerHTML={{ __html: highlightMentionsAndTags(message.content) }}
+                    />
+                    {message.metadata && (
+                      <div className={`mt-2 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {message.metadata.confidence && (
+                          <div className={`flex items-center space-x-1 ${getConfidenceColor(message.metadata.confidence)}`}>
+                            <span>신뢰도: {(message.metadata.confidence * 100).toFixed(1)}%</span>
+                          </div>
+                        )}
+                        {message.metadata.processingTime && (
+                          <div className={isDarkMode ? 'text-gray-500' : 'text-gray-400'}>
+                            처리시간: {message.metadata.processingTime}ms
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {message.metadata?.suggestions && message.metadata.suggestions.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {message.metadata.suggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            className={`px-2 py-1 ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} text-xs rounded transition`}
+                            onClick={() => addSystemMessage(`선택된 제안: ${suggestion}`, 'system')}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* 타이핑 표시기 */}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border'} rounded-lg px-4 py-2 shadow-sm`}>
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-full"></div>
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* 이미지 미리보기 */}
+        {previewImage && (
+          <div className={`px-4 py-2 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-blue-50 border-blue-200'} border-t`}>
+            <div className="flex items-center space-x-2">
+              <span className={`text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>📷 이미지가 업로드되었습니다</span>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className={`text-sm ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-400 hover:text-blue-600'}`}
+              >
+                취소
+              </button>
+            </div>
+            <img src={previewImage} alt="미리보기" className="mt-2 max-h-20 rounded border" />
+          </div>
+        )}
+
+        {/* 음성 변환 결과 */}
+        {voiceText && (
+          <div className={`px-4 py-2 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-green-50 border-green-200'} border-t`}>
+            <div className="flex items-center space-x-2">
+              <span className={`text-sm ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>🎤 음성 변환 결과</span>
+              <button
+                onClick={() => setVoiceText('')}
+                className={`text-sm ${isDarkMode ? 'text-green-400 hover:text-green-300' : 'text-green-400 hover:text-green-600'}`}
+              >
+                닫기
+              </button>
+            </div>
+            <div className={`mt-2 text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{voiceText}</div>
+          </div>
+        )}
+
+        {/* 번역 결과 */}
+        {translatedText && (
+          <div className={`px-4 py-2 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-blue-50 border-blue-200'} border-t`}>
+            <div className="flex items-center space-x-2">
+              <span className={`text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>🌐 번역 결과 ({selectedLanguage.toUpperCase()})</span>
+              <button
+                onClick={() => setTranslatedText('')}
+                className={`text-sm ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-400 hover:text-blue-600'}`}
+              >
+                닫기
+              </button>
+            </div>
+            <div className={`mt-2 text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{translatedText}</div>
+          </div>
+        )}
+
+        {/* 압축 파일 결과 */}
+        {compressedFiles.length > 0 && (
+          <div className={`px-4 py-2 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-purple-50 border-purple-200'} border-t`}>
+            <div className="flex items-center space-x-2">
+              <span className={`text-sm ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>📦 압축 완료</span>
+              <button
+                onClick={() => setCompressedFiles([])}
+                className={`text-sm ${isDarkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-400 hover:text-purple-600'}`}
+              >
+                닫기
+              </button>
+            </div>
+            <div className="mt-2 space-y-1">
+              {compressedFiles.map((file, index) => (
+                <div key={index} className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  📄 {file}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 입력 영역 */}
+        <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t p-4`}>
+          <div className="flex items-end space-x-2 sm:space-x-3">
+            {/* 파일 버튼 */}
+            <button className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-green-50 hover:bg-green-100'} shadow transition active:scale-95 hover:shadow-lg`} onClick={handleFileUpload} title="파일 첨부" aria-label="파일 첨부">
+              <PaperClipIcon className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-green-500'}`} />
+            </button>
+            {/* 이모지 버튼 */}
+            <button className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-green-50 hover:bg-green-100'} shadow transition active:scale-95 hover:shadow-lg relative`} onClick={handleEmojiSelect} title="이모지" aria-label="이모지">
+              <FaceSmileIcon className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-green-400'}`} />
+              {/* 이모지 선택기 */}
+              {showEmojiPicker && (
+                <div
+                  ref={emojiPickerRef}
+                  className={`absolute bottom-full right-0 mb-2 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border'} rounded-lg shadow-lg p-2 max-h-60 overflow-y-auto z-50`}
+                  style={{ width: '300px' }}
+                >
+                  <div className="grid grid-cols-8 gap-1">
+                    {emojis.map((emoji, index) => (
+                      <button
+                        key={index}
+                        className={`p-1 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} rounded text-lg transition`}
+                        onClick={() => handleEmojiClick(emoji)}
+                        title={emoji}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </button>
+            {/* 음성 변환 버튼 */}
+            <button
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-green-50 hover:bg-green-100'} shadow transition active:scale-95 hover:shadow-lg ${isVoiceConverting ? 'animate-pulse' : ''}`}
+              onClick={handleVoiceConversion}
+              title="음성 변환"
+              aria-label="음성 변환"
+            >
+              {isVoiceConverting ? (
+                <svg className="animate-spin h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+              ) : (
+                <MicrophoneIcon className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-green-400'}`} />
+              )}
+            </button>
+            {/* 번역 버튼 */}
+            <button
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-blue-50 hover:bg-blue-100'} shadow transition active:scale-95 hover:shadow-lg`}
+              onClick={handleTranslation}
+              title="번역"
+              aria-label="번역"
+            >
+              <MagnifyingGlassIcon className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-blue-400'}`} />
+            </button>
+            {/* 언어 선택 */}
+            <select
+              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} text-sm`}
+              value={selectedLanguage}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              style={{ minWidth: '100px' }}
+            >
+              <option value="ko">한국어</option>
+              <option value="en">영어</option>
+              <option value="ja">일본어</option>
+            </select>
+            {/* 입력창 */}
+            <div className="flex-1 relative flex items-center">
+              <span className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-400' : 'text-green-200'} pointer-events-none`}>
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke={isDarkMode ? "#9ca3af" : "#6ee7b7"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M8 12h8m-4-4v8" /></svg>
+              </span>
+              <textarea
+                ref={el => { textareaRef.current = el; inputRef.current = el; }}
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onFocus={() => setInputFocus(true)}
+                onBlur={() => setInputFocus(false)}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                placeholder="메시지를 입력하세요... (@멘션, #태그 사용 가능)"
+                aria-label="메시지 입력"
+                aria-describedby="input-tip"
+                maxLength={600}
+                className={`w-full pl-9 pr-12 py-2 border rounded-lg shadow-sm resize-none transition placeholder:text-gray-500 focus:outline-none text-sm sm:text-base ${inputFocus ? 'bg-green-50 border-green-300 ring-2 ring-green-200' : isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} ${inputError ? 'border-red-400 bg-red-50' : ''} ${bannedWordsDetected.length > 0 ? 'border-red-400 bg-red-50' : ''}`}
+                rows={1}
+                style={{ minHeight: '40px', maxHeight: '120px', overflow: 'hidden' }}
+              />
+              {/* 글자수 표시 */}
+              <span className={`absolute right-3 bottom-1 text-xs select-none ${inputMessage.length > 500 ? 'text-red-400 font-bold' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {inputMessage.length}/500
+              </span>
+              {/* 자동 완성 드롭다운 */}
+              {showAutoComplete && (
+                <div
+                  ref={autoCompleteRef}
+                  className={`absolute bottom-full left-0 right-0 mb-1 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border'} rounded-lg shadow-lg max-h-40 overflow-y-auto z-50`}
+                >
+                  {autoCompleteSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition ${index === selectedAutoCompleteIndex ? 'bg-blue-50 text-blue-700' : isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700'
+                        }`}
+                      onClick={() => handleAutoCompleteSelect(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* 전송 버튼 */}
+            <button
+              className="px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition active:scale-95 hover:shadow-lg disabled:bg-gray-300 flex items-center justify-center"
+              disabled={!inputMessage.trim() || isTyping || inputMessage.length > 500 || bannedWordsDetected.length > 0}
+              onClick={handleSendMessage}
+              title="메시지 전송"
+              aria-label="메시지 전송"
+            >
+              {isTyping ? (
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+              ) : (
+                <PaperAirplaneIcon className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+          {/* 입력 안내 툴팁 및 경고 */}
+          <div id="input-tip" className="mt-1 text-xs select-none">
+            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-400'}>Enter: 전송 &nbsp;|&nbsp; Shift+Enter: 줄바꿈 &nbsp;|&nbsp; @멘션 #태그 지원</span>
+            {inputMessage.length > 500 && (
+              <span className="ml-4 text-red-500 font-bold animate-pulse">500자 이내로 입력해 주세요!</span>
+            )}
+            {bannedWordsDetected.length > 0 && (
+              <span className="ml-4 text-red-500 font-bold animate-pulse">⚠️ 금지어가 감지되었습니다: {bannedWordsDetected.join(', ')}</span>
+            )}
+          </div>
+        </div>
+      </div>
+      );
+};
+
+      export default ConversationalInterface; 

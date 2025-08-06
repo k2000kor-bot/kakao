@@ -9,7 +9,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { Message } from '../types/conversation';
+import { Message } from '../types/chat';
 
 interface DeepLearningAnalyzerProps {
   messages: Message[];

@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, DocumentArrowUpIcon, FolderIcon, BookOpenIcon, LightBulbIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import {
+    FolderIcon,
+    BookOpenIcon,
+    CheckCircleIcon,
+    LightBulbIcon,
+    XMarkIcon,
+    PlusIcon,
+    TrashIcon,
+    PencilIcon,
+    ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
+import { useModalClose } from '../hooks/useModalClose';
 
 interface ProjectManagerPopupProps {
     isOpen: boolean;
@@ -33,8 +44,12 @@ const ProjectManagerPopup: React.FC<ProjectManagerPopupProps> = ({ isOpen, onClo
     const [newProjectName, setNewProjectName] = useState('');
     const [newKnowledgeTitle, setNewKnowledgeTitle] = useState('');
     const [newKnowledgeContent, setNewKnowledgeContent] = useState('');
-    const [guidelines, setGuidelines] = useState<string[]>([]);
-    const [sellingPoints, setSellingPoints] = useState<string[]>([]);
+    const [newKnowledgeType, setNewKnowledgeType] = useState<'document' | 'conversation' | 'guideline' | 'selling_point'>('document');
+
+    const { modalRef, handleClose } = useModalClose({
+        isOpen,
+        onClose
+    });
 
     // 프로젝트 로드
     const loadProjects = async () => {
@@ -206,7 +221,7 @@ const ProjectManagerPopup: React.FC<ProjectManagerPopupProps> = ({ isOpen, onClo
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div ref={modalRef} className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
                 {/* 헤더 */}
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
@@ -214,10 +229,12 @@ const ProjectManagerPopup: React.FC<ProjectManagerPopupProps> = ({ isOpen, onClo
                         <span>프로젝트 관리</span>
                     </h2>
                     <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                        onClick={handleClose}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                        aria-label="프로젝트 관리 모달 닫기"
+                        title="ESC 키로도 닫을 수 있습니다"
                     >
-                        <XMarkIcon className="w-6 h-6 text-gray-500" />
+                        <XMarkIcon className="w-6 h-6" />
                     </button>
                 </div>
 

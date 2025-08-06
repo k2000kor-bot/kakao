@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-interface MessageFormat {
-    [key: string]: string;
-}
+import { messageAPI, MessageFormat } from '../services/unifiedMessageAPI';
 
 interface MessageFormatSelectorProps {
     onMessageGenerated?: (message: any) => void;
@@ -19,18 +16,26 @@ const MessageFormatSelector: React.FC<MessageFormatSelectorProps> = ({
     const [generatedMessage, setGeneratedMessage] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
+    const [serverStatus, setServerStatus] = useState<boolean>(false);
 
     useEffect(() => {
         fetchMessageFormats();
+        checkServerStatus();
     }, []);
+
+    const checkServerStatus = async () => {
+        try {
+            const isHealthy = await messageAPI.checkStatus();
+            setServerStatus(isHealthy);
+        } catch (err) {
+            setServerStatus(false);
+        }
+    };
 
     const fetchMessageFormats = async () => {
         try {
-            const response = await fetch('http://localhost:8011/api/message-formats');
-            const data = await response.json();
-            if (data.success) {
-                setFormats(data.formats);
-            }
+            const formatsData = await messageAPI.getFormats();
+            setFormats(formatsData);
         } catch (err) {
             setError('메시지 형식을 불러오는데 실패했습니다.');
         }
@@ -46,27 +51,22 @@ const MessageFormatSelector: React.FC<MessageFormatSelectorProps> = ({
         setError('');
 
         try {
-            const response = await fetch('http://localhost:8011/api/generate-formatted-message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    format_type: selectedFormat,
-                    original_message: originalMessage,
-                    context: context,
-                    recent_messages: recentMessages ? recentMessages.split('\n').map(msg => ({ content: msg })) : []
-                }),
-            });
+            // 최근 메시지 파싱
+            const recentMessagesArray = recentMessages
+                ? recentMessages.split('\n')
+                    .filter(msg => msg.trim())
+                    .map(msg => ({ content: msg.trim(), sender: 'user', timestamp: new Date().toISOString() }))
+                : [];
 
-            const data = await response.json();
+            const message = await messageAPI.generateFormatted(
+                selectedFormat,
+                originalMessage,
+                context,
+                recentMessagesArray
+            );
 
-            if (data.success) {
-                setGeneratedMessage(data.message.generated_message);
-                onMessageGenerated?.(data.message);
-            } else {
-                setError(data.error || '메시지 생성에 실패했습니다.');
-            }
+            setGeneratedMessage(message.generated_message);
+            onMessageGenerated?.(message);
         } catch (err) {
             setError('메시지 생성 중 오류가 발생했습니다.');
         } finally {
@@ -75,80 +75,174 @@ const MessageFormatSelector: React.FC<MessageFormatSelectorProps> = ({
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-6 text-center">메시지 형식 선택기</h2>
+        <div className="max-w-4xl mx-auto">
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">메시지 형태 선택기</h1>
+                <p className="text-gray-600">원하는 메시지 형식을 선택하고 AI가 최적화된 응답을 생성합니다.</p>
+
+                {/* 서버 상태 표시 */}
+                <div className="mt-4 flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${serverStatus ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className={`text-sm ${serverStatus ? 'text-green-600' : 'text-red-600'}`}>
+                        {serverStatus ? '서버 연결됨' : '서버 연결 안됨'}
+                    </span>
+                </div>
+            </div>
 
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    {error}
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                    <div className="flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {error}
+                    </div>
                 </div>
             )}
 
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium mb-2">메시지 형식</label>
-                    <select
-                        value={selectedFormat}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedFormat(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                        {Object.entries(formats).map(([key, description]) => (
-                            <option key={key} value={key}>
-                                {key} - {description}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* 입력 영역 */}
+                <div className="space-y-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">메시지 설정</h2>
 
-                <div>
-                    <label className="block text-sm font-medium mb-2">원본 메시지</label>
-                    <input
-                        type="text"
-                        value={originalMessage}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOriginalMessage(e.target.value)}
-                        placeholder="원본 메시지를 입력하세요"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                    />
-                </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    메시지 형식
+                                </label>
+                                <select
+                                    value={selectedFormat}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedFormat(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    aria-label="메시지 형식 선택"
+                                >
+                                    {Object.entries(formats).map(([key, description]) => (
+                                        <option key={key} value={key}>
+                                            {key} - {description}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                <div>
-                    <label className="block text-sm font-medium mb-2">맥락 (선택사항)</label>
-                    <input
-                        type="text"
-                        value={context}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContext(e.target.value)}
-                        placeholder="대화 맥락을 입력하세요"
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                    />
-                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    원본 메시지
+                                </label>
+                                <textarea
+                                    value={originalMessage}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setOriginalMessage(e.target.value)}
+                                    placeholder="원본 메시지를 입력하세요"
+                                    rows={4}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                />
+                            </div>
 
-                <div>
-                    <label className="block text-sm font-medium mb-2">최근 메시지들 (선택사항)</label>
-                    <textarea
-                        value={recentMessages}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRecentMessages(e.target.value)}
-                        placeholder="최근 대화 내용을 한 줄씩 입력하세요"
-                        rows={3}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                    />
-                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    맥락 (선택사항)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={context}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContext(e.target.value)}
+                                    placeholder="대화 맥락을 입력하세요"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
 
-                <button
-                    onClick={generateFormattedMessage}
-                    disabled={isLoading || !originalMessage.trim()}
-                    className="w-full bg-blue-500 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded"
-                >
-                    {isLoading ? '생성 중...' : '메시지 생성'}
-                </button>
-
-                {generatedMessage && (
-                    <div className="mt-6">
-                        <label className="block text-sm font-medium mb-2">생성된 메시지</label>
-                        <div className="p-4 bg-gray-50 rounded-lg border">
-                            <pre className="whitespace-pre-wrap text-sm">{generatedMessage}</pre>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    최근 메시지들 (선택사항)
+                                </label>
+                                <textarea
+                                    value={recentMessages}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRecentMessages(e.target.value)}
+                                    placeholder="최근 대화 내용을 한 줄씩 입력하세요"
+                                    rows={3}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                />
+                            </div>
                         </div>
+
+                        <button
+                            onClick={generateFormattedMessage}
+                            disabled={isLoading || !originalMessage.trim() || !serverStatus}
+                            className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    생성 중...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    메시지 생성
+                                </>
+                            )}
+                        </button>
                     </div>
-                )}
+                </div>
+
+                {/* 결과 영역 */}
+                <div className="space-y-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">생성된 메시지</h2>
+
+                        {generatedMessage ? (
+                            <div className="space-y-4">
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-700">선택된 형식</span>
+                                        <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                            {selectedFormat}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                        <pre className="whitespace-pre-wrap text-sm text-gray-900">{generatedMessage}</pre>
+                                    </div>
+                                </div>
+
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={() => navigator.clipboard.writeText(generatedMessage)}
+                                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
+                                    >
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                        복사
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setGeneratedMessage('');
+                                            setOriginalMessage('');
+                                        }}
+                                        className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
+                                    >
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        초기화
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                <p className="text-gray-500">메시지를 생성하면 여기에 표시됩니다.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

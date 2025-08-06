@@ -34,6 +34,16 @@ else
     echo "✅ node_modules 확인됨"
 fi
 
+# WebSocket 서버 시작
+echo "🔌 WebSocket 서버 시작 중..."
+cd backend
+if [ -d "venv" ]; then
+    source venv/bin/activate
+fi
+python3 advanced_websocket_server.py &
+WEBSOCKET_PID=$!
+cd ..
+
 # 통합 서버 시작
 echo "🚀 통합 서버 시작 중..."
 cd backend
@@ -47,6 +57,14 @@ cd ..
 # 서버 시작 대기
 echo "⏳ 서버 시작 대기 중..."
 sleep 5
+
+# WebSocket 서버 상태 확인
+echo "🔌 WebSocket 서버 상태 확인 중..."
+if netstat -an | grep ":8001" | grep "LISTEN" > /dev/null; then
+    echo "✅ WebSocket 서버 시작 완료 (포트 8001)"
+else
+    echo "⚠️  WebSocket 서버 상태 확인 실패 (포트 8001)"
+fi
 
 # 서버 상태 확인
 if curl -s http://localhost:8000/health > /dev/null; then
@@ -76,6 +94,13 @@ else
     echo "❌ 백엔드 서버 오류"
 fi
 
+# WebSocket 서버 상태
+if netstat -an | grep ":8001" | grep "LISTEN" > /dev/null; then
+    echo "✅ WebSocket 서버: ws://localhost:8001"
+else
+    echo "❌ WebSocket 서버 오류"
+fi
+
 # 프론트엔드 상태
 if curl -s http://localhost:3000 > /dev/null; then
     echo "✅ 프론트엔드: http://localhost:3000"
@@ -98,8 +123,10 @@ cleanup() {
     echo ""
     echo "🛑 시스템 종료 중..."
     kill $SERVER_PID 2>/dev/null
+    kill $WEBSOCKET_PID 2>/dev/null
     kill $FRONTEND_PID 2>/dev/null
     pkill -f "python.*ultimate_integrated_server" 2>/dev/null
+    pkill -f "python.*advanced_websocket_server" 2>/dev/null
     pkill -f "node.*start.js" 2>/dev/null
     echo "✅ 시스템 종료 완료"
     exit 0

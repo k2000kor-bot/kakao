@@ -39,6 +39,10 @@ from conversation_learner import ConversationLearner
 # 정치인 스타일 API
 from political_style_api import political_router, set_integrated_system
 
+# 개포우성7차 분석기
+from gaeposung_analyzer import gaeposung_analyzer
+from gaeposung_project_api import gaeposung_project_api
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -7071,6 +7075,251 @@ async def add_chat_room_to_project(project_id: str, request: dict):
 
 @app.post("/api/v7/projects/{project_id}/documents")
 async def add_document_to_project(project_id: str, request: dict):
+    """프로젝트에 문서 추가"""
+    try:
+        result = project_manager.add_document(project_id, request)
+        return result
+    except Exception as e:
+        logger.error(f"문서 추가 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+# 개포우성7차 특화 분석 API 엔드포인트들
+
+@app.get("/api/v7/gaeposung/analysis/{room_id}")
+async def get_gaeposung_analysis(room_id: str):
+    """개포우성7차 프로젝트 분석"""
+    try:
+        analysis_result = gaeposung_analyzer.analyze_project(room_id)
+        return {
+            "success": True,
+            "analysis": analysis_result,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"개포우성7차 분석 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/v7/gaeposung/sentiment/{room_id}")
+async def get_gaeposung_sentiment(room_id: str):
+    """개포우성7차 감정 분석"""
+    try:
+        analysis_result = gaeposung_analyzer.analyze_project(room_id)
+        return {
+            "success": True,
+            "sentiment": analysis_result.get("sentimentAnalysis", {}),
+            "specialized": analysis_result.get("specializedAnalysis", {}),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"개포우성7차 감정 분석 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/v7/gaeposung/speakers/{room_id}")
+async def get_gaeposung_speakers(room_id: str):
+    """개포우성7차 주요 발언자 분석"""
+    try:
+        analysis_result = gaeposung_analyzer.analyze_project(room_id)
+        return {
+            "success": True,
+            "speakers": analysis_result.get("topSpeakers", []),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"개포우성7차 발언자 분석 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/v7/gaeposung/topics/{room_id}")
+async def get_gaeposung_topics(room_id: str):
+    """개포우성7차 주요 주제 분석"""
+    try:
+        analysis_result = gaeposung_analyzer.analyze_project(room_id)
+        return {
+            "success": True,
+            "topics": analysis_result.get("keyTopics", []),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"개포우성7차 주제 분석 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/v7/gaeposung/timeline/{room_id}")
+async def get_gaeposung_timeline(room_id: str):
+    """개포우성7차 타임라인 분석"""
+    try:
+        analysis_result = gaeposung_analyzer.analyze_project(room_id)
+        return {
+            "success": True,
+            "timeline": analysis_result.get("timeline", []),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"개포우성7차 타임라인 분석 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+# 개포우성7차 프로젝트 관리 API 엔드포인트들
+
+@app.get("/api/v7/gaeposung/project/overview/{room_id}")
+async def get_project_overview(room_id: str):
+    """프로젝트 개요 조회"""
+    try:
+        overview = gaeposung_project_api.get_project_overview(room_id)
+        return {
+            "success": True,
+            "overview": overview,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"프로젝트 개요 조회 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/v7/gaeposung/project/tasks/{room_id}")
+async def get_project_tasks(room_id: str):
+    """프로젝트 작업 목록 조회"""
+    try:
+        tasks = gaeposung_project_api.get_tasks_by_room(room_id)
+        return {
+            "success": True,
+            "tasks": tasks,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"프로젝트 작업 조회 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/v7/gaeposung/project/tasks/{room_id}")
+async def create_project_task(room_id: str, task_data: dict):
+    """새 프로젝트 작업 생성"""
+    try:
+        task = gaeposung_project_api.create_task(room_id, task_data)
+        return {
+            "success": True,
+            "task": task,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"프로젝트 작업 생성 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.put("/api/v7/gaeposung/project/tasks/{task_id}")
+async def update_project_task(task_id: str, task_data: dict):
+    """프로젝트 작업 업데이트"""
+    try:
+        task = gaeposung_project_api.update_task(task_id, task_data)
+        return {
+            "success": True,
+            "task": task,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"프로젝트 작업 업데이트 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.delete("/api/v7/gaeposung/project/tasks/{task_id}")
+async def delete_project_task(task_id: str):
+    """프로젝트 작업 삭제"""
+    try:
+        deleted = gaeposung_project_api.delete_task(task_id)
+        return {
+            "success": deleted,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"프로젝트 작업 삭제 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/v7/gaeposung/project/milestones/{room_id}")
+async def get_project_milestones(room_id: str):
+    """프로젝트 마일스톤 목록 조회"""
+    try:
+        milestones = gaeposung_project_api.get_milestones_by_room(room_id)
+        return {
+            "success": True,
+            "milestones": milestones,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"프로젝트 마일스톤 조회 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/v7/gaeposung/project/milestones/{room_id}")
+async def create_project_milestone(room_id: str, milestone_data: dict):
+    """새 프로젝트 마일스톤 생성"""
+    try:
+        milestone = gaeposung_project_api.create_milestone(room_id, milestone_data)
+        return {
+            "success": True,
+            "milestone": milestone,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"프로젝트 마일스톤 생성 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/v7/gaeposung/project/recommendations/{room_id}")
+async def get_project_recommendations(room_id: str):
+    """AI 추천 목록 조회"""
+    try:
+        recommendations = gaeposung_project_api.get_recommendations_by_room(room_id)
+        return {
+            "success": True,
+            "recommendations": recommendations,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"AI 추천 조회 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/v7/gaeposung/project/recommendations/{room_id}/generate")
+async def generate_project_recommendations(room_id: str):
+    """AI 추천 생성"""
+    try:
+        recommendations = gaeposung_project_api.generate_ai_recommendations(room_id)
+        return {
+            "success": True,
+            "recommendations": recommendations,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"AI 추천 생성 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.put("/api/v7/gaeposung/project/recommendations/{recommendation_id}/status")
+async def update_recommendation_status(recommendation_id: str, status: str):
+    """AI 추천 상태 업데이트"""
+    try:
+        recommendation = gaeposung_project_api.update_recommendation_status(recommendation_id, status)
+        return {
+            "success": True,
+            "recommendation": recommendation,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"AI 추천 상태 업데이트 오류: {e}")
+        return {"success": False, "error": str(e)}
+
+# 메시지 생성 API
+@app.post("/api/v7/generate-message")
+async def generate_message(request: dict):
+    """대화 내용에 대응하는 메시지 생성"""
+    try:
+        from message_generator import message_generator
+        
+        context = request.get("context", "")
+        room_id = request.get("room_id", "")
+        style = request.get("style", "professional")
+        
+        # 메시지 생성
+        messages = message_generator.generate_response(context, room_id, style)
+        
+        return {
+            "success": True,
+            "messages": messages,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"메시지 생성 오류: {e}")
+        return {"success": False, "error": str(e)}
+
 if __name__ == "__main__":
     try:
         import uvicorn

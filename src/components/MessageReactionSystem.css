@@ -1,0 +1,263 @@
+/* 메시지 리액션 시스템 스타일 */
+
+.message-reaction-system {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.existing-reactions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.reaction-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.reaction-item:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.reaction-item.user-reacted {
+  background: var(--primary-100);
+  border-color: var(--primary-300);
+  color: var(--primary-700);
+}
+
+.reaction-emoji {
+  font-size: var(--text-sm);
+}
+
+.reaction-count {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.add-reaction-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  opacity: 0.6;
+}
+
+.add-reaction-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* 리액션 툴팁 */
+.reaction-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.tooltip-users {
+  color: var(--text-secondary);
+}
+
+/* 리액션 선택기 모달 */
+.reaction-picker-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.reaction-picker-content {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: 0 8px 32px var(--shadow-color);
+  max-width: 400px;
+  width: 90%;
+  animation: slideIn 0.3s ease-out;
+}
+
+.reaction-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.reaction-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xl);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.reaction-option:hover {
+  background: var(--primary-100);
+  border-color: var(--primary-300);
+  transform: scale(1.1);
+}
+
+.reaction-picker-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.close-picker-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.close-picker-btn:hover {
+  background: var(--gray-100);
+  color: var(--text-primary);
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .reaction-picker-content {
+    padding: var(--spacing-md);
+    width: 95%;
+  }
+
+  .reaction-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-xs);
+  }
+
+  .reaction-option {
+    width: 40px;
+    height: 40px;
+    font-size: var(--text-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .reaction-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .reaction-option {
+    width: 36px;
+    height: 36px;
+    font-size: var(--text-base);
+  }
+}
+
+/* 다크 테마 대응 */
+[data-theme="dark"] .reaction-item {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .reaction-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .reaction-item.user-reacted {
+  background: var(--primary-800);
+  border-color: var(--primary-600);
+  color: var(--primary-200);
+}
+
+[data-theme="dark"] .add-reaction-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--dark-500);
+}
+
+[data-theme="dark"] .reaction-picker-content {
+  background: var(--dark-400);
+}
+
+[data-theme="dark"] .reaction-option {
+  border-color: var(--dark-500);
+}
+
+[data-theme="dark"] .reaction-option:hover {
+  background: var(--primary-800);
+  border-color: var(--primary-600);
+}
+
+[data-theme="dark"] .close-picker-btn {
+  background: var(--dark-500);
+  border-color: var(--dark-600);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .close-picker-btn:hover {
+  background: var(--dark-600);
+  color: var(--text-primary);
+} 

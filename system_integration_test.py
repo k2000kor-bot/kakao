@@ -1,181 +1,254 @@
 #!/usr/bin/env python3
 """
-시스템 통합 테스트 스크립트
+CORBU AI 시스템 통합 테스트
+백엔드 API와 프론트엔드 연동 테스트
 """
 
 import requests
-import time
 import json
+import time
+import sys
 from datetime import datetime
 
-class SystemIntegrationTester:
+# API 설정
+BASE_URL = "http://localhost:8001"
+API_VERSION = "v8"
+
+class SystemIntegrationTest:
     def __init__(self):
-        self.backend_url = "http://localhost:8000"
-        self.frontend_url = "http://localhost:3000"
+        self.session = requests.Session()
         self.test_results = []
-    
-    def test_backend_health(self):
-        """백엔드 서버 상태 테스트"""
-        print("🔍 백엔드 서버 상태 테스트...")
         
+    def log_test(self, test_name: str, success: bool, message: str = ""):
+        """테스트 결과 로깅"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        result = "✅ PASS" if success else "❌ FAIL"
+        print(f"[{timestamp}] {result} - {test_name}")
+        if message:
+            print(f"    {message}")
+        
+        self.test_results.append({
+            "test": test_name,
+            "success": success,
+            "message": message,
+            "timestamp": timestamp
+        })
+        
+    def test_server_health(self):
+        """서버 상태 확인 테스트"""
         try:
-            response = requests.get(f"{self.backend_url}/health", timeout=5)
+            response = self.session.get(f"{BASE_URL}/")
             if response.status_code == 200:
                 data = response.json()
-                print(f"✅ 백엔드 서버 정상 (버전: {data.get('version', 'N/A')})")
+                self.log_test("서버 상태 확인", True, f"API 버전: {data.get('version', 'N/A')}")
                 return True
             else:
-                print(f"❌ 백엔드 서버 오류: {response.status_code}")
+                self.log_test("서버 상태 확인", False, f"HTTP {response.status_code}")
                 return False
         except Exception as e:
-            print(f"❌ 백엔드 서버 연결 실패: {e}")
+            self.log_test("서버 상태 확인", False, str(e))
             return False
     
-    def test_frontend_health(self):
-        """프론트엔드 서버 상태 테스트"""
-        print("🔍 프론트엔드 서버 상태 테스트...")
-        
+    def test_projects_api(self):
+        """프로젝트 API 테스트"""
         try:
-            response = requests.get(self.frontend_url, timeout=5)
+            # 프로젝트 목록 조회
+            response = self.session.get(f"{BASE_URL}/api/{API_VERSION}/projects")
             if response.status_code == 200:
-                print("✅ 프론트엔드 서버 정상")
-                return True
-            else:
-                print(f"❌ 프론트엔드 서버 오류: {response.status_code}")
-                return False
-        except Exception as e:
-            print(f"❌ 프론트엔드 서버 연결 실패: {e}")
-            return False
-    
-    def test_api_endpoints(self):
-        """API 엔드포인트 테스트"""
-        print("🔍 API 엔드포인트 테스트...")
-        
-        endpoints = [
-            "/api/v7/status",
-            "/api/v7/chat-rooms",
-            "/api/v7/analytics/dashboard",
-            "/api/v7/projects"
-        ]
-        
-        success_count = 0
-        for endpoint in endpoints:
-            try:
-                response = requests.get(f"{self.backend_url}{endpoint}", timeout=5)
+                data = response.json()
+                self.log_test("프로젝트 목록 조회", True, f"프로젝트 수: {data.get('count', 0)}")
+                
+                # 새 프로젝트 생성
+                new_project = {
+                    "name": f"테스트 프로젝트 {datetime.now().strftime('%H:%M:%S')}",
+                    "description": "시스템 통합 테스트용 프로젝트",
+                    "project_type": "test"
+                }
+                
+                response = self.session.post(
+                    f"{BASE_URL}/api/{API_VERSION}/projects",
+                    json=new_project
+                )
+                
                 if response.status_code == 200:
-                    print(f"✅ {endpoint} 정상")
-                    success_count += 1
+                    data = response.json()
+                    project_id = data.get('project', {}).get('id')
+                    self.log_test("프로젝트 생성", True, f"프로젝트 ID: {project_id}")
+                    return project_id
                 else:
-                    print(f"❌ {endpoint} 오류: {response.status_code}")
-            except Exception as e:
-                print(f"❌ {endpoint} 연결 실패: {e}")
-        
-        success_rate = (success_count / len(endpoints)) * 100
-        print(f"📊 API 엔드포인트 성공률: {success_rate:.1f}% ({success_count}/{len(endpoints)})")
-        
-        return success_rate >= 75
+                    self.log_test("프로젝트 생성", False, f"HTTP {response.status_code}")
+                    return None
+            else:
+                self.log_test("프로젝트 목록 조회", False, f"HTTP {response.status_code}")
+                return None
+        except Exception as e:
+            self.log_test("프로젝트 API 테스트", False, str(e))
+            return None
     
-    def test_ai_functionality(self):
-        """AI 기능 테스트"""
-        print("🔍 AI 기능 테스트...")
-        
+    def test_chat_sessions_api(self, project_id: str):
+        """채팅 세션 API 테스트"""
         try:
-            # GPT 메시지 생성 테스트
-            response = requests.post(
-                f"{self.backend_url}/api/v7/generate-gpt-message",
-                json={"target_message": "안녕하세요", "context": "테스트"},
-                timeout=10
+            # 세션 목록 조회
+            response = self.session.get(
+                f"{BASE_URL}/api/{API_VERSION}/chat-sessions",
+                params={"project_id": project_id}
             )
             
             if response.status_code == 200:
                 data = response.json()
-                if data.get("success"):
-                    print("✅ GPT 메시지 생성 성공")
-                    return True
-                else:
-                    print(f"❌ GPT 메시지 생성 실패: {data.get('error')}")
-                    return False
-            else:
-                print(f"❌ GPT 메시지 생성 요청 실패: {response.status_code}")
-                return False
+                self.log_test("채팅 세션 목록 조회", True, f"세션 수: {data.get('count', 0)}")
                 
+                # 새 세션 생성
+                new_session = {
+                    "project_id": project_id,
+                    "title": f"테스트 세션 {datetime.now().strftime('%H:%M:%S')}",
+                    "initial_message": "안녕하세요! CORBU AI 시스템 테스트입니다."
+                }
+                
+                response = self.session.post(
+                    f"{BASE_URL}/api/{API_VERSION}/chat-sessions",
+                    json=new_session
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    session_id = data.get('session', {}).get('id')
+                    self.log_test("채팅 세션 생성", True, f"세션 ID: {session_id}")
+                    return session_id
+                else:
+                    self.log_test("채팅 세션 생성", False, f"HTTP {response.status_code}")
+                    return None
+            else:
+                self.log_test("채팅 세션 목록 조회", False, f"HTTP {response.status_code}")
+                return None
         except Exception as e:
-            print(f"❌ AI 기능 테스트 실패: {e}")
-            return False
+            self.log_test("채팅 세션 API 테스트", False, str(e))
+            return None
     
-    def test_websocket_connection(self):
-        """WebSocket 연결 테스트"""
-        print("🔍 WebSocket 연결 테스트...")
-        
+    def test_database_stats(self):
+        """데이터베이스 통계 테스트"""
         try:
-            # WebSocket 연결 테스트 (간단한 HTTP 요청으로 대체)
-            response = requests.get(f"{self.backend_url}/api/v7/status", timeout=5)
+            response = self.session.get(f"{BASE_URL}/api/{API_VERSION}/database/statistics")
             if response.status_code == 200:
-                print("✅ WebSocket 서버 응답 정상")
+                data = response.json()
+                self.log_test("데이터베이스 통계 조회", True, "통계 정보 조회 성공")
                 return True
             else:
-                print(f"❌ WebSocket 서버 응답 오류: {response.status_code}")
+                self.log_test("데이터베이스 통계 조회", False, f"HTTP {response.status_code}")
                 return False
         except Exception as e:
-            print(f"❌ WebSocket 연결 테스트 실패: {e}")
+            self.log_test("데이터베이스 통계 조회", False, str(e))
+            return False
+    
+    def test_search_api(self):
+        """검색 API 테스트"""
+        try:
+            response = self.session.get(
+                f"{BASE_URL}/api/{API_VERSION}/search",
+                params={"query": "테스트"}
+            )
+            if response.status_code == 200:
+                data = response.json()
+                self.log_test("검색 API 테스트", True, "검색 기능 정상 작동")
+                return True
+            else:
+                self.log_test("검색 API 테스트", False, f"HTTP {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("검색 API 테스트", False, str(e))
+            return False
+    
+    def test_ai_message_generation(self):
+        """AI 메시지 생성 테스트"""
+        try:
+            ai_request = {
+                "prompt": "안녕하세요! CORBU AI 시스템입니다.",
+                "context": {
+                    "project_type": "test",
+                    "user_id": "test_user"
+                }
+            }
+            
+            response = self.session.post(
+                f"{BASE_URL}/api/{API_VERSION}/ai-message",
+                json=ai_request
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log_test("AI 메시지 생성", True, "AI 메시지 생성 성공")
+                return True
+            else:
+                self.log_test("AI 메시지 생성", False, f"HTTP {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("AI 메시지 생성", False, str(e))
             return False
     
     def run_all_tests(self):
         """모든 테스트 실행"""
-        print("🚀 시스템 통합 테스트 시작")
-        print("=" * 60)
+        print("🚀 CORBU AI 시스템 통합 테스트 시작")
+        print("=" * 50)
         
-        # 백엔드 테스트
-        backend_result = self.test_backend_health()
-        self.test_results.append(("백엔드 서버", backend_result))
+        # 1. 서버 상태 확인
+        if not self.test_server_health():
+            print("❌ 서버가 실행되지 않았습니다. 백엔드 서버를 먼저 시작해주세요.")
+            return False
         
-        # 프론트엔드 테스트
-        frontend_result = self.test_frontend_health()
-        self.test_results.append(("프론트엔드 서버", frontend_result))
+        # 2. 프로젝트 API 테스트
+        project_id = self.test_projects_api()
+        if not project_id:
+            print("❌ 프로젝트 API 테스트 실패")
+            return False
         
-        # API 엔드포인트 테스트
-        api_result = self.test_api_endpoints()
-        self.test_results.append(("API 엔드포인트", api_result))
+        # 3. 채팅 세션 API 테스트
+        session_id = self.test_chat_sessions_api(project_id)
+        if not session_id:
+            print("❌ 채팅 세션 API 테스트 실패")
+            return False
         
-        # AI 기능 테스트
-        ai_result = self.test_ai_functionality()
-        self.test_results.append(("AI 기능", ai_result))
+        # 4. 데이터베이스 통계 테스트
+        self.test_database_stats()
         
-        # WebSocket 테스트
-        ws_result = self.test_websocket_connection()
-        self.test_results.append(("WebSocket 연결", ws_result))
+        # 5. 검색 API 테스트
+        self.test_search_api()
+        
+        # 6. AI 메시지 생성 테스트
+        self.test_ai_message_generation()
         
         # 결과 요약
-        self.print_summary()
-    
-    def print_summary(self):
-        """테스트 결과 요약"""
-        print("\n" + "=" * 60)
-        print("📊 시스템 통합 테스트 결과 요약:")
-        print("=" * 60)
+        print("\n" + "=" * 50)
+        print("📊 테스트 결과 요약")
+        print("=" * 50)
         
-        successful_tests = 0
-        for test_name, success in self.test_results:
-            status = "✅ 성공" if success else "❌ 실패"
-            print(f"   {test_name}: {status}")
-            if success:
-                successful_tests += 1
+        passed = sum(1 for result in self.test_results if result["success"])
+        total = len(self.test_results)
         
-        total_tests = len(self.test_results)
-        success_rate = (successful_tests / total_tests) * 100
+        print(f"총 테스트: {total}")
+        print(f"성공: {passed}")
+        print(f"실패: {total - passed}")
+        print(f"성공률: {(passed/total)*100:.1f}%")
         
-        print(f"\n📈 전체 성공률: {success_rate:.1f}% ({successful_tests}/{total_tests})")
-        
-        if success_rate >= 80:
-            print("🎉 시스템이 정상 작동합니다!")
-            print("🌐 웹 브라우저에서 http://localhost:3001 으로 접속하세요.")
-        elif success_rate >= 60:
-            print("⚠️ 대부분의 기능이 작동하지만 일부 문제가 있습니다.")
+        if passed == total:
+            print("\n🎉 모든 테스트가 성공했습니다!")
+            return True
         else:
-            print("❌ 시스템에 심각한 문제가 있습니다.")
-        
-        print(f"\n⏰ 테스트 완료 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print("\n⚠️ 일부 테스트가 실패했습니다.")
+            return False
+
+def main():
+    """메인 함수"""
+    test = SystemIntegrationTest()
+    success = test.run_all_tests()
+    
+    if success:
+        print("\n✅ 시스템이 정상적으로 작동하고 있습니다.")
+        print("프론트엔드 애플리케이션을 브라우저에서 확인해보세요: http://localhost:3000")
+    else:
+        print("\n❌ 시스템에 문제가 있습니다.")
+        print("백엔드 서버가 실행 중인지 확인해주세요.")
+    
+    return 0 if success else 1
 
 if __name__ == "__main__":
-    tester = SystemIntegrationTester()
-    tester.run_all_tests() 
+    sys.exit(main()) 

@@ -39,7 +39,7 @@ const LegacyMessageBridge: React.FC<LegacyMessageBridgeProps> = ({
   const [responseQuality, setResponseQuality] = useState<{
     confidence: number;
     reasoning: string;
-    suggestions: string;
+    suggestions: string[];
   } | null>(null);
 
   // 대화 데이터 관리
@@ -209,7 +209,7 @@ const LegacyMessageBridge: React.FC<LegacyMessageBridgeProps> = ({
       setResponseQuality({
         confidence: result.confidence,
         reasoning: result.reasoning,
-        suggestions: result.suggestions
+        suggestions: Array.isArray(result.suggestions) ? result.suggestions : [result.suggestions]
       });
 
       if (onMessageGenerated) {

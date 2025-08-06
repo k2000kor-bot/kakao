@@ -1,19 +1,6 @@
-export interface Message {
-    id: string;
-    content: string;
-    sender: string;
-    timestamp: string;
-    type?: string;
-    sentiment?: 'positive' | 'negative' | 'neutral';
-    reliability?: number;
-    urgency?: 'low' | 'medium' | 'high';
-    isDeleted?: boolean;
-    aiResponse?: {
-        message: string;
-        confidence: number;
-        status: 'success' | 'error' | 'pending';
-    };
-}
+import { Message as ChatMessage } from './chat';
+
+export type Message = ChatMessage;
 
 export interface ConversationSummary {
     topics: {

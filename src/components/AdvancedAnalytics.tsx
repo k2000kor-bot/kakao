@@ -1,306 +1,348 @@
 import React, { useState, useEffect } from 'react';
-import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+  ChartBarIcon,
+  ArrowTrendingUpIcon,
+  LightBulbIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline';
+import { AILearningService } from '../services/aiLearningService';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-interface AnalyticsData {
-  messageCount: number;
-  activeUsers: number;
-  responseTime: number;
-  sentimentScore: number;
-  topTopics: Array<{ topic: string; count: number }>;
-  hourlyActivity: Array<{ hour: number; count: number }>;
-  userEngagement: Array<{ user: string; messages: number }>;
-  sentimentDistribution: Array<{ sentiment: string; percentage: number }>;
+interface AdvancedAnalyticsProps {
+  projectId: string;
 }
 
-const AdvancedAnalytics: React.FC = () => {
+interface AnalyticsData {
+  totalFiles: number;
+  totalKnowledge: number;
+  averageConfidence: number;
+  mostAnalyzedFiles: string[];
+  topKeywords: string[];
+  sentimentDistribution: {
+    positive: number;
+    neutral: number;
+    negative: number;
+  };
+  knowledgeGrowthRate: number;
+  modelPerformance: {
+    accuracy: number;
+    precision: number;
+    recall: number;
+    f1Score: number;
+  };
+  recommendations: string[];
+  recentActivity: Array<{
+    id: string;
+    type: 'file_upload' | 'analysis' | 'learning' | 'knowledge_add';
+    description: string;
+    timestamp: string;
+    status: 'success' | 'warning' | 'error';
+  }>;
+}
+
+const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ projectId }) => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('24h');
-  const [selectedMetric, setSelectedMetric] = useState('overview');
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'trends' | 'insights'>('overview');
+
+  const aiLearningService = AILearningService.getInstance();
 
   useEffect(() => {
-    fetchAnalyticsData();
-  }, [timeRange]);
+    loadAnalyticsData();
+  }, [projectId]);
 
-  const fetchAnalyticsData = async () => {
+  const loadAnalyticsData = async () => {
+    setIsLoading(true);
     try {
-      setLoading(true);
-      // 실제 API 호출로 대체
-      const mockData: AnalyticsData = {
-        messageCount: 1247,
-        activeUsers: 23,
-        responseTime: 2.3,
-        sentimentScore: 0.75,
-        topTopics: [
-          { topic: '프로젝트 진행', count: 156 },
-          { topic: '일정 조율', count: 134 },
-          { topic: '기술 논의', count: 98 },
-          { topic: '회의 준비', count: 87 },
-          { topic: '리소스 할당', count: 76 }
-        ],
-        hourlyActivity: Array.from({ length: 24 }, (_, i) => ({
-          hour: i,
-          count: Math.floor(Math.random() * 50) + 10
-        })),
-        userEngagement: [
-          { user: '김철수', messages: 234 },
-          { user: '이영희', messages: 198 },
-          { user: '박민수', messages: 156 },
-          { user: '정수진', messages: 134 },
-          { user: '최동욱', messages: 98 }
-        ],
-        sentimentDistribution: [
-          { sentiment: '긍정', percentage: 65 },
-          { sentiment: '중립', percentage: 25 },
-          { sentiment: '부정', percentage: 10 }
-        ]
-      };
-
-      setAnalyticsData(mockData);
+      const data = await aiLearningService.getAdvancedAnalytics(projectId);
+      setAnalyticsData(data);
     } catch (error) {
       console.error('분석 데이터 로드 실패:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const getMetricCard = (title: string, value: string | number, change?: number, unit?: string) => (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {value}{unit}
-          </p>
-        </div>
-        {change !== undefined && (
-          <div className={`text-sm font-medium ${change > 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-            {change > 0 ? '+' : ''}{change}%
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const hourlyActivityData = {
-    labels: analyticsData?.hourlyActivity.map(h => `${h.hour}시`) || [],
-    datasets: [{
-      label: '메시지 수',
-      data: analyticsData?.hourlyActivity.map(h => h.count) || [],
-      borderColor: 'rgb(59, 130, 246)',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      tension: 0.4
-    }]
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <CheckCircleIcon className="w-4 h-4 text-green-500" />;
+      case 'warning':
+        return <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500" />;
+      case 'error':
+        return <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />;
+      default:
+        return <InformationCircleIcon className="w-4 h-4 text-blue-500" />;
+    }
   };
 
-  const topTopicsData = {
-    labels: analyticsData?.topTopics.map(t => t.topic) || [],
-    datasets: [{
-      label: '대화 수',
-      data: analyticsData?.topTopics.map(t => t.count) || [],
-      backgroundColor: [
-        'rgba(59, 130, 246, 0.8)',
-        'rgba(16, 185, 129, 0.8)',
-        'rgba(245, 158, 11, 0.8)',
-        'rgba(239, 68, 68, 0.8)',
-        'rgba(139, 92, 246, 0.8)'
-      ]
-    }]
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'file_upload':
+        return <DocumentTextIcon className="w-4 h-4" />;
+      case 'analysis':
+        return <ChartBarIcon className="w-4 h-4" />;
+      case 'learning':
+        return <LightBulbIcon className="w-4 h-4" />;
+      case 'knowledge_add':
+        return <InformationCircleIcon className="w-4 h-4" />;
+      default:
+        return <ClockIcon className="w-4 h-4" />;
+    }
   };
 
-  const sentimentData = {
-    labels: analyticsData?.sentimentDistribution.map(s => s.sentiment) || [],
-    datasets: [{
-      data: analyticsData?.sentimentDistribution.map(s => s.percentage) || [],
-      backgroundColor: [
-        'rgba(16, 185, 129, 0.8)',
-        'rgba(156, 163, 175, 0.8)',
-        'rgba(239, 68, 68, 0.8)'
-      ]
-    }]
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-gray-600">분석 데이터를 로드하는 중...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analyticsData) {
+    return (
+      <div className="text-center py-8">
+        <ChartBarIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+        <p className="text-gray-500">분석 데이터를 불러올 수 없습니다.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">고급 분석 대시보드</h2>
-          <p className="text-gray-600">실시간 대화 분석 및 인사이트</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="1h">최근 1시간</option>
-            <option value="24h">최근 24시간</option>
-            <option value="7d">최근 7일</option>
-            <option value="30d">최근 30일</option>
-          </select>
-        </div>
+      {/* 탭 네비게이션 */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { id: 'overview', name: '개요', icon: ChartBarIcon },
+            { id: 'performance', name: '성능', icon: ArrowTrendingUpIcon },
+            { id: 'trends', name: '트렌드', icon: ArrowTrendingUpIcon },
+            { id: 'insights', name: '인사이트', icon: LightBulbIcon }
+          ].map((tab) => {
+            const IconComponent = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <IconComponent className="w-4 h-4" />
+                <span>{tab.name}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* 주요 지표 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {getMetricCard('총 메시지 수', analyticsData?.messageCount || 0, 12)}
-        {getMetricCard('활성 사용자', analyticsData?.activeUsers || 0, 8)}
-        {getMetricCard('평균 응답 시간', `${analyticsData?.responseTime || 0}`, -5, '초')}
-        {getMetricCard('감정 점수', `${Math.round((analyticsData?.sentimentScore || 0) * 100)}`, 15, '%')}
-      </div>
-
-      {/* 차트 영역 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 시간별 활동 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">시간별 활동</h3>
-          <div className="h-64">
-            <Line
-              data={hourlyActivityData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false
-                  }
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true
-                  }
-                }
-              }}
-            />
-          </div>
-        </div>
-
-        {/* 인기 토픽 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">인기 토픽</h3>
-          <div className="h-64">
-            <Bar
-              data={topTopicsData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false
-                  }
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true
-                  }
-                }
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 추가 분석 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 감정 분포 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">감정 분포</h3>
-          <div className="h-64">
-            <Doughnut
-              data={sentimentData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'bottom'
-                  }
-                }
-              }}
-            />
-          </div>
-        </div>
-
-        {/* 사용자 참여도 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">사용자 참여도</h3>
-          <div className="space-y-4">
-            {analyticsData?.userEngagement.map((user, index) => (
-              <div key={user.user} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${index === 0 ? 'bg-yellow-500' :
-                      index === 1 ? 'bg-gray-400' :
-                        index === 2 ? 'bg-orange-500' : 'bg-blue-500'
-                    }`}>
-                    {index + 1}
-                  </div>
-                  <span className="font-medium text-gray-900">{user.user}</span>
+      {/* 개요 탭 */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* 주요 지표 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">총 파일</p>
+                  <p className="text-2xl font-bold text-gray-900">{analyticsData.totalFiles}</p>
                 </div>
-                <span className="text-gray-600">{user.messages}개 메시지</span>
+                <DocumentTextIcon className="w-8 h-8 text-blue-500" />
               </div>
-            ))}
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">지식 베이스</p>
+                  <p className="text-2xl font-bold text-gray-900">{analyticsData.totalKnowledge}</p>
+                </div>
+                <LightBulbIcon className="w-8 h-8 text-green-500" />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">평균 신뢰도</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {(analyticsData.averageConfidence * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <CheckCircleIcon className="w-8 h-8 text-yellow-500" />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">지식 성장률</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {(analyticsData.knowledgeGrowthRate * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <ArrowTrendingUpIcon className="w-8 h-8 text-purple-500" />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* 실시간 알림 */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">실시간 알림</h3>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-green-700">
-              새로운 사용자가 채팅방에 참여했습니다
-            </span>
+          {/* 감정 분포 */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">감정 분석 분포</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">긍정적</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-32 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{ width: `${analyticsData.sentimentDistribution.positive * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">
+                    {(analyticsData.sentimentDistribution.positive * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">중립적</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-32 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-yellow-500 h-2 rounded-full"
+                      style={{ width: `${analyticsData.sentimentDistribution.neutral * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">
+                    {(analyticsData.sentimentDistribution.neutral * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">부정적</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-32 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-red-500 h-2 rounded-full"
+                      style={{ width: `${analyticsData.sentimentDistribution.negative * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">
+                    {(analyticsData.sentimentDistribution.negative * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-sm text-blue-700">
-              긍정적인 감정 점수가 15% 증가했습니다
-            </span>
-          </div>
-          <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <span className="text-sm text-yellow-700">
-              평균 응답 시간이 개선되었습니다
-            </span>
+
+          {/* 최근 활동 */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 활동</h3>
+            <div className="space-y-3">
+              {analyticsData.recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  {getStatusIcon(activity.status)}
+                  <div className="flex items-center space-x-2">
+                    {getActivityIcon(activity.type)}
+                    <span className="text-sm text-gray-900">{activity.description}</span>
+                  </div>
+                  <span className="text-xs text-gray-500 ml-auto">
+                    {new Date(activity.timestamp).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* 성능 탭 */}
+      {activeTab === 'performance' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">모델 성능</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {(analyticsData.modelPerformance.accuracy * 100).toFixed(1)}%
+                </p>
+                <p className="text-sm text-gray-600">정확도</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  {(analyticsData.modelPerformance.precision * 100).toFixed(1)}%
+                </p>
+                <p className="text-sm text-gray-600">정밀도</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-yellow-600">
+                  {(analyticsData.modelPerformance.recall * 100).toFixed(1)}%
+                </p>
+                <p className="text-sm text-gray-600">재현율</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">
+                  {(analyticsData.modelPerformance.f1Score * 100).toFixed(1)}%
+                </p>
+                <p className="text-sm text-gray-600">F1 점수</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 트렌드 탭 */}
+      {activeTab === 'trends' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">주요 키워드</h3>
+            <div className="flex flex-wrap gap-2">
+              {analyticsData.topKeywords.map((keyword, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                >
+                  {keyword}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">가장 많이 분석된 파일</h3>
+            <div className="space-y-2">
+              {analyticsData.mostAnalyzedFiles.map((file, index) => (
+                <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                  <DocumentTextIcon className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-900">{file}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 인사이트 탭 */}
+      {activeTab === 'insights' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 추천사항</h3>
+            <div className="space-y-3">
+              {analyticsData.recommendations.map((recommendation, index) => (
+                <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                  <LightBulbIcon className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <span className="text-sm text-blue-800">{recommendation}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

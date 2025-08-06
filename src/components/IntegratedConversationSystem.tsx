@@ -380,9 +380,14 @@ const IntegratedConversationSystem: React.FC<IntegratedConversationSystemProps> 
 
         // 실제로는 AI API 호출
         const response = {
-            confidence: Math.floor(Math.random() * 40) + 60,
-            message: selectedFormat,
-            status: 'success' as const
+            type: 'conversation' as const,
+            data: selectedFormat,
+            metadata: {
+                confidence: Math.floor(Math.random() * 40) + 60,
+                processingTime: 1000,
+                model: 'ai-model',
+                tokens: 150
+            }
         };
 
         // 메시지 업데이트
@@ -393,7 +398,13 @@ const IntegratedConversationSystem: React.FC<IntegratedConversationSystemProps> 
         ));
 
         if (onMessageGenerated) {
-            onMessageGenerated(response);
+            // AIResponse 타입에 맞게 변환
+            const aiResponse: AIResponse = {
+                message: response.data,
+                confidence: response.metadata.confidence,
+                status: 'success'
+            };
+            onMessageGenerated(aiResponse);
         }
     };
 
@@ -434,6 +445,7 @@ const IntegratedConversationSystem: React.FC<IntegratedConversationSystemProps> 
                             value={customStartDate}
                             onChange={(e) => setCustomStartDate(e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            aria-label="시작 날짜"
                         />
                         <span className="text-gray-500">~</span>
                         <input
@@ -441,6 +453,7 @@ const IntegratedConversationSystem: React.FC<IntegratedConversationSystemProps> 
                             value={customEndDate}
                             onChange={(e) => setCustomEndDate(e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            aria-label="종료 날짜"
                         />
                     </div>
                 </div>

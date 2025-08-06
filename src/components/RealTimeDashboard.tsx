@@ -1,264 +1,300 @@
 import React, { useState, useEffect } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { Activity, Brain, MessageCircle, TrendingUp, Zap, Database } from 'lucide-react';
 
-interface DashboardMetrics {
-    activeUsers: number;
-    totalMessages: number;
-    averageResponseTime: number;
-    sentimentScore: number;
-    topKeywords: string[];
-    recentActivity: Array<{
-        user: string;
-        action: string;
-        timestamp: string;
-    }>;
+interface RealtimeData {
+    current_time: string;
+    active_sessions: number;
+    messages_per_minute: number;
+    ai_processing_queue: number;
+    system_load: {
+        cpu: number;
+        memory: number;
+        ai_models: number;
+    };
+    emotion_distribution: {
+        positive: number;
+        neutral: number;
+        negative: number;
+    };
+    learning_stats: {
+        files_processed: number;
+        knowledge_entries: number;
+        model_updates: number;
+    };
 }
 
-const RealTimeDashboard: React.FC = () => {
-    const [metrics, setMetrics] = useState<DashboardMetrics>({
-        activeUsers: 0,
-        totalMessages: 0,
-        averageResponseTime: 0,
-        sentimentScore: 0,
-        topKeywords: [],
-        recentActivity: []
-    });
+interface RealTimeDashboardProps {
+    isVisible?: boolean;
+    onClose?: () => void;
+}
 
-    const [isConnected, setIsConnected] = useState(false);
-    const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+const RealTimeDashboard: React.FC<RealTimeDashboardProps> = ({
+    isVisible = false,
+    onClose
+}) => {
+    const [realtimeData, setRealtimeData] = useState<RealtimeData | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const { messages: wsMessages, isConnected: wsConnected } = useWebSocket({
-        url: 'ws://localhost:8000',
-        clientId: 'dashboard',
-        autoReconnect: true
-    });
+    const fetchRealtimeData = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const response = await fetch('http://localhost:8000/api/v7/analytics/realtime');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'success') {
+                    setRealtimeData(data.realtime_data);
+                }
+            }
+        } catch (err) {
+            setError('실시간 데이터를 가져오는 중 오류가 발생했습니다.');
+            console.error('실시간 분석 데이터 오류:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        setIsConnected(wsConnected);
-    }, [wsConnected]);
+        if (isVisible) {
+            fetchRealtimeData();
 
-    useEffect(() => {
-        // 실시간 메트릭 업데이트 시뮬레이션
-        const interval = setInterval(() => {
-            setMetrics(prev => ({
-                ...prev,
-                activeUsers: Math.floor(Math.random() * 50) + 10,
-                totalMessages: prev.totalMessages + Math.floor(Math.random() * 5) + 1,
-                averageResponseTime: Math.random() * 5 + 1,
-                sentimentScore: Math.random() * 100,
-                topKeywords: ['프로젝트', '회의', '일정', '리소스', '기술'].sort(() => Math.random() - 0.5).slice(0, 5),
-                recentActivity: [
-                    {
-                        user: '김철수',
-                        action: '새 메시지 전송',
-                        timestamp: new Date().toISOString()
-                    },
-                    {
-                        user: '이영희',
-                        action: '파일 업로드',
-                        timestamp: new Date(Date.now() - 30000).toISOString()
-                    },
-                    {
-                        user: '박민수',
-                        action: '이모티콘 반응',
-                        timestamp: new Date(Date.now() - 60000).toISOString()
-                    }
-                ]
-            }));
-            setLastUpdate(new Date());
-        }, 5000);
+            // 5초마다 데이터 업데이트
+            const interval = setInterval(fetchRealtimeData, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [isVisible]);
 
-        return () => clearInterval(interval);
-    }, []);
-
-    const getStatusColor = (score: number) => {
-        if (score >= 80) return 'text-green-600';
-        if (score >= 60) return 'text-yellow-600';
-        return 'text-red-600';
+    const formatTime = (isoString: string) => {
+        return new Date(isoString).toLocaleTimeString('ko-KR');
     };
 
-    const getStatusIcon = (score: number) => {
-        if (score >= 80) return '🟢';
-        if (score >= 60) return '🟡';
-        return '🔴';
+    const getEmotionColor = (emotion: string) => {
+        switch (emotion) {
+            case 'positive': return 'text-green-600';
+            case 'negative': return 'text-red-600';
+            default: return 'text-gray-600';
+        }
     };
 
-    const formatTime = (timestamp: string) => {
-        return new Date(timestamp).toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
+    const getLoadColor = (load: number) => {
+        if (load < 0.3) return 'bg-green-500';
+        if (load < 0.7) return 'bg-yellow-500';
+        return 'bg-red-500';
     };
+
+    const getProgressBarWidth = (load: number) => `${load * 100}%`;
+
+    if (!isVisible) return null;
 
     return (
-        <div className="space-y-6">
-            {/* 헤더 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">실시간 대시보드</h2>
-                    <p className="text-gray-600">
-                        마지막 업데이트: {lastUpdate.toLocaleTimeString('ko-KR')}
-                    </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-sm text-gray-600">
-                        {isConnected ? '실시간 연결됨' : '연결 끊김'}
-                    </span>
-                </div>
-            </div>
-
-            {/* 주요 지표 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">활성 사용자</p>
-                            <p className="text-2xl font-bold text-gray-900">{metrics.activeUsers}명</p>
-                        </div>
-                        <div className="text-3xl">👥</div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto m-4">
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                            <Activity className="mr-2" size={28} />
+                            실시간 AI 분석 대시보드
+                        </h2>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700 text-2xl"
+                        >
+                            ×
+                        </button>
                     </div>
-                    <div className="mt-2">
-                        <span className="text-xs text-green-600">+5%</span>
-                        <span className="text-xs text-gray-500 ml-1">지난 시간 대비</span>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">총 메시지</p>
-                            <p className="text-2xl font-bold text-gray-900">{metrics.totalMessages.toLocaleString()}</p>
-                        </div>
-                        <div className="text-3xl">💬</div>
-                    </div>
-                    <div className="mt-2">
-                        <span className="text-xs text-green-600">+12%</span>
-                        <span className="text-xs text-gray-500 ml-1">지난 시간 대비</span>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">평균 응답 시간</p>
-                            <p className="text-2xl font-bold text-gray-900">{metrics.averageResponseTime.toFixed(1)}초</p>
-                        </div>
-                        <div className="text-3xl">⏱️</div>
-                    </div>
-                    <div className="mt-2">
-                        <span className="text-xs text-red-600">-8%</span>
-                        <span className="text-xs text-gray-500 ml-1">지난 시간 대비</span>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">감정 점수</p>
-                            <p className={`text-2xl font-bold ${getStatusColor(metrics.sentimentScore)}`}>
-                                {Math.round(metrics.sentimentScore)}%
-                            </p>
-                        </div>
-                        <div className="text-3xl">{getStatusIcon(metrics.sentimentScore)}</div>
-                    </div>
-                    <div className="mt-2">
-                        <span className="text-xs text-green-600">+15%</span>
-                        <span className="text-xs text-gray-500 ml-1">지난 시간 대비</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* 실시간 활동 및 키워드 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* 실시간 활동 */}
-                <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">실시간 활동</h3>
-                    <div className="space-y-4">
-                        {metrics.recentActivity.map((activity, index) => (
-                            <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-900">{activity.user}</p>
-                                    <p className="text-xs text-gray-600">{activity.action}</p>
-                                </div>
-                                <span className="text-xs text-gray-500">{formatTime(activity.timestamp)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 인기 키워드 */}
-                <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">인기 키워드</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {metrics.topKeywords.map((keyword, index) => (
-                            <span
-                                key={index}
-                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
-                            >
-                                #{keyword}
-                            </span>
-                        ))}
-                    </div>
-                    <div className="mt-4">
-                        <p className="text-xs text-gray-500">
-                            실시간으로 업데이트되는 대화 키워드입니다.
+                    {realtimeData && (
+                        <p className="text-sm text-gray-600 mt-2">
+                            마지막 업데이트: {formatTime(realtimeData.current_time)}
                         </p>
-                    </div>
+                    )}
                 </div>
-            </div>
 
-            {/* 시스템 상태 */}
-            <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">시스템 상태</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <div>
-                            <p className="text-sm font-medium text-green-800">AI 모델</p>
-                            <p className="text-xs text-green-600">정상 작동</p>
+                <div className="p-6">
+                    {isLoading && !realtimeData && (
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="mt-2 text-gray-600">데이터를 불러오는 중...</p>
                         </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <div>
-                            <p className="text-sm font-medium text-blue-800">데이터베이스</p>
-                            <p className="text-xs text-blue-600">연결됨</p>
+                    )}
+
+                    {error && (
+                        <div className="text-center py-8">
+                            <p className="text-red-600">{error}</p>
+                            <button
+                                onClick={fetchRealtimeData}
+                                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                다시 시도
+                            </button>
                         </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <div>
-                            <p className="text-sm font-medium text-yellow-800">API 서버</p>
-                            <p className="text-xs text-yellow-600">응답 지연</p>
+                    )}
+
+                    {realtimeData && (
+                        <div className="space-y-6">
+                            {/* 시스템 상태 */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                    <div className="flex items-center">
+                                        <MessageCircle className="text-blue-600 mr-2" size={20} />
+                                        <div>
+                                            <p className="text-sm text-gray-600">활성 세션</p>
+                                            <p className="text-xl font-bold text-blue-600">
+                                                {realtimeData.active_sessions}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-green-50 p-4 rounded-lg">
+                                    <div className="flex items-center">
+                                        <TrendingUp className="text-green-600 mr-2" size={20} />
+                                        <div>
+                                            <p className="text-sm text-gray-600">분당 메시지</p>
+                                            <p className="text-xl font-bold text-green-600">
+                                                {realtimeData.messages_per_minute}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-purple-50 p-4 rounded-lg">
+                                    <div className="flex items-center">
+                                        <Brain className="text-purple-600 mr-2" size={20} />
+                                        <div>
+                                            <p className="text-sm text-gray-600">AI 처리 대기</p>
+                                            <p className="text-xl font-bold text-purple-600">
+                                                {realtimeData.ai_processing_queue}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-orange-50 p-4 rounded-lg">
+                                    <div className="flex items-center">
+                                        <Database className="text-orange-600 mr-2" size={20} />
+                                        <div>
+                                            <p className="text-sm text-gray-600">지식 항목</p>
+                                            <p className="text-xl font-bold text-orange-600">
+                                                {realtimeData.learning_stats.knowledge_entries}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 시스템 부하 */}
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                                    <Zap className="mr-2" size={20} />
+                                    시스템 부하
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-sm text-gray-600">CPU</span>
+                                            <span className="text-sm font-medium">
+                                                {(realtimeData.system_load.cpu * 100).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div
+                                                className={`h-2 rounded-full ${getLoadColor(realtimeData.system_load.cpu)}`}
+                                                style={{ width: getProgressBarWidth(realtimeData.system_load.cpu) }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-sm text-gray-600">메모리</span>
+                                            <span className="text-sm font-medium">
+                                                {(realtimeData.system_load.memory * 100).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div
+                                                className={`h-2 rounded-full ${getLoadColor(realtimeData.system_load.memory)}`}
+                                                style={{ width: getProgressBarWidth(realtimeData.system_load.memory) }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-sm text-gray-600">AI 모델</span>
+                                            <span className="text-sm font-medium">
+                                                {(realtimeData.system_load.ai_models * 100).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div
+                                                className={`h-2 rounded-full ${getLoadColor(realtimeData.system_load.ai_models)}`}
+                                                style={{ width: getProgressBarWidth(realtimeData.system_load.ai_models) }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 감정 분포 */}
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <h3 className="text-lg font-semibold mb-4">감정 분포</h3>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {Object.entries(realtimeData.emotion_distribution).map(([emotion, value]) => (
+                                        <div key={emotion} className="text-center">
+                                            <div className={`text-2xl font-bold ${getEmotionColor(emotion)}`}>
+                                                {(value * 100).toFixed(1)}%
+                                            </div>
+                                            <div className="text-sm text-gray-600 capitalize">
+                                                {emotion === 'positive' ? '긍정' : emotion === 'negative' ? '부정' : '중립'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 학습 통계 */}
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <h3 className="text-lg font-semibold mb-4">AI 학습 통계</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="text-center">
+                                        <div className="text-2xl font-bold text-blue-600">
+                                            {realtimeData.learning_stats.files_processed}
+                                        </div>
+                                        <div className="text-sm text-gray-600">처리된 파일</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-2xl font-bold text-green-600">
+                                            {realtimeData.learning_stats.knowledge_entries}
+                                        </div>
+                                        <div className="text-sm text-gray-600">지식 항목</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-2xl font-bold text-purple-600">
+                                            {realtimeData.learning_stats.model_updates}
+                                        </div>
+                                        <div className="text-sm text-gray-600">모델 업데이트</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-            </div>
 
-            {/* 실시간 알림 */}
-            <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">실시간 알림</h3>
-                <div className="space-y-3">
-                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm text-blue-700">
-                            새로운 사용자가 채팅방에 참여했습니다
-                        </span>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm text-green-700">
-                            긍정적인 감정 점수가 15% 증가했습니다
-                        </span>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-                        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm text-yellow-700">
-                            평균 응답 시간이 개선되었습니다
-                        </span>
+                <div className="p-4 border-t border-gray-200 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center text-sm text-gray-600">
+                            <div className={`w-2 h-2 rounded-full mr-2 ${realtimeData ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                            {realtimeData ? '연결됨' : '연결 끊김'}
+                        </div>
+                        <button
+                            onClick={fetchRealtimeData}
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        >
+                            새로고침
+                        </button>
                     </div>
                 </div>
             </div>
@@ -266,4 +302,4 @@ const RealTimeDashboard: React.FC = () => {
     );
 };
 
-export default RealTimeDashboard; 
+export default RealTimeDashboard;

@@ -1,0 +1,3645 @@
+import React, { useState } from 'react';
+import './App.css';
+import VoiceIntegrationTest from './components/VoiceIntegrationTest';
+import ProjectRouter from './components/ProjectRouter';
+
+// 프로젝트 관련 타입 정의
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  lastActivity: string;
+  messageCount: number;
+  files: ProjectFile[];
+  guidelines: ProjectGuideline[];
+  settings: ProjectSettings;
+  archived: boolean;
+}
+
+interface ProjectFile {
+  id: string;
+  name: string;
+  type: 'document' | 'image' | 'video' | 'audio' | 'spreadsheet' | 'presentation';
+  size: number;
+  uploadedAt: string;
+  url: string;
+  description?: string;
+}
+
+interface ProjectGuideline {
+  id: string;
+  title: string;
+  content: string;
+  type: 'basic' | 'technical' | 'process' | 'reference';
+  createdAt: string;
+  priority: 'low' | 'medium' | 'high';
+}
+
+interface ProjectSettings {
+  theme: 'light' | 'dark' | 'auto';
+  language: string;
+  aiModel: string;
+  autoSave: boolean;
+  collaboration: boolean;
+}
+
+// 채팅 관련 타입 정의
+interface Chat {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  messages: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+  status: 'active' | 'archived' | 'completed';
+  tags: string[];
+  participants: string[];
+}
+
+interface ChatMessage {
+  id: string;
+  projectId: string;
+  chatId: string;
+  content: string;
+  sender: string;
+  timestamp: string;
+  type: 'question' | 'answer' | 'system' | 'file' | 'image';
+  isUser: boolean;
+  replyTo?: string;
+  edited?: boolean;
+  attachments?: Array<{
+    id: string;
+    name: string;
+    type: 'image' | 'file' | 'document';
+    url: string;
+  }>;
+  metadata?: {
+    confidence?: number;
+    processingTime?: number;
+    modelUsed?: string;
+  };
+}
+
+function App() {
+  const [inputValue, setInputValue] = useState('');
+  const [messages, setMessages] = useState<Array<{
+    id: string;
+    content: string;
+    isUser: boolean;
+    timestamp: Date;
+    type?: 'text' | 'chart' | 'data' | 'analysis';
+  }>>([]);
+
+  // 프로젝트 관련 상태
+  const [projects, setProjects] = useState<Project[]>([
+    {
+      id: '1',
+      name: '부동산 개발 프로젝트',
+      description: '강남구 재개발 사업 분석 및 계획',
+      createdAt: '2024-01-15',
+      lastActivity: '2024-01-20',
+      messageCount: 45,
+      files: [
+        {
+          id: '1',
+          name: '개발계획서.pdf',
+          type: 'document',
+          size: 2048576,
+          uploadedAt: '2024-01-16',
+          url: '#',
+          description: '부동산 개발 상세 계획서'
+        },
+        {
+          id: '2',
+          name: '시장분석.xlsx',
+          type: 'spreadsheet',
+          size: 512000,
+          uploadedAt: '2024-01-17',
+          url: '#',
+          description: '시장 동향 분석 데이터'
+        }
+      ],
+      guidelines: [
+        {
+          id: '1',
+          title: '개발 가이드라인',
+          content: '부동산 개발 시 준수해야 할 기본 가이드라인',
+          type: 'basic',
+          createdAt: '2024-01-15',
+          priority: 'high'
+        },
+        {
+          id: '2',
+          title: '환경영향평가 절차',
+          content: '환경영향평가 수행 시 필요한 절차와 준비사항',
+          type: 'process',
+          createdAt: '2024-01-16',
+          priority: 'medium'
+        }
+      ],
+      settings: {
+        theme: 'light',
+        language: 'ko',
+        aiModel: 'gpt-4',
+        autoSave: true,
+        collaboration: true
+      },
+      archived: false
+    },
+    {
+      id: '2',
+      name: '도시정비 사업',
+      description: '서초구 도시정비사업 추진 계획',
+      createdAt: '2024-01-10',
+      lastActivity: '2024-01-19',
+      messageCount: 32,
+      files: [
+        {
+          id: '3',
+          name: '정비계획.pdf',
+          type: 'document',
+          size: 1536000,
+          uploadedAt: '2024-01-11',
+          url: '#',
+          description: '도시정비사업 기본 계획'
+        }
+      ],
+      guidelines: [
+        {
+          id: '3',
+          title: '정비사업 절차',
+          content: '도시정비사업 추진 시 필요한 법적 절차',
+          type: 'process',
+          createdAt: '2024-01-10',
+          priority: 'high'
+        }
+      ],
+      settings: {
+        theme: 'light',
+        language: 'ko',
+        aiModel: 'gpt-4',
+        autoSave: true,
+        collaboration: false
+      },
+      archived: false
+    }
+  ]);
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [newChatTitle, setNewChatTitle] = useState('');
+  const [newChatDescription, setNewChatDescription] = useState('');
+  const [currentView, setCurrentView] = useState<'chat' | 'project-list' | 'chat-list' | 'project-detail'>('chat');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  // 채팅 관련 상태
+  const [chats, setChats] = useState<Chat[]>([
+    {
+      id: '1',
+      projectId: '1',
+      title: '부동산 개발 분석',
+      description: '부동산 개발 프로젝트 관련 분석 및 논의',
+      messages: [
+        {
+          id: '1',
+          projectId: '1',
+          chatId: '1',
+          content: '부동산 개발 프로젝트 분석을 시작하겠습니다.',
+          sender: 'CORBU AI',
+          timestamp: '2024-01-20T10:00:00Z',
+          type: 'system',
+          isUser: false
+        },
+        {
+          id: '2',
+          projectId: '1',
+          chatId: '1',
+          content: '시장 분석 결과를 확인해주세요.',
+          sender: 'User',
+          timestamp: '2024-01-20T10:05:00Z',
+          type: 'question',
+          isUser: true
+        }
+      ],
+      createdAt: '2024-01-20',
+      updatedAt: '2024-01-20',
+      isActive: true,
+      status: 'active',
+      tags: ['부동산', '개발', '분석'],
+      participants: ['User', 'CORBU AI']
+    },
+    {
+      id: '2',
+      projectId: '1',
+      title: '프로젝트 생성 채팅',
+      description: '새 프로젝트 생성 관련 채팅',
+      messages: [
+        {
+          id: '3',
+          projectId: '1',
+          chatId: '2',
+          content: '새 프로젝트를 생성하시겠습니까?',
+          sender: 'CORBU AI',
+          timestamp: '2024-01-20T11:00:00Z',
+          type: 'system',
+          isUser: false
+        }
+      ],
+      createdAt: '2024-01-20',
+      updatedAt: '2024-01-20',
+      isActive: true,
+      status: 'active',
+      tags: ['프로젝트', '생성'],
+      participants: ['User', 'CORBU AI']
+    },
+    {
+      id: '3',
+      projectId: '2',
+      title: '도시정비 사업 채팅',
+      description: '도시정비 사업 관련 논의',
+      messages: [
+        {
+          id: '4',
+          projectId: '2',
+          chatId: '3',
+          content: '도시정비 사업 계획을 검토하겠습니다.',
+          sender: 'CORBU AI',
+          timestamp: '2024-01-19T09:00:00Z',
+          type: 'system',
+          isUser: false
+        }
+      ],
+      createdAt: '2024-01-19',
+      updatedAt: '2024-01-19',
+      isActive: true,
+      status: 'active',
+      tags: ['도시정비', '사업'],
+      participants: ['User', 'CORBU AI']
+    }
+  ]);
+
+  // 유틸리티 함수들
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (type: string): string => {
+    const icons = {
+      document: '📄',
+      image: '🖼️',
+      video: '🎥',
+      audio: '🎵',
+      spreadsheet: '📊',
+      presentation: '📽️'
+    };
+    return icons[type as keyof typeof icons] || '📄';
+  };
+
+  // 프로젝트 생성 함수
+  const createProject = (name: string, description: string) => {
+    const newProject: Project = {
+      id: Date.now().toString(),
+      name,
+      description,
+      createdAt: new Date().toISOString().split('T')[0],
+      lastActivity: new Date().toISOString().split('T')[0],
+      messageCount: 0,
+      files: [],
+      guidelines: [],
+      settings: {
+        theme: 'light',
+        language: 'ko',
+        aiModel: 'gpt-4',
+        autoSave: true,
+        collaboration: false
+      },
+      archived: false
+    };
+
+    setProjects(prev => [...prev, newProject]);
+    return newProject;
+  };
+
+  // 채팅 생성 함수
+  const createChat = (projectId: string, title: string, description: string) => {
+    const newChat: Chat = {
+      id: Date.now().toString(),
+      projectId,
+      title,
+      description,
+      messages: [
+        {
+          id: Date.now().toString(),
+          projectId,
+          chatId: Date.now().toString(),
+          content: `새로운 채팅 "${title}"이 생성되었습니다. 무엇을 도와드릴까요?`,
+          sender: 'CORBU AI',
+          timestamp: new Date().toISOString(),
+          type: 'system',
+          isUser: false
+        }
+      ],
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
+      isActive: true,
+      status: 'active',
+      tags: [],
+      participants: ['User', 'CORBU AI']
+    };
+
+    setChats(prev => [...prev, newChat]);
+    return newChat;
+  };
+
+  // 현재 선택된 프로젝트의 채팅들 가져오기
+  const getProjectChats = (projectId: string) => {
+    return chats.filter(chat => chat.projectId === projectId);
+  };
+
+  const handleSendMessage = () => {
+    if (!inputValue.trim()) return;
+
+    const newMessage = {
+      id: Date.now().toString(),
+      content: inputValue,
+      isUser: true,
+      timestamp: new Date(),
+      type: 'text' as const
+    };
+
+    setMessages(prev => [...prev, newMessage]);
+    const userInput = inputValue;
+    setInputValue('');
+
+    // AI 응답 처리 (분석, 차트, 데이터 요청 감지)
+    setTimeout(() => {
+      const aiResponse = generateAIResponse(userInput);
+      setMessages(prev => [...prev, aiResponse]);
+    }, 1000);
+  };
+
+  const generateAIResponse = (userInput: string): {
+    id: string;
+    content: string;
+    isUser: boolean;
+    timestamp: Date;
+    type: 'text' | 'chart' | 'data' | 'analysis';
+  } => {
+    const lowerInput = userInput.toLowerCase();
+
+    // 분석 요청 감지
+    if (lowerInput.includes('분석') || lowerInput.includes('analyze') || lowerInput.includes('분석해')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📊 분석 결과\n\n${userInput}에 대한 분석을 수행했습니다.\n\n• 데이터 패턴: 상승 추세\n• 주요 인사이트: 3가지 발견\n• 권장사항: 최적화 필요\n\n더 자세한 분석이 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 차트 요청 감지
+    if (lowerInput.includes('차트') || lowerInput.includes('chart') || lowerInput.includes('그래프')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📈 차트 데이터\n\n${userInput}에 대한 차트를 생성했습니다.\n\n📊 월별 성과 차트\n├── 1월: 85%\n├── 2월: 92%\n├── 3월: 88%\n└── 4월: 95%\n\n차트 데이터를 다운로드하거나 다른 형태로 보시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'chart'
+      };
+    }
+
+    // 데이터 요청 감지
+    if (lowerInput.includes('데이터') || lowerInput.includes('data') || lowerInput.includes('통계')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📋 데이터 요약\n\n${userInput}에 대한 데이터를 수집했습니다.\n\n주요 지표:\n• 총 데이터: 1,247개\n• 평균값: 73.5\n• 표준편차: 12.3\n• 최대값: 98.2\n• 최소값: 45.1\n\n특정 데이터 필터링이나 추가 분석이 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'data'
+      };
+    }
+
+    // 협업 요청 감지
+    if (lowerInput.includes('협업') || lowerInput.includes('collaboration') || lowerInput.includes('팀')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `👥 협업 기능\n\n${userInput}에 대한 협업 세션을 설정했습니다.\n\n🤝 협업 정보:\n• 참여자: 5명\n• 권한: 편집 가능\n• 실시간 동기화: 활성화\n• 변경 이력: 추적 중\n\n새로운 팀원을 초대하거나 권한을 변경하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 보안 분석 요청 감지
+    if (lowerInput.includes('보안') || lowerInput.includes('security') || lowerInput.includes('취약점')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🔒 보안 분석 결과\n\n${userInput}에 대한 보안 분석을 수행했습니다.\n\n🛡️ 보안 상태:\n• 전체 점수: 85/100\n• 위험도: 낮음\n• 발견된 취약점: 2개\n• 권장 조치: 3가지\n\n보안 강화를 위한 상세한 권장사항을 제공하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 성능 최적화 요청 감지
+    if (lowerInput.includes('성능') || lowerInput.includes('performance') || lowerInput.includes('최적화')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `⚡ 성능 최적화 결과\n\n${userInput}에 대한 성능 최적화를 수행했습니다.\n\n📈 성능 개선:\n• 응답 시간: 2.3초 → 1.1초 (52% 개선)\n• 처리량: 1,000건/분 → 2,100건/분 (110% 증가)\n• 메모리 사용량: 45% → 28% (38% 감소)\n• CPU 사용률: 78% → 52% (33% 감소)\n\n추가 최적화가 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 카드뉴스 생성 요청 감지
+    if (lowerInput.includes('카드뉴스') || lowerInput.includes('cardnews') || lowerInput.includes('카드')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📱 카드뉴스 생성\n\n${userInput}에 대한 카드뉴스를 생성했습니다.\n\n📋 카드 구성:\n• 카드 1: 주요 제목\n• 카드 2: 핵심 내용\n• 카드 3: 데이터 시각화\n• 카드 4: 결론 및 액션\n\n카드뉴스를 다운로드하거나 공유하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 감정 분석 요청 감지
+    if (lowerInput.includes('감정') || lowerInput.includes('emotion') || lowerInput.includes('기분')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `😊 감정 분석 결과\n\n${userInput}에 대한 감정 분석을 수행했습니다.\n\n📊 감정 분포:\n• 긍정: 65%\n• 중립: 25%\n• 부정: 10%\n\n주요 감정 키워드:\n• 기대, 희망, 만족\n\n감정 변화 추이를 확인하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 언어 번역 요청 감지
+    if (lowerInput.includes('번역') || lowerInput.includes('translate') || lowerInput.includes('언어')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🌐 언어 번역 결과\n\n${userInput}에 대한 번역을 완료했습니다.\n\n📝 번역 결과:\n• 원문: ${userInput}\n• 영어: Translated content\n• 일본어: 翻訳された内容\n• 중국어: 翻译内容\n\n다른 언어로 번역하거나 발음을 확인하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 음성 변환 요청 감지
+    if (lowerInput.includes('음성') || lowerInput.includes('voice') || lowerInput.includes('tts')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🎤 음성 변환 완료\n\n${userInput}를 음성으로 변환했습니다.\n\n🔊 음성 설정:\n• 언어: 한국어\n• 속도: 보통\n• 톤: 자연스러움\n• 볼륨: 적당함\n\n음성을 재생하거나 다운로드하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 코드 생성 요청 감지
+    if (lowerInput.includes('코드') || lowerInput.includes('code') || lowerInput.includes('프로그램')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `💻 코드 생성 완료\n\n${userInput}에 대한 코드를 생성했습니다.\n\n코드 예시:\nfunction example() {\n  console.log("Hello World");\n  return true;\n}\n\n코드를 복사하거나 다른 언어로 변환하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 머신러닝 모델 관리 요청 감지
+    if (lowerInput.includes('머신러닝') || lowerInput.includes('machine learning') || lowerInput.includes('모델')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🤖 머신러닝 모델 관리\n\n${userInput}에 대한 머신러닝 모델을 관리합니다.\n\n📊 모델 상태:\n• 활성 모델: 3개\n• 훈련 중: 1개\n• 성능 점수: 92.5%\n• 정확도: 89.3%\n\n모델을 새로 훈련하거나 성능을 개선하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // API 통합 요청 감지
+    if (lowerInput.includes('api') || lowerInput.includes('통합') || lowerInput.includes('연동')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🔗 API 통합 완료\n\n${userInput}에 대한 API 통합을 완료했습니다.\n\n🔌 연결된 API:\n• 외부 데이터 API: 5개\n• 인증 API: 2개\n• 결제 API: 1개\n• 알림 API: 3개\n\nAPI 상태: 정상\n응답 시간: 평균 1.2초\n\n새로운 API를 추가하거나 기존 API를 수정하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 블록체인 분석 요청 감지
+    if (lowerInput.includes('블록체인') || lowerInput.includes('blockchain') || lowerInput.includes('암호화폐')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `⛓️ 블록체인 분석 결과\n\n${userInput}에 대한 블록체인 분석을 수행했습니다.\n\n📈 블록체인 지표:\n• 총 거래량: 1,247,892건\n• 평균 블록 시간: 2.3초\n• 해시레이트: 125.7 TH/s\n• 활성 주소: 45,892개\n\n트랜잭션 패턴이나 지갑 분석이 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // IoT 데이터 분석 요청 감지
+    if (lowerInput.includes('iot') || lowerInput.includes('사물인터넷') || lowerInput.includes('센서')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📡 IoT 데이터 분석\n\n${userInput}에 대한 IoT 데이터를 분석했습니다.\n\n🌐 IoT 네트워크:\n• 연결된 디바이스: 1,247개\n• 센서 종류: 15가지\n• 데이터 수집 주기: 5분\n• 평균 배터리 수명: 8.5개월\n\n실시간 모니터링이나 알림 설정을 변경하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 양자 컴퓨팅 시뮬레이션 요청 감지
+    if (lowerInput.includes('양자') || lowerInput.includes('quantum') || lowerInput.includes('큐비트')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `⚛️ 양자 컴퓨팅 시뮬레이션\n\n${userInput}에 대한 양자 컴퓨팅 시뮬레이션을 실행했습니다.\n\n🔬 양자 상태:\n• 큐비트 수: 50개\n• 얽힘 상태: 23개\n• 양자 얽힘: 78%\n• 계산 시간: 0.3초\n\n양자 알고리즘을 최적화하거나 다른 양자 게이트를 적용하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // AR/VR 분석 요청 감지
+    if (lowerInput.includes('ar') || lowerInput.includes('vr') || lowerInput.includes('증강현실') || lowerInput.includes('가상현실')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🥽 AR/VR 분석 결과\n\n${userInput}에 대한 AR/VR 분석을 수행했습니다.\n\n🎮 AR/VR 환경:\n• 사용자 수: 1,892명\n• 평균 세션 시간: 45분\n• 상호작용률: 87%\n• 렌더링 성능: 90fps\n\n새로운 AR/VR 콘텐츠를 생성하거나 환경을 최적화하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 생체인식 보안 요청 감지
+    if (lowerInput.includes('생체') || lowerInput.includes('biometric') || lowerInput.includes('지문') || lowerInput.includes('얼굴인식')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🔐 생체인식 보안 시스템\n\n${userInput}에 대한 생체인식 보안을 설정했습니다.\n\n🆔 인식 방식:\n• 지문 인식: 99.7% 정확도\n• 얼굴 인식: 98.9% 정확도\n• 음성 인식: 97.3% 정확도\n• 홍채 인식: 99.9% 정확도\n\n보안 레벨을 조정하거나 새로운 생체 인식 방식을 추가하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 자율주행 분석 요청 감지
+    if (lowerInput.includes('자율주행') || lowerInput.includes('autonomous') || lowerInput.includes('자동차') || lowerInput.includes('드라이버')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🚗 자율주행 분석 결과\n\n${userInput}에 대한 자율주행 분석을 수행했습니다.\n\n🛣️ 주행 데이터:\n• 총 주행 거리: 15,247km\n• 안전 점수: 94.8%\n• 연료 효율성: 23.5km/l\n• 평균 속도: 45km/h\n\n경로 최적화나 안전 시스템을 개선하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 부동산 분석 요청 감지
+    if (lowerInput.includes('부동산') || lowerInput.includes('real estate') || lowerInput.includes('아파트') || lowerInput.includes('주택')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🏠 부동산 분석 결과\n\n${userInput}에 대한 부동산 분석을 수행했습니다.\n\n📊 시장 동향:\n• 평균 매매가: 8억 5천만원\n• 전월 대비: +2.3%\n• 전년 동월 대비: +8.7%\n• 거래량: 1,247건\n\n📍 지역별 분석:\n• 강남구: +3.2%\n• 서초구: +2.8%\n• 송파구: +1.9%\n\n투자 가이드나 상세 분석이 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis' as const
+      };
+    }
+
+    // 도시정비 분석 요청 감지
+    if (lowerInput.includes('도시정비') || lowerInput.includes('urban') || lowerInput.includes('재개발') || lowerInput.includes('재건축')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🏗️ 도시정비 분석 결과\n\n${userInput}에 대한 도시정비 분석을 수행했습니다.\n\n📈 정비사업 현황:\n• 진행 중인 사업: 247개\n• 완료된 사업: 892개\n• 예정 사업: 156개\n• 총 투자금액: 12조 5천억원\n\n🏘️ 사업 유형별:\n• 재개발: 45%\n• 재건축: 38%\n• 도시환경정비: 17%\n\n사업 진행률이나 투자 분석이 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis' as const
+      };
+    }
+
+    // 여론분석 요청 감지
+    if (lowerInput.includes('여론') || lowerInput.includes('public opinion') || lowerInput.includes('시민') || lowerInput.includes('주민')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📊 여론분석 결과\n\n${userInput}에 대한 여론분석을 수행했습니다.\n\n👥 응답자 현황:\n• 총 응답자: 2,847명\n• 유효 응답률: 89.3%\n• 조사 기간: 2024년 1월 15일~22일\n\n📈 찬반 비율:\n• 찬성: 67.3%\n• 반대: 23.8%\n• 중립: 8.9%\n\n💬 주요 의견:\n• "개발로 인한 편의시설 확충 기대" (42%)\n• "교통 혼잡 우려" (28%)\n• "환경 보호 필요" (18%)\n• "기타" (12%)\n\n상세 분석이나 추가 조사가 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis' as const
+      };
+    }
+
+    // 시공사선정 요청 감지
+    if (lowerInput.includes('시공사') || lowerInput.includes('contractor') || lowerInput.includes('건설사') || lowerInput.includes('입찰')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🏢 시공사 선정 분석\n\n${userInput}에 대한 시공사 선정 분석을 수행했습니다.\n\n📋 선정 기준:\n• 기술력: 30%\n• 경험: 25%\n• 가격: 25%\n• 안전성: 20%\n\n🏆 상위 후보사:\n\n1. ㈜대한건설\n   • 기술점수: 92/100\n   • 경험점수: 95/100\n   • 가격점수: 88/100\n   • 종합점수: 91.5/100\n\n2. ㈜한국건설\n   • 기술점수: 89/100\n   • 경험점수: 92/100\n   • 가격점수: 92/100\n   • 종합점수: 90.8/100\n\n3. ㈜현대건설\n   • 기술점수: 90/100\n   • 경험점수: 88/100\n   • 가격점수: 90/100\n   • 종합점수: 89.5/100\n\n상세 평가나 추가 검토가 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis' as const
+      };
+    }
+
+    // 토지이용계획 요청 감지
+    if (lowerInput.includes('토지이용') || lowerInput.includes('land use') || lowerInput.includes('용도지역') || lowerInput.includes('지구단위')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🗺️ 토지이용계획 분석\n\n${userInput}에 대한 토지이용계획을 분석했습니다.\n\n📋 용도지역 현황:\n• 주거지역: 45.2%\n• 상업지역: 23.8%\n• 공업지역: 15.3%\n• 녹지지역: 12.7%\n• 기타: 3.0%\n\n🏘️ 지구단위계획:\n• 주거지구: 12개\n• 상업지구: 8개\n• 공업지구: 5개\n• 특수목적지구: 3개\n\n개발밀도나 용적률 분석이 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis' as const
+      };
+    }
+
+    // 환경영향평가 요청 감지
+    if (lowerInput.includes('환경영향') || lowerInput.includes('environmental') || lowerInput.includes('환경평가') || lowerInput.includes('EIA')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🌱 환경영향평가 결과\n\n${userInput}에 대한 환경영향평가를 수행했습니다.\n\n📊 평가 항목:\n• 대기환경: 양호 (A등급)\n• 수질환경: 양호 (A등급)\n• 소음진동: 보통 (B등급)\n• 생태계: 양호 (A등급)\n• 토양환경: 양호 (A등급)\n\n🌿 환경보전 대책:\n• 녹지 확보: 15% 이상\n• 친환경 건축자재 사용\n• 에너지 효율 설계\n• 폐기물 최소화\n\n환경영향 저감 방안이나 추가 검토가 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis' as const
+      };
+    }
+
+    // 교통영향평가 요청 감지
+    if (lowerInput.includes('교통영향') || lowerInput.includes('traffic') || lowerInput.includes('교통평가') || lowerInput.includes('TIA')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🚗 교통영향평가 결과\n\n${userInput}에 대한 교통영향평가를 수행했습니다.\n\n📊 교통량 분석:\n• 현재 교통량: 15,247대/일\n• 개발 후 예상: 18,892대/일\n• 증가율: +23.9%\n• 도로 포화도: 78.5%\n\n🚦 교통대책:\n• 도로 확폭: 2차선 → 4차선\n• 신호체계 최적화\n• 대중교통 연계\n• 주차장 확충\n\n교통 혼잡도 개선 방안이나 추가 분석이 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis' as const
+      };
+    }
+
+    // 경제성분석 요청 감지
+    if (lowerInput.includes('경제성') || lowerInput.includes('economic') || lowerInput.includes('수익성') || lowerInput.includes('투자')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `💰 경제성분석 결과\n\n${userInput}에 대한 경제성분석을 수행했습니다.\n\n📈 투자 분석:\n• 총 투자비: 2,847억원\n• 연간 수익: 892억원\n• 투자회수기간: 3.2년\n• 내부수익률(IRR): 18.5%\n• 순현재가치(NPV): +1,247억원\n\n📊 민감도 분석:\n• 최적 시나리오: +25.3%\n• 기본 시나리오: +18.5%\n• 최악 시나리오: +8.7%\n\n리스크 분석이나 추가 검토가 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 예측 분석 요청 감지
+    if (lowerInput.includes('예측') || lowerInput.includes('predict') || lowerInput.includes('미래')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🔮 예측 분석 결과\n\n${userInput}에 대한 예측 분석을 수행했습니다.\n\n📈 향후 6개월 예측:\n• 1개월 후: +15% 성장\n• 2개월 후: +22% 성장\n• 3개월 후: +18% 성장\n• 4개월 후: +25% 성장\n• 5개월 후: +20% 성장\n• 6개월 후: +28% 성장\n\n신뢰도: 87.5%\n\n더 자세한 예측이나 다른 기간에 대한 분석이 필요하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // AI 학습 요청 감지
+    if (lowerInput.includes('학습') || lowerInput.includes('learn') || lowerInput.includes('훈련')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🧠 AI 학습 진행\n\n${userInput}에 대한 AI 학습을 시작했습니다.\n\n📚 학습 과정:\n• 데이터 전처리: 완료\n• 모델 훈련: 진행 중 (75%)\n• 성능 검증: 대기 중\n• 최적화: 대기 중\n\n예상 완료 시간: 15분\n\n학습이 완료되면 자동으로 알림을 드리겠습니다.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 자동화 요청 감지
+    if (lowerInput.includes('자동화') || lowerInput.includes('automation') || lowerInput.includes('자동')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `🤖 자동화 설정\n\n${userInput}에 대한 자동화를 구성했습니다.\n\n⚙️ 자동화 규칙:\n• 데이터 수집: 매일 오전 9시\n• 분석 실행: 매주 월요일\n• 보고서 생성: 매월 1일\n• 알림 발송: 조건 충족 시\n\n자동화를 활성화하시겠습니까?\n\n설정을 변경하거나 새로운 규칙을 추가하시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 요약 요청 감지
+    if (lowerInput.includes('요약') || lowerInput.includes('summary') || lowerInput.includes('정리')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📝 요약 결과\n\n${userInput}에 대한 요약을 생성했습니다.\n\n📋 핵심 내용:\n• 주요 포인트: 5가지\n• 결론: 긍정적 결과\n• 다음 단계: 3가지 액션\n\n더 자세한 요약이나 특정 부분에 대해 알고 싶으시면 말씀해 주세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 템플릿 생성 요청 감지
+    if (lowerInput.includes('템플릿') || lowerInput.includes('template') || lowerInput.includes('양식')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📄 템플릿 생성\n\n${userInput}에 대한 템플릿을 생성했습니다.\n\n📋 템플릿 종류:\n• 보고서 템플릿\n• 분석 템플릿\n• 차트 템플릿\n• 요약 템플릿\n\n템플릿을 다운로드하거나 수정하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 내보내기 요청 감지
+    if (lowerInput.includes('내보내기') || lowerInput.includes('export') || lowerInput.includes('다운로드')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📤 내보내기 옵션\n\n${userInput}에 대한 내보내기 옵션입니다.\n\n📁 지원 형식:\n• PDF: 고품질 문서\n• Excel: 데이터 분석용\n• Word: 편집 가능한 문서\n• PNG: 이미지 파일\n\n어떤 형식으로 내보내시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 실시간 분석 요청 감지
+    if (lowerInput.includes('실시간') || lowerInput.includes('realtime') || lowerInput.includes('라이브')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `⚡ 실시간 분석\n\n${userInput}에 대한 실시간 분석을 시작했습니다.\n\n🔄 실시간 지표:\n• 현재 처리량: 1,234건/분\n• 평균 응답시간: 2.3초\n• 시스템 상태: 정상\n• 업데이트: 30초마다\n\n실시간 모니터링을 중지하시겠습니까?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'analysis'
+      };
+    }
+
+    // 파일 업로드 요청 감지
+    if (lowerInput.includes('파일') || lowerInput.includes('upload') || lowerInput.includes('업로드')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📁 파일 업로드 안내\n\n파일을 업로드하려면 다음 방법을 사용하세요:\n\n1. 사이드바의 "파일 업로드" 클릭\n2. 드래그 앤 드롭으로 파일 추가\n3. 지원 형식: PDF, DOC, XLS, 이미지\n\n업로드된 파일은 자동으로 분석되어 결과를 제공합니다.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 프로젝트 목록 요청 감지
+    if (lowerInput.includes('프로젝트') || lowerInput.includes('project') || lowerInput.includes('목록')) {
+      const projectList = projects.map(project =>
+        `• ${project.name} (${project.messageCount}개 메시지, ${project.files.length}개 파일)`
+      ).join('\n');
+
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📁 프로젝트 목록\n\n현재 활성 프로젝트:\n\n${projectList}\n\n프로젝트 상세보기: "프로젝트 상세 [프로젝트명]"\n새 프로젝트 생성: "새 프로젝트 생성"\n프로젝트 삭제: "프로젝트 삭제 [프로젝트명]"`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text' as const
+      };
+    }
+
+    // 프로젝트 상세보기 요청 감지
+    if (lowerInput.includes('프로젝트 상세') || lowerInput.includes('상세보기')) {
+      const projectName = lowerInput.replace('프로젝트 상세', '').replace('상세보기', '').trim();
+      const project = projects.find(p => p.name.toLowerCase().includes(projectName.toLowerCase()));
+
+      if (project) {
+        const fileList = project.files.map(file =>
+          `  - ${file.name} (${formatFileSize(file.size)})`
+        ).join('\n');
+
+        const guidelineList = project.guidelines.map(guideline =>
+          `  - ${guideline.title} (${guideline.priority})`
+        ).join('\n');
+
+        return {
+          id: (Date.now() + 1).toString(),
+          content: `📋 프로젝트 상세 정보\n\n🏗️ ${project.name}\n\n📝 설명: ${project.description}\n📅 생성일: ${project.createdAt}\n🕒 마지막 활동: ${project.lastActivity}\n💬 메시지 수: ${project.messageCount}개\n\n📁 파일 (${project.files.length}개):\n${fileList}\n\n📋 가이드라인 (${project.guidelines.length}개):\n${guidelineList}\n\n⚙️ 설정:\n  - 테마: ${project.settings.theme}\n  - 언어: ${project.settings.language}\n  - AI 모델: ${project.settings.aiModel}\n  - 자동저장: ${project.settings.autoSave ? '활성화' : '비활성화'}\n  - 협업: ${project.settings.collaboration ? '활성화' : '비활성화'}\n\n프로젝트 편집: "프로젝트 편집 [프로젝트명]"\n파일 업로드: "파일 업로드 [프로젝트명]"\n가이드라인 추가: "가이드라인 추가 [프로젝트명]"`,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'text' as const
+        };
+      } else {
+        return {
+          id: (Date.now() + 1).toString(),
+          content: `❌ 프로젝트를 찾을 수 없습니다.\n\n사용 가능한 프로젝트:\n${projects.map(p => `• ${p.name}`).join('\n')}\n\n정확한 프로젝트명을 입력해 주세요.`,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'text' as const
+        };
+      }
+    }
+
+    // 새 프로젝트 생성 요청 감지
+    if (lowerInput.includes('새 프로젝트') || lowerInput.includes('프로젝트 생성')) {
+      // 프로젝트명과 설명 추출 시도
+      const projectMatch = userInput.match(/프로젝트명:\s*(.+?)(?:\n|$)/i);
+      const descMatch = userInput.match(/설명:\s*(.+?)(?:\n|$)/i);
+
+      if (projectMatch && descMatch) {
+        const projectName = projectMatch[1].trim();
+        const description = descMatch[1].trim();
+
+        const newProject = createProject(projectName, description);
+
+        return {
+          id: (Date.now() + 1).toString(),
+          content: `✅ 새 프로젝트가 생성되었습니다!\n\n📁 프로젝트명: ${newProject.name}\n📝 설명: ${newProject.description}\n📅 생성일: ${newProject.createdAt}\n\n프로젝트 목록에서 확인하거나 "프로젝트 상세 ${newProject.name}"으로 상세 정보를 볼 수 있습니다.`,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'text' as const
+        };
+      } else {
+        return {
+          id: (Date.now() + 1).toString(),
+          content: `🆕 새 프로젝트 생성\n\n새 프로젝트를 생성하려면 다음 정보를 제공해 주세요:\n\n프로젝트명: [프로젝트명 입력]\n설명: [프로젝트 설명 입력]\n\n예시:\n프로젝트명: 부동산 개발 프로젝트\n설명: 강남구 재개발 사업 분석 및 계획\n\n프로젝트명과 설명을 입력해 주시면 새 프로젝트를 생성하겠습니다.`,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'text' as const
+        };
+      }
+    }
+
+    // 새 채팅 생성 요청 감지
+    if (lowerInput.includes('새 채팅') || lowerInput.includes('채팅 생성')) {
+      // 채팅 제목과 설명 추출 시도
+      const titleMatch = userInput.match(/제목:\s*(.+?)(?:\n|$)/i);
+      const descMatch = userInput.match(/설명:\s*(.+?)(?:\n|$)/i);
+
+      if (titleMatch && descMatch) {
+        const title = titleMatch[1].trim();
+        const description = descMatch[1].trim();
+        const projectId = selectedProjectId || '1'; // 기본 프로젝트 또는 선택된 프로젝트
+
+        const newChat = createChat(projectId, title, description);
+
+        return {
+          id: (Date.now() + 1).toString(),
+          content: `✅ 새 채팅이 생성되었습니다!\n\n💬 채팅명: ${newChat.title}\n📝 설명: ${newChat.description}\n📅 생성일: ${newChat.createdAt}\n\n채팅 목록에서 확인하거나 바로 대화를 시작할 수 있습니다.`,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'text' as const
+        };
+      } else {
+        return {
+          id: (Date.now() + 1).toString(),
+          content: `🆕 새 채팅 생성\n\n새 채팅을 생성하려면 다음 정보를 제공해 주세요:\n\n제목: [채팅 제목 입력]\n설명: [채팅 설명 입력]\n\n예시:\n제목: 부동산 분석 채팅\n설명: 부동산 시장 분석 및 논의\n\n제목과 설명을 입력해 주시면 새 채팅을 생성하겠습니다.`,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'text' as const
+        };
+      }
+    }
+
+    // 채팅 목록 요청 감지
+    if (lowerInput.includes('채팅 목록') || lowerInput.includes('채팅 리스트')) {
+      const chatList = chats.map(chat => {
+        const project = projects.find(p => p.id === chat.projectId);
+        return `• ${chat.title} (${project?.name || '알 수 없음'}) - ${chat.messages.length}개 메시지`;
+      }).join('\n');
+
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `💬 채팅 목록\n\n현재 활성 채팅:\n\n${chatList}\n\n채팅 상세보기: "채팅 상세 [채팅명]"\n새 채팅 생성: "새 채팅 생성"\n프로젝트별 채팅: "프로젝트 채팅 [프로젝트명]"`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text' as const
+      };
+    }
+
+    // 프로젝트별 채팅 요청 감지
+    if (lowerInput.includes('프로젝트 채팅')) {
+      const projectName = lowerInput.replace('프로젝트 채팅', '').trim();
+      const project = projects.find(p => p.name.toLowerCase().includes(projectName.toLowerCase()));
+
+      if (project) {
+        const projectChats = getProjectChats(project.id);
+        const chatList = projectChats.map(chat =>
+          `• ${chat.title} - ${chat.messages.length}개 메시지`
+        ).join('\n');
+
+        return {
+          id: (Date.now() + 1).toString(),
+          content: `📁 ${project.name} 채팅 목록\n\n${chatList || '아직 채팅이 없습니다.'}\n\n새 채팅 생성: "새 채팅 생성"\n채팅 상세보기: "채팅 상세 [채팅명]"`,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'text' as const
+        };
+      } else {
+        return {
+          id: (Date.now() + 1).toString(),
+          content: `❌ 프로젝트를 찾을 수 없습니다.\n\n사용 가능한 프로젝트:\n${projects.map(p => `• ${p.name}`).join('\n')}\n\n정확한 프로젝트명을 입력해 주세요.`,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'text' as const
+        };
+      }
+    }
+
+    // 파일 업로드 요청 감지
+    if (lowerInput.includes('파일 업로드') || lowerInput.includes('파일 추가')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📁 파일 업로드 안내\n\n파일을 업로드하려면 다음 방법을 사용하세요:\n\n1. 사이드바의 "파일 업로드" 버튼 클릭\n2. 드래그 앤 드롭으로 파일 추가\n3. 지원 형식: PDF, DOC, XLS, 이미지, 동영상\n\n업로드된 파일은 자동으로 분석되어 결과를 제공합니다.\n\n특정 프로젝트에 파일을 추가하려면:\n"파일 업로드 [프로젝트명] [파일명]" 형식으로 입력하세요.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text' as const
+      };
+    }
+
+    // 가이드라인 추가 요청 감지
+    if (lowerInput.includes('가이드라인') || lowerInput.includes('지침')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `📋 가이드라인 관리\n\n가이드라인을 추가하려면 다음 정보를 제공해 주세요:\n\n제목: [가이드라인 제목]\n내용: [가이드라인 내용]\n유형: basic/technical/process/reference\n우선순위: low/medium/high\n\n예시:\n제목: 개발 가이드라인\n내용: 부동산 개발 시 준수해야 할 기본 가이드라인\n유형: basic\n우선순위: high\n\n가이드라인 정보를 입력해 주시면 추가하겠습니다.`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text' as const
+      };
+    }
+
+    // 도움말 요청 감지
+    if (lowerInput.includes('도움') || lowerInput.includes('help') || lowerInput.includes('명령어')) {
+      return {
+        id: (Date.now() + 1).toString(),
+        content: `💡 CORBU AI 도움말\n\n사용 가능한 명령어:\n\n📊 분석 기능:\n• "데이터를 분석해줘"\n• "분석 결과 보여줘"\n• "실시간 분석"\n• "예측 분석"\n• "보안 분석"\n• "성능 최적화"\n• "감정 분석"\n• "머신러닝 모델"\n• "블록체인 분석"\n• "IoT 데이터 분석"\n• "양자 컴퓨팅"\n• "AR/VR 분석"\n• "생체인식 보안"\n• "자율주행 분석"\n\n🏠 부동산/도시정비 기능:\n• "부동산 분석"\n• "도시정비 분석"\n• "여론분석"\n• "시공사선정"\n• "토지이용계획"\n• "환경영향평가"\n• "교통영향평가"\n• "경제성분석"\n\n📁 프로젝트 관리:\n• "프로젝트 목록"\n• "프로젝트 상세 [프로젝트명]"\n• "새 프로젝트 생성"\n• "파일 업로드"\n• "가이드라인 추가"\n\n💬 채팅 관리:\n• "채팅 목록"\n• "새 채팅 생성"\n• "프로젝트 채팅 [프로젝트명]"\n\n📈 차트 기능:\n• "차트로 보여줘"\n• "그래프 생성해줘"\n\n📋 데이터 기능:\n• "데이터 요약해줘"\n• "통계 보여줘"\n\n🤖 AI 기능:\n• "AI 학습"\n• "자동화 설정"\n\n👥 협업 기능:\n• "협업 설정"\n• "팀 관리"\n\n🌐 언어 기능:\n• "번역"\n• "음성 변환"\n\n💻 개발 기능:\n• "코드 생성"\n• "API 통합"\n\n📱 콘텐츠 기능:\n• "카드뉴스 생성"\n\n📝 기타 기능:\n• "요약해줘"\n• "템플릿 생성"\n• "내보내기"\n• "파일 업로드 방법"\n\n무엇을 도와드릴까요?`,
+        isUser: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+    }
+
+    // 일반 응답
+    return {
+      id: (Date.now() + 1).toString(),
+      content: `안녕하세요! CORBU AI가 도와드리겠습니다. ${userInput}에 대해 무엇을 도와드릴까요?\n\n💡 사용 가능한 기능:\n• 분석: "데이터를 분석해줘"\n• 차트: "차트로 보여줘"\n• 데이터: "데이터를 보여줘"\n• 예측: "예측 분석"\n• AI 학습: "AI 학습"\n• 자동화: "자동화 설정"\n• 협업: "협업 설정"\n• 보안: "보안 분석"\n• 성능: "성능 최적화"\n• 감정: "감정 분석"\n• 머신러닝: "머신러닝 모델"\n• 블록체인: "블록체인 분석"\n• IoT: "IoT 데이터 분석"\n• 양자: "양자 컴퓨팅"\n• AR/VR: "AR/VR 분석"\n• 생체: "생체인식 보안"\n• 자율주행: "자율주행 분석"\n• API: "API 통합"\n• 번역: "번역"\n• 음성: "음성 변환"\n• 코드: "코드 생성"\n• 카드뉴스: "카드뉴스 생성"\n• 부동산: "부동산 분석"\n• 도시정비: "도시정비 분석"\n• 여론: "여론분석"\n• 시공사: "시공사선정"\n• 토지이용: "토지이용계획"\n• 환경: "환경영향평가"\n• 교통: "교통영향평가"\n• 경제성: "경제성분석"\n• 프로젝트: "프로젝트 목록"\n• 프로젝트상세: "프로젝트 상세 [프로젝트명]"\n• 새프로젝트: "새 프로젝트 생성"\n• 파일업로드: "파일 업로드"\n• 가이드라인: "가이드라인 추가"\n• 요약: "요약해줘"\n• 템플릿: "템플릿 생성"\n• 내보내기: "내보내기"\n• 실시간: "실시간 분석"\n• 도움말: "도움말" 또는 "help"\n• 일반 대화: 자유롭게 질문하세요`,
+      isUser: false,
+      timestamp: new Date(),
+      type: 'text'
+    };
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // 새 프로젝트 생성 핸들러
+  const handleCreateNewProject = () => {
+    if (!newProjectName.trim() || !newProjectDescription.trim()) {
+      alert('프로젝트 이름과 설명을 입력해주세요.');
+      return;
+    }
+
+    const newProject = createProject(newProjectName, newProjectDescription);
+    setSelectedProjectId(newProject.id);
+    setShowProjectModal(false);
+    setNewProjectName('');
+    setNewProjectDescription('');
+  };
+
+  // 새 채팅 생성 핸들러
+  const handleCreateNewChat = () => {
+    if (!selectedProjectId) {
+      alert('먼저 프로젝트를 선택해주세요.');
+      return;
+    }
+
+    if (!newChatTitle.trim() || !newChatDescription.trim()) {
+      alert('채팅 제목과 설명을 입력해주세요.');
+      return;
+    }
+
+    const newChat = createChat(selectedProjectId, newChatTitle, newChatDescription);
+    setSelectedChatId(newChat.id);
+    setShowChatModal(false);
+    setNewChatTitle('');
+    setNewChatDescription('');
+  };
+
+  // 프로젝트 상세 화면 표시 핸들러
+  const handleProjectSelect = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      setSelectedProject(project);
+      setSelectedProjectId(projectId);
+      setCurrentView('project-detail');
+    }
+  };
+
+  // 프로젝트 상세 화면에서 뒤로가기
+  const handleBackToProjectList = () => {
+    setSelectedProject(null);
+    setSelectedProjectId(null);
+    setCurrentView('project-list');
+  };
+
+  // 추가 기능 상태들
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [isImageAnalyzing, setIsImageAnalyzing] = useState(false);
+  // 제거된 고급 기능 관련 상태 변수들
+  // const [showAdvancedSidebar, setShowAdvancedSidebar] = useState(false);
+  // const [showAdvancedModal, setShowAdvancedModal] = useState(false);
+  // const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<{
+    type: 'image' | 'prediction' | 'advanced';
+    filename?: string;
+    analysis?: string;
+    predictions?: Array<{
+      category: string;
+      prediction: string;
+    }>;
+    data?: {
+      performance: {
+        responseTime: number;
+        accuracy: number;
+        satisfaction: number;
+        cpu: number;
+        memory: number;
+        disk: number;
+      };
+      security: {
+        encryptionLevel: string;
+        authenticationMethod: string;
+        dataProtection: string;
+        threats: number;
+        vulnerabilities: number;
+        lastScan: string;
+      };
+      usage: {
+        dailyActiveUsers: number;
+        monthlyGrowth: number;
+        retentionRate: number;
+        totalMessages: number;
+        activeProjects: number;
+        storageUsed: number;
+      };
+    };
+  } | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<'ko' | 'en' | 'ja' | 'zh'>('ko');
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+    timestamp: Date;
+  }>>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  // 제거된 상태 변수:
+  // const [showAdvancedFeaturesPopup, setShowAdvancedFeaturesPopup] = useState(false);
+
+
+  // 음성 인식 기능
+  const handleVoiceRecognition = () => {
+    setIsVoiceRecording(!isVoiceRecording);
+    if (!isVoiceRecording) {
+      // 음성 인식 시작
+      console.log('음성 인식 시작');
+      // 실제 음성 인식 API 호출
+    } else {
+      // 음성 인식 중지
+      console.log('음성 인식 중지');
+    }
+  };
+
+  // 음성 인식 테스트 페이지 표시
+  const [showVoiceTest, setShowVoiceTest] = useState(false);
+
+  // 프로젝트 관련 상태
+  const [showProjectRouter, setShowProjectRouter] = useState(false);
+
+  // 이미지 분석 기능
+  const handleImageAnalysis = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsImageAnalyzing(true);
+      const reader = new FileReader();
+      reader.onload = () => {
+        // 이미지 분석 API 호출
+        console.log('이미지 분석 시작:', file.name);
+        setTimeout(() => {
+          setIsImageAnalyzing(false);
+          setAnalysisResults({
+            type: 'image',
+            filename: file.name,
+            analysis: '이미지 분석이 완료되었습니다.'
+          });
+        }, 2000);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 예측 분석 기능
+  const handlePredictionAnalysis = () => {
+    console.log('예측 분석 시작');
+    setAnalysisResults({
+      type: 'prediction',
+      predictions: [
+        { category: '사용자 활동', prediction: '활성화 증가 예상' },
+        { category: '메시지 품질', prediction: '품질 향상 예상' },
+        { category: '시스템 성능', prediction: '안정적 유지 예상' }
+      ]
+    });
+  };
+
+  // 다국어 지원 기능
+  const handleLanguageChange = (language: 'ko' | 'en' | 'ja' | 'zh') => {
+    setSelectedLanguage(language);
+    console.log(`언어 변경: ${language}`);
+  };
+
+  // 알림 추가 함수
+  const addNotification = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
+    const newNotification = {
+      id: Date.now().toString(),
+      type,
+      title,
+      message,
+      timestamp: new Date()
+    };
+    setNotifications(prev => [...prev, newNotification]);
+
+    // 5초 후 자동 제거
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== newNotification.id));
+    }, 5000);
+  };
+
+
+
+  // 고급 분석 기능
+  const handleAdvancedAnalysis = () => {
+    const analysisData = {
+      performance: {
+        responseTime: 1.2,
+        accuracy: 95.5,
+        satisfaction: 4.2,
+        cpu: 45.2,
+        memory: 67.8,
+        disk: 23.4
+      },
+      security: {
+        encryptionLevel: 'AES-256',
+        authenticationMethod: 'OAuth 2.0',
+        dataProtection: 'GDPR Compliant',
+        threats: 3,
+        vulnerabilities: 1,
+        lastScan: '2024-01-20T10:30:00Z'
+      },
+      usage: {
+        dailyActiveUsers: 1250,
+        monthlyGrowth: 15.3,
+        retentionRate: 87.2,
+        totalMessages: 15420,
+        activeProjects: 23,
+        storageUsed: 2456.7
+      }
+    };
+
+    setAnalysisResults({
+      type: 'advanced',
+      data: analysisData
+    });
+  };
+
+  // 프로젝트 분석 데이터 생성
+  const generateProjectAnalytics = (project: Project) => {
+    const analytics = {
+      messageTrend: [
+        { date: '2024-01-15', count: 12 },
+        { date: '2024-01-16', count: 18 },
+        { date: '2024-01-17', count: 15 },
+        { date: '2024-01-18', count: 22 },
+        { date: '2024-01-19', count: 28 },
+        { date: '2024-01-20', count: 25 }
+      ],
+      fileUsage: {
+        documents: project.files.filter(f => f.type === 'document').length,
+        images: project.files.filter(f => f.type === 'image').length,
+        videos: project.files.filter(f => f.type === 'video').length,
+        totalSize: project.files.reduce((sum, file) => sum + file.size, 0)
+      },
+      participantActivity: [
+        { name: 'User', messages: 45, lastActive: '2024-01-20T10:30:00Z' },
+        { name: 'CORBU AI', messages: 32, lastActive: '2024-01-20T10:25:00Z' },
+        { name: 'Team Member 1', messages: 18, lastActive: '2024-01-20T09:15:00Z' }
+      ],
+      performance: {
+        responseTime: 1.2,
+        accuracy: 95.5,
+        satisfaction: 4.2
+      }
+    };
+    setProjectAnalytics(analytics);
+  };
+
+
+
+  // 파일 업로드 처리
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && selectedProject) {
+      const newFiles: ProjectFile[] = Array.from(files).map(file => {
+        let fileType: 'document' | 'image' | 'video' | 'audio' | 'spreadsheet' | 'presentation' = 'document';
+
+        if (file.type.includes('image')) {
+          fileType = 'image';
+        } else if (file.type.includes('video')) {
+          fileType = 'video';
+        } else if (file.type.includes('audio')) {
+          fileType = 'audio';
+        } else if (file.type.includes('spreadsheet') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+          fileType = 'spreadsheet';
+        } else if (file.type.includes('presentation') || file.name.endsWith('.ppt') || file.name.endsWith('.pptx')) {
+          fileType = 'presentation';
+        } else {
+          fileType = 'document';
+        }
+
+        return {
+          id: Date.now().toString() + Math.random(),
+          name: file.name,
+          type: fileType,
+          size: file.size,
+          uploadedAt: new Date().toISOString().split('T')[0],
+          url: URL.createObjectURL(file),
+          description: ''
+        };
+      });
+
+      setProjects(prev => prev.map(p =>
+        p.id === selectedProject.id
+          ? { ...p, files: [...p.files, ...newFiles] }
+          : p
+      ));
+
+      addNotification('success', '파일 업로드 완료', `${newFiles.length}개의 파일이 업로드되었습니다.`);
+      setShowFileUpload(false);
+    }
+  };
+
+  // 지침 추가/수정
+  const handleGuidelineSave = (guideline: {
+    title: string;
+    content: string;
+    type?: 'basic' | 'technical' | 'process' | 'reference';
+    priority?: 'low' | 'medium' | 'high';
+  }) => {
+    if (selectedProject) {
+      const newGuideline: ProjectGuideline = {
+        id: editingGuideline?.id || Date.now().toString(),
+        title: guideline.title,
+        content: guideline.content,
+        type: guideline.type || 'basic',
+        createdAt: editingGuideline?.createdAt || new Date().toISOString().split('T')[0],
+        priority: guideline.priority || 'medium'
+      };
+
+      setProjects(prev => prev.map(p =>
+        p.id === selectedProject.id
+          ? {
+            ...p,
+            guidelines: editingGuideline
+              ? p.guidelines.map(g => g.id === editingGuideline.id ? newGuideline : g)
+              : [...p.guidelines, newGuideline]
+          }
+          : p
+      ));
+
+      addNotification('success', '지침 저장 완료', editingGuideline ? '지침이 수정되었습니다.' : '새 지침이 추가되었습니다.');
+      setShowGuidelineEditor(false);
+      setEditingGuideline(null);
+    }
+  };
+
+  // 프로젝트 상세 관련 상태
+  const [activeTab, setActiveTab] = useState<'overview' | 'files' | 'guidelines' | 'chats' | 'analytics' | 'settings'>('overview');
+  const [projectAnalytics, setProjectAnalytics] = useState<{
+    messageTrend: Array<{ date: string; count: number }>;
+    fileUsage: {
+      documents: number;
+      images: number;
+      videos: number;
+      totalSize: number;
+    };
+    participantActivity: Array<{
+      name: string;
+      messages: number;
+      lastActive: string;
+    }>;
+    performance: {
+      responseTime: number;
+      accuracy: number;
+      satisfaction: number;
+    };
+  } | null>(null);
+  const [projectActivity, setProjectActivity] = useState<Array<{
+    id: string;
+    type: string;
+    description: string;
+    timestamp: string;
+    user: string;
+  }>>([]);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showGuidelineEditor, setShowGuidelineEditor] = useState(false);
+  const [editingGuideline, setEditingGuideline] = useState<ProjectGuideline | null>(null);
+
+  // 실시간 협업 관련 상태
+  const [collaborationSession, setCollaborationSession] = useState<{
+    id: string;
+    participants: Array<{
+      id: string;
+      name: string;
+      status: 'online' | 'away' | 'busy';
+      lastActivity: string;
+      currentTask?: string;
+    }>;
+    sharedFiles: Array<{
+      id: string;
+      name: string;
+      type: string;
+      lastModified: string;
+      modifiedBy: string;
+    }>;
+    activeEditors: Array<{
+      fileId: string;
+      userId: string;
+      userName: string;
+      cursorPosition: { line: number; column: number };
+    }>;
+  } | null>(null);
+
+  const [advancedStats, setAdvancedStats] = useState<{
+    productivity: {
+      messagesPerHour: number;
+      responseTime: number;
+      accuracy: number;
+      userSatisfaction: number;
+    };
+    system: {
+      cpuUsage: number;
+      memoryUsage: number;
+      networkLatency: number;
+      errorRate: number;
+    };
+    trends: {
+      dailyActiveUsers: number[];
+      weeklyGrowth: number;
+      monthlyRetention: number;
+      featureUsage: {
+        chat: number;
+        analysis: number;
+        collaboration: number;
+        fileSharing: number;
+      };
+    };
+  } | null>(null);
+
+  // 실시간 협업 세션 시작
+  const startCollaborationSession = () => {
+    const session = {
+      id: Date.now().toString(),
+      participants: [
+        {
+          id: '1',
+          name: 'User',
+          status: 'online' as const,
+          lastActivity: new Date().toISOString(),
+          currentTask: '프로젝트 분석'
+        },
+        {
+          id: '2',
+          name: 'CORBU AI',
+          status: 'online' as const,
+          lastActivity: new Date().toISOString(),
+          currentTask: 'AI 분석 지원'
+        }
+      ],
+      sharedFiles: [
+        {
+          id: '1',
+          name: '프로젝트_계획서.pdf',
+          type: 'document',
+          lastModified: new Date().toISOString(),
+          modifiedBy: 'User'
+        }
+      ],
+      activeEditors: [
+        {
+          fileId: '1',
+          userId: '1',
+          userName: 'User',
+          cursorPosition: { line: 15, column: 10 }
+        }
+      ]
+    };
+    setCollaborationSession(session);
+    addNotification('success', '협업 세션 시작', '실시간 협업이 활성화되었습니다.');
+  };
+
+  // 고급 통계 업데이트
+  const updateAdvancedStats = () => {
+    const stats = {
+      productivity: {
+        messagesPerHour: Math.floor(Math.random() * 50) + 20,
+        responseTime: Math.random() * 2 + 0.5,
+        accuracy: Math.random() * 10 + 90,
+        userSatisfaction: Math.random() * 2 + 3
+      },
+      system: {
+        cpuUsage: Math.random() * 100,
+        memoryUsage: Math.random() * 100,
+        networkLatency: Math.random() * 100 + 10,
+        errorRate: Math.random() * 5
+      },
+      trends: {
+        dailyActiveUsers: Array.from({ length: 7 }, () => Math.floor(Math.random() * 1000) + 500),
+        weeklyGrowth: Math.random() * 20 + 5,
+        monthlyRetention: Math.random() * 20 + 70,
+        featureUsage: {
+          chat: Math.random() * 100,
+          analysis: Math.random() * 100,
+          collaboration: Math.random() * 100,
+          fileSharing: Math.random() * 100
+        }
+      }
+    };
+    setAdvancedStats(stats);
+  };
+
+  // 실시간 통계 업데이트 시작
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      updateAdvancedStats();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // AI 문서 분석 관련 상태
+  const [documentAnalysis, setDocumentAnalysis] = useState<{
+    id: string;
+    filename: string;
+    type: 'pdf' | 'doc' | 'txt' | 'image';
+    status: 'processing' | 'completed' | 'error';
+    results: {
+      summary: string;
+      keyPoints: string[];
+      sentiment: 'positive' | 'negative' | 'neutral';
+      entities: Array<{
+        name: string;
+        type: 'person' | 'organization' | 'location' | 'date';
+        confidence: number;
+      }>;
+      topics: Array<{
+        name: string;
+        weight: number;
+      }>;
+      recommendations: string[];
+    };
+    processingTime: number;
+  } | null>(null);
+
+  // 제거된 기능들:
+  // - 자동화 워크플로우 상태
+  // - 고급 검색 상태
+
+  // AI 문서 분석 시작
+  const startDocumentAnalysis = (file: File) => {
+    let fileType: 'pdf' | 'doc' | 'txt' | 'image' = 'txt';
+
+    if (file.name.endsWith('.pdf')) {
+      fileType = 'pdf';
+    } else if (file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+      fileType = 'doc';
+    } else if (file.name.endsWith('.txt')) {
+      fileType = 'txt';
+    } else {
+      fileType = 'image';
+    }
+
+    const analysis = {
+      id: Date.now().toString(),
+      filename: file.name,
+      type: fileType,
+      status: 'processing' as const,
+      results: {
+        summary: '',
+        keyPoints: [] as string[],
+        sentiment: 'neutral' as const,
+        entities: [] as Array<{
+          name: string;
+          type: 'person' | 'organization' | 'location' | 'date';
+          confidence: number;
+        }>,
+        topics: [] as Array<{
+          name: string;
+          weight: number;
+        }>,
+        recommendations: [] as string[]
+      },
+      processingTime: 0
+    };
+
+    setDocumentAnalysis(analysis);
+
+    // 시뮬레이션된 분석 처리
+    setTimeout(() => {
+      const results = {
+        summary: '이 문서는 부동산 개발 프로젝트에 대한 종합적인 분석 보고서입니다. 주요 내용으로는 시장 분석, 재무 계획, 리스크 평가 등이 포함되어 있습니다.',
+        keyPoints: [
+          '시장 분석: 강남구 재개발 지역의 시장 잠재력 높음',
+          '재무 계획: 총 투자금액 500억원, 예상 수익률 15%',
+          '리스크 평가: 정부 정책 변화에 따른 리스크 존재',
+          '타임라인: 2024년 3분기 착공, 2026년 완공 예정'
+        ],
+        sentiment: 'positive' as const,
+        entities: [
+          { name: '강남구', type: 'location' as const, confidence: 0.95 },
+          { name: '2024년', type: 'date' as const, confidence: 0.88 },
+          { name: '부동산 개발사', type: 'organization' as const, confidence: 0.92 }
+        ],
+        topics: [
+          { name: '부동산 개발', weight: 0.85 },
+          { name: '시장 분석', weight: 0.72 },
+          { name: '재무 계획', weight: 0.68 },
+          { name: '리스크 관리', weight: 0.55 }
+        ],
+        recommendations: [
+          '정부 정책 변화에 대한 대응 방안 마련 필요',
+          '환경 영향 평가 절차 조기 진행 권장',
+          '지역 주민과의 소통 강화 방안 수립',
+          '투자자 유치를 위한 마케팅 전략 수립'
+        ]
+      };
+
+      setDocumentAnalysis(prev => prev ? {
+        ...prev,
+        status: 'completed',
+        results,
+        processingTime: 3.2
+      } : null);
+
+      addNotification('success', '문서 분석 완료', `${file.name} 분석이 완료되었습니다.`);
+    }, 3000);
+  };
+
+  // 제거된 기능들:
+  // - 고급 검색 기능
+  // - 워크플로우 실행 기능
+  // - 머신러닝 예측 분석 실행
+  // - 보안 스캔 실행
+  // - 차트 생성
+  // - 블록체인 무결성 검증 실행
+  // - AI 모델 배포
+  // - 양자 회로 실행
+
+  // 제거된 기능들:
+  // - 머신러닝 예측 분석 상태 (mlPredictions)
+  // - 고급 보안 기능 상태 (securityStatus)
+  // - 데이터 시각화 상태 (dataVisualization)
+  // - 블록체인 데이터 무결성 검증 상태 (blockchainIntegrity)
+  // - 고급 AI 모델 관리 상태 (aiModelManagement)
+  // - 양자 컴퓨팅 시뮬레이션 상태 (quantumComputing)
+
+  // 신경망 시각화 상태
+  const [neuralNetwork, setNeuralNetwork] = useState<{
+    layers: Array<{
+      id: string;
+      type: 'input' | 'hidden' | 'output';
+      neurons: number;
+      activation: 'relu' | 'sigmoid' | 'tanh' | 'softmax';
+      weights: Array<Array<number>>;
+      biases: Array<number>;
+    }>;
+    training: {
+      epoch: number;
+      totalEpochs: number;
+      loss: number;
+      accuracy: number;
+      learningRate: number;
+      batchSize: number;
+      isTraining: boolean;
+    };
+    predictions: Array<{
+      input: Array<number>;
+      output: Array<number>;
+      confidence: number;
+      timestamp: string;
+    }>;
+  }>({
+    layers: [
+      {
+        id: 'input',
+        type: 'input',
+        neurons: 4,
+        activation: 'relu',
+        weights: [],
+        biases: []
+      },
+      {
+        id: 'hidden1',
+        type: 'hidden',
+        neurons: 8,
+        activation: 'relu',
+        weights: Array.from({ length: 8 }, () => Array.from({ length: 4 }, () => Math.random() * 2 - 1)),
+        biases: Array.from({ length: 8 }, () => Math.random() * 2 - 1)
+      },
+      {
+        id: 'hidden2',
+        type: 'hidden',
+        neurons: 6,
+        activation: 'relu',
+        weights: Array.from({ length: 6 }, () => Array.from({ length: 8 }, () => Math.random() * 2 - 1)),
+        biases: Array.from({ length: 6 }, () => Math.random() * 2 - 1)
+      },
+      {
+        id: 'output',
+        type: 'output',
+        neurons: 3,
+        activation: 'softmax',
+        weights: Array.from({ length: 3 }, () => Array.from({ length: 6 }, () => Math.random() * 2 - 1)),
+        biases: Array.from({ length: 3 }, () => Math.random() * 2 - 1)
+      }
+    ],
+    training: {
+      epoch: 0,
+      totalEpochs: 100,
+      loss: 0.0,
+      accuracy: 0.0,
+      learningRate: 0.001,
+      batchSize: 32,
+      isTraining: false
+    },
+    predictions: []
+  });
+
+  // 고급 AI 에이전트 시스템 상태
+  const [aiAgents, setAiAgents] = useState<{
+    agents: Array<{
+      id: string;
+      name: string;
+      type: 'assistant' | 'analyst' | 'researcher' | 'creative' | 'specialist';
+      status: 'active' | 'idle' | 'busy' | 'learning';
+      capabilities: Array<string>;
+      performance: {
+        tasksCompleted: number;
+        successRate: number;
+        averageResponseTime: number;
+        userSatisfaction: number;
+      };
+      currentTask: {
+        type: string;
+        description: string;
+        progress: number;
+        startedAt: string;
+      } | null;
+      memory: {
+        shortTerm: Array<{ id: string; content: string; timestamp: string }>;
+        longTerm: Array<{ id: string; topic: string; knowledge: string; lastAccessed: string }>;
+      };
+    }>;
+    collaboration: {
+      activeSessions: number;
+      sharedKnowledge: Array<{ id: string; topic: string; contributors: Array<string>; lastUpdated: string }>;
+      communicationChannels: Array<{ id: string; type: 'text' | 'voice' | 'visual'; participants: Array<string>; status: 'active' | 'idle' }>;
+    };
+  }>({
+    agents: [
+      {
+        id: 'agent_001',
+        name: 'Alpha Assistant',
+        type: 'assistant',
+        status: 'active',
+        capabilities: ['문서 작성', '데이터 분석', '프로젝트 관리', '통역'],
+        performance: {
+          tasksCompleted: 156,
+          successRate: 94.2,
+          averageResponseTime: 2.3,
+          userSatisfaction: 4.8
+        },
+        currentTask: {
+          type: '문서 분석',
+          description: '프로젝트 보고서 요약 작성 중',
+          progress: 75,
+          startedAt: new Date().toISOString()
+        },
+        memory: {
+          shortTerm: [
+            { id: '1', content: '사용자가 프로젝트 보고서 분석을 요청함', timestamp: new Date().toISOString() }
+          ],
+          longTerm: [
+            { id: '1', topic: '프로젝트 관리', knowledge: '애자일 방법론과 스크럼 프레임워크', lastAccessed: new Date().toISOString() }
+          ]
+        }
+      },
+      {
+        id: 'agent_002',
+        name: 'Beta Analyst',
+        type: 'analyst',
+        status: 'busy',
+        capabilities: ['통계 분석', '예측 모델링', '데이터 시각화', '리포트 생성'],
+        performance: {
+          tasksCompleted: 89,
+          successRate: 96.7,
+          averageResponseTime: 4.1,
+          userSatisfaction: 4.9
+        },
+        currentTask: {
+          type: '시장 분석',
+          description: 'Q4 시장 트렌드 분석 중',
+          progress: 45,
+          startedAt: new Date(Date.now() - 1800000).toISOString()
+        },
+        memory: {
+          shortTerm: [
+            { id: '1', content: '시장 데이터 수집 완료', timestamp: new Date().toISOString() }
+          ],
+          longTerm: [
+            { id: '1', topic: '시장 분석', knowledge: '시계열 분석 및 예측 모델링 기법', lastAccessed: new Date().toISOString() }
+          ]
+        }
+      }
+    ],
+    collaboration: {
+      activeSessions: 2,
+      sharedKnowledge: [
+        {
+          id: 'knowledge_001',
+          topic: 'AI 모델 최적화',
+          contributors: ['Alpha Assistant', 'Beta Analyst'],
+          lastUpdated: new Date().toISOString()
+        }
+      ],
+      communicationChannels: [
+        {
+          id: 'channel_001',
+          type: 'text',
+          participants: ['Alpha Assistant', 'Beta Analyst'],
+          status: 'active'
+        }
+      ]
+    }
+  });
+
+  // 실시간 학습 모니터링 상태
+  const [learningMonitor, setLearningMonitor] = useState<{
+    activeModels: Array<{
+      id: string;
+      name: string;
+      type: 'supervised' | 'unsupervised' | 'reinforcement';
+      status: 'training' | 'evaluating' | 'deploying' | 'completed';
+      metrics: {
+        loss: number;
+        accuracy: number;
+        precision: number;
+        recall: number;
+        f1Score: number;
+      };
+      progress: {
+        epoch: number;
+        totalEpochs: number;
+        batch: number;
+        totalBatches: number;
+        timeElapsed: number;
+        estimatedTimeRemaining: number;
+      };
+      hyperparameters: {
+        learningRate: number;
+        batchSize: number;
+        optimizer: string;
+        lossFunction: string;
+      };
+    }>;
+    systemMetrics: {
+      gpuUtilization: number;
+      memoryUsage: number;
+      cpuUsage: number;
+      networkThroughput: number;
+      activeConnections: number;
+    };
+    alerts: Array<{
+      id: string;
+      type: 'warning' | 'error' | 'info' | 'success';
+      message: string;
+      timestamp: string;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+    }>;
+  }>({
+    activeModels: [
+      {
+        id: 'model_001',
+        name: 'BERT Fine-tuning',
+        type: 'supervised',
+        status: 'training',
+        metrics: {
+          loss: 0.234,
+          accuracy: 0.892,
+          precision: 0.876,
+          recall: 0.901,
+          f1Score: 0.888
+        },
+        progress: {
+          epoch: 15,
+          totalEpochs: 50,
+          batch: 128,
+          totalBatches: 500,
+          timeElapsed: 1800,
+          estimatedTimeRemaining: 3600
+        },
+        hyperparameters: {
+          learningRate: 0.0001,
+          batchSize: 16,
+          optimizer: 'AdamW',
+          lossFunction: 'CrossEntropyLoss'
+        }
+      }
+    ],
+    systemMetrics: {
+      gpuUtilization: 78.5,
+      memoryUsage: 65.2,
+      cpuUsage: 45.8,
+      networkThroughput: 125.6,
+      activeConnections: 12
+    },
+    alerts: [
+      {
+        id: 'alert_001',
+        type: 'warning',
+        message: 'GPU 메모리 사용량이 80%에 근접했습니다.',
+        timestamp: new Date().toISOString(),
+        severity: 'medium'
+      }
+    ]
+  });
+
+  // 신경망 훈련 시작
+  const startNeuralNetworkTraining = () => {
+    setNeuralNetwork(prev => ({
+      ...prev,
+      training: { ...prev.training, isTraining: true }
+    }));
+
+    // 시뮬레이션된 훈련 과정
+    const trainingInterval = setInterval(() => {
+      setNeuralNetwork(prev => {
+        if (prev.training.epoch >= prev.training.totalEpochs) {
+          clearInterval(trainingInterval);
+          return {
+            ...prev,
+            training: { ...prev.training, isTraining: false }
+          };
+        }
+
+        return {
+          ...prev,
+          training: {
+            ...prev.training,
+            epoch: prev.training.epoch + 1,
+            loss: Math.max(0.01, prev.training.loss - 0.005),
+            accuracy: Math.min(0.99, prev.training.accuracy + 0.003)
+          }
+        };
+      });
+    }, 1000);
+
+    addNotification('success', '신경망 훈련 시작', '신경망 훈련이 시작되었습니다.');
+  };
+
+  // AI 에이전트 작업 할당
+  const assignTaskToAgent = (agentId: string, taskType: string, description: string) => {
+    setAiAgents(prev => ({
+      ...prev,
+      agents: prev.agents.map(agent =>
+        agent.id === agentId
+          ? {
+            ...agent,
+            status: 'busy' as const,
+            currentTask: {
+              type: taskType,
+              description,
+              progress: 0,
+              startedAt: new Date().toISOString()
+            }
+          }
+          : agent
+      )
+    }));
+
+    addNotification('success', '작업 할당 완료', `${taskType} 작업이 에이전트에게 할당되었습니다.`);
+  };
+
+  // 학습 모니터링 업데이트
+  const updateLearningMetrics = () => {
+    setLearningMonitor(prev => ({
+      ...prev,
+      activeModels: prev.activeModels.map(model => ({
+        ...model,
+        metrics: {
+          ...model.metrics,
+          loss: Math.max(0.01, model.metrics.loss - 0.001),
+          accuracy: Math.min(0.99, model.metrics.accuracy + 0.002)
+        },
+        progress: {
+          ...model.progress,
+          batch: model.progress.batch + 1,
+          timeElapsed: model.progress.timeElapsed + 60
+        }
+      })),
+      systemMetrics: {
+        ...prev.systemMetrics,
+        gpuUtilization: Math.min(100, prev.systemMetrics.gpuUtilization + Math.random() * 2 - 1),
+        memoryUsage: Math.min(100, prev.systemMetrics.memoryUsage + Math.random() * 2 - 1)
+      }
+    }));
+  };
+
+  // 제거된 고급 기능 클릭 핸들러
+  // const handleAdvancedFeatureClick = (feature: string) => {
+  //   // 제거된 기능들에 대한 처리
+  //   const message = '해당 기능은 제거되었습니다. 필요하시면 대화를 통해 요청해 주세요.';
+  //   setMessages(prev => [...prev, {
+  //     id: Date.now().toString(),
+  //     content: message,
+  //     isUser: false,
+  //     timestamp: new Date(),
+  //     type: 'text'
+  //   }]);
+  // };
+
+  return (
+    <div className="App">
+      {/* 사이드바 */}
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <h1 className="app-title">CORBU AI</h1>
+        </div>
+
+        <div className="sidebar-section">
+          <h3>뷰 전환</h3>
+          <div className="sidebar-items">
+            <div
+              className={`sidebar-item ${currentView === 'chat' ? 'active' : ''}`}
+              onClick={() => setCurrentView('chat')}
+            >
+              <div className="item-icon blue"></div>
+              <span>채팅</span>
+            </div>
+            <div
+              className={`sidebar-item ${currentView === 'project-list' ? 'active' : ''}`}
+              onClick={() => setCurrentView('project-list')}
+            >
+              <div className="item-icon green"></div>
+              <span>프로젝트 목록</span>
+            </div>
+            <div
+              className={`sidebar-item ${currentView === 'chat-list' ? 'active' : ''}`}
+              onClick={() => setCurrentView('chat-list')}
+            >
+              <div className="item-icon purple"></div>
+              <span>채팅 목록</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="sidebar-section">
+          <h3>프로젝트</h3>
+          <div className="sidebar-items">
+            {projects.map(project => (
+              <div
+                key={project.id}
+                className={`sidebar-item ${selectedProjectId === project.id ? 'active' : ''}`}
+                onClick={() => handleProjectSelect(project.id)}
+              >
+                <div className="item-icon blue"></div>
+                <span>{project.name}</span>
+                <span className="project-count">({project.messageCount})</span>
+              </div>
+            ))}
+            <div
+              className="sidebar-item add-project"
+              onClick={() => setShowProjectModal(true)}
+            >
+              <div className="item-icon green"></div>
+              <span>+ 새 프로젝트</span>
+            </div>
+          </div>
+        </div>
+
+        {selectedProjectId && (
+          <div className="sidebar-section">
+            <h3>채팅</h3>
+            <div className="sidebar-items">
+              {getProjectChats(selectedProjectId).map(chat => (
+                <div
+                  key={chat.id}
+                  className={`sidebar-item ${selectedChatId === chat.id ? 'active' : ''}`}
+                  onClick={() => setSelectedChatId(chat.id)}
+                >
+                  <div className="item-icon purple"></div>
+                  <span>{chat.title}</span>
+                  <span className="chat-count">({chat.messages.length})</span>
+                </div>
+              ))}
+              <div
+                className="sidebar-item add-chat"
+                onClick={() => setShowChatModal(true)}
+              >
+                <div className="item-icon orange"></div>
+                <span>+ 새 채팅</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="sidebar-section">
+          <h3>시스템 기능</h3>
+          <div className="sidebar-items">
+            <div className="sidebar-item">
+              <div className="item-icon blue"></div>
+              <span>프로젝트</span>
+            </div>
+            <div className="sidebar-item">
+              <div className="item-icon green"></div>
+              <span>프로젝트 파일</span>
+            </div>
+            <div className="sidebar-item">
+              <div className="item-icon yellow"></div>
+              <span>지침</span>
+            </div>
+            <div className="sidebar-item">
+              <div className="item-icon purple"></div>
+              <span>분석 기록</span>
+            </div>
+            <div className="sidebar-item">
+              <div className="item-icon orange"></div>
+              <span>템플릿</span>
+            </div>
+            <div className="sidebar-item">
+              <div className="item-icon red"></div>
+              <span>내보내기</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="sidebar-section">
+          <h3>시스템 명령어</h3>
+          <div className="sidebar-items">
+            <div className="sidebar-item">
+              <div className="item-icon purple"></div>
+              <span>파일 업로드</span>
+            </div>
+            <div className="sidebar-item">
+              <div className="item-icon green"></div>
+              <span>분석 시작</span>
+            </div>
+            <div className="sidebar-item">
+              <div className="item-icon blue"></div>
+              <span>요약 생성</span>
+            </div>
+            <div className="sidebar-item">
+              <div className="item-icon pink"></div>
+              <span>카드뉴스 생성</span>
+            </div>
+          </div>
+        </div>
+
+
+                - 고급 검색
+                - ML 예측 분석
+                - 보안 스캔
+                - 데이터 시각화
+                - 블록체인 검증
+                - AI 모델 관리
+                - 양자 컴퓨팅 */}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 제거된 고급 기능 아이콘들:
+        - 고급 통계
+        - 자동화 워크플로우
+        - 보안 대시보드
+        - 데이터 시각화
+        - 블록체인 데이터 무결성 검증
+        - AI 모델 관리
+        - 양자 컴퓨팅 시뮬레이션
+        - 고급 검색 */}
+      </div>
+
+      {/* 제거된 고급 기능 팝업:
+      - AdvancedFeaturesPopup 컴포넌트 제거됨 */}
+
+      {/* 메인 컨텐츠 */}
+      <div className="main-content">
+        {currentView === 'chat' && (
+          <>
+            {messages.length === 0 ? (
+              <div className="welcome-section">
+                <h2 className="welcome-title">무엇이든 물어보세요!</h2>
+                <p className="welcome-subtitle">CORBU.AI가 도와드리겠습니다.</p>
+
+                <div className="command-suggestions">
+                  <div className="suggestion-header">
+                    <span className="lightbulb-icon">💡</span>
+                    <span>명령어를 사용해보세요:</span>
+                  </div>
+                  <div className="suggestion-list">
+                    <div className="suggestion-item">/help - 사용 가능한 명령어 보기</div>
+                    <div className="suggestion-item">/upload - 파일 업로드</div>
+                    <div className="suggestion-item">/project list - 프로젝트 목록</div>
+                    <div className="suggestion-item">데이터를 분석해줘 - 분석 기능</div>
+                    <div className="suggestion-item">차트로 보여줘 - 차트 생성</div>
+                    <div className="suggestion-item">통계 데이터 보여줘 - 데이터 요약</div>
+                    <div className="suggestion-item">예측 분석 - 미래 예측</div>
+                    <div className="suggestion-item">AI 학습 - 모델 훈련</div>
+                    <div className="suggestion-item">자동화 설정 - 작업 자동화</div>
+                    <div className="suggestion-item">요약해줘 - 내용 요약</div>
+                    <div className="suggestion-item">템플릿 생성 - 양식 생성</div>
+                    <div className="suggestion-item">내보내기 - 결과 다운로드</div>
+                    <div className="suggestion-item">실시간 분석 - 라이브 모니터링</div>
+                    <div className="suggestion-item">도움말 - 사용법 안내</div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="messages-container">
+                {messages.map((message) => (
+                  <div key={message.id} className={`message ${message.isUser ? 'user-message' : 'ai-message'}`}>
+                    <div className={`message-content ${message.type}`}>
+                      {message.content}
+                    </div>
+                    <div className="message-time">
+                      {message.timestamp.toLocaleTimeString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {currentView === 'project-list' && (
+          <div className="project-list-view">
+            <h2 className="view-title">프로젝트 목록</h2>
+            <div className="project-grid">
+              {projects.map(project => (
+                <div key={project.id} className="project-card">
+                  <div className="project-card-header">
+                    <h3 className="project-card-title">{project.name}</h3>
+                    <span className="project-card-count">{project.messageCount}개 메시지</span>
+                  </div>
+                  <p className="project-card-description">{project.description}</p>
+                  <div className="project-card-stats">
+                    <span className="stat">📁 {project.files.length}개 파일</span>
+                    <span className="stat">📋 {project.guidelines.length}개 가이드라인</span>
+                  </div>
+                  <div className="project-card-footer">
+                    <span className="project-date">생성: {project.createdAt}</span>
+                    <span className="project-activity">활동: {project.lastActivity}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {currentView === 'chat-list' && (
+          <div className="chat-list-view">
+            <h2 className="view-title">채팅 목록</h2>
+            <div className="chat-grid">
+              {chats.map(chat => {
+                const project = projects.find(p => p.id === chat.projectId);
+                return (
+                  <div key={chat.id} className="chat-card">
+                    <div className="chat-card-header">
+                      <h3 className="chat-card-title">{chat.title}</h3>
+                      <span className="chat-card-count">{chat.messages.length}개 메시지</span>
+                    </div>
+                    <p className="chat-card-description">{chat.description}</p>
+                    <div className="chat-card-project">
+                      <span className="project-name">📁 {project?.name || '알 수 없음'}</span>
+                    </div>
+                    <div className="chat-card-footer">
+                      <span className="chat-date">생성: {chat.createdAt}</span>
+                      <span className="chat-status">{chat.status}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {currentView === 'project-detail' && selectedProject && (
+          <div className="project-detail">
+            <div className="project-header">
+              <div className="project-header-left">
+                <button
+                  className="back-button"
+                  onClick={handleBackToProjectList}
+                >
+                  ← 뒤로가기
+                </button>
+                <h2 className="project-title">{selectedProject.name}</h2>
+                <p className="project-description">{selectedProject.description}</p>
+              </div>
+              <div className="project-header-right">
+                <div className="project-stats">
+                  <div className="stat-item">
+                    <span className="stat-label">메시지</span>
+                    <span className="stat-value">{selectedProject.messageCount}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">파일</span>
+                    <span className="stat-value">{selectedProject.files.length}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">지침</span>
+                    <span className="stat-value">{selectedProject.guidelines.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="project-tabs">
+              <button
+                className={`project-tab ${activeTab === 'overview' ? 'active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                개요
+              </button>
+              <button
+                className={`project-tab ${activeTab === 'files' ? 'active' : ''}`}
+                onClick={() => setActiveTab('files')}
+              >
+                파일 ({selectedProject.files.length})
+              </button>
+              <button
+                className={`project-tab ${activeTab === 'guidelines' ? 'active' : ''}`}
+                onClick={() => setActiveTab('guidelines')}
+              >
+                지침 ({selectedProject.guidelines.length})
+              </button>
+              <button
+                className={`project-tab ${activeTab === 'chats' ? 'active' : ''}`}
+                onClick={() => setActiveTab('chats')}
+              >
+                채팅 ({getProjectChats(selectedProject.id).length})
+              </button>
+              <button
+                className={`project-tab ${activeTab === 'analytics' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveTab('analytics');
+                  generateProjectAnalytics(selectedProject);
+                }}
+              >
+                분석
+              </button>
+              <button
+                className={`project-tab ${activeTab === 'settings' ? 'active' : ''}`}
+                onClick={() => setActiveTab('settings')}
+              >
+                설정
+              </button>
+            </div>
+
+            <div className="project-content">
+              {activeTab === 'overview' && (
+                <div className="project-overview">
+                  <div className="overview-section">
+                    <h3>프로젝트 정보</h3>
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <span className="info-label">생성일</span>
+                        <span className="info-value">{selectedProject.createdAt}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">마지막 활동</span>
+                        <span className="info-value">{selectedProject.lastActivity}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">상태</span>
+                        <span className="info-value">{selectedProject.archived ? '보관됨' : '활성'}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">총 메시지</span>
+                        <span className="info-value">{selectedProject.messageCount}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overview-section">
+                    <h3>최근 활동</h3>
+                    <div className="activity-list">
+                      {projectActivity.slice(0, 5).map(activity => (
+                        <div key={activity.id} className="activity-item">
+                          <div className="activity-icon">
+                            {activity.type === 'file_upload' && '📁'}
+                            {activity.type === 'message' && '💬'}
+                            {activity.type === 'guideline' && '📋'}
+                            {activity.type === 'chat' && '💭'}
+                            {activity.type === 'analysis' && '📊'}
+                          </div>
+                          <div className="activity-content">
+                            <div className="activity-description">{activity.description}</div>
+                            <div className="activity-meta">
+                              <span className="activity-user">{activity.user}</span>
+                              <span className="activity-time">
+                                {new Date(activity.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="overview-section">
+                    <h3>참여자</h3>
+                    <div className="participants-list">
+                      {projectAnalytics?.participantActivity.map((participant: any, index: number) => (
+                        <div key={index} className="participant-item">
+                          <div className="participant-avatar">
+                            {participant.name.charAt(0)}
+                          </div>
+                          <div className="participant-info">
+                            <div className="participant-name">{participant.name}</div>
+                            <div className="participant-stats">
+                              <span>{participant.messages}개 메시지</span>
+                              <span>마지막 활동: {new Date(participant.lastActive).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'files' && (
+                <div className="files-tab">
+                  <div className="tab-header">
+                    <h3>프로젝트 파일</h3>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowFileUpload(true)}
+                    >
+                      파일 업로드
+                    </button>
+                  </div>
+                  <div className="files-grid">
+                    {selectedProject.files.length > 0 ? (
+                      selectedProject.files.map(file => (
+                        <div key={file.id} className="file-card">
+                          <div className="file-icon">
+                            {getFileIcon(file.type)}
+                          </div>
+                          <div className="file-info">
+                            <div className="file-name">{file.name}</div>
+                            <div className="file-meta">
+                              {formatFileSize(file.size)} • {file.uploadedAt}
+                            </div>
+                          </div>
+                          <div className="file-actions">
+                            <button className="file-action-btn">보기</button>
+                            <button className="file-action-btn">다운로드</button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-state">
+                        <p>업로드된 파일이 없습니다.</p>
+                        <button className="upload-btn" onClick={() => setShowFileUpload(true)}>
+                          파일 업로드
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'guidelines' && (
+                <div className="guidelines-tab">
+                  <div className="tab-header">
+                    <h3>프로젝트 지침</h3>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowGuidelineEditor(true)}
+                    >
+                      지침 추가
+                    </button>
+                  </div>
+                  <div className="guidelines-grid">
+                    {selectedProject.guidelines.length > 0 ? (
+                      selectedProject.guidelines.map(guideline => (
+                        <div key={guideline.id} className="guideline-card">
+                          <div className="guideline-header">
+                            <h4 className="guideline-title">{guideline.title}</h4>
+                            <span className={`guideline-priority ${guideline.priority}`}>
+                              {guideline.priority}
+                            </span>
+                          </div>
+                          <p className="guideline-content">{guideline.content}</p>
+                          <div className="guideline-footer">
+                            <span className="guideline-type">{guideline.type}</span>
+                            <button
+                              className="edit-guideline-btn"
+                              onClick={() => {
+                                setEditingGuideline(guideline);
+                                setShowGuidelineEditor(true);
+                              }}
+                            >
+                              수정
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-state">
+                        <p>설정된 지침이 없습니다.</p>
+                        <button className="add-guideline-btn" onClick={() => setShowGuidelineEditor(true)}>
+                          지침 추가
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'chats' && (
+                <div className="chats-tab">
+                  <div className="tab-header">
+                    <h3>프로젝트 채팅</h3>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowChatModal(true)}
+                    >
+                      새 채팅
+                    </button>
+                  </div>
+                  <div className="chats-grid">
+                    {getProjectChats(selectedProject.id).map(chat => (
+                      <div key={chat.id} className="chat-card">
+                        <div className="chat-header">
+                          <h4 className="chat-title">{chat.title}</h4>
+                          <span className="chat-status">{chat.status}</span>
+                        </div>
+                        <p className="chat-description">{chat.description}</p>
+                        <div className="chat-meta">
+                          <span>{chat.messages.length}개 메시지</span>
+                          <span>생성: {chat.createdAt}</span>
+                        </div>
+                        <div className="chat-actions">
+                          <button className="chat-action-btn">열기</button>
+                          <button className="chat-action-btn">보관</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'analytics' && projectAnalytics && (
+                <div className="analytics-tab">
+                  <div className="analytics-overview">
+                    <div className="analytics-card">
+                      <h4>메시지 트렌드</h4>
+                      <div className="trend-chart">
+                        {projectAnalytics.messageTrend.map((point: any, index: number) => (
+                          <div key={index} className="trend-point">
+                            <div className="trend-bar" style={{ height: `${(point.count / 30) * 100}%` }}></div>
+                            <span className="trend-label">{point.date}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="analytics-card">
+                      <h4>파일 사용량</h4>
+                      <div className="file-usage">
+                        <div className="usage-item">
+                          <span>문서</span>
+                          <span>{projectAnalytics.fileUsage.documents}</span>
+                        </div>
+                        <div className="usage-item">
+                          <span>이미지</span>
+                          <span>{projectAnalytics.fileUsage.images}</span>
+                        </div>
+                        <div className="usage-item">
+                          <span>비디오</span>
+                          <span>{projectAnalytics.fileUsage.videos}</span>
+                        </div>
+                        <div className="usage-item">
+                          <span>총 크기</span>
+                          <span>{formatFileSize(projectAnalytics.fileUsage.totalSize)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="analytics-card">
+                      <h4>성능 지표</h4>
+                      <div className="performance-metrics">
+                        <div className="metric">
+                          <span>응답 시간</span>
+                          <span>{projectAnalytics.performance.responseTime}s</span>
+                        </div>
+                        <div className="metric">
+                          <span>정확도</span>
+                          <span>{projectAnalytics.performance.accuracy}%</span>
+                        </div>
+                        <div className="metric">
+                          <span>만족도</span>
+                          <span>{projectAnalytics.performance.satisfaction}/5</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'settings' && (
+                <div className="settings-tab">
+                  <div className="settings-section">
+                    <h3>프로젝트 설정</h3>
+                    <div className="settings-form">
+                      <div className="form-group">
+                        <label>프로젝트 이름</label>
+                        <input
+                          type="text"
+                          value={selectedProject.name}
+                          className="form-input"
+                          readOnly
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>설명</label>
+                        <textarea
+                          value={selectedProject.description}
+                          className="form-textarea"
+                          readOnly
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>상태</label>
+                        <select className="form-select">
+                          <option value="active">활성</option>
+                          <option value="archived">보관</option>
+                          <option value="completed">완료</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="settings-section">
+                    <h3>협업 설정</h3>
+                    <div className="collaboration-settings">
+                      <div className="setting-item">
+                        <label>
+                          <input type="checkbox" defaultChecked />
+                          실시간 협업 활성화
+                        </label>
+                      </div>
+                      <div className="setting-item">
+                        <label>
+                          <input type="checkbox" defaultChecked />
+                          자동 저장
+                        </label>
+                      </div>
+                      <div className="setting-item">
+                        <label>
+                          <input type="checkbox" />
+                          알림 활성화
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 입력 영역 */}
+        <div className="input-area">
+          <div className="input-container">
+            <div className="input-icons">
+              <div className="input-icon black"></div>
+              <div className="input-icon gray"></div>
+            </div>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="메시지를 입력하거나 기능을 요청하세요..."
+              className="message-input"
+            />
+            <div className="input-actions">
+              <div className="action-icon gray"></div>
+              <div className="action-icon black"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 프로젝트 생성 모달 */}
+      {showProjectModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>새 프로젝트 생성</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowProjectModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>프로젝트 이름</label>
+                <input
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  placeholder="프로젝트 이름을 입력하세요"
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>프로젝트 설명</label>
+                <textarea
+                  value={newProjectDescription}
+                  onChange={(e) => setNewProjectDescription(e.target.value)}
+                  placeholder="프로젝트 설명을 입력하세요"
+                  className="form-textarea"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowProjectModal(false)}
+              >
+                취소
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleCreateNewProject}
+              >
+                생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 채팅 생성 모달 */}
+      {showChatModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>새 채팅 생성</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowChatModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>채팅 제목</label>
+                <input
+                  type="text"
+                  value={newChatTitle}
+                  onChange={(e) => setNewChatTitle(e.target.value)}
+                  placeholder="채팅 제목을 입력하세요"
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>채팅 설명</label>
+                <textarea
+                  value={newChatDescription}
+                  onChange={(e) => setNewChatDescription(e.target.value)}
+                  placeholder="채팅 설명을 입력하세요"
+                  className="form-textarea"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowChatModal(false)}
+              >
+                취소
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleCreateNewChat}
+              >
+                생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 음성 인식 상태 표시 */}
+      {isVoiceRecording && (
+        <div className="voice-status">
+          🎤 음성 인식 중...
+        </div>
+      )}
+
+      {/* 이미지 분석 진행 상태 */}
+      {isImageAnalyzing && (
+        <div className="image-analysis-progress">
+          <div className="progress-spinner"></div>
+          <p>이미지 분석 중...</p>
+        </div>
+      )}
+
+      {/* 분석 결과 표시 */}
+      {analysisResults && (
+        <div className="analysis-results">
+          <div className="analysis-header">
+            <h3>분석 결과</h3>
+            <button
+              className="close-analysis"
+              onClick={() => setAnalysisResults(null)}
+              aria-label="분석 결과 닫기"
+              title="분석 결과를 닫습니다"
+            >
+              ×
+            </button>
+          </div>
+          <div className="analysis-content">
+            {analysisResults?.type === 'image' && (
+              <div className="image-analysis-result">
+                <h4>이미지 분석 결과</h4>
+                <p><strong>파일명:</strong> {analysisResults.filename}</p>
+                <p><strong>분석:</strong> {analysisResults.analysis}</p>
+              </div>
+            )}
+            {analysisResults?.type === 'prediction' && analysisResults.predictions && (
+              <div className="prediction-analysis-result">
+                <h4>예측 분석 결과</h4>
+                {analysisResults.predictions.map((pred: {
+                  category: string;
+                  prediction: string;
+                }, index: number) => (
+                  <div key={index} className="prediction-item">
+                    <span className="prediction-category">{pred.category}</span>
+                    <span className="prediction-value">{pred.prediction}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {analysisResults?.type === 'advanced' && analysisResults.data && (
+              <div className="advanced-analysis-result">
+                <h4>고급 분석 결과</h4>
+                <div className="analysis-sections">
+                  <div className="analysis-section">
+                    <h5>성능 분석</h5>
+                    <div className="performance-metrics">
+                      <div className="metric">
+                        <span>응답 시간</span>
+                        <span>{analysisResults.data.performance.responseTime.toFixed(2)}초</span>
+                      </div>
+                      <div className="metric">
+                        <span>정확도</span>
+                        <span>{analysisResults.data.performance.accuracy.toFixed(1)}%</span>
+                      </div>
+                      <div className="metric">
+                        <span>만족도</span>
+                        <span>{analysisResults.data.performance.satisfaction.toFixed(1)}/5.0</span>
+                      </div>
+                      <div className="metric">
+                        <span>CPU 사용률</span>
+                        <span>{analysisResults.data.performance.cpu.toFixed(1)}%</span>
+                      </div>
+                      <div className="metric">
+                        <span>메모리 사용률</span>
+                        <span>{analysisResults.data.performance.memory.toFixed(1)}%</span>
+                      </div>
+                      <div className="metric">
+                        <span>디스크 사용률</span>
+                        <span>{analysisResults.data.performance.disk.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="analysis-section">
+                    <h5>보안 지표</h5>
+                    <div className="security-metrics">
+                      <div className="metric">
+                        <span>암호화 수준</span>
+                        <span>{analysisResults.data.security.encryptionLevel}</span>
+                      </div>
+                      <div className="metric">
+                        <span>인증 방법</span>
+                        <span>{analysisResults.data.security.authenticationMethod}</span>
+                      </div>
+                      <div className="metric">
+                        <span>데이터 보호</span>
+                        <span>{analysisResults.data.security.dataProtection}</span>
+                      </div>
+                      <div className="metric">
+                        <span>위협 수</span>
+                        <span>{analysisResults.data.security.threats}</span>
+                      </div>
+                      <div className="metric">
+                        <span>취약점 수</span>
+                        <span>{analysisResults.data.security.vulnerabilities}</span>
+                      </div>
+                      <div className="metric">
+                        <span>마지막 스캔</span>
+                        <span>{new Date(analysisResults.data.security.lastScan).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="analysis-section">
+                    <h5>사용량 지표</h5>
+                    <div className="usage-metrics">
+                      <div className="metric">
+                        <span>일일 활성 사용자</span>
+                        <span>{analysisResults.data.usage.dailyActiveUsers.toLocaleString()}</span>
+                      </div>
+                      <div className="metric">
+                        <span>월간 성장률</span>
+                        <span>{analysisResults.data.usage.monthlyGrowth.toFixed(1)}%</span>
+                      </div>
+                      <div className="metric">
+                        <span>유지율</span>
+                        <span>{analysisResults.data.usage.retentionRate.toFixed(1)}%</span>
+                      </div>
+                      <div className="metric">
+                        <span>총 메시지</span>
+                        <span>{analysisResults.data.usage.totalMessages.toLocaleString()}</span>
+                      </div>
+                      <div className="metric">
+                        <span>활성 프로젝트</span>
+                        <span>{analysisResults.data.usage.activeProjects}</span>
+                      </div>
+                      <div className="metric">
+                        <span>저장소 사용량</span>
+                        <span>{analysisResults.data.usage.storageUsed.toFixed(1)} MB</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 숨겨진 파일 업로드 */}
+      <input
+        id="image-upload"
+        type="file"
+        accept="image/*"
+        onChange={handleImageAnalysis}
+        style={{ display: 'none' }}
+        aria-label="이미지 파일 업로드"
+        title="이미지 파일을 선택하세요"
+      />
+
+      {/* 알림 패널 */}
+      {showNotifications && (
+        <div className="notifications-panel">
+          <div className="notifications-header">
+            <h3>알림</h3>
+            <button
+              className="close-notifications"
+              onClick={() => setShowNotifications(false)}
+              aria-label="알림 패널 닫기"
+              title="알림 패널을 닫습니다"
+            >
+              ×
+            </button>
+          </div>
+          <div className="notifications-list">
+            {notifications.length === 0 ? (
+              <p className="no-notifications">새로운 알림이 없습니다.</p>
+            ) : (
+              notifications.map(notification => (
+                <div key={notification.id} className={`notification-item ${notification.type}`}>
+                  <div className="notification-header">
+                    <span className="notification-title">{notification.title}</span>
+                    <span className="notification-time">
+                      {notification.timestamp.toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <p className="notification-message">{notification.message}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+
+
+      {/* 실시간 협업 패널 */}
+      {collaborationSession && (
+        <div className="collaboration-panel">
+          <h3>실시간 협업</h3>
+          <div className="collaboration-participants">
+            <h4>참여자 ({collaborationSession.participants.length})</h4>
+            {collaborationSession.participants.map(participant => (
+              <div key={participant.id} className="participant-item">
+                <div className={`participant-status ${participant.status}`}></div>
+                <div className="participant-info">
+                  <span className="participant-name">{participant.name}</span>
+                  <span className="participant-task">{participant.currentTask}</span>
+                  <span className="participant-activity">
+                    마지막 활동: {new Date(participant.lastActivity).toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="shared-files">
+            <h4>공유 파일 ({collaborationSession.sharedFiles.length})</h4>
+            {collaborationSession.sharedFiles.map(file => (
+              <div key={file.id} className="shared-file-item">
+                <span className="file-name">{file.name}</span>
+                <span className="file-modified">
+                  수정: {new Date(file.lastModified).toLocaleString()} by {file.modifiedBy}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="active-editors">
+            <h4>활성 편집자 ({collaborationSession.activeEditors.length})</h4>
+            {collaborationSession.activeEditors.map(editor => (
+              <div key={`${editor.fileId}-${editor.userId}`} className="editor-item">
+                <span className="editor-user">{editor.userName}</span>
+                <span className="editor-position">
+                  라인 {editor.cursorPosition.line}, 열 {editor.cursorPosition.column}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 고급 통계 패널 */}
+      {advancedStats && (
+        <div className="advanced-stats-panel">
+          <h3>고급 통계</h3>
+
+          <div className="stats-section">
+            <h4>생산성 지표</h4>
+            <div className="stats-grid">
+              <div className="stat-item">
+                <span className="stat-label">시간당 메시지</span>
+                <span className="stat-value">{advancedStats.productivity.messagesPerHour}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">응답 시간</span>
+                <span className="stat-value">{advancedStats.productivity.responseTime.toFixed(2)}초</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">정확도</span>
+                <span className="stat-value">{advancedStats.productivity.accuracy.toFixed(1)}%</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">사용자 만족도</span>
+                <span className="stat-value">{advancedStats.productivity.userSatisfaction.toFixed(1)}/5.0</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-section">
+            <h4>시스템 성능</h4>
+            <div className="stats-grid">
+              <div className="stat-item">
+                <span className="stat-label">CPU 사용률</span>
+                <span className="stat-value">{advancedStats.system.cpuUsage.toFixed(1)}%</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">메모리 사용률</span>
+                <span className="stat-value">{advancedStats.system.memoryUsage.toFixed(1)}%</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">네트워크 지연</span>
+                <span className="stat-value">{advancedStats.system.networkLatency.toFixed(1)}ms</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">오류율</span>
+                <span className="stat-value">{advancedStats.system.errorRate.toFixed(2)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-section">
+            <h4>사용량 트렌드</h4>
+            <div className="trend-chart">
+              {advancedStats.trends.dailyActiveUsers.map((users, index) => (
+                <div key={index} className="trend-bar" style={{ height: `${(users / 1500) * 100}%` }}>
+                  <span className="trend-label">{users}</span>
+                </div>
+              ))}
+            </div>
+            <div className="trend-metrics">
+              <div className="trend-item">
+                <span>주간 성장률</span>
+                <span>{advancedStats.trends.weeklyGrowth.toFixed(1)}%</span>
+              </div>
+              <div className="trend-item">
+                <span>월간 유지율</span>
+                <span>{advancedStats.trends.monthlyRetention.toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-section">
+            <h4>기능 사용률</h4>
+            <div className="feature-usage">
+              <div className="usage-item">
+                <span>채팅</span>
+                <div className="usage-bar">
+                  <div className="usage-fill" style={{ width: `${advancedStats.trends.featureUsage.chat}%` }}></div>
+                </div>
+                <span>{advancedStats.trends.featureUsage.chat.toFixed(1)}%</span>
+              </div>
+              <div className="usage-item">
+                <span>분석</span>
+                <div className="usage-bar">
+                  <div className="usage-fill" style={{ width: `${advancedStats.trends.featureUsage.analysis}%` }}></div>
+                </div>
+                <span>{advancedStats.trends.featureUsage.analysis.toFixed(1)}%</span>
+              </div>
+              <div className="usage-item">
+                <span>협업</span>
+                <div className="usage-bar">
+                  <div className="usage-fill" style={{ width: `${advancedStats.trends.featureUsage.collaboration}%` }}></div>
+                </div>
+                <span>{advancedStats.trends.featureUsage.collaboration.toFixed(1)}%</span>
+              </div>
+              <div className="usage-item">
+                <span>파일 공유</span>
+                <div className="usage-bar">
+                  <div className="usage-fill" style={{ width: `${advancedStats.trends.featureUsage.fileSharing}%` }}></div>
+                </div>
+                <span>{advancedStats.trends.featureUsage.fileSharing.toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 파일 업로드 모달 */}
+      {showFileUpload && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>파일 업로드</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowFileUpload(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="file-upload-area">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="file-input"
+                  aria-label="파일 선택"
+                  title="업로드할 파일을 선택하세요"
+                />
+                <p className="upload-hint">파일을 선택하거나 여기에 드래그하세요</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 지침 편집 모달 */}
+      {showGuidelineEditor && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>{editingGuideline ? '지침 수정' : '새 지침 추가'}</h3>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setShowGuidelineEditor(false);
+                  setEditingGuideline(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>제목</label>
+                <input
+                  type="text"
+                  defaultValue={editingGuideline?.title || ''}
+                  className="form-input"
+                  placeholder="지침 제목을 입력하세요"
+                />
+              </div>
+              <div className="form-group">
+                <label>내용</label>
+                <textarea
+                  defaultValue={editingGuideline?.content || ''}
+                  className="form-textarea"
+                  rows={5}
+                  placeholder="지침 내용을 입력하세요"
+                />
+              </div>
+              <div className="form-group">
+                <label>우선순위</label>
+                <select className="form-select" defaultValue={editingGuideline?.priority || 'medium'} aria-label="우선순위 선택" title="지침의 우선순위를 선택하세요">
+                  <option value="low">낮음</option>
+                  <option value="medium">보통</option>
+                  <option value="high">높음</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowGuidelineEditor(false);
+                  setEditingGuideline(null);
+                }}
+              >
+                취소
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => handleGuidelineSave({
+                  title: '새 지침',
+                  content: '지침 내용',
+                  priority: 'medium'
+                })}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI 문서 분석 결과 */}
+      {documentAnalysis && (
+        <div className="document-analysis-panel">
+          <h3>AI 문서 분석 결과</h3>
+          <div className="analysis-header">
+            <div className="file-info">
+              <span className="filename">{documentAnalysis.filename}</span>
+              <span className={`status ${documentAnalysis.status}`}>
+                {documentAnalysis.status === 'processing' ? '분석 중...' :
+                  documentAnalysis.status === 'completed' ? '분석 완료' : '오류'}
+              </span>
+            </div>
+            {documentAnalysis.status === 'completed' && (
+              <div className="processing-time">
+                처리 시간: {documentAnalysis.processingTime}초
+              </div>
+            )}
+          </div>
+
+          {documentAnalysis.status === 'completed' && documentAnalysis.results && (
+            <div className="analysis-results">
+              <div className="result-section">
+                <h4>요약</h4>
+                <p>{documentAnalysis.results.summary}</p>
+              </div>
+
+              <div className="result-section">
+                <h4>주요 포인트</h4>
+                <ul className="key-points">
+                  {documentAnalysis.results.keyPoints.map((point, index) => (
+                    <li key={index}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="result-section">
+                <h4>감정 분석</h4>
+                <div className={`sentiment ${documentAnalysis.results.sentiment}`}>
+                  {documentAnalysis.results.sentiment === 'positive' ? '긍정적' :
+                    documentAnalysis.results.sentiment === 'negative' ? '부정적' : '중립'}
+                </div>
+              </div>
+
+              <div className="result-section">
+                <h4>추출된 엔티티</h4>
+                <div className="entities-grid">
+                  {documentAnalysis.results.entities.map((entity, index) => (
+                    <div key={index} className="entity-item">
+                      <span className="entity-name">{entity.name}</span>
+                      <span className="entity-type">{entity.type}</span>
+                      <span className="entity-confidence">
+                        신뢰도: {(entity.confidence * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="result-section">
+                <h4>주제 분석</h4>
+                <div className="topics-chart">
+                  {documentAnalysis.results.topics.map((topic, index) => (
+                    <div key={index} className="topic-item">
+                      <span className="topic-name">{topic.name}</span>
+                      <div className="topic-bar">
+                        <div
+                          className="topic-fill"
+                          style={{ width: `${topic.weight * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className="topic-weight">{(topic.weight * 100).toFixed(1)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="result-section">
+                <h4>추천사항</h4>
+                <ul className="recommendations">
+                  {documentAnalysis.results.recommendations.map((rec, index) => (
+                    <li key={index}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 제거된 패널들:
+      - 자동화 워크플로우 패널
+      - 고급 검색 패널 */}
+
+      {/* 제거된 패널들:
+      - ML 예측 분석 패널
+      - 보안 대시보드 패널
+      - 데이터 시각화 패널
+      - 블록체인 무결성 검증 패널
+      - AI 모델 관리 패널
+      - 양자 컴퓨팅 시뮬레이션 패널 */}
+
+      {/* 신경망 시각화 패널 */}
+      <div className="neural-network-panel">
+        <h3>신경망 시각화</h3>
+
+        <div className="network-overview">
+          <h4>네트워크 구조</h4>
+          <div className="layers-visualization">
+            {neuralNetwork.layers.map((layer, layerIndex) => (
+              <div key={layer.id} className="layer-container">
+                <div className="layer-header">
+                  <h5>{layer.type.toUpperCase()} Layer</h5>
+                  <span className="layer-info">
+                    {layer.neurons} neurons, {layer.activation}
+                  </span>
+                </div>
+                <div className="neurons-grid">
+                  {Array.from({ length: layer.neurons }, (_, neuronIndex) => (
+                    <div key={neuronIndex} className="neuron">
+                      <div className="neuron-circle"></div>
+                      {layerIndex < neuralNetwork.layers.length - 1 && (
+                        <div className="connections">
+                          {Array.from({ length: neuralNetwork.layers[layerIndex + 1].neurons }, (_, nextNeuronIndex) => (
+                            <div
+                              key={nextNeuronIndex}
+                              className="connection"
+                              style={{
+                                opacity: layer.weights[neuronIndex]?.[nextNeuronIndex]
+                                  ? Math.abs(layer.weights[neuronIndex][nextNeuronIndex])
+                                  : 0.1
+                              }}
+                            ></div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="training-section">
+          <h4>훈련 상태</h4>
+          <div className="training-metrics">
+            <div className="metric-card">
+              <span className="metric-label">Epoch</span>
+              <span className="metric-value">
+                {neuralNetwork.training.epoch} / {neuralNetwork.training.totalEpochs}
+              </span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">Loss</span>
+              <span className="metric-value">{neuralNetwork.training.loss.toFixed(4)}</span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">Accuracy</span>
+              <span className="metric-value">{(neuralNetwork.training.accuracy * 100).toFixed(2)}%</span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">Learning Rate</span>
+              <span className="metric-value">{neuralNetwork.training.learningRate}</span>
+            </div>
+          </div>
+
+          <div className="training-controls">
+            <button
+              className="btn btn-primary"
+              onClick={startNeuralNetworkTraining}
+              disabled={neuralNetwork.training.isTraining}
+            >
+              {neuralNetwork.training.isTraining ? '훈련 중...' : '훈련 시작'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* AI 에이전트 시스템 패널 */}
+      <div className="ai-agents-panel">
+        <h3>AI 에이전트 시스템</h3>
+
+        <div className="agents-overview">
+          <h4>활성 에이전트 ({aiAgents.agents.length})</h4>
+          <div className="agents-grid">
+            {aiAgents.agents.map(agent => (
+              <div key={agent.id} className="agent-card">
+                <div className="agent-header">
+                  <h5>{agent.name}</h5>
+                  <span className={`agent-status ${agent.status}`}>
+                    {agent.status === 'active' ? '활성' :
+                      agent.status === 'idle' ? '대기' :
+                        agent.status === 'busy' ? '작업 중' : '학습 중'}
+                  </span>
+                </div>
+
+                <div className="agent-type">
+                  <span className="type-badge">{agent.type}</span>
+                </div>
+
+                <div className="agent-capabilities">
+                  <h6>능력</h6>
+                  <div className="capabilities-list">
+                    {agent.capabilities.map((capability, index) => (
+                      <span key={index} className="capability-tag">{capability}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="agent-performance">
+                  <h6>성능 지표</h6>
+                  <div className="performance-metrics">
+                    <div className="perf-metric">
+                      <span>완료 작업</span>
+                      <span>{agent.performance.tasksCompleted}</span>
+                    </div>
+                    <div className="perf-metric">
+                      <span>성공률</span>
+                      <span>{agent.performance.successRate}%</span>
+                    </div>
+                    <div className="perf-metric">
+                      <span>평균 응답시간</span>
+                      <span>{agent.performance.averageResponseTime}s</span>
+                    </div>
+                    <div className="perf-metric">
+                      <span>사용자 만족도</span>
+                      <span>{agent.performance.userSatisfaction}/5.0</span>
+                    </div>
+                  </div>
+                </div>
+
+                {agent.currentTask && (
+                  <div className="agent-current-task">
+                    <h6>현재 작업</h6>
+                    <div className="task-info">
+                      <div className="task-type">{agent.currentTask.type}</div>
+                      <div className="task-description">{agent.currentTask.description}</div>
+                      <div className="task-progress">
+                        <div className="progress-bar">
+                          <div
+                            className="progress-fill"
+                            style={{ width: `${agent.currentTask.progress}%` }}
+                          ></div>
+                        </div>
+                        <span className="progress-text">{agent.currentTask.progress}%</span>
+                      </div>
+                      <div className="task-time">
+                        시작: {new Date(agent.currentTask.startedAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="agent-memory">
+                  <h6>메모리</h6>
+                  <div className="memory-info">
+                    <div className="memory-section">
+                      <span className="memory-label">단기 메모리:</span>
+                      <span className="memory-count">{agent.memory.shortTerm.length} 항목</span>
+                    </div>
+                    <div className="memory-section">
+                      <span className="memory-label">장기 메모리:</span>
+                      <span className="memory-count">{agent.memory.longTerm.length} 항목</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="agent-actions">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => assignTaskToAgent(agent.id, '데이터 분석', '새로운 데이터셋 분석')}
+                  >
+                    작업 할당
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 실시간 학습 모니터링 패널 */}
+      <div className="learning-monitor-panel">
+        <h3>실시간 학습 모니터링</h3>
+
+        <div className="system-metrics">
+          <h4>시스템 메트릭</h4>
+          <div className="metrics-grid">
+            <div className="metric-card">
+              <span className="metric-label">GPU 사용률</span>
+              <span className="metric-value">{learningMonitor.systemMetrics.gpuUtilization}%</span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">메모리 사용률</span>
+              <span className="metric-value">{learningMonitor.systemMetrics.memoryUsage}%</span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">CPU 사용률</span>
+              <span className="metric-value">{learningMonitor.systemMetrics.cpuUsage}%</span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">네트워크 처리량</span>
+              <span className="metric-value">{learningMonitor.systemMetrics.networkThroughput} MB/s</span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">활성 연결</span>
+              <span className="metric-value">{learningMonitor.systemMetrics.activeConnections}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="active-models">
+          <h4>활성 모델 ({learningMonitor.activeModels.length})</h4>
+          <div className="models-list">
+            {learningMonitor.activeModels.map(model => (
+              <div key={model.id} className="model-training-card">
+                <div className="model-header">
+                  <h5>{model.name}</h5>
+                  <span className={`model-status ${model.status}`}>
+                    {model.status === 'training' ? '훈련 중' :
+                      model.status === 'evaluating' ? '평가 중' :
+                        model.status === 'deploying' ? '배포 중' : '완료'}
+                  </span>
+                </div>
+
+                <div className="model-metrics">
+                  <h6>성능 지표</h6>
+                  <div className="metrics-row">
+                    <div className="metric">
+                      <span>Loss</span>
+                      <span>{model.metrics.loss.toFixed(4)}</span>
+                    </div>
+                    <div className="metric">
+                      <span>Accuracy</span>
+                      <span>{(model.metrics.accuracy * 100).toFixed(2)}%</span>
+                    </div>
+                    <div className="metric">
+                      <span>Precision</span>
+                      <span>{(model.metrics.precision * 100).toFixed(2)}%</span>
+                    </div>
+                    <div className="metric">
+                      <span>Recall</span>
+                      <span>{(model.metrics.recall * 100).toFixed(2)}%</span>
+                    </div>
+                    <div className="metric">
+                      <span>F1 Score</span>
+                      <span>{(model.metrics.f1Score * 100).toFixed(2)}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="model-progress">
+                  <h6>진행 상황</h6>
+                  <div className="progress-info">
+                    <div className="progress-row">
+                      <span>Epoch</span>
+                      <span>{model.progress.epoch} / {model.progress.totalEpochs}</span>
+                    </div>
+                    <div className="progress-row">
+                      <span>Batch</span>
+                      <span>{model.progress.batch} / {model.progress.totalBatches}</span>
+                    </div>
+                    <div className="progress-row">
+                      <span>경과 시간</span>
+                      <span>{Math.floor(model.progress.timeElapsed / 60)}분 {model.progress.timeElapsed % 60}초</span>
+                    </div>
+                    <div className="progress-row">
+                      <span>예상 남은 시간</span>
+                      <span>{Math.floor(model.progress.estimatedTimeRemaining / 60)}분</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 제거된 고급 기능 모달:
+      - AdvancedFeatures 컴포넌트 제거됨 */}
+
+      {/* 음성 인식 테스트 버튼 */}
+      <button
+        onClick={() => setShowVoiceTest(!showVoiceTest)}
+        className="fixed bottom-20 right-4 bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 z-50"
+        title="음성 인식 테스트"
+      >
+        🎤
+      </button>
+
+      {/* 음성 인식 테스트 모달 */}
+      {showVoiceTest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold">음성 인식 시스템 테스트</h2>
+              <button
+                onClick={() => setShowVoiceTest(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <VoiceIntegrationTest />
+          </div>
+        </div>
+      )}
+
+      {/* 프로젝트 관리 버튼 */}
+      <button
+        onClick={() => setShowProjectRouter(!showProjectRouter)}
+        className="fixed bottom-32 right-4 bg-green-600 text-white p-3 rounded-full shadow-lg hover:bg-green-700 z-50"
+        title="프로젝트 관리"
+      >
+        📁
+      </button>
+
+      {/* 프로젝트 라우터 모달 */}
+      {showProjectRouter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-7xl mx-4 max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold">프로젝트 관리</h2>
+              <button
+                onClick={() => setShowProjectRouter(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="h-[calc(90vh-80px)] overflow-hidden">
+              <ProjectRouter />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;

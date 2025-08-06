@@ -166,7 +166,7 @@ class ConstructionCompanyAnalyzer:
                     positive_mentions += 1
                 elif any(neg_keyword in content for neg_keyword in self.negative_keywords):
                     negative_mentions += 1
-            else:
+                else:
                     neutral_mentions += 1
                 
                 # 홍보 논리 확인
@@ -353,7 +353,7 @@ class ConstructionCompanyAnalyzer:
             return "긍정적 편향"
         elif negative_companies > positive_companies:
             return "부정적 편향"
-                else:
+        else:
             return "균형적"
 
     def _calculate_promotion_vs_opposition(self, company_analysis: Dict[str, CompanyBias]) -> Dict[str, int]:

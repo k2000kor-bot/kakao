@@ -14,7 +14,7 @@ import {
     CheckCircleIcon,
     XMarkIcon
 } from '@heroicons/react/24/outline';
-import { AdvancedMessageAPI } from '../services/advancedMessageAPI';
+import { advancedMessageAPI } from '../services/advancedMessageAPI';
 
 interface AnalyticsData {
     total_messages: number;
@@ -70,7 +70,7 @@ const ConversationAnalyticsDashboard: React.FC<ConversationAnalyticsDashboardPro
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'emotions' | 'keywords' | 'engagement' | 'patterns'>('overview');
 
-    const api = new AdvancedMessageAPI();
+    const api = advancedMessageAPI;
 
     useEffect(() => {
         if (chatRoomId) {

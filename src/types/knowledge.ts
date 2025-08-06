@@ -76,9 +76,9 @@ export interface MessageGenerationResponse {
   generatedMessage: string;
   confidence: number;
   reasoning: string;
-  usedGuidelines: Guideline[];
+  usedGuidelines: string[];
   appliedRules: LogicRule[];
-  suggestions: string;
+  suggestions: string[];
   metadata: {
     processingTime: number;
     modelUsed: string;

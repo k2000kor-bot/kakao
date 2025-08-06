@@ -7,9 +7,11 @@ import {
   EyeIcon,
   FolderIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { fetchFileList, uploadFile, deleteFile } from '../services/fileService';
+import { useModalClose } from '../hooks/useModalClose';
 
 interface FileManagerModalProps {
   open: boolean;
@@ -43,6 +45,21 @@ const FileManagerModal: React.FC<FileManagerModalProps> = ({ open, onClose }) =>
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['all']));
   const [viewMode, setViewMode] = useState<'list' | 'category'>('category');
+
+  const { modalRef, handleClose } = useModalClose({
+    isOpen: open,
+    onClose: () => {
+      if (isUploading) {
+        if (window.confirm('파일 업로드가 진행 중입니다. 정말로 닫으시겠습니까?')) {
+          onClose();
+        }
+      } else {
+        onClose();
+      }
+    },
+    showConfirm: isUploading,
+    confirmMessage: '파일 업로드가 진행 중입니다. 정말로 닫으시겠습니까?'
+  });
 
   useEffect(() => {
     if (open) {
@@ -256,10 +273,17 @@ const FileManagerModal: React.FC<FileManagerModalProps> = ({ open, onClose }) =>
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+      <div ref={modalRef} className="bg-white rounded-lg shadow-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">파일 업로드 및 관리</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">✕</button>
+          <button 
+            onClick={handleClose}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="파일 관리 모달 닫기"
+            title="ESC 키로도 닫을 수 있습니다"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
         </div>
 
         {/* 성공/에러 메시지 */}

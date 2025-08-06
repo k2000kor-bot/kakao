@@ -1,433 +1,296 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { FiPlus, FiMic } from 'react-icons/fi';
 
-interface ConversationSummaryProps {
-    selectedRoomId: string;
-}
+const ConversationSummary: React.FC = () => {
+  const [inputMessage, setInputMessage] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
-interface ContextAnalysis {
-    situation_type: string;
-    urgency_level: string;
-    participants_involved: string[];
-    power_dynamics: string;
-    conflict_escalation?: boolean;
-    communication_breakdown?: boolean;
-    trust_erosion?: boolean;
-}
+  const handleSendMessage = () => {
+    if (inputMessage.trim() === '') return;
+    // 메시지 전송 로직
+    setInputMessage('');
+  };
 
-interface SentimentAnalysis {
-    overall_sentiment: string;
-    sentiment_score: number;
-    emotion_distribution: Record<string, number>;
-}
-
-interface TopicClassification {
-    primary_topic: string;
-    sub_topics: string[];
-    keyword_frequency: Record<string, number>;
-}
-
-interface SummarySection {
-    title: string;
-    context_analysis: ContextAnalysis;
-    key_points: string[];
-    sentiment_analysis: SentimentAnalysis;
-    topic_classification: TopicClassification;
-    summary: string;
-    action_items: string[];
-}
-
-interface OverallAnalysis {
-    total_conflicts: number;
-    escalation_level: string;
-    communication_health: string;
-    trust_level: string;
-    recommended_actions: string[];
-}
-
-interface SummaryData {
-    room_name: string;
-    period: string;
-    total_messages: number;
-    active_participants: number;
-    analysis_metadata: {
-        analysis_type: string;
-        analysis_engine: string;
-        context_aware: boolean;
-        keyword_extraction: boolean;
-        sentiment_analysis: boolean;
-        topic_classification: boolean;
-    };
-    summary_sections: SummarySection[];
-    overall_analysis: OverallAnalysis;
-    generated_at: string;
-}
-
-const ConversationSummary: React.FC<ConversationSummaryProps> = ({ selectedRoomId }) => {
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-    const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [chatRooms, setChatRooms] = useState<any[]>([]);
-    const [selectedRoom, setSelectedRoom] = useState<any>(null);
-    const [activeSection, setActiveSection] = useState<number | null>(null);
-
-    // 채팅방 목록 가져오기
-    useEffect(() => {
-        const fetchChatRooms = async () => {
-            try {
-                const response = await fetch('http://localhost:8000/api/v7/chat-rooms/detailed');
-                if (response.ok) {
-                    const data = await response.json();
-                    setChatRooms(data.chat_rooms);
-                    const currentRoom = data.chat_rooms.find((room: any) => room.id === selectedRoomId);
-                    setSelectedRoom(currentRoom);
-                }
-            } catch (error) {
-                console.error('채팅방 목록 가져오기 실패:', error);
-            }
-        };
-
-        fetchChatRooms();
-    }, [selectedRoomId]);
-
-    // 대화 요약 생성
-    const generateSummary = async () => {
-        if (!startDate || !endDate) {
-            setError('시작일과 종료일을 모두 선택해주세요.');
-            return;
-        }
-
-        setIsLoading(true);
-        setError('');
-
-        try {
-            const response = await fetch('http://localhost:8000/api/v7/conversation/summary', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    room_id: selectedRoomId,
-                    start_date: startDate,
-                    end_date: endDate
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setSummaryData(data.summary);
-            } else {
-                throw new Error('요약 생성 실패');
-            }
-        } catch (error) {
-            console.error('대화 요약 생성 실패:', error);
-            setError('대화 요약 생성 중 오류가 발생했습니다.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const getSentimentColor = (sentiment: string) => {
-        switch (sentiment) {
-            case '긍정적': return 'text-green-600';
-            case '부정적': return 'text-red-600';
-            case '중립적': return 'text-gray-600';
-            default: return 'text-gray-600';
-        }
-    };
-
-    const getUrgencyColor = (level: string) => {
-        switch (level) {
-            case '높음': return 'text-red-600 bg-red-100';
-            case '중간': return 'text-yellow-600 bg-yellow-100';
-            case '낮음': return 'text-green-600 bg-green-100';
-            default: return 'text-gray-600 bg-gray-100';
-        }
-    };
-
-    return (
-        <div className="conversation-summary">
-            <div className="summary-header">
-                <h2>
-                    <span className="header-icon">📊</span>
-                    실무용 대화 요약 생성
-                </h2>
-                <div className="room-info">
-                    {selectedRoom && (
-                        <div className="room-details">
-                            <span className="room-name">{selectedRoom.name}</span>
-                            <span className="participants">참여자: {selectedRoom.participants}명</span>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="summary-controls">
-                <div className="date-selection">
-                    <div className="date-input">
-                        <label htmlFor="start-date">시작일:</label>
-                        <input
-                            id="start-date"
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="date-picker"
-                        />
-                    </div>
-                    <div className="date-input">
-                        <label htmlFor="end-date">종료일:</label>
-                        <input
-                            id="end-date"
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="date-picker"
-                        />
-                    </div>
-                </div>
-                <button
-                    onClick={generateSummary}
-                    disabled={isLoading || !startDate || !endDate}
-                    className="generate-summary-btn"
-                >
-                    {isLoading ? '요약 생성 중...' : '실무용 대화 요약 생성'}
-                </button>
-            </div>
-
-            {error && (
-                <div className="error-message">
-                    ❌ {error}
-                </div>
-            )}
-
-            {summaryData && (
-                <div className="summary-content">
-                    <div className="summary-header-info">
-                        <h3>{summaryData.room_name}</h3>
-                        <p className="period">{summaryData.period}</p>
-                        <div className="summary-stats">
-                            <span>총 메시지: {summaryData.total_messages}개</span>
-                            <span>활성 참여자: {summaryData.active_participants}명</span>
-                        </div>
-
-                        {/* 분석 메타데이터 */}
-                        <div className="analysis-metadata">
-                            <h4>분석 정보</h4>
-                            <div className="metadata-grid">
-                                <div className="metadata-item">
-                                    <span className="label">분석 타입:</span>
-                                    <span className="value">{summaryData.analysis_metadata.analysis_type}</span>
-                                </div>
-                                <div className="metadata-item">
-                                    <span className="label">분석 엔진:</span>
-                                    <span className="value">{summaryData.analysis_metadata.analysis_engine}</span>
-                                </div>
-                                <div className="metadata-item">
-                                    <span className="label">맥락 인식:</span>
-                                    <span className="value">{summaryData.analysis_metadata.context_aware ? '활성화' : '비활성화'}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 전체 분석 */}
-                        <div className="overall-analysis">
-                            <h4>전체 분석 결과</h4>
-                            <div className="overall-stats">
-                                <div className="stat-item">
-                                    <span className="label">총 갈등:</span>
-                                    <span className="value">{summaryData.overall_analysis.total_conflicts}건</span>
-                                </div>
-                                <div className="stat-item">
-                                    <span className="label">갈등 수준:</span>
-                                    <span className={`value ${getUrgencyColor(summaryData.overall_analysis.escalation_level)}`}>
-                                        {summaryData.overall_analysis.escalation_level}
-                                    </span>
-                                </div>
-                                <div className="stat-item">
-                                    <span className="label">커뮤니케이션 상태:</span>
-                                    <span className={`value ${getUrgencyColor(summaryData.overall_analysis.communication_health)}`}>
-                                        {summaryData.overall_analysis.communication_health}
-                                    </span>
-                                </div>
-                                <div className="stat-item">
-                                    <span className="label">신뢰도:</span>
-                                    <span className={`value ${getUrgencyColor(summaryData.overall_analysis.trust_level)}`}>
-                                        {summaryData.overall_analysis.trust_level}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="recommended-actions">
-                                <h5>권장 조치사항</h5>
-                                <ul>
-                                    {summaryData.overall_analysis.recommended_actions.map((action, index) => (
-                                        <li key={index}>{action}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="summary-sections">
-                        {summaryData.summary_sections.map((section, index) => (
-                            <div key={index} className="summary-section">
-                                <div className="section-header" onClick={() => setActiveSection(activeSection === index ? null : index)}>
-                                    <h4 className="section-title">{section.title}</h4>
-                                    <span className="expand-icon">{activeSection === index ? '▼' : '▶'}</span>
-                                </div>
-
-                                {activeSection === index && (
-                                    <div className="section-content">
-                                        {/* 맥락 분석 */}
-                                        <div className="context-analysis">
-                                            <h5>맥락 분석</h5>
-                                            <div className="context-grid">
-                                                <div className="context-item">
-                                                    <span className="label">상황 타입:</span>
-                                                    <span className="value">{section.context_analysis.situation_type}</span>
-                                                </div>
-                                                <div className="context-item">
-                                                    <span className="label">긴급도:</span>
-                                                    <span className={`value ${getUrgencyColor(section.context_analysis.urgency_level)}`}>
-                                                        {section.context_analysis.urgency_level}
-                                                    </span>
-                                                </div>
-                                                <div className="context-item">
-                                                    <span className="label">참여자:</span>
-                                                    <span className="value">{section.context_analysis.participants_involved.join(', ')}</span>
-                                                </div>
-                                                <div className="context-item">
-                                                    <span className="label">권력 구조:</span>
-                                                    <span className="value">{section.context_analysis.power_dynamics}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* 감정 분석 */}
-                                        <div className="sentiment-analysis">
-                                            <h5>감정 분석</h5>
-                                            <div className="sentiment-info">
-                                                <div className="sentiment-overall">
-                                                    <span className="label">전체 감정:</span>
-                                                    <span className={`value ${getSentimentColor(section.sentiment_analysis.overall_sentiment)}`}>
-                                                        {section.sentiment_analysis.overall_sentiment}
-                                                    </span>
-                                                </div>
-                                                <div className="sentiment-score">
-                                                    <span className="label">감정 점수:</span>
-                                                    <span className="value">{section.sentiment_analysis.sentiment_score.toFixed(2)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="emotion-distribution">
-                                                <h6>감정 분포</h6>
-                                                <div className="emotion-chart">
-                                                    {Object.entries(section.sentiment_analysis.emotion_distribution).map(([emotion, score]) => (
-                                                        <div key={emotion} className="emotion-item">
-                                                            <span className="emotion-name">{emotion}</span>
-                                                            <div className="emotion-bar">
-                                                                <div
-                                                                    className="emotion-fill"
-                                                                    style={{ width: `${score * 100}%` }}
-                                                                ></div>
-                                                            </div>
-                                                            <span className="emotion-score">{(score * 100).toFixed(1)}%</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* 주제 분류 */}
-                                        <div className="topic-classification">
-                                            <h5>주제 분류</h5>
-                                            <div className="topic-info">
-                                                <div className="primary-topic">
-                                                    <span className="label">주요 주제:</span>
-                                                    <span className="value">{section.topic_classification.primary_topic}</span>
-                                                </div>
-                                                <div className="sub-topics">
-                                                    <span className="label">세부 주제:</span>
-                                                    <span className="value">{section.topic_classification.sub_topics.join(', ')}</span>
-                                                </div>
-                                            </div>
-                                            <div className="keyword-frequency">
-                                                <h6>키워드 빈도</h6>
-                                                <div className="keyword-chart">
-                                                    {Object.entries(section.topic_classification.keyword_frequency)
-                                                        .sort(([, a], [, b]) => b - a)
-                                                        .slice(0, 5)
-                                                        .map(([keyword, frequency]) => (
-                                                            <div key={keyword} className="keyword-item">
-                                                                <span className="keyword-name">{keyword}</span>
-                                                                <div className="keyword-bar">
-                                                                    <div
-                                                                        className="keyword-fill"
-                                                                        style={{ width: `${(frequency / Math.max(...Object.values(section.topic_classification.keyword_frequency))) * 100}%` }}
-                                                                    ></div>
-                                                                </div>
-                                                                <span className="keyword-count">{frequency}회</span>
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="key-points">
-                                            <h5>주요 발언</h5>
-                                            <ul>
-                                                {section.key_points.map((point, pointIndex) => (
-                                                    <li key={pointIndex}>{point}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-
-                                        <div className="section-summary">
-                                            <h5>대화 요약</h5>
-                                            <p>{section.summary}</p>
-                                        </div>
-
-                                        <div className="action-items">
-                                            <h5>권장 조치사항</h5>
-                                            <ul>
-                                                {section.action_items.map((item, itemIndex) => (
-                                                    <li key={itemIndex}>{item}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="summary-footer">
-                        <p className="generated-time">
-                            생성 시간: {new Date(summaryData.generated_at).toLocaleString()}
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {!summaryData && !isLoading && (
-                <div className="empty-state">
-                    <div className="empty-icon">📝</div>
-                    <h3>실무용 대화 요약을 생성해보세요</h3>
-                    <p>시작일과 종료일을 선택한 후 요약을 생성하세요.</p>
-                    <div className="features-list">
-                        <h4>주요 기능:</h4>
-                        <ul>
-                            <li>맥락 인식 분석</li>
-                            <li>감정 분석 및 분포</li>
-                            <li>주제 분류 및 키워드 추출</li>
-                            <li>갈등 수준 평가</li>
-                            <li>실무용 권장 조치사항</li>
-                        </ul>
-                    </div>
-                </div>
-            )}
+  return (
+    <div className="flex h-screen bg-gray-50">
+      {/* Left Sidebar */}
+      <div className="w-64 bg-gray-800 text-white flex flex-col">
+        {/* Top Section */}
+        <div className="p-4 border-b border-gray-700">
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="w-8 h-8 bg-blue-500 rounded"></div>
+            <span className="font-semibold">CORBU.AI</span>
+          </div>
+          <div className="flex space-x-2">
+            <div className="w-6 h-6 bg-gray-600 rounded"></div>
+            <div className="w-6 h-6 bg-gray-600 rounded"></div>
+            <div className="w-6 h-6 bg-gray-600 rounded"></div>
+            <div className="w-6 h-6 bg-gray-600 rounded"></div>
+          </div>
         </div>
-    );
+
+        {/* Main Navigation */}
+        <div className="flex-1 p-4 space-y-4">
+          <div className="flex items-center space-x-3 text-sm">
+            <div className="w-4 h-4 bg-gray-600 rounded"></div>
+            <span>새 채팅</span>
+          </div>
+          <div className="flex items-center space-x-3 text-sm">
+            <div className="w-4 h-4 bg-gray-600 rounded"></div>
+            <span>채팅 검색</span>
+          </div>
+          <div className="flex items-center space-x-3 text-sm">
+            <div className="w-4 h-4 bg-gray-600 rounded"></div>
+            <span>라이브러리</span>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <div>Codex</div>
+            <div>Sora</div>
+            <div>GPT</div>
+            <div>챗</div>
+          </div>
+
+          {/* Project Section */}
+          <div className="pt-4">
+            <div className="flex items-center space-x-3 text-sm mb-4">
+              <div className="w-4 h-4 bg-gray-600 rounded"></div>
+              <span>새 프로젝트</span>
+            </div>
+            <div className="flex items-center space-x-3 text-sm mb-4">
+              <div className="w-4 h-4 bg-gray-600 rounded"></div>
+              <span>바이럴</span>
+            </div>
+
+            {/* Project List */}
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>채팅방 논의 요약</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>행복한소유 개포우성7차 요약</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>삼성 홍보 반박</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>70대 조합원 반박글</span>
+              </div>
+              <div className="flex items-center space-x-2 bg-gray-700 p-2 rounded">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>DA 설계 의견 요청</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>모두 보기</span>
+              </div>
+            </div>
+
+            {/* Additional Sections */}
+            <div className="pt-4 space-y-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>개포우성_실명방</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>부동산뉴스</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>웨딩다이어리</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>바이럴메뉴얼</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-600 rounded"></div>
+                <span>더 보기</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="pt-4">
+            <div className="text-sm font-medium mb-2">채팅</div>
+            <div className="space-y-2 text-sm">
+              <div>SM-T530 루팅 방법</div>
+              <div>상가 보상 비율 분석</div>
+              <div>지하철 직결 아파트</div>
+              <div>원격주차보조 사용법</div>
+              <div>금리 차이 및 조건 비교</div>
+            </div>
+          </div>
+        </div>
+
+        {/* User Profile */}
+        <div className="p-4 border-t border-gray-700">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gray-600 rounded-full"></div>
+            <span className="text-sm">KIM HOBUM</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className="font-semibold">CORBU.AI</span>
+              <div className="flex space-x-2">
+                <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                <div className="w-4 h-4 bg-gray-300 rounded"></div>
+              </div>
+            </div>
+            <button className="px-4 py-2 bg-blue-500 text-white rounded text-sm flex items-center space-x-2">
+              <div className="w-4 h-4 bg-white rounded"></div>
+              <span>공유하기</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Document Display Area */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
+            {/* Top Action Buttons */}
+            <div className="flex justify-end space-x-2 mb-6">
+              <button className="px-4 py-2 bg-blue-500 text-white rounded text-sm">
+                대화내용 요약해줘
+              </button>
+              <button
+                className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center"
+                title="편집"
+              >
+                <div className="w-4 h-4 bg-gray-600 rounded-sm"></div>
+              </button>
+              <button
+                className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center"
+                title="다운로드"
+              >
+                <div className="w-4 h-4 bg-gray-600 rounded-sm"></div>
+              </button>
+            </div>
+
+            {/* Conversation Summary */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
+              <div className="prose max-w-none">
+                <h2 className="text-lg font-bold mb-4">
+                  다음은 실명 채팅방 [인증] 행복한소유 개포우성7차의 2025년 7월 14일 대화 내용을 주요 이슈 중심으로 정리한 요약입니다:
+                </h2>
+
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-4 h-4 bg-green-500 rounded-full mt-1"></div>
+                    <div>
+                      <h3 className="font-semibold">1. 시공사 평가 기준 및 설명회 기대</h3>
+                      <ul className="list-disc list-inside space-y-1 mt-2 text-sm">
+                        <li><strong>이재헌:</strong> 시공사 평가 기준이 중요하다고 강조</li>
+                        <li><strong>박재우:</strong> 내용 확인의 중요성 언급</li>
+                        <li><strong>박은진:</strong> 설명회 발표자의 중요성 강조</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <div className="w-4 h-4 bg-green-500 rounded-full mt-1"></div>
+                    <div>
+                      <h3 className="font-semibold">2. 공사비 관련 견해</h3>
+                      <ul className="list-disc list-inside space-y-1 mt-2 text-sm">
+                        <li><strong>이재헌:</strong> 공사비가 같을 경우 브랜드 등 다양한 요소 고려</li>
+                        <li><strong>박재우:</strong> GS와 삼성 조건 비교 불가 주장</li>
+                        <li><strong>정지혜:</strong> 제안서 확인 후 판단 주장</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Down Arrow */}
+            <div className="text-center mb-4">
+              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center mx-auto">
+                <div className="w-2 h-2 bg-white rounded-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Input Bar */}
+        <div className="border-t border-gray-200 bg-white p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className={`bg-gray-50 rounded-lg border border-gray-300 p-4 transition-all duration-200 ${isInputFocused ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
+              }`}>
+              {/* Input Field */}
+              <div className="flex items-start space-x-3">
+                {/* Left Tools */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800"
+                    title="파일 첨부"
+                  >
+                    <div className="w-4 h-4 bg-gray-500 rounded"></div>
+                  </button>
+                  <button
+                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
+                    title="도구 메뉴"
+                  >
+                    <div className="w-4 h-4 bg-black rounded-sm flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-sm"></div>
+                    </div>
+                    <span className="text-sm">도구</span>
+                  </button>
+                </div>
+
+                {/* Main Input */}
+                <div className="flex-1">
+                  <textarea
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="무엇이든 물어보세요"
+                    className={`w-full bg-transparent border-none outline-none resize-none text-gray-900 transition-all duration-200 ${inputMessage.trim() === ''
+                      ? 'placeholder-gray-400'
+                      : 'placeholder-gray-500'
+                      } focus:placeholder-gray-600`}
+                    rows={3}
+                    title="메시지 입력"
+                    onFocus={() => setIsInputFocused(true)}
+                    onBlur={() => setIsInputFocused(false)}
+                  />
+                </div>
+
+                {/* Right Controls */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800"
+                    title="음성 입력"
+                  >
+                    <div className="w-4 h-4 bg-gray-500 rounded"></div>
+                  </button>
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <div className="flex space-x-0.5">
+                      <div className="w-0.5 h-2 bg-gray-400 rounded-sm"></div>
+                      <div className="w-0.5 h-4 bg-gray-400 rounded-sm"></div>
+                      <div className="w-0.5 h-5 bg-gray-400 rounded-sm"></div>
+                      <div className="w-0.5 h-4 bg-gray-400 rounded-sm"></div>
+                      <div className="w-0.5 h-2 bg-gray-400 rounded-sm"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ConversationSummary; 

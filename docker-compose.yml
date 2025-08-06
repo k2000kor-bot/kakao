@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # 백엔드 서비스
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: corbu-ai-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:///./database.db
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./backend:/app
+      - ./database:/app/database
+    networks:
+      - corbu-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 프론트엔드 서비스
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: corbu-ai-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - corbu-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 데이터베이스 서비스 (선택사항)
+  database:
+    image: postgres:15-alpine
+    container_name: corbu-ai-database
+    environment:
+      - POSTGRES_DB=corbu_ai
+      - POSTGRES_USER=corbu_user
+      - POSTGRES_PASSWORD=corbu_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - corbu-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U corbu_user -d corbu_ai"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis 캐시 (선택사항)
+  redis:
+    image: redis:7-alpine
+    container_name: corbu-ai-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - corbu-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 모니터링 서비스 (선택사항)
+  monitoring:
+    image: prom/prometheus:latest
+    container_name: corbu-ai-monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - corbu-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+
+networks:
+  corbu-network:
+    driver: bridge 

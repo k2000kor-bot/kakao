@@ -1,552 +1,423 @@
-import os
-import re
+#!/usr/bin/env python3
+"""
+대화 분석 시스템
+- 대화 패턴 분석
+- 감정 트렌드 분석
+- 사용자 행동 분석
+- 대화 품질 평가
+"""
+
 import json
-import sqlite3
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass
-from pathlib import Path
-import logging
+from typing import Dict, List, Optional, Any, Tuple
 from collections import defaultdict, Counter
-import pandas as pd
+import logging
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class ChatMessage:
-    """채팅 메시지 데이터 클래스"""
-    id: str
-    sender: str
-    content: str
-    timestamp: datetime
-    message_type: str = "text"
-    media_files: List[str] = None
-    links: List[str] = None
-    sentiment: str = "neutral"
-    topics: List[str] = None
 
-@dataclass
-class ConversationSummary:
-    """대화 요약 데이터 클래스"""
-    period_start: datetime
-    period_end: datetime
-    total_messages: int
-    unique_speakers: int
-    main_topics: List[str]
-    key_issues: List[Dict[str, Any]]
-    speaker_summaries: List[Dict[str, Any]]
-    sentiment_analysis: Dict[str, Any]
-
-class KakaoTalkAnalyzer:
-    """카카오톡 대화 분석기"""
-    
-    def __init__(self, db_path: str = "conversations.db"):
-        self.db_path = db_path
-        self.init_database()
-    
-    def init_database(self):
-        """데이터베이스 초기화"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+class ConversationAnalyzer:
+    def __init__(self):
+        self.conversation_data = []
+        self.user_profiles = {}
+        self.analysis_cache = {}
         
-        # 채팅방 테이블
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS chat_rooms (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # 메시지 테이블 (기존 테이블 확장)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS messages (
-                id TEXT PRIMARY KEY,
-                chat_room_id TEXT,
-                sender TEXT NOT NULL,
-                content TEXT NOT NULL,
-                message_type TEXT DEFAULT 'text',
-                timestamp TIMESTAMP,
-                sentiment TEXT DEFAULT 'neutral',
-                topics TEXT,
-                media_files TEXT,
-                links TEXT,
-                FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id)
-            )
-        ''')
-        
-        # 대화 요약 테이블
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS conversation_summaries (
-                id TEXT PRIMARY KEY,
-                chat_room_id TEXT,
-                period_start TIMESTAMP,
-                period_end TIMESTAMP,
-                summary_data TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id)
-            )
-        ''')
-        
-        # 발언자 요약 테이블
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS speaker_summaries (
-                id TEXT PRIMARY KEY,
-                chat_room_id TEXT,
-                speaker_name TEXT,
-                period_start TIMESTAMP,
-                period_end TIMESTAMP,
-                message_count INTEGER,
-                main_topics TEXT,
-                sentiment_analysis TEXT,
-                key_statements TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id)
-            )
-        ''')
-        
-        conn.commit()
-        conn.close()
-    
-    def parse_kakao_chat_file(self, file_path: str, chat_room_id: str) -> List[ChatMessage]:
-        """카카오톡 대화 파일 파싱"""
-        messages = []
-        
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # 카카오톡 대화 형식 파싱
-        # 형식: [날짜] [시간] [이름] : [메시지]
-        pattern = r'\[([^\]]+)\] \[([^\]]+)\] ([^:]+) : (.+)'
-        
-        for line in content.split('\n'):
-            if not line.strip():
-                continue
+    def add_conversation(self, conversation_data: Dict[str, Any]):
+        """대화 데이터 추가"""
+        try:
+            # 기본 정보 추가
+            conversation_data["analyzed_at"] = datetime.now().isoformat()
+            conversation_data["conversation_id"] = self._generate_conversation_id()
             
-            match = re.match(pattern, line)
-            if match:
-                date_str, time_str, sender, content = match.groups()
-                
-                # 날짜와 시간 결합
-                datetime_str = f"{date_str} {time_str}"
-                try:
-                    timestamp = datetime.strptime(datetime_str, "%Y년 %m월 %d일 %H:%M")
-                except ValueError:
-                    try:
-                        timestamp = datetime.strptime(datetime_str, "%Y. %m. %d. %H:%M")
-                    except ValueError:
-                        timestamp = datetime.now()
-                
-                # 메시지 타입 및 미디어 파일 추출
-                message_type, media_files, links = self.extract_message_components(content)
-                
-                # 메시지 ID 생성
-                message_id = f"{chat_room_id}_{timestamp.strftime('%Y%m%d_%H%M%S')}_{len(messages)}"
-                
-                message = ChatMessage(
-                    id=message_id,
-                    sender=sender.strip(),
-                    content=content.strip(),
-                    timestamp=timestamp,
-                    message_type=message_type,
-                    media_files=media_files,
-                    links=links
-                )
-                
-                messages.append(message)
-        
-        return messages
+            # 분석 데이터 추가
+            analysis_result = self._analyze_single_conversation(conversation_data)
+            conversation_data["analysis"] = analysis_result
+            
+            self.conversation_data.append(conversation_data)
+            
+            # 캐시 초기화
+            self.analysis_cache.clear()
+            
+            logger.info(f"대화 데이터 추가 완료: {conversation_data['conversation_id']}")
+            
+        except Exception as e:
+            logger.error(f"대화 데이터 추가 중 오류: {e}")
     
-    def extract_message_components(self, content: str) -> Tuple[str, List[str], List[str]]:
-        """메시지에서 타입, 미디어 파일, 링크 추출"""
-        message_type = "text"
-        media_files = []
-        links = []
-        
-        # 이미지 파일 패턴
-        image_patterns = [
-            r'이미지\.(jpg|jpeg|png|gif|bmp)',
-            r'사진\.(jpg|jpeg|png|gif|bmp)',
-            r'\[이미지\]',
-            r'\[사진\]'
-        ]
-        
-        # 미디어 파일 패턴
-        media_patterns = [
-            r'동영상\.(mp4|avi|mov|mkv)',
-            r'음성\.(mp3|wav|m4a)',
-            r'\[동영상\]',
-            r'\[음성\]'
-        ]
-        
-        # 링크 패턴
-        link_patterns = [
-            r'https?://[^\s]+',
-            r'www\.[^\s]+',
-            r'\[링크\]([^\]]+)',
-            r'\[URL\]([^\]]+)'
-        ]
-        
-        # 파일 패턴
-        file_patterns = [
-            r'파일\.(pdf|doc|docx|xls|xlsx|ppt|pptx)',
-            r'\[파일\]([^\]]+)',
-            r'첨부파일\.([^\s]+)'
-        ]
-        
-        # 이미지 확인
-        for pattern in image_patterns:
-            if re.search(pattern, content, re.IGNORECASE):
-                message_type = "image"
-                media_files.append(content)
-                break
-        
-        # 미디어 확인
-        for pattern in media_patterns:
-            if re.search(pattern, content, re.IGNORECASE):
-                message_type = "media"
-                media_files.append(content)
-                break
-        
-        # 파일 확인
-        for pattern in file_patterns:
-            if re.search(pattern, content, re.IGNORECASE):
-                message_type = "file"
-                media_files.append(content)
-                break
-        
-        # 링크 확인
-        for pattern in link_patterns:
-            matches = re.findall(pattern, content)
-            links.extend(matches)
-        
-        return message_type, media_files, links
+    def _generate_conversation_id(self) -> str:
+        """대화 ID 생성"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"conv_{timestamp}_{len(self.conversation_data)}"
     
-    def save_messages_to_db(self, messages: List[ChatMessage], chat_room_id: str):
-        """메시지를 데이터베이스에 저장"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # 채팅방 정보 저장
-        cursor.execute('''
-            INSERT OR REPLACE INTO chat_rooms (id, name, updated_at)
-            VALUES (?, ?, ?)
-        ''', (chat_room_id, f"채팅방_{chat_room_id}", datetime.now()))
-        
-        # 메시지 저장
-        for message in messages:
-            cursor.execute('''
-                INSERT OR REPLACE INTO messages 
-                (id, chat_room_id, sender, content, message_type, timestamp, 
-                 media_files, links)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                message.id,
-                chat_room_id,
-                message.sender,
-                message.content,
-                message.message_type,
-                message.timestamp,
-                json.dumps(message.media_files) if message.media_files else None,
-                json.dumps(message.links) if message.links else None
-            ))
-        
-        conn.commit()
-        conn.close()
+    def _analyze_single_conversation(self, conversation: Dict[str, Any]) -> Dict[str, Any]:
+        """단일 대화 분석"""
+        try:
+            messages = conversation.get("messages", [])
+            
+            analysis = {
+                "basic_stats": self._analyze_basic_stats(messages),
+                "emotion_analysis": self._analyze_emotions(messages),
+                "language_analysis": self._analyze_languages(messages),
+                "interaction_patterns": self._analyze_interaction_patterns(messages),
+                "topic_analysis": self._analyze_topics(messages),
+                "quality_metrics": self._analyze_quality_metrics(messages)
+            }
+            
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"단일 대화 분석 중 오류: {e}")
+            return {}
     
-    def analyze_conversation_period(self, chat_room_id: str, start_date: datetime, 
-                                  end_date: datetime) -> ConversationSummary:
-        """특정 기간의 대화 분석"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # 기간 내 메시지 조회
-        cursor.execute('''
-            SELECT sender, content, timestamp, message_type, media_files, links
-            FROM messages 
-            WHERE chat_room_id = ? AND timestamp BETWEEN ? AND ?
-            ORDER BY timestamp
-        ''', (chat_room_id, start_date, end_date))
-        
-        messages = []
-        for row in cursor.fetchall():
-            sender, content, timestamp, message_type, media_files, links = row
-            messages.append({
-                'sender': sender,
-                'content': content,
-                'timestamp': datetime.fromisoformat(timestamp),
-                'message_type': message_type,
-                'media_files': json.loads(media_files) if media_files else [],
-                'links': json.loads(links) if links else []
-            })
-        
-        conn.close()
-        
+    def _analyze_basic_stats(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """기본 통계 분석"""
         if not messages:
-            return ConversationSummary(
-                period_start=start_date,
-                period_end=end_date,
-                total_messages=0,
-                unique_speakers=0,
-                main_topics=[],
-                key_issues=[],
-                speaker_summaries=[],
-                sentiment_analysis={}
-            )
+            return {"total_messages": 0, "avg_length": 0, "duration": 0}
         
-        # 주요 이슈 분석
-        key_issues = self.analyze_key_issues(messages)
+        total_messages = len(messages)
+        total_length = sum(len(msg.get("content", "")) for msg in messages)
+        avg_length = total_length / total_messages if total_messages > 0 else 0
         
-        # 발언자별 요약
-        speaker_summaries = self.analyze_speakers(messages)
+        # 대화 지속 시간 계산
+        if len(messages) >= 2:
+            first_time = datetime.fromisoformat(messages[0].get("timestamp", ""))
+            last_time = datetime.fromisoformat(messages[-1].get("timestamp", ""))
+            duration = (last_time - first_time).total_seconds()
+        else:
+            duration = 0
         
-        # 감정 분석
-        sentiment_analysis = self.analyze_sentiment(messages)
-        
-        # 주요 주제 추출
-        main_topics = self.extract_main_topics(messages)
-        
-        return ConversationSummary(
-            period_start=start_date,
-            period_end=end_date,
-            total_messages=len(messages),
-            unique_speakers=len(set(msg['sender'] for msg in messages)),
-            main_topics=main_topics,
-            key_issues=key_issues,
-            speaker_summaries=speaker_summaries,
-            sentiment_analysis=sentiment_analysis
-        )
-    
-    def analyze_key_issues(self, messages: List[Dict]) -> List[Dict[str, Any]]:
-        """주요 이슈 분석"""
-        issues = []
-        
-        # 주제별로 메시지 그룹화
-        topic_groups = defaultdict(list)
-        
-        for msg in messages:
-            if msg['message_type'] == 'text':
-                # 간단한 키워드 기반 주제 분류
-                content = msg['content'].lower()
-                
-                if any(word in content for word in ['공사비', '분담금', '비용', '가격']):
-                    topic_groups['cost'].append(msg)
-                elif any(word in content for word in ['설계', '평면', '고급화', '품질']):
-                    topic_groups['design'].append(msg)
-                elif any(word in content for word in ['홍보', '마케팅', '브랜드']):
-                    topic_groups['marketing'].append(msg)
-                elif any(word in content for word in ['평가', '비교', '선택']):
-                    topic_groups['evaluation'].append(msg)
-                else:
-                    topic_groups['general'].append(msg)
-        
-        # 각 주제별로 이슈 분석
-        for topic, topic_messages in topic_groups.items():
-            if len(topic_messages) < 3:  # 최소 3개 메시지 이상
-                continue
-            
-            # 주요 발언자들
-            speakers = Counter(msg['sender'] for msg in topic_messages)
-            main_speakers = [speaker for speaker, count in speakers.most_common(5)]
-            
-            # 핵심 발언들
-            key_statements = []
-            for msg in topic_messages:
-                if msg['sender'] in main_speakers:
-                    key_statements.append({
-                        'speaker': msg['sender'],
-                        'content': msg['content'],
-                        'timestamp': msg['timestamp'].isoformat()
-                    })
-            
-            # 요약 생성
-            summary = self.generate_issue_summary(topic, topic_messages, key_statements)
-            
-            issues.append({
-                'topic': topic,
-                'message_count': len(topic_messages),
-                'main_speakers': main_speakers,
-                'key_statements': key_statements,
-                'summary': summary
-            })
-        
-        return issues
-    
-    def generate_issue_summary(self, topic: str, messages: List[Dict], 
-                             key_statements: List[Dict]) -> str:
-        """이슈 요약 생성"""
-        topic_names = {
-            'cost': '공사비·분담금 현실 인식',
-            'design': '평면·커뮤니티 등 비정량적 요소의 비교 필요성',
-            'marketing': '홍보방식에 대한 감정적 반응과 평가',
-            'evaluation': '시공사 평가 방식 및 기준에 대한 토론',
-            'general': '일반적인 대화'
-        }
-        
-        topic_name = topic_names.get(topic, topic)
-        
-        # 핵심 발언들을 기반으로 요약 생성
-        if key_statements:
-            summary_parts = []
-            for statement in key_statements[:3]:  # 상위 3개 발언만 사용
-                speaker = statement['speaker']
-                content = statement['content']
-                summary_parts.append(f"{speaker}: {content}")
-            
-            summary = f"{topic_name}\n" + "\n".join(summary_parts)
-            summary += f"\n\n➡ 요약:\n{topic_name}에 대한 다양한 의견이 제시되었으며, "
-            summary += f"총 {len(messages)}개의 메시지가 교환되었습니다."
-            
-            return summary
-        
-        return f"{topic_name}: {len(messages)}개의 메시지가 교환되었습니다."
-    
-    def analyze_speakers(self, messages: List[Dict]) -> List[Dict[str, Any]]:
-        """발언자별 분석"""
-        speaker_data = defaultdict(lambda: {
-            'message_count': 0,
-            'messages': [],
-            'topics': Counter(),
-            'sentiment': Counter()
-        })
-        
-        for msg in messages:
-            speaker = msg['sender']
-            speaker_data[speaker]['message_count'] += 1
-            speaker_data[speaker]['messages'].append(msg)
-            
-            # 주제 분류
-            content = msg['content'].lower()
-            if any(word in content for word in ['공사비', '분담금']):
-                speaker_data[speaker]['topics']['cost'] += 1
-            elif any(word in content for word in ['설계', '평면']):
-                speaker_data[speaker]['topics']['design'] += 1
-            elif any(word in content for word in ['홍보', '마케팅']):
-                speaker_data[speaker]['topics']['marketing'] += 1
-        
-        speaker_summaries = []
-        for speaker, data in speaker_data.items():
-            if data['message_count'] < 2:  # 최소 2개 메시지 이상
-                continue
-            
-            main_topics = [topic for topic, count in data['topics'].most_common(3)]
-            
-            # 주요 발언들
-            key_statements = []
-            for msg in data['messages']:
-                if len(msg['content']) > 20:  # 긴 메시지만 선택
-                    key_statements.append({
-                        'content': msg['content'],
-                        'timestamp': msg['timestamp'].isoformat()
-                    })
-            
-            speaker_summaries.append({
-                'speaker': speaker,
-                'message_count': data['message_count'],
-                'main_topics': main_topics,
-                'key_statements': key_statements[:5],  # 상위 5개만
-                'participation_rate': round(data['message_count'] / len(messages) * 100, 1)
-            })
-        
-        return speaker_summaries
-    
-    def analyze_sentiment(self, messages: List[Dict]) -> Dict[str, Any]:
-        """감정 분석"""
-        sentiment_keywords = {
-            'positive': ['좋다', '훌륭하다', '만족', '긍정', '찬성', '지지'],
-            'negative': ['나쁘다', '불만', '반대', '비판', '우려', '문제'],
-            'neutral': ['생각', '고려', '검토', '분석', '제안']
-        }
-        
-        sentiment_counts = Counter()
-        
-        for msg in messages:
-            content = msg['content'].lower()
-            
-            for sentiment, keywords in sentiment_keywords.items():
-                if any(keyword in content for keyword in keywords):
-                    sentiment_counts[sentiment] += 1
-                    break
-            else:
-                sentiment_counts['neutral'] += 1
-        
-        total = len(messages)
         return {
-            'positive_rate': round(sentiment_counts['positive'] / total * 100, 1),
-            'negative_rate': round(sentiment_counts['negative'] / total * 100, 1),
-            'neutral_rate': round(sentiment_counts['neutral'] / total * 100, 1),
-            'total_messages': total
+            "total_messages": total_messages,
+            "avg_length": round(avg_length, 2),
+            "duration_seconds": round(duration, 2),
+            "messages_per_minute": round(total_messages / (duration / 60), 2) if duration > 0 else 0
         }
     
-    def extract_main_topics(self, messages: List[Dict]) -> List[str]:
-        """주요 주제 추출"""
-        topic_keywords = {
-            '공사비 및 분담금': ['공사비', '분담금', '비용', '가격', '원가'],
-            '설계 및 품질': ['설계', '평면', '고급화', '품질', '마감재'],
-            '홍보 및 마케팅': ['홍보', '마케팅', '브랜드', '부스', '직원'],
-            '평가 및 선택': ['평가', '비교', '선택', '입찰', '제안서'],
-            '커뮤니티 시설': ['커뮤니티', '시설', '공용', '편의시설']
-        }
+    def _analyze_emotions(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """감정 분석"""
+        if not messages:
+            return {"emotion_distribution": {}, "emotion_trend": []}
         
-        topic_counts = Counter()
+        emotion_counts = Counter()
+        emotion_trend = []
         
         for msg in messages:
-            content = msg['content'].lower()
+            emotion = msg.get("emotion", "neutral")
+            emotion_counts[emotion] += 1
+            
+            emotion_trend.append({
+                "timestamp": msg.get("timestamp", ""),
+                "emotion": emotion,
+                "content": msg.get("content", "")[:50]  # 첫 50자만
+            })
+        
+        dominant_emotion = emotion_counts.most_common(1)[0][0] if emotion_counts else "neutral"
+        
+        return {
+            "emotion_distribution": dict(emotion_counts),
+            "dominant_emotion": dominant_emotion,
+            "emotion_trend": emotion_trend,
+            "emotion_stability": self._calculate_emotion_stability(emotion_trend)
+        }
+    
+    def _analyze_languages(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """언어 분석"""
+        if not messages:
+            return {"language_distribution": {}, "language_switches": 0}
+        
+        language_counts = Counter()
+        language_switches = 0
+        previous_language = None
+        
+        for msg in messages:
+            language = msg.get("language", "korean")
+            language_counts[language] += 1
+            
+            if previous_language and previous_language != language:
+                language_switches += 1
+            
+            previous_language = language
+        
+        return {
+            "language_distribution": dict(language_counts),
+            "dominant_language": language_counts.most_common(1)[0][0] if language_counts else "korean",
+            "language_switches": language_switches
+        }
+    
+    def _analyze_interaction_patterns(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """상호작용 패턴 분석"""
+        if not messages:
+            return {"response_times": [], "turn_taking": {}, "engagement_level": "low"}
+        
+        response_times = []
+        turn_taking = {"user": 0, "ai": 0}
+        
+        for i in range(1, len(messages)):
+            prev_msg = messages[i-1]
+            curr_msg = messages[i]
+            
+            # 응답 시간 계산
+            try:
+                prev_time = datetime.fromisoformat(prev_msg.get("timestamp", ""))
+                curr_time = datetime.fromisoformat(curr_msg.get("timestamp", ""))
+                response_time = (curr_time - prev_time).total_seconds()
+                response_times.append(response_time)
+            except:
+                pass
+            
+            # 턴 테이킹 분석
+            speaker = curr_msg.get("speaker", "user")
+            turn_taking[speaker] = turn_taking.get(speaker, 0) + 1
+        
+        avg_response_time = sum(response_times) / len(response_times) if response_times else 0
+        
+        # 참여도 레벨 계산
+        engagement_level = self._calculate_engagement_level(messages, avg_response_time)
+        
+        return {
+            "response_times": response_times,
+            "avg_response_time": round(avg_response_time, 2),
+            "turn_taking": turn_taking,
+            "engagement_level": engagement_level
+        }
+    
+    def _analyze_topics(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """주제 분석"""
+        if not messages:
+            return {"topics": [], "topic_changes": 0}
+        
+        # 간단한 키워드 기반 주제 분석
+        topic_keywords = {
+            "project": ["프로젝트", "project", "작업", "task"],
+            "file": ["파일", "file", "업로드", "upload", "분석", "analysis"],
+            "system": ["시스템", "system", "기능", "function", "설정", "setting"],
+            "chat": ["채팅", "chat", "대화", "conversation", "메시지", "message"],
+            "help": ["도움", "help", "질문", "question", "문제", "problem"]
+        }
+        
+        topics = []
+        topic_changes = 0
+        previous_topic = None
+        
+        for msg in messages:
+            content = msg.get("content", "").lower()
+            current_topic = "general"
+            
             for topic, keywords in topic_keywords.items():
                 if any(keyword in content for keyword in keywords):
-                    topic_counts[topic] += 1
+                    current_topic = topic
+                    break
+            
+            topics.append(current_topic)
+            
+            if previous_topic and previous_topic != current_topic:
+                topic_changes += 1
+            
+            previous_topic = current_topic
         
-        return [topic for topic, count in topic_counts.most_common(5)]
+        topic_distribution = Counter(topics)
+        
+        return {
+            "topics": topics,
+            "topic_distribution": dict(topic_distribution),
+            "dominant_topic": topic_distribution.most_common(1)[0][0] if topic_distribution else "general",
+            "topic_changes": topic_changes
+        }
     
-    def save_conversation_summary(self, summary: ConversationSummary, chat_room_id: str):
-        """대화 요약을 데이터베이스에 저장"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+    def _analyze_quality_metrics(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """대화 품질 지표 분석"""
+        if not messages:
+            return {"quality_score": 0, "suggestions": []}
         
-        summary_id = f"{chat_room_id}_{summary.period_start.strftime('%Y%m%d')}_{summary.period_end.strftime('%Y%m%d')}"
+        # 품질 지표 계산
+        total_messages = len(messages)
+        avg_length = sum(len(msg.get("content", "")) for msg in messages) / total_messages
         
-        cursor.execute('''
-            INSERT OR REPLACE INTO conversation_summaries 
-            (id, chat_room_id, period_start, period_end, summary_data)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (
-            summary_id,
-            chat_room_id,
-            summary.period_start,
-            summary.period_end,
-            json.dumps({
-                'total_messages': summary.total_messages,
-                'unique_speakers': summary.unique_speakers,
-                'main_topics': summary.main_topics,
-                'key_issues': summary.key_issues,
-                'speaker_summaries': summary.speaker_summaries,
-                'sentiment_analysis': summary.sentiment_analysis
-            })
-        ))
+        # 감정 다양성
+        emotions = [msg.get("emotion", "neutral") for msg in messages]
+        emotion_diversity = len(set(emotions)) / len(emotions) if emotions else 0
         
-        # 발언자별 요약도 저장
-        for speaker_summary in summary.speaker_summaries:
-            speaker_id = f"{summary_id}_{speaker_summary['speaker']}"
-            cursor.execute('''
-                INSERT OR REPLACE INTO speaker_summaries 
-                (id, chat_room_id, speaker_name, period_start, period_end, 
-                 message_count, main_topics, sentiment_analysis, key_statements)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                speaker_id,
-                chat_room_id,
-                speaker_summary['speaker'],
-                summary.period_start,
-                summary.period_end,
-                speaker_summary['message_count'],
-                json.dumps(speaker_summary['main_topics']),
-                json.dumps({'participation_rate': speaker_summary['participation_rate']}),
-                json.dumps(speaker_summary['key_statements'])
-            ))
+        # 응답 시간 일관성
+        response_times = []
+        for i in range(1, len(messages)):
+            try:
+                prev_time = datetime.fromisoformat(messages[i-1].get("timestamp", ""))
+                curr_time = datetime.fromisoformat(messages[i].get("timestamp", ""))
+                response_time = (curr_time - prev_time).total_seconds()
+                response_times.append(response_time)
+            except:
+                pass
         
-        conn.commit()
-        conn.close()
+        response_consistency = 1.0
+        if len(response_times) > 1:
+            avg_response = sum(response_times) / len(response_times)
+            variance = sum((t - avg_response) ** 2 for t in response_times) / len(response_times)
+            response_consistency = 1.0 / (1.0 + variance)
+        
+        # 품질 점수 계산 (0-100)
+        quality_score = (
+            min(avg_length / 10, 1.0) * 30 +  # 메시지 길이
+            emotion_diversity * 25 +           # 감정 다양성
+            response_consistency * 25 +        # 응답 일관성
+            min(total_messages / 20, 1.0) * 20  # 대화 길이
+        )
+        
+        # 개선 제안
+        suggestions = []
+        if avg_length < 10:
+            suggestions.append("더 자세한 메시지를 작성해보세요.")
+        if emotion_diversity < 0.3:
+            suggestions.append("다양한 감정 표현을 시도해보세요.")
+        if response_consistency < 0.5:
+            suggestions.append("일관된 응답 시간을 유지해보세요.")
+        if total_messages < 10:
+            suggestions.append("더 긴 대화를 시도해보세요.")
+        
+        return {
+            "quality_score": round(quality_score, 1),
+            "avg_length": round(avg_length, 1),
+            "emotion_diversity": round(emotion_diversity, 3),
+            "response_consistency": round(response_consistency, 3),
+            "suggestions": suggestions
+        }
+    
+    def _calculate_emotion_stability(self, emotion_trend: List[Dict[str, Any]]) -> float:
+        """감정 안정성 계산"""
+        if len(emotion_trend) < 2:
+            return 1.0
+        
+        emotion_changes = 0
+        for i in range(1, len(emotion_trend)):
+            if emotion_trend[i]["emotion"] != emotion_trend[i-1]["emotion"]:
+                emotion_changes += 1
+        
+        stability = 1.0 - (emotion_changes / (len(emotion_trend) - 1))
+        return round(stability, 3)
+    
+    def _calculate_engagement_level(self, messages: List[Dict[str, Any]], avg_response_time: float) -> str:
+        """참여도 레벨 계산"""
+        if not messages:
+            return "low"
+        
+        # 참여도 지표들
+        message_count = len(messages)
+        avg_length = sum(len(msg.get("content", "")) for msg in messages) / message_count
+        
+        # 점수 계산
+        engagement_score = (
+            min(message_count / 20, 1.0) * 40 +      # 메시지 수
+            min(avg_length / 50, 1.0) * 30 +         # 메시지 길이
+            max(0, 1.0 - avg_response_time / 60) * 30  # 응답 시간
+        )
+        
+        if engagement_score >= 80:
+            return "high"
+        elif engagement_score >= 50:
+            return "medium"
+        else:
+            return "low"
+    
+    def get_conversation_summary(self, conversation_id: Optional[str] = None) -> Dict[str, Any]:
+        """대화 요약 조회"""
+        if conversation_id:
+            # 특정 대화 요약
+            for conv in self.conversation_data:
+                if conv.get("conversation_id") == conversation_id:
+                    return {
+                        "conversation_id": conversation_id,
+                        "summary": conv.get("analysis", {}),
+                        "timestamp": conv.get("analyzed_at", "")
+                    }
+            return {"error": "대화를 찾을 수 없습니다."}
+        else:
+            # 전체 대화 요약
+            if not self.conversation_data:
+                return {"total_conversations": 0, "overall_summary": {}}
+            
+            total_conversations = len(self.conversation_data)
+            overall_stats = self._calculate_overall_stats()
+            
+            return {
+                "total_conversations": total_conversations,
+                "overall_summary": overall_stats,
+                "recent_conversations": self.conversation_data[-5:]  # 최근 5개
+            }
+    
+    def _calculate_overall_stats(self) -> Dict[str, Any]:
+        """전체 통계 계산"""
+        if not self.conversation_data:
+            return {}
+        
+        total_messages = sum(len(conv.get("messages", [])) for conv in self.conversation_data)
+        avg_quality = sum(conv.get("analysis", {}).get("quality_metrics", {}).get("quality_score", 0) 
+                         for conv in self.conversation_data) / len(self.conversation_data)
+        
+        # 전체 감정 분포
+        all_emotions = []
+        for conv in self.conversation_data:
+            messages = conv.get("messages", [])
+            emotions = [msg.get("emotion", "neutral") for msg in messages]
+            all_emotions.extend(emotions)
+        
+        emotion_distribution = Counter(all_emotions)
+        
+        return {
+            "total_messages": total_messages,
+            "avg_quality_score": round(avg_quality, 1),
+            "emotion_distribution": dict(emotion_distribution),
+            "avg_conversation_length": round(total_messages / len(self.conversation_data), 1)
+        }
+    
+    def get_user_profile(self, user_id: str) -> Dict[str, Any]:
+        """사용자 프로필 조회"""
+        if user_id in self.user_profiles:
+            return self.user_profiles[user_id]
+        
+        # 사용자별 대화 분석
+        user_conversations = [conv for conv in self.conversation_data 
+                            if conv.get("user_id") == user_id]
+        
+        if not user_conversations:
+            return {"user_id": user_id, "conversations": 0}
+        
+        # 사용자 통계 계산
+        total_conversations = len(user_conversations)
+        total_messages = sum(len(conv.get("messages", [])) for conv in user_conversations)
+        
+        # 사용자 선호 감정
+        all_emotions = []
+        for conv in user_conversations:
+            messages = conv.get("messages", [])
+            emotions = [msg.get("emotion", "neutral") for msg in messages]
+            all_emotions.extend(emotions)
+        
+        emotion_distribution = Counter(all_emotions)
+        preferred_emotion = emotion_distribution.most_common(1)[0][0] if emotion_distribution else "neutral"
+        
+        # 평균 품질 점수
+        avg_quality = sum(conv.get("analysis", {}).get("quality_metrics", {}).get("quality_score", 0) 
+                         for conv in user_conversations) / total_conversations
+        
+        user_profile = {
+            "user_id": user_id,
+            "conversations": total_conversations,
+            "total_messages": total_messages,
+            "avg_messages_per_conversation": round(total_messages / total_conversations, 1),
+            "preferred_emotion": preferred_emotion,
+            "avg_quality_score": round(avg_quality, 1),
+            "emotion_distribution": dict(emotion_distribution),
+            "last_conversation": user_conversations[-1].get("analyzed_at", "") if user_conversations else ""
+        }
+        
+        self.user_profiles[user_id] = user_profile
+        return user_profile
+    
+    def clear_data(self):
+        """모든 데이터 초기화"""
+        self.conversation_data.clear()
+        self.user_profiles.clear()
+        self.analysis_cache.clear()
+        logger.info("모든 대화 분석 데이터가 초기화되었습니다.")
 
-# 전역 인스턴스 생성
-conversation_analyzer = KakaoTalkAnalyzer()
+
+# 싱글톤 인스턴스
+conversation_analyzer = ConversationAnalyzer()

@@ -1,538 +1,472 @@
 #!/usr/bin/env python3
 """
-실시간 대화 모니터링 서버 - 카카오톡 AI 분석 시스템
-- 실시간 메시지 분석
-- 중요 이벤트 감지
-- 참여자 활동 추적
-- 대화 품질 모니터링
-- 알림 시스템
+실시간 대화 모니터링 시스템
+- 실시간 대화 상태 모니터링
+- 예측 분석 기능
+- 이상 패턴 감지
+- 성능 최적화
 """
 
-import sqlite3
-import json
 import asyncio
+import json
+import time
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from typing import Dict, List, Optional, Any, Callable
+from collections import defaultdict, deque
 import logging
+from dataclasses import dataclass, asdict
 
-# 로깅 설정
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="실시간 대화 모니터링 서버 v1.0")
 
-# CORS 설정
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
-
-# WebSocket 연결 관리
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-        logger.info(f"WebSocket 연결 추가. 총 연결 수: {len(self.active_connections)}")
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-        logger.info(f"WebSocket 연결 제거. 총 연결 수: {len(self.active_connections)}")
-
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            try:
-                await connection.send_text(message)
-            except:
-                # 연결이 끊어진 경우 제거
-                self.active_connections.remove(connection)
-
-manager = ConnectionManager()
-
-# 데이터 모델
-class MonitoringRequest(BaseModel):
-    chat_room_id: str
-    monitoring_type: str  # 'realtime', 'events', 'quality', 'activity'
-    settings: Optional[Dict[str, Any]] = None
-
-class MonitoringResponse(BaseModel):
-    success: bool
-    monitoring_type: str
-    data: Dict[str, Any]
+@dataclass
+class ConversationEvent:
+    """대화 이벤트 데이터 클래스"""
+    event_id: str
+    conversation_id: str
+    user_id: str
+    event_type: str  # 'message', 'emotion_change', 'topic_shift', 'engagement_drop'
     timestamp: str
+    data: Dict[str, Any]
+    severity: str = 'normal'  # 'low', 'normal', 'high', 'critical'
 
-# 데이터베이스 연결
-def get_db_connection():
-    return sqlite3.connect('chat_system.db')
 
-# 실시간 메시지 분석
-def analyze_realtime_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
-    """실시간 메시지 분석"""
-    content = message_data.get('content', '')
-    sender = message_data.get('sender', '')
-    timestamp = message_data.get('timestamp', '')
-    
-    # 메시지 길이 분석
-    message_length = len(content) if content else 0
-    length_category = 'short' if message_length < 20 else 'medium' if message_length < 100 else 'long'
-    
-    # 키워드 감지
-    important_keywords = ['긴급', '즉시', '바로', '당장', '시급', '중요', '필수', '필요']
-    detected_keywords = [keyword for keyword in important_keywords if keyword in content]
-    
-    # 감정 분석 (간단한 키워드 기반)
-    positive_words = ['좋다', '감사', '행복', '기쁘', '만족', '성공', '완료', '해결']
-    negative_words = ['문제', '어려움', '실패', '불만', '걱정', '우려', '지연', '오류']
-    
-    sentiment_score = 0
-    for word in positive_words:
-        if word in content:
-            sentiment_score += 1
-    for word in negative_words:
-        if word in content:
-            sentiment_score -= 1
-    
-    sentiment = 'positive' if sentiment_score > 0 else 'negative' if sentiment_score < 0 else 'neutral'
-    
-    return {
-        'message_id': message_data.get('id'),
-        'sender': sender,
-        'content': content,
-        'timestamp': timestamp,
-        'analysis': {
-            'length': message_length,
-            'length_category': length_category,
-            'detected_keywords': detected_keywords,
-            'sentiment': sentiment,
-            'sentiment_score': sentiment_score,
-            'is_important': len(detected_keywords) > 0,
-            'has_urgency': any(word in content for word in ['긴급', '즉시', '바로', '당장'])
+@dataclass
+class PredictionResult:
+    """예측 결과 데이터 클래스"""
+    prediction_id: str
+    conversation_id: str
+    prediction_type: str  # 'engagement', 'emotion', 'topic', 'quality'
+    confidence: float
+    predicted_value: Any
+    timestamp: str
+    reasoning: str
+
+
+class RealtimeConversationMonitor:
+    def __init__(self):
+        self.active_conversations: Dict[str, Dict[str, Any]] = {}
+        self.conversation_events: Dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
+        self.predictions: Dict[str, List[PredictionResult]] = defaultdict(list)
+        self.monitoring_callbacks: List[Callable] = []
+        self.anomaly_thresholds = {
+            'response_time': 30.0,  # 30초 이상 응답 지연
+            'emotion_volatility': 0.7,  # 감정 변동성 임계값
+            'engagement_drop': 0.3,  # 참여도 하락 임계값
+            'message_frequency': 0.1  # 메시지 빈도 하락 임계값
         }
-    }
-
-# 중요 이벤트 감지
-def detect_important_events(chat_room_id: str, time_window: int = 60) -> List[Dict[str, Any]]:
-    """중요 이벤트 감지"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # 최근 메시지 조회
-    cursor.execute('''
-        SELECT id, sender, content, timestamp
-        FROM messages 
-        WHERE chat_room_id = ?
-        AND timestamp >= datetime('now', '-{} minutes')
-        ORDER BY timestamp DESC
-    '''.format(time_window), (chat_room_id,))
-    
-    recent_messages = cursor.fetchall()
-    events = []
-    
-    # 긴급 키워드 이벤트
-    urgent_keywords = ['긴급', '즉시', '바로', '당장', '시급']
-    for message in recent_messages:
-        msg_id, sender, content, timestamp = message
-        if any(keyword in content for keyword in urgent_keywords):
-            events.append({
-                'type': 'urgent_message',
-                'severity': 'high',
-                'message_id': msg_id,
-                'sender': sender,
-                'content': content,
-                'timestamp': timestamp,
-                'description': '긴급 키워드가 포함된 메시지'
-            })
-    
-    # 높은 활동량 이벤트
-    cursor.execute('''
-        SELECT sender, COUNT(*) as count
-        FROM messages 
-        WHERE chat_room_id = ?
-        AND timestamp >= datetime('now', '-10 minutes')
-        GROUP BY sender
-        HAVING count > 10
-    ''', (chat_room_id,))
-    
-    high_activity = cursor.fetchall()
-    for sender, count in high_activity:
-        events.append({
-            'type': 'high_activity',
-            'severity': 'medium',
-            'sender': sender,
-            'message_count': count,
-            'timestamp': datetime.now().isoformat(),
-            'description': f'{sender}님이 10분 내 {count}개 메시지 전송'
-        })
-    
-    # 새로운 참여자 이벤트
-    cursor.execute('''
-        SELECT sender, MIN(timestamp) as first_message
-        FROM messages 
-        WHERE chat_room_id = ?
-        AND timestamp >= datetime('now', '-30 minutes')
-        GROUP BY sender
-        HAVING first_message >= datetime('now', '-30 minutes')
-    ''', (chat_room_id,))
-    
-    new_participants = cursor.fetchall()
-    for sender, first_message in new_participants:
-        events.append({
-            'type': 'new_participant',
-            'severity': 'low',
-            'sender': sender,
-            'timestamp': first_message,
-            'description': f'새로운 참여자: {sender}'
-        })
-    
-    conn.close()
-    return events
-
-# 대화 품질 모니터링
-def monitor_conversation_quality(chat_room_id: str) -> Dict[str, Any]:
-    """대화 품질 모니터링"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # 최근 1시간 메시지 분석
-    cursor.execute('''
-        SELECT content, sender, timestamp
-        FROM messages 
-        WHERE chat_room_id = ?
-        AND timestamp >= datetime('now', '-1 hour')
-        ORDER BY timestamp DESC
-    ''', (chat_room_id,))
-    
-    recent_messages = cursor.fetchall()
-    
-    if not recent_messages:
-        return {
-            'quality_score': 0,
-            'message_count': 0,
-            'participant_count': 0,
-            'avg_message_length': 0,
-            'sentiment_distribution': {'positive': 0, 'neutral': 0, 'negative': 0},
-            'issues': ['최근 메시지가 없습니다']
-        }
-    
-    # 기본 통계
-    message_count = len(recent_messages)
-    participants = set(msg[1] for msg in recent_messages)
-    participant_count = len(participants)
-    
-    # 메시지 길이 분석
-    total_length = sum(len(msg[0]) for msg in recent_messages if msg[0])
-    avg_message_length = total_length / message_count if message_count > 0 else 0
-    
-    # 감정 분포
-    sentiment_counts = {'positive': 0, 'neutral': 0, 'negative': 0}
-    positive_words = ['좋다', '감사', '행복', '기쁘', '만족', '성공', '완료', '해결']
-    negative_words = ['문제', '어려움', '실패', '불만', '걱정', '우려', '지연', '오류']
-    
-    for message in recent_messages:
-        content = message[0].lower() if message[0] else ''
-        positive_count = sum(1 for word in positive_words if word in content)
-        negative_count = sum(1 for word in negative_words if word in content)
         
-        if positive_count > negative_count:
-            sentiment_counts['positive'] += 1
-        elif negative_count > positive_count:
-            sentiment_counts['negative'] += 1
-        else:
-            sentiment_counts['neutral'] += 1
-    
-    # 품질 점수 계산
-    quality_score = 0
-    issues = []
-    
-    # 메시지 수 기반 점수
-    if message_count >= 20:
-        quality_score += 30
-    elif message_count >= 10:
-        quality_score += 20
-    elif message_count >= 5:
-        quality_score += 10
-    else:
-        issues.append('메시지 수가 적습니다')
-    
-    # 참여자 수 기반 점수
-    if participant_count >= 5:
-        quality_score += 25
-    elif participant_count >= 3:
-        quality_score += 15
-    elif participant_count >= 2:
-        quality_score += 10
-    else:
-        issues.append('참여자가 적습니다')
-    
-    # 감정 분포 기반 점수
-    positive_ratio = sentiment_counts['positive'] / message_count if message_count > 0 else 0
-    if positive_ratio >= 0.6:
-        quality_score += 25
-    elif positive_ratio >= 0.4:
-        quality_score += 15
-    elif positive_ratio >= 0.2:
-        quality_score += 10
-    else:
-        issues.append('부정적 감정이 많습니다')
-    
-    # 메시지 길이 기반 점수
-    if 20 <= avg_message_length <= 200:
-        quality_score += 20
-    elif avg_message_length > 200:
-        quality_score += 10
-        issues.append('메시지가 너무 깁니다')
-    else:
-        issues.append('메시지가 너무 짧습니다')
-    
-    conn.close()
-    
-    return {
-        'quality_score': min(100, quality_score),
-        'message_count': message_count,
-        'participant_count': participant_count,
-        'avg_message_length': round(avg_message_length, 1),
-        'sentiment_distribution': sentiment_counts,
-        'issues': issues
-    }
-
-# 참여자 활동 추적
-def track_participant_activity(chat_room_id: str) -> Dict[str, Any]:
-    """참여자 활동 추적"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # 최근 30분 활동
-    cursor.execute('''
-        SELECT sender, COUNT(*) as count, 
-               AVG(LENGTH(content)) as avg_length,
-               MIN(timestamp) as first_message,
-               MAX(timestamp) as last_message
-        FROM messages 
-        WHERE chat_room_id = ?
-        AND timestamp >= datetime('now', '-30 minutes')
-        GROUP BY sender
-        ORDER BY count DESC
-    ''', (chat_room_id,))
-    
-    recent_activity = []
-    for row in cursor.fetchall():
-        sender, count, avg_length, first, last = row
-        recent_activity.append({
-            'sender': sender,
-            'message_count': count,
-            'avg_message_length': round(avg_length or 0, 1),
-            'first_message': first,
-            'last_message': last,
-            'activity_level': 'high' if count > 10 else 'medium' if count > 5 else 'low'
-        })
-    
-    # 시간대별 활동
-    cursor.execute('''
-        SELECT strftime('%H', timestamp) as hour, COUNT(*) as count
-        FROM messages 
-        WHERE chat_room_id = ?
-        AND timestamp >= datetime('now', '-1 hour')
-        GROUP BY hour
-        ORDER BY hour
-    ''', (chat_room_id,))
-    
-    hourly_activity = {}
-    for row in cursor.fetchall():
-        hour, count = row
-        hourly_activity[int(hour)] = count
-    
-    # 활발한 참여자
-    active_participants = [p for p in recent_activity if p['activity_level'] == 'high']
-    
-    conn.close()
-    
-    return {
-        'recent_activity': recent_activity,
-        'hourly_activity': hourly_activity,
-        'active_participants': active_participants,
-        'total_participants': len(recent_activity),
-        'total_messages': sum(p['message_count'] for p in recent_activity)
-    }
-
-# API 엔드포인트
-@app.get("/")
-async def root():
-    return {
-        "service": "실시간 대화 모니터링 서버",
-        "version": "1.0.0",
-        "status": "running",
-        "features": [
-            "실시간 메시지 분석",
-            "중요 이벤트 감지",
-            "참여자 활동 추적",
-            "대화 품질 모니터링",
-            "WebSocket 알림"
-        ]
-    }
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
-
-@app.post("/api/monitor", response_model=MonitoringResponse)
-async def start_monitoring(request: MonitoringRequest):
-    """모니터링 시작"""
-    try:
-        logger.info(f"모니터링 요청: {request.monitoring_type} for {request.chat_room_id}")
-        
-        if request.monitoring_type == "realtime":
-            # 실시간 분석은 WebSocket을 통해 처리
-            data = {"status": "monitoring_started", "chat_room_id": request.chat_room_id}
-            
-        elif request.monitoring_type == "events":
-            data = {
-                "events": detect_important_events(request.chat_room_id),
-                "chat_room_id": request.chat_room_id
+    def start_monitoring_conversation(self, conversation_id: str, user_id: str):
+        """대화 모니터링 시작"""
+        try:
+            self.active_conversations[conversation_id] = {
+                'user_id': user_id,
+                'start_time': datetime.now().isoformat(),
+                'message_count': 0,
+                'last_message_time': None,
+                'current_emotion': 'neutral',
+                'emotion_history': deque(maxlen=10),
+                'response_times': deque(maxlen=10),
+                'engagement_score': 1.0,
+                'topic_history': deque(maxlen=5),
+                'status': 'active'
             }
             
-        elif request.monitoring_type == "quality":
-            data = monitor_conversation_quality(request.chat_room_id)
+            logger.info(f"대화 모니터링 시작: {conversation_id}")
             
-        elif request.monitoring_type == "activity":
-            data = track_participant_activity(request.chat_room_id)
+        except Exception as e:
+            logger.error(f"대화 모니터링 시작 실패: {e}")
+    
+    def stop_monitoring_conversation(self, conversation_id: str):
+        """대화 모니터링 중지"""
+        try:
+            if conversation_id in self.active_conversations:
+                self.active_conversations[conversation_id]['status'] = 'ended'
+                self.active_conversations[conversation_id]['end_time'] = datetime.now().isoformat()
+                
+                # 최종 분석 수행
+                final_analysis = self._analyze_conversation_end(conversation_id)
+                self._trigger_event(conversation_id, 'conversation_end', final_analysis)
+                
+                logger.info(f"대화 모니터링 종료: {conversation_id}")
+                
+        except Exception as e:
+            logger.error(f"대화 모니터링 종료 실패: {e}")
+    
+    def record_message(self, conversation_id: str, message_data: Dict[str, Any]):
+        """메시지 기록 및 분석"""
+        try:
+            if conversation_id not in self.active_conversations:
+                return
             
-        else:
-            raise HTTPException(status_code=400, detail=f"지원하지 않는 모니터링 타입: {request.monitoring_type}")
+            conv_data = self.active_conversations[conversation_id]
+            current_time = datetime.now()
+            
+            # 기본 메시지 정보 업데이트
+            conv_data['message_count'] += 1
+            conv_data['last_message_time'] = current_time.isoformat()
+            
+            # 응답 시간 계산
+            if conv_data['last_message_time'] and len(conv_data['response_times']) > 0:
+                last_time = datetime.fromisoformat(conv_data['last_message_time'])
+                response_time = (current_time - last_time).total_seconds()
+                conv_data['response_times'].append(response_time)
+                
+                # 응답 시간 이상 감지
+                if response_time > self.anomaly_thresholds['response_time']:
+                    self._trigger_event(conversation_id, 'slow_response', {
+                        'response_time': response_time,
+                        'threshold': self.anomaly_thresholds['response_time']
+                    }, 'high')
+            
+            # 감정 분석
+            emotion = message_data.get('emotion', 'neutral')
+            conv_data['emotion_history'].append(emotion)
+            conv_data['current_emotion'] = emotion
+            
+            # 감정 변화 감지
+            if len(conv_data['emotion_history']) >= 2:
+                emotion_volatility = self._calculate_emotion_volatility(conv_data['emotion_history'])
+                if emotion_volatility > self.anomaly_thresholds['emotion_volatility']:
+                    self._trigger_event(conversation_id, 'emotion_volatility', {
+                        'volatility': emotion_volatility,
+                        'threshold': self.anomaly_thresholds['emotion_volatility']
+                    }, 'medium')
+            
+            # 참여도 계산
+            engagement_score = self._calculate_engagement_score(conv_data)
+            conv_data['engagement_score'] = engagement_score
+            
+            # 참여도 하락 감지
+            if engagement_score < self.anomaly_thresholds['engagement_drop']:
+                self._trigger_event(conversation_id, 'engagement_drop', {
+                    'engagement_score': engagement_score,
+                    'threshold': self.anomaly_thresholds['engagement_drop']
+                }, 'high')
+            
+            # 주제 분석
+            topic = message_data.get('topic', 'general')
+            conv_data['topic_history'].append(topic)
+            
+            # 주제 변화 감지
+            if len(conv_data['topic_history']) >= 2:
+                topic_changes = self._detect_topic_changes(conv_data['topic_history'])
+                if topic_changes > 2:  # 2회 이상 주제 변화
+                    self._trigger_event(conversation_id, 'topic_shift', {
+                        'topic_changes': topic_changes,
+                        'recent_topics': list(conv_data['topic_history'])
+                    }, 'normal')
+            
+            # 예측 분석 수행
+            predictions = self._generate_predictions(conversation_id)
+            for prediction in predictions:
+                self.predictions[conversation_id].append(prediction)
+            
+            logger.debug(f"메시지 기록 완료: {conversation_id} (총 {conv_data['message_count']}개)")
+            
+        except Exception as e:
+            logger.error(f"메시지 기록 실패: {e}")
+    
+    def _trigger_event(self, conversation_id: str, event_type: str, data: Dict[str, Any], severity: str = 'normal'):
+        """이벤트 트리거"""
+        try:
+            event = ConversationEvent(
+                event_id=f"event_{int(time.time() * 1000)}",
+                conversation_id=conversation_id,
+                user_id=self.active_conversations[conversation_id]['user_id'],
+                event_type=event_type,
+                timestamp=datetime.now().isoformat(),
+                data=data,
+                severity=severity
+            )
+            
+            self.conversation_events[conversation_id].append(event)
+            
+            # 콜백 함수들 실행
+            for callback in self.monitoring_callbacks:
+                try:
+                    callback(event)
+                except Exception as e:
+                    logger.error(f"이벤트 콜백 실행 실패: {e}")
+            
+            logger.info(f"이벤트 트리거: {event_type} (심각도: {severity})")
+            
+        except Exception as e:
+            logger.error(f"이벤트 트리거 실패: {e}")
+    
+    def _calculate_emotion_volatility(self, emotion_history: deque) -> float:
+        """감정 변동성 계산"""
+        if len(emotion_history) < 2:
+            return 0.0
         
-        logger.info(f"모니터링 완료: {request.monitoring_type}")
+        emotion_changes = 0
+        for i in range(1, len(emotion_history)):
+            if emotion_history[i] != emotion_history[i-1]:
+                emotion_changes += 1
         
-        return MonitoringResponse(
-            success=True,
-            monitoring_type=request.monitoring_type,
-            data=data,
-            timestamp=datetime.now().isoformat()
-        )
+        return emotion_changes / (len(emotion_history) - 1)
+    
+    def _calculate_engagement_score(self, conv_data: Dict[str, Any]) -> float:
+        """참여도 점수 계산"""
+        try:
+            # 메시지 빈도 기반 참여도
+            if conv_data['last_message_time']:
+                last_time = datetime.fromisoformat(conv_data['last_message_time'])
+                time_diff = (datetime.now() - last_time).total_seconds()
+                
+                # 시간이 지날수록 참여도 감소
+                time_factor = max(0, 1 - (time_diff / 300))  # 5분 기준
+                
+                # 메시지 수 기반 참여도
+                message_factor = min(1.0, conv_data['message_count'] / 20)
+                
+                # 응답 시간 기반 참여도
+                response_factor = 1.0
+                if len(conv_data['response_times']) > 0:
+                    avg_response = sum(conv_data['response_times']) / len(conv_data['response_times'])
+                    response_factor = max(0, 1 - (avg_response / 60))  # 1분 기준
+                
+                # 종합 참여도 점수
+                engagement_score = (time_factor * 0.4 + message_factor * 0.4 + response_factor * 0.2)
+                return max(0, min(1, engagement_score))
+            
+            return 1.0
+            
+        except Exception as e:
+            logger.error(f"참여도 계산 실패: {e}")
+            return 0.5
+    
+    def _detect_topic_changes(self, topic_history: deque) -> int:
+        """주제 변화 감지"""
+        if len(topic_history) < 2:
+            return 0
         
-    except Exception as e:
-        logger.error(f"모니터링 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"모니터링 중 오류 발생: {str(e)}")
-
-@app.websocket("/ws/monitor")
-async def websocket_monitor(websocket: WebSocket):
-    """WebSocket 모니터링"""
-    await manager.connect(websocket)
-    try:
-        while True:
-            # 클라이언트로부터 메시지 수신
-            data = await websocket.receive_text()
-            message_data = json.loads(data)
+        changes = 0
+        for i in range(1, len(topic_history)):
+            if topic_history[i] != topic_history[i-1]:
+                changes += 1
+        
+        return changes
+    
+    def _generate_predictions(self, conversation_id: str) -> List[PredictionResult]:
+        """예측 분석 생성"""
+        try:
+            conv_data = self.active_conversations[conversation_id]
+            predictions = []
+            current_time = datetime.now().isoformat()
             
-            # 실시간 메시지 분석
-            analysis = analyze_realtime_message(message_data)
+            # 참여도 예측
+            engagement_prediction = self._predict_engagement(conv_data)
+            if engagement_prediction:
+                predictions.append(PredictionResult(
+                    prediction_id=f"pred_{int(time.time() * 1000)}_1",
+                    conversation_id=conversation_id,
+                    prediction_type='engagement',
+                    confidence=engagement_prediction['confidence'],
+                    predicted_value=engagement_prediction['value'],
+                    timestamp=current_time,
+                    reasoning=engagement_prediction['reasoning']
+                ))
             
-            # 중요 이벤트 감지
-            if analysis['analysis']['is_important']:
-                event_data = {
-                    'type': 'important_message',
-                    'severity': 'high',
-                    'message': analysis,
-                    'timestamp': datetime.now().isoformat()
+            # 감정 예측
+            emotion_prediction = self._predict_emotion(conv_data)
+            if emotion_prediction:
+                predictions.append(PredictionResult(
+                    prediction_id=f"pred_{int(time.time() * 1000)}_2",
+                    conversation_id=conversation_id,
+                    prediction_type='emotion',
+                    confidence=emotion_prediction['confidence'],
+                    predicted_value=emotion_prediction['value'],
+                    timestamp=current_time,
+                    reasoning=emotion_prediction['reasoning']
+                ))
+            
+            # 대화 품질 예측
+            quality_prediction = self._predict_quality(conv_data)
+            if quality_prediction:
+                predictions.append(PredictionResult(
+                    prediction_id=f"pred_{int(time.time() * 1000)}_3",
+                    conversation_id=conversation_id,
+                    prediction_type='quality',
+                    confidence=quality_prediction['confidence'],
+                    predicted_value=quality_prediction['value'],
+                    timestamp=current_time,
+                    reasoning=quality_prediction['reasoning']
+                ))
+            
+            return predictions
+            
+        except Exception as e:
+            logger.error(f"예측 생성 실패: {e}")
+            return []
+    
+    def _predict_engagement(self, conv_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """참여도 예측"""
+        try:
+            current_engagement = conv_data['engagement_score']
+            
+            # 단순한 선형 예측 (실제로는 더 복잡한 알고리즘 사용)
+            if len(conv_data['response_times']) > 0:
+                recent_response_avg = sum(list(conv_data['response_times'])[-3:]) / min(3, len(conv_data['response_times']))
+                
+                if recent_response_avg > 30:  # 30초 이상 응답 지연
+                    predicted_engagement = max(0, current_engagement - 0.2)
+                    confidence = 0.7
+                    reasoning = "최근 응답 시간이 길어 참여도 하락 예상"
+                else:
+                    predicted_engagement = min(1, current_engagement + 0.1)
+                    confidence = 0.6
+                    reasoning = "안정적인 응답 시간으로 참여도 유지 예상"
+                
+                return {
+                    'value': predicted_engagement,
+                    'confidence': confidence,
+                    'reasoning': reasoning
                 }
-                await manager.send_personal_message(json.dumps(event_data), websocket)
             
-            # 분석 결과 전송
-            await manager.send_personal_message(json.dumps(analysis), websocket)
+            return None
             
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-    except Exception as e:
-        logger.error(f"WebSocket 오류: {str(e)}")
-        manager.disconnect(websocket)
-
-@app.get("/api/monitoring-types")
-async def get_monitoring_types():
-    """지원하는 모니터링 타입 목록"""
-    return {
-        "monitoring_types": [
-            {
-                "id": "realtime",
-                "name": "실시간 분석",
-                "description": "메시지를 실시간으로 분석",
-                "type": "websocket"
-            },
-            {
-                "id": "events",
-                "name": "이벤트 감지",
-                "description": "중요한 이벤트를 감지",
-                "type": "api"
-            },
-            {
-                "id": "quality",
-                "name": "품질 모니터링",
-                "description": "대화 품질을 분석",
-                "type": "api"
-            },
-            {
-                "id": "activity",
-                "name": "활동 추적",
-                "description": "참여자 활동을 추적",
-                "type": "api"
-            }
-        ]
-    }
-
-@app.get("/api/chat-rooms")
-async def get_monitorable_chat_rooms():
-    """모니터링 가능한 채팅방 목록"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT DISTINCT chat_room_id, 
-                   COUNT(*) as message_count,
-                   MIN(timestamp) as first_message,
-                   MAX(timestamp) as last_message
-            FROM messages 
-            GROUP BY chat_room_id
-            ORDER BY message_count DESC
-        ''')
-        
-        rooms = []
-        for row in cursor.fetchall():
-            room_id, count, first, last = row
-            rooms.append({
-                'id': room_id,
-                'message_count': count,
-                'first_message': first,
-                'last_message': last
-            })
-        
-        conn.close()
-        return {"success": True, "chat_rooms": rooms}
-        
-    except Exception as e:
-        logger.error(f"채팅방 목록 조회 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"채팅방 목록 조회 중 오류 발생: {str(e)}")
-
-if __name__ == "__main__":
-    import uvicorn
-    print("🚀 실시간 대화 모니터링 서버 시작")
-    print("=" * 50)
-    print("📍 서버 주소: http://localhost:8010")
-    print("📖 API 문서: http://localhost:8010/docs")
-    print("🎯 주요 기능:")
-    print("   - 실시간 메시지 분석")
-    print("   - 중요 이벤트 감지")
-    print("   - 참여자 활동 추적")
-    print("   - 대화 품질 모니터링")
-    print("   - WebSocket 알림")
-    print("=" * 50)
+        except Exception as e:
+            logger.error(f"참여도 예측 실패: {e}")
+            return None
     
-    uvicorn.run(app, host="0.0.0.0", port=8010) 
+    def _predict_emotion(self, conv_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """감정 예측"""
+        try:
+            if len(conv_data['emotion_history']) < 3:
+                return None
+            
+            recent_emotions = list(conv_data['emotion_history'])[-3:]
+            emotion_counts = defaultdict(int)
+            
+            for emotion in recent_emotions:
+                emotion_counts[emotion] += 1
+            
+            # 가장 빈번한 감정을 다음 예측 감정으로 사용
+            most_common_emotion = max(emotion_counts.items(), key=lambda x: x[1])[0]
+            confidence = emotion_counts[most_common_emotion] / len(recent_emotions)
+            
+            return {
+                'value': most_common_emotion,
+                'confidence': confidence,
+                'reasoning': f"최근 감정 패턴 기반 예측: {most_common_emotion}"
+            }
+            
+        except Exception as e:
+            logger.error(f"감정 예측 실패: {e}")
+            return None
+    
+    def _predict_quality(self, conv_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """대화 품질 예측"""
+        try:
+            # 품질 점수 계산 (0-100)
+            message_count = conv_data['message_count']
+            engagement_score = conv_data['engagement_score']
+            
+            # 기본 품질 점수
+            base_quality = min(100, message_count * 5)  # 메시지 수 기반
+            
+            # 참여도 보정
+            engagement_correction = engagement_score * 20
+            
+            # 응답 시간 보정
+            response_correction = 0
+            if len(conv_data['response_times']) > 0:
+                avg_response = sum(conv_data['response_times']) / len(conv_data['response_times'])
+                response_correction = max(-20, min(20, (30 - avg_response) * 2))
+            
+            predicted_quality = max(0, min(100, base_quality + engagement_correction + response_correction))
+            
+            # 신뢰도 계산
+            confidence = min(0.9, 0.3 + (message_count / 50))
+            
+            return {
+                'value': predicted_quality,
+                'confidence': confidence,
+                'reasoning': f"메시지 수({message_count}), 참여도({engagement_score:.2f}), 응답시간 기반 품질 예측"
+            }
+            
+        except Exception as e:
+            logger.error(f"품질 예측 실패: {e}")
+            return None
+    
+    def _analyze_conversation_end(self, conversation_id: str) -> Dict[str, Any]:
+        """대화 종료 분석"""
+        try:
+            conv_data = self.active_conversations[conversation_id]
+            
+            # 대화 지속 시간
+            start_time = datetime.fromisoformat(conv_data['start_time'])
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            # 평균 응답 시간
+            avg_response_time = 0
+            if len(conv_data['response_times']) > 0:
+                avg_response_time = sum(conv_data['response_times']) / len(conv_data['response_times'])
+            
+            # 감정 분포
+            emotion_distribution = defaultdict(int)
+            for emotion in conv_data['emotion_history']:
+                emotion_distribution[emotion] += 1
+            
+            # 주제 분포
+            topic_distribution = defaultdict(int)
+            for topic in conv_data['topic_history']:
+                topic_distribution[topic] += 1
+            
+            return {
+                'duration_seconds': duration,
+                'total_messages': conv_data['message_count'],
+                'avg_response_time': avg_response_time,
+                'final_engagement_score': conv_data['engagement_score'],
+                'emotion_distribution': dict(emotion_distribution),
+                'topic_distribution': dict(topic_distribution),
+                'events_count': len(self.conversation_events[conversation_id]),
+                'predictions_count': len(self.predictions[conversation_id])
+            }
+            
+        except Exception as e:
+            logger.error(f"대화 종료 분석 실패: {e}")
+            return {}
+    
+    def get_conversation_status(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """대화 상태 조회"""
+        if conversation_id in self.active_conversations:
+            return self.active_conversations[conversation_id]
+        return None
+    
+    def get_recent_events(self, conversation_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """최근 이벤트 조회"""
+        events = list(self.conversation_events[conversation_id])
+        return [asdict(event) for event in events[-limit:]]
+    
+    def get_recent_predictions(self, conversation_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """최근 예측 조회"""
+        predictions = self.predictions[conversation_id]
+        return [asdict(prediction) for prediction in predictions[-limit:]]
+    
+    def add_monitoring_callback(self, callback: Callable):
+        """모니터링 콜백 추가"""
+        self.monitoring_callbacks.append(callback)
+    
+    def get_active_conversations_count(self) -> int:
+        """활성 대화 수 조회"""
+        return len([conv for conv in self.active_conversations.values() if conv['status'] == 'active'])
+    
+    def get_system_stats(self) -> Dict[str, Any]:
+        """시스템 통계 조회"""
+        active_count = self.get_active_conversations_count()
+        total_events = sum(len(events) for events in self.conversation_events.values())
+        total_predictions = sum(len(predictions) for predictions in self.predictions.values())
+        
+        return {
+            'active_conversations': active_count,
+            'total_events': total_events,
+            'total_predictions': total_predictions,
+            'monitoring_callbacks': len(self.monitoring_callbacks)
+        }
+
+
+# 싱글톤 인스턴스
+realtime_monitor = RealtimeConversationMonitor() 

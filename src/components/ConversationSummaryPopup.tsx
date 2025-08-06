@@ -3,6 +3,7 @@ import { XMarkIcon, ChartBarIcon, UserGroupIcon, ClockIcon, ExclamationTriangleI
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useModalClose } from '../hooks/useModalClose';
 
 interface ConversationSummaryPopupProps {
     isOpen: boolean;
@@ -30,6 +31,11 @@ const ConversationSummaryPopup: React.FC<ConversationSummaryPopupProps> = ({ isO
     );
     const [startDate, endDate] = dateRange;
     const [autoApply, setAutoApply] = useState(false);
+
+    const { modalRef, handleClose } = useModalClose({
+        isOpen,
+        onClose
+    });
 
     // 팝업이 열릴 때 요약 데이터 로드
     useEffect(() => {
@@ -171,7 +177,7 @@ const ConversationSummaryPopup: React.FC<ConversationSummaryPopupProps> = ({ isO
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div ref={modalRef} className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
                 {/* 헤더 */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -179,11 +185,12 @@ const ConversationSummaryPopup: React.FC<ConversationSummaryPopupProps> = ({ isO
                         <h2 className="text-xl font-bold text-gray-800">대화 요약 분석</h2>
                     </div>
                     <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="닫기"
+                        onClick={handleClose}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                        aria-label="대화 요약 분석 모달 닫기"
+                        title="ESC 키로도 닫을 수 있습니다"
                     >
-                        <XMarkIcon className="w-5 h-5 text-gray-500" />
+                        <XMarkIcon className="w-5 h-5" />
                     </button>
                 </div>
 

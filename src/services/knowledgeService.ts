@@ -209,6 +209,16 @@ class KnowledgeService {
     return newRule;
   }
 
+  async getGuidelines(): Promise<Guideline[]> {
+    // 모든 지식 베이스의 지침을 수집
+    const allGuidelines: Guideline[] = [];
+    const knowledgeBases = Array.from(this.knowledgeBases.values());
+    for (const kb of knowledgeBases) {
+      allGuidelines.push(...kb.guidelines);
+    }
+    return allGuidelines;
+  }
+
   // 메시지 생성 (핵심 기능)
   async generateMessage(request: MessageGenerationRequest): Promise<MessageGenerationResponse> {
     const startTime = Date.now();
@@ -242,7 +252,7 @@ class KnowledgeService {
         generatedMessage,
         confidence,
         reasoning: this.generateReasoning(contextAnalysis, relevantGuidelines, applicableRules),
-        usedGuidelines: relevantGuidelines,
+        usedGuidelines: relevantGuidelines.map(g => g.id),
         appliedRules: applicableRules,
         suggestions: this.generateSuggestions(request, contextAnalysis),
         metadata: {
@@ -487,7 +497,7 @@ class KnowledgeService {
     return reasoning;
   }
 
-  private generateSuggestions(request: MessageGenerationRequest, contextAnalysis: any): string {
+  private generateSuggestions(request: MessageGenerationRequest, contextAnalysis: any): string[] {
     const suggestions = [];
     if (contextAnalysis.sentiment === 'negative') {
       suggestions.push('공감적이고 이해하는 톤으로 응답하는 것을 권장합니다.');
@@ -497,7 +507,7 @@ class KnowledgeService {
       suggestions.push('간결하고 핵심적인 내용으로 응답하는 것을 권장합니다.');
     }
 
-    return suggestions.join(' ');
+    return suggestions;
   }
 
   private calculateSimilarity(embeddings1: number[], embeddings2: number[]): number {

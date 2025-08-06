@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-    AdvancedMessageRequest,
     AdvancedGeneratedMessage,
     UserProfile,
     PerformanceAnalysis,
@@ -42,19 +41,19 @@ const AdvancedMessageGenerationSystem: React.FC = () => {
         try {
             // 서버 상태 확인
             const status = await advancedMessageAPI.checkServerStatus();
-            setServerStatus(status);
+            setServerStatus(status.data);
 
             // AI 모델 성능 조회
             const models = await advancedMessageAPI.getAIModelPerformance();
-            setAiModels(models);
+            setAiModels(models.data);
 
             // 성능 분석 조회
             const performance = await advancedMessageAPI.getPerformanceAnalysis();
-            setPerformanceAnalysis(performance);
+            setPerformanceAnalysis(performance.data);
 
             // 사용자 프로필 조회 (기본 사용자)
             const profile = await advancedMessageAPI.getUserProfile('default_user');
-            setUserProfile(profile);
+            setUserProfile(profile.data);
         } catch (error) {
             console.error('초기 데이터 로드 오류:', error);
         }
@@ -69,25 +68,15 @@ const AdvancedMessageGenerationSystem: React.FC = () => {
         setIsGenerating(true);
 
         try {
-            const request: AdvancedMessageRequest = {
-                original_message: originalMessage,
-                sender: sender || 'default_user',
-                chat_room_id: chatRoomId || 'default_room',
-                target_audience: targetAudience.length > 0 ? targetAudience : ['일반'],
-                context_type: contextType,
-                urgency_level: urgencyLevel,
-                message_length: messageLength,
-                include_data: includeData,
-                include_examples: includeExamples,
-                include_call_to_action: includeCallToAction,
-                personalization_level: personalizationLevel,
-                ai_model_preference: aiModelPreference || undefined,
-                emotion_context: emotionContext || undefined,
-                learning_enabled: learningEnabled
+            const request = {
+                context: originalMessage,
+                style: 'professional',
+                user_profile: userProfile,
+                performance_metrics: performanceAnalysis
             };
 
             const result = await advancedMessageAPI.generateAdvancedMessage(request);
-            setGeneratedMessage(result);
+            setGeneratedMessage(result.data);
         } catch (error) {
             console.error('메시지 생성 오류:', error);
             alert('메시지 생성 중 오류가 발생했습니다.');
@@ -102,14 +91,14 @@ const AdvancedMessageGenerationSystem: React.FC = () => {
         try {
             await advancedMessageAPI.submitLearningFeedback({
                 message_id: generatedMessage.id,
-                user_feedback: feedback,
+                user_feedback: feedback.toString(),
                 success_indicator: success,
                 improvement_suggestions: success ? '좋은 메시지입니다.' : '개선이 필요합니다.'
             });
 
             // 성능 분석 새로고침
             const performance = await advancedMessageAPI.getPerformanceAnalysis();
-            setPerformanceAnalysis(performance);
+            setPerformanceAnalysis(performance.data);
 
             alert('학습 피드백이 제출되었습니다.');
         } catch (error) {
@@ -341,28 +330,28 @@ const AdvancedMessageGenerationSystem: React.FC = () => {
                             {/* 생성된 메시지 */}
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <h3 className="font-medium text-gray-800 mb-2">생성된 메시지</h3>
-                                <p className="text-gray-700">{generatedMessage.generated_message}</p>
+                                <p className="text-gray-700">{generatedMessage.advanced_message}</p>
                             </div>
 
                             {/* AI 모델 정보 */}
                             <div className="bg-blue-50 p-4 rounded-lg">
                                 <h3 className="font-medium text-blue-800 mb-2">AI 모델 정보</h3>
                                 <p className="text-blue-700">사용된 모델: {generatedMessage.ai_model_used}</p>
-                                <p className="text-blue-700">신뢰도: {(generatedMessage.confidence_score * 100).toFixed(1)}%</p>
-                                <p className="text-blue-700">개인화 점수: {(generatedMessage.personalization_score * 100).toFixed(1)}%</p>
-                                <p className="text-blue-700">영향력 예측: {generatedMessage.impact_prediction.toFixed(1)}%</p>
+                                <p className="text-blue-700">신뢰도: {generatedMessage.confidence_score !== undefined ? (generatedMessage.confidence_score * 100).toFixed(1) + '%' : 'N/A'}</p>
+                                <p className="text-blue-700">개인화 점수: {generatedMessage.personalization_score !== undefined ? (generatedMessage.personalization_score * 100).toFixed(1) + '%' : 'N/A'}</p>
+                                <p className="text-blue-700">영향력 예측: {generatedMessage.impact_prediction !== undefined ? generatedMessage.impact_prediction.toFixed(1) + '%' : 'N/A'}</p>
                             </div>
 
                             {/* 감정 분석 */}
                             <div className="bg-green-50 p-4 rounded-lg">
                                 <h3 className="font-medium text-green-800 mb-2">감정 분석</h3>
-                                <p className="text-green-700">주요 감정: {generatedMessage.emotion_analysis.primary_emotion}</p>
-                                <p className="text-green-700">감정 강도: {(generatedMessage.emotion_analysis.intensity * 100).toFixed(1)}%</p>
-                                <p className="text-green-700">분석 신뢰도: {(generatedMessage.emotion_analysis.confidence * 100).toFixed(1)}%</p>
+                                <p className="text-green-700">주요 감정: {generatedMessage.emotion_analysis?.primary_emotion ?? 'N/A'}</p>
+                                <p className="text-green-700">감정 강도: {generatedMessage.emotion_analysis?.intensity !== undefined ? (generatedMessage.emotion_analysis.intensity * 100).toFixed(1) + '%' : 'N/A'}</p>
+                                <p className="text-green-700">분석 신뢰도: {generatedMessage.emotion_analysis?.confidence !== undefined ? (generatedMessage.emotion_analysis.confidence * 100).toFixed(1) + '%' : 'N/A'}</p>
                             </div>
 
                             {/* 학습 인사이트 */}
-                            {generatedMessage.learning_insights.length > 0 && (
+                            {generatedMessage.learning_insights && generatedMessage.learning_insights.length > 0 && (
                                 <div className="bg-yellow-50 p-4 rounded-lg">
                                     <h3 className="font-medium text-yellow-800 mb-2">학습 인사이트</h3>
                                     <ul className="text-yellow-700 space-y-1">
@@ -374,7 +363,7 @@ const AdvancedMessageGenerationSystem: React.FC = () => {
                             )}
 
                             {/* 대안 메시지 */}
-                            {generatedMessage.alternatives.length > 0 && (
+                            {generatedMessage.alternatives && generatedMessage.alternatives.length > 0 && (
                                 <div className="bg-purple-50 p-4 rounded-lg">
                                     <h3 className="font-medium text-purple-800 mb-2">대안 메시지</h3>
                                     <div className="space-y-2">
@@ -426,20 +415,20 @@ const AdvancedMessageGenerationSystem: React.FC = () => {
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">성능 분석</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-blue-50 p-4 rounded-lg text-center">
-                            <div className="text-2xl font-bold text-blue-600">{performanceAnalysis.average_feedback.toFixed(1)}</div>
+                            <div className="text-2xl font-bold text-blue-600">{performanceAnalysis.average_feedback !== undefined ? performanceAnalysis.average_feedback.toFixed(1) : 'N/A'}</div>
                             <div className="text-sm text-blue-700">평균 피드백</div>
                         </div>
                         <div className="bg-green-50 p-4 rounded-lg text-center">
-                            <div className="text-2xl font-bold text-green-600">{performanceAnalysis.total_messages}</div>
+                            <div className="text-2xl font-bold text-green-600">{performanceAnalysis.total_messages !== undefined ? performanceAnalysis.total_messages : 'N/A'}</div>
                             <div className="text-sm text-green-700">총 메시지 수</div>
                         </div>
                         <div className="bg-yellow-50 p-4 rounded-lg text-center">
-                            <div className="text-2xl font-bold text-yellow-600">{(performanceAnalysis.success_rate * 100).toFixed(1)}%</div>
+                            <div className="text-2xl font-bold text-yellow-600">{performanceAnalysis.success_rate !== undefined ? (performanceAnalysis.success_rate * 100).toFixed(1) + '%' : 'N/A'}</div>
                             <div className="text-sm text-yellow-700">성공률</div>
                         </div>
                         <div className="bg-red-50 p-4 rounded-lg text-center">
                             <div className="text-2xl font-bold text-red-600">
-                                {performanceAnalysis.improvement_needed ? '필요' : '불필요'}
+                                {performanceAnalysis.improvement_needed !== undefined ? (performanceAnalysis.improvement_needed ? '필요' : '불필요') : 'N/A'}
                             </div>
                             <div className="text-sm text-red-700">개선 필요</div>
                         </div>

@@ -1,0 +1,723 @@
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useChat, useUI, useNotifications } from '../context/AppContext';
+import { useRealtime } from '../services/realtimeService';
+import { parseConversationCommand } from '../utils/conversationRouter';
+import { handleAIStatus, handleAnalytics, handleListRooms, handleLogout, handleHelp, handleChat } from '../conversationHandlers';
+import IntegratedAISystem from './IntegratedAISystem';
+import NotificationSystem from './NotificationSystem';
+import RealtimeStatus from './RealtimeStatus';
+import TypingIndicator from './TypingIndicator';
+import CORBULogo from './CORBULogo';
+import FileUploadModal from './FileUploadModal';
+import ProjectManager from './ProjectManager';
+import ProjectChatList from './ProjectChatList';
+import ProjectInfoPopup from './ProjectInfoPopup';
+import ProjectFileManager from './ProjectFileManager';
+import ChatSummaryPopup from './ChatSummaryPopup';
+
+const IntegratedChatSystem: React.FC = () => {
+  const {
+    messages,
+    addMessage,
+    setMessages,
+    chatRooms
+  } = useChat();
+
+  const {
+    showSidebar,
+    showAISystem,
+    toggleSidebar,
+    toggleAIPanel,
+    isTyping
+  } = useUI();
+
+  const {
+    notifications,
+    addNotification,
+    removeNotification
+  } = useNotifications();
+
+  const [inputMessage, setInputMessage] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string>('1'); // 기본값으로 개포우성7차 선택
+  const [currentRoomId, setCurrentRoomId] = useState<string>('1-1'); // 기본값으로 일반 채팅 선택
+  const [showProjectInfo, setShowProjectInfo] = useState(false);
+  const [showFileManager, setShowFileManager] = useState(false);
+  const [showChatSummary, setShowChatSummary] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 모의 프로젝트 데이터 (개포우성7차)
+  const mockProject = {
+    id: '1',
+    name: '개포우성7차',
+    description: '개포우성7차 프로젝트 - 시공사 비교 및 홍보 논란 관련 대화 관리',
+    mediaFiles: [
+      {
+        id: '1',
+        name: '시공사_비교_분석.pdf',
+        size: 2048576,
+        type: 'application/pdf',
+        url: '#',
+        category: 'document',
+        tags: ['비교', '분석', '시공사'],
+        confidence: 0.95,
+        summary: '삼성물산과 대우건설의 비교 분석 문서입니다.'
+      },
+      {
+        id: '2',
+        name: '홍보_전략_가이드.pptx',
+        size: 5120000,
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        url: '#',
+        category: 'presentation',
+        tags: ['홍보', '전략', '가이드'],
+        confidence: 0.88,
+        summary: '홍보 전략 및 가이드라인 프레젠테이션입니다.'
+      }
+    ],
+    guidelines: `## 🧭 **시공사 비교 설명 지침 (삼성물산 vs 대우건설)**
+
+### ✅ **1. 비교 논리의 기본 원칙**
+
+| 항목     | 원칙                                           |
+| ------ | -------------------------------------------- |
+| **비용** | 조합원이 실제 부담해야 할 금액(금리, 분담금, 이자비용)을 중심으로 비교한다. |
+| **혜택** | '보이는 조건'보다 '계약서에 담긴 실질 내용'을 기준으로 검증한다.       |
+| **책임** | "문제가 생겼을 때 누가 책임지나"를 기준으로, 계약서 조항 중심으로 판단한다. |
+| **설계** | 외형보다 생활에 직결되는 요소(사생활 보호, 개방감 등)를 우선한다.       |
+
+### ✅ **2. 핵심 메시지 템플릿**
+
+> "삼성은 층고 2cm, 공기 2개월로 홍보하지만, 대우는 금리 2.5% 낮춰 수백억 이자 절감시킵니다."
+
+> "겉으로는 좋은 조건처럼 보이지만, 계약서 속 조항은 조합에 불리하게 바뀌었습니다."
+
+> "말이 아닌 계약서, 느낌이 아닌 숫자로 비교하면 대우가 이기는 제안입니다."`,
+    createdAt: '2025-01-15T00:00:00.000Z'
+  };
+
+  // 실시간 훅 사용
+  const {
+    sendMessage: sendRealtimeMessage,
+    getTypingUsers
+  } = useRealtime();
+
+  // 메시지 전송 핸들러 (대화형 명령 처리 포함)
+  const handleSendMessage = useCallback(async (message: string) => {
+    if (!message.trim()) return;
+
+    // 사용자 메시지 추가
+    const userMessage = {
+      id: Date.now().toString(),
+      content: message,
+      sender: 'user' as const,
+      timestamp: new Date().toISOString(),
+      type: 'text' as const
+    };
+    addMessage(userMessage);
+
+    // 실시간 메시지 전송
+    sendRealtimeMessage(currentRoomId, userMessage);
+
+    // 입력창 초기화
+    setInputMessage('');
+
+    // 대화형 명령 파싱 및 처리
+    setIsProcessing(true);
+    try {
+      const command = parseConversationCommand(message);
+
+      let response: string;
+
+      switch (command.intent) {
+        case 'ai_status':
+          response = await handleAIStatus();
+          break;
+        case 'analytics':
+          response = await handleAnalytics();
+          break;
+        case 'file_upload':
+          setShowFileUpload(true);
+          response = "파일 업로드 모달이 열렸습니다. 파일을 선택하거나 드래그하여 업로드하세요.";
+          break;
+        case 'list_rooms':
+          response = await handleListRooms();
+          break;
+        case 'logout':
+          response = await handleLogout();
+          break;
+        case 'help':
+          response = await handleHelp();
+          break;
+        case 'chat':
+        default:
+          // 일반 채팅 처리
+          response = await handleChat(message);
+          break;
+      }
+
+      // AI 응답 메시지 추가
+      const aiMessage = {
+        id: (Date.now() + 1).toString(),
+        content: response,
+        sender: 'ai' as const,
+        timestamp: new Date().toISOString(),
+        type: 'text' as const
+      };
+      addMessage(aiMessage);
+
+      // 실시간 AI 응답 전송
+      sendRealtimeMessage(currentRoomId, aiMessage);
+
+      addNotification({
+        type: 'success',
+        title: '명령 처리 완료',
+        message: `"${command.intent}" 명령이 성공적으로 처리되었습니다.`
+      });
+
+    } catch (error) {
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        content: `명령 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`,
+        sender: 'system' as const,
+        timestamp: new Date().toISOString(),
+        type: 'error' as const
+      };
+      addMessage(errorMessage);
+
+      addNotification({
+        type: 'error',
+        title: '명령 처리 실패',
+        message: '명령을 처리하는 중 오류가 발생했습니다.'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [currentRoomId, addMessage, sendRealtimeMessage, addNotification]);
+
+  // 채팅방 선택 핸들러
+  const handleRoomSelect = useCallback((roomId: string) => {
+    setCurrentRoomId(roomId);
+    addNotification({
+      type: 'info',
+      title: '채팅방 변경',
+      message: `${chatRooms.find(room => room.id === roomId)?.name}으로 이동했습니다.`
+    });
+
+    // 선택된 채팅방의 메시지 로드 (실제로는 API 호출)
+    loadRoomMessages(roomId);
+  }, [setCurrentRoomId, chatRooms, addNotification]);
+
+  // 채팅방 메시지 로드 (모의 함수)
+  const loadRoomMessages = useCallback((roomId: string) => {
+    // 실제로는 API에서 메시지를 로드
+    console.log(`Loading messages for room: ${roomId}`);
+  }, []);
+
+  // 시스템 명령 핸들러
+  const handleSystemCommand = useCallback((command: string) => {
+    switch (command) {
+      case 'toggle_sidebar':
+        toggleSidebar();
+        break;
+      case 'toggle_ai_panel':
+        toggleAIPanel();
+        break;
+      default:
+        addNotification({
+          type: 'info',
+          title: '시스템 명령',
+          message: `명령어 "${command}"가 실행되었습니다.`
+        });
+    }
+  }, [showSidebar, showAISystem, toggleSidebar, toggleAIPanel, setMessages, addNotification]);
+
+  // 키보드 이벤트 핸들러
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(inputMessage);
+    }
+  }, [inputMessage, handleSendMessage]);
+
+  const handleChatSelect = (chatId: string) => {
+    setSelectedChatId(chatId);
+    addNotification({
+      type: 'success',
+      title: '대화 선택',
+      message: '선택한 대화로 이동합니다.'
+    });
+  };
+
+  const handleProjectInfoToggle = () => {
+    setShowProjectInfo(!showProjectInfo);
+  };
+
+  const handleFileManagerToggle = () => {
+    setShowFileManager(!showFileManager);
+  };
+
+  const handleChatSummaryToggle = () => {
+    setShowChatSummary(!showChatSummary);
+  };
+
+  const handleChatSummarySave = () => {
+    setShowChatSummary(false);
+    addNotification({
+      type: 'success',
+      title: '대화 요약 저장',
+      message: '대화 요약이 성공적으로 저장되었습니다.'
+    });
+  };
+
+  // 초기 로드
+  useEffect(() => {
+    loadRoomMessages(currentRoomId);
+  }, [currentRoomId, loadRoomMessages]);
+
+  // 현재 채팅방의 타이핑 사용자
+  const currentTypingUsers = getTypingUsers(currentRoomId);
+
+  // 메시지 영역 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  return (
+    <div className="h-screen flex bg-gray-50">
+      {/* 사이드바 */}
+      {showSidebar && (
+        <div className="w-80 bg-white border-r border-gray-200 flex-shrink-0">
+          <div className="p-4 border-b border-gray-200">
+            <CORBULogo size="md" />
+          </div>
+          <ProjectManager
+            selectedProjectId={currentProjectId}
+            selectedRoomId={currentRoomId}
+            onProjectSelect={setCurrentProjectId}
+            onRoomSelect={setCurrentRoomId}
+          />
+        </div>
+      )}
+
+      {/* 메인 채팅 영역 */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* 헤더 */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="사이드바 토글"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="flex items-center space-x-2">
+              <div className="text-gray-600">📁</div>
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">개포우성_실명방</h1>
+                <p className="text-sm text-gray-500">CORBU AI 통합 채팅 시스템</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            {/* 파일 추가 버튼 */}
+            <button
+              onClick={handleFileManagerToggle}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+            >
+              파일 추가
+            </button>
+
+            {/* 실시간 상태 표시 */}
+            <RealtimeStatus />
+
+            <button
+              onClick={toggleAIPanel}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="AI 시스템 토글"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </button>
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-sm text-gray-500">온라인</span>
+          </div>
+        </div>
+
+        {/* 메인 콘텐츠 영역 */}
+        <div className="flex-1 flex min-h-0">
+          {/* 채팅 영역 */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* 상단 요약 버튼 */}
+            <div className="bg-white border-b border-gray-200 px-6 py-3 flex justify-end">
+              <div className="flex items-center space-x-2">
+                <div className="bg-gray-100 rounded-lg px-4 py-2">
+                  <span className="text-sm text-gray-700">대화내용 요약해줘</span>
+                </div>
+                <button
+                  className="p-1 text-gray-400 hover:text-gray-600"
+                  aria-label="복사"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <button
+                  className="p-1 text-gray-400 hover:text-gray-600"
+                  aria-label="편집"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* 메시지 영역 */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {messages.length === 0 ? (
+                // 채팅 내역이 없을 때 메인 화면 표시
+                <div className="max-w-4xl mx-auto h-full flex flex-col">
+                  {/* 상단 안내 문구 */}
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl font-medium text-gray-900">
+                      무엇을 도와드릴까요?
+                    </h2>
+                  </div>
+
+                  {/* 중앙 채팅 영역 */}
+                  <div className="flex-1 bg-white rounded-lg border border-gray-200 mb-6 p-8">
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center text-gray-400">
+                        <div className="text-6xl mb-4">💬</div>
+                        <p className="text-lg">새로운 대화를 시작해보세요</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 프로젝트 파일과 지침 카드들 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    {/* 프로젝트 파일 카드 */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-medium text-gray-900">프로젝트 파일</h3>
+                        <button
+                          onClick={handleFileManagerToggle}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          파일 관리
+                        </button>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-3xl">📁</div>
+                        <div>
+                          <p className="text-lg text-gray-900 font-medium">1 파일</p>
+                          <p className="text-sm text-gray-500">[인증]행복한소유☆개포우성7차.txt</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 지침 카드 */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-medium text-gray-900">지침</h3>
+                        <button
+                          onClick={handleProjectInfoToggle}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          자세히 보기
+                        </button>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-3xl">📋</div>
+                        <div>
+                          <p className="text-sm text-gray-600 line-clamp-3">
+                            개포우성 0000대화 요약 2025년 00월 00일 오후 8시 이후 ~ 00월...
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 대화 목록 */}
+                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">대화 목록</h3>
+                    <div className="space-y-3">
+                      <div className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <h4 className="font-medium text-gray-900">시공사 홍보 논란</h4>
+                        <p className="text-sm text-gray-600 mt-1">2025년 당일만 7월 14일 기준, 실명 채팅방 대화 내용을 채팅방[인증]행복한소유☆개포우성7차로 주요 내용과 관련자 발언 중심으...</p>
+                      </div>
+                      <div className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <h4 className="font-medium text-gray-900">잠실우성 대화 요약</h4>
+                        <p className="text-sm text-gray-600 mt-1">다음은 2025년 7월 12일부터 7월 14일 기준, 실명 채팅방 대화 내용을 채팅방(파일)별로 주요 내용과 관련자 발언 중심으로 정리한...</p>
+                      </div>
+                      <div className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <h4 className="font-medium text-gray-900">잠실우성 실명방 대화 요약 (2025년 4월 29 기준)</h4>
+                        <p className="text-sm text-gray-600 mt-1">주요내용과 관련자 발언을 채팅방별로 분류해줘</p>
+                      </div>
+                      <div className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <h4 className="font-medium text-gray-900">잠실우성 실명방 대화 요약 2025년 6월 17일기준</h4>
+                        <p className="text-sm text-gray-600 mt-1">주요내용과 관련자 발언을 파일별(채팅방)별로 자세히 분류해줘</p>
+                      </div>
+                      <div className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <h4 className="font-medium text-gray-900">잠실우성 실명방 대화 요약 2025년 6월 16일기준</h4>
+                        <p className="text-sm text-gray-600 mt-1">주요내용과 관련자 발언을 파일별(채팅방)별로 자세히 분류해줘</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // 채팅이 있을 때는 채팅 요약 화면 표시
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-900 mb-6">
+                      다음은 실명 채팅방 [인증]행복한소유★개포우성7차 의 2025년 7월 14일 대화 내용을 주요 이슈 중심으로 정리한 요약입니다:
+                    </h2>
+
+                    <div className="space-y-8">
+                      {/* 시공사 평가 기준 및 설명회 기대 */}
+                      <div>
+                        <div className="flex items-center space-x-2 mb-4">
+                          <div className="text-green-500 text-xl">✓</div>
+                          <h3 className="text-lg font-semibold text-gray-900">1. 시공사 평가 기준 및 설명회 기대</h3>
+                        </div>
+                        <div className="ml-8 space-y-3">
+                          <div className="flex items-start space-x-3">
+                            <div className="text-green-500 mt-1">•</div>
+                            <p className="text-gray-700">
+                              <strong>이재헌:</strong> 조합원들이 제안서를 보고 선택하는 것이 중요하다고 강조했습니다.
+                            </p>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <div className="text-green-500 mt-1">•</div>
+                            <p className="text-gray-700">
+                              <strong>박재우:</strong> 점수 외에도 내용을 꼼꼼히 확인해야 한다고 조언했습니다.
+                            </p>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <div className="text-green-500 mt-1">•</div>
+                            <p className="text-gray-700">
+                              <strong>박은진:</strong> 설명회에서 누가 설명하는지가 중요하다고 언급했습니다.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 공사비 관련 견해 */}
+                      <div>
+                        <div className="flex items-center space-x-2 mb-4">
+                          <div className="text-green-500 text-xl">✓</div>
+                          <h3 className="text-lg font-semibold text-gray-900">2. 공사비 관련 견해</h3>
+                        </div>
+                        <div className="ml-8 space-y-3">
+                          <div className="flex items-start space-x-3">
+                            <div className="text-green-500 mt-1">•</div>
+                            <p className="text-gray-700">
+                              <strong>이재헌:</strong> 공사비가 동일할 경우 다양한 요소를 고려해야 한다고 제안했습니다.
+                            </p>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <div className="text-green-500 mt-1">•</div>
+                            <p className="text-gray-700">
+                              <strong>박재우:</strong> 일부 조건들은 비교할 수 없다고 지적했습니다.
+                            </p>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <div className="text-green-500 mt-1">•</div>
+                            <p className="text-gray-700">
+                              <strong>정지혜:</strong> 판단하기 전에 제안서를 평가해야 한다고 강조했습니다.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 하단 화살표 */}
+                    <div className="flex justify-center mt-8">
+                      <div className="text-gray-400">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* 입력 영역 */}
+            <div className="bg-white border-t border-gray-200 p-4">
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-end space-x-3">
+                  <div className="flex-1 relative">
+                    {/* 왼쪽 아이콘들 */}
+                    <div className="flex items-center space-x-2 mb-2">
+                      <button
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                        aria-label="추가"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </button>
+                      <button
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                        aria-label="도구"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                      </button>
+                      <span className="text-xs text-gray-500">도구</span>
+                    </div>
+                    
+                    <textarea
+                      ref={inputRef}
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="무엇이든 물어보세요"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows={1}
+                      style={{ minHeight: '44px', maxHeight: '120px' }}
+                      disabled={isProcessing}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                      aria-label="음성 입력"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    </button>
+                    <button
+                      className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                      aria-label="음성 상태"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage(inputMessage)}
+                    disabled={!inputMessage.trim() || isTyping || isProcessing}
+                    className="p-2 bg-gray-900 text-white rounded-full hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    aria-label="전송"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="mt-2 text-xs text-gray-500">
+                  Enter: 전송 | Shift+Enter: 줄바꿈
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI 시스템 패널 */}
+          {showAISystem && (
+            <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">AI 시스템</h3>
+              </div>
+              <div className="p-4">
+                <IntegratedAISystem />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 알림 시스템 */}
+      <NotificationSystem
+        notifications={notifications}
+        onRemove={removeNotification}
+      />
+
+      {/* 파일 업로드 모달 */}
+      <FileUploadModal
+        isOpen={showFileUpload}
+        onClose={() => setShowFileUpload(false)}
+        onUploadSuccess={(fileInfo) => {
+          addMessage({
+            id: Date.now().toString(),
+            content: `📎 파일이 업로드되었습니다: ${fileInfo.filename}`,
+            sender: 'system',
+            timestamp: new Date().toISOString(),
+            type: 'text'
+          });
+          addNotification({
+            type: 'success',
+            title: '파일 업로드 완료',
+            message: `${fileInfo.filename} 파일이 성공적으로 업로드되었습니다.`
+          });
+        }}
+      />
+
+      {/* 프로젝트 정보 팝업 */}
+      <ProjectInfoPopup
+        project={mockProject}
+        isOpen={showProjectInfo}
+        onClose={() => setShowProjectInfo(false)}
+      />
+
+      {/* 프로젝트 파일 관리 모달 */}
+      <ProjectFileManager
+        isOpen={showFileManager}
+        onClose={() => setShowFileManager(false)}
+        projectName="개포우성7차"
+      />
+
+      {/* 대화 요약 팝업 */}
+      <ChatSummaryPopup
+        isOpen={showChatSummary}
+        onClose={() => setShowChatSummary(false)}
+        onSave={handleChatSummarySave}
+      />
+
+      {/* 프로젝트 대화 리스트 (선택된 채팅이 있을 때) */}
+      {selectedChatId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">개포우성7차 대화 목록</h2>
+                <button
+                  onClick={() => setSelectedChatId(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="대화 목록 닫기"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <ProjectChatList
+                projectName="개포우성7차"
+                projectId="1"
+                onChatSelect={handleChatSelect}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default IntegratedChatSystem; 
