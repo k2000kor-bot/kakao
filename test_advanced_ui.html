@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고급 맥락 이해 시스템 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: #f1f5f9;
+        }
+        .test-title {
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2563eb;
+        }
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 6px;
+            background-color: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .loading {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        .success { border-left-color: #10b981; background-color: #f0fdf4; }
+        .warning { border-left-color: #f59e0b; background-color: #fffbeb; }
+        .error { border-left-color: #ef4444; background-color: #fef2f2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 고급 맥락 이해 시스템 실시간 테스트</h1>
+        
+        <div class="test-section">
+            <div class="test-title">📄 복잡한 다중 조건 요청 테스트</div>
+            <textarea id="complexRequest" placeholder="예: 먼저 삼성물산 홍보 문제를 분석해주고, 그다음에 카드뉴스로 만들어줘. 또한 다른 시공사와도 비교해주고, 마지막으로 법적 검토도 포함해서 종합 보고서를 작성해줘.">먼저 삼성물산 홍보 문제를 분석해주고, 그다음에 카드뉴스로 만들어줘. 또한 다른 시공사와도 비교해주고, 마지막으로 법적 검토도 포함해서 종합 보고서를 작성해줘.</textarea>
+            <button onclick="testComplexRequest()">🚀 복잡한 요청 테스트</button>
+            <div id="complexResult"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">💬 대화 연속성 테스트</div>
+            <textarea id="contextRequest" placeholder="이전 대화를 참고한 후속 질문을 입력하세요">이전에 말씀드린 삼성물산 홍보 문제에 대한 후속 조치는 어떻게 하면 좋을까요? 추가로 조합원들의 의견도 수렴해서 대응 방안을 만들어주세요.</textarea>
+            <button onclick="testContextRequest()">🔗 맥락 연속성 테스트</button>
+            <div id="contextResult"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">⚡ 처리 성능 및 통계</div>
+            <button onclick="getSystemStats()">📊 시스템 성능 확인</button>
+            <div id="statsResult"></div>
+        </div>
+    </div>
+
+    <script>
+        let conversationHistory = [
+            {
+                id: '1',
+                content: '안녕하세요, 개포우성7차 재개발 관련 문의가 있습니다.',
+                sender: 'user',
+                timestamp: '2024-01-01T10:00:00Z',
+                isUser: true,
+                type: 'text'
+            },
+            {
+                id: '2',
+                content: '네, 개포우성7차 재개발에 대해 도움드리겠습니다. 어떤 부분이 궁금하신가요?',
+                sender: 'ai',
+                timestamp: '2024-01-01T10:00:01Z',
+                isUser: false,
+                type: 'text'
+            }
+        ];
+
+        async function testComplexRequest() {
+            const message = document.getElementById('complexRequest').value;
+            const resultDiv = document.getElementById('complexResult');
+            
+            if (!message.trim()) {
+                alert('메시지를 입력해주세요.');
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading">🔄 복잡한 요청을 분석하고 있습니다...</div>';
+
+            try {
+                const response = await fetch('http://localhost:8005/api/v9/advanced-document', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        document_text: message,
+                        conversation_history: conversationHistory,
+                        user_conditions: extractConditions(message),
+                        priority_level: 'high'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayResult(resultDiv, data, 'success');
+                    
+                    // 대화 기록에 추가
+                    conversationHistory.push({
+                        id: Date.now().toString(),
+                        content: message,
+                        sender: 'user',
+                        timestamp: new Date().toISOString(),
+                        isUser: true,
+                        type: 'text'
+                    });
+                    conversationHistory.push({
+                        id: (Date.now() + 1).toString(),
+                        content: data.processed_response,
+                        sender: 'ai',
+                        timestamp: new Date().toISOString(),
+                        isUser: false,
+                        type: 'text'
+                    });
+                } else {
+                    throw new Error(`API 오류: ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ 오류 발생: ${error.message}</div>`;
+            }
+        }
+
+        async function testContextRequest() {
+            const message = document.getElementById('contextRequest').value;
+            const resultDiv = document.getElementById('contextResult');
+            
+            if (!message.trim()) {
+                alert('메시지를 입력해주세요.');
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading">🔄 대화 맥락을 분석하고 있습니다...</div>';
+
+            try {
+                const response = await fetch('http://localhost:8005/api/v9/advanced-document', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        document_text: message,
+                        conversation_history: conversationHistory,
+                        user_conditions: [message],
+                        context_id: 'test_context_001',
+                        priority_level: 'normal'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayResult(resultDiv, data, 'success');
+                } else {
+                    throw new Error(`API 오류: ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ 오류 발생: ${error.message}</div>`;
+            }
+        }
+
+        async function getSystemStats() {
+            const resultDiv = document.getElementById('statsResult');
+            resultDiv.innerHTML = '<div class="loading">📊 시스템 통계를 가져오고 있습니다...</div>';
+
+            try {
+                const response = await fetch('http://localhost:8005/api/v9/stats');
+                
+                if (response.ok) {
+                    const stats = await response.json();
+                    displayStats(resultDiv, stats);
+                } else {
+                    throw new Error(`통계 조회 오류: ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ 통계 조회 실패: ${error.message}</div>`;
+            }
+        }
+
+        function extractConditions(message) {
+            const conditions = [];
+            if (message.includes('분석')) conditions.push('분석');
+            if (message.includes('비교')) conditions.push('비교');
+            if (message.includes('제시') || message.includes('제안')) conditions.push('제안');
+            if (message.includes('카드뉴스') || message.includes('작성')) conditions.push('작성');
+            if (message.includes('검토')) conditions.push('검토');
+            if (message.includes('보고서')) conditions.push('보고서');
+            return conditions;
+        }
+
+        function displayResult(container, data, type) {
+            const resultClass = type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'error';
+            
+            container.innerHTML = `
+                <div class="result ${resultClass}">
+                    <strong>🤖 AI 응답:</strong>
+                    ${data.processed_response}
+                    
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value">${data.multi_condition_analysis.complexity_score.toFixed(2)}</div>
+                            <div class="stat-label">복잡도 점수</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${data.context_memory.memory_strength.toFixed(2)}</div>
+                            <div class="stat-label">메모리 강도</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${data.context_continuity_score.toFixed(2)}</div>
+                            <div class="stat-label">맥락 연속성</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${data.style_analysis.consistency_score.toFixed(2)}</div>
+                            <div class="stat-label">스타일 일관성</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${(data.processing_metadata.processing_time * 1000).toFixed(1)}ms</div>
+                            <div class="stat-label">처리 시간</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${data.context_memory.context_windows.length}</div>
+                            <div class="stat-label">컨텍스트 윈도우</div>
+                        </div>
+                    </div>
+                    
+                    <details style="margin-top: 15px;">
+                        <summary style="cursor: pointer; font-weight: 500;">📋 상세 분석 결과</summary>
+                        <div style="margin-top: 10px; font-size: 12px; background: #f8fafc; padding: 10px; border-radius: 4px;">
+                            <strong>📊 다중 조건 분석:</strong><br>
+                            • 주요 조건: ${data.multi_condition_analysis.primary_condition || '없음'}<br>
+                            • 보조 조건: ${data.multi_condition_analysis.secondary_conditions.length}개<br>
+                            • 의존성: ${data.multi_condition_analysis.dependencies.length}개<br>
+                            
+                            <br><strong>🧠 컨텍스트 메모리:</strong><br>
+                            • 대화 ID: ${data.context_memory.conversation_id}<br>
+                            • 장기 메모리 토픽: ${Object.keys(data.context_memory.long_term_memory.topics || {}).length}개<br>
+                            
+                            <br><strong>🎨 스타일 분석:</strong><br>
+                            • 톤: ${data.style_analysis.tone}<br>
+                            • 격식 수준: ${data.style_analysis.formality_level.toFixed(2)}<br>
+                            • 어휘 스타일: ${data.style_analysis.vocabulary_style}<br>
+                        </div>
+                    </details>
+                </div>
+            `;
+        }
+
+        function displayStats(container, stats) {
+            container.innerHTML = `
+                <div class="result success">
+                    <strong>📊 시스템 성능 통계</strong>
+                    
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value">${stats.total_requests}</div>
+                            <div class="stat-label">총 요청 수</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${(stats.avg_processing_time * 1000).toFixed(1)}ms</div>
+                            <div class="stat-label">평균 처리 시간</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${stats.cache_hits}</div>
+                            <div class="stat-label">캐시 히트</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 페이지 로드 시 서버 상태 확인
+        window.onload = async function() {
+            try {
+                const response = await fetch('http://localhost:8005/api/v9/health');
+                if (response.ok) {
+                    console.log('✅ 고급 문서 처리 서버 정상 작동');
+                } else {
+                    console.warn('⚠️ 서버 응답 이상');
+                }
+            } catch (error) {
+                console.error('❌ 서버 연결 실패:', error.message);
+                alert('백엔드 서버가 실행되지 않았습니다. ./start_advanced_document_server.sh를 실행해주세요.');
+            }
+        };
+    </script>
+</body>
+</html>

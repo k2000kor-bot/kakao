@@ -4,7 +4,8 @@ export interface Message {
   sender: string;
   timestamp: string;
   isMe?: boolean;
-  type?: 'text' | 'image' | 'file' | 'system' | 'voice' | 'media' | 'ai_response';
+  isUser?: boolean; // 사용자 메시지 여부 추가
+  type?: 'text' | 'image' | 'file' | 'system' | 'voice' | 'media' | 'ai_response' | 'analysis' | 'chart' | 'data' | 'error';
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
@@ -100,6 +101,34 @@ export interface Message {
     style?: string;
     size?: string;
   };
+}
+
+// 채팅 세션 타입 추가
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: string;
+  updatedAt: string;
+  projectId?: string; // 프로젝트와 연동
+  isActive: boolean;
+  messageCount: number;
+  lastMessage?: string;
+  participants: string[];
+  tags: string[];
+  metadata?: {
+    totalTokens?: number;
+    averageResponseTime?: number;
+    userSatisfaction?: number;
+  };
+}
+
+// 채팅 리스트 관리 타입
+export interface ChatList {
+  sessions: ChatSession[];
+  activeSessionId?: string;
+  totalSessions: number;
+  lastUpdated: string;
 }
 
 export interface AIResponseConfig {
@@ -244,6 +273,7 @@ export interface ProjectFile {
   uploadedAt: string;
   uploadedBy: string;
   path: string;
+  file?: File; // 파일 객체 추가
   description?: string;
   tags: string[];
   learningStatus: 'pending' | 'processing' | 'completed' | 'failed';

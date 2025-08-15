@@ -1,0 +1,185 @@
+import { ChatSession, Message, ChatList } from '../types/chat';
+
+class ChatSessionService {
+  private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  private localStorageKey = 'corbu_chat_sessions';
+
+  // 채팅 세션 생성
+  async createChatSession(title?: string, projectId?: string): Promise<ChatSession> {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    const dateString = now.toLocaleDateString('ko-KR', {
+      month: 'short',
+      day: 'numeric'
+    });
+
+    const session: ChatSession = {
+      id: this.generateId(),
+      title: title || `개포우성7차 분석 (${dateString} ${timeString})`,
+      messages: [
+        {
+          id: this.generateId(),
+          content: '안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?',
+          sender: 'ai',
+          timestamp: new Date().toISOString(),
+          isUser: false,
+          type: 'ai_response'
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      projectId,
+      isActive: true,
+      messageCount: 1,
+      lastMessage: '안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?',
+      participants: ['user', 'ai'],
+      tags: [],
+      metadata: {
+        totalTokens: 0,
+        averageResponseTime: 0,
+        userSatisfaction: 0
+      }
+    };
+
+    // 로컬 스토리지에 저장
+    this.saveSessionToLocal(session);
+
+    return session;
+  }
+
+  // 채팅 세션 로드
+  async loadChatSession(sessionId: string): Promise<ChatSession | null> {
+    try {
+      const sessions = this.getSessionsFromLocal();
+      return sessions.find(session => session.id === sessionId) || null;
+    } catch (error) {
+      console.error('채팅 세션 로드 오류:', error);
+      return null;
+    }
+  }
+
+  // 모든 채팅 세션 로드
+  async loadAllChatSessions(): Promise<ChatList> {
+    try {
+      const sessions = this.getSessionsFromLocal();
+      return {
+        sessions,
+        totalSessions: sessions.length,
+        lastUpdated: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('채팅 세션 목록 로드 오류:', error);
+      return {
+        sessions: [],
+        totalSessions: 0,
+        lastUpdated: new Date().toISOString()
+      };
+    }
+  }
+
+  // 메시지 추가
+  async addMessage(sessionId: string, message: Omit<Message, 'id'>): Promise<ChatSession | null> {
+    try {
+      const sessions = this.getSessionsFromLocal();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+
+      if (sessionIndex === -1) return null;
+
+      const newMessage: Message = {
+        ...message,
+        id: this.generateId()
+      };
+
+      sessions[sessionIndex].messages.push(newMessage);
+      sessions[sessionIndex].messageCount = sessions[sessionIndex].messages.length;
+      sessions[sessionIndex].updatedAt = new Date().toISOString();
+      sessions[sessionIndex].lastMessage = message.content;
+
+      // 로컬 스토리지 업데이트
+      localStorage.setItem(this.localStorageKey, JSON.stringify(sessions));
+
+      return sessions[sessionIndex];
+    } catch (error) {
+      console.error('메시지 추가 오류:', error);
+      return null;
+    }
+  }
+
+  // 채팅 세션 삭제
+  async deleteChatSession(sessionId: string): Promise<boolean> {
+    try {
+      const sessions = this.getSessionsFromLocal();
+      const filteredSessions = sessions.filter(session => session.id !== sessionId);
+
+      localStorage.setItem(this.localStorageKey, JSON.stringify(filteredSessions));
+      return true;
+    } catch (error) {
+      console.error('채팅 세션 삭제 오류:', error);
+      return false;
+    }
+  }
+
+  // 채팅 세션 제목 업데이트
+  async updateChatTitle(sessionId: string, title: string): Promise<boolean> {
+    try {
+      const sessions = this.getSessionsFromLocal();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+
+      if (sessionIndex === -1) return false;
+
+      sessions[sessionIndex].title = title;
+      sessions[sessionIndex].updatedAt = new Date().toISOString();
+
+      localStorage.setItem(this.localStorageKey, JSON.stringify(sessions));
+      return true;
+    } catch (error) {
+      console.error('채팅 제목 업데이트 오류:', error);
+      return false;
+    }
+  }
+
+  // 프로젝트별 채팅 세션 조회
+  async getProjectChatSessions(projectId: string): Promise<ChatSession[]> {
+    try {
+      const sessions = this.getSessionsFromLocal();
+      return sessions.filter(session => session.projectId === projectId);
+    } catch (error) {
+      console.error('프로젝트 채팅 세션 조회 오류:', error);
+      return [];
+    }
+  }
+
+  // 로컬 스토리지에서 세션 목록 가져오기
+  private getSessionsFromLocal(): ChatSession[] {
+    try {
+      const stored = localStorage.getItem(this.localStorageKey);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('로컬 스토리지 읽기 오류:', error);
+      return [];
+    }
+  }
+
+  // 로컬 스토리지에 세션 저장
+  private saveSessionToLocal(session: ChatSession): void {
+    try {
+      const sessions = this.getSessionsFromLocal();
+      sessions.push(session);
+      localStorage.setItem(this.localStorageKey, JSON.stringify(sessions));
+    } catch (error) {
+      console.error('로컬 스토리지 저장 오류:', error);
+    }
+  }
+
+  // 고유 ID 생성
+  private generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
+}
+
+const chatSessionService = new ChatSessionService();
+export default chatSessionService;

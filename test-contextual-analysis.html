@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문맥 분석 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>문맥 분석 기능 테스트</h1>
+
+    <div class="test-section">
+        <h2>테스트 텍스트 입력</h2>
+        <textarea id="testText"
+            placeholder="분석할 텍스트를 입력하세요...">삼성물산의 개포우성7차 재개발 프로젝트에서 시공사 홍보 활동이 논란이 되고 있습니다. 조합원들이 불법 홍보에 대한 신고를 요구하고 있으며, GS건설과 비교하여 삼성물산의 홍보 수위가 낮다는 의견도 있습니다. 이 문제를 분석해주세요.</textarea>
+        <button onclick="testContextualAnalysis()">문맥 분석 테스트</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>포맷팅 보존 테스트</h2>
+        <textarea id="formattedText" placeholder="줄바꿈이 포함된 텍스트를 입력하세요...">공사비 자동이체·금융조건 삭제·연체료 조항 제거...
+
+조합 향후 수백억 부담 가능성, 법률상 치명적 구조
+
+삼성물산의 개포우성7차 재개발 프로젝트 계약서에서
+80개 이상의 중요한 조항이 수정되었습니다.
+
+이로 인해 조합의 사업 주도권이 약화되고
+수백억 원의 추가 비용이 발생할 가능성이 있습니다.</textarea>
+        <button onclick="testFormatting()">포맷팅 보존 테스트</button>
+        <div id="formattingResult" class="result"></div>
+    </div>
+
+    <script>
+        // 문맥 분석 서비스 모킹
+        class MockContextualUnderstandingService {
+            constructor() {
+                this.conversationHistory = [];
+            }
+
+            addMessage(message) {
+                this.conversationHistory.push(message);
+            }
+
+            async generateContextualResponse(newMessage) {
+                const understanding = await this.analyzeFullContext(newMessage);
+                const response = this.generateLocalResponse(understanding, newMessage);
+                const suggestions = this.generateSuggestions(understanding);
+                const relatedTopics = this.generateRelatedTopics(understanding);
+
+                return {
+                    understanding,
+                    response,
+                    suggestions,
+                    relatedTopics
+                };
+            }
+
+            async analyzeFullContext(newMessage) {
+                const fullContext = this.buildFullContext(newMessage);
+                return this.performLocalContextualAnalysis(fullContext);
+            }
+
+            buildFullContext(newMessage) {
+                const historyText = this.conversationHistory
+                    .map(msg => `${msg.type === 'user' ? '사용자' : 'AI'}: ${msg.content}`)
+                    .join('\n\n');
+
+                return `${historyText}\n\n사용자: ${newMessage}`;
+            }
+
+            performLocalContextualAnalysis(fullContext) {
+                const mainTopics = this.extractMainTopics(fullContext);
+                const keyEntities = this.extractKeyEntities(fullContext);
+                const sentiment = this.analyzeSentiment(fullContext);
+                const intent = this.analyzeIntent(fullContext);
+                const requirements = this.extractRequirements(fullContext);
+                const followUpQuestions = this.generateFollowUpQuestions(fullContext, mainTopics);
+                const summary = this.generateSummary(fullContext);
+                const preservedFormatting = this.preserveTextFormatting(newMessage);
+
+                return {
+                    fullContext,
+                    mainTopics,
+                    keyEntities,
+                    sentiment,
+                    intent,
+                    requirements,
+                    followUpQuestions,
+                    summary,
+                    preservedFormatting
+                };
+            }
+
+            extractMainTopics(context) {
+                const topics = [];
+                const keywordPatterns = [
+                    /(?:시공사|건설사|삼성|GS|대우|현대)/g,
+                    /(?:재개발|재건축|아파트|주택)/g,
+                    /(?:홍보|마케팅|광고)/g,
+                    /(?:조합원|주민|시민)/g,
+                    /(?:설계|계획|안건)/g,
+                    /(?:분석|검토|평가)/g,
+                    /(?:논란|문제|이슈)/g
+                ];
+
+                keywordPatterns.forEach(pattern => {
+                    const matches = context.match(pattern);
+                    if (matches) {
+                        topics.push(...matches);
+                    }
+                });
+
+                return Array.from(new Set(topics));
+            }
+
+            extractKeyEntities(context) {
+                const entities = [];
+                const entityPatterns = [
+                    /(?:삼성물산|GS건설|대우건설|현대건설)/g,
+                    /(?:개포우성|잠실우성|강남|서울)/g,
+                    /(?:이재헌|박재우|박은진|정지혜)/g
+                ];
+
+                entityPatterns.forEach(pattern => {
+                    const matches = context.match(pattern);
+                    if (matches) {
+                        entities.push(...matches);
+                    }
+                });
+
+                return Array.from(new Set(entities));
+            }
+
+            analyzeSentiment(context) {
+                const positiveWords = ['좋다', '긍정적', '유리', '성공', '개선', '해결'];
+                const negativeWords = ['문제', '논란', '부정적', '불리', '실패', '어려움'];
+
+                const positiveCount = positiveWords.filter(word => context.includes(word)).length;
+                const negativeCount = negativeWords.filter(word => context.includes(word)).length;
+
+                if (positiveCount > negativeCount) return 'positive';
+                if (negativeCount > positiveCount) return 'negative';
+                if (positiveCount === negativeCount && positiveCount > 0) return 'mixed';
+                return 'neutral';
+            }
+
+            analyzeIntent(context) {
+                if (context.includes('분석') || context.includes('검토')) return 'analysis_request';
+                if (context.includes('요약') || context.includes('정리')) return 'summary_request';
+                if (context.includes('글쓰기') || context.includes('작성')) return 'writing_request';
+                if (context.includes('비교') || context.includes('대조')) return 'comparison_request';
+                if (context.includes('예측') || context.includes('전망')) return 'prediction_request';
+                return 'general_inquiry';
+            }
+
+            extractRequirements(context) {
+                const requirements = [];
+                const requirementPatterns = [
+                    /(?:카드뉴스|카드뉴스 형식)/g,
+                    /(?:극우적|극우적 댓글)/g,
+                    /(?:실명|실명방)/g,
+                    /(?:요약|정리)/g,
+                    /(?:분석|검토)/g,
+                    /(?:비교|대조)/g
+                ];
+
+                requirementPatterns.forEach(pattern => {
+                    const matches = context.match(pattern);
+                    if (matches) {
+                        requirements.push(...matches);
+                    }
+                });
+
+                return Array.from(new Set(requirements));
+            }
+
+            generateFollowUpQuestions(context, topics) {
+                const questions = [];
+
+                if (topics.includes('시공사')) {
+                    questions.push('다른 시공사와의 비교 분석이 필요하신가요?');
+                }
+
+                if (topics.includes('재개발')) {
+                    questions.push('재개발 과정의 다른 단계에 대한 정보가 필요하신가요?');
+                }
+
+                if (context.includes('홍보')) {
+                    questions.push('홍보 활동의 구체적인 내용을 더 자세히 분석해드릴까요?');
+                }
+
+                return questions;
+            }
+
+            generateSummary(context) {
+                return `현재 대화는 ${this.extractMainTopics(context).join(', ')}에 대한 논의로, 
+                ${this.analyzeIntent(context)} 의도를 가지고 있으며, 
+                ${this.analyzeSentiment(context)}적인 관점에서 진행되고 있습니다.`;
+            }
+
+            preserveTextFormatting(text) {
+                const originalText = text;
+                const lineBreaks = text.includes('\n');
+                const textStructure = text.split('\n').filter(line => line.trim() !== '');
+
+                let fontSize;
+                if (text.length > 1000) {
+                    fontSize = 14;
+                } else if (text.length > 500) {
+                    fontSize = 16;
+                } else {
+                    fontSize = 18;
+                }
+
+                return {
+                    originalText,
+                    lineBreaks,
+                    fontSize,
+                    textStructure
+                };
+            }
+
+            generateLocalResponse(understanding, newMessage) {
+                const { intent, requirements, mainTopics } = understanding;
+
+                let response = `전체 문맥을 파악했습니다. `;
+
+                if (intent === 'analysis_request') {
+                    response += `${mainTopics.join(', ')}에 대한 종합적인 분석을 제공하겠습니다. `;
+                } else if (intent === 'summary_request') {
+                    response += `주요 내용을 요약하여 정리해드리겠습니다. `;
+                } else if (intent === 'writing_request') {
+                    response += `요청하신 형식으로 글을 작성해드리겠습니다. `;
+                }
+
+                if (requirements.length > 0) {
+                    response += `특별히 ${requirements.join(', ')} 요구사항을 반영하여 처리하겠습니다.`;
+                }
+
+                return response;
+            }
+
+            generateSuggestions(understanding) {
+                const suggestions = [];
+                const { intent, mainTopics, requirements } = understanding;
+
+                if (intent === 'analysis_request') {
+                    suggestions.push('더 상세한 분석이 필요하시면 말씀해주세요.');
+                    suggestions.push('다른 관점에서의 분석도 가능합니다.');
+                }
+
+                if (mainTopics.includes('시공사')) {
+                    suggestions.push('다른 시공사와의 비교 분석을 제공할 수 있습니다.');
+                }
+
+                if (requirements.includes('카드뉴스')) {
+                    suggestions.push('카드뉴스 외에도 다른 형식으로 제작 가능합니다.');
+                }
+
+                return suggestions;
+            }
+
+            generateRelatedTopics(understanding) {
+                const { mainTopics } = understanding;
+                const relatedTopics = [];
+
+                if (mainTopics.includes('시공사')) {
+                    relatedTopics.push('시공사 선정 기준', '시공사 평가 방법', '시공사 비교 분석');
+                }
+
+                if (mainTopics.includes('재개발')) {
+                    relatedTopics.push('재개발 과정', '재개발 혜택', '재개발 문제점');
+                }
+
+                if (mainTopics.includes('홍보')) {
+                    relatedTopics.push('홍보 전략', '홍보 효과', '홍보 규제');
+                }
+
+                return relatedTopics;
+            }
+        }
+
+        const mockService = new MockContextualUnderstandingService();
+
+        async function testContextualAnalysis() {
+            const text = document.getElementById('testText').value;
+            const resultDiv = document.getElementById('result');
+
+            try {
+                const contextualMessage = {
+                    id: Date.now().toString(),
+                    content: text,
+                    timestamp: new Date(),
+                    type: 'user'
+                };
+
+                mockService.addMessage(contextualMessage);
+                const result = await mockService.generateContextualResponse(text);
+
+                resultDiv.innerHTML = `
+문맥 분석 결과:
+
+📊 분석 요약:
+${result.understanding.summary}
+
+🎯 의도: ${result.understanding.intent}
+😊 감정: ${result.understanding.sentiment}
+📝 주요 토픽: ${result.understanding.mainTopics.join(', ')}
+🏢 핵심 엔티티: ${result.understanding.keyEntities.join(', ')}
+
+💡 제안사항:
+${result.suggestions.map(s => `• ${s}`).join('\n')}
+
+🔗 관련 토픽:
+${result.relatedTopics.map(t => `• ${t}`).join('\n')}
+
+🤖 AI 응답:
+${result.response}
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `오류 발생: ${error.message}`;
+            }
+        }
+
+        function testFormatting() {
+            const text = document.getElementById('formattedText').value;
+            const resultDiv = document.getElementById('formattingResult');
+
+            try {
+                const formatting = mockService.preserveTextFormatting(text);
+
+                resultDiv.innerHTML = `
+포맷팅 보존 결과:
+
+📄 원본 텍스트:
+${formatting.originalText}
+
+📏 텍스트 구조 (${formatting.textStructure.length}줄):
+${formatting.textStructure.map((line, i) => `${i + 1}: ${line}`).join('\n')}
+
+🔤 글자 크기: ${formatting.fontSize}px
+↩️ 줄바꿈 포함: ${formatting.lineBreaks ? '예' : '아니오'}
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `오류 발생: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+
+</html>

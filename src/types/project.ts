@@ -1,18 +1,31 @@
 export interface ProjectFile {
     id: string;
     name: string;
-    type: 'document' | 'spreadsheet' | 'image' | 'video' | 'audio';
+    type: 'document' | 'spreadsheet' | 'image' | 'video' | 'audio' | 'other';
     size: number;
-    uploadedAt: string;
-    url: string;
-    description: string;
-    tags: string[];
+    uploadedAt: Date;
+    status: 'uploaded' | 'processing' | 'completed' | 'error';
+    url?: string;
+    description?: string;
+    tags?: string[];
+    relevance?: number; // 관련성 점수 추가
     aiAnalysis?: {
         keywords: string[];
         summary: string;
         sentiment: 'positive' | 'negative' | 'neutral';
         confidence: number;
     };
+}
+
+export interface WritingMaterial {
+    id: string;
+    title: string;
+    content: string;
+    type: 'summary' | 'analysis' | 'report' | 'template';
+    createdAt: Date;
+    sourceFiles?: string[];
+    quality?: number;
+    tags?: string[];
 }
 
 export interface KnowledgeBase {
@@ -51,42 +64,66 @@ export interface Project {
     id: string;
     name: string;
     description: string;
-    status: string;
-    priority: string;
+    status: 'active' | 'completed' | 'archived' | 'paused';
+    priority: 'low' | 'medium' | 'high';
     createdAt: string;
     updatedAt: string;
-    files: ProjectFile[];
-    guidelines: any[];
-    chats: any[];
-    analytics: any;
-    settings: any;
     messageCount: number;
+    files: ProjectFile[];
+    guidelines: Guideline[];
+    chats: ProjectChat[];
+    analytics: ProjectAnalytics;
+    settings: ProjectSettings;
     archived: boolean;
     tags: string[];
 }
 
-export interface ProjectGuideline {
+export interface Guideline {
     id: string;
     title: string;
     content: string;
-    type: 'basic' | 'process' | 'technical' | 'legal';
+    category: 'general' | 'specific' | 'technical';
+    priority?: 'high' | 'medium' | 'low';
     createdAt: string;
-    priority: 'high' | 'medium' | 'low';
+    updatedAt: string;
+    isActive: boolean;
+    relevance?: number; // 관련성 점수 추가
 }
 
 export interface ProjectChat {
     id: string;
-    name: string;
-    lastMessage: string;
-    timestamp: string;
-    unreadCount: number;
+    title: string;
+    description: string;
+    participants: string[];
+    messageCount: number;
+    lastActivity: string;
+    status: 'active' | 'archived' | 'completed';
+    messages: ChatMessage[];
 }
 
 export interface ProjectAnalytics {
-    totalFiles: number;
     totalMessages: number;
-    lastActivity: string;
-    completionRate: number;
+    totalFiles: number;
+    totalGuidelines: number;
+    activeChats: number;
+    participants: number;
+    activityTrend: Array<{
+        date: string;
+        messages: number;
+        files: number;
+    }>;
+    topTopics: Array<{
+        topic: string;
+        count: number;
+        percentage: number;
+    }>;
+    sentimentAnalysis: {
+        positive: number;
+        neutral: number;
+        negative: number;
+    };
+    completionRate?: number;
+    lastActivity?: string;
 }
 
 export interface ProjectSettings {
@@ -94,6 +131,12 @@ export interface ProjectSettings {
     allowedFileTypes: string[];
     autoBackup: boolean;
     notifications: boolean;
+    theme?: string;
+    language?: string;
+    aiModel?: string;
+    autoSave?: boolean;
+    collaboration?: boolean;
+    privacy?: string;
 }
 
 export interface ChatMessage {

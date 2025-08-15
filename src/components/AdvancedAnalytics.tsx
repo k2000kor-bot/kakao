@@ -1,350 +1,301 @@
 import React, { useState, useEffect } from 'react';
-import {
-  ChartBarIcon,
-  ArrowTrendingUpIcon,
-  LightBulbIcon,
-  DocumentTextIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon
-} from '@heroicons/react/24/outline';
-import { AILearningService } from '../services/aiLearningService';
 
-interface AdvancedAnalyticsProps {
-  projectId: string;
-}
 
 interface AnalyticsData {
-  totalFiles: number;
-  totalKnowledge: number;
-  averageConfidence: number;
-  mostAnalyzedFiles: string[];
-  topKeywords: string[];
-  sentimentDistribution: {
-    positive: number;
-    neutral: number;
-    negative: number;
+  projectPerformance: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string;
+      borderColor: string;
+    }[];
   };
-  knowledgeGrowthRate: number;
-  modelPerformance: {
-    accuracy: number;
-    precision: number;
-    recall: number;
-    f1Score: number;
+  userActivity: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string;
+      borderColor: string;
+    }[];
   };
-  recommendations: string[];
-  recentActivity: Array<{
-    id: string;
-    type: 'file_upload' | 'analysis' | 'learning' | 'knowledge_add';
-    description: string;
-    timestamp: string;
-    status: 'success' | 'warning' | 'error';
-  }>;
+  aiResponseQuality: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string;
+      borderColor: string;
+    }[];
+  };
+  systemMetrics: {
+    cpu: number;
+    memory: number;
+    responseTime: number;
+    throughput: number;
+  };
 }
 
-const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ projectId }) => {
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'trends' | 'insights'>('overview');
+interface AdvancedAnalyticsProps {
+  projectId?: string;
+  onBack?: () => void;
+}
 
-  const aiLearningService = AILearningService.getInstance();
-
-  useEffect(() => {
-    loadAnalyticsData();
-  }, [projectId]);
-
-  const loadAnalyticsData = async () => {
-    setIsLoading(true);
-    try {
-      const data = await aiLearningService.getAdvancedAnalytics(projectId);
-      setAnalyticsData(data);
-    } catch (error) {
-      console.error('분석 데이터 로드 실패:', error);
-    } finally {
-      setIsLoading(false);
+const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ projectId, onBack }) => {
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
+    projectPerformance: {
+      labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+      datasets: [
+        {
+          label: '완료된 프로젝트',
+          data: [12, 19, 15, 25, 22, 30],
+          backgroundColor: 'rgba(102, 126, 234, 0.2)',
+          borderColor: 'rgba(102, 126, 234, 1)'
+        },
+        {
+          label: '진행 중 프로젝트',
+          data: [8, 12, 10, 18, 15, 20],
+          backgroundColor: 'rgba(72, 187, 120, 0.2)',
+          borderColor: 'rgba(72, 187, 120, 1)'
+        }
+      ]
+    },
+    userActivity: {
+      labels: ['월', '화', '수', '목', '금', '토', '일'],
+      datasets: [
+        {
+          label: '활성 사용자',
+          data: [65, 59, 80, 81, 56, 55, 40],
+          backgroundColor: 'rgba(237, 137, 54, 0.2)',
+          borderColor: 'rgba(237, 137, 54, 1)'
+        }
+      ]
+    },
+    aiResponseQuality: {
+      labels: ['정확도', '신뢰도', '응답속도', '사용자만족도', '완성도'],
+      datasets: [
+        {
+          label: 'AI 응답 품질',
+          data: [92, 88, 95, 87, 90],
+          backgroundColor: 'rgba(66, 153, 225, 0.2)',
+          borderColor: 'rgba(66, 153, 225, 1)'
+        }
+      ]
+    },
+    systemMetrics: {
+      cpu: 45,
+      memory: 62,
+      responseTime: 0.3,
+      throughput: 156
     }
-  };
+  });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'success':
-        return <CheckCircleIcon className="w-4 h-4 text-green-500" />;
-      case 'warning':
-        return <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500" />;
-      case 'error':
-        return <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />;
-      default:
-        return <InformationCircleIcon className="w-4 h-4 text-blue-500" />;
-    }
-  };
+  const [selectedTimeRange, setSelectedTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+  const [selectedMetric, setSelectedMetric] = useState<'performance' | 'activity' | 'quality'>('performance');
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'file_upload':
-        return <DocumentTextIcon className="w-4 h-4" />;
-      case 'analysis':
-        return <ChartBarIcon className="w-4 h-4" />;
-      case 'learning':
-        return <LightBulbIcon className="w-4 h-4" />;
-      case 'knowledge_add':
-        return <InformationCircleIcon className="w-4 h-4" />;
-      default:
-        return <ClockIcon className="w-4 h-4" />;
-    }
-  };
-
-  if (isLoading) {
+  const renderChart = (data: any, type: 'line' | 'bar' | 'radar') => {
+    // 실제 차트 라이브러리 대신 CSS로 시뮬레이션
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-gray-600">분석 데이터를 로드하는 중...</span>
+      <div className={`chart-container ${type}-chart`}>
+        <div className="chart-header">
+          <h3>{type === 'line' ? '트렌드 분석' : type === 'bar' ? '성과 비교' : '품질 평가'}</h3>
+          <div className="chart-legend">
+            {data.datasets.map((dataset: any, index: number) => (
+              <div key={index} className="legend-item">
+                <div
+                  className="legend-color"
+                  style={{ backgroundColor: dataset.borderColor }}
+                />
+                <span>{dataset.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="chart-content">
+          <div className="chart-bars">
+            {data.labels.map((label: string, index: number) => (
+              <div key={index} className="chart-bar-group">
+                <div className="bar-label">{label}</div>
+                <div className="bars">
+                  {data.datasets.map((dataset: any, datasetIndex: number) => (
+                    <div
+                      key={datasetIndex}
+                      className="bar"
+                      style={{
+                        height: `${(dataset.data[index] / Math.max(...dataset.data)) * 200}px`,
+                        backgroundColor: dataset.backgroundColor,
+                        borderColor: dataset.borderColor
+                      }}
+                    >
+                      <span className="bar-value">{dataset.data[index]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
-  }
+  };
 
-  if (!analyticsData) {
-    return (
-      <div className="text-center py-8">
-        <ChartBarIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-        <p className="text-gray-500">분석 데이터를 불러올 수 없습니다.</p>
+  const renderMetricCard = (title: string, value: string | number, unit: string, trend: number, color: string) => (
+    <div className="metric-card" style={{ borderLeftColor: color }}>
+      <div className="metric-header">
+        <h4>{title}</h4>
+        <div className={`trend ${trend > 0 ? 'positive' : 'negative'}`}>
+          {trend > 0 ? '↗' : '↘'} {Math.abs(trend)}%
+        </div>
       </div>
-    );
-  }
+      <div className="metric-value">
+        {value} <span className="metric-unit">{unit}</span>
+      </div>
+    </div>
+  );
+
+  const renderSystemMetrics = () => (
+    <div className="system-metrics">
+      <h3>시스템 성능 지표</h3>
+      <div className="metrics-grid">
+        {renderMetricCard('CPU 사용률', analyticsData.systemMetrics.cpu, '%', 5, '#667eea')}
+        {renderMetricCard('메모리 사용률', analyticsData.systemMetrics.memory, '%', -2, '#48bb78')}
+        {renderMetricCard('응답 시간', analyticsData.systemMetrics.responseTime, '초', -15, '#ed8936')}
+        {renderMetricCard('처리량', analyticsData.systemMetrics.throughput, 'req/s', 12, '#9f7aea')}
+      </div>
+    </div>
+  );
+
+  const renderInsights = () => (
+    <div className="insights-section">
+      <h3>AI 인사이트</h3>
+      <div className="insights-grid">
+        <div className="insight-card positive">
+          <div className="insight-icon">📈</div>
+          <div className="insight-content">
+            <h4>프로젝트 완료율 향상</h4>
+            <p>지난 달 대비 25% 증가한 프로젝트 완료율을 보여주고 있습니다.</p>
+          </div>
+        </div>
+        <div className="insight-card warning">
+          <div className="insight-icon">⚠️</div>
+          <div className="insight-content">
+            <h4>사용자 활동 감소</h4>
+            <p>주말 사용자 활동이 평일 대비 35% 감소하고 있습니다.</p>
+          </div>
+        </div>
+        <div className="insight-card positive">
+          <div className="insight-icon">🎯</div>
+          <div className="insight-content">
+            <h4>AI 응답 품질 개선</h4>
+            <p>AI 응답의 정확도가 92%로 지속적으로 향상되고 있습니다.</p>
+          </div>
+        </div>
+        <div className="insight-card info">
+          <div className="insight-icon">💡</div>
+          <div className="insight-content">
+            <h4>최적화 기회</h4>
+            <p>메모리 사용률을 10% 줄이면 응답 시간을 0.1초 단축할 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* 탭 네비게이션 */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'overview', name: '개요', icon: ChartBarIcon },
-            { id: 'performance', name: '성능', icon: ArrowTrendingUpIcon },
-            { id: 'trends', name: '트렌드', icon: ArrowTrendingUpIcon },
-            { id: 'insights', name: '인사이트', icon: LightBulbIcon }
-          ].map((tab) => {
-            const IconComponent = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <IconComponent className="w-4 h-4" />
-                <span>{tab.name}</span>
-              </button>
-            );
-          })}
-        </nav>
+    <div className="advanced-analytics">
+      {/* Header */}
+      <div className="analytics-header">
+        <div className="header-left">
+          {onBack && (
+            <button className="back-button" onClick={onBack}>
+              <span>←</span>
+              뒤로
+            </button>
+          )}
+          <div className="header-content">
+            <h1>고급 분석 대시보드</h1>
+            <p>데이터 기반 인사이트와 성과 분석</p>
+          </div>
+        </div>
+        <div className="header-controls">
+          <div className="time-range-selector">
+            <button
+              className={selectedTimeRange === 'week' ? 'active' : ''}
+              onClick={() => setSelectedTimeRange('week')}
+            >
+              주간
+            </button>
+            <button
+              className={selectedTimeRange === 'month' ? 'active' : ''}
+              onClick={() => setSelectedTimeRange('month')}
+            >
+              월간
+            </button>
+            <button
+              className={selectedTimeRange === 'quarter' ? 'active' : ''}
+              onClick={() => setSelectedTimeRange('quarter')}
+            >
+              분기
+            </button>
+            <button
+              className={selectedTimeRange === 'year' ? 'active' : ''}
+              onClick={() => setSelectedTimeRange('year')}
+            >
+              연간
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* 개요 탭 */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* 주요 지표 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">총 파일</p>
-                  <p className="text-2xl font-bold text-gray-900">{analyticsData.totalFiles}</p>
-                </div>
-                <DocumentTextIcon className="w-8 h-8 text-blue-500" />
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">지식 베이스</p>
-                  <p className="text-2xl font-bold text-gray-900">{analyticsData.totalKnowledge}</p>
-                </div>
-                <LightBulbIcon className="w-8 h-8 text-green-500" />
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">평균 신뢰도</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {(analyticsData.averageConfidence * 100).toFixed(1)}%
-                  </p>
-                </div>
-                <CheckCircleIcon className="w-8 h-8 text-yellow-500" />
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">지식 성장률</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {(analyticsData.knowledgeGrowthRate * 100).toFixed(1)}%
-                  </p>
-                </div>
-                <ArrowTrendingUpIcon className="w-8 h-8 text-purple-500" />
-              </div>
-            </div>
+      {/* Main Content */}
+      <div className="analytics-content">
+        {/* Chart Section */}
+        <div className="chart-section">
+          <div className="chart-tabs">
+            <button
+              className={selectedMetric === 'performance' ? 'active' : ''}
+              onClick={() => setSelectedMetric('performance')}
+            >
+              프로젝트 성과
+            </button>
+            <button
+              className={selectedMetric === 'activity' ? 'active' : ''}
+              onClick={() => setSelectedMetric('activity')}
+            >
+              사용자 활동
+            </button>
+            <button
+              className={selectedMetric === 'quality' ? 'active' : ''}
+              onClick={() => setSelectedMetric('quality')}
+            >
+              AI 품질
+            </button>
           </div>
 
-          {/* 감정 분포 */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">감정 분석 분포</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">긍정적</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full"
-                      style={{ width: `${analyticsData.sentimentDistribution.positive * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {(analyticsData.sentimentDistribution.positive * 100).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">중립적</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-yellow-500 h-2 rounded-full"
-                      style={{ width: `${analyticsData.sentimentDistribution.neutral * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {(analyticsData.sentimentDistribution.neutral * 100).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">부정적</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-red-500 h-2 rounded-full"
-                      style={{ width: `${analyticsData.sentimentDistribution.negative * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {(analyticsData.sentimentDistribution.negative * 100).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 최근 활동 */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 활동</h3>
-            <div className="space-y-3">
-              {analyticsData.recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  {getStatusIcon(activity.status)}
-                  <div className="flex items-center space-x-2">
-                    {getActivityIcon(activity.type)}
-                    <span className="text-sm text-gray-900">{activity.description}</span>
-                  </div>
-                  <span className="text-xs text-gray-500 ml-auto">
-                    {new Date(activity.timestamp).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div className="chart-display">
+            {selectedMetric === 'performance' && renderChart(analyticsData.projectPerformance, 'bar')}
+            {selectedMetric === 'activity' && renderChart(analyticsData.userActivity, 'line')}
+            {selectedMetric === 'quality' && renderChart(analyticsData.aiResponseQuality, 'radar')}
           </div>
         </div>
-      )}
 
-      {/* 성능 탭 */}
-      {activeTab === 'performance' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">모델 성능</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">
-                  {(analyticsData.modelPerformance.accuracy * 100).toFixed(1)}%
-                </p>
-                <p className="text-sm text-gray-600">정확도</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">
-                  {(analyticsData.modelPerformance.precision * 100).toFixed(1)}%
-                </p>
-                <p className="text-sm text-gray-600">정밀도</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-yellow-600">
-                  {(analyticsData.modelPerformance.recall * 100).toFixed(1)}%
-                </p>
-                <p className="text-sm text-gray-600">재현율</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">
-                  {(analyticsData.modelPerformance.f1Score * 100).toFixed(1)}%
-                </p>
-                <p className="text-sm text-gray-600">F1 점수</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        {/* System Metrics */}
+        {renderSystemMetrics()}
 
-      {/* 트렌드 탭 */}
-      {activeTab === 'trends' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">주요 키워드</h3>
-            <div className="flex flex-wrap gap-2">
-              {analyticsData.topKeywords.map((keyword, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                >
-                  {keyword}
-                </span>
-              ))}
-            </div>
-          </div>
+        {/* Insights */}
+        {renderInsights()}
+      </div>
 
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">가장 많이 분석된 파일</h3>
-            <div className="space-y-2">
-              {analyticsData.mostAnalyzedFiles.map((file, index) => (
-                <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                  <DocumentTextIcon className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-900">{file}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 인사이트 탭 */}
-      {activeTab === 'insights' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 추천사항</h3>
-            <div className="space-y-3">
-              {analyticsData.recommendations.map((recommendation, index) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                  <LightBulbIcon className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <span className="text-sm text-blue-800">{recommendation}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Floating Export Button */}
+      <div className="export-button">
+        <button>
+          <span>📊</span>
+          보고서 내보내기
+        </button>
+      </div>
     </div>
   );
 };
 
-export default AdvancedAnalytics; 
+export default AdvancedAnalytics;

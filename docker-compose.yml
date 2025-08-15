@@ -1,69 +1,31 @@
 version: '3.8'
 
 services:
-  # 백엔드 서비스
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: corbu-ai-backend
+  # CORBU AI 메인 애플리케이션
+  corbu-ai:
+    build: .
+    container_name: corbu-ai-production
     ports:
-      - "8000:8000"
+      - "80:80"         # 웹 인터페이스
+      - "8001:8001"     # 메인 API
+      - "8005:8005"     # 분석 API
+      - "8006:8006"     # 통합 분석 API
+      - "8080:8080"     # API 게이트웨이
     environment:
-      - PYTHONPATH=/app
-      - DATABASE_URL=sqlite:///./database.db
-      - LOG_LEVEL=INFO
+      - NODE_ENV=production
+      - PYTHONPATH=/app/backend
     volumes:
-      - ./backend:/app
-      - ./database:/app/database
-    networks:
-      - corbu-network
+      - ./logs:/var/log/nginx
+      - ./data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
-  # 프론트엔드 서비스
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: corbu-ai-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - corbu-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # 데이터베이스 서비스 (선택사항)
-  database:
-    image: postgres:15-alpine
-    container_name: corbu-ai-database
-    environment:
-      - POSTGRES_DB=corbu_ai
-      - POSTGRES_USER=corbu_user
-      - POSTGRES_PASSWORD=corbu_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - corbu-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U corbu_user -d corbu_ai"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Redis 캐시 (선택사항)
+  # Redis (캐싱 및 세션 관리)
   redis:
     image: redis:7-alpine
     container_name: corbu-ai-redis
@@ -71,43 +33,60 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    networks:
-      - corbu-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    command: redis-server --appendonly yes
 
-  # 모니터링 서비스 (선택사항)
-  monitoring:
+  # PostgreSQL (프로덕션 데이터베이스)
+  postgres:
+    image: postgres:15-alpine
+    container_name: corbu-ai-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: corbu_ai
+      POSTGRES_USER: corbu_admin
+      POSTGRES_PASSWORD: corbu_secure_2025
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  # Prometheus (모니터링)
+  prometheus:
     image: prom/prometheus:latest
-    container_name: corbu-ai-monitoring
+    container_name: corbu-ai-prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
-    networks:
-      - corbu-network
-    restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Grafana (대시보드)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: corbu-ai-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=corbu_admin_2025
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
 
 volumes:
-  postgres_data:
-    driver: local
   redis_data:
-    driver: local
+  postgres_data:
   prometheus_data:
-    driver: local
+  grafana_data:
 
 networks:
-  corbu-network:
-    driver: bridge 
+  default:
+    name: corbu-ai-network

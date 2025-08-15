@@ -14,6 +14,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {
+        "service": "CORBU AI 분석 서버",
+        "version": "1.0.0",
+        "status": "온라인",
+        "port": 8005,
+        "endpoints": [
+            "/health - 헬스체크",
+            "/api/status - 서버 상태"
+        ]
+    }
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}

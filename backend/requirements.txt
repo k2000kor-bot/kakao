@@ -1,3 +1,15 @@
+fastapi>=0.110
+uvicorn>=0.23
+PyPDF2>=3.0
+python-docx>=1.1
+numpy>=1.24
+
+# Optional (enable if needed; heavy installs)
+# opencv-python-headless>=4.8  # for cv2 image processing
+# easyocr>=1.7                # OCR
+# transformers>=4.40          # NLP pipelines
+# sentence-transformers>=2.2  # embeddings
+# torch>=2.1                  # required by some models
 fastapi==0.104.1
 uvicorn==0.24.0
 python-multipart==0.0.6

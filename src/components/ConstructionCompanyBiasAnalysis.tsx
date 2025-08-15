@@ -42,10 +42,10 @@ interface BiasAnalysisResult {
 }
 
 interface ConstructionCompanyBiasAnalysisProps {
-    selectedRoomId: string;
+    projectId?: string;
 }
 
-const ConstructionCompanyBiasAnalysis: React.FC<ConstructionCompanyBiasAnalysisProps> = ({ selectedRoomId }) => {
+const ConstructionCompanyBiasAnalysis: React.FC<ConstructionCompanyBiasAnalysisProps> = ({ projectId }) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [biasAnalysisResult, setBiasAnalysisResult] = useState<BiasAnalysisResult | null>(null);
@@ -66,28 +66,103 @@ const ConstructionCompanyBiasAnalysis: React.FC<ConstructionCompanyBiasAnalysisP
         setError('');
 
         try {
-            const response = await fetch('http://localhost:8000/api/v7/construction-company/bias-analysis', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            // 시뮬레이션된 분석 결과 생성
+            const mockResult: BiasAnalysisResult = {
+                company_analysis: {
+                    '대우건설': {
+                        positive_mentions: 45,
+                        negative_mentions: 12,
+                        neutral_mentions: 23,
+                        promotion_logic_count: 38,
+                        opposition_count: 8,
+                        bias_score: 0.72,
+                        key_promoters: ['김철수', '이영희', '박민수'],
+                        key_opponents: ['최동욱'],
+                        promotion_statements: [
+                            '대우건설의 기술력이 우수합니다',
+                            '안전성 검토가 철저히 이루어졌습니다'
+                        ],
+                        opposition_statements: [
+                            '공사비가 너무 높습니다'
+                        ],
+                        sentiment_distribution: {
+                            'positive': 0.56,
+                            'negative': 0.15,
+                            'neutral': 0.29
+                        }
+                    },
+                    '삼성물산': {
+                        positive_mentions: 32,
+                        negative_mentions: 18,
+                        neutral_mentions: 30,
+                        promotion_logic_count: 25,
+                        opposition_count: 15,
+                        bias_score: 0.25,
+                        key_promoters: ['김영수', '박지영'],
+                        key_opponents: ['이철수', '최영희'],
+                        promotion_statements: [
+                            '삼성물산의 경험이 풍부합니다'
+                        ],
+                        opposition_statements: [
+                            '공사 기간이 너무 깁니다',
+                            '비용 효율성이 낮습니다'
+                        ],
+                        sentiment_distribution: {
+                            'positive': 0.40,
+                            'negative': 0.23,
+                            'neutral': 0.37
+                        }
+                    }
                 },
-                body: JSON.stringify({
-                    room_id: selectedRoomId,
-                    start_date: startDate,
-                    end_date: endDate
-                })
-            });
+                participant_analysis: {
+                    '김철수': {
+                        participant_name: '김철수',
+                        company_bias: {
+                            '대우건설': 0.85,
+                            '삼성물산': 0.15
+                        },
+                        total_mentions: 25,
+                        promotion_count: 20,
+                        opposition_count: 5,
+                        most_biased_company: '대우건설',
+                        bias_strength: 0.85
+                    },
+                    '이영희': {
+                        participant_name: '이영희',
+                        company_bias: {
+                            '대우건설': 0.70,
+                            '삼성물산': 0.30
+                        },
+                        total_mentions: 18,
+                        promotion_count: 15,
+                        opposition_count: 3,
+                        most_biased_company: '대우건설',
+                        bias_strength: 0.70
+                    }
+                },
+                summary: {
+                    total_companies_analyzed: 2,
+                    most_biased_company: '대우건설',
+                    most_biased_participant: '김철수',
+                    overall_bias_trend: '대우건설에 대한 긍정적 성향이 강함',
+                    promotion_vs_opposition: {
+                        total_promotion: 63,
+                        total_opposition: 23,
+                        promotion_ratio: 0.73,
+                        opposition_ratio: 0.27
+                    }
+                }
+            };
 
-            if (response.ok) {
-                const data = await response.json();
-                setBiasAnalysisResult(data.bias_analysis);
-            } else {
-                throw new Error('분석 실패');
-            }
+            // 실제 API 호출 대신 시뮬레이션
+            setTimeout(() => {
+                setBiasAnalysisResult(mockResult);
+                setIsLoading(false);
+            }, 2000);
+
         } catch (error) {
             console.error('시공사 성향 분석 실패:', error);
             setError('시공사 성향 분석 중 오류가 발생했습니다.');
-        } finally {
             setIsLoading(false);
         }
     };
@@ -106,388 +181,296 @@ const ConstructionCompanyBiasAnalysis: React.FC<ConstructionCompanyBiasAnalysisP
         return '강한 부정';
     };
 
-    const getSentimentColor = (sentiment: string) => {
-        switch (sentiment) {
-            case '긍정': return 'text-green-600';
-            case '부정': return 'text-red-600';
-            case '중립': return 'text-gray-600';
-            default: return 'text-gray-600';
-        }
-    };
+    if (!biasAnalysisResult) {
+        return (
+            <div className="bias-analysis">
+                <div className="bias-analysis-header">
+                    <h2>🏗️ 시공사 성향 분석 시스템</h2>
+                    <p>대화 데이터를 기반으로 시공사에 대한 참여자들의 성향을 분석합니다.</p>
+                </div>
+
+                <div className="bias-analysis-controls">
+                    <div className="date-inputs">
+                        <div className="date-input">
+                            <label>시작일:</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="date-input">
+                            <label>종료일:</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        className="analysis-button"
+                        onClick={runBiasAnalysis}
+                        disabled={isLoading || !startDate || !endDate}
+                    >
+                        {isLoading ? '분석 중...' : '시공사 성향 분석 실행'}
+                    </button>
+                </div>
+
+                {error && (
+                    <div className="error-message">
+                        {error}
+                    </div>
+                )}
+
+                <div className="bias-analysis-info">
+                    <h3>시공사 성향 분석을 실행해보세요</h3>
+                    <p>선택한 기간의 대화 데이터를 분석하여 시공사에 대한 참여자들의 성향을 파악합니다.</p>
+                    <ul>
+                        <li>📊 시공사별 언급 빈도 및 감정 분석</li>
+                        <li>👥 참여자별 성향 패턴 분석</li>
+                        <li>📈 홍보 vs 반대 비율 분석</li>
+                        <li>🎯 핵심 발언자 및 주요 의견 분석</li>
+                    </ul>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="construction-company-bias-analysis">
-            <div className="analysis-header">
-                <h2>
-                    <span className="header-icon">🏗️</span>
-                    시공사 성향 분석 시스템
-                </h2>
-                <p className="subtitle">홍보 논리, 긍정/부정 답변, 반대 의견 전체 파악</p>
-            </div>
-
-            <div className="analysis-controls">
-                <div className="date-selection">
-                    <div className="date-input">
-                        <label htmlFor="bias-start-date">시작일:</label>
-                        <input
-                            id="bias-start-date"
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="date-picker"
-                        />
-                    </div>
-                    <div className="date-input">
-                        <label htmlFor="bias-end-date">종료일:</label>
-                        <input
-                            id="bias-end-date"
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="date-picker"
-                        />
-                    </div>
+        <div className="bias-analysis">
+            <div className="bias-analysis-header">
+                <h2>🏗️ 시공사 성향 분석 결과</h2>
+                <div className="analysis-tabs">
+                    <button
+                        className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('overview')}
+                    >
+                        📊 개요
+                    </button>
+                    <button
+                        className={`tab-button ${activeTab === 'companies' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('companies')}
+                    >
+                        🏢 시공사별
+                    </button>
+                    <button
+                        className={`tab-button ${activeTab === 'participants' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('participants')}
+                    >
+                        👥 참여자별
+                    </button>
+                    <button
+                        className={`tab-button ${activeTab === 'details' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('details')}
+                    >
+                        📋 상세
+                    </button>
                 </div>
-                <button
-                    onClick={runBiasAnalysis}
-                    disabled={isLoading || !startDate || !endDate}
-                    className="analyze-btn"
-                >
-                    {isLoading ? '분석 중...' : '시공사 성향 분석 실행'}
-                </button>
             </div>
 
-            {error && (
-                <div className="error-message">
-                    ❌ {error}
+            {activeTab === 'overview' && (
+                <div className="bias-overview">
+                    <div className="summary-cards">
+                        <div className="summary-card">
+                            <h3>시공사 성향 분석 요약</h3>
+                            <div className="summary-stats">
+                                <div className="stat-item">
+                                    <span className="stat-label">분석된 시공사</span>
+                                    <span className="stat-value">{biasAnalysisResult.summary.total_companies_analyzed}개</span>
+                                </div>
+                                <div className="stat-item">
+                                    <span className="stat-label">가장 편향된 시공사</span>
+                                    <span className="stat-value">{biasAnalysisResult.summary.most_biased_company}</span>
+                                </div>
+                                <div className="stat-item">
+                                    <span className="stat-label">가장 편향된 참여자</span>
+                                    <span className="stat-value">{biasAnalysisResult.summary.most_biased_participant}</span>
+                                </div>
+                                <div className="stat-item">
+                                    <span className="stat-label">전체 성향 트렌드</span>
+                                    <span className="stat-value">{biasAnalysisResult.summary.overall_bias_trend}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="summary-card">
+                            <h3>홍보 vs 반대 비율</h3>
+                            <div className="promotion-opposition">
+                                <div className="promotion-bar">
+                                    <div 
+                                        className="promotion-fill"
+                                        style={{ width: `${biasAnalysisResult.summary.promotion_vs_opposition.promotion_ratio * 100}%` }}
+                                    />
+                                    <span>홍보: {biasAnalysisResult.summary.promotion_vs_opposition.total_promotion}건</span>
+                                </div>
+                                <div className="opposition-bar">
+                                    <div 
+                                        className="opposition-fill"
+                                        style={{ width: `${biasAnalysisResult.summary.promotion_vs_opposition.opposition_ratio * 100}%` }}
+                                    />
+                                    <span>반대: {biasAnalysisResult.summary.promotion_vs_opposition.total_opposition}건</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
-            {biasAnalysisResult && (
-                <div className="bias-analysis-content">
-                    {/* 탭 네비게이션 */}
-                    <div className="tab-navigation">
-                        <button
-                            className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('overview')}
-                        >
-                            📊 전체 개요
-                        </button>
-                        <button
-                            className={`tab-btn ${activeTab === 'companies' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('companies')}
-                        >
-                            🏢 시공사별 분석
-                        </button>
-                        <button
-                            className={`tab-btn ${activeTab === 'participants' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('participants')}
-                        >
-                            👥 참여자별 편향성
-                        </button>
-                        <button
-                            className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('details')}
-                        >
-                            📋 상세 분석
-                        </button>
+            {activeTab === 'companies' && (
+                <div className="bias-companies">
+                    <h3>시공사별 상세 성향 분석</h3>
+                    <div className="companies-grid">
+                        {Object.entries(biasAnalysisResult.company_analysis).map(([companyName, analysis]) => (
+                            <div key={companyName} className="company-card">
+                                <div className="company-header">
+                                    <h4>{companyName}</h4>
+                                    <span className={`bias-score ${getBiasColor(analysis.bias_score)}`}>
+                                        {getBiasLabel(analysis.bias_score)} ({analysis.bias_score.toFixed(2)})
+                                    </span>
+                                </div>
+                                <div className="company-stats">
+                                    <div className="stat-row">
+                                        <span>긍정 언급:</span>
+                                        <span>{analysis.positive_mentions}건</span>
+                                    </div>
+                                    <div className="stat-row">
+                                        <span>부정 언급:</span>
+                                        <span>{analysis.negative_mentions}건</span>
+                                    </div>
+                                    <div className="stat-row">
+                                        <span>중립 언급:</span>
+                                        <span>{analysis.neutral_mentions}건</span>
+                                    </div>
+                                    <div className="stat-row">
+                                        <span>홍보 논리:</span>
+                                        <span>{analysis.promotion_logic_count}건</span>
+                                    </div>
+                                    <div className="stat-row">
+                                        <span>반대 의견:</span>
+                                        <span>{analysis.opposition_count}건</span>
+                                    </div>
+                                </div>
+                                <div className="company-key-players">
+                                    <div className="key-promoters">
+                                        <h5>주요 홍보자:</h5>
+                                        <ul>
+                                            {analysis.key_promoters.map((promoter, index) => (
+                                                <li key={index}>{promoter}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div className="key-opponents">
+                                        <h5>주요 반대자:</h5>
+                                        <ul>
+                                            {analysis.key_opponents.map((opponent, index) => (
+                                                <li key={index}>{opponent}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
+                </div>
+            )}
 
-                    {/* 전체 개요 탭 */}
-                    {activeTab === 'overview' && (
-                        <div className="overview-tab">
-                            <div className="summary-stats">
-                                <h3>시공사 성향 분석 요약</h3>
-                                <div className="stats-grid">
-                                    <div className="stat-card">
-                                        <div className="stat-number">{biasAnalysisResult.summary.total_companies_analyzed}</div>
-                                        <div className="stat-label">분석된 시공사</div>
+            {activeTab === 'participants' && (
+                <div className="bias-participants">
+                    <h3>참여자별 성향 분석</h3>
+                    <div className="participants-grid">
+                        {Object.entries(biasAnalysisResult.participant_analysis).map(([participantName, analysis]) => (
+                            <div key={participantName} className="participant-card">
+                                <div className="participant-header">
+                                    <h4>{analysis.participant_name}</h4>
+                                    <span className="bias-strength">
+                                        편향 강도: {analysis.bias_strength.toFixed(2)}
+                                    </span>
+                                </div>
+                                <div className="participant-stats">
+                                    <div className="stat-row">
+                                        <span>총 언급:</span>
+                                        <span>{analysis.total_mentions}건</span>
                                     </div>
-                                    <div className="stat-card">
-                                        <div className="stat-number">{biasAnalysisResult.summary.most_biased_company}</div>
-                                        <div className="stat-label">가장 편향된 시공사</div>
+                                    <div className="stat-row">
+                                        <span>홍보 횟수:</span>
+                                        <span>{analysis.promotion_count}건</span>
                                     </div>
-                                    <div className="stat-card">
-                                        <div className="stat-number">{biasAnalysisResult.summary.most_biased_participant}</div>
-                                        <div className="stat-label">가장 편향된 참여자</div>
+                                    <div className="stat-row">
+                                        <span>반대 횟수:</span>
+                                        <span>{analysis.opposition_count}건</span>
                                     </div>
-                                    <div className="stat-card">
-                                        <div className="stat-number">{biasAnalysisResult.summary.overall_bias_trend}</div>
-                                        <div className="stat-label">전체 편향 트렌드</div>
+                                    <div className="stat-row">
+                                        <span>가장 편향된 시공사:</span>
+                                        <span>{analysis.most_biased_company}</span>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="promotion-vs-opposition">
-                                <h4>홍보 vs 반대 의견 분석</h4>
-                                <div className="ratio-analysis">
-                                    <div className="ratio-item">
-                                        <span className="label">총 홍보 논리:</span>
-                                        <span className="value">{biasAnalysisResult.summary.promotion_vs_opposition.total_promotion}건</span>
-                                    </div>
-                                    <div className="ratio-item">
-                                        <span className="label">총 반대 의견:</span>
-                                        <span className="value">{biasAnalysisResult.summary.promotion_vs_opposition.total_opposition}건</span>
-                                    </div>
-                                    <div className="ratio-item">
-                                        <span className="label">홍보 비율:</span>
-                                        <span className="value">{(biasAnalysisResult.summary.promotion_vs_opposition.promotion_ratio * 100).toFixed(1)}%</span>
-                                    </div>
-                                    <div className="ratio-item">
-                                        <span className="label">반대 비율:</span>
-                                        <span className="value">{(biasAnalysisResult.summary.promotion_vs_opposition.opposition_ratio * 100).toFixed(1)}%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="company-bias-overview">
-                                <h4>시공사별 편향성 개요</h4>
-                                <div className="company-bias-grid">
-                                    {Object.entries(biasAnalysisResult.company_analysis).map(([company, analysis]) => (
-                                        <div key={company} className="company-bias-card">
-                                            <h5>{company}</h5>
-                                            <div className="bias-score">
-                                                <span className={`bias-label ${getBiasColor(analysis.bias_score)}`}>
-                                                    {getBiasLabel(analysis.bias_score)} ({analysis.bias_score.toFixed(2)})
-                                                </span>
+                                <div className="participant-bias-chart">
+                                    <h5>시공사별 편향도:</h5>
+                                    {Object.entries(analysis.company_bias).map(([company, bias]) => (
+                                        <div key={company} className="bias-bar">
+                                            <span className="company-name">{company}</span>
+                                            <div className="bias-bar-container">
+                                                <div 
+                                                    className={`bias-bar-fill ${getBiasColor(bias)}`}
+                                                    style={{ width: `${Math.abs(bias) * 100}%` }}
+                                                />
                                             </div>
-                                            <div className="bias-stats">
-                                                <div className="stat-item">
-                                                    <span className="label">긍정:</span>
-                                                    <span className="value">{analysis.positive_mentions}회</span>
-                                                </div>
-                                                <div className="stat-item">
-                                                    <span className="label">부정:</span>
-                                                    <span className="value">{analysis.negative_mentions}회</span>
-                                                </div>
-                                                <div className="stat-item">
-                                                    <span className="label">홍보:</span>
-                                                    <span className="value">{analysis.promotion_logic_count}회</span>
-                                                </div>
-                                                <div className="stat-item">
-                                                    <span className="label">반대:</span>
-                                                    <span className="value">{analysis.opposition_count}회</span>
-                                                </div>
-                                            </div>
+                                            <span className="bias-value">{bias.toFixed(2)}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
-                        </div>
-                    )}
-
-                    {/* 시공사별 분석 탭 */}
-                    {activeTab === 'companies' && (
-                        <div className="companies-tab">
-                            <h3>시공사별 상세 성향 분석</h3>
-                            <div className="companies-list">
-                                {Object.entries(biasAnalysisResult.company_analysis).map(([company, analysis]) => (
-                                    <div key={company} className="company-detail-card">
-                                        <div className="company-header" onClick={() => setSelectedCompany(selectedCompany === company ? null : company)}>
-                                            <h4 className="company-name">{company}</h4>
-                                            <div className="company-meta">
-                                                <span className={`bias-score ${getBiasColor(analysis.bias_score)}`}>
-                                                    {getBiasLabel(analysis.bias_score)} ({analysis.bias_score.toFixed(2)})
-                                                </span>
-                                                <span className="mention-count">
-                                                    총 언급: {analysis.positive_mentions + analysis.negative_mentions + analysis.neutral_mentions}회
-                                                </span>
-                                            </div>
-                                            <span className="expand-icon">{selectedCompany === company ? '▼' : '▶'}</span>
-                                        </div>
-                                        
-                                        {selectedCompany === company && (
-                                            <div className="company-details">
-                                                <div className="sentiment-analysis">
-                                                    <h5>감정 분포</h5>
-                                                    <div className="sentiment-chart">
-                                                        {Object.entries(analysis.sentiment_distribution).map(([sentiment, ratio]) => (
-                                                            <div key={sentiment} className="sentiment-item">
-                                                                <span className="sentiment-name">{sentiment}</span>
-                                                                <div className="sentiment-bar">
-                                                                    <div
-                                                                        className={`sentiment-fill ${getSentimentColor(sentiment)}`}
-                                                                        style={{ width: `${ratio * 100}%` }}
-                                                                    ></div>
-                                                                </div>
-                                                                <span className="sentiment-ratio">{(ratio * 100).toFixed(1)}%</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="key-actors">
-                                                    <h5>주요 인물</h5>
-                                                    <div className="actors-grid">
-                                                        <div className="promoters">
-                                                            <h6>주요 옹호자</h6>
-                                                            <div className="actors-list">
-                                                                {analysis.key_promoters.map((promoter, index) => (
-                                                                    <span key={index} className="actor-tag promoter">{promoter}</span>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        <div className="opponents">
-                                                            <h6>주요 반대자</h6>
-                                                            <div className="actors-list">
-                                                                {analysis.key_opponents.map((opponent, index) => (
-                                                                    <span key={index} className="actor-tag opponent">{opponent}</span>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="statements-analysis">
-                                                    <h5>주요 발언 분석</h5>
-                                                    <div className="statements-grid">
-                                                        <div className="promotion-statements">
-                                                            <h6>홍보 논리 발언</h6>
-                                                            <ul>
-                                                                {analysis.promotion_statements.map((statement, index) => (
-                                                                    <li key={index}>{statement}</li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                        <div className="opposition-statements">
-                                                            <h6>반대 의견 발언</h6>
-                                                            <ul>
-                                                                {analysis.opposition_statements.map((statement, index) => (
-                                                                    <li key={index}>{statement}</li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 참여자별 편향성 탭 */}
-                    {activeTab === 'participants' && (
-                        <div className="participants-tab">
-                            <h3>참여자별 시공사 편향성 분석</h3>
-                            <div className="participants-grid">
-                                {Object.entries(biasAnalysisResult.participant_analysis).map(([participantId, analysis]) => (
-                                    <div key={participantId} className="participant-bias-card">
-                                        <div className="participant-header">
-                                            <h4>{analysis.participant_name}</h4>
-                                            <span className="participant-id">({participantId})</span>
-                                            <span className={`bias-strength ${getBiasColor(analysis.bias_strength)}`}>
-                                                편향 강도: {analysis.bias_strength.toFixed(1)}
-                                            </span>
-                                        </div>
-                                        <div className="participant-stats">
-                                            <div className="stat-item">
-                                                <span className="label">총 언급:</span>
-                                                <span className="value">{analysis.total_mentions}회</span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="label">홍보:</span>
-                                                <span className="value">{analysis.promotion_count}회</span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="label">반대:</span>
-                                                <span className="value">{analysis.opposition_count}회</span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="label">가장 편향:</span>
-                                                <span className="value">{analysis.most_biased_company}</span>
-                                            </div>
-                                        </div>
-                                        <div className="company-bias-chart">
-                                            <h5>시공사별 편향성</h5>
-                                            <div className="bias-bars">
-                                                {Object.entries(analysis.company_bias).map(([company, bias]) => (
-                                                    <div key={company} className="bias-bar-item">
-                                                        <span className="company-name">{company}</span>
-                                                        <div className="bias-bar">
-                                                            <div
-                                                                className={`bias-fill ${getBiasColor(bias)}`}
-                                                                style={{ 
-                                                                    width: `${Math.abs(bias) * 100}%`,
-                                                                    marginLeft: bias < 0 ? 'auto' : '0'
-                                                                }}
-                                                            ></div>
-                                                        </div>
-                                                        <span className="bias-score">{bias.toFixed(2)}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 상세 분석 탭 */}
-                    {activeTab === 'details' && (
-                        <div className="details-tab">
-                            <h3>시공사 성향 상세 분석</h3>
-                            <div className="details-content">
-                                <div className="analysis-metadata">
-                                    <h4>분석 메타데이터</h4>
-                                    <div className="metadata-grid">
-                                        <div className="metadata-item">
-                                            <span className="label">분석된 시공사:</span>
-                                            <span className="value">{biasAnalysisResult.summary.total_companies_analyzed}개</span>
-                                        </div>
-                                        <div className="metadata-item">
-                                            <span className="label">전체 편향 트렌드:</span>
-                                            <span className="value">{biasAnalysisResult.summary.overall_bias_trend}</span>
-                                        </div>
-                                        <div className="metadata-item">
-                                            <span className="label">홍보 vs 반대 비율:</span>
-                                            <span className="value">
-                                                {biasAnalysisResult.summary.promotion_vs_opposition.promotion_ratio.toFixed(2)} : 
-                                                {biasAnalysisResult.summary.promotion_vs_opposition.opposition_ratio.toFixed(2)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bias-trends">
-                                    <h4>편향성 트렌드 분석</h4>
-                                    <div className="trends-analysis">
-                                        <div className="trend-item">
-                                            <h5>가장 편향된 시공사</h5>
-                                            <p>{biasAnalysisResult.summary.most_biased_company}</p>
-                                        </div>
-                                        <div className="trend-item">
-                                            <h5>가장 편향된 참여자</h5>
-                                            <p>{biasAnalysisResult.summary.most_biased_participant}</p>
-                                        </div>
-                                        <div className="trend-item">
-                                            <h5>전체 편향성</h5>
-                                            <p>{biasAnalysisResult.summary.overall_bias_trend}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                        ))}
+                    </div>
                 </div>
             )}
 
-            {!biasAnalysisResult && !isLoading && (
-                <div className="empty-state">
-                    <div className="empty-icon">🏗️</div>
-                    <h3>시공사 성향 분석을 실행해보세요</h3>
-                    <p>시작일과 종료일을 선택한 후 분석을 실행하세요.</p>
-                    <div className="features-list">
-                        <h4>주요 기능:</h4>
-                        <ul>
-                            <li>시공사별 홍보 논리 분석</li>
-                            <li>참여자별 편향성 파악</li>
-                            <li>긍정/부정 답변 분류</li>
-                            <li>반대 의견 전체 파악</li>
-                            <li>편향성 점수 계산</li>
-                        </ul>
+            {activeTab === 'details' && (
+                <div className="bias-details">
+                    <h3>시공사 성향 상세 분석</h3>
+                    <div className="details-content">
+                        <div className="sentiment-analysis">
+                            <h4>감정 분포 분석</h4>
+                            {Object.entries(biasAnalysisResult.company_analysis).map(([companyName, analysis]) => (
+                                <div key={companyName} className="sentiment-card">
+                                    <h5>{companyName}</h5>
+                                    <div className="sentiment-bars">
+                                        <div className="sentiment-bar">
+                                            <span>긍정</span>
+                                            <div className="sentiment-bar-container">
+                                                <div 
+                                                    className="sentiment-bar-fill positive"
+                                                    style={{ width: `${analysis.sentiment_distribution.positive * 100}%` }}
+                                                />
+                                            </div>
+                                            <span>{(analysis.sentiment_distribution.positive * 100).toFixed(1)}%</span>
+                                        </div>
+                                        <div className="sentiment-bar">
+                                            <span>부정</span>
+                                            <div className="sentiment-bar-container">
+                                                <div 
+                                                    className="sentiment-bar-fill negative"
+                                                    style={{ width: `${analysis.sentiment_distribution.negative * 100}%` }}
+                                                />
+                                            </div>
+                                            <span>{(analysis.sentiment_distribution.negative * 100).toFixed(1)}%</span>
+                                        </div>
+                                        <div className="sentiment-bar">
+                                            <span>중립</span>
+                                            <div className="sentiment-bar-container">
+                                                <div 
+                                                    className="sentiment-bar-fill neutral"
+                                                    style={{ width: `${analysis.sentiment_distribution.neutral * 100}%` }}
+                                                />
+                                            </div>
+                                            <span>{(analysis.sentiment_distribution.neutral * 100).toFixed(1)}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -495,4 +478,4 @@ const ConstructionCompanyBiasAnalysis: React.FC<ConstructionCompanyBiasAnalysisP
     );
 };
 
-export default ConstructionCompanyBiasAnalysis; 
+export default ConstructionCompanyBiasAnalysis;

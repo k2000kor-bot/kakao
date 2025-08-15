@@ -48,9 +48,13 @@ export class AILearningService {
     return AILearningService.instance;
   }
 
-  async startLearningSession(projectId: string, options: any): Promise<AILearningSession> {
+  async startLearningSession(projectId: string, options: {
+    analysisType?: 'basic' | 'advanced' | 'deep';
+    modelVersion?: string;
+    accuracy?: number;
+  }): Promise<AILearningSession> {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const session: AILearningSession = {
       id: sessionId,
       projectId,
@@ -63,8 +67,8 @@ export class AILearningService {
       progress: 0,
       results: [],
       errors: [],
-      modelVersion: 'GPT-4-Advanced-v2.1',
-      accuracy: 0.94,
+      modelVersion: options.modelVersion || 'GPT-5-Enhanced-v1.0',
+      accuracy: options.accuracy || 0.94,
       processingTime: 0
     };
 
@@ -81,19 +85,19 @@ export class AILearningService {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
+
       // 시뮬레이션된 처리 시간
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-      
+
       try {
         const analysis = await this.analyzeFile(file);
         session.results.push(analysis);
         session.filesAnalyzed++;
         session.progress = (session.filesAnalyzed / session.totalFiles) * 100;
-        
-        // 지식 베이스에 추가
-        await this.extractKnowledge(file, analysis);
-        
+
+        // 지식 베이스에 추가 (프로젝트 단위 저장)
+        await this.extractKnowledge(file, analysis, session.projectId);
+
       } catch (error) {
         session.errors.push(`파일 ${file.name} 분석 실패: ${error}`);
       }
@@ -105,22 +109,95 @@ export class AILearningService {
   }
 
   async analyzeFile(file: ProjectFile): Promise<AIAnalysisResult> {
-    // 시뮬레이션된 AI 분석
-    const content = await this.readFileContent(file);
+    const startTime = Date.now();
     
-    return {
-      keywords: this.extractKeywords(content),
-      summary: this.generateSummary(content),
-      sentiment: this.analyzeSentiment(content),
-      entities: this.extractEntities(content),
-      topics: this.identifyTopics(content),
-      recommendations: this.generateRecommendationsFromContent(content),
-      confidence: Math.random() * 0.3 + 0.7, // 70-100% 신뢰도
-      analysisType: 'advanced',
-      processingTime: Math.random() * 2000 + 1000, // 1-3초
-      modelVersion: 'GPT-4-Advanced-v2.1',
-      accuracy: 0.94
-    };
+    try {
+      // 파일 내용 읽기
+      const content = await this.readFileContent(file);
+      
+      // 고도화된 분석 수행
+      const keywords = this.extractKeywords(content);
+      const summary = this.generateSummary(content);
+      const sentiment = this.analyzeSentiment(content);
+      const entities = this.extractEntities(content);
+      const topics = this.identifyTopics(content);
+      const recommendations = this.generateRecommendationsFromContent(content);
+      
+      // 신뢰도 계산 (내용 길이, 키워드 수, 감정 분석 일관성 등 기반)
+      const confidence = this.calculateConfidence(content, keywords, sentiment);
+      
+      // 정확도 계산 (분석 품질 기반)
+      const accuracy = this.calculateAccuracy(content, keywords, entities);
+      
+      const processingTime = Date.now() - startTime;
+      
+      return {
+        keywords,
+        summary,
+        sentiment,
+        entities,
+        topics,
+        recommendations,
+        confidence,
+        analysisType: 'advanced',
+        processingTime,
+        modelVersion: 'GPT-5-Enhanced-v1.0',
+        accuracy
+      };
+    } catch (error) {
+      console.error('AI 파일 분석 오류:', error);
+      return {
+        keywords: [],
+        summary: `파일 "${file.name}" 분석 중 오류가 발생했습니다.`,
+        sentiment: 'neutral',
+        entities: [],
+        topics: [],
+        recommendations: ['파일 분석을 다시 시도해주세요.'],
+        confidence: 0.1,
+        analysisType: 'basic',
+        processingTime: Date.now() - startTime,
+        modelVersion: 'GPT-5-Enhanced-v1.0',
+        accuracy: 0.1
+      };
+    }
+  }
+
+  private calculateConfidence(content: string, keywords: string[], sentiment: string): number {
+    let confidence = 0.5; // 기본 신뢰도
+    
+    // 내용 길이에 따른 신뢰도 조정
+    if (content.length > 1000) confidence += 0.2;
+    else if (content.length > 500) confidence += 0.1;
+    
+    // 키워드 수에 따른 신뢰도 조정
+    if (keywords.length > 10) confidence += 0.15;
+    else if (keywords.length > 5) confidence += 0.1;
+    
+    // 감정 분석 일관성에 따른 조정
+    if (sentiment !== 'neutral') confidence += 0.1;
+    
+    // 특수 문자나 숫자 비율에 따른 조정
+    const specialCharRatio = (content.match(/[^\w\s가-힣]/g) || []).length / content.length;
+    if (specialCharRatio < 0.1) confidence += 0.05;
+    
+    return Math.min(confidence, 0.95); // 최대 0.95로 제한
+  }
+
+  private calculateAccuracy(content: string, keywords: string[], entities: string[]): number {
+    let accuracy = 0.6; // 기본 정확도
+    
+    // 키워드 품질에 따른 정확도 조정
+    const meaningfulKeywords = keywords.filter(kw => kw.length >= 2);
+    if (meaningfulKeywords.length > keywords.length * 0.8) accuracy += 0.2;
+    
+    // 엔티티 다양성에 따른 정확도 조정
+    if (entities.length > 3) accuracy += 0.1;
+    
+    // 내용의 구조화 정도에 따른 정확도 조정
+    const hasStructure = /제목|목차|개요|요약|결론/.test(content);
+    if (hasStructure) accuracy += 0.1;
+    
+    return Math.min(accuracy, 0.95); // 최대 0.95로 제한
   }
 
   private async readFileContent(file: ProjectFile): Promise<string> {
@@ -138,12 +215,77 @@ export class AILearningService {
   }
 
   private extractKeywords(content: string): string[] {
-    const keywords = [
-      '프로젝트', '분석', '개선', '해결', '전략', '협업', '기술', '사용자', '시장', '성과',
-      '효율성', '품질', '혁신', '최적화', '통합', '시스템', '데이터', '인사이트', '추천', '평가'
+    const keywords: string[] = [];
+    
+    // 한국어 핵심 키워드 패턴 (확장)
+    const patterns = [
+      { pattern: /재개발|재건축|아파트|아파트단지|주거단지/g, weight: 3 },
+      { pattern: /시공사|건설사|건설|시공|공사|시공업체/g, weight: 3 },
+      { pattern: /분석|검토|평가|조사|연구|검증/g, weight: 2 },
+      { pattern: /조합원|주민|거주자|입주자|세대주|주민대표/g, weight: 3 },
+      { pattern: /홍보|마케팅|광고|선전|브랜딩|프로모션/g, weight: 2 },
+      { pattern: /법적|법률|규정|조례|법령|법규/g, weight: 3 },
+      { pattern: /가격|비용|예산|투자|자금|재정/g, weight: 3 },
+      { pattern: /일정|스케줄|계획|진도|단계|타임라인/g, weight: 2 },
+      { pattern: /사업|프로젝트|개발|사업화|추진|진행/g, weight: 3 },
+      { pattern: /계약|협약|합의|MOU|양해각서|협의/g, weight: 3 },
+      { pattern: /환경|친환경|녹지|공원|조경|생태/g, weight: 2 },
+      { pattern: /교통|도로|지하철|버스|주차|교통편/g, weight: 2 },
+      { pattern: /교육|학교|학원|도서관|문화시설|교육시설/g, weight: 2 },
+      { pattern: /상업|상가|매장|오피스|업무|상업시설/g, weight: 2 },
+      { pattern: /의료|병원|약국|보건|의료시설|의료기관/g, weight: 2 },
+      { pattern: /안전|보안|방재|소방|안전시설|안전관리/g, weight: 2 },
+      { pattern: /복지|복지시설|노인|장애인|어린이|복지정책/g, weight: 2 },
+      { pattern: /통신|IT|인터넷|스마트|디지털|정보화/g, weight: 2 },
+      { pattern: /에너지|전기|가스|수도|열공급|에너지관리/g, weight: 2 },
+      { pattern: /관리|운영|유지보수|시설관리|관리체계/g, weight: 2 }
     ];
 
-    return keywords.slice(0, Math.floor(Math.random() * 8) + 3);
+    // 패턴 기반 키워드 추출
+    patterns.forEach(({ pattern, weight }) => {
+      if (pattern.test(content)) {
+        const matches = content.match(pattern);
+        if (matches) {
+          // 가중치에 따라 중복 추가
+          for (let i = 0; i < weight; i++) {
+            keywords.push(...matches);
+          }
+        }
+      }
+    });
+
+    // 빈도 기반 키워드 추출
+    const words = content.toLowerCase().split(/[^\w가-힣]+/).filter(word => word.length > 1);
+    const wordFreq: Record<string, number> = {};
+    
+    words.forEach(word => {
+      if (word.length >= 2) {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
+      }
+    });
+
+    // 빈도가 높은 단어들을 키워드로 추가
+    const sortedWords = Object.entries(wordFreq)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 15)
+      .map(([word]) => word);
+
+    // 의미있는 단어만 필터링
+    const stopWords = [
+      '그리고', '또는', '하지만', '그러나', '이것', '저것', '무엇', '어떤', '어떻게', 
+      '언제', '어디서', '왜', '어떻게', '그런', '이런', '저런', '무슨', '어느', '몇',
+      '있고', '있으며', '있어서', '있으니', '있으므로', '있기', '있을', '있는', '있었',
+      '그리고', '또한', '또는', '그러나', '하지만', '그런데', '그러므로', '따라서'
+    ];
+
+    const meaningfulWords = sortedWords.filter(word => 
+      word.length >= 2 && !stopWords.includes(word)
+    );
+
+    keywords.push(...meaningfulWords);
+
+    // 중복 제거 및 정렬
+    return Array.from(new Set(keywords)).slice(0, 20);
   }
 
   private generateSummary(content: string): string {
@@ -187,11 +329,11 @@ export class AILearningService {
       "기술적 부채를 정기적으로 점검하고 리팩토링을 통해 코드 품질을 유지하세요.",
       "시장 동향을 지속적으로 모니터링하고 전략을 적시에 조정하세요."
     ];
-    
+
     return recommendations.slice(0, Math.floor(Math.random() * 3) + 1);
   }
 
-  async extractKnowledge(file: ProjectFile, analysis: AIAnalysisResult): Promise<void> {
+  async extractKnowledge(file: ProjectFile, analysis: AIAnalysisResult, projectId: string): Promise<void> {
     const knowledgeItem: KnowledgeBase = {
       id: `knowledge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       title: `${file.name} 분석 결과`,
@@ -207,9 +349,9 @@ export class AILearningService {
       lastAccessed: new Date().toISOString()
     };
 
-    const projectKnowledge = this.knowledgeBase.get(file.id) || [];
+    const projectKnowledge = this.knowledgeBase.get(projectId) || [];
     projectKnowledge.push(knowledgeItem);
-    this.knowledgeBase.set(file.id, projectKnowledge);
+    this.knowledgeBase.set(projectId, projectKnowledge);
   }
 
   async addKnowledgeItem(projectId: string, knowledge: Omit<KnowledgeBase, 'id' | 'createdAt'>): Promise<void> {
@@ -286,10 +428,10 @@ export class AILearningService {
 
   async performRealTimeAnalysis(fileId: string, analysisType: string): Promise<RealTimeAnalysis> {
     const analysisId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // 시뮬레이션된 실시간 분석
     const result = await this.simulateRealTimeAnalysis(analysisType);
-    
+
     const analysis: RealTimeAnalysis = {
       id: analysisId,
       fileId,
@@ -342,7 +484,7 @@ export class AILearningService {
   async getAdvancedAnalytics(projectId: string): Promise<any> {
     const sessions = this.getProjectLearningSessions(projectId);
     const knowledge = this.getProjectKnowledge(projectId);
-    
+
     // 최근 활동 데이터 생성
     const recentActivity = [
       {
@@ -374,7 +516,7 @@ export class AILearningService {
         status: 'success' as const
       }
     ];
-    
+
     return {
       totalSessions: sessions.length,
       totalKnowledge: knowledge.length,

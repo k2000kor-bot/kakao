@@ -134,8 +134,7 @@ class MessageAnalysisResponse(BaseModel):
 
 
 class ProjectCreateRequest(BaseModel):
-    name: strCompiled with problems:
-×
+    name: str
 ERROR in src/components/AdvancedMessageGenerationSystem.tsx:74:17
 TS2322: Type '{ original_message: string; sender: string; chat_room_id: string; target_audience: string[]; context_type: string; urgency_level: string; message_length: string; include_data: boolean; include_examples: boolean; ... 4 more ...; learning_enabled: boolean; }' is not assignable to type 'AdvancedMessageRequest'.
   Object literal may only specify known properties, and 'sender' does not exist in type 'AdvancedMessageRequest'.

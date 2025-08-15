@@ -1,0 +1,593 @@
+/* CORBU AI 음성 채팅 컴포넌트 스타일 */
+
+.voice-chat {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 20px;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 400px;
+    margin: 16px 0;
+}
+
+/* 헤더 */
+.voice-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.voice-chat-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.voice-status {
+    display: flex;
+    gap: 8px;
+}
+
+.status-indicator {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-indicator.listening {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.speaking {
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.status-indicator.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* 오류 메시지 */
+.error-message {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fee2e2;
+}
+
+.error-icon {
+    font-size: 16px;
+}
+
+.error-close {
+    background: none;
+    border: none;
+    color: #fee2e2;
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: auto;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.error-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* 음성 컨트롤 */
+.voice-controls {
+    margin-bottom: 20px;
+}
+
+/* 음성 시각화 */
+.voice-visualizer {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.visualizer-canvas {
+    width: 100%;
+    height: 100px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 12px;
+}
+
+.current-transcript {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.current-transcript p {
+    margin: 0 0 8px 0;
+    font-style: italic;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.confidence-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ef4444 0%, #f97316 50%, #22c55e 100%);
+    transition: width 0.3s ease;
+    border-radius: 2px;
+}
+
+.confidence-text {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+/* 제어 버튼 */
+.control-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.voice-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: white;
+    font-size: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.voice-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.voice-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.voice-button.listening {
+    background: rgba(34, 197, 94, 0.3);
+    border-color: #22c55e;
+    animation: voiceButtonPulse 2s infinite;
+}
+
+.voice-button span {
+    font-size: 10px;
+    margin-top: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+@keyframes voiceButtonPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+
+    50% {
+        box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+    }
+}
+
+.stop-speaking-button {
+    background: rgba(239, 68, 68, 0.2);
+    border: 2px solid rgba(239, 68, 68, 0.3);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: white;
+    font-size: 20px;
+}
+
+.stop-speaking-button:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.stop-speaking-button span {
+    font-size: 8px;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+/* 설정 패널 */
+.voice-settings {
+    margin-bottom: 20px;
+}
+
+.voice-settings details {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.voice-settings summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.voice-settings summary:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.voice-settings details[open] summary {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.setting-group {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.setting-group:last-child {
+    border-bottom: none;
+}
+
+.setting-group label {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.setting-group select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 6px 12px;
+    color: white;
+    font-size: 12px;
+    min-width: 120px;
+}
+
+.setting-group select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.setting-group select option {
+    background: #1f2937;
+    color: white;
+}
+
+.setting-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+/* 음성 세션 히스토리 */
+.voice-sessions {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 16px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.voice-sessions h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.sessions-list {
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.sessions-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sessions-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sessions-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+.session-item {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+.session-item.active {
+    border-left-color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.session-item:last-child {
+    margin-bottom: 0;
+}
+
+.session-time {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-bottom: 4px;
+}
+
+.session-transcript {
+    font-size: 13px;
+    line-height: 1.3;
+    margin-bottom: 4px;
+    font-style: italic;
+}
+
+.session-confidence {
+    font-size: 10px;
+    opacity: 0.6;
+    text-align: right;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .voice-chat {
+        max-width: 100%;
+        margin: 8px 0;
+        padding: 16px;
+    }
+
+    .voice-chat-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .voice-status {
+        align-self: flex-end;
+    }
+
+    .visualizer-canvas {
+        height: 80px;
+    }
+
+    .voice-button {
+        width: 70px;
+        height: 70px;
+        font-size: 20px;
+    }
+
+    .stop-speaking-button {
+        width: 50px;
+        height: 50px;
+        font-size: 16px;
+    }
+
+    .setting-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .setting-group select {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .voice-chat {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .voice-chat-header h3 {
+        font-size: 16px;
+    }
+
+    .control-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .voice-button {
+        width: 60px;
+        height: 60px;
+        font-size: 18px;
+    }
+
+    .voice-button span {
+        font-size: 9px;
+    }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+    .voice-chat {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+    }
+
+    .setting-group select option {
+        background: #0f172a;
+    }
+}
+
+/* 고대비 모드 */
+@media (prefers-contrast: high) {
+    .voice-chat {
+        border: 2px solid white;
+    }
+
+    .status-indicator {
+        border-width: 2px;
+    }
+
+    .voice-button {
+        border-width: 3px;
+    }
+}
+
+/* 접근성 개선 */
+.voice-button:focus,
+.stop-speaking-button:focus {
+    outline: 3px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 2px;
+}
+
+.setting-group select:focus {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+/* 애니메이션 성능 최적화 */
+.voice-button,
+.stop-speaking-button,
+.session-item {
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .status-indicator.listening,
+    .voice-button.listening {
+        animation: none;
+    }
+
+    .voice-button:hover,
+    .stop-speaking-button:hover {
+        transform: none;
+    }
+}
+
+/* 음성 파형 효과 */
+@keyframes waveform {
+
+    0%,
+    100% {
+        transform: scaleY(1);
+    }
+
+    50% {
+        transform: scaleY(0.3);
+    }
+}
+
+.voice-visualizer.active::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 20px;
+    background: white;
+    animation: waveform 0.8s infinite ease-in-out;
+}
+
+/* 커스텀 스크롤바 */
+.sessions-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+}
+
+.sessions-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sessions-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.sessions-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.sessions-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}

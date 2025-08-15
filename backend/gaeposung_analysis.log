@@ -1,0 +1,315 @@
+2025-08-15 16:38:37,427 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 16:38:37,513 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.0.84:5001
+2025-08-15 16:38:37,514 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:38:37,515 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 16:38:37,931 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 16:38:37,991 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 16:38:38,002 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-08-15 16:44:08,600 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 16:44:08] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 16:48:50,741 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 16:48:50] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 16:53:42,233 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/advanced_ai_analysis_engine.py', reloading
+2025-08-15 16:53:42,358 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 16:53:42,747 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 16:53:42,810 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 16:53:42,842 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-08-15 16:54:05,842 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 16:54:05,982 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 16:54:06,915 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 16:54:06,989 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 16:54:07,010 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-08-15 16:54:16,835 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 16:54:16,936 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 16:54:17,504 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 16:54:17,577 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 16:54:17,595 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-08-15 16:54:41,268 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 16:54:41,400 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 16:54:42,251 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 16:54:42,336 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 16:54:42,352 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-08-15 16:59:30,828 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 16:59:30] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 16:59:55,933 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/advanced_ai_analysis_engine.py', reloading
+2025-08-15 16:59:56,044 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 16:59:56,607 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 16:59:56,670 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 16:59:56,703 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-08-15 17:06:13,522 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:06:13] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 17:06:22,489 - advanced_ai_analysis_engine - INFO - 깊은 이해 분석 시작: 개포우성 재개발 프로젝트의 투자 가치는 어떻게 되나요?...
+2025-08-15 17:06:22,491 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:06:22] "POST /api/analysis/advanced-ai HTTP/1.1" 200 -
+2025-08-15 17:06:30,719 - advanced_ai_analysis_engine - INFO - 깊은 이해 분석 시작: 개포우성 재개발 프로젝트에서 주민 갈등 해결 방안과 투자자 관점에서의 리스크 요소를 종합적...
+2025-08-15 17:06:30,719 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:06:30] "POST /api/analysis/advanced-ai HTTP/1.1" 200 -
+2025-08-15 17:07:55,116 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:07:55] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 17:08:55,726 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:08:55] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 17:09:04,643 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:09:04] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 17:09:10,431 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:09:10] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 17:12:06,005 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/advanced_nlp_engine.py', reloading
+2025-08-15 17:12:06,168 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:12:06,823 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:12:06,879 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 17:12:06,893 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-08-15 17:12:28,484 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 17:12:28,671 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:12:29,406 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:12:29,410 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:12:29,454 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 17:12:29,464 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-08-15 17:12:37,133 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 17:12:37,248 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:12:37,717 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:12:37,726 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:13:50,898 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:13:50,913 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:28:07,787 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:28:07,818 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:28:07,818 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:28:07,818 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:28:07,819 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:28:08,159 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.0.84:5001
+2025-08-15 17:28:08,159 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 17:28:08,185 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:28:08,905 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:28:08,914 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:28:08,914 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:28:08,915 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:28:08,915 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:28:08,970 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 17:28:09,037 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 17:28:14,525 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:28:14] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 17:28:22,130 - intelligent_question_analyzer - INFO - 지능형 질문 분석 시작: 개포우성 재개발 프로젝트의 투자 가치를 분석해주세요. 주민들의 반응도 함께 고려해서 종합적...
+2025-08-15 17:28:22,136 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:28:22] "POST /api/analysis/intelligent-question HTTP/1.1" 200 -
+2025-08-15 17:36:19,385 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/web_research_engine.py', reloading
+2025-08-15 17:36:19,683 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:36:20,394 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:36:20,406 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:36:20,406 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:36:20,407 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:36:20,407 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:36:20,540 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 17:36:20,592 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 17:36:38,056 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 17:36:38,206 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:36:39,159 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:41:04,104 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:44:00,313 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:44:00,408 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:44:00,409 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:44:00,411 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:44:00,411 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:44:08,775 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:44:08,867 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:44:08,868 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:44:08,869 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:44:08,870 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:58:38,006 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:58:38,086 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:58:38,086 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:58:38,087 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:58:38,088 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:58:38,361 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.0.84:5001
+2025-08-15 17:58:38,361 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 17:58:38,363 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:58:38,871 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:58:38,918 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:58:38,919 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:58:38,920 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:58:38,921 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:58:38,962 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 17:58:38,977 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 17:59:01,271 - __main__ - ERROR - 웹 연구 분석 오류: 'coroutine' object has no attribute 'original_question'
+2025-08-15 17:59:01,278 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:59:01] "[35m[1mPOST /api/analysis/web-research HTTP/1.1[0m" 500 -
+2025-08-15 17:59:16,003 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 17:59:16,152 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:59:16,745 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:59:16,789 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:59:16,789 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:59:16,791 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:59:16,792 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:59:16,848 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 17:59:16,869 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 17:59:27,240 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:59:27,301 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:59:27,302 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:59:27,302 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:59:27,304 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:59:29,345 - __main__ - ERROR - 웹 연구 분석 오류: 'dict' object has no attribute 'original_question'
+2025-08-15 17:59:29,347 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:59:29] "[35m[1mPOST /api/analysis/web-research HTTP/1.1[0m" 500 -
+2025-08-15 17:59:39,905 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 17:59:40,036 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 17:59:40,817 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:59:40,867 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:59:40,868 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:59:40,868 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:59:40,869 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:59:40,926 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 17:59:40,949 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 17:59:51,593 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 17:59:51,632 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 17:59:51,633 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 17:59:51,633 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 17:59:51,634 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 17:59:53,677 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 17:59:53] "POST /api/analysis/web-research HTTP/1.1" 200 -
+2025-08-15 18:01:19,423 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 18:01:19,562 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 18:01:20,203 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:01:20,276 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:01:20,276 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:01:20,277 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:01:20,278 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:01:20,339 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 18:01:20,362 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 18:04:13,052 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/real_web_research_engine.py', reloading
+2025-08-15 18:04:13,344 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 18:04:13,978 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:04:14,033 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:04:14,033 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:04:14,034 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:04:14,034 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:04:14,085 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 18:04:14,105 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 18:04:17,661 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/real_web_research_engine.py', reloading
+2025-08-15 18:04:17,856 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 18:04:18,586 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:04:18,636 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:04:18,637 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:04:18,637 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:04:18,638 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:04:18,684 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 18:04:18,708 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 18:07:00,130 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/conversational_qa_system.py', reloading
+2025-08-15 18:07:00,279 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 18:07:00,743 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:07:00,782 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:07:00,782 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:07:00,783 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:07:00,783 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:07:00,820 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 18:07:00,830 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 18:07:21,526 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 18:07:21,681 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 18:07:22,184 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:07:22,232 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 18:07:22,234 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:07:22,235 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:07:22,235 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:07:22,235 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:07:22,276 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 18:07:22,284 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 18:07:46,392 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 18:07:46,527 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 18:07:47,148 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:07:47,191 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 18:07:47,194 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:07:47,194 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:07:47,194 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:07:47,195 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:07:47,240 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 18:07:47,253 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 18:07:49,590 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 18:07:49,694 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 18:07:50,206 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:07:50,263 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 18:07:50,266 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:07:50,266 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:07:50,267 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:07:50,267 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:07:50,315 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 18:07:50,326 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 18:10:33,963 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:10:34,061 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 18:10:34,066 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:10:34,066 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:10:34,067 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:10:34,069 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:11:15,186 - conversational_qa_system - INFO - 지식 베이스에 '개포우성 재개발 현황' 추가됨
+2025-08-15 18:11:15,193 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:11:15] "POST /api/conversational/knowledge HTTP/1.1" 200 -
+2025-08-15 18:11:15,204 - conversational_qa_system - INFO - 지식 베이스에 '재개발 투자 위험' 추가됨
+2025-08-15 18:11:15,205 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:11:15] "POST /api/conversational/knowledge HTTP/1.1" 200 -
+2025-08-15 18:11:15,228 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:11:15] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:11:15,241 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:11:15] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:11:15,262 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:11:15] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:11:15,275 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:11:15] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:11:15,289 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:11:15] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:14:09,610 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:14:09,668 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 18:14:09,672 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:14:09,673 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:14:09,679 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:14:09,713 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:14:09,994 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.0.84:5001
+2025-08-15 18:14:09,994 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 18:14:09,996 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 18:14:10,628 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 18:14:10,668 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 18:14:10,671 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 18:14:10,671 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 18:14:10,672 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 18:14:10,672 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 18:14:10,714 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 18:14:10,729 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 18:29:47,910 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:29:47] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 18:29:54,926 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:29:54] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:30:01,528 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:30:01] "[33mPOST /api/web-research HTTP/1.1[0m" 404 -
+2025-08-15 18:33:01,885 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:33:01] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:38:11,645 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:38:11] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:38:18,945 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:38:18] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:42:23,706 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:42:23] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 18:53:10,845 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:53:10] "[33mGET /health HTTP/1.1[0m" 404 -
+2025-08-15 18:53:18,688 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:53:18] "[33mPOST /conversational_qa HTTP/1.1[0m" 404 -
+2025-08-15 18:53:29,490 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:53:29] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 18:53:36,914 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 18:53:36] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 19:00:42,603 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:00:42] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:03:19,576 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:03:19] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 19:07:57,071 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:07:57] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:11:29,981 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:11:29] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 19:17:08,080 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:17:08] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:26:15,871 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:26:15] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:26:34,346 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 19:26:34,530 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 19:26:35,158 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 19:26:35,214 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 19:26:35,217 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 19:26:35,217 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 19:26:35,226 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 19:26:35,228 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 19:26:35,285 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 19:26:35,299 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 19:26:50,774 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 19:26:51,013 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 19:26:51,596 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 19:26:51,629 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 19:26:51,632 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 19:26:51,632 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 19:26:51,633 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 19:26:51,633 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 19:26:51,686 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 19:26:51,709 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 19:27:01,804 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:27:01] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:27:09,362 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:27:09] "POST /api/conversational/qa HTTP/1.1" 200 -
+2025-08-15 19:27:56,063 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:27:56] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:36:34,580 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/gaeposung_analysis_api.py', reloading
+2025-08-15 19:36:34,988 - werkzeug - INFO -  * Restarting with stat
+2025-08-15 19:36:36,085 - root - WARNING - 고급 NLP 라이브러리가 설치되지 않았습니다. 기본 모드로 실행됩니다.
+2025-08-15 19:36:36,175 - conversational_qa_system - INFO - 대화형 QA 시스템 데이터베이스 초기화 완료
+2025-08-15 19:36:36,180 - gaeposung_advanced_analysis_system - INFO - 분석 엔진이 시작되었습니다.
+2025-08-15 19:36:36,180 - advanced_nlp_engine - WARNING - NLP 라이브러리 없음 - 기본 모드로 실행
+2025-08-15 19:36:36,183 - advanced_nlp_engine - INFO - 고급 NLP 엔진 초기화 완료 (Device: cpu)
+2025-08-15 19:36:36,183 - intelligent_question_analyzer - INFO - 지능형 질문 분석기 초기화 완료
+2025-08-15 19:36:36,245 - werkzeug - WARNING -  * Debugger is active!
+2025-08-15 19:36:36,266 - werkzeug - INFO -  * Debugger PIN: 982-848-525
+2025-08-15 19:41:30,388 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:41:30] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:44:14,553 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:44:14] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:45:16,198 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:45:16] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:47:23,807 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:47:23] "GET /api/health HTTP/1.1" 200 -
+2025-08-15 19:59:17,316 - werkzeug - INFO - 127.0.0.1 - - [15/Aug/2025 19:59:17] "GET /api/health HTTP/1.1" 200 -

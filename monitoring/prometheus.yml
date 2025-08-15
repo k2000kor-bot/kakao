@@ -7,29 +7,25 @@ rule_files:
   # - "second_rules.yml"
 
 scrape_configs:
-  # Prometheus 자체 모니터링
-  - job_name: 'prometheus'
+  # CORBU AI 메인 애플리케이션 모니터링
+  - job_name: 'corbu-ai-main'
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ['corbu-ai:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
 
-  # CORBU AI 백엔드 모니터링
-  - job_name: 'corbu-ai-backend'
+  # 통합 분석 API 모니터링
+  - job_name: 'corbu-ai-analysis'
     static_configs:
-      - targets: ['backend:8000']
+      - targets: ['corbu-ai:8006']
     metrics_path: '/metrics'
     scrape_interval: 10s
 
-  # CORBU AI 프론트엔드 모니터링
-  - job_name: 'corbu-ai-frontend'
+  # Nginx 모니터링
+  - job_name: 'nginx'
     static_configs:
-      - targets: ['frontend:80']
-    metrics_path: '/metrics'
-    scrape_interval: 10s
-
-  # 데이터베이스 모니터링 (PostgreSQL)
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['database:5432']
+      - targets: ['corbu-ai:80']
+    metrics_path: '/nginx_status'
     scrape_interval: 30s
 
   # Redis 모니터링
@@ -38,8 +34,14 @@ scrape_configs:
       - targets: ['redis:6379']
     scrape_interval: 30s
 
-  # 시스템 리소스 모니터링
+  # PostgreSQL 모니터링
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+
+  # 시스템 메트릭
   - job_name: 'node-exporter'
     static_configs:
-      - targets: ['localhost:9100']
-    scrape_interval: 15s 
+      - targets: ['corbu-ai:9100']
+    scrape_interval: 15s

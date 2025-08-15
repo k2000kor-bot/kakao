@@ -1,37 +1,72 @@
-export async function handleChat(message: string): Promise<string> {
+import { contextualAnalysisService, ContextualRequest } from '../services/contextualAnalysisService';
+import { Message } from '../types/chat';
+
+export async function handleChat(message: string, conversationHistory: Message[] = []): Promise<string> {
   try {
-    // 간단한 AI 응답 생성 (실제로는 더 복잡한 AI 모델 사용)
-    const responses = [
-      `안녕하세요! "${message}"에 대해 답변드리겠습니다. CORBU AI가 도움을 드릴게요.`,
-      `흥미로운 질문이네요! "${message}"에 대한 분석 결과를 준비했습니다.`,
-      `좋은 질문입니다. "${message}"에 대해 자세히 설명드리겠습니다.`,
-      `"${message}"에 대한 답변을 찾아보겠습니다. 잠시만 기다려주세요.`,
-      `"${message}"에 대해 CORBU AI가 최선을 다해 답변드리겠습니다.`
-    ];
+    // 문맥 분석 요청 생성
+    const contextualRequest: ContextualRequest = {
+      message,
+      conversationHistory,
+      context: undefined,
+      userPreferences: undefined
+    };
 
-    // 메시지 길이와 내용에 따라 응답 선택
-    let response: string;
+    // 문맥 분석 수행
+    const contextualResponse = await contextualAnalysisService.analyzeContext(contextualRequest);
     
-    if (message.length < 10) {
-      response = `짧은 메시지네요! "${message}"에 대해 더 자세히 말씀해 주시면 더 정확한 답변을 드릴 수 있습니다.`;
-    } else if (message.includes('?') || message.includes('?')) {
-      response = `질문을 감지했습니다! "${message}"에 대한 답변을 준비하고 있습니다.`;
-    } else if (message.includes('감사') || message.includes('고마워')) {
-      response = `천만에요! 언제든지 도움이 필요하시면 말씀해 주세요. CORBU AI가 항상 함께합니다.`;
-    } else {
-      // 랜덤 응답 선택
-      const randomIndex = Math.floor(Math.random() * responses.length);
-      response = responses[randomIndex];
+    // 분석 결과에 따른 응답 생성
+    let response = contextualResponse.response;
+    
+    // 긴급도가 높은 경우 우선 처리 표시
+    if (contextualResponse.analysis.urgency === 'critical' || contextualResponse.analysis.urgency === 'high') {
+      response += '\n\n🚨 **긴급 요청으로 우선 처리하겠습니다.**';
     }
-
-    // 추가 제안 제공
-    response += `\n\n💡 **추가로 도움이 필요하시면 다음을 시도해보세요:**\n`;
-    response += `• "AI 상태" - 시스템 상태 확인\n`;
-    response += `• "분석" - 상세한 분석 리포트\n`;
-    response += `• "도움말" - 사용법 안내`;
-
+    
+    // 제안사항 추가
+    if (contextualResponse.suggestions.length > 0) {
+      response += '\n\n💡 **추가 제안사항:**\n';
+      contextualResponse.suggestions.forEach(suggestion => {
+        response += `• ${suggestion}\n`;
+      });
+    }
+    
+    // 관련 토픽 추가
+    if (contextualResponse.relatedTopics.length > 0) {
+      response += '\n\n🔗 **관련 토픽:**\n';
+      contextualResponse.relatedTopics.forEach(topic => {
+        response += `• ${topic}\n`;
+      });
+    }
+    
+    // 후속 질문 추가
+    if (contextualResponse.analysis.followUpQuestions.length > 0) {
+      response += '\n\n❓ **추가 질문이 있으시면:**\n';
+      contextualResponse.analysis.followUpQuestions.forEach(question => {
+        response += `• ${question}\n`;
+      });
+    }
+    
+    // 신뢰도가 낮은 경우 추가 안내
+    if (contextualResponse.analysis.confidence < 0.5) {
+      response += '\n\n⚠️ **더 정확한 답변을 위해 구체적으로 말씀해주세요.**';
+    }
+    
     return response;
+    
   } catch (error) {
-    throw new Error('채팅 메시지 처리 중 오류가 발생했습니다.');
+    console.error('문맥 분석 오류:', error);
+    
+    // 폴백 응답
+    return `메시지를 이해했습니다. "${message}"에 대해 답변드리겠습니다. 
+    
+💡 **더 정확한 답변을 위해 다음을 시도해보세요:**
+• 구체적인 요청사항을 명시해주세요
+• "분석해줘", "요약해줘", "비교해줘" 등의 키워드를 사용해주세요
+• 긴 텍스트의 경우 주요 내용을 강조해주세요
+
+🔧 **사용 가능한 기능:**
+• "AI 상태" - 시스템 상태 확인
+• "분석" - 상세한 분석 리포트
+• "도움말" - 사용법 안내`;
   }
 }

@@ -1,0 +1,571 @@
+/* CORBU AI 고급 데이터 시각화 스타일 */
+
+.advanced-visualization-container {
+    max-width: 100%;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    margin: 16px 0;
+}
+
+/* 로딩 상태 */
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-spinner p {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* 오류 상태 */
+.error-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.error-message p {
+    color: #dc2626;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.retry-button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+    background: #2563eb;
+}
+
+/* 데이터 없음 상태 */
+.no-data-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.no-data-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.no-data-message p {
+    color: #6b7280;
+    font-size: 16px;
+    margin: 0;
+}
+
+/* 차트 컨트롤 패널 */
+.chart-controls {
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.chart-header h3 {
+    margin: 0 0 8px 0;
+    color: #111827;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.chart-description {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0 0 16px 0;
+}
+
+.chart-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+}
+
+/* 차트 타입 선택기 */
+.chart-type-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-type-selector label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.chart-type-selector select {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    color: #374151;
+}
+
+.chart-type-selector select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 내보내기 버튼 */
+.export-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.export-btn {
+    padding: 6px 12px;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.export-btn:hover {
+    background: #5b21b6;
+}
+
+/* 대안 차트 토글 */
+.alternatives-toggle {
+    padding: 6px 12px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.alternatives-toggle:hover {
+    background: #059669;
+}
+
+/* 메인 차트 */
+.main-chart {
+    padding: 20px;
+    background: white;
+}
+
+/* 차트 디스플레이 */
+.chart-display {
+    position: relative;
+    width: 100%;
+}
+
+.chart-canvas {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    cursor: crosshair;
+    overflow: hidden;
+}
+
+/* 차트 요소 스타일 */
+.chart-bar {
+    transition: opacity 0.2s;
+    cursor: pointer;
+}
+
+.chart-bar:hover {
+    opacity: 0.8;
+}
+
+.chart-line {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.chart-point {
+    transition: r 0.2s;
+    cursor: pointer;
+}
+
+.chart-point:hover {
+    r: 6;
+}
+
+.chart-pie-slice {
+    transition: transform 0.2s;
+    cursor: pointer;
+    transform-origin: center;
+}
+
+.chart-pie-slice:hover {
+    transform: scale(1.05);
+}
+
+.chart-scatter-point {
+    transition: r 0.2s;
+    cursor: pointer;
+}
+
+.chart-scatter-point:hover {
+    r: 8;
+}
+
+.heatmap-cell {
+    transition: stroke-width 0.2s;
+    cursor: pointer;
+}
+
+.heatmap-cell:hover {
+    stroke-width: 2;
+    stroke: #374151;
+}
+
+/* 툴팁 */
+.chart-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-content {
+    line-height: 1.4;
+}
+
+/* 차트 메타데이터 */
+.chart-metadata {
+    padding: 16px 20px;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.metadata-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.metadata-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.metadata-value {
+    font-size: 13px;
+    color: #374151;
+}
+
+.metadata-tags {
+    display: flex;
+    gap: 4px;
+}
+
+.tag {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* AI 제안사항 */
+.chart-suggestions {
+    padding: 16px 20px;
+    background: #eff6ff;
+    border-top: 1px solid #e5e7eb;
+}
+
+.chart-suggestions h4 {
+    margin: 0 0 12px 0;
+    color: #1e40af;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.chart-suggestions ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #1e40af;
+}
+
+.chart-suggestions li {
+    margin-bottom: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 대안 차트 */
+.alternative-charts {
+    padding: 20px;
+    background: #f3f4f6;
+    border-top: 1px solid #e5e7eb;
+}
+
+.alternative-charts h4 {
+    margin: 0 0 16px 0;
+    color: #374151;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.alternatives-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.alternative-chart {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.alternative-chart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.alternative-chart h5 {
+    margin: 0 0 12px 0;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.alternative-chart .chart-display {
+    margin-bottom: 12px;
+}
+
+.use-alternative-btn {
+    width: 100%;
+    padding: 8px 16px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.use-alternative-btn:hover {
+    background: #059669;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .chart-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .export-buttons {
+        justify-content: stretch;
+    }
+
+    .export-btn {
+        flex: 1;
+    }
+
+    .chart-metadata {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .alternatives-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .advanced-visualization-container {
+        margin: 8px 0;
+        border-radius: 8px;
+    }
+
+    .chart-controls,
+    .main-chart,
+    .chart-metadata,
+    .chart-suggestions,
+    .alternative-charts {
+        padding: 12px;
+    }
+
+    .chart-header h3 {
+        font-size: 18px;
+    }
+
+    .chart-canvas {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+    .advanced-visualization-container {
+        background: #1f2937;
+        color: #f9fafb;
+    }
+
+    .chart-controls {
+        background: #374151;
+        border-bottom-color: #4b5563;
+    }
+
+    .chart-header h3 {
+        color: #f9fafb;
+    }
+
+    .chart-description {
+        color: #d1d5db;
+    }
+
+    .chart-type-selector label {
+        color: #f3f4f6;
+    }
+
+    .chart-type-selector select {
+        background: #374151;
+        border-color: #6b7280;
+        color: #f9fafb;
+    }
+
+    .chart-canvas {
+        background: #374151;
+        border-color: #6b7280;
+    }
+
+    .chart-metadata {
+        background: #374151;
+        border-top-color: #4b5563;
+    }
+
+    .metadata-label {
+        color: #d1d5db;
+    }
+
+    .metadata-value {
+        color: #f3f4f6;
+    }
+
+    .chart-suggestions {
+        background: #1e3a8a;
+    }
+
+    .alternative-charts {
+        background: #374151;
+    }
+
+    .alternative-chart {
+        background: #4b5563;
+    }
+
+    .alternative-chart h5 {
+        color: #f3f4f6;
+    }
+}
+
+/* 애니메이션 */
+.chart-canvas svg {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 접근성 개선 */
+.chart-canvas:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.export-btn:focus,
+.alternatives-toggle:focus,
+.retry-button:focus,
+.use-alternative-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* 고성능 렌더링 */
+.chart-canvas svg {
+    will-change: transform;
+}
+
+.chart-bar,
+.chart-point,
+.chart-pie-slice,
+.chart-scatter-point,
+.heatmap-cell {
+    will-change: transform, opacity;
+}
