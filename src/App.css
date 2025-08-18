@@ -73,6 +73,39 @@ body {
   gap: 12px;
 }
 
+/* Device Info Badge */
+.device-info-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  color: #374151;
+  cursor: default;
+}
+
+.device-info-badge .device-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+
+.device-info-badge .device-dot.online {
+  background: #10b981;
+}
+
+.device-info-badge .device-dot.offline {
+  background: #ef4444;
+}
+
+.device-info-badge .device-label {
+  font-weight: 600;
+}
+
 .header-button {
   background: #f3f4f6;
   border: 1px solid #d1d5db;
@@ -86,6 +119,36 @@ body {
 .header-button:hover {
   background: #e5e7eb;
   border-color: #9ca3af;
+}
+
+/* Sidebar brand logo at the very top */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px 12px 8px 12px;
+  cursor: pointer;
+}
+
+.sidebar-brand .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-brand .logo-icon {
+  font-size: 18px;
+}
+
+.sidebar-brand h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .header-button.active {
@@ -2174,8 +2237,39 @@ body {
 
 .header-right {
   display: flex;
-  gap: 10px;
+  gap: 15px;
   align-items: center;
+}
+
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.05);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-indicator {
+  font-size: 10px;
+}
+
+.status-text {
+  color: #666;
+}
+
+.system-status.connected .status-text {
+  color: #28a745;
+}
+
+.system-status.connecting .status-text {
+  color: #ffc107;
+}
+
+.system-status.disconnected .status-text {
+  color: #dc3545;
 }
 
 .voice-button {
@@ -3468,8 +3562,37 @@ body {
   padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.connection-status {
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+}
+
+.connection-status.connected {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.connection-status.connecting {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.connection-status.disconnected {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
 .brand-section {
@@ -4470,6 +4593,89 @@ body {
   .main-content {
     order: 2;
   }
+}
+
+/* 프로젝트 생성 모달 스타일 */
+.project-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.project-modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.project-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.project-modal-content {
+  padding: 24px;
+}
+
+.project-name-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+
+.project-name-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.project-info-box {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.info-icon {
+  font-size: 20px;
+  color: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.info-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.info-content p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.project-modal-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
 }
 
 /* 스크롤바 스타일 */
@@ -6498,4 +6704,634 @@ body {
 
 .new-chat-btn:hover {
   background-color: #1565c0;
+}
+
+/* AdvancedProjectManager 스타일 */
+.advanced-project-manager {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+
+.advanced-project-manager .modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.advanced-project-manager .modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.advanced-project-manager .modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.advanced-project-manager .modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.advanced-project-manager .close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.3s;
+}
+
+.advanced-project-manager .close-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.advanced-project-manager .modal-tabs {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.advanced-project-manager .tab-button {
+  flex: 1;
+  padding: 15px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6c757d;
+  transition: all 0.3s;
+  border-bottom: 3px solid transparent;
+}
+
+.advanced-project-manager .tab-button.active {
+  color: #667eea;
+  background: white;
+  border-bottom-color: #667eea;
+}
+
+.advanced-project-manager .tab-button:hover {
+  background: #e9ecef;
+}
+
+.advanced-project-manager .modal-body {
+  padding: 30px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.advanced-project-manager .form-section {
+  margin-bottom: 30px;
+}
+
+.advanced-project-manager .form-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.advanced-project-manager .form-group {
+  margin-bottom: 20px;
+}
+
+.advanced-project-manager .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+.advanced-project-manager .form-input,
+.advanced-project-manager .form-select,
+.advanced-project-manager .form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.advanced-project-manager .form-input:focus,
+.advanced-project-manager .form-select:focus,
+.advanced-project-manager .form-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.advanced-project-manager .form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* 파일 관리 탭 */
+.advanced-project-manager .files-header {
+  margin-bottom: 30px;
+}
+
+.advanced-project-manager .search-filter {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.advanced-project-manager .search-input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.advanced-project-manager .filter-select,
+.advanced-project-manager .sort-select {
+  padding: 10px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+}
+
+.advanced-project-manager .sort-order-button {
+  padding: 10px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.advanced-project-manager .file-upload-area {
+  margin-bottom: 20px;
+}
+
+.advanced-project-manager .drag-drop-zone {
+  border: 3px dashed #e9ecef;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.advanced-project-manager .drag-drop-zone.active {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.advanced-project-manager .drag-drop-zone:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.advanced-project-manager .upload-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.advanced-project-manager .upload-hint {
+  color: #6c757d;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.advanced-project-manager .files-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.advanced-project-manager .file-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: white;
+  transition: all 0.3s;
+}
+
+.advanced-project-manager .file-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.advanced-project-manager .file-icon {
+  font-size: 24px;
+  margin-right: 15px;
+}
+
+.advanced-project-manager .file-info {
+  flex: 1;
+}
+
+.advanced-project-manager .file-name {
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.advanced-project-manager .file-details {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.advanced-project-manager .file-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.advanced-project-manager .action-button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.advanced-project-manager .action-button.edit {
+  background: #28a745;
+  color: white;
+}
+
+.advanced-project-manager .action-button.delete {
+  background: #dc3545;
+  color: white;
+}
+
+.advanced-project-manager .action-button:hover {
+  opacity: 0.8;
+}
+
+.advanced-project-manager .upload-progress {
+  width: 100%;
+  height: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.advanced-project-manager .progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s;
+}
+
+/* 지침 관리 탭 */
+.advanced-project-manager .guidelines-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.advanced-project-manager .add-guideline-button {
+  padding: 12px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.advanced-project-manager .add-guideline-button:hover {
+  background: #5a6fd8;
+}
+
+.advanced-project-manager .guidelines-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.advanced-project-manager .guideline-item {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: white;
+}
+
+.advanced-project-manager .guideline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.advanced-project-manager .guideline-title-input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  margin-right: 15px;
+}
+
+.advanced-project-manager .guideline-meta {
+  display: flex;
+  gap: 10px;
+}
+
+.advanced-project-manager .guideline-category-select,
+.advanced-project-manager .guideline-priority-select,
+.advanced-project-manager .guideline-status-select {
+  padding: 8px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 12px;
+  background: white;
+}
+
+.advanced-project-manager .guideline-content-textarea {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.advanced-project-manager .guideline-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e9ecef;
+}
+
+.advanced-project-manager .guideline-info {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.advanced-project-manager .delete-guideline-button {
+  padding: 8px 16px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.advanced-project-manager .delete-guideline-button:hover {
+  background: #c82333;
+}
+
+/* 템플릿 탭 */
+.advanced-project-manager .templates-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.advanced-project-manager .templates-header h3 {
+  margin-bottom: 10px;
+}
+
+.advanced-project-manager .templates-header p {
+  color: #6c757d;
+  margin: 0;
+}
+
+.advanced-project-manager .templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.advanced-project-manager .template-card {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: white;
+}
+
+.advanced-project-manager .template-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.advanced-project-manager .template-card.selected {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.advanced-project-manager .template-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.advanced-project-manager .template-header h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.advanced-project-manager .template-category {
+  background: #667eea;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.advanced-project-manager .template-description {
+  color: #6c757d;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.advanced-project-manager .template-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.advanced-project-manager .stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.advanced-project-manager .stat-icon {
+  font-size: 16px;
+}
+
+.advanced-project-manager .template-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #6c757d;
+  padding-top: 15px;
+  border-top: 1px solid #e9ecef;
+}
+
+/* 프로젝트 요약 */
+.advanced-project-manager .project-summary {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.advanced-project-manager .summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.advanced-project-manager .summary-item:last-child {
+  margin-bottom: 0;
+}
+
+.advanced-project-manager .summary-item .label {
+  font-weight: 500;
+  color: #555;
+}
+
+.advanced-project-manager .summary-item .value {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.advanced-project-manager .selected-template {
+  background: #f8f9ff;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.advanced-project-manager .selected-template h4 {
+  margin: 0 0 10px 0;
+  color: #667eea;
+}
+
+.advanced-project-manager .template-stats {
+  display: flex;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.advanced-project-manager .no-template {
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+/* 모달 푸터 */
+.advanced-project-manager .modal-footer {
+  padding: 20px 30px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.advanced-project-manager .cancel-button {
+  padding: 12px 24px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.advanced-project-manager .cancel-button:hover {
+  background: #5a6268;
+}
+
+.advanced-project-manager .create-button {
+  padding: 12px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.advanced-project-manager .create-button:hover:not(:disabled) {
+  background: #5a6fd8;
+}
+
+.advanced-project-manager .create-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .advanced-project-manager .modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .advanced-project-manager .modal-tabs {
+    flex-direction: column;
+  }
+
+  .advanced-project-manager .search-filter {
+    flex-direction: column;
+  }
+
+  .advanced-project-manager .guideline-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .advanced-project-manager .guideline-meta {
+    flex-wrap: wrap;
+  }
+
+  .advanced-project-manager .templates-grid {
+    grid-template-columns: 1fr;
+  }
 }

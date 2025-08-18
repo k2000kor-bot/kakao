@@ -1,5 +1,5 @@
 // API 서비스 - 백엔드와의 통신을 담당
-const API_BASE_URL = 'http://localhost:8003';
+const API_BASE_URL = 'http://localhost:8005';
 
 export interface PoliticalStyleRequest {
     target_topic: string;

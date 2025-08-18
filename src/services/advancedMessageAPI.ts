@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 
 // API 기본 설정
-const API_BASE_URL = 'http://localhost:8001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 const WS_BASE_URL = 'ws://localhost:8001';
 
 // 타입 정의

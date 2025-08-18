@@ -1,40 +1,27 @@
 import React, { useState } from 'react';
-import { ChatSession } from '../types/chat';
 import { Project } from '../types/project';
-import ConnectionStatus from './ConnectionStatus';
-import SystemMonitor from './SystemMonitor';
 
 interface SidebarProps {
-  currentSession: ChatSession | null;
-  currentProject: Project | null;
-  sessions: ChatSession[];
   projects: Project[];
-  onSessionSelect: (session: ChatSession) => void;
-  onSessionDelete: (sessionId: string) => void;
-  onProjectSelect: (project: Project) => void;
-  onNewSession: () => void;
-  onViewChange: (view: 'chat' | 'new-project') => void;
-  onToggleMonitor: () => void;
-  showSystemMonitor: boolean;
+  currentProject: Project | null;
+  onProjectSelect: (projectId: string) => void;
+  onProjectChange: (project: Project | null) => void;
+  onSystemMonitorToggle?: () => void;
+  showSystemMonitor?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  currentSession,
-  currentProject,
-  sessions,
   projects,
-  onSessionSelect,
-  onSessionDelete,
+  currentProject,
   onProjectSelect,
-  onNewSession,
-  onViewChange,
-  onToggleMonitor,
-  showSystemMonitor
+  onProjectChange,
+  onSystemMonitorToggle,
+  showSystemMonitor = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredSessions = sessions.filter(session =>
-    session.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProjects = projects.filter(project =>
+    project.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatDate = (dateString: string) => {
@@ -49,139 +36,136 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className="sidebar">
-      {/* 검색바 */}
-      <div className="search-section">
-        <input
-          type="text"
-          placeholder="대화 검색..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
+    <div className="flex flex-col h-full bg-white">
+      {/* 헤더 */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center space-x-2 mb-4">
+          <div className="text-2xl">🤖</div>
+          <h1 className="text-lg font-semibold">CORBU AI</h1>
+        </div>
+
+        {/* 검색 */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="프로젝트 검색..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <svg className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
       </div>
 
-      {/* 새 대화 버튼 */}
-      <div className="new-chat-section">
-        <button onClick={onNewSession} className="new-chat-button">
-          ✨ 새 대화
-        </button>
-      </div>
-
-      {/* 프로젝트 섹션 */}
-      <div className="project-section">
-        <div className="section-header">
-          <div className="section-header-left">
-            <span className="section-icon">📁</span>
-            <span>프로젝트</span>
-          </div>
+      {/* 네비게이션 */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* 새 프로젝트 */}
+        <div className="mb-6">
           <button
-            onClick={() => onViewChange('new-project')}
-            className="new-project-button"
-            title="새 프로젝트"
+            onClick={() => onProjectChange(null)}
+            className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
           >
-            ➕
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>새 프로젝트</span>
           </button>
         </div>
-        <div className="project-list">
-          {projects.length > 0 ? (
-            projects.map(project => (
-              <div
-                key={project.id}
-                className={`project-item ${currentProject?.id === project.id ? 'active' : ''}`}
-                onClick={() => onProjectSelect(project)}
-              >
-                <div className="project-item-header">
-                  <span className="project-icon">📁</span>
-                  <span className="project-name">{project.name}</span>
-                </div>
-                <span className="project-description">{project.description}</span>
-              </div>
-            ))
-          ) : (
-            <div className="empty-state">
-              <p>프로젝트가 없습니다</p>
-              <p>새 프로젝트를 생성해보세요</p>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* 프로젝트 정보 */}
-      {currentProject && (
-        <div className="project-info">
-          <div className="project-header">
-            <h3>📁 현재 프로젝트</h3>
-          </div>
-          <div className="project-details">
-            <h4>{currentProject.name}</h4>
-            <p>{currentProject.description}</p>
-            <div className="project-stats">
-              <span>📊 모든 기능이 통합된 채팅에서 사용 가능</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 채팅 섹션 */}
-      <div className="chat-section">
-        <div className="section-header">
-          <span className="section-icon">💬</span>
-          <span>대화</span>
-        </div>
-        <div className="chat-list">
-          {filteredSessions.length > 0 ? (
-            filteredSessions.map(session => (
-              <div
-                key={session.id}
-                className={`chat-item ${currentSession?.id === session.id ? 'active' : ''}`}
-                onClick={() => onSessionSelect(session)}
-              >
-                <div className="chat-info">
-                  <span className="chat-title">{session.title}</span>
-                  <span className="chat-date">{formatDate(session.createdAt)}</span>
-                </div>
+        {/* 프로젝트 목록 */}
+        <div className="mb-6">
+          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">프로젝트</h3>
+          <div className="space-y-1">
+            {filteredProjects.length > 0 ? (
+              filteredProjects.map(project => (
                 <button
-                  className="delete-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSessionDelete(session.id);
-                  }}
-                  title="대화 삭제"
+                  key={project.id}
+                  onClick={() => onProjectSelect(project.id)}
+                  className={`w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors ${currentProject?.id === project.id
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
-                  🗑️
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                  </svg>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium">{project.name}</div>
+                    {project.description && (
+                      <div className="text-xs text-gray-500 truncate">{project.description}</div>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {formatDate(project.createdAt)}
+                  </div>
                 </button>
+              ))
+            ) : (
+              <div className="text-sm text-gray-500 px-3 py-2">
+                {searchTerm ? '검색 결과가 없습니다.' : '프로젝트가 없습니다.'}
               </div>
-            ))
-          ) : (
-            <div className="empty-state">
-              <p>대화가 없습니다</p>
-              <p>새 대화를 시작해보세요</p>
-            </div>
-          )}
+            )}
+          </div>
+        </div>
+
+        {/* 시스템 도구 */}
+        <div className="mb-6">
+          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">시스템 도구</h3>
+          <div className="space-y-1">
+            <button
+              onClick={onSystemMonitorToggle}
+              className={`w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors ${showSystemMonitor
+                ? 'bg-green-100 text-green-700'
+                : 'text-gray-700 hover:bg-gray-100'
+                }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>시스템 모니터링</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 빠른 액션 */}
+        <div className="mb-6">
+          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">빠른 액션</h3>
+          <div className="space-y-1">
+            <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>문장 표현 만들기</span>
+            </button>
+            <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span>개포동 아파트 시세</span>
+            </button>
+            <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>개포우성7차 이주비 분석</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 연결 상태 */}
-      <ConnectionStatus className="sidebar-connection" />
-
-      {/* 시스템 모니터 */}
-      {showSystemMonitor && (
-        <SystemMonitor className="sidebar-monitor" />
-      )}
-
-      {/* 사이드바 푸터 */}
-      <div className="sidebar-footer">
-        <div className="user-info">
-          <span className="user-name">CORBU.AI</span>
-          <span className="user-role">AI 분석 플랫폼</span>
+      {/* 사용자 프로필 */}
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm font-medium">K</span>
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-gray-900">KIM HOBUM</div>
+            <div className="text-xs text-gray-500">Plus</div>
+          </div>
         </div>
-        <button
-          onClick={onToggleMonitor}
-          className="monitor-toggle"
-        >
-          {showSystemMonitor ? '📊' : '📈'} 시스템 모니터
-        </button>
       </div>
     </div>
   );
