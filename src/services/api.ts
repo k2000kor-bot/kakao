@@ -1,310 +1,465 @@
-// API 기본 설정
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-export const USE_MOCK_API = process.env.REACT_APP_USE_MOCK_API === 'true' || !process.env.REACT_APP_API_URL;
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 // API 응답 타입 정의
-export interface APIResponse<T = any> {
+interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
-  message?: string;
   error?: string;
+  message?: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  content: string;
-  sender: 'user' | 'ai' | 'system';
-  timestamp: string;
-  type: 'text' | 'chart' | 'stats' | 'summary' | 'analysis' | 'system' | 'command' | 'error' | 'success';
-  metadata?: {
-    confidence?: number;
-    processingTime?: number;
-    suggestions?: string[];
-    actions?: string[];
-  };
-}
-
-export interface ChatRoom {
-  id: string;
-  name: string;
-  type: 'general' | 'project' | 'analysis' | 'system';
-  unreadCount: number;
-  lastMessage?: string;
-  lastMessageTime?: string;
-}
-
-export interface AISystem {
+interface Project {
   id: string;
   name: string;
   description: string;
-  isActive: boolean;
-  capabilities: string[];
-  performance: {
-    accuracy: number;
-    speed: number;
-    reliability: number;
+  tags: string[];
+  status: string;
+  messageCount: number;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  settings: {
+    aiModel: string;
+    temperature: number;
+    maxTokens: number;
   };
 }
 
-export interface Message {
-  // 필요한 필드 정의 (예시)
+interface Session {
+  id: string;
+  projectId: string;
+  name: string;
+  messages: Message[];
+  createdAt: string;
+  updatedAt: string;
+  metadata: {
+    totalTokens: number;
+    avgResponseTime: number;
+  };
+}
+
+interface Message {
   id: string;
   content: string;
-  sender: string;
+  role: 'user' | 'assistant';
   timestamp: string;
+  metadata?: {
+    model?: string;
+    tokens?: number;
+    responseTime?: number;
+    confidence?: number;
+  };
 }
 
-export interface AIResponse {
-  // 필요한 필드 정의 (예시)
-  result: string;
-  confidence?: number;
+interface AnalyticsData {
+  totalMessages: number;
+  totalSessions: number;
+  totalProjects: number;
+  avgResponseTime: number;
+  messagesByDay: Array<{
+    date: string;
+    messages: number;
+    responses: number;
+  }>;
+  topProjects: Array<{
+    id: string;
+    name: string;
+    messageCount: number;
+    lastActivity: string;
+  }>;
+  userActivity: {
+    activeUsers: number;
+    totalSessions: number;
+    avgSessionDuration: string;
+    peakHours: string[];
+  };
 }
 
-// HTTP 클라이언트 설정
-class APIClient {
+class ApiService {
+  private api: AxiosInstance;
   private baseURL: string;
 
-  constructor(baseURL: string) {
-    this.baseURL = baseURL;
+  constructor() {
+    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    this.api = axios.create({
+      baseURL: this.baseURL,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // 요청 인터셉터
+    this.api.interceptors.request.use(
+      (config) => {
+        // 로딩 상태 설정
+        console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        return config;
+      },
+      (error) => {
+        console.error('API Request Error:', error);
+        return Promise.reject(error);
+      }
+    );
+
+    // 응답 인터셉터
+    this.api.interceptors.response.use(
+      (response: AxiosResponse<ApiResponse>) => {
+        console.log(`API Response: ${response.status} ${response.config.url}`);
+        return response;
+      },
+      (error) => {
+        console.error('API Response Error:', error);
+        return Promise.reject(error);
+      }
+    );
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<APIResponse<T>> {
-    const url = `${this.baseURL}${endpoint}`;
-
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-    };
-
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options.headers,
-      },
-    };
-
+  // 시스템 초기화
+  async initialize(): Promise<void> {
     try {
-      const response = await fetch(url, config);
+      const response = await this.api.get<ApiResponse>('/api/health');
+      if (!response.data.success) {
+        throw new Error('System health check failed');
+      }
+      console.log('API Service initialized successfully');
+    } catch (error) {
+      console.error('API Service initialization failed:', error);
+      throw error;
+    }
+  }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  // 시스템 상태 확인
+  async getSystemStatus(): Promise<any> {
+    try {
+      const response = await this.api.get<ApiResponse>('/api/system/status');
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to get system status:', error);
+      throw error;
+    }
+  }
+
+  // 프로젝트 관련 API
+  async getProjects(): Promise<Project[]> {
+    try {
+      const response = await this.api.get<ApiResponse<Project[]>>('/api/projects');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+      throw error;
+    }
+  }
+
+  async getProject(projectId: string): Promise<Project | null> {
+    try {
+      const response = await this.api.get<ApiResponse<Project>>(`/api/projects/${projectId}`);
+      return response.data.data || null;
+    } catch (error) {
+      console.error('Failed to fetch project:', error);
+      throw error;
+    }
+  }
+
+  async createProject(projectData: {
+    name: string;
+    description: string;
+    tags?: string[];
+    settings?: any;
+  }): Promise<Project> {
+    try {
+      const response = await this.api.post<ApiResponse<Project>>('/api/projects', projectData);
+      return response.data.data!;
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      throw error;
+    }
+  }
+
+  async updateProject(projectId: string, updates: Partial<Project>): Promise<Project | null> {
+    try {
+      const response = await this.api.put<ApiResponse<Project>>(`/api/projects/${projectId}`, updates);
+      return response.data.data || null;
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      throw error;
+    }
+  }
+
+  async deleteProject(projectId: string): Promise<boolean> {
+    try {
+      const response = await this.api.delete<ApiResponse>(`/api/projects/${projectId}`);
+      return response.data.success;
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      throw error;
+    }
+  }
+
+  // 세션 관련 API
+  async getSessions(projectId: string): Promise<Session[]> {
+    try {
+      const response = await this.api.get<ApiResponse<Session[]>>(`/api/projects/${projectId}/sessions`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to fetch sessions:', error);
+      throw error;
+    }
+  }
+
+  async getSession(sessionId: string): Promise<Session | null> {
+    try {
+      const response = await this.api.get<ApiResponse<Session>>(`/api/sessions/${sessionId}`);
+      return response.data.data || null;
+    } catch (error) {
+      console.error('Failed to fetch session:', error);
+      throw error;
+    }
+  }
+
+  async createSession(sessionData: {
+    projectId: string;
+    name?: string;
+  }): Promise<Session> {
+    try {
+      const response = await this.api.post<ApiResponse<Session>>('/api/sessions', sessionData);
+      return response.data.data!;
+    } catch (error) {
+      console.error('Failed to create session:', error);
+      throw error;
+    }
+  }
+
+  async updateSession(sessionId: string, updates: Partial<Session>): Promise<Session | null> {
+    try {
+      const response = await this.api.put<ApiResponse<Session>>(`/api/sessions/${sessionId}`, updates);
+      return response.data.data || null;
+    } catch (error) {
+      console.error('Failed to update session:', error);
+      throw error;
+    }
+  }
+
+  async deleteSession(sessionId: string): Promise<boolean> {
+    try {
+      const response = await this.api.delete<ApiResponse>(`/api/sessions/${sessionId}`);
+      return response.data.success;
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      throw error;
+    }
+  }
+
+  // 메시지 관련 API
+  async sendMessage(messageData: {
+    sessionId: string;
+    content: string;
+    role?: 'user' | 'assistant';
+    projectId?: string;
+  }): Promise<{
+    userMessage: Message;
+    aiResponse: Message;
+  }> {
+    try {
+      const response = await this.api.post<ApiResponse<{
+        userMessage: Message;
+        aiResponse: Message;
+      }>>(`/api/sessions/${messageData.sessionId}/messages`, {
+        content: messageData.content,
+        role: messageData.role || 'user',
+        projectId: messageData.projectId,
+      });
+      return response.data.data!;
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      throw error;
+    }
+  }
+
+  async getMessages(sessionId: string): Promise<Message[]> {
+    try {
+      const response = await this.api.get<ApiResponse<Message[]>>(`/api/sessions/${sessionId}/messages`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+      throw error;
+    }
+  }
+
+  // 분석 데이터 API
+  async getAnalytics(params?: {
+    projectId?: string;
+    timeRange?: string;
+  }): Promise<AnalyticsData> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.projectId) queryParams.append('projectId', params.projectId);
+      if (params?.timeRange) queryParams.append('timeRange', params.timeRange);
+
+      const response = await this.api.get<ApiResponse<AnalyticsData>>(`/api/analytics?${queryParams}`);
+      return response.data.data!;
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+      throw error;
+    }
+  }
+
+  // 파일 업로드 API
+  async uploadFile(file: File, projectId?: string): Promise<{
+    id: string;
+    filename: string;
+    url: string;
+    size: number;
+    type: string;
+  }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (projectId) {
+        formData.append('projectId', projectId);
       }
 
-      const data = await response.json();
-      return data;
+      const response = await this.api.post<ApiResponse<{
+        id: string;
+        filename: string;
+        url: string;
+        size: number;
+        type: string;
+      }>>('/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.data!;
     } catch (error) {
-      console.error('API request failed:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
+      console.error('Failed to upload file:', error);
+      throw error;
     }
   }
 
-  // GET 요청
-  async get<T>(endpoint: string): Promise<APIResponse<T>> {
-    return this.request<T>(endpoint, { method: 'GET' });
-  }
-
-  // POST 요청
-  async post<T>(endpoint: string, data?: any): Promise<APIResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  }
-
-  // PUT 요청
-  async put<T>(endpoint: string, data?: any): Promise<APIResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  }
-
-  // DELETE 요청
-  async delete<T>(endpoint: string): Promise<APIResponse<T>> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
-  }
-}
-
-// API 클라이언트 인스턴스
-const apiClient = new APIClient(API_BASE_URL);
-
-// 모킹 API 클라이언트 (개발 환경에서 사용)
-let mockAPIClient: any = null;
-if (USE_MOCK_API) {
-  import('./mockAPI').then(module => {
-    mockAPIClient = module.mockAPIClient;
-  });
-}
-
-// 채팅 관련 API
-export const chatAPI = {
-  // 채팅방 목록 조회
-  async getChatRooms(): Promise<APIResponse<ChatRoom[]>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.getChatRooms();
-    }
-    return apiClient.get<ChatRoom[]>('/chat/rooms');
-  },
-
-  // 채팅방 메시지 조회
-  async getMessages(roomId: string): Promise<APIResponse<ChatMessage[]>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.getMessages(roomId);
-    }
-    return apiClient.get<ChatMessage[]>(`/chat/rooms/${roomId}/messages`);
-  },
-
-  // 메시지 전송
-  async sendMessage(roomId: string, message: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<APIResponse<ChatMessage>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.sendMessage(roomId, message);
-    }
-    return apiClient.post<ChatMessage>(`/chat/rooms/${roomId}/messages`, message);
-  },
-
-  // AI 응답 생성
-  async generateAIResponse(message: string, systemId?: string): Promise<APIResponse<ChatMessage>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.generateAIResponse(message, systemId);
-    }
-    return apiClient.post<ChatMessage>('/ai/generate', {
-      message,
-      systemId,
-    });
-  },
-
-  // 채팅방 생성
-  async createChatRoom(roomData: Omit<ChatRoom, 'id' | 'unreadCount' | 'lastMessageTime'>): Promise<APIResponse<ChatRoom>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.createChatRoom(roomData);
-    }
-    return apiClient.post<ChatRoom>('/chat/rooms', roomData);
-  },
-
-  // 채팅방 삭제
-  async deleteChatRoom(roomId: string): Promise<APIResponse<void>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return { success: true, data: undefined };
-    }
-    return apiClient.delete<void>(`/chat/rooms/${roomId}`);
-  },
-};
-
-// AI 시스템 관련 API
-export const aiAPI = {
-  // AI 시스템 목록 조회
-  async getAISystems(): Promise<APIResponse<AISystem[]>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.getAISystems();
-    }
-    return apiClient.get<AISystem[]>('/ai/systems');
-  },
-
-  // AI 시스템 상태 변경
-  async toggleAISystem(systemId: string, isActive: boolean): Promise<APIResponse<AISystem>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.toggleAISystem(systemId, isActive);
-    }
-    return apiClient.put<AISystem>(`/ai/systems/${systemId}`, { isActive });
-  },
-
-  // AI 시스템 성능 모니터링
-  async getSystemPerformance(systemId: string): Promise<APIResponse<any>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.getSystemPerformance(systemId);
-    }
-    return apiClient.get<any>(`/ai/systems/${systemId}/performance`);
-  },
-
-  // AI 응답 테스트
-  async testAIResponse(systemId: string, input: string): Promise<APIResponse<any>> {
-    if (USE_MOCK_API && mockAPIClient) {
-      return mockAPIClient.testAIResponse(systemId, input);
-    }
-    return apiClient.post<any>(`/ai/systems/${systemId}/test`, { input });
-  },
-};
-
-// 실시간 통신을 위한 WebSocket 클라이언트
-export class WebSocketClient {
-  private ws: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
-
-  constructor(private url: string) { }
-
-  connect(onMessage: (data: any) => void, onError?: (error: Event) => void) {
+  // AI 모델 설정 API
+  async updateAISettings(projectId: string, settings: {
+    aiModel: string;
+    temperature: number;
+    maxTokens: number;
+  }): Promise<Project> {
     try {
-      this.ws = new WebSocket(this.url);
-
-      this.ws.onopen = () => {
-        console.log('WebSocket 연결됨');
-        this.reconnectAttempts = 0;
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          onMessage(data);
-        } catch (error) {
-          console.error('WebSocket 메시지 파싱 오류:', error);
-        }
-      };
-
-      this.ws.onerror = (error) => {
-        console.error('WebSocket 오류:', error);
-        onError?.(error);
-      };
-
-      this.ws.onclose = () => {
-        console.log('WebSocket 연결 종료');
-        this.attemptReconnect(onMessage, onError);
-      };
+      const response = await this.api.put<ApiResponse<Project>>(`/api/projects/${projectId}/ai-settings`, settings);
+      return response.data.data!;
     } catch (error) {
-      console.error('WebSocket 연결 실패:', error);
+      console.error('Failed to update AI settings:', error);
+      throw error;
     }
   }
 
-  private attemptReconnect(onMessage: (data: any) => void, onError?: (error: Event) => void) {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      console.log(`WebSocket 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-
-      setTimeout(() => {
-        this.connect(onMessage, onError);
-      }, this.reconnectDelay * this.reconnectAttempts);
-    } else {
-      console.error('WebSocket 재연결 실패');
+  // 사용자 설정 API
+  async getUserSettings(): Promise<any> {
+    try {
+      const response = await this.api.get<ApiResponse>('/api/user/settings');
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch user settings:', error);
+      throw error;
     }
   }
 
-  send(data: any) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(data));
-    } else {
-      console.error('WebSocket이 연결되지 않음');
+  async updateUserSettings(settings: any): Promise<any> {
+    try {
+      const response = await this.api.put<ApiResponse>('/api/user/settings', settings);
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to update user settings:', error);
+      throw error;
     }
   }
 
-  disconnect() {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
+  // 에러 처리 헬퍼
+  handleError(error: any): string {
+    if (error.response?.data?.message) {
+      return error.response.data.message;
+    }
+    if (error.message) {
+      return error.message;
+    }
+    return '알 수 없는 오류가 발생했습니다.';
+  }
+
+  // 연결 상태 확인
+  async checkConnection(): Promise<boolean> {
+    try {
+      await this.api.get('/api/health');
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // 고급 AI 엔진 API 메서드들
+  async initializeAIEngine(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.api.post('/ai/initialize');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async switchAIModel(modelName: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.api.post('/ai/switch-model', { model: modelName });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async startRealtimeAnalysis(config?: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.api.post('/ai/realtime-analysis/start', config);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async analyzeSentiment(text: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.api.post('/ai/sentiment-analysis', { text });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async detectIntent(text: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.api.post('/ai/intent-detection', { text });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getAIEngineStatus(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.api.get('/ai/status');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getModelPerformance(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.api.get('/ai/model-performance');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
     }
   }
 }
 
-// WebSocket 인스턴스 (실제 서버 URL로 변경 필요)
-export const wsClient = new WebSocketClient('ws://localhost:8000/ws');
+// 싱글톤 인스턴스 생성
+const apiService = new ApiService();
 
-// MockWebSocketClient export
-export { MockWebSocketClient } from './mockAPI';
-
-export default apiClient; 
+export default apiService; 

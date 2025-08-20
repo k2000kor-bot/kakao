@@ -1,12 +1,32 @@
-import React from 'react';
-import { Notification } from '../hooks/useNotifications';
+import React, { useEffect } from 'react';
+
+interface Notification {
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+    duration?: number;
+}
 
 interface NotificationToastProps {
     notification: Notification;
     onRemove: (id: string) => void;
 }
 
-const NotificationToast: React.FC<NotificationToastProps> = ({ notification, onRemove }) => {
+const NotificationToast: React.FC<NotificationToastProps> = ({
+    notification,
+    onRemove
+}) => {
+    useEffect(() => {
+        if (notification.duration !== 0) {
+            const timer = setTimeout(() => {
+                onRemove(notification.id);
+            }, notification.duration || 5000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [notification.id, notification.duration, onRemove]);
+
     const getIcon = () => {
         switch (notification.type) {
             case 'success':
@@ -52,48 +72,28 @@ const NotificationToast: React.FC<NotificationToastProps> = ({ notification, onR
         }
     };
 
-    const getTitleColor = () => {
-        switch (notification.type) {
-            case 'success':
-                return 'text-green-900';
-            case 'error':
-                return 'text-red-900';
-            case 'warning':
-                return 'text-yellow-900';
-            case 'info':
-                return 'text-blue-900';
-            default:
-                return 'text-gray-900';
-        }
-    };
-
     return (
-        <div
-            className={`p-4 border rounded-lg shadow-lg max-w-sm w-full ${getBgColor()} animate-slide-in`}
-            role="alert"
-        >
+        <div className={`rounded-lg border p-4 shadow-lg ${getBgColor()} max-w-sm`}>
             <div className="flex items-start">
                 <div className="flex-shrink-0 mr-3">
                     <span className="text-lg">{getIcon()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h4 className={`text-sm font-medium ${getTitleColor()}`}>
+                    <h4 className={`text-sm font-medium ${getTextColor()}`}>
                         {notification.title}
                     </h4>
-                    <p className={`text-sm mt-1 ${getTextColor()}`}>
+                    <p className="text-sm text-gray-600 mt-1">
                         {notification.message}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                        {notification.timestamp.toLocaleTimeString()}
                     </p>
                 </div>
                 <div className="flex-shrink-0 ml-3">
                     <button
                         onClick={() => onRemove(notification.id)}
                         className="text-gray-400 hover:text-gray-600 transition-colors"
-                        aria-label="알림 닫기"
                     >
-                        ×
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
             </div>

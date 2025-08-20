@@ -116,6 +116,8 @@ export interface ChatSession {
   lastMessage?: string;
   participants: string[];
   tags: string[];
+  type?: 'general' | 'file_chat' | 'guideline_chat'; // 채팅 타입 추가
+  parentChatId?: string; // 부모 채팅 ID
   metadata?: {
     totalTokens?: number;
     averageResponseTime?: number;
@@ -244,6 +246,8 @@ export interface MessageMetadata {
   model: string;
   tokens: number;
   usedServices: string[];
+  quality?: string;
+  responseLength?: string;
 }
 
 export interface Project {
