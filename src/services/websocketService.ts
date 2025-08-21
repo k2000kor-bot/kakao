@@ -1,14 +1,15 @@
-import { store } from '../store';
-import {
-    setWebSocketStatus,
-    receiveWebSocketMessage,
-    updateRealtimeAnalysis,
-    updateAdvancedAnalytics
-} from '../store/slices/aiEngineSlice';
+// WebSocket 서비스 - 향후 Redux 연동 예정
+// import { store } from '../store';
+// import {
+//     setWebSocketStatus,
+//     receiveWebSocketMessage,
+//     updateRealtimeAnalysis,
+//     updateAdvancedAnalytics
+// } from '../store/slices/aiEngineSlice';
 
 export interface WebSocketMessage {
     type: string;
-    data: any;
+    data: Record<string, unknown>;
     timestamp: number;
     roomId?: string;
     userId?: string;
@@ -69,7 +70,14 @@ class WebSocketService {
         });
     }
 
-    private handleMessage(data: any) {
+    private handleMessage(data: {
+        type: string;
+        content?: string;
+        timestamp?: number;
+        model?: string;
+        sentiment?: string;
+        confidence?: number;
+    }) {
         switch (data.type) {
             case 'ai_response':
                 console.log('AI 응답 수신:', data.content);
@@ -115,7 +123,7 @@ class WebSocketService {
         }
     }
 
-    sendMessage(message: any): void {
+    sendMessage(message: Record<string, unknown>): void {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(message));
         } else {

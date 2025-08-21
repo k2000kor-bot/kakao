@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-08-21T05:48:01.398Z",
+  "total": 10,
+  "passed": 9,
+  "failed": 1,
+  "successRate": 90,
+  "details": [
+    {
+      "test": "프로젝트 구조 확인",
+      "status": "PASSED"
+    },
+    {
+      "test": "의존성 확인",
+      "status": "PASSED"
+    },
+    {
+      "test": "TypeScript 컴파일 확인",
+      "status": "PASSED"
+    },
+    {
+      "test": "환경 설정 확인",
+      "status": "PASSED"
+    },
+    {
+      "test": "문서화 확인",
+      "status": "PASSED"
+    },
+    {
+      "test": "빌드 결과 확인",
+      "status": "FAILED"
+    },
+    {
+      "test": "코드 품질 확인",
+      "status": "PASSED"
+    },
+    {
+      "test": "설정 파일 확인",
+      "status": "PASSED"
+    },
+    {
+      "test": "서비스 파일 확인",
+      "status": "PASSED"
+    },
+    {
+      "test": "컴포넌트 파일 확인",
+      "status": "PASSED"
+    }
+  ]
+}

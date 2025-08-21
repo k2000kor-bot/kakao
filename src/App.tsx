@@ -11,7 +11,7 @@ import ChatGPTMode from './components/ChatGPTMode';
 import Dashboard from './components/Dashboard';
 
 function App() {
-  const [currentMode, setCurrentMode] = useState('gemini');
+  const [currentMode, setCurrentMode] = useState('chatgpt');
   const [showModeSelector, setShowModeSelector] = useState(false);
 
   const modes = [
@@ -86,8 +86,8 @@ function App() {
                       key={mode.id}
                       onClick={() => handleModeChange(mode.id)}
                       className={`w-full flex items-center space-x-3 p-4 rounded-lg border-2 transition-all ${currentMode === mode.id
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                     >
                       <IconComponent className={`h-6 w-6 ${mode.color}`} />

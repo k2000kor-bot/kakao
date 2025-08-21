@@ -11,8 +11,6 @@ import {
     MoreVertical,
     Share2,
     X,
-    Upload,
-    Lightbulb,
     Play,
     Grid,
     Bot
@@ -26,6 +24,13 @@ interface Message {
     content: string;
     timestamp: Date;
     projectId?: string;
+    attachments?: Array<{
+        id: string;
+        name: string;
+        type: string;
+        size: number;
+        url?: string;
+    }>;
     analysis?: {
         score?: number;
         issues?: string[];
@@ -40,6 +45,18 @@ interface Project {
     type: 'project' | 'chat';
     isSelected?: boolean;
     subItems?: string[];
+    description?: string;
+    instructions?: string;
+    files?: Array<{
+        id: string;
+        name: string;
+        type: string;
+        size: number;
+        url?: string;
+        uploadedAt: Date;
+    }>;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 const ChatGPTMode: React.FC = () => {
@@ -52,7 +69,36 @@ const ChatGPTMode: React.FC = () => {
     const [projectInstructions, setProjectInstructions] = useState('');
     const [currentModel] = useState('ChatGPT 5');
     const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
-    const [monitoringStatus, setMonitoringStatus] = useState<any>(null);
+    const [attachedFiles, setAttachedFiles] = useState<Array<{
+        id: string;
+        name: string;
+        type: string;
+        size: number;
+        url?: string;
+    }>>([]);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+    const [showProjectFiles, setShowProjectFiles] = useState(false);
+    const [projectFiles, setProjectFiles] = useState<Array<{
+        id: string;
+        name: string;
+        type: string;
+        size: number;
+        url?: string;
+        uploadedAt: Date;
+    }>>([]);
+    const [monitoringStatus, setMonitoringStatus] = useState<{
+        isConnected: boolean;
+        lastUpdate: string;
+        alerts: string[];
+        active_topics?: number;
+        total_alerts?: number;
+        topics?: Array<{
+            topic: string;
+            alert_threshold: number;
+            alert_count: number;
+        }>;
+    } | null>(null);
     const [showMonitoringModal, setShowMonitoringModal] = useState(false);
 
     // WebSocket 연결
@@ -123,6 +169,8 @@ const ChatGPTMode: React.FC = () => {
             name: '개포',
             type: 'project',
             isSelected: true,
+            description: '개포 지역 부동산 프로젝트',
+            instructions: '부동산 관련 질문에 대해 전문적이고 실용적인 답변을 제공하세요.',
             subItems: [
                 '바이럴',
                 '재미있는 삼성물산 댓글',
@@ -131,11 +179,41 @@ const ChatGPTMode: React.FC = () => {
                 '설계 변경 필요 사항',
                 '홍보관 방문 비교 분석',
                 '모두 보기'
-            ]
+            ],
+            files: [],
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date()
         },
-        { id: '2', name: '개포우성', type: 'project' },
-        { id: '3', name: '대화요약', type: 'project' },
-        { id: '4', name: '개포우성7차', type: 'project' },
+        {
+            id: '2',
+            name: '개포우성',
+            type: 'project',
+            description: '개포우성 아파트 관련 프로젝트',
+            instructions: '아파트 관련 정보와 분석을 제공하세요.',
+            files: [],
+            createdAt: new Date('2024-01-15'),
+            updatedAt: new Date()
+        },
+        {
+            id: '3',
+            name: '대화요약',
+            type: 'project',
+            description: '대화 내용 요약 및 분석',
+            instructions: '대화 내용을 간결하고 명확하게 요약해주세요.',
+            files: [],
+            createdAt: new Date('2024-02-01'),
+            updatedAt: new Date()
+        },
+        {
+            id: '4',
+            name: '개포우성7차',
+            type: 'project',
+            description: '개포우성 7차 분양 관련 프로젝트',
+            instructions: '분양 관련 정보와 시장 분석을 제공하세요.',
+            files: [],
+            createdAt: new Date('2024-02-15'),
+            updatedAt: new Date()
+        },
     ];
 
     const recentChats = [
@@ -147,18 +225,28 @@ const ChatGPTMode: React.FC = () => {
     ];
 
     const handleSendMessage = async () => {
-        if (!inputMessage.trim()) return;
+        if (!inputMessage.trim() || isSending) return;
 
+        setIsSending(true);
         const userMessage: Message = {
             id: Date.now().toString(),
             type: 'user',
             content: inputMessage,
-            timestamp: new Date()
+            timestamp: new Date(),
+            attachments: attachedFiles.length > 0 ? attachedFiles.map(file => ({
+                id: file.id,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                url: file.url
+            })) : undefined
         };
 
         setMessages(prev => [...prev, userMessage]);
         const currentInput = inputMessage;
+        const currentAttachments = attachedFiles;
         setInputMessage('');
+        setAttachedFiles([]);
 
         try {
             // WebSocket이 연결되어 있으면 실시간 채팅 사용
@@ -182,10 +270,34 @@ const ChatGPTMode: React.FC = () => {
                     const data = await response.json();
                     console.log('백엔드 응답:', data);
 
+                    let aiContent = data.ai_response.content;
+
+                    // 프로젝트 컨텍스트 추가
+                    if (selectedProject) {
+                        const projectInfo = `
+**프로젝트 컨텍스트:**
+📁 프로젝트: ${selectedProject.name}
+📝 설명: ${selectedProject.description || '설명 없음'}
+💡 지침: ${selectedProject.instructions || '지침 없음'}
+📎 프로젝트 파일: ${selectedProject.files?.length || 0}개
+📅 생성일: ${selectedProject.createdAt.toLocaleDateString()}
+🔄 수정일: ${selectedProject.updatedAt.toLocaleDateString()}
+                        `.trim();
+                        aiContent = `${projectInfo}\n\n${aiContent}`;
+                    }
+
+                    // 첨부파일이 있는 경우 AI 응답에 파일 정보 포함
+                    if (currentAttachments.length > 0) {
+                        const fileInfo = currentAttachments.map(file =>
+                            `📎 ${file.name} (${file.type}, ${(file.size / 1024).toFixed(1)}KB)`
+                        ).join('\n');
+                        aiContent = `${aiContent}\n\n**첨부파일 분석:**\n${fileInfo}\n\n*첨부파일을 분석하여 더 정확한 답변을 제공했습니다.*`;
+                    }
+
                     const aiMessage: Message = {
                         id: (Date.now() + 1).toString(),
                         type: 'ai',
-                        content: data.ai_response.content,
+                        content: aiContent,
                         timestamp: new Date()
                     };
                     setMessages(prev => [...prev, aiMessage]);
@@ -203,10 +315,31 @@ const ChatGPTMode: React.FC = () => {
                     }
                 } else {
                     // 백엔드 연결 실패 시 기본 응답
+                    let fallbackContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`;
+
+                    // 프로젝트 컨텍스트 추가
+                    if (selectedProject) {
+                        const projectInfo = `
+**프로젝트 컨텍스트:**
+📁 프로젝트: ${selectedProject.name}
+📝 설명: ${selectedProject.description || '설명 없음'}
+💡 지침: ${selectedProject.instructions || '지침 없음'}
+📎 프로젝트 파일: ${selectedProject.files?.length || 0}개
+                        `.trim();
+                        fallbackContent = `${projectInfo}\n\n${fallbackContent}`;
+                    }
+
+                    if (currentAttachments.length > 0) {
+                        const fileInfo = currentAttachments.map(file =>
+                            `📎 ${file.name} (${file.type}, ${(file.size / 1024).toFixed(1)}KB)`
+                        ).join('\n');
+                        fallbackContent += `\n\n**첨부파일 확인:**\n${fileInfo}\n\n*첨부파일을 확인했습니다. 서버 연결 후 더 정확한 분석을 제공하겠습니다.*`;
+                    }
+
                     const aiMessage: Message = {
                         id: (Date.now() + 1).toString(),
                         type: 'ai',
-                        content: `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`,
+                        content: fallbackContent,
                         timestamp: new Date()
                     };
                     setMessages(prev => [...prev, aiMessage]);
@@ -215,13 +348,36 @@ const ChatGPTMode: React.FC = () => {
         } catch (error) {
             console.error('API 호출 오류:', error);
             // 오류 시 기본 응답
+            let errorContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`;
+
+            // 프로젝트 컨텍스트 추가
+            if (selectedProject) {
+                const projectInfo = `
+**프로젝트 컨텍스트:**
+📁 프로젝트: ${selectedProject.name}
+📝 설명: ${selectedProject.description || '설명 없음'}
+💡 지침: ${selectedProject.instructions || '지침 없음'}
+📎 프로젝트 파일: ${selectedProject.files?.length || 0}개
+                `.trim();
+                errorContent = `${projectInfo}\n\n${errorContent}`;
+            }
+
+            if (currentAttachments.length > 0) {
+                const fileInfo = currentAttachments.map(file =>
+                    `📎 ${file.name} (${file.type}, ${(file.size / 1024).toFixed(1)}KB)`
+                ).join('\n');
+                errorContent += `\n\n**첨부파일 확인:**\n${fileInfo}\n\n*첨부파일을 확인했습니다. 연결 문제 해결 후 더 정확한 분석을 제공하겠습니다.*`;
+            }
+
             const aiMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 type: 'ai',
-                content: `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`,
+                content: errorContent,
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, aiMessage]);
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -257,18 +413,19 @@ const ChatGPTMode: React.FC = () => {
         }
     };
 
-    const checkMonitoringAlerts = async () => {
-        try {
-            const response = await fetch('http://localhost:5000/api/monitoring/alerts');
-            if (response.ok) {
-                const data = await response.json();
-                return data.data || [];
-            }
-        } catch (error) {
-            console.error('알림 확인 실패:', error);
-        }
-        return [];
-    };
+    // 모니터링 알림 확인 함수 (향후 사용 예정)
+    // const checkMonitoringAlerts = async () => {
+    //     try {
+    //         const response = await fetch('http://localhost:5000/api/monitoring/alerts');
+    //         if (response.ok) {
+    //             const data = await response.json();
+    //             return data.data || [];
+    //         }
+    //     } catch (error) {
+    //         console.error('알림 확인 실패:', error);
+    //     }
+    //     return [];
+    // };
 
     const getMonitoringStatus = async () => {
         try {
@@ -283,28 +440,29 @@ const ChatGPTMode: React.FC = () => {
         return null;
     };
 
-    const analyzeSentiment = async (text: string) => {
-        if (isWebSocketConnected) {
-            websocketService.sendSentimentAnalysis(text);
-        } else {
-            try {
-                const response = await fetch('http://localhost:5000/ai/sentiment-analysis', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ text })
-                });
+    // 감정 분석 함수 (향후 사용 예정)
+    // const analyzeSentiment = async (text: string) => {
+    //     if (isWebSocketConnected) {
+    //         websocketService.sendSentimentAnalysis(text);
+    //     } else {
+    //         try {
+    //         const response = await fetch('http://localhost:5000/ai/sentiment-analysis', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify({ text })
+    //         });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('감정 분석 결과:', data.data);
-                }
-            } catch (error) {
-                console.error('감정 분석 오류:', error);
-            }
-        }
-    };
+    //         if (response.ok) {
+    //             const data = await response.json();
+    //             console.log('감정 분석 결과:', data.data);
+    //         }
+    //     } catch (error) {
+    //         console.error('감정 분석 오류:', error);
+    //     }
+    // }
+    // };
 
     const createNewProject = async () => {
         if (newProjectName.trim()) {
@@ -329,7 +487,12 @@ const ChatGPTMode: React.FC = () => {
                     const newProject: Project = {
                         id: data.project.id,
                         name: data.project.name,
-                        type: 'project'
+                        type: 'project',
+                        description: `새로운 프로젝트: ${data.project.name}`,
+                        instructions: '',
+                        files: [],
+                        createdAt: new Date(),
+                        updatedAt: new Date()
                     };
                     setSelectedProject(newProject);
                     setShowNewProjectModal(false);
@@ -350,7 +513,12 @@ const ChatGPTMode: React.FC = () => {
                 const newProject: Project = {
                     id: Date.now().toString(),
                     name: newProjectName,
-                    type: 'project'
+                    type: 'project',
+                    description: `새로운 프로젝트: ${newProjectName}`,
+                    instructions: '',
+                    files: [],
+                    createdAt: new Date(),
+                    updatedAt: new Date()
                 };
                 setSelectedProject(newProject);
                 setShowNewProjectModal(false);
@@ -360,7 +528,11 @@ const ChatGPTMode: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-white">
+        <div className="flex h-screen bg-white" data-component="ChatGPTMode">
+            {/* 컴포넌트 식별자 - 개발용 */}
+            <div className="fixed top-0 left-0 bg-red-500 text-white px-2 py-1 text-xs z-50">
+                ChatGPTMode 컴포넌트 - 프로젝트: {selectedProject?.name || '없음'} | 파일: {attachedFiles.length}개
+            </div>
             {/* Left Sidebar - ChatGPT Style */}
             <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
                 {/* 연결 상태 표시 */}
@@ -430,7 +602,13 @@ const ChatGPTMode: React.FC = () => {
                         {projects.map((project) => (
                             <div key={project.id}>
                                 <button
-                                    onClick={() => setSelectedProject(project)}
+                                    onClick={() => {
+                                        setSelectedProject(project);
+                                        // 프로젝트 선택 시 해당 프로젝트의 파일들 로드
+                                        if (project.files) {
+                                            setProjectFiles(project.files);
+                                        }
+                                    }}
                                     className={`flex items-center space-x-2 px-2 py-1 rounded w-full text-left ${project.isSelected ? 'bg-gray-200' : 'hover:bg-gray-100'
                                         }`}
                                 >
@@ -492,10 +670,20 @@ const ChatGPTMode: React.FC = () => {
                             <span className="text-lg font-medium">{currentModel}</span>
                             <ChevronDown size={16} />
                         </div>
-                        {selectedProject && (
+                        {selectedProject ? (
                             <div className="flex items-center space-x-2">
                                 <Folder size={16} />
-                                <span className="text-sm">{selectedProject.name}</span>
+                                <div>
+                                    <span className="text-sm font-medium">{selectedProject.name}</span>
+                                    <div className="text-xs text-gray-500">
+                                        {selectedProject.files?.length || 0}개 파일 • {selectedProject.instructions ? '지침 설정됨' : '지침 없음'}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center space-x-2 text-gray-500">
+                                <Folder size={16} />
+                                <span className="text-sm">프로젝트를 선택하세요</span>
                             </div>
                         )}
                     </div>
@@ -532,18 +720,27 @@ const ChatGPTMode: React.FC = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-left">
+                                <button
+                                    onClick={() => setShowProjectFiles(true)}
+                                    className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-left hover:bg-gray-100 transition-colors"
+                                >
                                     <h3 className="font-medium mb-2">파일 추가</h3>
                                     <p className="text-sm text-gray-600">
                                         이 프로젝트의 채팅이 파일 콘텐츠에 액세스할 수 있습니다
                                     </p>
-                                </div>
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-left">
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setProjectInstructions(selectedProject?.instructions || '');
+                                        setShowInstructionsModal(true);
+                                    }}
+                                    className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-left hover:bg-gray-100 transition-colors"
+                                >
                                     <h3 className="font-medium mb-2">지침 추가</h3>
                                     <p className="text-sm text-gray-600">
                                         ChatGPT가 프로젝트에 응답하는 방식을 직접 짜세요
                                     </p>
-                                </div>
+                                </button>
                             </div>
                         </div>
                     ) : (
@@ -561,7 +758,21 @@ const ChatGPTMode: React.FC = () => {
                                             ? 'bg-blue-500 text-white rounded-lg px-4 py-2'
                                             : 'bg-gray-100 text-gray-800 rounded-lg px-4 py-2'
                                             }`}>
-                                            <p className="text-sm">{message.content}</p>
+                                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                            {message.attachments && message.attachments.length > 0 && (
+                                                <div className="mt-2 pt-2 border-t border-opacity-20 border-white">
+                                                    <div className="text-xs opacity-70 mb-1">첨부파일:</div>
+                                                    <div className="space-y-1">
+                                                        {message.attachments.map((attachment, idx) => (
+                                                            <div key={idx} className="text-xs opacity-80 flex items-center space-x-1">
+                                                                <span>📎</span>
+                                                                <span>{attachment.name}</span>
+                                                                <span>({(attachment.size / 1024).toFixed(1)}KB)</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                             <p className="text-xs opacity-70 mt-1">
                                                 {message.timestamp.toLocaleTimeString()}
                                             </p>
@@ -576,31 +787,150 @@ const ChatGPTMode: React.FC = () => {
                 {/* Input Area */}
                 <div className="p-4 border-t border-gray-200">
                     <div className="max-w-4xl mx-auto">
-                        <div className="flex items-center space-x-2 mb-4">
-                            <button
-                                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
-                            >
-                                <Upload size={16} />
-                                <span className="text-sm">파일 추가</span>
-                            </button>
-                            <span className="text-gray-400">|</span>
-                            <button
-                                onClick={() => setShowInstructionsModal(true)}
-                                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
-                            >
-                                <Lightbulb size={16} />
-                                <span className="text-sm">지침 추가</span>
-                            </button>
-                        </div>
+                        {/* 첨부파일 미리보기 */}
+                        {attachedFiles.length > 0 && (
+                            <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-lg">📎</span>
+                                        <span className="text-sm font-semibold text-blue-900">첨부파일 ({attachedFiles.length}개)</span>
+                                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">질문과 함께 전송됩니다</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setAttachedFiles([])}
+                                        className="text-xs text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg transition-colors font-medium"
+                                    >
+                                        모두 제거
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {attachedFiles.map((file, index) => {
+                                        const getFileIcon = (fileName: string, fileType: string) => {
+                                            const extension = fileName.split('.').pop()?.toLowerCase();
+                                            if (fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension || '')) {
+                                                return '🖼️';
+                                            } else if (fileType.startsWith('video/') || ['mp4', 'avi', 'mov', 'wmv'].includes(extension || '')) {
+                                                return '🎥';
+                                            } else if (fileType.startsWith('audio/') || ['mp3', 'wav', 'flac', 'aac'].includes(extension || '')) {
+                                                return '🎵';
+                                            } else if (['pdf'].includes(extension || '')) {
+                                                return '📄';
+                                            } else if (['doc', 'docx'].includes(extension || '')) {
+                                                return '📝';
+                                            } else if (['xls', 'xlsx'].includes(extension || '')) {
+                                                return '📊';
+                                            } else if (['ppt', 'pptx'].includes(extension || '')) {
+                                                return '📋';
+                                            } else if (['txt', 'md'].includes(extension || '')) {
+                                                return '📄';
+                                            } else {
+                                                return '📁';
+                                            }
+                                        };
 
-                        <div className="flex items-end space-x-2">
+                                        const getFileTypeName = (fileName: string, fileType: string) => {
+                                            const extension = fileName.split('.').pop()?.toLowerCase();
+                                            if (fileType.startsWith('image/')) return '이미지';
+                                            if (fileType.startsWith('video/')) return '비디오';
+                                            if (fileType.startsWith('audio/')) return '오디오';
+                                            if (extension === 'pdf') return 'PDF 문서';
+                                            if (['doc', 'docx'].includes(extension || '')) return 'Word 문서';
+                                            if (['xls', 'xlsx'].includes(extension || '')) return 'Excel 문서';
+                                            if (['ppt', 'pptx'].includes(extension || '')) return 'PowerPoint';
+                                            if (['txt', 'md'].includes(extension || '')) return '텍스트';
+                                            return '파일';
+                                        };
+
+                                        const formatFileSize = (bytes: number) => {
+                                            if (bytes < 1024) return `${bytes}B`;
+                                            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+                                            return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+                                        };
+
+                                        return (
+                                            <div key={file.id} className="bg-white rounded-lg border border-blue-200 shadow-sm hover:shadow-md transition-shadow p-3">
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="flex-shrink-0">
+                                                        <span className="text-2xl">{getFileIcon(file.name, file.type)}</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-sm font-medium text-gray-900 truncate">{file.name}</span>
+                                                            <button
+                                                                onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
+                                                                className="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
+                                                                title="제거"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                                                                {getFileTypeName(file.name, file.type)}
+                                                            </span>
+                                                            <span>{formatFileSize(file.size)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <div
+                            className={`flex items-end space-x-2 transition-all duration-200 ${isDragOver ? 'bg-blue-50 border-blue-500 rounded-lg p-2' : ''}`}
+                            onDragOver={(e) => {
+                                e.preventDefault();
+                                setIsDragOver(true);
+                            }}
+                            onDragLeave={(e) => {
+                                e.preventDefault();
+                                setIsDragOver(false);
+                            }}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                setIsDragOver(false);
+
+                                const files = Array.from(e.dataTransfer.files);
+                                if (files.length > 0) {
+                                    const newAttachments = files.map((file, index) => ({
+                                        id: `file-${Date.now()}-${index}`,
+                                        name: file.name,
+                                        type: file.type,
+                                        size: file.size,
+                                        url: URL.createObjectURL(file)
+                                    }));
+                                    setAttachedFiles(prev => [...prev, ...newAttachments]);
+                                }
+                            }}
+                        >
                             <div className="flex-1 relative">
                                 <textarea
                                     value={inputMessage}
                                     onChange={(e) => setInputMessage(e.target.value)}
                                     onKeyPress={handleKeyPress}
-                                    placeholder="+ 무엇이든 물어보세요"
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-12 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        const files = Array.from(e.dataTransfer.files);
+                                        if (files.length > 0) {
+                                            const newAttachments = files.map(file => ({
+                                                id: Date.now().toString() + Math.random(),
+                                                name: file.name,
+                                                type: file.type,
+                                                size: file.size,
+                                                url: URL.createObjectURL(file)
+                                            }));
+                                            setAttachedFiles(prev => [...prev, ...newAttachments]);
+                                        }
+                                    }}
+                                    placeholder={isDragOver ? "파일을 여기에 놓으세요!" : "+ 무엇이든 물어보세요 (파일을 드래그하여 첨부 가능)"}
+                                    className={`w-full border rounded-lg px-4 py-3 pr-12 resize-none focus:outline-none focus:ring-2 focus:border-transparent transition-all ${isDragOver
+                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                        : 'border-gray-300 hover:border-gray-400 focus:ring-blue-500 focus:border-blue-500'
+                                        }`}
                                     rows={1}
                                     style={{ minHeight: '48px', maxHeight: '120px' }}
                                 />
@@ -612,10 +942,18 @@ const ChatGPTMode: React.FC = () => {
                             </div>
                             <button
                                 onClick={handleSendMessage}
-                                disabled={!inputMessage.trim()}
-                                className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!inputMessage.trim() || isSending}
+                                className={`p-3 rounded-lg transition-all duration-200 ${inputMessage.trim() && !isSending
+                                    ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
+                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                    }`}
+                                title={isSending ? '전송 중...' : '메시지 전송'}
                             >
-                                <Send size={16} />
+                                {isSending ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                                ) : (
+                                    <Send size={16} />
+                                )}
                             </button>
                         </div>
 
@@ -685,6 +1023,178 @@ const ChatGPTMode: React.FC = () => {
                 )}
             </AnimatePresence>
 
+            {/* Project Files Modal */}
+            <AnimatePresence>
+                {showProjectFiles && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[80vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-medium">프로젝트 파일 관리</h2>
+                                <button onClick={() => setShowProjectFiles(false)}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-medium">현재 프로젝트: {selectedProject?.name}</h3>
+                                    <button
+                                        onClick={() => {
+                                            const input = document.createElement('input');
+                                            input.type = 'file';
+                                            input.multiple = true;
+                                            input.accept = '.txt,.pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.mp4,.mp3';
+                                            input.onchange = (e) => {
+                                                const files = Array.from((e.target as HTMLInputElement).files || []);
+                                                if (files.length > 0) {
+                                                    const newFiles = files.map((file, index) => ({
+                                                        id: `project-file-${Date.now()}-${index}`,
+                                                        name: file.name,
+                                                        type: file.type,
+                                                        size: file.size,
+                                                        url: URL.createObjectURL(file),
+                                                        uploadedAt: new Date()
+                                                    }));
+                                                    setProjectFiles(prev => [...prev, ...newFiles]);
+
+                                                    // 프로젝트에도 파일 추가
+                                                    if (selectedProject) {
+                                                        const updatedProject = {
+                                                            ...selectedProject,
+                                                            files: [...(selectedProject.files || []), ...newFiles],
+                                                            updatedAt: new Date()
+                                                        };
+                                                        setSelectedProject(updatedProject);
+                                                    }
+                                                }
+                                            };
+                                            input.click();
+                                        }}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                    >
+                                        파일 추가
+                                    </button>
+                                </div>
+                            </div>
+
+                            {projectFiles.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {projectFiles.map((file, index) => {
+                                        const getFileIcon = (fileName: string, fileType: string) => {
+                                            const extension = fileName.split('.').pop()?.toLowerCase();
+                                            if (fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension || '')) {
+                                                return '🖼️';
+                                            } else if (fileType.startsWith('video/') || ['mp4', 'avi', 'mov', 'wmv'].includes(extension || '')) {
+                                                return '🎥';
+                                            } else if (fileType.startsWith('audio/') || ['mp3', 'wav', 'flac', 'aac'].includes(extension || '')) {
+                                                return '🎵';
+                                            } else if (['pdf'].includes(extension || '')) {
+                                                return '📄';
+                                            } else if (['doc', 'docx'].includes(extension || '')) {
+                                                return '📝';
+                                            } else if (['xls', 'xlsx'].includes(extension || '')) {
+                                                return '📊';
+                                            } else if (['ppt', 'pptx'].includes(extension || '')) {
+                                                return '📋';
+                                            } else if (['txt', 'md'].includes(extension || '')) {
+                                                return '📄';
+                                            } else {
+                                                return '📁';
+                                            }
+                                        };
+
+                                        const getFileTypeName = (fileName: string, fileType: string) => {
+                                            const extension = fileName.split('.').pop()?.toLowerCase();
+                                            if (fileType.startsWith('image/')) return '이미지';
+                                            if (fileType.startsWith('video/')) return '비디오';
+                                            if (fileType.startsWith('audio/')) return '오디오';
+                                            if (extension === 'pdf') return 'PDF 문서';
+                                            if (['doc', 'docx'].includes(extension || '')) return 'Word 문서';
+                                            if (['xls', 'xlsx'].includes(extension || '')) return 'Excel 문서';
+                                            if (['ppt', 'pptx'].includes(extension || '')) return 'PowerPoint';
+                                            if (['txt', 'md'].includes(extension || '')) return '텍스트';
+                                            return '파일';
+                                        };
+
+                                        const formatFileSize = (bytes: number) => {
+                                            if (bytes < 1024) return `${bytes}B`;
+                                            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+                                            return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+                                        };
+
+                                        return (
+                                            <div key={file.id} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="flex-shrink-0">
+                                                        <span className="text-2xl">{getFileIcon(file.name, file.type)}</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-sm font-medium text-gray-900 truncate">{file.name}</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setProjectFiles(prev => prev.filter((_, i) => i !== index));
+                                                                    if (selectedProject) {
+                                                                        const updatedProject = {
+                                                                            ...selectedProject,
+                                                                            files: (selectedProject.files || []).filter((_, i) => i !== index),
+                                                                            updatedAt: new Date()
+                                                                        };
+                                                                        setSelectedProject(updatedProject);
+                                                                    }
+                                                                }}
+                                                                className="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
+                                                                title="제거"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                                                                {getFileTypeName(file.name, file.type)}
+                                                            </span>
+                                                            <span>{formatFileSize(file.size)}</span>
+                                                        </div>
+                                                        <div className="text-xs text-gray-400 mt-1">
+                                                            업로드: {file.uploadedAt.toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <div className="text-4xl mb-2">📁</div>
+                                    <p>아직 업로드된 파일이 없습니다.</p>
+                                    <p className="text-sm">파일을 추가하여 프로젝트에서 활용하세요.</p>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowProjectFiles(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Instructions Modal */}
             <AnimatePresence>
                 {showInstructionsModal && (
@@ -736,7 +1246,17 @@ const ChatGPTMode: React.FC = () => {
                                     취소
                                 </button>
                                 <button
-                                    onClick={() => setShowInstructionsModal(false)}
+                                    onClick={() => {
+                                        if (selectedProject) {
+                                            const updatedProject = {
+                                                ...selectedProject,
+                                                instructions: projectInstructions,
+                                                updatedAt: new Date()
+                                            };
+                                            setSelectedProject(updatedProject);
+                                        }
+                                        setShowInstructionsModal(false);
+                                    }}
                                     className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
                                 >
                                     저장
@@ -773,15 +1293,15 @@ const ChatGPTMode: React.FC = () => {
                                 <div className="space-y-4">
                                     <div className="bg-blue-50 p-3 rounded-lg">
                                         <h3 className="font-medium text-blue-800">활성 모니터링</h3>
-                                        <p className="text-blue-600">{monitoringStatus.active_topics}개 주제 모니터링 중</p>
-                                        <p className="text-blue-600">총 {monitoringStatus.total_alerts}개 알림 발생</p>
+                                        <p className="text-blue-600">{monitoringStatus.active_topics || 0}개 주제 모니터링 중</p>
+                                        <p className="text-blue-600">총 {monitoringStatus.total_alerts || 0}개 알림 발생</p>
                                     </div>
 
                                     {monitoringStatus.topics && monitoringStatus.topics.length > 0 && (
                                         <div>
                                             <h3 className="font-medium mb-2">모니터링 주제</h3>
                                             <div className="space-y-2">
-                                                {monitoringStatus.topics.map((topic: any, index: number) => (
+                                                {monitoringStatus.topics.map((topic, index) => (
                                                     <div key={index} className="bg-gray-50 p-2 rounded">
                                                         <p className="font-medium">{topic.topic}</p>
                                                         <p className="text-sm text-gray-600">

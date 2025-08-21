@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -54,6 +54,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
+  const [inputError, setInputError] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [showAutoComplete, setShowAutoComplete] = useState(false);
+  const [autoCompleteOptions, setAutoCompleteOptions] = useState<string[]>([]);
+  const [inputStats, setInputStats] = useState({
+    wordCount: 0,
+    charCount: 0,
+    readingTime: 0
+  });
+  const [inputQuality, setInputQuality] = useState({
+    score: 0,
+    suggestions: [] as string[]
+  });
+  const [inputHistory, setInputHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [inputMode, setInputMode] = useState<'normal' | 'command' | 'search'>('normal');
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -62,20 +81,41 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
   const currentSession = sessions.find(session => session.id === sessionId);
   const messages = currentSession?.messages || [];
 
-  // 필터링된 메시지
-  const filteredMessages = searchQuery.trim()
-    ? messages.filter(message =>
-      message.content.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    : messages;
+  // 필터링된 메시지 (메모이제이션)
+  const filteredMessages = useMemo(() =>
+    searchQuery.trim()
+      ? messages.filter(message =>
+        message.content.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      : messages,
+    [messages, searchQuery]
+  );
 
-  // 제안사항
-  const [suggestions] = useState([
+  // 제안사항 (메모이제이션)
+  const suggestions = useMemo(() => [
     '코드 리뷰를 도와주세요',
     '알고리즘을 설명해주세요',
     '최신 기술 트렌드를 알려주세요',
-    '프로젝트 계획을 세워주세요'
-  ]);
+    '프로젝트 계획을 세워주세요',
+    '성능 최적화 방법을 알려주세요',
+    '보안 관련 조언을 해주세요',
+    '아키텍처 설계를 도와주세요',
+    '테스트 코드 작성법을 알려주세요',
+    '디버깅 방법을 알려주세요',
+    '코드 리팩토링을 도와주세요'
+  ], []);
+
+  // 명령어 목록 (메모이제이션)
+  const commands = useMemo(() => [
+    { cmd: 'help', description: '사용 가능한 명령어 목록 보기' },
+    { cmd: 'clear', description: '대화 기록 초기화' },
+    { cmd: 'export', description: '대화 내용 내보내기' },
+    { cmd: 'settings', description: '설정 메뉴 열기' },
+    { cmd: 'search', description: '대화 내용 검색' },
+    { cmd: 'theme', description: '테마 변경' },
+    { cmd: 'voice', description: '음성 입력 모드' },
+    { cmd: 'file', description: '파일 업로드' }
+  ], []);
 
   // 자동 스크롤
   useEffect(() => {
@@ -90,12 +130,79 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
     }
   }, [inputMessage]);
 
-  // 메시지 전송
-  const handleSendMessage = async () => {
+  // 전역 키보드 이벤트
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+K로 입력창 포커스 (전역)
+      if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  // 드래그 앤 드롭 핸들러 (메모이제이션)
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      // 파일 업로드 처리
+      setUploadedFiles(prev => [...prev, ...files]);
+      setShowFileUpload(true);
+    }
+  }, []);
+
+  // 메시지 전송 (메모이제이션)
+  const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim() || isSending) return;
+
+    // 명령어 모드 처리
+    if (inputMode === 'command') {
+      const command = inputMessage.trim().substring(1); // '/' 제거
+      handleCommand(command);
+      return;
+    }
+
+    // 입력 검증
+    if (inputMessage.trim().length < 2) {
+      setInputError('메시지는 최소 2자 이상 입력해주세요.');
+      return;
+    }
+
+    if (inputMessage.trim().length > 4000) {
+      setInputError('메시지는 최대 4000자까지 입력 가능합니다.');
+      return;
+    }
 
     const userMessage = inputMessage.trim();
     setInputMessage('');
+    setInputError('');
+    setIsTyping(false);
+
+    // 입력 히스토리에 추가
+    setInputHistory(prev => [userMessage, ...prev.slice(0, 9)]);
+    setHistoryIndex(-1);
+
+    // 입력창 높이 초기화
+    if (inputRef.current) {
+      inputRef.current.style.height = '24px';
+    }
+
     setIsSending(true);
 
     try {
@@ -145,48 +252,218 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
     } finally {
       setIsSending(false);
     }
-  };
+  }, [inputMessage, isSending, dispatch, sessionId, selectedAIModel]);
 
-  // 키보드 이벤트
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  // 키보드 이벤트 (메모이제이션)
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
 
-  // 파일 업로드 핸들러
-  const handleFileUpload = () => {
+    // Ctrl+K로 입력창 포커스
+    if (e.ctrlKey && e.key === 'k') {
+      e.preventDefault();
+      inputRef.current?.focus();
+    }
+
+    // / 키로 명령어 모드 시작
+    if (e.key === '/' && inputMessage.length === 0) {
+      e.preventDefault();
+      setInputMode('command');
+      setInputMessage('/');
+    }
+
+    // 명령어 모드에서 Escape로 일반 모드로 복귀
+    if (e.key === 'Escape' && inputMode === 'command') {
+      setInputMode('normal');
+      setInputMessage('');
+    }
+
+    // Escape로 입력창 초기화
+    if (e.key === 'Escape') {
+      setInputMessage('');
+      setInputError('');
+      setIsTyping(false);
+      setShowAutoComplete(false);
+      setShowSuggestions(false);
+      if (inputRef.current) {
+        inputRef.current.style.height = '24px';
+      }
+    }
+
+    // Tab 키로 자동 완성 네비게이션
+    if (e.key === 'Tab' && showAutoComplete && autoCompleteOptions.length > 0) {
+      e.preventDefault();
+      setInputMessage(autoCompleteOptions[0]);
+      setShowAutoComplete(false);
+      inputRef.current?.focus();
+    }
+
+    // 화살표 키로 히스토리 네비게이션
+    if (e.key === 'ArrowUp' && e.ctrlKey && inputHistory.length > 0) {
+      e.preventDefault();
+      const newIndex = Math.min(historyIndex + 1, inputHistory.length - 1);
+      setHistoryIndex(newIndex);
+      setInputMessage(inputHistory[newIndex]);
+    }
+
+    if (e.key === 'ArrowDown' && e.ctrlKey && historyIndex >= 0) {
+      e.preventDefault();
+      const newIndex = historyIndex - 1;
+      if (newIndex >= 0) {
+        setHistoryIndex(newIndex);
+        setInputMessage(inputHistory[newIndex]);
+      } else {
+        setHistoryIndex(-1);
+        setInputMessage('');
+      }
+    }
+  }, [handleSendMessage, showAutoComplete, autoCompleteOptions, inputHistory, historyIndex]);
+
+  // 파일 업로드 핸들러 (메모이제이션)
+  const handleFileUpload = useCallback(() => {
     setShowFileUpload(!showFileUpload);
-  };
+  }, [showFileUpload]);
 
-  const handleFilesUploaded = (files: any[]) => {
+  const handleFilesUploaded = useCallback((files: any[]) => {
     setUploadedFiles(prev => [...prev, ...files]);
-  };
+  }, []);
 
-  const handleFileRemove = (fileId: string) => {
+  const handleFileRemove = useCallback((fileId: string) => {
     setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
-  };
+  }, []);
 
-  // 음성 인식 핸들러
-  const handleVoiceTranscript = (transcript: string) => {
+  // 음성 인식 핸들러 (메모이제이션)
+  const handleVoiceTranscript = useCallback((transcript: string) => {
     setInputMessage(transcript);
     setVoiceTranscript('');
-  };
+  }, []);
 
-  const handleVoiceError = (error: string) => {
+  const handleVoiceError = useCallback((error: string) => {
     dispatch(addNotification({
       type: 'error',
       message: `음성 인식 오류: ${error}`,
       duration: 5000,
     }));
-  };
+  }, [dispatch]);
 
   // 추천 시스템 핸들러
-  const handleRecommendationClick = (recommendation: any) => {
+  const handleRecommendationClick = useCallback((recommendation: any) => {
     setInputMessage(recommendation.title);
     setShowRecommendations(false);
-  };
+  }, []);
+
+  const handleAutoCompleteClick = useCallback((option: string) => {
+    setInputMessage(option);
+    setShowAutoComplete(false);
+    inputRef.current?.focus();
+  }, []);
+
+  // 명령어 처리
+  const handleCommand = useCallback((command: string) => {
+    const cmd = command.toLowerCase().trim();
+
+    switch (cmd) {
+      case 'help':
+        dispatch(addNotification({
+          type: 'info',
+          message: '사용 가능한 명령어: /help, /clear, /export, /settings, /search, /theme, /voice, /file',
+          duration: 5000
+        }));
+        break;
+      case 'clear':
+        // 대화 기록 초기화 로직
+        dispatch(addNotification({
+          type: 'warning',
+          message: '대화 기록을 초기화하시겠습니까?',
+          duration: 3000
+        }));
+        break;
+      case 'export':
+        // 대화 내용 내보내기 로직
+        dispatch(addNotification({
+          type: 'info',
+          message: '대화 내용 내보내기 기능이 곧 추가됩니다.',
+          duration: 3000
+        }));
+        break;
+      case 'settings':
+        // 설정 메뉴 열기
+        dispatch(addNotification({
+          type: 'info',
+          message: '설정 메뉴가 곧 추가됩니다.',
+          duration: 3000
+        }));
+        break;
+      case 'search':
+        setInputMode('search');
+        setInputMessage('');
+        break;
+      case 'theme':
+        // 테마 변경 로직
+        dispatch(addNotification({
+          type: 'info',
+          message: '테마 변경 기능이 곧 추가됩니다.',
+          duration: 3000
+        }));
+        break;
+      case 'voice':
+        // 음성 입력 모드
+        dispatch(addNotification({
+          type: 'info',
+          message: '음성 입력 모드가 활성화되었습니다.',
+          duration: 3000
+        }));
+        break;
+      case 'file':
+        setShowFileUpload(true);
+        break;
+      default:
+        dispatch(addNotification({
+          type: 'error',
+          message: `알 수 없는 명령어: ${cmd}`,
+          duration: 3000
+        }));
+    }
+
+    setInputMode('normal');
+    setInputMessage('');
+  }, [dispatch]);
+
+  // 입력 품질 분석 (메모이제이션)
+  const analyzeInputQuality = useCallback((text: string) => {
+    const suggestions: string[] = [];
+    let score = 100;
+
+    // 길이 검사
+    if (text.length < 10) {
+      score -= 20;
+      suggestions.push('더 구체적인 질문을 해주세요');
+    }
+
+    // 문장 부호 검사
+    if (!text.includes('?') && !text.includes('!') && !text.includes('.')) {
+      score -= 10;
+      suggestions.push('문장 부호를 사용해주세요');
+    }
+
+    // 대문자 사용 검사
+    if (text === text.toLowerCase()) {
+      score -= 5;
+      suggestions.push('적절한 대문자 사용을 권장합니다');
+    }
+
+    // 키워드 검사
+    const commonKeywords = ['어떻게', '무엇', '왜', '언제', '어디서', '누가'];
+    const hasKeyword = commonKeywords.some(keyword => text.includes(keyword));
+    if (!hasKeyword && text.length > 20) {
+      score -= 15;
+      suggestions.push('질문 키워드를 포함해주세요');
+    }
+
+    setInputQuality({ score: Math.max(0, score), suggestions });
+  }, []);
 
   // 기타 핸들러들
   const handleVoiceInput = () => {
@@ -298,19 +575,74 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
     inputRef.current?.focus();
   };
 
-  const handleInputFocus = () => {
+  const handleInputFocus = useCallback(() => {
+    setInputFocused(true);
+    setInputError('');
+
     if (inputMessage.length === 0) {
       setShowSuggestions(true);
     }
-  };
 
-  const handleInputBlur = () => {
+    // 입력창이 포커스되면 자동으로 높이 조절
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + 'px';
+    }
+  }, [inputMessage.length]);
+
+  const handleInputBlur = useCallback(() => {
+    setInputFocused(false);
     setTimeout(() => setShowSuggestions(false), 200);
-  };
+  }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputMessage(e.target.value);
-  };
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setInputMessage(value);
+    setInputError('');
+
+    // 타이핑 상태 관리
+    if (value.length > 0 && !isTyping) {
+      setIsTyping(true);
+    } else if (value.length === 0 && isTyping) {
+      setIsTyping(false);
+    }
+
+    // 자동 완성 기능
+    if (value.length > 2) {
+      const filteredOptions = suggestions.filter(suggestion =>
+        suggestion.toLowerCase().includes(value.toLowerCase())
+      );
+      if (filteredOptions.length > 0) {
+        setAutoCompleteOptions(filteredOptions);
+        setShowAutoComplete(true);
+      } else {
+        setShowAutoComplete(false);
+      }
+    } else {
+      setShowAutoComplete(false);
+    }
+
+    // 입력 통계 계산
+    const words = value.trim().split(/\s+/).filter(word => word.length > 0);
+    const readingTime = Math.ceil(words.length / 200); // 평균 읽기 속도 200단어/분
+    setInputStats({
+      wordCount: words.length,
+      charCount: value.length,
+      readingTime: readingTime
+    });
+
+    // 입력 품질 분석
+    if (value.length > 5) {
+      analyzeInputQuality(value);
+    } else {
+      setInputQuality({ score: 0, suggestions: [] });
+    }
+
+    // 자동 높이 조절
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  }, [isTyping, suggestions, analyzeInputQuality]);
 
   if (isInitializing) {
     return (
@@ -479,12 +811,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
         )}
       </div>
 
-      {/* 입력 영역 - Gemini 스타일 (채팅 탭에서만 표시) */}
+      {/* 입력 영역 - ChatGPT 스타일 (채팅 탭에서만 표시) */}
       {activeTab === 'chat' && (
-        <div className="border-t border-gray-200 p-6 bg-white">
-          <div className="max-w-4xl mx-auto">
+        <div className="chatgpt-input-container">
+          <div className="chatgpt-input-wrapper">
             {/* 메인 입력창 */}
-            <div className="relative bg-gray-50 rounded-2xl border border-gray-200 hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all duration-200">
+            <div
+              className={`chatgpt-input-box ${inputError ? 'error' : ''} ${inputFocused ? 'focused' : ''} ${isDragOver ? 'drag-over' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               {/* 스마트 제안 */}
               <AnimatePresence>
                 {showSuggestions && (
@@ -510,18 +847,49 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
                 )}
               </AnimatePresence>
 
+              {/* 자동 완성 */}
+              <AnimatePresence>
+                {showAutoComplete && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg border border-gray-200 shadow-lg p-2 z-10"
+                  >
+                    <div className="text-xs text-gray-500 mb-2 px-2">🔍 자동 완성</div>
+                    <div className="space-y-1 chatgpt-autocomplete">
+                      {autoCompleteOptions.map((option, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleAutoCompleteClick(option)}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* 메인 입력 라인 */}
-              <div className="flex items-center p-4">
+              <div
+                className="chatgpt-input-main"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 {/* 플러스 버튼 */}
                 <button
                   onClick={handleFileUpload}
-                  className="flex-shrink-0 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors mr-3"
+                  className="chatgpt-plus-button"
+                  title="파일 첨부 (드래그 앤 드롭도 지원)"
                 >
                   <Plus size={20} />
                 </button>
 
                 {/* 메시지 입력 */}
-                <div className="flex-1">
+                <div className="flex-1 relative">
                   <textarea
                     ref={inputRef}
                     value={inputMessage}
@@ -529,11 +897,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
                     onKeyPress={handleKeyPress}
                     onFocus={handleInputFocus}
                     onBlur={handleInputBlur}
-                    placeholder="Gemini에게 물어보기"
-                    className="w-full bg-transparent border-none outline-none resize-none text-gray-900 placeholder-gray-500"
+                    placeholder="무엇이든 물어보세요"
+                    className={`chatgpt-input-textarea ${isTyping ? 'typing' : ''}`}
                     rows={1}
-                    style={{ minHeight: '24px', maxHeight: '120px' }}
+                    maxLength={4000}
+                    aria-label="메시지 입력"
+                    aria-describedby="input-hint"
+                    role="textbox"
+                    aria-multiline="true"
+                    data-history={historyIndex >= 0}
                   />
+
+                  {/* 입력 통계 표시 */}
+                  {inputMessage.length > 0 && (
+                    <div className="absolute bottom-1 right-2 text-xs pointer-events-none flex items-center space-x-2 chatgpt-input-stats px-2 py-1 rounded">
+                      <span className={`${inputMessage.length > 3500 ? 'text-red-500' :
+                        inputMessage.length > 3000 ? 'text-yellow-500' :
+                          'text-gray-400'
+                        }`}>
+                        {inputMessage.length}/4000
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      <span className="text-gray-400">{inputStats.wordCount}단어</span>
+                      {inputStats.readingTime > 0 && (
+                        <>
+                          <span className="text-gray-400">•</span>
+                          <span className="text-gray-400">{inputStats.readingTime}분 읽기</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* 고급 음성 인식 */}
@@ -550,10 +943,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim() || isSending}
-                  className={`flex-shrink-0 p-2 rounded-lg transition-colors ml-2 ${inputMessage.trim() && !isSending
-                    ? 'bg-blue-500 text-white hover:bg-blue-600'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
+                  className={`chatgpt-send-button ${isSending ? 'sending' : ''}`}
+                  title={isSending ? "전송 중..." : "메시지 전송"}
                 >
                   {isSending ? (
                     <RefreshCw size={18} className="animate-spin" />
@@ -564,50 +955,55 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
               </div>
 
               {/* 하단 도구 버튼들 */}
-              <div className="flex items-center justify-between px-4 pb-3 border-t border-gray-100">
-                <div className="flex items-center space-x-4">
+              <div className="chatgpt-tool-buttons">
+                <div className="flex items-center space-x-2">
                   {/* Deep Research */}
                   <button
                     onClick={handleDeepResearch}
-                    className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="chatgpt-tool-button"
+                    title="심층 연구"
                   >
-                    <Search size={16} />
+                    <Search size={14} />
                     <span>Deep Research</span>
                   </button>
 
                   {/* Canvas */}
                   <button
                     onClick={handleCanvas}
-                    className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="chatgpt-tool-button"
+                    title="캔버스"
                   >
-                    <Square size={16} />
+                    <Square size={14} />
                     <span>Canvas</span>
                   </button>
 
                   {/* 이미지 */}
                   <button
                     onClick={handleImageUpload}
-                    className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="chatgpt-tool-button"
+                    title="이미지 업로드"
                   >
-                    <Image size={16} />
+                    <Image size={14} />
                     <span>이미지</span>
                   </button>
 
                   {/* 가이드 학습 */}
                   <button
                     onClick={handleGuidedLearning}
-                    className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="chatgpt-tool-button"
+                    title="가이드 학습"
                   >
-                    <BookOpen size={16} />
+                    <BookOpen size={14} />
                     <span>가이드 학습</span>
                   </button>
 
                   {/* AI 추천 */}
                   <button
                     onClick={() => setShowRecommendations(!showRecommendations)}
-                    className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="chatgpt-tool-button"
+                    title="AI 추천"
                   >
-                    <Sparkles size={16} />
+                    <Sparkles size={14} />
                     <span>AI 추천</span>
                   </button>
                 </div>
@@ -615,11 +1011,55 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, projectId }) =
             </div>
 
             {/* 입력 힌트 (채팅 탭에서만 표시) */}
-            {activeTab === 'chat' && inputMessage.length > 0 && (
-              <div className="mt-2 text-xs text-gray-500 text-center">
-                Enter로 전송, Shift+Enter로 줄바꿈
+            {activeTab === 'chat' && inputMessage.length > 0 && !inputError && (
+              <div id="input-hint" className="chatgpt-input-hint">
+                Enter로 전송, Shift+Enter로 줄바꿈 • Ctrl+K로 포커스 • Esc로 초기화 • Ctrl+↑/↓로 히스토리
               </div>
             )}
+
+            {/* 에러 메시지 */}
+            {activeTab === 'chat' && inputError && (
+              <div className="mt-2 text-xs text-red-500 text-center chatgpt-error-message">
+                {inputError}
+              </div>
+            )}
+
+            {/* 입력 품질 표시 */}
+            {activeTab === 'chat' && inputMessage.length > 5 && inputQuality.score > 0 && (
+              <div className="mt-2 flex items-center justify-center space-x-2">
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-gray-500">품질:</span>
+                  <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden chatgpt-quality-bar">
+                    <div
+                      className={`h-full transition-all duration-300 ${inputQuality.score >= 80 ? 'bg-green-500' :
+                        inputQuality.score >= 60 ? 'bg-yellow-500' :
+                          'bg-red-500'
+                        }`}
+                      style={{ width: `${inputQuality.score}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500">{inputQuality.score}%</span>
+                </div>
+                {inputQuality.suggestions.length > 0 && (
+                  <button
+                    onClick={() => setShowSuggestions(!showSuggestions)}
+                    className="text-xs text-blue-500 hover:text-blue-700"
+                    title="개선 제안 보기"
+                  >
+                    💡
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* 하단 안내 문구 */}
+            <div className="chatgpt-disclaimer">
+              ChatGPT는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+              <br />
+              <span className="text-xs text-gray-400">
+                💡 팁: Ctrl+↑/↓로 이전 메시지를 불러올 수 있습니다
+              </span>
+            </div>
           </div>
         </div>
       )}

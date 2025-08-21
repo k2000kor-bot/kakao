@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORBU AI 프론트엔드-백엔드 연동 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+
+        .test-section h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+        }
+
+        .button.success {
+            background-color: #27ae60;
+        }
+
+        .button.error {
+            background-color: #e74c3c;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #ecf0f1;
+            border-left: 4px solid #3498db;
+        }
+
+        .result.success {
+            border-left-color: #27ae60;
+            background-color: #d5f4e6;
+        }
+
+        .result.error {
+            border-left-color: #e74c3c;
+            background-color: #fadbd8;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status.connected {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .status.disconnected {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .websocket-status {
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .input-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 CORBU AI 프론트엔드-백엔드 연동 테스트</h1>
+            <p>고도화된 프론트엔드와 백엔드 시스템의 완벽한 연동을 테스트합니다</p>
+        </div>
+
+        <!-- 연결 상태 -->
+        <div class="test-section">
+            <h3>🔗 연결 상태</h3>
+            <div class="websocket-status">
+                <strong>백엔드 서버:</strong>
+                <span id="backend-status" class="status disconnected">연결 확인 중...</span>
+            </div>
+            <div class="websocket-status">
+                <strong>웹소켓 연결:</strong>
+                <span id="websocket-status" class="status disconnected">연결 확인 중...</span>
+            </div>
+            <button class="button" onclick="checkConnections()">연결 상태 확인</button>
+        </div>
+
+        <!-- AI 엔진 테스트 -->
+        <div class="test-section">
+            <h3>🧠 AI 엔진 테스트</h3>
+            <button class="button" onclick="initializeAIEngine()">AI 엔진 초기화</button>
+            <button class="button" onclick="getAIStatus()">AI 상태 확인</button>
+            <button class="button" onclick="getModelPerformance()">모델 성능 확인</button>
+            <div id="ai-engine-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 감정 분석 테스트 -->
+        <div class="test-section">
+            <h3>😊 감정 분석 테스트</h3>
+            <div class="input-group">
+                <label for="sentiment-text">분석할 텍스트:</label>
+                <textarea id="sentiment-text"
+                    placeholder="감정을 분석할 텍스트를 입력하세요...">오늘 정말 좋은 하루였어요! 새로운 프로젝트가 성공적으로 완료되어서 기분이 너무 좋습니다.</textarea>
+            </div>
+            <button class="button" onclick="analyzeSentiment()">감정 분석 실행</button>
+            <div id="sentiment-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 의도 감지 테스트 -->
+        <div class="test-section">
+            <h3>🎯 의도 감지 테스트</h3>
+            <div class="input-group">
+                <label for="intent-text">분석할 텍스트:</label>
+                <textarea id="intent-text" placeholder="의도를 감지할 텍스트를 입력하세요...">이 시스템에 대해 질문이 있습니다. 어떻게 사용하나요?</textarea>
+            </div>
+            <button class="button" onclick="detectIntent()">의도 감지 실행</button>
+            <div id="intent-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 실시간 분석 테스트 -->
+        <div class="test-section">
+            <h3>⚡ 실시간 분석 테스트</h3>
+            <button class="button" onclick="startRealtimeAnalysis()">실시간 분석 시작</button>
+            <button class="button" onclick="stopRealtimeAnalysis()">실시간 분석 중지</button>
+            <div id="realtime-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 성능 지표 -->
+        <div class="test-section">
+            <h3>📊 실시간 성능 지표</h3>
+            <div class="metrics">
+                <div class="metric-card">
+                    <div id="confidence-value" class="metric-value">0</div>
+                    <div class="metric-label">신뢰도 (%)</div>
+                </div>
+                <div class="metric-card">
+                    <div id="processing-time" class="metric-value">0</div>
+                    <div class="metric-label">처리 시간 (ms)</div>
+                </div>
+                <div class="metric-card">
+                    <div id="response-quality" class="metric-value">0</div>
+                    <div class="metric-label">응답 품질 (%)</div>
+                </div>
+                <div class="metric-card">
+                    <div id="context-understanding" class="metric-value">0</div>
+                    <div class="metric-label">컨텍스트 이해 (%)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 종합 테스트 -->
+        <div class="test-section">
+            <h3>🚀 종합 테스트</h3>
+            <button class="button success" onclick="runFullTest()">전체 테스트 실행</button>
+            <div id="full-test-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let websocket = null;
+        let realtimeAnalysisActive = false;
+        let testResults = {
+            backend: false,
+            websocket: false,
+            aiEngine: false,
+            sentiment: false,
+            intent: false,
+            realtime: false
+        };
+
+        // 페이지 로드 시 초기화
+        window.onload = function () {
+            checkConnections();
+            initializeWebSocket();
+        };
+
+        // 연결 상태 확인
+        async function checkConnections() {
+            try {
+                // 백엔드 서버 확인
+                const response = await fetch('http://localhost:5000/health');
+                if (response.ok) {
+                    document.getElementById('backend-status').textContent = '연결됨';
+                    document.getElementById('backend-status').className = 'status connected';
+                    testResults.backend = true;
+                } else {
+                    throw new Error('서버 응답 오류');
+                }
+            } catch (error) {
+                document.getElementById('backend-status').textContent = '연결 실패';
+                document.getElementById('backend-status').className = 'status disconnected';
+                testResults.backend = false;
+            }
+        }
+
+        // 웹소켓 초기화
+        function initializeWebSocket() {
+            try {
+                websocket = new WebSocket('ws://localhost:5000/ws/test-client');
+
+                websocket.onopen = function () {
+                    document.getElementById('websocket-status').textContent = '연결됨';
+                    document.getElementById('websocket-status').className = 'status connected';
+                    testResults.websocket = true;
+                };
+
+                websocket.onmessage = function (event) {
+                    const message = JSON.parse(event.data);
+                    handleWebSocketMessage(message);
+                };
+
+                websocket.onclose = function () {
+                    document.getElementById('websocket-status').textContent = '연결 끊김';
+                    document.getElementById('websocket-status').className = 'status disconnected';
+                    testResults.websocket = false;
+                };
+
+                websocket.onerror = function (error) {
+                    document.getElementById('websocket-status').textContent = '연결 오류';
+                    document.getElementById('websocket-status').className = 'status disconnected';
+                    testResults.websocket = false;
+                };
+            } catch (error) {
+                console.error('웹소켓 초기화 실패:', error);
+            }
+        }
+
+        // 웹소켓 메시지 처리
+        function handleWebSocketMessage(message) {
+            switch (message.type) {
+                case 'sentiment_analysis':
+                    displayResult('sentiment-result', message.data, '감정 분석 결과');
+                    break;
+                case 'intent_detection':
+                    displayResult('intent-result', message.data, '의도 감지 결과');
+                    break;
+                case 'realtime_analysis':
+                    updateMetrics(message.data);
+                    break;
+                case 'heartbeat_response':
+                    console.log('하트비트 응답:', message);
+                    break;
+            }
+        }
+
+        // AI 엔진 초기화
+        async function initializeAIEngine() {
+            try {
+                const response = await fetch('http://localhost:5000/ai/initialize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                displayResult('ai-engine-result', result, 'AI 엔진 초기화 결과');
+                testResults.aiEngine = result.success;
+            } catch (error) {
+                displayError('ai-engine-result', 'AI 엔진 초기화 실패: ' + error.message);
+            }
+        }
+
+        // AI 상태 확인
+        async function getAIStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/ai/status');
+                const result = await response.json();
+                displayResult('ai-engine-result', result, 'AI 엔진 상태');
+            } catch (error) {
+                displayError('ai-engine-result', 'AI 상태 확인 실패: ' + error.message);
+            }
+        }
+
+        // 모델 성능 확인
+        async function getModelPerformance() {
+            try {
+                const response = await fetch('http://localhost:5000/ai/model-performance');
+                const result = await response.json();
+                displayResult('ai-engine-result', result, '모델 성능 정보');
+            } catch (error) {
+                displayError('ai-engine-result', '모델 성능 확인 실패: ' + error.message);
+            }
+        }
+
+        // 감정 분석
+        async function analyzeSentiment() {
+            const text = document.getElementById('sentiment-text').value;
+            if (!text.trim()) {
+                alert('분석할 텍스트를 입력해주세요.');
+                return;
+            }
+
+            try {
+                // HTTP API 호출
+                const response = await fetch('http://localhost:5000/ai/sentiment-analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                const result = await response.json();
+                displayResult('sentiment-result', result, '감정 분석 결과');
+                testResults.sentiment = result.success;
+
+                // 웹소켓으로도 요청
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    websocket.send(JSON.stringify({
+                        type: 'sentiment_analysis_request',
+                        data: { text: text }
+                    }));
+                }
+            } catch (error) {
+                displayError('sentiment-result', '감정 분석 실패: ' + error.message);
+            }
+        }
+
+        // 의도 감지
+        async function detectIntent() {
+            const text = document.getElementById('intent-text').value;
+            if (!text.trim()) {
+                alert('분석할 텍스트를 입력해주세요.');
+                return;
+            }
+
+            try {
+                // HTTP API 호출
+                const response = await fetch('http://localhost:5000/ai/intent-detection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                const result = await response.json();
+                displayResult('intent-result', result, '의도 감지 결과');
+                testResults.intent = result.success;
+
+                // 웹소켓으로도 요청
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    websocket.send(JSON.stringify({
+                        type: 'intent_detection_request',
+                        data: { text: text }
+                    }));
+                }
+            } catch (error) {
+                displayError('intent-result', '의도 감지 실패: ' + error.message);
+            }
+        }
+
+        // 실시간 분석 시작
+        async function startRealtimeAnalysis() {
+            try {
+                const response = await fetch('http://localhost:5000/ai/realtime-analysis/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                displayResult('realtime-result', result, '실시간 분석 시작');
+                testResults.realtime = result.success;
+                realtimeAnalysisActive = true;
+
+                // 웹소켓으로 실시간 분석 요청
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    websocket.send(JSON.stringify({
+                        type: 'start_realtime_analysis'
+                    }));
+                }
+            } catch (error) {
+                displayError('realtime-result', '실시간 분석 시작 실패: ' + error.message);
+            }
+        }
+
+        // 실시간 분석 중지
+        function stopRealtimeAnalysis() {
+            realtimeAnalysisActive = false;
+            displayResult('realtime-result', { message: '실시간 분석이 중지되었습니다.' }, '실시간 분석 중지');
+        }
+
+        // 성능 지표 업데이트
+        function updateMetrics(data) {
+            if (data.confidence) {
+                document.getElementById('confidence-value').textContent = data.confidence;
+            }
+            if (data.processingTime) {
+                document.getElementById('processing-time').textContent = data.processingTime;
+            }
+            if (data.responseQuality) {
+                document.getElementById('response-quality').textContent = data.responseQuality;
+            }
+            if (data.contextUnderstanding) {
+                document.getElementById('context-understanding').textContent = data.contextUnderstanding;
+            }
+        }
+
+        // 결과 표시
+        function displayResult(elementId, data, title) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'result success';
+            element.innerHTML = `
+                <h4>${title}</h4>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+
+        // 에러 표시
+        function displayError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'result error';
+            element.innerHTML = `
+                <h4>오류 발생</h4>
+                <p>${message}</p>
+            `;
+        }
+
+        // 전체 테스트 실행
+        async function runFullTest() {
+            const resultElement = document.getElementById('full-test-result');
+            resultElement.style.display = 'block';
+            resultElement.className = 'result';
+
+            let testLog = '<h4>전체 테스트 결과</h4><ul>';
+
+            // 각 테스트 실행
+            await checkConnections();
+            testLog += `<li>백엔드 연결: ${testResults.backend ? '✅ 성공' : '❌ 실패'}</li>`;
+            testLog += `<li>웹소켓 연결: ${testResults.websocket ? '✅ 성공' : '❌ 실패'}</li>`;
+
+            await initializeAIEngine();
+            testLog += `<li>AI 엔진 초기화: ${testResults.aiEngine ? '✅ 성공' : '❌ 실패'}</li>`;
+
+            await analyzeSentiment();
+            testLog += `<li>감정 분석: ${testResults.sentiment ? '✅ 성공' : '❌ 실패'}</li>`;
+
+            await detectIntent();
+            testLog += `<li>의도 감지: ${testResults.intent ? '✅ 성공' : '❌ 실패'}</li>`;
+
+            await startRealtimeAnalysis();
+            testLog += `<li>실시간 분석: ${testResults.realtime ? '✅ 성공' : '❌ 실패'}</li>`;
+
+            const successCount = Object.values(testResults).filter(Boolean).length;
+            const totalCount = Object.keys(testResults).length;
+
+            testLog += '</ul>';
+            testLog += `<p><strong>전체 성공률: ${successCount}/${totalCount} (${Math.round(successCount / totalCount * 100)}%)</strong></p>`;
+
+            if (successCount === totalCount) {
+                resultElement.className = 'result success';
+                testLog += '<p style="color: #27ae60; font-weight: bold;">🎉 모든 테스트가 성공적으로 완료되었습니다!</p>';
+            } else {
+                resultElement.className = 'result error';
+                testLog += '<p style="color: #e74c3c; font-weight: bold;">⚠️ 일부 테스트가 실패했습니다.</p>';
+            }
+
+            resultElement.innerHTML = testLog;
+        }
+
+        // 주기적으로 연결 상태 확인
+        setInterval(checkConnections, 30000);
+    </script>
+</body>
+
+</html>

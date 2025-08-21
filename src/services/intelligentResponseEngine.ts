@@ -1,425 +1,850 @@
-import { ChatSession, Message } from '../types/chat';
-import { Project, ProjectFile, Guideline } from '../types/project';
+/**
+ * 지능형 응답 생성 엔진
+ * 질문을 정확히 파악하고 실제 답변을 생성하는 고도화된 시스템
+ */
 
-interface AnalysisContext {
-  userIntent: string;
-  conversationHistory: Message[];
-  projectContext: Project | null;
-  relevantFiles: ProjectFile[];
-  relevantGuidelines: Guideline[];
-  suggestedActions: string[];
-  followUpQuestions: string[];
+export interface QuestionContext {
+    originalQuestion: string;
+    processedQuestion: string;
+    questionType: 'factual' | 'analytical' | 'creative' | 'procedural' | 'comparative' | 'predictive';
+    complexity: number; // 1-10
+    domain: string[];
+    intent: {
+        primary: string;
+        secondary: string[];
+        actionRequired: boolean;
+        informationSeeking: boolean;
+        problemSolving: boolean;
+    };
+    context: {
+        temporal: 'past' | 'present' | 'future' | 'timeless';
+        scope: 'specific' | 'general' | 'comprehensive';
+        urgency: 'low' | 'medium' | 'high';
+    };
+    requiredCapabilities: string[];
+    expectedResponseFormat: 'short' | 'detailed' | 'structured' | 'conversational';
 }
 
-interface ResponseStrategy {
-  id: string;
-  name: string;
-  description: string;
-  priority: number;
-  execute: (context: AnalysisContext) => Promise<string>;
+export interface ResponseStrategy {
+    approach: 'direct' | 'analytical' | 'step-by-step' | 'comparative' | 'narrative';
+    tone: 'professional' | 'casual' | 'educational' | 'supportive' | 'technical';
+    structure: {
+        introduction: boolean;
+        mainContent: string[];
+        examples: boolean;
+        conclusion: boolean;
+        actionItems: boolean;
+    };
+    evidenceLevel: 'minimal' | 'moderate' | 'comprehensive';
+    interactivity: {
+        followUpQuestions: string[];
+        clarificationNeeded: boolean;
+        additionalResources: boolean;
+    };
 }
 
-class IntelligentResponseEngine {
-  private strategies: ResponseStrategy[] = [];
-
-  constructor() {
-    this.initializeStrategies();
-  }
-
-  private initializeStrategies() {
-    this.strategies = [
-      // 1. 의도 분석 및 분류
-      {
-        id: 'intent-analysis',
-        name: '의도 분석 및 분류',
-        description: '사용자 질문의 숨겨진 의도와 목적을 분석하여 적절한 응답 방향 결정',
-        priority: 1,
-        execute: async (context) => {
-          const intent = this.analyzeUserIntent(context.userIntent);
-          return `🔍 **의도 분석 결과**: ${intent.type}\n\n${intent.description}\n\n이 분석을 바탕으로 다음 단계를 진행하겠습니다.`;
-        }
-      },
-
-      // 2. 컨텍스트 기반 정보 수집
-      {
-        id: 'context-gathering',
-        name: '컨텍스트 기반 정보 수집',
-        description: '대화 히스토리와 프로젝트 데이터에서 관련 정보를 수집하고 연결',
-        priority: 2,
-        execute: async (context) => {
-          const contextInfo = this.gatherContextualInformation(context);
-          return `📚 **컨텍스트 정보 수집**:\n\n${contextInfo.summary}\n\n관련 파일: ${contextInfo.relevantFiles.length}개\n관련 지침: ${contextInfo.relevantGuidelines.length}개`;
-        }
-      },
-
-      // 3. 다각도 분석 및 가설 설정
-      {
-        id: 'multi-perspective-analysis',
-        name: '다각도 분석 및 가설 설정',
-        description: '문제를 여러 관점에서 분석하고 가능한 해결책에 대한 가설을 설정',
-        priority: 3,
-        execute: async (context) => {
-          const perspectives = this.analyzeFromMultiplePerspectives(context);
-          return `🔬 **다각도 분석**:\n\n${perspectives.map(p => `• ${p.perspective}: ${p.analysis}`).join('\n')}\n\n가설: ${perspectives[0].hypothesis}`;
-        }
-      },
-
-      // 4. 정보 격차 식별 및 추가 질문
-      {
-        id: 'information-gap-identification',
-        name: '정보 격차 식별 및 추가 질문',
-        description: '답변에 필요한 추가 정보를 식별하고 구체적인 질문을 제시',
-        priority: 4,
-        execute: async (context) => {
-          const gaps = this.identifyInformationGaps(context);
-          return `❓ **정보 격차 식별**:\n\n${gaps.map(gap => `• ${gap.area}: ${gap.question}`).join('\n')}\n\n이 정보들을 확인하면 더 정확한 답변을 드릴 수 있습니다.`;
-        }
-      },
-
-      // 5. 우선순위 기반 답변 구성
-      {
-        id: 'priority-based-response',
-        name: '우선순위 기반 답변 구성',
-        priority: 5,
-        description: '중요도와 긴급성을 고려하여 답변의 우선순위를 설정하고 구성',
-        execute: async (context) => {
-          const priorities = this.setResponsePriorities(context);
-          return `⚡ **우선순위 설정**:\n\n${priorities.map(p => `🔸 ${p.level}: ${p.content}`).join('\n')}\n\n이 순서로 답변을 구성하겠습니다.`;
-        }
-      },
-
-      // 6. 예측적 사고 및 시나리오 분석
-      {
-        id: 'predictive-thinking',
-        name: '예측적 사고 및 시나리오 분석',
-        description: '가능한 시나리오를 예측하고 각각의 결과를 분석하여 최적의 방향 제시',
-        priority: 6,
-        execute: async (context) => {
-          const scenarios = this.analyzePossibleScenarios(context);
-          return `🔮 **시나리오 분석**:\n\n${scenarios.map(s => `📋 ${s.name}:\n   - 확률: ${s.probability}%\n   - 결과: ${s.outcome}\n   - 권장사항: ${s.recommendation}`).join('\n\n')}`;
-        }
-      },
-
-      // 7. 지식 통합 및 창의적 연결
-      {
-        id: 'knowledge-integration',
-        name: '지식 통합 및 창의적 연결',
-        description: '다양한 정보를 통합하고 창의적으로 연결하여 새로운 인사이트 도출',
-        priority: 7,
-        execute: async (context) => {
-          const insights = this.integrateKnowledge(context);
-          return `💡 **지식 통합 인사이트**:\n\n${insights.map(insight => `✨ ${insight.title}:\n   ${insight.description}`).join('\n\n')}`;
-        }
-      },
-
-      // 8. 실용적 해결책 제시
-      {
-        id: 'practical-solutions',
-        name: '실용적 해결책 제시',
-        description: '이론적 분석을 바탕으로 구체적이고 실행 가능한 해결책을 제시',
-        priority: 8,
-        execute: async (context) => {
-          const solutions = this.generatePracticalSolutions(context);
-          return `🛠️ **실용적 해결책**:\n\n${solutions.map(s => `📌 ${s.title}:\n   - 단계: ${s.steps.join(' → ')}\n   - 예상 시간: ${s.estimatedTime}\n   - 필요 자원: ${s.resources}`).join('\n\n')}`;
-        }
-      },
-
-      // 9. 리스크 평가 및 대안 제시
-      {
-        id: 'risk-assessment',
-        name: '리스크 평가 및 대안 제시',
-        description: '제안된 해결책의 잠재적 리스크를 평가하고 대안을 제시',
-        priority: 9,
-        execute: async (context) => {
-          const risks = this.assessRisksAndAlternatives(context);
-          return `⚠️ **리스크 평가**:\n\n${risks.map(r => `🚨 ${r.risk}:\n   - 영향도: ${r.impact}\n   - 대안: ${r.alternative}`).join('\n\n')}`;
-        }
-      },
-
-      // 10. 실행 계획 및 후속 조치
-      {
-        id: 'execution-planning',
-        name: '실행 계획 및 후속 조치',
-        description: '최종 답변을 바탕으로 구체적인 실행 계획과 후속 조치를 제시',
-        priority: 10,
-        execute: async (context) => {
-          const plan = this.createExecutionPlan(context);
-          return `📋 **실행 계획**:\n\n${plan.steps.map((step, index) => `${index + 1}. ${step.action}\n   📅 ${step.timeline}\n   👤 ${step.responsibility}`).join('\n\n')}\n\n🎯 **성공 지표**: ${plan.successMetrics.join(', ')}`;
-        }
-      }
-    ];
-  }
-
-  // 의도 분석
-  private analyzeUserIntent(userMessage: string) {
-    const message = userMessage.toLowerCase();
-    
-    if (message.includes('어떻게') || message.includes('방법')) {
-      return {
-        type: '방법론 요청',
-        description: '특정 작업이나 문제 해결 방법을 찾고 있습니다.'
-      };
-    } else if (message.includes('왜') || message.includes('이유')) {
-      return {
-        type: '원인 분석',
-        description: '현상이나 결과의 원인을 파악하려고 합니다.'
-      };
-    } else if (message.includes('언제') || message.includes('시기')) {
-      return {
-        type: '타이밍 질문',
-        description: '적절한 시기나 일정에 대해 문의하고 있습니다.'
-      };
-    } else if (message.includes('어디') || message.includes('장소')) {
-      return {
-        type: '위치/장소 질문',
-        description: '특정 장소나 위치에 대해 문의하고 있습니다.'
-      };
-    } else {
-      return {
-        type: '일반 정보 요청',
-        description: '일반적인 정보나 설명을 요청하고 있습니다.'
-      };
-    }
-  }
-
-  // 컨텍스트 정보 수집
-  private gatherContextualInformation(context: AnalysisContext) {
-    const relevantFiles = context.relevantFiles || [];
-    const relevantGuidelines = context.relevantGuidelines || [];
-    
-    return {
-      summary: `현재 대화에서 ${context.conversationHistory.length}개의 메시지가 있으며, ${relevantFiles.length}개의 관련 파일과 ${relevantGuidelines.length}개의 관련 지침이 있습니다.`,
-      relevantFiles,
-      relevantGuidelines
+export interface IntelligentResponse {
+    content: string;
+    confidence: number;
+    sources: string[];
+    reasoning: string;
+    followUpSuggestions: string[];
+    relatedTopics: string[];
+    qualityMetrics: {
+        relevance: number;
+        completeness: number;
+        accuracy: number;
+        clarity: number;
+        usefulness: number;
     };
-  }
+}
 
-  // 다각도 분석
-  private analyzeFromMultiplePerspectives(context: AnalysisContext) {
-    return [
-      {
-        perspective: '기술적 관점',
-        analysis: '현재 기술적 제약사항과 가능성을 고려한 분석',
-        hypothesis: '기술적 솔루션이 가장 효과적일 것으로 예상됩니다.'
-      },
-      {
-        perspective: '비즈니스 관점',
-        analysis: '비용, 효율성, ROI를 고려한 분석',
-        hypothesis: '비즈니스 가치를 극대화하는 방향으로 접근해야 합니다.'
-      },
-      {
-        perspective: '사용자 경험 관점',
-        analysis: '사용자 편의성과 만족도를 고려한 분석',
-        hypothesis: '사용자 중심의 솔루션이 장기적으로 더 성공적일 것입니다.'
-      }
-    ];
-  }
+export class IntelligentResponseEngine {
+    private questionPatterns: Map<string, RegExp[]>;
+    private domainKnowledge: Map<string, any>;
+    private responseTemplates: Map<string, string>;
+    private learningHistory: any[];
 
-  // 정보 격차 식별
-  private identifyInformationGaps(context: AnalysisContext) {
-    return [
-      {
-        area: '구체적 요구사항',
-        question: '정확히 어떤 결과를 원하시나요?'
-      },
-      {
-        area: '제약사항',
-        question: '시간, 예산, 기술적 제약사항이 있나요?'
-      },
-      {
-        area: '우선순위',
-        question: '가장 중요한 것은 무엇인가요?'
-      }
-    ];
-  }
-
-  // 우선순위 설정
-  private setResponsePriorities(context: AnalysisContext) {
-    return [
-      {
-        level: '높음',
-        content: '즉시 해결이 필요한 핵심 문제'
-      },
-      {
-        level: '중간',
-        content: '중기적으로 개선이 필요한 영역'
-      },
-      {
-        level: '낮음',
-        content: '장기적으로 고려할 수 있는 개선사항'
-      }
-    ];
-  }
-
-  // 시나리오 분석
-  private analyzePossibleScenarios(context: AnalysisContext) {
-    return [
-      {
-        name: '최적 시나리오',
-        probability: 60,
-        outcome: '모든 목표가 달성되고 예상보다 좋은 결과',
-        recommendation: '현재 방향을 유지하면서 세부사항을 조정'
-      },
-      {
-        name: '보통 시나리오',
-        probability: 30,
-        outcome: '기본 목표는 달성하지만 일부 제약사항 발생',
-        recommendation: '리스크 관리에 집중하고 대안 준비'
-      },
-      {
-        name: '최악 시나리오',
-        probability: 10,
-        outcome: '예상치 못한 문제로 인한 지연이나 실패',
-        recommendation: '사전 대비책 마련과 지속적 모니터링'
-      }
-    ];
-  }
-
-  // 지식 통합
-  private integrateKnowledge(context: AnalysisContext) {
-    return [
-      {
-        title: '패턴 인식',
-        description: '과거 대화와 현재 상황에서 반복되는 패턴을 발견했습니다.'
-      },
-      {
-        title: '연관성 발견',
-        description: '다양한 정보 간의 숨겨진 연관성을 파악했습니다.'
-      },
-      {
-        title: '혁신적 접근',
-        description: '기존 방법과 다른 새로운 접근 방식을 제안합니다.'
-      }
-    ];
-  }
-
-  // 실용적 해결책
-  private generatePracticalSolutions(context: AnalysisContext) {
-    return [
-      {
-        title: '단계적 접근',
-        steps: ['현재 상황 분석', '목표 설정', '실행 계획 수립', '단계별 실행', '결과 평가'],
-        estimatedTime: '2-4주',
-        resources: '팀원 2-3명, 기본 도구'
-      },
-      {
-        title: '빠른 해결',
-        steps: ['핵심 문제 식별', '즉시 실행 가능한 해결책 적용', '결과 확인'],
-        estimatedTime: '1주',
-        resources: '최소한의 자원'
-      }
-    ];
-  }
-
-  // 리스크 평가
-  private assessRisksAndAlternatives(context: AnalysisContext) {
-    return [
-      {
-        risk: '시간 지연',
-        impact: '중간',
-        alternative: '병렬 작업 진행 및 우선순위 재조정'
-      },
-      {
-        risk: '예산 초과',
-        impact: '낮음',
-        alternative: '단계별 예산 관리 및 대안 솔루션 준비'
-      },
-      {
-        risk: '기술적 문제',
-        impact: '높음',
-        alternative: '사전 테스트 및 전문가 자문'
-      }
-    ];
-  }
-
-  // 실행 계획
-  private createExecutionPlan(context: AnalysisContext) {
-    return {
-      steps: [
-        {
-          action: '현재 상황 정리 및 목표 재확인',
-          timeline: '1-2일',
-          responsibility: '프로젝트 매니저'
-        },
-        {
-          action: '세부 실행 계획 수립',
-          timeline: '3-5일',
-          responsibility: '팀 리더'
-        },
-        {
-          action: '실행 및 모니터링',
-          timeline: '2-3주',
-          responsibility: '전체 팀'
-        },
-        {
-          action: '결과 평가 및 피드백',
-          timeline: '1주',
-          responsibility: '프로젝트 매니저'
-        }
-      ],
-      successMetrics: ['목표 달성률', '일정 준수율', '품질 만족도', '비용 효율성']
-    };
-  }
-
-  // 메인 실행 함수
-  async generateIntelligentResponse(
-    userMessage: string,
-    chatSession: ChatSession,
-    project: Project | null
-  ): Promise<string> {
-    console.log('🧠 능동적 AI 응답 엔진 시작...');
-
-    // 컨텍스트 분석
-    const context: AnalysisContext = {
-      userIntent: userMessage,
-      conversationHistory: chatSession.messages,
-      projectContext: project,
-      relevantFiles: project?.files || [],
-      relevantGuidelines: project?.guidelines || [],
-      suggestedActions: [],
-      followUpQuestions: []
-    };
-
-    let response = `# 🤖 CORBU AI 능동적 분석 결과\n\n`;
-    response += `**사용자 질문**: ${userMessage}\n\n`;
-    response += `---\n\n`;
-
-    // 10가지 전략을 순차적으로 실행
-    for (const strategy of this.strategies.sort((a, b) => a.priority - b.priority)) {
-      console.log(`📋 실행 중: ${strategy.name}`);
-      
-      try {
-        const result = await strategy.execute(context);
-        response += `## ${strategy.priority}. ${strategy.name}\n\n`;
-        response += `${result}\n\n`;
-        response += `---\n\n`;
-        
-        // 각 단계별 처리 시간 시뮬레이션
-        await this.simulateProcessingTime(strategy.priority);
-        
-      } catch (error) {
-        console.error(`전략 실행 오류 (${strategy.name}):`, error);
-        response += `## ${strategy.priority}. ${strategy.name}\n\n`;
-        response += `⚠️ 이 단계에서 일시적인 오류가 발생했습니다.\n\n`;
-      }
+    constructor() {
+        this.questionPatterns = new Map();
+        this.domainKnowledge = new Map();
+        this.responseTemplates = new Map();
+        this.learningHistory = [];
+        this.initializePatterns();
+        this.initializeDomainKnowledge();
+        this.initializeResponseTemplates();
     }
 
-    response += `## 🎯 최종 권장사항\n\n`;
-    response += `위의 분석을 종합하여 다음과 같이 권장드립니다:\n\n`;
-    response += `1. **즉시 실행**: 핵심 문제 해결에 집중\n`;
-    response += `2. **단기 계획**: 구체적인 실행 계획 수립\n`;
-    response += `3. **장기 전략**: 지속적인 개선 및 모니터링\n\n`;
-    response += `추가 질문이나 세부사항에 대해 언제든 문의해주세요!`;
+    private initializePatterns(): void {
+        // 질문 유형별 패턴 정의
+        this.questionPatterns.set('factual', [
+            /^(무엇|what|어떤|어떻게|how|언제|when|어디|where|누구|who|왜|why)/i,
+            /(정의|definition|의미|meaning|설명|explain)/i,
+            /(사실|fact|정보|information|데이터|data)/i
+        ]);
 
-    return response;
-  }
+        this.questionPatterns.set('analytical', [
+            /(분석|analysis|비교|compare|평가|evaluate|검토|review)/i,
+            /(장단점|pros and cons|차이점|difference|유사점|similarity)/i,
+            /(원인|cause|결과|result|영향|impact|효과|effect)/i
+        ]);
 
-  // 처리 시간 시뮬레이션
-  private async simulateProcessingTime(priority: number): Promise<void> {
-    const delay = Math.max(100, 500 - (priority * 30)); // 우선순위가 높을수록 빠르게
-    await new Promise(resolve => setTimeout(resolve, delay));
-  }
+        this.questionPatterns.set('creative', [
+            /(아이디어|idea|제안|suggestion|창의적|creative|혁신|innovation)/i,
+            /(디자인|design|계획|plan|전략|strategy|방법|method)/i,
+            /(만들어|create|생성|generate|개발|develop)/i
+        ]);
+
+        this.questionPatterns.set('procedural', [
+            /(방법|how to|단계|step|과정|process|절차|procedure)/i,
+            /(가이드|guide|튜토리얼|tutorial|매뉴얼|manual)/i,
+            /(설치|install|설정|setup|구현|implement)/i
+        ]);
+
+        this.questionPatterns.set('comparative', [
+            /(비교|compare|대비|versus|vs|차이|difference)/i,
+            /(더 좋은|better|최고|best|우수한|superior)/i,
+            /(선택|choice|결정|decision|추천|recommend)/i
+        ]);
+
+        this.questionPatterns.set('predictive', [
+            /(예측|predict|전망|forecast|미래|future|트렌드|trend)/i,
+            /(될 것|will be|가능성|possibility|확률|probability)/i,
+            /(변화|change|발전|development|진화|evolution)/i
+        ]);
+    }
+
+    private initializeDomainKnowledge(): void {
+        // 도메인별 지식 베이스
+        this.domainKnowledge.set('technology', {
+            keywords: ['AI', '인공지능', '머신러닝', '딥러닝', '블록체인', '클라우드', 'IoT', '빅데이터'],
+            concepts: ['개발', '프로그래밍', '소프트웨어', '하드웨어', '네트워크', '보안'],
+            trends: ['자동화', '디지털 전환', '스마트 시티', '메타버스', 'NFT']
+        });
+
+        this.domainKnowledge.set('business', {
+            keywords: ['경영', '마케팅', '전략', '투자', '수익', '비용', '경쟁', '시장'],
+            concepts: ['스타트업', '기업', '브랜드', '고객', '서비스', '제품'],
+            trends: ['ESG', '디지털 마케팅', '원격근무', '구독경제', '플랫폼 비즈니스']
+        });
+
+        this.domainKnowledge.set('realestate', {
+            keywords: ['부동산', '아파트', '주택', '투자', '매매', '임대', '시세', '정책'],
+            concepts: ['하자', '분양', '입주', '관리비', '대출', '세금'],
+            trends: ['원베일리', '재건축', '재개발', '청약', '규제']
+        });
+
+        this.domainKnowledge.set('general', {
+            keywords: ['일반', '상식', '생활', '문화', '사회', '정치', '경제', '교육'],
+            concepts: ['건강', '여행', '음식', '취미', '관계', '가족'],
+            trends: ['코로나', '환경', '기후변화', '지속가능성', '웰빙']
+        });
+    }
+
+    private initializeResponseTemplates(): void {
+        // 응답 템플릿 정의
+        this.responseTemplates.set('factual', `
+**📋 {title}**
+
+{introduction}
+
+**🔍 핵심 정보:**
+{mainContent}
+
+**📊 추가 세부사항:**
+{details}
+
+**💡 관련 정보:**
+{relatedInfo}
+        `);
+
+        this.responseTemplates.set('analytical', `
+**🔬 {title}**
+
+{introduction}
+
+**📈 분석 결과:**
+{analysis}
+
+**⚖️ 장단점 비교:**
+{prosAndCons}
+
+**🎯 결론 및 권장사항:**
+{conclusion}
+
+**🔗 참고자료:**
+{references}
+        `);
+
+        this.responseTemplates.set('procedural', `
+**📝 {title}**
+
+{introduction}
+
+**🚀 단계별 가이드:**
+{steps}
+
+**⚠️ 주의사항:**
+{warnings}
+
+**💡 추가 팁:**
+{tips}
+
+**❓ 자주 묻는 질문:**
+{faq}
+        `);
+
+        this.responseTemplates.set('creative', `
+**💡 {title}**
+
+{introduction}
+
+**🎨 창의적 아이디어:**
+{ideas}
+
+**🛠️ 구현 방안:**
+{implementation}
+
+**📈 기대 효과:**
+{benefits}
+
+**🔄 다음 단계:**
+{nextSteps}
+        `);
+    }
+
+    /**
+     * 질문 컨텍스트 분석
+     */
+    async analyzeQuestionContext(question: string): Promise<QuestionContext> {
+        const processedQuestion = this.preprocessQuestion(question);
+        const questionType = this.identifyQuestionType(processedQuestion);
+        const complexity = this.calculateComplexity(processedQuestion);
+        const domain = this.identifyDomain(processedQuestion);
+        const intent = this.analyzeIntent(processedQuestion);
+        const context = this.analyzeContext(processedQuestion);
+        const requiredCapabilities = this.identifyRequiredCapabilities(processedQuestion, questionType);
+        const expectedResponseFormat = this.determineResponseFormat(processedQuestion, complexity);
+
+        return {
+            originalQuestion: question,
+            processedQuestion,
+            questionType,
+            complexity,
+            domain,
+            intent,
+            context,
+            requiredCapabilities,
+            expectedResponseFormat
+        };
+    }
+
+    /**
+     * 응답 전략 생성
+     */
+    async generateResponseStrategy(context: QuestionContext): Promise<ResponseStrategy> {
+        const approach = this.determineApproach(context);
+        const tone = this.determineTone(context);
+        const structure = this.determineStructure(context);
+        const evidenceLevel = this.determineEvidenceLevel(context);
+        const interactivity = this.determineInteractivity(context);
+
+        return {
+            approach,
+            tone,
+            structure,
+            evidenceLevel,
+            interactivity
+        };
+    }
+
+    /**
+     * 지능형 응답 생성
+     */
+    async generateIntelligentResponse(
+        context: QuestionContext,
+        strategy: ResponseStrategy,
+        additionalData?: any
+    ): Promise<IntelligentResponse> {
+        try {
+            // 1. 기본 응답 생성
+            const baseContent = await this.generateBaseContent(context, strategy);
+
+            // 2. 도메인 특화 정보 추가
+            const domainEnhancedContent = await this.enhanceWithDomainKnowledge(baseContent, context);
+
+            // 3. 실시간 정보 통합 (뉴스, 웹 검색 등)
+            const realTimeEnhancedContent = await this.enhanceWithRealTimeData(domainEnhancedContent, context, additionalData);
+
+            // 4. 응답 품질 최적화
+            const optimizedContent = await this.optimizeResponse(realTimeEnhancedContent, context, strategy);
+
+            // 5. 메타데이터 생성
+            const confidence = this.calculateConfidence(context, optimizedContent);
+            const sources = this.identifySources(context, additionalData);
+            const reasoning = this.generateReasoning(context, strategy);
+            const followUpSuggestions = this.generateFollowUpSuggestions(context);
+            const relatedTopics = this.identifyRelatedTopics(context);
+            const qualityMetrics = this.calculateQualityMetrics(optimizedContent, context);
+
+            return {
+                content: optimizedContent,
+                confidence,
+                sources,
+                reasoning,
+                followUpSuggestions,
+                relatedTopics,
+                qualityMetrics
+            };
+        } catch (error) {
+            console.error('지능형 응답 생성 실패:', error);
+            return this.generateFallbackResponse(context);
+        }
+    }
+
+    private preprocessQuestion(question: string): string {
+        // 질문 전처리 (정규화, 노이즈 제거 등)
+        return question
+            .trim()
+            .replace(/\s+/g, ' ')
+            .replace(/[^\w\s가-힣?!.,]/g, '')
+            .toLowerCase();
+    }
+
+    private identifyQuestionType(question: string): QuestionContext['questionType'] {
+        for (const [type, patterns] of Array.from(this.questionPatterns.entries())) {
+            for (const pattern of patterns) {
+                if (pattern.test(question)) {
+                    return type as QuestionContext['questionType'];
+                }
+            }
+        }
+        return 'factual'; // 기본값
+    }
+
+    private calculateComplexity(question: string): number {
+        let complexity = 1;
+
+        // 길이 기반 복잡도
+        complexity += Math.min(3, Math.floor(question.length / 50));
+
+        // 키워드 기반 복잡도
+        const complexKeywords = ['분석', '비교', '평가', '예측', '전략', '최적화', '통합'];
+        complexity += complexKeywords.filter(keyword => question.includes(keyword)).length;
+
+        // 질문 개수 기반 복잡도
+        const questionMarks = (question.match(/\?/g) || []).length;
+        complexity += questionMarks;
+
+        // 접속사 기반 복잡도 (복합 문장)
+        const conjunctions = ['그리고', '또한', '하지만', '그러나', '따라서', '그래서'];
+        complexity += conjunctions.filter(conj => question.includes(conj)).length;
+
+        return Math.min(10, complexity);
+    }
+
+    private identifyDomain(question: string): string[] {
+        const domains: string[] = [];
+
+        for (const [domain, knowledge] of Array.from(this.domainKnowledge.entries())) {
+            const keywords = knowledge.keywords || [];
+            const concepts = knowledge.concepts || [];
+            const allTerms = [...keywords, ...concepts];
+
+            if (allTerms.some((term: string) => question.includes(term.toLowerCase()))) {
+                domains.push(domain);
+            }
+        }
+
+        return domains.length > 0 ? domains : ['general'];
+    }
+
+    private analyzeIntent(question: string): QuestionContext['intent'] {
+        const actionWords = ['해줘', '만들어', '생성', '개발', '구현', '설치', '설정'];
+        const infoWords = ['알려줘', '설명', '정보', '무엇', '어떤', '어떻게'];
+        const problemWords = ['문제', '해결', '오류', '에러', '버그', '이슈'];
+
+        return {
+            primary: actionWords.some(word => question.includes(word)) ? 'action_request' :
+                infoWords.some(word => question.includes(word)) ? 'information_seeking' :
+                    problemWords.some(word => question.includes(word)) ? 'problem_solving' : 'general_inquiry',
+            secondary: [],
+            actionRequired: actionWords.some(word => question.includes(word)),
+            informationSeeking: infoWords.some(word => question.includes(word)),
+            problemSolving: problemWords.some(word => question.includes(word))
+        };
+    }
+
+    private analyzeContext(question: string): QuestionContext['context'] {
+        const pastWords = ['과거', '이전', '예전', '했던', '했었'];
+        const futureWords = ['미래', '앞으로', '예정', '계획', '예측'];
+        const urgentWords = ['급해', '빨리', '즉시', '긴급', 'urgent'];
+
+        return {
+            temporal: pastWords.some(word => question.includes(word)) ? 'past' :
+                futureWords.some(word => question.includes(word)) ? 'future' : 'present',
+            scope: question.length > 100 ? 'comprehensive' :
+                question.length > 50 ? 'general' : 'specific',
+            urgency: urgentWords.some(word => question.includes(word)) ? 'high' : 'medium'
+        };
+    }
+
+    private identifyRequiredCapabilities(question: string, type: QuestionContext['questionType']): string[] {
+        const capabilities: string[] = [];
+
+        // 기본 역량
+        capabilities.push('natural_language_understanding');
+
+        // 질문 유형별 역량
+        switch (type) {
+            case 'analytical':
+                capabilities.push('data_analysis', 'critical_thinking', 'comparison');
+                break;
+            case 'creative':
+                capabilities.push('creative_thinking', 'ideation', 'design');
+                break;
+            case 'procedural':
+                capabilities.push('step_by_step_guidance', 'technical_knowledge');
+                break;
+            case 'predictive':
+                capabilities.push('forecasting', 'trend_analysis', 'pattern_recognition');
+                break;
+        }
+
+        // 특수 역량
+        if (question.includes('코드') || question.includes('프로그래밍')) {
+            capabilities.push('programming', 'code_generation');
+        }
+        if (question.includes('번역')) {
+            capabilities.push('translation', 'multilingual');
+        }
+        if (question.includes('수학') || question.includes('계산')) {
+            capabilities.push('mathematical_reasoning', 'calculation');
+        }
+
+        return capabilities;
+    }
+
+    private determineResponseFormat(question: string, complexity: number): QuestionContext['expectedResponseFormat'] {
+        if (complexity >= 8) return 'structured';
+        if (complexity >= 5) return 'detailed';
+        if (question.includes('간단히') || question.includes('요약')) return 'short';
+        return 'conversational';
+    }
+
+    private determineApproach(context: QuestionContext): ResponseStrategy['approach'] {
+        switch (context.questionType) {
+            case 'analytical': return 'analytical';
+            case 'procedural': return 'step-by-step';
+            case 'comparative': return 'comparative';
+            case 'creative': return 'narrative';
+            default: return 'direct';
+        }
+    }
+
+    private determineTone(context: QuestionContext): ResponseStrategy['tone'] {
+        if (context.domain.includes('technology')) return 'technical';
+        if (context.domain.includes('business')) return 'professional';
+        if (context.complexity >= 7) return 'educational';
+        return 'casual';
+    }
+
+    private determineStructure(context: QuestionContext): ResponseStrategy['structure'] {
+        return {
+            introduction: context.complexity >= 5,
+            mainContent: this.generateMainContentSections(context),
+            examples: context.questionType === 'procedural' || context.complexity >= 6,
+            conclusion: context.complexity >= 7,
+            actionItems: context.intent.actionRequired
+        };
+    }
+
+    private generateMainContentSections(context: QuestionContext): string[] {
+        const sections: string[] = [];
+
+        switch (context.questionType) {
+            case 'factual':
+                sections.push('핵심 정보', '상세 설명', '관련 사실');
+                break;
+            case 'analytical':
+                sections.push('현황 분석', '요인 분석', '결론 및 시사점');
+                break;
+            case 'procedural':
+                sections.push('준비 사항', '단계별 진행', '완료 확인');
+                break;
+            case 'creative':
+                sections.push('아이디어 제안', '구현 방안', '기대 효과');
+                break;
+            default:
+                sections.push('주요 내용', '세부 사항');
+        }
+
+        return sections;
+    }
+
+    private determineEvidenceLevel(context: QuestionContext): ResponseStrategy['evidenceLevel'] {
+        if (context.complexity >= 8) return 'comprehensive';
+        if (context.complexity >= 5) return 'moderate';
+        return 'minimal';
+    }
+
+    private determineInteractivity(context: QuestionContext): ResponseStrategy['interactivity'] {
+        return {
+            followUpQuestions: this.generateFollowUpQuestions(context),
+            clarificationNeeded: context.complexity >= 7,
+            additionalResources: context.domain.includes('technology') || context.domain.includes('business')
+        };
+    }
+
+    private generateFollowUpQuestions(context: QuestionContext): string[] {
+        const questions: string[] = [];
+
+        if (context.questionType === 'analytical') {
+            questions.push('더 자세한 분석이 필요한 부분이 있나요?');
+            questions.push('특정 관점에서의 분석을 원하시나요?');
+        }
+
+        if (context.intent.actionRequired) {
+            questions.push('구체적인 실행 계획이 필요하신가요?');
+            questions.push('추가로 고려해야 할 제약사항이 있나요?');
+        }
+
+        return questions;
+    }
+
+    private async generateBaseContent(context: QuestionContext, strategy: ResponseStrategy): Promise<string> {
+        // 기본 응답 생성 로직
+        const template = this.responseTemplates.get(context.questionType) || this.responseTemplates.get('factual')!;
+
+        // 템플릿 변수 치환
+        let content = template
+            .replace('{title}', this.generateTitle(context))
+            .replace('{introduction}', this.generateIntroduction(context))
+            .replace('{mainContent}', this.generateMainContent(context))
+            .replace('{conclusion}', this.generateConclusion(context));
+
+        return content;
+    }
+
+    private generateTitle(context: QuestionContext): string {
+        const question = context.originalQuestion;
+        if (question.includes('원베일리')) return '원베일리 아파트 관련 정보';
+        if (question.includes('AI') || question.includes('인공지능')) return 'AI 관련 정보';
+        return '질문에 대한 답변';
+    }
+
+    private generateIntroduction(context: QuestionContext): string {
+        return `${context.originalQuestion}에 대해 ${context.questionType === 'analytical' ? '분석해' : '설명해'} 드리겠습니다.`;
+    }
+
+    private generateMainContent(context: QuestionContext): string {
+        // 도메인별 맞춤 콘텐츠 생성
+        if (context.domain.includes('realestate') && context.originalQuestion.includes('원베일리')) {
+            return this.generateRealEstateContent(context);
+        }
+
+        if (context.domain.includes('technology')) {
+            return this.generateTechnologyContent(context);
+        }
+
+        return this.generateGeneralContent(context);
+    }
+
+    private generateRealEstateContent(context: QuestionContext): string {
+        return `
+• **현재 상황**: 원베일리 아파트의 하자 문제가 지속적으로 제기되고 있습니다.
+• **주요 이슈**: 구조적 결함, 시공 품질 문제, 입주민 불만 등이 주요 쟁점입니다.
+• **대응 방안**: 법적 대응, 집단 소송, 보상 협상 등의 방법을 고려할 수 있습니다.
+• **관련 정보**: 최신 뉴스와 입주민 커뮤니티의 의견을 참고하시기 바랍니다.
+        `;
+    }
+
+    private generateTechnologyContent(context: QuestionContext): string {
+        return `
+• **기술 동향**: 최신 기술 트렌드와 발전 방향을 분석합니다.
+• **구현 방안**: 실제 적용 가능한 구체적인 방법을 제시합니다.
+• **고려사항**: 기술적 제약사항과 비용, 시간 등을 고려합니다.
+• **추천사항**: 최적의 솔루션과 대안을 제안합니다.
+        `;
+    }
+
+    private generateGeneralContent(context: QuestionContext): string {
+        return `
+• **핵심 포인트**: 질문의 핵심 내용에 대한 명확한 답변을 제공합니다.
+• **상세 설명**: 추가적인 배경 정보와 맥락을 설명합니다.
+• **실용적 조언**: 실제 활용 가능한 구체적인 방안을 제시합니다.
+• **참고 자료**: 관련된 추가 정보와 자료를 안내합니다.
+        `;
+    }
+
+    private generateConclusion(context: QuestionContext): string {
+        if (context.intent.actionRequired) {
+            return '위 정보를 바탕으로 구체적인 실행 계획을 수립하시기 바랍니다.';
+        }
+        return '추가 질문이나 더 자세한 정보가 필요하시면 언제든지 말씀해 주세요.';
+    }
+
+    private async enhanceWithDomainKnowledge(content: string, context: QuestionContext): Promise<string> {
+        // 도메인 지식으로 콘텐츠 강화
+        const domainInfo = context.domain.map(domain => this.domainKnowledge.get(domain)).filter(Boolean);
+
+        if (domainInfo.length > 0) {
+            const additionalInfo = domainInfo.map(info => {
+                return `\n**🔍 관련 키워드**: ${info.keywords?.slice(0, 5).join(', ')}\n`;
+            }).join('');
+
+            return content + additionalInfo;
+        }
+
+        return content;
+    }
+
+    private async enhanceWithRealTimeData(content: string, context: QuestionContext, additionalData?: any): Promise<string> {
+        // 실시간 데이터로 콘텐츠 강화
+        if (additionalData?.newsResults) {
+            const newsInfo = `\n**📰 최신 뉴스 정보**:\n${additionalData.newsResults.slice(0, 3).map((news: any) => `• ${news.title}`).join('\n')}\n`;
+            content += newsInfo;
+        }
+
+        if (additionalData?.webSearchResults) {
+            const webInfo = `\n**🌐 웹 검색 결과**:\n${additionalData.webSearchResults.slice(0, 3).map((result: any) => `• ${result.title}`).join('\n')}\n`;
+            content += webInfo;
+        }
+
+        return content;
+    }
+
+    private async optimizeResponse(content: string, context: QuestionContext, strategy: ResponseStrategy): Promise<string> {
+        // 응답 최적화
+        let optimized = content;
+
+        // 길이 조정
+        if (context.expectedResponseFormat === 'short' && optimized.length > 500) {
+            optimized = this.summarizeContent(optimized);
+        }
+
+        // 구조화
+        if (context.expectedResponseFormat === 'structured') {
+            optimized = this.structureContent(optimized, strategy);
+        }
+
+        // 톤 조정
+        optimized = this.adjustTone(optimized, strategy.tone);
+
+        return optimized;
+    }
+
+    private summarizeContent(content: string): string {
+        // 콘텐츠 요약
+        const lines = content.split('\n').filter(line => line.trim());
+        const importantLines = lines.filter(line =>
+            line.includes('**') ||
+            line.includes('•') ||
+            line.includes('핵심') ||
+            line.includes('중요')
+        );
+
+        return importantLines.slice(0, 10).join('\n');
+    }
+
+    private structureContent(content: string, strategy: ResponseStrategy): string {
+        // 콘텐츠 구조화
+        const sections = strategy.structure.mainContent;
+        let structured = content;
+
+        // 섹션 헤더 추가
+        sections.forEach((section, index) => {
+            structured = structured.replace(
+                new RegExp(`(${section})`, 'gi'),
+                `\n## ${index + 1}. ${section}\n`
+            );
+        });
+
+        return structured;
+    }
+
+    private adjustTone(content: string, tone: ResponseStrategy['tone']): string {
+        // 톤 조정
+        switch (tone) {
+            case 'professional':
+                return content.replace(/해요/g, '합니다').replace(/이에요/g, '입니다');
+            case 'casual':
+                return content.replace(/합니다/g, '해요').replace(/입니다/g, '이에요');
+            case 'technical':
+                return content; // 기술적 용어 유지
+            default:
+                return content;
+        }
+    }
+
+    private calculateConfidence(context: QuestionContext, content: string): number {
+        let confidence = 0.5; // 기본 신뢰도
+
+        // 도메인 매칭도
+        if (context.domain.length > 0) confidence += 0.2;
+
+        // 콘텐츠 길이 및 구조
+        if (content.length > 200) confidence += 0.1;
+        if (content.includes('**')) confidence += 0.1;
+
+        // 복잡도 대비 응답 품질
+        if (context.complexity <= 5) confidence += 0.1;
+
+        return Math.min(1.0, confidence);
+    }
+
+    private identifySources(context: QuestionContext, additionalData?: any): string[] {
+        const sources: string[] = ['내부 지식 베이스'];
+
+        if (additionalData?.newsResults) {
+            sources.push('뉴스 검색 결과');
+        }
+
+        if (additionalData?.webSearchResults) {
+            sources.push('웹 검색 결과');
+        }
+
+        if (context.domain.includes('technology')) {
+            sources.push('기술 문서');
+        }
+
+        return sources;
+    }
+
+    private generateReasoning(context: QuestionContext, strategy: ResponseStrategy): string {
+        return `${context.questionType} 유형의 질문으로 분석하여 ${strategy.approach} 접근법을 사용했습니다. 복잡도 ${context.complexity}/10에 맞춰 ${strategy.tone} 톤으로 응답을 생성했습니다.`;
+    }
+
+    private generateFollowUpSuggestions(context: QuestionContext): string[] {
+        const suggestions: string[] = [];
+
+        if (context.questionType === 'factual') {
+            suggestions.push('더 자세한 정보가 필요하신가요?');
+            suggestions.push('관련된 다른 주제에 대해서도 궁금하신가요?');
+        }
+
+        if (context.intent.actionRequired) {
+            suggestions.push('구체적인 실행 방법을 알려드릴까요?');
+            suggestions.push('단계별 가이드가 필요하신가요?');
+        }
+
+        return suggestions;
+    }
+
+    private identifyRelatedTopics(context: QuestionContext): string[] {
+        const topics: string[] = [];
+
+        context.domain.forEach(domain => {
+            const knowledge = this.domainKnowledge.get(domain);
+            if (knowledge?.concepts) {
+                topics.push(...knowledge.concepts.slice(0, 3));
+            }
+        });
+
+        return Array.from(new Set(topics)); // 중복 제거
+    }
+
+    private calculateQualityMetrics(content: string, context: QuestionContext): IntelligentResponse['qualityMetrics'] {
+        return {
+            relevance: this.calculateRelevance(content, context),
+            completeness: this.calculateCompleteness(content, context),
+            accuracy: this.calculateAccuracy(content, context),
+            clarity: this.calculateClarity(content),
+            usefulness: this.calculateUsefulness(content, context)
+        };
+    }
+
+    private calculateRelevance(content: string, context: QuestionContext): number {
+        // 관련성 계산
+        const questionWords = context.processedQuestion.split(' ');
+        const contentWords = content.toLowerCase().split(' ');
+        const matchCount = questionWords.filter(word => contentWords.includes(word)).length;
+
+        return Math.min(1.0, matchCount / questionWords.length);
+    }
+
+    private calculateCompleteness(content: string, context: QuestionContext): number {
+        // 완성도 계산
+        let score = 0.5;
+
+        if (content.length > 200) score += 0.2;
+        if (content.includes('**')) score += 0.1; // 구조화
+        if (content.includes('•')) score += 0.1; // 목록
+        if (context.complexity <= 5 || content.length > context.complexity * 50) score += 0.1;
+
+        return Math.min(1.0, score);
+    }
+
+    private calculateAccuracy(content: string, context: QuestionContext): number {
+        // 정확성 계산 (기본적인 휴리스틱)
+        let score = 0.7; // 기본 점수
+
+        // 도메인 지식 활용도
+        if (context.domain.length > 0) score += 0.1;
+
+        // 구체적인 정보 포함 여부
+        if (content.includes('구체적') || content.includes('상세')) score += 0.1;
+
+        // 불확실한 표현 사용 시 감점
+        if (content.includes('아마도') || content.includes('추정')) score -= 0.1;
+
+        return Math.max(0.0, Math.min(1.0, score));
+    }
+
+    private calculateClarity(content: string): number {
+        // 명확성 계산
+        let score = 0.5;
+
+        // 구조화된 콘텐츠
+        if (content.includes('**') || content.includes('•')) score += 0.2;
+
+        // 적절한 길이
+        if (content.length > 100 && content.length < 2000) score += 0.2;
+
+        // 문장 구조
+        const sentences = content.split(/[.!?]/).filter(s => s.trim());
+        const avgSentenceLength = content.length / sentences.length;
+        if (avgSentenceLength < 100) score += 0.1; // 너무 긴 문장 방지
+
+        return Math.min(1.0, score);
+    }
+
+    private calculateUsefulness(content: string, context: QuestionContext): number {
+        // 유용성 계산
+        let score = 0.5;
+
+        // 실행 가능한 조언 포함
+        if (content.includes('방법') || content.includes('방안') || content.includes('추천')) score += 0.2;
+
+        // 구체적인 예시 포함
+        if (content.includes('예시') || content.includes('예를 들어')) score += 0.1;
+
+        // 추가 자료 제공
+        if (content.includes('참고') || content.includes('자료')) score += 0.1;
+
+        // 액션 아이템 포함
+        if (context.intent.actionRequired && content.includes('단계')) score += 0.1;
+
+        return Math.min(1.0, score);
+    }
+
+    private generateFallbackResponse(context: QuestionContext): IntelligentResponse {
+        return {
+            content: `죄송합니다. "${context.originalQuestion}"에 대한 정확한 답변을 생성하는 데 어려움이 있습니다. 질문을 더 구체적으로 다시 말씀해 주시거나, 다른 방식으로 표현해 주시면 더 나은 답변을 드릴 수 있습니다.`,
+            confidence: 0.3,
+            sources: ['시스템 기본 응답'],
+            reasoning: '응답 생성 중 오류 발생으로 인한 기본 응답',
+            followUpSuggestions: ['질문을 더 구체적으로 해주세요', '다른 방식으로 질문해주세요'],
+            relatedTopics: [],
+            qualityMetrics: {
+                relevance: 0.3,
+                completeness: 0.2,
+                accuracy: 0.5,
+                clarity: 0.8,
+                usefulness: 0.3
+            }
+        };
+    }
 }
 
-const intelligentResponseEngine = new IntelligentResponseEngine();
-export default intelligentResponseEngine;
+export const intelligentResponseEngine = new IntelligentResponseEngine();
