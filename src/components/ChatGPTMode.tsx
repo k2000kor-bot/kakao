@@ -14,13 +14,13 @@ import {
     Play,
     Grid,
     Bot,
-    AlertTriangle,
     CheckCircle,
-    Info,
     BarChart3,
     Smartphone,
     Shield,
-    TrendingUp
+    TrendingUp,
+    Zap,
+    Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import websocketService from '../services/websocketService';
@@ -30,6 +30,7 @@ import webCommentAnalysisService from '../services/webCommentAnalysisService';
 import mobileOptimizationService from '../services/mobileOptimizationService';
 import advancedSecurityService from '../services/advancedSecurityService';
 import advancedAIAnalyticsService from '../services/advancedAIAnalyticsService';
+import advancedAIOrchestrationService from '../services/advancedAIOrchestrationService';
 import ErrorFeedbackContainer from './ErrorFeedback/ErrorFeedbackContainer';
 
 interface Message {
@@ -156,6 +157,14 @@ const ChatGPTMode: React.FC = () => {
     const [behaviorPatterns, setBehaviorPatterns] = useState<any[]>([]);
     const [predictiveModels, setPredictiveModels] = useState<any[]>([]);
     const [personalizationProfile, setPersonalizationProfile] = useState<any>(null);
+
+    // 고급 AI 오케스트레이션 상태
+    const [showOrchestrationModal, setShowOrchestrationModal] = useState(false);
+    const [orchestrationMetrics, setOrchestrationMetrics] = useState<any>(null);
+    const [orchestrationConfig, setOrchestrationConfig] = useState<any>(null);
+    const [activeWorkflows, setActiveWorkflows] = useState<any[]>([]);
+    const [workflowHistory, setWorkflowHistory] = useState<any[]>([]);
+    const [isIntelligentMode, setIsIntelligentMode] = useState(false);
 
     // WebSocket 연결
     useEffect(() => {
@@ -337,6 +346,42 @@ const ChatGPTMode: React.FC = () => {
         return () => clearInterval(analyticsInterval);
     }, []);
 
+    // 고급 AI 오케스트레이션 초기화
+    useEffect(() => {
+        const initializeOrchestration = async () => {
+            try {
+                const metrics = advancedAIOrchestrationService.getOrchestrationMetrics();
+                const config = advancedAIOrchestrationService.getOrchestrationConfig();
+                const active = advancedAIOrchestrationService.getActiveWorkflows();
+                const history = advancedAIOrchestrationService.getWorkflowHistory(20);
+
+                setOrchestrationMetrics(metrics);
+                setOrchestrationConfig(config);
+                setActiveWorkflows(active);
+                setWorkflowHistory(history);
+            } catch (error) {
+                console.error('AI 오케스트레이션 초기화 실패:', error);
+            }
+        };
+
+        initializeOrchestration();
+
+        // 오케스트레이션 메트릭 주기적 업데이트
+        const updateOrchestrationMetrics = () => {
+            const metrics = advancedAIOrchestrationService.getOrchestrationMetrics();
+            const active = advancedAIOrchestrationService.getActiveWorkflows();
+            const history = advancedAIOrchestrationService.getWorkflowHistory(20);
+
+            setOrchestrationMetrics(metrics);
+            setActiveWorkflows(active);
+            setWorkflowHistory(history);
+        };
+
+        const orchestrationInterval = setInterval(updateOrchestrationMetrics, 30000); // 30초마다
+
+        return () => clearInterval(orchestrationInterval);
+    }, []);
+
     // 프로젝트 목록
     const projects: Project[] = [
         {
@@ -449,6 +494,85 @@ const ChatGPTMode: React.FC = () => {
                     console.log('백엔드 응답:', data);
 
                     let aiContent = data.ai_response.content;
+
+                    // 지능형 모드 처리
+                    if (isIntelligentMode) {
+                        try {
+                            const workflowRequest = {
+                                userInput: currentInput,
+                                context: {
+                                    userId: 'current-user',
+                                    sessionId: 'session-' + Date.now(),
+                                    previousInteractions: messages.slice(-5),
+                                    userPreferences: personalizationProfile,
+                                    currentProject: selectedProject?.id,
+                                    attachedFiles: currentAttachments
+                                },
+                                requirements: {
+                                    responseType: 'text' as const,
+                                    complexity: 'moderate' as const,
+                                    urgency: 'medium' as const,
+                                    includeAnalysis: true,
+                                    includeRecommendations: true,
+                                    includeSecurityCheck: true,
+                                    includePerformanceOptimization: true
+                                },
+                                constraints: {
+                                    maxResponseTime: 30000,
+                                    maxResponseLength: 2000,
+                                    requiredAccuracy: 0.8,
+                                    allowedServices: ['advancedNLPService', 'intelligentResponseEngine', 'advancedAIAnalyticsService']
+                                }
+                            };
+
+                            const workflowResponse = await advancedAIOrchestrationService.executeIntelligentWorkflow(workflowRequest);
+                            
+                            // 지능형 응답으로 교체
+                            aiContent = workflowResponse.mainResponse;
+                            
+                            // 지능형 분석 결과를 메시지에 추가
+                            const enhancedMessage: Message = {
+                                id: (Date.now() + 1).toString(),
+                                type: 'ai',
+                                content: aiContent,
+                                timestamp: new Date(),
+                                metadata: {
+                                    workflowId: workflowResponse.workflowId,
+                                    confidence: workflowResponse.metadata.confidence,
+                                    quality: workflowResponse.metadata.quality,
+                                    executionTime: workflowResponse.metadata.executionTime,
+                                    analysis: workflowResponse.analysis,
+                                    recommendations: workflowResponse.recommendations,
+                                    nextSteps: workflowResponse.nextSteps,
+                                    intelligentMode: true
+                                }
+                            };
+                            
+                            setMessages(prev => [...prev, enhancedMessage]);
+                            
+                            // 성능 추적 및 오류 보고
+                            performanceOptimizationService.trackComponentRender('ChatGPTMode', Date.now());
+                            await errorHandlingService.reportError(
+                                new Error('지능형 워크플로우 실행 완료'),
+                                {
+                                    component: 'ChatGPTMode',
+                                    action: 'intelligentWorkflow',
+                                    metadata: { 
+                                        input: currentInput, 
+                                        workflowId: workflowResponse.workflowId,
+                                        executionTime: workflowResponse.metadata.executionTime 
+                                    }
+                                },
+                                '지능형 워크플로우가 성공적으로 실행되었습니다.'
+                            );
+                            
+                            return; // 지능형 모드에서는 여기서 종료
+                            
+                        } catch (error) {
+                            console.error('지능형 워크플로우 실행 실패:', error);
+                            // 실패 시 기본 응답 사용
+                        }
+                    }
 
                     // 프로젝트 컨텍스트 추가
                     if (selectedProject) {
@@ -596,7 +720,7 @@ const ChatGPTMode: React.FC = () => {
         try {
             // 검색어 추출
             const searchQuery = input.replace(/댓글|분석|생성|해줘|요/g, '').trim();
-            
+
             if (!searchQuery) {
                 console.error('검색어를 찾을 수 없습니다.');
                 return;
@@ -604,7 +728,7 @@ const ChatGPTMode: React.FC = () => {
 
             // 웹 검색 결과에서 댓글 추출
             const comments = await webCommentAnalysisService.extractCommentsFromWebSearch(searchQuery);
-            
+
             // 댓글 분석
             const analysis = webCommentAnalysisService.analyzeComments(comments);
             setCommentAnalysis(analysis);
@@ -865,6 +989,27 @@ const ChatGPTMode: React.FC = () => {
                         >
                             <TrendingUp size={16} />
                             <span className="text-sm">AI 분석</span>
+                        </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setShowOrchestrationModal(true)}
+                            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            <Zap size={16} />
+                            <span className="text-sm">AI 오케스트레이션</span>
+                        </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setIsIntelligentMode(!isIntelligentMode)}
+                            className={`flex items-center space-x-2 px-2 py-1 rounded ${isIntelligentMode
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                        >
+                            <Brain size={16} />
+                            <span className="text-sm">지능형 모드</span>
                         </button>
                     </div>
                 </div>
@@ -1742,7 +1887,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 댓글 분석 결과 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">댓글 분석 결과</h3>
-                                    
+
                                     {commentAnalysis ? (
                                         <div className="space-y-3">
                                             <div className="bg-blue-50 p-3 rounded-lg">
@@ -1778,7 +1923,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 생성된 댓글 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">생성된 댓글</h3>
-                                    
+
                                     {generatedComment ? (
                                         <div className="space-y-3">
                                             <div className="bg-white border border-gray-200 p-4 rounded-lg">
@@ -1875,7 +2020,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 디바이스 정보 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">디바이스 정보</h3>
-                                    
+
                                     {deviceInfo ? (
                                         <div className="space-y-3">
                                             <div className="bg-blue-50 p-3 rounded-lg">
@@ -1916,7 +2061,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 최적화 설정 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">최적화 설정</h3>
-                                    
+
                                     {optimizationSettings ? (
                                         <div className="space-y-3">
                                             <div className="bg-white border border-gray-200 p-4 rounded-lg">
@@ -2001,18 +2146,17 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 보안 메트릭 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">보안 메트릭</h3>
-                                    
+
                                     {securityMetrics ? (
                                         <div className="space-y-3">
                                             <div className="bg-blue-50 p-3 rounded-lg">
                                                 <h4 className="font-medium text-blue-800">보안 점수</h4>
                                                 <div className="flex items-center space-x-2">
                                                     <div className="w-full bg-gray-200 rounded-full h-2">
-                                                        <div 
-                                                            className={`h-2 rounded-full ${
-                                                                securityMetrics.securityScore >= 80 ? 'bg-green-500' :
+                                                        <div
+                                                            className={`h-2 rounded-full ${securityMetrics.securityScore >= 80 ? 'bg-green-500' :
                                                                 securityMetrics.securityScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                                                            }`}
+                                                                }`}
                                                             style={{ width: `${securityMetrics.securityScore}%` }}
                                                         ></div>
                                                     </div>
@@ -2055,8 +2199,8 @@ const ChatGPTMode: React.FC = () => {
                                             <div className="bg-yellow-50 p-3 rounded-lg">
                                                 <h4 className="font-medium text-yellow-800">마지막 스캔</h4>
                                                 <p className="text-yellow-600 text-sm">
-                                                    {securityMetrics.lastSecurityScan ? 
-                                                        new Date(securityMetrics.lastSecurityScan).toLocaleString() : 
+                                                    {securityMetrics.lastSecurityScan ?
+                                                        new Date(securityMetrics.lastSecurityScan).toLocaleString() :
                                                         '스캔 없음'
                                                     }
                                                 </p>
@@ -2070,32 +2214,29 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 취약점 및 권장사항 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">취약점 및 권장사항</h3>
-                                    
+
                                     {securityMetrics?.vulnerabilities ? (
                                         <div className="space-y-3">
                                             {securityMetrics.vulnerabilities.length > 0 ? (
                                                 securityMetrics.vulnerabilities.map((vuln: any, index: number) => (
-                                                    <div key={index} className={`p-3 rounded-lg ${
-                                                        vuln.severity === 'critical' ? 'bg-red-50 border border-red-200' :
+                                                    <div key={index} className={`p-3 rounded-lg ${vuln.severity === 'critical' ? 'bg-red-50 border border-red-200' :
                                                         vuln.severity === 'high' ? 'bg-orange-50 border border-orange-200' :
-                                                        vuln.severity === 'medium' ? 'bg-yellow-50 border border-yellow-200' :
-                                                        'bg-blue-50 border border-blue-200'
-                                                    }`}>
+                                                            vuln.severity === 'medium' ? 'bg-yellow-50 border border-yellow-200' :
+                                                                'bg-blue-50 border border-blue-200'
+                                                        }`}>
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <h4 className={`font-medium ${
-                                                                vuln.severity === 'critical' ? 'text-red-800' :
+                                                            <h4 className={`font-medium ${vuln.severity === 'critical' ? 'text-red-800' :
                                                                 vuln.severity === 'high' ? 'text-orange-800' :
-                                                                vuln.severity === 'medium' ? 'text-yellow-800' :
-                                                                'text-blue-800'
-                                                            }`}>
+                                                                    vuln.severity === 'medium' ? 'text-yellow-800' :
+                                                                        'text-blue-800'
+                                                                }`}>
                                                                 {vuln.type}
                                                             </h4>
-                                                            <span className={`text-xs px-2 py-1 rounded-full ${
-                                                                vuln.severity === 'critical' ? 'bg-red-200 text-red-800' :
+                                                            <span className={`text-xs px-2 py-1 rounded-full ${vuln.severity === 'critical' ? 'bg-red-200 text-red-800' :
                                                                 vuln.severity === 'high' ? 'bg-orange-200 text-orange-800' :
-                                                                vuln.severity === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                                                                'bg-blue-200 text-blue-800'
-                                                            }`}>
+                                                                    vuln.severity === 'medium' ? 'bg-yellow-200 text-yellow-800' :
+                                                                        'bg-blue-200 text-blue-800'
+                                                                }`}>
                                                                 {vuln.severity.toUpperCase()}
                                                             </span>
                                                         </div>
@@ -2121,7 +2262,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 보안 설정 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">보안 설정</h3>
-                                    
+
                                     {securityConfig ? (
                                         <div className="space-y-3">
                                             <div className="bg-white border border-gray-200 p-4 rounded-lg">
@@ -2203,9 +2344,8 @@ const ChatGPTMode: React.FC = () => {
                                             {auditLog.slice(0, 10).map((event, index) => (
                                                 <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
                                                     <div className="flex items-center space-x-3">
-                                                        <div className={`w-2 h-2 rounded-full ${
-                                                            event.success ? 'bg-green-500' : 'bg-red-500'
-                                                        }`}></div>
+                                                        <div className={`w-2 h-2 rounded-full ${event.success ? 'bg-green-500' : 'bg-red-500'
+                                                            }`}></div>
                                                         <span className="text-sm font-medium">{event.action}</span>
                                                         <span className="text-xs text-gray-500">{event.resource}</span>
                                                     </div>
@@ -2260,7 +2400,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 사용자 참여도 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">사용자 참여도</h3>
-                                    
+
                                     {analyticsMetrics ? (
                                         <div className="space-y-3">
                                             <div className="bg-blue-50 p-3 rounded-lg">
@@ -2293,7 +2433,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 성능 메트릭 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">성능 메트릭</h3>
-                                    
+
                                     {analyticsMetrics ? (
                                         <div className="space-y-3">
                                             <div className="bg-blue-50 p-3 rounded-lg">
@@ -2307,7 +2447,7 @@ const ChatGPTMode: React.FC = () => {
                                                 <h4 className="font-medium text-green-800">성공률</h4>
                                                 <div className="flex items-center space-x-2">
                                                     <div className="w-full bg-gray-200 rounded-full h-2">
-                                                        <div 
+                                                        <div
                                                             className="h-2 rounded-full bg-green-500"
                                                             style={{ width: `${analyticsMetrics.performance.successRate * 100}%` }}
                                                         ></div>
@@ -2322,7 +2462,7 @@ const ChatGPTMode: React.FC = () => {
                                                 <h4 className="font-medium text-red-800">오류율</h4>
                                                 <div className="flex items-center space-x-2">
                                                     <div className="w-full bg-gray-200 rounded-full h-2">
-                                                        <div 
+                                                        <div
                                                             className="h-2 rounded-full bg-red-500"
                                                             style={{ width: `${analyticsMetrics.performance.errorRate * 100}%` }}
                                                         ></div>
@@ -2348,7 +2488,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 콘텐츠 분석 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">콘텐츠 분석</h3>
-                                    
+
                                     {analyticsMetrics ? (
                                         <div className="space-y-3">
                                             <div className="bg-blue-50 p-3 rounded-lg">
@@ -2385,7 +2525,7 @@ const ChatGPTMode: React.FC = () => {
                                 {/* 예측 모델 */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">예측 모델</h3>
-                                    
+
                                     {predictiveModels.length > 0 ? (
                                         <div className="space-y-3">
                                             {predictiveModels.map((model, index) => (
@@ -2433,9 +2573,9 @@ const ChatGPTMode: React.FC = () => {
                                                         신뢰도: {(pattern.insights.confidence * 100).toFixed(1)}%
                                                     </span>
                                                 </div>
-                                                
+
                                                 <p className="text-sm text-gray-600 mb-3">{pattern.insights.description}</p>
-                                                
+
                                                 <div className="space-y-2">
                                                     <h5 className="text-sm font-medium text-gray-700">권장사항:</h5>
                                                     <ul className="text-xs text-gray-600 space-y-1">
@@ -2499,6 +2639,240 @@ const ChatGPTMode: React.FC = () => {
                             <div className="flex justify-end mt-6">
                                 <button
                                     onClick={() => setShowAnalyticsModal(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 고급 AI 오케스트레이션 모달 */}
+            <AnimatePresence>
+                {showOrchestrationModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-lg p-6 w-4/5 max-w-7xl max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold">고급 AI 오케스트레이션</h2>
+                                <button onClick={() => setShowOrchestrationModal(false)}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                {/* 워크플로우 메트릭 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">워크플로우 메트릭</h3>
+
+                                    {orchestrationMetrics ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800">총 워크플로우</h4>
+                                                <p className="text-blue-600 text-2xl font-bold">{orchestrationMetrics.totalWorkflows}</p>
+                                            </div>
+
+                                            <div className="bg-green-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-green-800">활성 워크플로우</h4>
+                                                <p className="text-green-600 text-2xl font-bold">{orchestrationMetrics.activeWorkflows}</p>
+                                            </div>
+
+                                            <div className="bg-purple-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-purple-800">완료된 워크플로우</h4>
+                                                <p className="text-purple-600 text-2xl font-bold">{orchestrationMetrics.completedWorkflows}</p>
+                                            </div>
+
+                                            <div className="bg-yellow-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-yellow-800">성공률</h4>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div
+                                                            className="h-2 rounded-full bg-yellow-500"
+                                                            style={{ width: `${orchestrationMetrics.successRate * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-yellow-600 font-medium">
+                                                        {(orchestrationMetrics.successRate * 100).toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">워크플로우 메트릭을 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 성능 메트릭 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">성능 메트릭</h3>
+
+                                    {orchestrationMetrics ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800">평균 실행 시간</h4>
+                                                <p className="text-blue-600 text-lg font-bold">
+                                                    {orchestrationMetrics.averageExecutionTime.toFixed(0)}ms
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-red-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-red-800">실패한 워크플로우</h4>
+                                                <p className="text-red-600 text-2xl font-bold">{orchestrationMetrics.failedWorkflows}</p>
+                                            </div>
+
+                                            <div className="bg-indigo-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-indigo-800">성능 트렌드</h4>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className={`text-sm font-medium ${orchestrationMetrics.performanceTrend === 'improving' ? 'text-green-600' :
+                                                            orchestrationMetrics.performanceTrend === 'declining' ? 'text-red-600' : 'text-yellow-600'
+                                                        }`}>
+                                                        {orchestrationMetrics.performanceTrend === 'improving' ? '개선 중' :
+                                                            orchestrationMetrics.performanceTrend === 'declining' ? '하락 중' : '안정적'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">성능 데이터를 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 서비스 사용률 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">서비스 사용률</h3>
+
+                                    {orchestrationMetrics?.serviceUtilization ? (
+                                        <div className="space-y-3">
+                                            {Object.entries(orchestrationMetrics.serviceUtilization)
+                                                .sort(([, a], [, b]) => (b as number) - (a as number))
+                                                .slice(0, 5)
+                                                .map(([service, count], index) => (
+                                                    <div key={index} className="bg-white border border-gray-200 p-3 rounded-lg">
+                                                        <h4 className="font-medium text-gray-800 mb-2 text-sm">
+                                                            {service.replace('Service', '')}
+                                                        </h4>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm text-gray-600">사용 횟수:</span>
+                                                            <span className="font-medium text-blue-600">{count}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">서비스 사용률 데이터가 없습니다.</p>
+                                    )}
+                                </div>
+
+                                {/* 오케스트레이션 설정 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">오케스트레이션 설정</h3>
+
+                                    {orchestrationConfig ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-white border border-gray-200 p-3 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-2">동시 실행 제한</h4>
+                                                <p className="text-blue-600 font-bold">{orchestrationConfig.maxConcurrentWorkflows}</p>
+                                            </div>
+
+                                            <div className="bg-white border border-gray-200 p-3 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-2">기본 타임아웃</h4>
+                                                <p className="text-blue-600 font-bold">{orchestrationConfig.defaultTimeout}ms</p>
+                                            </div>
+
+                                            <div className="bg-white border border-gray-200 p-3 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-2">재시도 전략</h4>
+                                                <p className="text-blue-600 font-bold capitalize">{orchestrationConfig.retryStrategy}</p>
+                                            </div>
+
+                                            <div className="bg-white border border-gray-200 p-3 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-2">최대 재시도</h4>
+                                                <p className="text-blue-600 font-bold">{orchestrationConfig.maxRetries}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">설정을 불러오는 중...</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 활성 워크플로우 */}
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-4">활성 워크플로우</h3>
+                                <div className="bg-gray-50 rounded-lg p-4 max-h-60 overflow-y-auto">
+                                    {activeWorkflows.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {activeWorkflows.map((workflow, index) => (
+                                                <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                        <span className="text-sm font-medium">{workflow.name}</span>
+                                                        <span className="text-xs text-gray-500">{workflow.id.slice(0, 8)}...</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                                            {workflow.priority}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {workflow.steps.filter((s: any) => s.status === 'completed').length}/{workflow.steps.length}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500 text-center">현재 활성 워크플로우가 없습니다.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 워크플로우 히스토리 */}
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-4">최근 워크플로우 히스토리</h3>
+                                <div className="bg-gray-50 rounded-lg p-4 max-h-60 overflow-y-auto">
+                                    {workflowHistory.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {workflowHistory.slice(0, 10).map((workflow, index) => (
+                                                <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className={`w-2 h-2 rounded-full ${workflow.status === 'completed' ? 'bg-green-500' :
+                                                                workflow.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
+                                                            }`}></div>
+                                                        <span className="text-sm font-medium">{workflow.name}</span>
+                                                        <span className="text-xs text-gray-500">{workflow.id.slice(0, 8)}...</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className={`text-xs px-2 py-1 rounded ${workflow.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                                workflow.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                                                            }`}>
+                                                            {workflow.status}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {workflow.executionTime ? `${workflow.executionTime}ms` : 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500 text-center">워크플로우 히스토리가 없습니다.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowOrchestrationModal(false)}
                                     className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                                 >
                                     닫기

@@ -370,7 +370,7 @@ class WebCommentAnalysisService {
       });
     });
 
-    return [...new Set(issues)].slice(0, 5);
+    return Array.from(new Set(issues)).slice(0, 5);
   }
 
   /**
@@ -422,7 +422,7 @@ class WebCommentAnalysisService {
       keywords = keywords.filter(keyword => !avoidKeywords.includes(keyword));
     }
     
-    return [...new Set(keywords)].slice(0, 5);
+    return Array.from(new Set(keywords)).slice(0, 5);
   }
 
   /**

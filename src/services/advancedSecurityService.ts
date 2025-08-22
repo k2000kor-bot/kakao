@@ -68,12 +68,12 @@ export interface SecurityMetrics {
 }
 
 class AdvancedSecurityService {
-  private config: SecurityConfig;
+  private config!: SecurityConfig;
   private sessions: Map<string, UserSession> = new Map();
   private auditLog: SecurityAudit[] = [];
   private encryptionKey: CryptoKey | null = null;
   private keyDerivationSalt: Uint8Array | null = null;
-  private securityMetrics: SecurityMetrics;
+  private securityMetrics!: SecurityMetrics;
 
   constructor() {
     this.initializeSecurityConfig();
@@ -228,14 +228,14 @@ class AdvancedSecurityService {
       encodedData
     );
 
-    const encrypted = btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer)));
-    const salt = this.keyDerivationSalt ? btoa(String.fromCharCode(...this.keyDerivationSalt)) : '';
+    const encrypted = btoa(String.fromCharCode(...Array.from(new Uint8Array(encryptedBuffer))));
+    const salt = this.keyDerivationSalt ? btoa(String.fromCharCode(...Array.from(this.keyDerivationSalt))) : '';
 
     this.securityMetrics.encryptionOperations++;
 
     return {
       encrypted,
-      iv: btoa(String.fromCharCode(...iv)),
+      iv: btoa(String.fromCharCode(...Array.from(iv))),
       salt,
       algorithm: this.config.encryptionAlgorithm,
       version: '1.0'
@@ -319,7 +319,7 @@ class AdvancedSecurityService {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    return btoa(String.fromCharCode(...salt)) + ':' + hashHex;
+    return btoa(String.fromCharCode(...Array.from(salt))) + ':' + hashHex;
   }
 
   /**
@@ -413,7 +413,7 @@ class AdvancedSecurityService {
     const now = new Date();
     let cleanedCount = 0;
 
-    for (const [sessionId, session] of this.sessions.entries()) {
+    for (const [, session] of Array.from(this.sessions.entries())) {
       if (now > session.expiresAt) {
         session.isActive = false;
         cleanedCount++;
@@ -664,7 +664,7 @@ class AdvancedSecurityService {
    */
   cleanup(): void {
     // 모든 세션 종료
-    for (const session of this.sessions.values()) {
+    for (const session of Array.from(this.sessions.values())) {
       session.isActive = false;
     }
     this.sessions.clear();

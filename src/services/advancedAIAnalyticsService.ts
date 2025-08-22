@@ -119,7 +119,7 @@ class AdvancedAIAnalyticsService {
   private behaviorPatterns: BehaviorPattern[] = [];
   private predictiveModels: PredictiveModel[] = [];
   private personalizationProfiles: Map<string, PersonalizationProfile> = new Map();
-  private analyticsMetrics: AnalyticsMetrics;
+  private analyticsMetrics!: AnalyticsMetrics;
 
   constructor() {
     this.initializeAnalyticsMetrics();
@@ -317,7 +317,7 @@ class AdvancedAIAnalyticsService {
 
     const mostActiveHours = this.getMostFrequent(timeSlots, 3);
     const mostActiveDays = this.getMostFrequent(daysOfWeek, 3);
-    const mostCommonActions = this.getMostFrequent(actions, 5);
+    // const mostCommonActions = this.getMostFrequent(actions, 5);
 
     return {
       frequency: behaviors.length,
@@ -437,7 +437,7 @@ class AdvancedAIAnalyticsService {
     const insights = {
       description: '',
       confidence: Math.min(pattern.frequency / 10, 1),
-      recommendations: []
+      recommendations: [] as string[]
     };
 
     switch (type) {
@@ -489,11 +489,11 @@ class AdvancedAIAnalyticsService {
     // 관심사 업데이트
     if (behavior.details.query) {
       const keywords = this.extractKeywords(behavior.details.query);
-      profile.interests.keywords = [...new Set([...profile.interests.keywords, ...keywords])];
+      profile.interests.keywords = Array.from(new Set([...profile.interests.keywords, ...keywords]));
     }
 
     // 행동 패턴 업데이트
-    profile.behavior.averageSessionDuration = 
+    profile.behavior.averageSessionDuration =
       (profile.behavior.averageSessionDuration + behavior.context.sessionDuration) / 2;
 
     const timeSlot = new Date(behavior.timestamp).getHours().toString();
@@ -551,9 +551,9 @@ class AdvancedAIAnalyticsService {
    */
   private generateRecommendations(profile: PersonalizationProfile): any {
     const recommendations = {
-      suggestedProjects: [],
-      recommendedFeatures: [],
-      optimizationTips: []
+      suggestedProjects: [] as string[],
+      recommendedFeatures: [] as string[],
+      optimizationTips: [] as string[]
     };
 
     // 관심사 기반 프로젝트 추천
@@ -679,21 +679,21 @@ class AdvancedAIAnalyticsService {
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // 사용자 참여도
-    this.analyticsMetrics.userEngagement.dailyActiveUsers = 
+    this.analyticsMetrics.userEngagement.dailyActiveUsers =
       new Set(this.userBehaviors.filter(b => b.timestamp > oneDayAgo).map(b => b.userId)).size;
-    
-    this.analyticsMetrics.userEngagement.weeklyActiveUsers = 
+
+    this.analyticsMetrics.userEngagement.weeklyActiveUsers =
       new Set(this.userBehaviors.filter(b => b.timestamp > oneWeekAgo).map(b => b.userId)).size;
-    
-    this.analyticsMetrics.userEngagement.monthlyActiveUsers = 
+
+    this.analyticsMetrics.userEngagement.monthlyActiveUsers =
       new Set(this.userBehaviors.filter(b => b.timestamp > oneMonthAgo).map(b => b.userId)).size;
 
     // 성능 메트릭
     const recentBehaviors = this.userBehaviors.slice(-100);
     const responseTimes = recentBehaviors.filter(b => b.details.responseTime).map(b => b.details.responseTime!);
-    
+
     if (responseTimes.length > 0) {
-      this.analyticsMetrics.performance.averageResponseTime = 
+      this.analyticsMetrics.performance.averageResponseTime =
         responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length;
     }
 
@@ -702,13 +702,13 @@ class AdvancedAIAnalyticsService {
     this.analyticsMetrics.performance.errorRate = 1 - this.analyticsMetrics.performance.successRate;
 
     // 콘텐츠 메트릭
-    this.analyticsMetrics.content.totalConversations = 
+    this.analyticsMetrics.content.totalConversations =
       this.userBehaviors.filter(b => b.category === 'chat').length;
-    
-    this.analyticsMetrics.content.totalProjects = 
+
+    this.analyticsMetrics.content.totalProjects =
       this.userBehaviors.filter(b => b.category === 'project').length;
-    
-    this.analyticsMetrics.content.totalFiles = 
+
+    this.analyticsMetrics.content.totalFiles =
       this.userBehaviors.filter(b => b.category === 'file').length;
 
     // 인기 토픽
@@ -741,7 +741,7 @@ class AdvancedAIAnalyticsService {
     if (performanceModel && performanceModel.predictions.length >= 2) {
       const recent = performanceModel.predictions.slice(-2);
       const trend = recent[1].value - recent[0].value;
-      
+
       if (trend > 5) this.analyticsMetrics.predictions.performanceTrend = 'improving';
       else if (trend < -5) this.analyticsMetrics.predictions.performanceTrend = 'declining';
       else this.analyticsMetrics.predictions.performanceTrend = 'stable';
@@ -758,7 +758,7 @@ class AdvancedAIAnalyticsService {
   private getDeviceInfo(): any {
     return {
       userAgent: navigator.userAgent,
-      screenSize: `${screen.width}x${screen.height}`,
+      screenSize: `${window.screen.width}x${window.screen.height}`,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
     };
   }

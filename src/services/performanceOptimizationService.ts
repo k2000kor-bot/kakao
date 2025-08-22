@@ -89,10 +89,10 @@ class PerformanceOptimizationService {
   }
 
   /**
-   * 네비게이션 엔트리 처리
+   * 네비게이션 타이밍 처리
    */
   private handleNavigationEntry(entry: PerformanceNavigationTiming): void {
-    const loadTime = entry.loadEventEnd - entry.navigationStart;
+    const loadTime = entry.loadEventEnd - (entry as any).navigationStart;
     this.recordMetric('page-load', loadTime);
   }
 

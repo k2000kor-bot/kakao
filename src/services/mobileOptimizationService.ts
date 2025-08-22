@@ -45,8 +45,8 @@ export interface MobileOptimizationSettings {
 
 class MobileOptimizationService {
   private deviceInfo: DeviceInfo | null = null;
-  private pwaConfig: PWAConfig;
-  private optimizationSettings: MobileOptimizationSettings;
+  private pwaConfig!: PWAConfig;
+  private optimizationSettings!: MobileOptimizationSettings;
   private serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
   private isOnline: boolean = navigator.onLine;
 
