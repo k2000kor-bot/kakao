@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import websocketService from '../services/websocketService';
 import errorHandlingService from '../services/errorHandlingService';
 import performanceOptimizationService from '../services/performanceOptimizationService';
+import webCommentAnalysisService from '../services/webCommentAnalysisService';
 import ErrorFeedbackContainer from './ErrorFeedback/ErrorFeedbackContainer';
 
 interface Message {
@@ -117,6 +118,18 @@ const ChatGPTMode: React.FC = () => {
     const [optimizationSuggestions, setOptimizationSuggestions] = useState<any[]>([]);
     const [showMonitoringModal, setShowMonitoringModal] = useState(false);
 
+    // 웹 댓글 분석 상태
+    const [showCommentAnalysisModal, setShowCommentAnalysisModal] = useState(false);
+    const [commentAnalysis, setCommentAnalysis] = useState<any>(null);
+    const [generatedComment, setGeneratedComment] = useState<any>(null);
+    const [commentGenerationSettings, setCommentGenerationSettings] = useState({
+        style: 'supportive' as const,
+        tone: 'friendly' as const,
+        length: 'medium' as const,
+        specificTopics: [] as string[],
+        avoidKeywords: [] as string[]
+    });
+
     // WebSocket 연결
     useEffect(() => {
         const connectWebSocket = async () => {
@@ -184,7 +197,7 @@ const ChatGPTMode: React.FC = () => {
         const updatePerformanceMetrics = () => {
             const metrics = performanceOptimizationService.getCurrentMetrics();
             const suggestions = performanceOptimizationService.getOptimizationSuggestions();
-            
+
             setPerformanceMetrics(metrics);
             setOptimizationSuggestions(suggestions);
         };
@@ -262,7 +275,7 @@ const ChatGPTMode: React.FC = () => {
 
         // 성능 추적 시작
         performanceOptimizationService.trackComponentRender('ChatGPTMode', Date.now());
-        
+
         setIsSending(true);
         const userMessage: Message = {
             id: Date.now().toString(),
@@ -349,6 +362,15 @@ const ChatGPTMode: React.FC = () => {
                             }
                         }
                     }
+
+                    // 웹 댓글 분석 요청 처리
+                    if (currentInput.includes('댓글') && (currentInput.includes('분석') || currentInput.includes('생성'))) {
+                        try {
+                            await handleCommentAnalysis(currentInput);
+                        } catch (error) {
+                            console.error('댓글 분석 실패:', error);
+                        }
+                    }
                 } else {
                     // 백엔드 연결 실패 시 기본 응답
                     let fallbackContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`;
@@ -383,7 +405,7 @@ const ChatGPTMode: React.FC = () => {
             }
         } catch (error) {
             console.error('API 호출 오류:', error);
-            
+
             // 에러 처리 서비스에 에러 보고
             await errorHandlingService.reportError(
                 error instanceof Error ? error : new Error(String(error)),
@@ -398,7 +420,7 @@ const ChatGPTMode: React.FC = () => {
                 },
                 'API 호출 중 오류가 발생했습니다.'
             );
-            
+
             // 오류 시 기본 응답
             let errorContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`;
 
@@ -437,6 +459,52 @@ const ChatGPTMode: React.FC = () => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
+        }
+    };
+
+    // 웹 댓글 분석 처리
+    const handleCommentAnalysis = async (input: string) => {
+        try {
+            // 검색어 추출
+            const searchQuery = input.replace(/댓글|분석|생성|해줘|요/g, '').trim();
+            
+            if (!searchQuery) {
+                console.error('검색어를 찾을 수 없습니다.');
+                return;
+            }
+
+            // 웹 검색 결과에서 댓글 추출
+            const comments = await webCommentAnalysisService.extractCommentsFromWebSearch(searchQuery);
+            
+            // 댓글 분석
+            const analysis = webCommentAnalysisService.analyzeComments(comments);
+            setCommentAnalysis(analysis);
+
+            // 댓글 생성
+            const generatedComment = await webCommentAnalysisService.generateComment({
+                originalContent: searchQuery,
+                comments: comments,
+                targetStyle: commentGenerationSettings.style,
+                targetTone: commentGenerationSettings.tone,
+                targetLength: commentGenerationSettings.length,
+                specificTopics: commentGenerationSettings.specificTopics,
+                avoidKeywords: commentGenerationSettings.avoidKeywords
+            });
+
+            setGeneratedComment(generatedComment);
+            setShowCommentAnalysisModal(true);
+
+        } catch (error) {
+            console.error('댓글 분석 중 오류:', error);
+            await errorHandlingService.reportError(
+                error instanceof Error ? error : new Error(String(error)),
+                {
+                    component: 'ChatGPTMode',
+                    action: 'handleCommentAnalysis',
+                    metadata: { input }
+                },
+                '댓글 분석 중 오류가 발생했습니다.'
+            );
         }
     };
 
@@ -617,7 +685,7 @@ const ChatGPTMode: React.FC = () => {
                         </button>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <button 
+                        <button
                             onClick={() => setShowMonitoringModal(true)}
                             className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
                         >
@@ -626,12 +694,21 @@ const ChatGPTMode: React.FC = () => {
                         </button>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <button 
+                        <button
                             onClick={() => setShowPerformanceReport(true)}
                             className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
                         >
                             <CheckCircle size={16} />
                             <span className="text-sm">성능</span>
+                        </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setShowCommentAnalysisModal(true)}
+                            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            <BookOpen size={16} />
+                            <span className="text-sm">댓글 분석</span>
                         </button>
                     </div>
                 </div>
@@ -1433,11 +1510,10 @@ const ChatGPTMode: React.FC = () => {
                                             {performanceMetrics.memoryUsage.percentage.toFixed(1)}% 사용 중
                                         </p>
                                         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                            <div 
-                                                className={`h-2 rounded-full ${
-                                                    performanceMetrics.memoryUsage.percentage > 80 ? 'bg-red-500' :
+                                            <div
+                                                className={`h-2 rounded-full ${performanceMetrics.memoryUsage.percentage > 80 ? 'bg-red-500' :
                                                     performanceMetrics.memoryUsage.percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
-                                                }`}
+                                                    }`}
                                                 style={{ width: `${performanceMetrics.memoryUsage.percentage}%` }}
                                             ></div>
                                         </div>
@@ -1475,6 +1551,139 @@ const ChatGPTMode: React.FC = () => {
                                 <button
                                     onClick={() => setShowPerformanceReport(false)}
                                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 웹 댓글 분석 모달 */}
+            <AnimatePresence>
+                {showCommentAnalysisModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-lg p-6 w-4/5 max-w-4xl max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold">웹 댓글 분석 및 생성</h2>
+                                <button onClick={() => setShowCommentAnalysisModal(false)}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* 댓글 분석 결과 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">댓글 분석 결과</h3>
+                                    
+                                    {commentAnalysis ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800">전체 감정</h4>
+                                                <p className="text-blue-600 capitalize">{commentAnalysis.overallSentiment}</p>
+                                            </div>
+
+                                            <div className="bg-green-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-green-800">주요 토픽</h4>
+                                                <p className="text-green-600">{commentAnalysis.dominantTopics.join(', ')}</p>
+                                            </div>
+
+                                            <div className="bg-yellow-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-yellow-800">공통 키워드</h4>
+                                                <p className="text-yellow-600">{commentAnalysis.commonKeywords.join(', ')}</p>
+                                            </div>
+
+                                            <div className="bg-purple-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-purple-800">참여도</h4>
+                                                <p className="text-purple-600 capitalize">{commentAnalysis.engagementLevel}</p>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-gray-800">톤</h4>
+                                                <p className="text-gray-600 capitalize">{commentAnalysis.tone}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">분석 결과를 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 생성된 댓글 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">생성된 댓글</h3>
+                                    
+                                    {generatedComment ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-2">댓글 내용</h4>
+                                                <p className="text-gray-700">{generatedComment.content}</p>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-2">생성 설정</h4>
+                                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                                    <div>
+                                                        <span className="font-medium">스타일:</span> {generatedComment.style}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">톤:</span> {generatedComment.tone}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">길이:</span> {generatedComment.length}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">대상:</span> {generatedComment.targetAudience}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800 mb-2">생성 근거</h4>
+                                                <p className="text-blue-700 text-sm">{generatedComment.reasoning}</p>
+                                            </div>
+
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(generatedComment.content);
+                                                        // 복사 완료 알림
+                                                    }}
+                                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                                                >
+                                                    복사
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setInputMessage(generatedComment.content);
+                                                        setShowCommentAnalysisModal(false);
+                                                    }}
+                                                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                                                >
+                                                    입력창에 추가
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">댓글을 생성하는 중...</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowCommentAnalysisModal(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                                 >
                                     닫기
                                 </button>
