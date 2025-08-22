@@ -13,10 +13,17 @@ import {
     X,
     Play,
     Grid,
-    Bot
+    Bot,
+    AlertTriangle,
+    CheckCircle,
+    Info,
+    BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import websocketService from '../services/websocketService';
+import errorHandlingService from '../services/errorHandlingService';
+import performanceOptimizationService from '../services/performanceOptimizationService';
+import ErrorFeedbackContainer from './ErrorFeedback/ErrorFeedbackContainer';
 
 interface Message {
     id: string;
@@ -98,7 +105,16 @@ const ChatGPTMode: React.FC = () => {
             alert_threshold: number;
             alert_count: number;
         }>;
-    } | null>(null);
+    }>({
+        isConnected: false,
+        lastUpdate: '',
+        alerts: []
+    });
+
+    // 에러 처리 및 성능 최적화 상태
+    const [showPerformanceReport, setShowPerformanceReport] = useState(false);
+    const [performanceMetrics, setPerformanceMetrics] = useState<any>(null);
+    const [optimizationSuggestions, setOptimizationSuggestions] = useState<any[]>([]);
     const [showMonitoringModal, setShowMonitoringModal] = useState(false);
 
     // WebSocket 연결
@@ -160,6 +176,23 @@ const ChatGPTMode: React.FC = () => {
         const interval = setInterval(checkStatus, 30000); // 30초마다 확인
 
         return () => clearInterval(interval);
+    }, []);
+
+    // 성능 최적화 및 에러 처리 초기화
+    useEffect(() => {
+        // 성능 메트릭 주기적 업데이트
+        const updatePerformanceMetrics = () => {
+            const metrics = performanceOptimizationService.getCurrentMetrics();
+            const suggestions = performanceOptimizationService.getOptimizationSuggestions();
+            
+            setPerformanceMetrics(metrics);
+            setOptimizationSuggestions(suggestions);
+        };
+
+        updatePerformanceMetrics();
+        const performanceInterval = setInterval(updatePerformanceMetrics, 60000); // 1분마다
+
+        return () => clearInterval(performanceInterval);
     }, []);
 
     // 프로젝트 목록
@@ -227,6 +260,9 @@ const ChatGPTMode: React.FC = () => {
     const handleSendMessage = async () => {
         if (!inputMessage.trim() || isSending) return;
 
+        // 성능 추적 시작
+        performanceOptimizationService.trackComponentRender('ChatGPTMode', Date.now());
+        
         setIsSending(true);
         const userMessage: Message = {
             id: Date.now().toString(),
@@ -347,6 +383,22 @@ const ChatGPTMode: React.FC = () => {
             }
         } catch (error) {
             console.error('API 호출 오류:', error);
+            
+            // 에러 처리 서비스에 에러 보고
+            await errorHandlingService.reportError(
+                error instanceof Error ? error : new Error(String(error)),
+                {
+                    component: 'ChatGPTMode',
+                    action: 'handleSendMessage',
+                    metadata: {
+                        inputMessage: currentInput,
+                        attachmentsCount: currentAttachments.length,
+                        selectedProject: selectedProject?.name
+                    }
+                },
+                'API 호출 중 오류가 발생했습니다.'
+            );
+            
             // 오류 시 기본 응답
             let errorContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`;
 
@@ -562,6 +614,24 @@ const ChatGPTMode: React.FC = () => {
                         <button className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded">
                             <BookOpen size={16} />
                             <span className="text-sm">라이브러리</span>
+                        </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button 
+                            onClick={() => setShowMonitoringModal(true)}
+                            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            <BarChart3 size={16} />
+                            <span className="text-sm">모니터링</span>
+                        </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button 
+                            onClick={() => setShowPerformanceReport(true)}
+                            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            <CheckCircle size={16} />
+                            <span className="text-sm">성능</span>
                         </button>
                     </div>
                 </div>
@@ -1332,6 +1402,90 @@ const ChatGPTMode: React.FC = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* 성능 모니터링 패널 */}
+            <AnimatePresence>
+                {showPerformanceReport && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-medium">성능 모니터링</h2>
+                                <button onClick={() => setShowPerformanceReport(false)}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {performanceMetrics ? (
+                                <div className="space-y-4">
+                                    <div className="bg-blue-50 p-3 rounded-lg">
+                                        <h3 className="font-medium text-blue-800">메모리 사용량</h3>
+                                        <p className="text-blue-600">
+                                            {performanceMetrics.memoryUsage.percentage.toFixed(1)}% 사용 중
+                                        </p>
+                                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                            <div 
+                                                className={`h-2 rounded-full ${
+                                                    performanceMetrics.memoryUsage.percentage > 80 ? 'bg-red-500' :
+                                                    performanceMetrics.memoryUsage.percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                                                }`}
+                                                style={{ width: `${performanceMetrics.memoryUsage.percentage}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-green-50 p-3 rounded-lg">
+                                        <h3 className="font-medium text-green-800">렌더링 성능</h3>
+                                        <p className="text-green-600">
+                                            평균 렌더링 시간: {performanceMetrics.renderTime.toFixed(2)}ms
+                                        </p>
+                                        <p className="text-green-600">
+                                            컴포넌트 렌더링: {performanceMetrics.componentRenderCount}회
+                                        </p>
+                                    </div>
+
+                                    {optimizationSuggestions.length > 0 && (
+                                        <div className="bg-yellow-50 p-3 rounded-lg">
+                                            <h3 className="font-medium text-yellow-800">최적화 제안</h3>
+                                            <div className="space-y-2">
+                                                {optimizationSuggestions.slice(0, 3).map((suggestion, index) => (
+                                                    <div key={index} className="text-sm">
+                                                        <p className="font-medium">{suggestion.message}</p>
+                                                        <p className="text-yellow-600">{suggestion.impact}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500">성능 메트릭을 불러오는 중...</p>
+                            )}
+
+                            <div className="flex justify-end mt-4">
+                                <button
+                                    onClick={() => setShowPerformanceReport(false)}
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 에러 피드백 컨테이너 */}
+            <ErrorFeedbackContainer />
         </div>
     );
 };
