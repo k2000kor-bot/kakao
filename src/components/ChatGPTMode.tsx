@@ -19,7 +19,8 @@ import {
     Info,
     BarChart3,
     Smartphone,
-    Shield
+    Shield,
+    TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import websocketService from '../services/websocketService';
@@ -28,6 +29,7 @@ import performanceOptimizationService from '../services/performanceOptimizationS
 import webCommentAnalysisService from '../services/webCommentAnalysisService';
 import mobileOptimizationService from '../services/mobileOptimizationService';
 import advancedSecurityService from '../services/advancedSecurityService';
+import advancedAIAnalyticsService from '../services/advancedAIAnalyticsService';
 import ErrorFeedbackContainer from './ErrorFeedback/ErrorFeedbackContainer';
 
 interface Message {
@@ -147,6 +149,13 @@ const ChatGPTMode: React.FC = () => {
     const [securityConfig, setSecurityConfig] = useState<any>(null);
     const [auditLog, setAuditLog] = useState<any[]>([]);
     const [currentSession, setCurrentSession] = useState<any>(null);
+
+    // 고급 AI 분석 상태
+    const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+    const [analyticsMetrics, setAnalyticsMetrics] = useState<any>(null);
+    const [behaviorPatterns, setBehaviorPatterns] = useState<any[]>([]);
+    const [predictiveModels, setPredictiveModels] = useState<any[]>([]);
+    const [personalizationProfile, setPersonalizationProfile] = useState<any>(null);
 
     // WebSocket 연결
     useEffect(() => {
@@ -290,6 +299,42 @@ const ChatGPTMode: React.FC = () => {
         const securityInterval = setInterval(updateSecurityMetrics, 30000); // 30초마다
 
         return () => clearInterval(securityInterval);
+    }, []);
+
+    // 고급 AI 분석 초기화
+    useEffect(() => {
+        const initializeAnalytics = async () => {
+            try {
+                const metrics = advancedAIAnalyticsService.getAnalyticsMetrics();
+                const patterns = advancedAIAnalyticsService.getBehaviorPatterns();
+                const models = advancedAIAnalyticsService.getPredictiveModels();
+                const profile = advancedAIAnalyticsService.getPersonalizationProfile('current');
+
+                setAnalyticsMetrics(metrics);
+                setBehaviorPatterns(patterns);
+                setPredictiveModels(models);
+                setPersonalizationProfile(profile);
+
+                // 예측 모델 실행
+                await advancedAIAnalyticsService.runPredictions();
+            } catch (error) {
+                console.error('AI 분석 초기화 실패:', error);
+            }
+        };
+
+        initializeAnalytics();
+
+        // 분석 메트릭 주기적 업데이트
+        const updateAnalyticsMetrics = () => {
+            const metrics = advancedAIAnalyticsService.getAnalyticsMetrics();
+            const patterns = advancedAIAnalyticsService.getBehaviorPatterns();
+            setAnalyticsMetrics(metrics);
+            setBehaviorPatterns(patterns);
+        };
+
+        const analyticsInterval = setInterval(updateAnalyticsMetrics, 60000); // 1분마다
+
+        return () => clearInterval(analyticsInterval);
     }, []);
 
     // 프로젝트 목록
@@ -811,6 +856,15 @@ const ChatGPTMode: React.FC = () => {
                         >
                             <Shield size={16} />
                             <span className="text-sm">보안</span>
+                        </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setShowAnalyticsModal(true)}
+                            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            <TrendingUp size={16} />
+                            <span className="text-sm">AI 분석</span>
                         </button>
                     </div>
                 </div>
@@ -2170,6 +2224,281 @@ const ChatGPTMode: React.FC = () => {
                             <div className="flex justify-end mt-6">
                                 <button
                                     onClick={() => setShowSecurityModal(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 고급 AI 분석 모달 */}
+            <AnimatePresence>
+                {showAnalyticsModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-lg p-6 w-4/5 max-w-7xl max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold">고급 AI 분석 및 예측</h2>
+                                <button onClick={() => setShowAnalyticsModal(false)}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                {/* 사용자 참여도 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">사용자 참여도</h3>
+                                    
+                                    {analyticsMetrics ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800">일일 활성 사용자</h4>
+                                                <p className="text-blue-600 text-2xl font-bold">{analyticsMetrics.userEngagement.dailyActiveUsers}</p>
+                                            </div>
+
+                                            <div className="bg-green-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-green-800">주간 활성 사용자</h4>
+                                                <p className="text-green-600 text-2xl font-bold">{analyticsMetrics.userEngagement.weeklyActiveUsers}</p>
+                                            </div>
+
+                                            <div className="bg-purple-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-purple-800">월간 활성 사용자</h4>
+                                                <p className="text-purple-600 text-2xl font-bold">{analyticsMetrics.userEngagement.monthlyActiveUsers}</p>
+                                            </div>
+
+                                            <div className="bg-yellow-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-yellow-800">평균 세션 시간</h4>
+                                                <p className="text-yellow-600 text-lg font-bold">
+                                                    {Math.round(analyticsMetrics.userEngagement.averageSessionDuration / 60000)}분
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">참여도 데이터를 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 성능 메트릭 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">성능 메트릭</h3>
+                                    
+                                    {analyticsMetrics ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800">평균 응답 시간</h4>
+                                                <p className="text-blue-600 text-lg font-bold">
+                                                    {analyticsMetrics.performance.averageResponseTime.toFixed(0)}ms
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-green-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-green-800">성공률</h4>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div 
+                                                            className="h-2 rounded-full bg-green-500"
+                                                            style={{ width: `${analyticsMetrics.performance.successRate * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-green-600 font-medium">
+                                                        {(analyticsMetrics.performance.successRate * 100).toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-red-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-red-800">오류율</h4>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div 
+                                                            className="h-2 rounded-full bg-red-500"
+                                                            style={{ width: `${analyticsMetrics.performance.errorRate * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-red-600 font-medium">
+                                                        {(analyticsMetrics.performance.errorRate * 100).toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-indigo-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-indigo-800">시스템 가동률</h4>
+                                                <p className="text-indigo-600 text-lg font-bold">
+                                                    {analyticsMetrics.performance.systemUptime}%
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">성능 데이터를 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 콘텐츠 분석 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">콘텐츠 분석</h3>
+                                    
+                                    {analyticsMetrics ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800">총 대화</h4>
+                                                <p className="text-blue-600 text-2xl font-bold">{analyticsMetrics.content.totalConversations}</p>
+                                            </div>
+
+                                            <div className="bg-green-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-green-800">총 프로젝트</h4>
+                                                <p className="text-green-600 text-2xl font-bold">{analyticsMetrics.content.totalProjects}</p>
+                                            </div>
+
+                                            <div className="bg-purple-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-purple-800">총 파일</h4>
+                                                <p className="text-purple-600 text-2xl font-bold">{analyticsMetrics.content.totalFiles}</p>
+                                            </div>
+
+                                            <div className="bg-yellow-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-yellow-800">인기 토픽</h4>
+                                                <div className="space-y-1">
+                                                    {analyticsMetrics.content.popularTopics.slice(0, 3).map((topic: string, index: number) => (
+                                                        <div key={index} className="text-sm text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
+                                                            {topic}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">콘텐츠 데이터를 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 예측 모델 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">예측 모델</h3>
+                                    
+                                    {predictiveModels.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {predictiveModels.map((model, index) => (
+                                                <div key={index} className="bg-white border border-gray-200 p-3 rounded-lg">
+                                                    <h4 className="font-medium text-gray-800 mb-2">{model.type.replace(/_/g, ' ')}</h4>
+                                                    <div className="space-y-1 text-sm">
+                                                        <div className="flex justify-between">
+                                                            <span>정확도:</span>
+                                                            <span className="font-medium">{(model.accuracy * 100).toFixed(1)}%</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>마지막 훈련:</span>
+                                                            <span className="font-medium">
+                                                                {new Date(model.lastTraining).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>다음 훈련:</span>
+                                                            <span className="font-medium">
+                                                                {new Date(model.nextTraining).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">예측 모델을 불러오는 중...</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 행동 패턴 분석 */}
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-4">사용자 행동 패턴</h3>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {behaviorPatterns.length > 0 ? (
+                                        behaviorPatterns.map((pattern, index) => (
+                                            <div key={index} className="bg-white border border-gray-200 p-4 rounded-lg">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h4 className="font-medium text-gray-800 capitalize">
+                                                        {pattern.pattern.type} 패턴
+                                                    </h4>
+                                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                                        신뢰도: {(pattern.insights.confidence * 100).toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                                
+                                                <p className="text-sm text-gray-600 mb-3">{pattern.insights.description}</p>
+                                                
+                                                <div className="space-y-2">
+                                                    <h5 className="text-sm font-medium text-gray-700">권장사항:</h5>
+                                                    <ul className="text-xs text-gray-600 space-y-1">
+                                                        {pattern.insights.recommendations.map((rec: string, recIndex: number) => (
+                                                            <li key={recIndex} className="flex items-start space-x-2">
+                                                                <span className="text-blue-500 mt-1">•</span>
+                                                                <span>{rec}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-gray-500 text-center col-span-2">행동 패턴 데이터가 없습니다.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 개인화 프로필 */}
+                            {personalizationProfile && (
+                                <div className="mt-6">
+                                    <h3 className="text-lg font-semibold mb-4">개인화 프로필</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <div className="bg-blue-50 p-4 rounded-lg">
+                                            <h4 className="font-medium text-blue-800 mb-3">관심사</h4>
+                                            <div className="space-y-2">
+                                                {personalizationProfile.interests.keywords.slice(0, 5).map((keyword: string, index: number) => (
+                                                    <div key={index} className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                                        {keyword}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-green-50 p-4 rounded-lg">
+                                            <h4 className="font-medium text-green-800 mb-3">추천 프로젝트</h4>
+                                            <div className="space-y-2">
+                                                {personalizationProfile.recommendations.suggestedProjects.slice(0, 3).map((project: string, index: number) => (
+                                                    <div key={index} className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
+                                                        {project}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-purple-50 p-4 rounded-lg">
+                                            <h4 className="font-medium text-purple-800 mb-3">최적화 팁</h4>
+                                            <div className="space-y-2">
+                                                {personalizationProfile.recommendations.optimizationTips.slice(0, 3).map((tip: string, index: number) => (
+                                                    <div key={index} className="text-sm bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                                                        {tip}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowAnalyticsModal(false)}
                                     className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                                 >
                                     닫기
