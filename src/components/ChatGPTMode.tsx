@@ -18,7 +18,8 @@ import {
     CheckCircle,
     Info,
     BarChart3,
-    Smartphone
+    Smartphone,
+    Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import websocketService from '../services/websocketService';
@@ -26,6 +27,7 @@ import errorHandlingService from '../services/errorHandlingService';
 import performanceOptimizationService from '../services/performanceOptimizationService';
 import webCommentAnalysisService from '../services/webCommentAnalysisService';
 import mobileOptimizationService from '../services/mobileOptimizationService';
+import advancedSecurityService from '../services/advancedSecurityService';
 import ErrorFeedbackContainer from './ErrorFeedback/ErrorFeedbackContainer';
 
 interface Message {
@@ -139,6 +141,13 @@ const ChatGPTMode: React.FC = () => {
     const [isOnline, setIsOnline] = useState(true);
     const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
+    // 고급 보안 상태
+    const [showSecurityModal, setShowSecurityModal] = useState(false);
+    const [securityMetrics, setSecurityMetrics] = useState<any>(null);
+    const [securityConfig, setSecurityConfig] = useState<any>(null);
+    const [auditLog, setAuditLog] = useState<any[]>([]);
+    const [currentSession, setCurrentSession] = useState<any>(null);
+
     // WebSocket 연결
     useEffect(() => {
         const connectWebSocket = async () => {
@@ -243,6 +252,44 @@ const ChatGPTMode: React.FC = () => {
             window.removeEventListener('online', handleOnlineStatusChange);
             window.removeEventListener('offline', handleOnlineStatusChange);
         };
+    }, []);
+
+    // 고급 보안 초기화
+    useEffect(() => {
+        const initializeSecurity = async () => {
+            try {
+                const metrics = advancedSecurityService.getSecurityMetrics();
+                const config = advancedSecurityService.getSecurityConfig();
+                const audit = advancedSecurityService.getAuditLog(50);
+                const sessions = advancedSecurityService.getActiveSessions();
+
+                setSecurityMetrics(metrics);
+                setSecurityConfig(config);
+                setAuditLog(audit);
+                setCurrentSession(sessions[0] || null);
+
+                // 보안 초기화 (임시 비밀번호)
+                if (!metrics.encryptionOperations) {
+                    await advancedSecurityService.initializeSecurity('CORBU_AI_SECURE_2024');
+                }
+            } catch (error) {
+                console.error('보안 초기화 실패:', error);
+            }
+        };
+
+        initializeSecurity();
+
+        // 보안 메트릭 주기적 업데이트
+        const updateSecurityMetrics = () => {
+            const metrics = advancedSecurityService.getSecurityMetrics();
+            const audit = advancedSecurityService.getAuditLog(50);
+            setSecurityMetrics(metrics);
+            setAuditLog(audit);
+        };
+
+        const securityInterval = setInterval(updateSecurityMetrics, 30000); // 30초마다
+
+        return () => clearInterval(securityInterval);
     }, []);
 
     // 프로젝트 목록
@@ -755,6 +802,15 @@ const ChatGPTMode: React.FC = () => {
                         >
                             <Smartphone size={16} />
                             <span className="text-sm">모바일</span>
+                        </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setShowSecurityModal(true)}
+                            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            <Shield size={16} />
+                            <span className="text-sm">보안</span>
                         </button>
                     </div>
                 </div>
@@ -1855,6 +1911,265 @@ const ChatGPTMode: React.FC = () => {
                             <div className="flex justify-end mt-6">
                                 <button
                                     onClick={() => setShowMobileOptimizationModal(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 고급 보안 모달 */}
+            <AnimatePresence>
+                {showSecurityModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-lg p-6 w-4/5 max-w-6xl max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold">고급 보안 및 암호화</h2>
+                                <button onClick={() => setShowSecurityModal(false)}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* 보안 메트릭 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">보안 메트릭</h3>
+                                    
+                                    {securityMetrics ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800">보안 점수</h4>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div 
+                                                            className={`h-2 rounded-full ${
+                                                                securityMetrics.securityScore >= 80 ? 'bg-green-500' :
+                                                                securityMetrics.securityScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                                            }`}
+                                                            style={{ width: `${securityMetrics.securityScore}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-blue-600 font-medium">{securityMetrics.securityScore}/100</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-green-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-green-800">로그인 통계</h4>
+                                                <div className="space-y-1 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>총 로그인:</span>
+                                                        <span className="font-medium">{securityMetrics.totalLogins}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>실패 로그인:</span>
+                                                        <span className="font-medium text-red-600">{securityMetrics.failedLogins}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>활성 세션:</span>
+                                                        <span className="font-medium">{securityMetrics.activeSessions}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-purple-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-purple-800">암호화 작업</h4>
+                                                <div className="space-y-1 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>총 작업:</span>
+                                                        <span className="font-medium">{securityMetrics.encryptionOperations}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>오디트 이벤트:</span>
+                                                        <span className="font-medium">{securityMetrics.auditEvents}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-yellow-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-yellow-800">마지막 스캔</h4>
+                                                <p className="text-yellow-600 text-sm">
+                                                    {securityMetrics.lastSecurityScan ? 
+                                                        new Date(securityMetrics.lastSecurityScan).toLocaleString() : 
+                                                        '스캔 없음'
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">보안 메트릭을 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 취약점 및 권장사항 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">취약점 및 권장사항</h3>
+                                    
+                                    {securityMetrics?.vulnerabilities ? (
+                                        <div className="space-y-3">
+                                            {securityMetrics.vulnerabilities.length > 0 ? (
+                                                securityMetrics.vulnerabilities.map((vuln: any, index: number) => (
+                                                    <div key={index} className={`p-3 rounded-lg ${
+                                                        vuln.severity === 'critical' ? 'bg-red-50 border border-red-200' :
+                                                        vuln.severity === 'high' ? 'bg-orange-50 border border-orange-200' :
+                                                        vuln.severity === 'medium' ? 'bg-yellow-50 border border-yellow-200' :
+                                                        'bg-blue-50 border border-blue-200'
+                                                    }`}>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className={`font-medium ${
+                                                                vuln.severity === 'critical' ? 'text-red-800' :
+                                                                vuln.severity === 'high' ? 'text-orange-800' :
+                                                                vuln.severity === 'medium' ? 'text-yellow-800' :
+                                                                'text-blue-800'
+                                                            }`}>
+                                                                {vuln.type}
+                                                            </h4>
+                                                            <span className={`text-xs px-2 py-1 rounded-full ${
+                                                                vuln.severity === 'critical' ? 'bg-red-200 text-red-800' :
+                                                                vuln.severity === 'high' ? 'bg-orange-200 text-orange-800' :
+                                                                vuln.severity === 'medium' ? 'bg-yellow-200 text-yellow-800' :
+                                                                'bg-blue-200 text-blue-800'
+                                                            }`}>
+                                                                {vuln.severity.toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-700 mb-2">{vuln.description}</p>
+                                                        <p className="text-xs text-gray-600">{vuln.recommendation}</p>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                                    <div className="flex items-center space-x-2">
+                                                        <CheckCircle className="text-green-600" size={20} />
+                                                        <span className="text-green-800 font-medium">보안 상태 양호</span>
+                                                    </div>
+                                                    <p className="text-green-700 text-sm mt-1">현재 발견된 취약점이 없습니다.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">취약점 정보를 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 보안 설정 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">보안 설정</h3>
+                                    
+                                    {securityConfig ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-3">암호화 설정</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>암호화 활성화:</span>
+                                                        <span className={`font-medium ${securityConfig.encryptionEnabled ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {securityConfig.encryptionEnabled ? '활성화' : '비활성화'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>알고리즘:</span>
+                                                        <span className="font-medium">{securityConfig.encryptionAlgorithm}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>키 반복:</span>
+                                                        <span className="font-medium">{securityConfig.keyDerivationIterations.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-3">세션 관리</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>세션 타임아웃:</span>
+                                                        <span className="font-medium">{securityConfig.sessionTimeout}분</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>최대 로그인 시도:</span>
+                                                        <span className="font-medium">{securityConfig.maxLoginAttempts}회</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>오디트 로깅:</span>
+                                                        <span className={`font-medium ${securityConfig.auditLogging ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {securityConfig.auditLogging ? '활성화' : '비활성화'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800 mb-2">현재 세션</h4>
+                                                {currentSession ? (
+                                                    <div className="space-y-1 text-sm">
+                                                        <div className="flex justify-between">
+                                                            <span>세션 ID:</span>
+                                                            <span className="font-mono text-xs">{currentSession.id.slice(0, 8)}...</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>만료 시간:</span>
+                                                            <span className="font-medium">
+                                                                {new Date(currentSession.expiresAt).toLocaleTimeString()}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>IP 주소:</span>
+                                                            <span className="font-medium">{currentSession.ipAddress}</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-blue-700 text-sm">활성 세션이 없습니다.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">보안 설정을 불러오는 중...</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 오디트 로그 */}
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-4">최근 보안 이벤트</h3>
+                                <div className="bg-gray-50 rounded-lg p-4 max-h-60 overflow-y-auto">
+                                    {auditLog.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {auditLog.slice(0, 10).map((event, index) => (
+                                                <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className={`w-2 h-2 rounded-full ${
+                                                            event.success ? 'bg-green-500' : 'bg-red-500'
+                                                        }`}></div>
+                                                        <span className="text-sm font-medium">{event.action}</span>
+                                                        <span className="text-xs text-gray-500">{event.resource}</span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-500">
+                                                        {new Date(event.timestamp).toLocaleTimeString()}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500 text-center">보안 이벤트가 없습니다.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowSecurityModal(false)}
                                     className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                                 >
                                     닫기
