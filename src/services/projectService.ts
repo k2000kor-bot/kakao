@@ -1,539 +1,465 @@
-import { Project, ProjectFile, Guideline, ProjectChat } from '../types/project';
+import { Project, Chat, Message, ProjectFile, ProjectGuidelines } from '../types/project';
 
-class ProjectService {
-    private readonly STORAGE_KEY = 'projects';
+// 로컬 스토리지 키
+const PROJECTS_KEY = 'corbu_projects';
+const CHATS_KEY = 'corbu_chats';
+const MESSAGES_KEY = 'corbu_messages';
 
-    // 초기 더미 프로젝트 생성
-    private createSeedProjects(): Project[] {
-        const now = new Date().toISOString();
-        const base = {
-            status: 'active' as const,
-            priority: 'medium' as const,
-            createdAt: now,
-            updatedAt: now,
-            messageCount: 0,
-            files: [] as ProjectFile[],
-            guidelines: [] as Guideline[],
-            chats: [] as ProjectChat[],
-            analytics: {
-                totalMessages: 0,
-                totalFiles: 0,
-                totalGuidelines: 0,
-                activeChats: 0,
-                participants: 0,
-                activityTrend: [],
-                topTopics: [],
-                sentimentAnalysis: { positive: 0, neutral: 0, negative: 0 }
-            },
-            settings: {
-                maxFileSize: 10,
-                allowedFileTypes: [] as string[],
-                autoBackup: true,
-                notifications: true
-            },
-            archived: false,
-            tags: [] as string[]
+// 프로젝트 관리
+export const projectService = {
+    // 프로젝트 목록 조회
+    getProjects(): Project[] {
+        try {
+            const projects = localStorage.getItem(PROJECTS_KEY);
+            return projects ? JSON.parse(projects) : [];
+        } catch (error) {
+            console.error('프로젝트 목록 조회 실패:', error);
+            return [];
+        }
+    },
+
+    // 프로젝트 생성
+    createProject(projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'chats'>): Project {
+        const newProject: Project = {
+            ...projectData,
+            id: generateId(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            chats: []
         };
 
-        return [
-            {
-                id: 'project_gaepo_woosung',
-                name: '개포우성',
-                description: '개포우성 단지 종합 분석',
-                ...base
-            },
-            {
-                id: 'project_gaepo_7th',
-                name: '개포우성7차',
-                description: '개포우성7차 재개발 프로젝트',
-                ...base
-            },
-            {
-                id: 'project_woosamo_kakao',
-                name: '우사모 카카오톡 분석',
-                description: '우사모 카카오톡 대화 분석',
-                ...base
-            },
-            {
-                id: 'project_viral',
-                name: '바이럴',
-                description: '바이럴 콘텐츠 분석',
-                ...base
-            },
-            {
-                id: 'project_business_loan',
-                name: '사업비 대여 차이 분석',
-                description: '사업비 대여 차이점 분석',
-                ...base
-            },
-            {
-                id: 'project_daewoo_elevator',
-                name: '대우 엘리베이터 설계 우위',
-                description: '대우 엘리베이터 설계 분석',
-                ...base
-            },
-            {
-                id: 'project_counter_comments',
-                name: '반격 댓글 작성',
-                description: '반격 댓글 작성 도구',
-                ...base
-            },
-            {
-                id: 'project_rain_preparedness',
-                name: '폭우 대비 비교',
-                description: '폭우 대비 시스템 비교',
-                ...base
-            },
-            {
-                id: 'project_criticism_analysis',
-                name: '극우적 비판 분석',
-                description: '극우적 비판 분석',
-                ...base
-            },
-            {
-                id: 'project_real_name_room',
-                name: '개포우성_실명방',
-                description: '개포우성 실명방 분석',
-                ...base
-            },
-            {
-                id: 'project_real_estate_news',
-                name: '부동산뉴스',
-                description: '부동산 뉴스 분석',
-                ...base
-            },
-            {
-                id: 'project_wedding_diary',
-                name: '웨딩다이어리',
-                description: '웨딩 다이어리 프로젝트',
-                ...base
-            }
-        ];
-    }
+        const projects = this.getProjects();
+        projects.push(newProject);
+        localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
 
-    // 로컬 스토리지에 기본 프로젝트가 없으면 시드
-    async seedProjectsIfEmpty(): Promise<Project[]> {
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        if (stored) {
-            try {
-                const parsed: Project[] = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-            } catch (_) {
-                // 파싱 실패 시 아래에서 시드
-            }
-        }
-
-        const seeds = this.createSeedProjects();
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(seeds));
-        return seeds;
-    }
-
-    // 모든 프로젝트 로드
-    async loadProjects(): Promise<Project[]> {
-        try {
-            const stored = localStorage.getItem(this.STORAGE_KEY);
-            if (!stored) {
-                return await this.seedProjectsIfEmpty();
-            }
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed as Project[];
-            return await this.seedProjectsIfEmpty();
-        } catch (error) {
-            console.error('프로젝트 로드 오류:', error);
-            return await this.seedProjectsIfEmpty();
-        }
-    }
-
-    // 새 프로젝트 생성
-    async createProject(name: string, description?: string, instructions?: string): Promise<Project> {
-        try {
-            const projects = await this.loadProjects();
-
-            const newProject: Project = {
-                id: `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                name,
-                description: description || `${name} 프로젝트`,
-                status: 'active',
-                priority: 'medium',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                messageCount: 0,
-                files: [],
-                guidelines: instructions ? [{
-                    id: `guideline_${Date.now()}`,
-                    title: '프로젝트 지침',
-                    content: instructions,
-                    category: 'general' as const,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    isActive: true
-                }] : [],
-                chats: [],
-                analytics: {
-                    totalMessages: 0,
-                    totalFiles: 0,
-                    totalGuidelines: instructions ? 1 : 0,
-                    activeChats: 0,
-                    participants: 0,
-                    activityTrend: [],
-                    topTopics: [],
-                    sentimentAnalysis: { positive: 0, neutral: 0, negative: 0 }
-                },
-                settings: {
-                    maxFileSize: 10,
-                    allowedFileTypes: [],
-                    autoBackup: true,
-                    notifications: true
-                },
-                archived: false,
-                tags: []
-            };
-
-            projects.unshift(newProject); // 새 프로젝트를 맨 앞에 추가
-            await this.saveProjects(projects);
-
-            return newProject;
-        } catch (error) {
-            console.error('프로젝트 생성 오류:', error);
-            throw error;
-        }
-    }
+        return newProject;
+    },
 
     // 프로젝트 업데이트
-    async updateProject(projectId: string, updates: Partial<Project>): Promise<Project | null> {
-        try {
-            const projects = await this.loadProjects();
-            const projectIndex = projects.findIndex(p => p.id === projectId);
+    updateProject(projectId: string, updates: Partial<Project>): Project | null {
+        const projects = this.getProjects();
+        const projectIndex = projects.findIndex(p => p.id === projectId);
 
-            if (projectIndex === -1) {
-                return null;
-            }
+        if (projectIndex === -1) return null;
 
-            projects[projectIndex] = {
-                ...projects[projectIndex],
-                ...updates,
-                updatedAt: new Date().toISOString()
-            };
+        projects[projectIndex] = {
+            ...projects[projectIndex],
+            ...updates,
+            updatedAt: new Date()
+        };
 
-            await this.saveProjects(projects);
-            return projects[projectIndex];
-        } catch (error) {
-            console.error('프로젝트 업데이트 오류:', error);
-            throw error;
-        }
-    }
+        localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+        return projects[projectIndex];
+    },
 
     // 프로젝트 삭제
-    async deleteProject(projectId: string): Promise<boolean> {
-        try {
-            const projects = await this.loadProjects();
-            const filteredProjects = projects.filter(p => p.id !== projectId);
+    deleteProject(projectId: string): boolean {
+        const projects = this.getProjects();
+        const filteredProjects = projects.filter(p => p.id !== projectId);
 
-            if (filteredProjects.length === projects.length) {
-                return false; // 프로젝트를 찾지 못함
-            }
+        if (filteredProjects.length === projects.length) return false;
 
-            await this.saveProjects(filteredProjects);
-            return true;
-        } catch (error) {
-            console.error('프로젝트 삭제 오류:', error);
-            throw error;
-        }
-    }
+        localStorage.setItem(PROJECTS_KEY, JSON.stringify(filteredProjects));
 
-    // 프로젝트 ID로 조회
-    async getProjectById(projectId: string): Promise<Project | null> {
-        try {
-            const projects = await this.loadProjects();
-            return projects.find(p => p.id === projectId) || null;
-        } catch (error) {
-            console.error('프로젝트 조회 오류:', error);
-            return null;
-        }
-    }
+        // 관련 채팅과 메시지도 삭제
+        this.deleteProjectChats(projectId);
 
-    // 프로젝트에 파일 추가
-    async addFileToProject(projectId: string, file: ProjectFile): Promise<boolean> {
-        try {
-            const project = await this.getProjectById(projectId);
-            if (!project) return false;
+        return true;
+    },
 
-            // 파일 중복 체크
-            const existingFile = project.files.find(f => f.name === file.name);
-            if (existingFile) {
-                // 기존 파일 업데이트
-                const updatedFiles = project.files.map(f =>
-                    f.id === existingFile.id ? { ...file, id: existingFile.id } : f
-                );
+    // 프로젝트 조회
+    getProject(projectId: string): Project | null {
+        const projects = this.getProjects();
+        return projects.find(p => p.id === projectId) || null;
+    },
 
-                const updatedProject = {
-                    ...project,
-                    files: updatedFiles,
-                    analytics: {
-                        ...project.analytics,
-                        totalFiles: project.analytics.totalFiles
-                    }
-                };
+    // 프로젝트의 채팅들 삭제
+    deleteProjectChats(projectId: string): void {
+        const chats = chatService.getAllChats();
+        const projectChats = chats.filter(c => c.projectId === projectId);
 
-                await this.updateProject(projectId, updatedProject);
-            } else {
-                // 새 파일 추가
-                const updatedProject = {
-                    ...project,
-                    files: [...project.files, file],
-                    analytics: {
-                        ...project.analytics,
-                        totalFiles: project.analytics.totalFiles + 1
-                    }
-                };
+        // 각 채팅의 메시지 삭제
+        projectChats.forEach(chat => {
+            messageService.deleteChatMessages(chat.id);
+        });
 
-                await this.updateProject(projectId, updatedProject);
-            }
+        // 채팅 삭제
+        const filteredChats = chats.filter(c => c.projectId !== projectId);
+        localStorage.setItem(CHATS_KEY, JSON.stringify(filteredChats));
+    },
 
-            return true;
-        } catch (error) {
-            console.error('파일 추가 오류:', error);
-            return false;
-        }
-    }
-
-    // 프로젝트에서 파일 삭제
-    async removeFileFromProject(projectId: string, fileId: string): Promise<boolean> {
-        try {
-            const project = await this.getProjectById(projectId);
-            if (!project) return false;
-
-            const updatedProject = {
-                ...project,
-                files: project.files.filter(f => f.id !== fileId),
-                analytics: {
-                    ...project.analytics,
-                    totalFiles: Math.max(0, project.analytics.totalFiles - 1)
+    // 초기 프로젝트 시드 생성
+    seedProjectsIfEmpty(): void {
+        const projects = this.getProjects();
+        if (projects.length === 0) {
+            const seedProjects: Project[] = [
+                {
+                    id: generateId(),
+                    name: '샘플 프로젝트',
+                    description: '프로젝트 관리 시스템을 테스트하기 위한 샘플 프로젝트입니다.',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    status: 'active',
+                    priority: 'medium',
+                    tags: ['샘플', '테스트'],
+                    guidelines: '이 프로젝트는 시스템 테스트를 위한 것입니다.',
+                    files: [],
+                    chats: [],
+                    messageCount: 0
                 }
-            };
-
-            await this.updateProject(projectId, updatedProject);
-            return true;
-        } catch (error) {
-            console.error('파일 삭제 오류:', error);
-            return false;
+            ];
+            localStorage.setItem(PROJECTS_KEY, JSON.stringify(seedProjects));
         }
     }
+};
 
-    // 프로젝트에 지침 추가
-    async addGuidelineToProject(projectId: string, guideline: string, title?: string): Promise<boolean> {
+// 채팅 관리
+export const chatService = {
+    // 프로젝트의 채팅 목록 조회
+    getProjectChats(projectId: string): Chat[] {
         try {
-            const project = await this.getProjectById(projectId);
-            if (!project) return false;
-
-            const newGuideline: Guideline = {
-                id: `guideline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                title: title || '새 지침',
-                content: guideline,
-                category: 'general' as const,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                isActive: true
-            };
-
-            const updatedProject = {
-                ...project,
-                guidelines: [...project.guidelines, newGuideline],
-                analytics: {
-                    ...project.analytics,
-                    totalGuidelines: project.analytics.totalGuidelines + 1
-                }
-            };
-
-            await this.updateProject(projectId, updatedProject);
-            return true;
+            const chats = localStorage.getItem(CHATS_KEY);
+            const allChats: Chat[] = chats ? JSON.parse(chats) : [];
+            return allChats.filter(chat => chat.projectId === projectId);
         } catch (error) {
-            console.error('지침 추가 오류:', error);
-            return false;
+            console.error('채팅 목록 조회 실패:', error);
+            return [];
         }
-    }
+    },
 
-    // 프로젝트에서 지침 삭제
-    async removeGuidelineFromProject(projectId: string, guidelineId: string): Promise<boolean> {
-        try {
-            const project = await this.getProjectById(projectId);
-            if (!project) return false;
+    // 채팅 생성
+    createChat(projectId: string, title: string): Chat {
+        const newChat: Chat = {
+            id: generateId(),
+            projectId,
+            title,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            messages: [],
+            status: 'active'
+        };
 
-            const updatedProject = {
-                ...project,
-                guidelines: project.guidelines.filter(g => g.id !== guidelineId),
-                analytics: {
-                    ...project.analytics,
-                    totalGuidelines: Math.max(0, project.analytics.totalGuidelines - 1)
-                }
-            };
+        const chats = this.getAllChats();
+        chats.push(newChat);
+        localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
 
-            await this.updateProject(projectId, updatedProject);
-            return true;
-        } catch (error) {
-            console.error('지침 삭제 오류:', error);
-            return false;
+        // 프로젝트의 채팅 목록 업데이트
+        const project = projectService.getProject(projectId);
+        if (project) {
+            project.chats.push(newChat);
+            projectService.updateProject(projectId, { chats: project.chats });
         }
-    }
 
-    // 프로젝트 지침 업데이트
-    async updateGuideline(projectId: string, guidelineId: string, updates: Partial<Guideline>): Promise<boolean> {
+        return newChat;
+    },
+
+    // 채팅 업데이트
+    updateChat(chatId: string, updates: Partial<Chat>): Chat | null {
+        const chats = this.getAllChats();
+        const chatIndex = chats.findIndex(c => c.id === chatId);
+
+        if (chatIndex === -1) return null;
+
+        chats[chatIndex] = {
+            ...chats[chatIndex],
+            ...updates,
+            updatedAt: new Date()
+        };
+
+        localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
+        return chats[chatIndex];
+    },
+
+    // 채팅 삭제
+    deleteChat(chatId: string): boolean {
+        const chats = this.getAllChats();
+        const filteredChats = chats.filter(c => c.id !== chatId);
+
+        if (filteredChats.length === chats.length) return false;
+
+        localStorage.setItem(CHATS_KEY, JSON.stringify(filteredChats));
+
+        // 관련 메시지도 삭제
+        messageService.deleteChatMessages(chatId);
+
+        return true;
+    },
+
+    // 채팅 조회
+    getChat(chatId: string): Chat | null {
+        const chats = this.getAllChats();
+        return chats.find(c => c.id === chatId) || null;
+    },
+
+    // 모든 채팅 조회
+    getAllChats(): Chat[] {
         try {
-            const project = await this.getProjectById(projectId);
-            if (!project) return false;
-
-            const updatedGuidelines = project.guidelines.map(g =>
-                g.id === guidelineId
-                    ? { ...g, ...updates, updatedAt: new Date().toISOString() }
-                    : g
-            );
-
-            const updatedProject = {
-                ...project,
-                guidelines: updatedGuidelines
-            };
-
-            await this.updateProject(projectId, updatedProject);
-            return true;
+            const chats = localStorage.getItem(CHATS_KEY);
+            return chats ? JSON.parse(chats) : [];
         } catch (error) {
-            console.error('지침 업데이트 오류:', error);
-            return false;
+            console.error('모든 채팅 조회 실패:', error);
+            return [];
         }
+    },
+
+    // 프로젝트의 채팅들 삭제
+    deleteProjectChats(projectId: string): void {
+        const chats = this.getAllChats();
+        const projectChats = chats.filter(c => c.projectId === projectId);
+
+        // 각 채팅의 메시지 삭제
+        projectChats.forEach(chat => {
+            messageService.deleteChatMessages(chat.id);
+        });
+
+        // 채팅 삭제
+        const filteredChats = chats.filter(c => c.projectId !== projectId);
+        localStorage.setItem(CHATS_KEY, JSON.stringify(filteredChats));
     }
+};
 
-    // 프로젝트 통계 업데이트
-    async updateProjectStats(projectId: string, stats: Partial<Project['analytics']>): Promise<boolean> {
+// 메시지 관리
+export const messageService = {
+    // 채팅의 메시지 목록 조회
+    getChatMessages(chatId: string): Message[] {
         try {
-            const project = await this.getProjectById(projectId);
-            if (!project) return false;
-
-            const updatedProject = {
-                ...project,
-                analytics: {
-                    ...project.analytics,
-                    ...stats
-                }
-            };
-
-            await this.updateProject(projectId, updatedProject);
-            return true;
+            const messages = localStorage.getItem(MESSAGES_KEY);
+            const allMessages: Message[] = messages ? JSON.parse(messages) : [];
+            return allMessages.filter(msg => msg.chatId === chatId);
         } catch (error) {
-            console.error('통계 업데이트 오류:', error);
-            return false;
+            console.error('메시지 목록 조회 실패:', error);
+            return [];
         }
-    }
+    },
 
-    // 프로젝트 검색
-    async searchProjects(query: string): Promise<Project[]> {
+    // 메시지 추가
+    addMessage(chatId: string, content: string, role: 'user' | 'assistant', metadata?: any): Message {
+        const newMessage: Message = {
+            id: generateId(),
+            chatId,
+            content,
+            role,
+            timestamp: new Date(),
+            metadata
+        };
+
+        const messages = this.getAllMessages();
+        messages.push(newMessage);
+        localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
+
+        // 채팅 업데이트
+        const chat = chatService.getChat(chatId);
+        if (chat) {
+            chat.messages.push(newMessage);
+            chat.updatedAt = new Date();
+            chatService.updateChat(chatId, { messages: chat.messages, updatedAt: chat.updatedAt });
+        }
+
+        return newMessage;
+    },
+
+    // 메시지 업데이트
+    updateMessage(messageId: string, updates: Partial<Message>): Message | null {
+        const messages = this.getAllMessages();
+        const messageIndex = messages.findIndex(m => m.id === messageId);
+
+        if (messageIndex === -1) return null;
+
+        messages[messageIndex] = {
+            ...messages[messageIndex],
+            ...updates
+        };
+
+        localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
+        return messages[messageIndex];
+    },
+
+    // 메시지 삭제
+    deleteMessage(messageId: string): boolean {
+        const messages = this.getAllMessages();
+        const filteredMessages = messages.filter(m => m.id !== messageId);
+
+        if (filteredMessages.length === messages.length) return false;
+
+        localStorage.setItem(MESSAGES_KEY, JSON.stringify(filteredMessages));
+        return true;
+    },
+
+    // 채팅의 모든 메시지 삭제
+    deleteChatMessages(chatId: string): void {
+        const messages = this.getAllMessages();
+        const filteredMessages = messages.filter(m => m.chatId !== chatId);
+        localStorage.setItem(MESSAGES_KEY, JSON.stringify(filteredMessages));
+    },
+
+    // 모든 메시지 조회
+    getAllMessages(): Message[] {
         try {
-            const projects = await this.loadProjects();
-            const lowerQuery = query.toLowerCase();
-
-            return projects.filter(project =>
-                project.name.toLowerCase().includes(lowerQuery) ||
-                project.description.toLowerCase().includes(lowerQuery) ||
-                project.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
-            );
+            const messages = localStorage.getItem(MESSAGES_KEY);
+            return messages ? JSON.parse(messages) : [];
         } catch (error) {
-            console.error('프로젝트 검색 오류:', error);
+            console.error('모든 메시지 조회 실패:', error);
             return [];
         }
     }
+};
 
-    // 활성 프로젝트만 조회
-    async getActiveProjects(): Promise<Project[]> {
-        try {
-            const projects = await this.loadProjects();
-            return projects.filter(p => p.status === 'active' && !p.archived);
-        } catch (error) {
-            console.error('활성 프로젝트 조회 오류:', error);
-            return [];
-        }
-    }
+// 시스템 관리용 추가 메서드들
+export const systemService = {
+    // 전체 시스템 통계
+    getSystemStats: () => {
+        const projects = projectService.getProjects();
+        const allChats = chatService.getAllChats();
+        const allMessages = messageService.getAllMessages();
 
-    // 프로젝트 아카이브
-    async archiveProject(projectId: string): Promise<boolean> {
-        try {
-            const project = await this.getProjectById(projectId);
-            if (!project) return false;
+        return {
+            totalProjects: projects.length,
+            totalChats: allChats.length,
+            totalMessages: allMessages.length,
+            activeProjects: projects.filter((p: Project) => p.status === 'active').length,
+            archivedProjects: projects.filter((p: Project) => p.status === 'archived').length,
+            completedProjects: projects.filter((p: Project) => p.status === 'completed').length
+        };
+    },
 
-            await this.updateProject(projectId, { archived: true });
-            return true;
-        } catch (error) {
-            console.error('프로젝트 아카이브 오류:', error);
-            return false;
-        }
-    }
+    // 프로젝트 검색 및 필터링
+    searchProjects: (query: string, filters: any = {}) => {
+        let projects = projectService.getProjects();
 
-    // 프로젝트 복원
-    async restoreProject(projectId: string): Promise<boolean> {
-        try {
-            const project = await this.getProjectById(projectId);
-            if (!project) return false;
-
-            await this.updateProject(projectId, { archived: false });
-            return true;
-        } catch (error) {
-            console.error('프로젝트 복원 오류:', error);
-            return false;
-        }
-    }
-
-    // 지침 활성/비활성 토글
-    async toggleGuidelineActive(projectId: string, guidelineId: string): Promise<Project | null> {
-        try {
-            const projects = await this.loadProjects();
-            const idx = projects.findIndex(p => p.id === projectId);
-            if (idx === -1) return null;
-            const updatedGuidelines = projects[idx].guidelines.map(g =>
-                g.id === guidelineId ? { ...g, isActive: !g.isActive, updatedAt: new Date().toISOString() } : g
+        // 검색어 필터링
+        if (query) {
+            projects = projects.filter((project: Project) =>
+                project.name.toLowerCase().includes(query.toLowerCase()) ||
+                project.description.toLowerCase().includes(query.toLowerCase())
             );
-            projects[idx] = { ...projects[idx], guidelines: updatedGuidelines, updatedAt: new Date().toISOString() };
-            await this.saveProjects(projects);
-            return projects[idx];
-        } catch (error) {
-            console.error('지침 토글 오류:', error);
-            return null;
         }
-    }
 
-    // 지침 삭제
-    async deleteGuideline(projectId: string, guidelineId: string): Promise<Project | null> {
+        // 상태 필터링
+        if (filters.status && filters.status !== 'all') {
+            projects = projects.filter((project: Project) => project.status === filters.status);
+        }
+
+        // 정렬
+        if (filters.sortBy) {
+            projects.sort((a: Project, b: Project) => {
+                let comparison = 0;
+                switch (filters.sortBy) {
+                    case 'name':
+                        comparison = a.name.localeCompare(b.name);
+                        break;
+                    case 'createdAt':
+                        comparison = a.createdAt.getTime() - b.createdAt.getTime();
+                        break;
+                    case 'updatedAt':
+                        comparison = a.updatedAt.getTime() - b.updatedAt.getTime();
+                        break;
+                    case 'messageCount':
+                        comparison = (a.messageCount || 0) - (b.messageCount || 0);
+                        break;
+                }
+                return filters.sortOrder === 'asc' ? comparison : -comparison;
+            });
+        }
+
+        return projects;
+    },
+
+    // 일괄 작업
+    bulkUpdateProjects: (projectIds: string[], updates: Partial<Project>) => {
+        projectIds.forEach(id => {
+            projectService.updateProject(id, updates);
+        });
+    },
+
+    // 시스템 백업
+    exportSystemData: () => {
+        const data = {
+            projects: projectService.getProjects(),
+            chats: chatService.getAllChats(),
+            messages: messageService.getAllMessages(),
+            exportDate: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `corbu-ai-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    },
+
+    // 시스템 복원
+    importSystemData: (data: any) => {
         try {
-            const projects = await this.loadProjects();
-            const idx = projects.findIndex(p => p.id === projectId);
-            if (idx === -1) return null;
-            const before = projects[idx].guidelines.length;
-            const filtered = projects[idx].guidelines.filter(g => g.id !== guidelineId);
-            if (filtered.length === before) return projects[idx];
-            const updated = {
-                ...projects[idx],
-                guidelines: filtered,
-                analytics: {
-                    ...projects[idx].analytics,
-                    totalGuidelines: Math.max(0, projects[idx].analytics.totalGuidelines - 1)
-                },
-                updatedAt: new Date().toISOString()
+            // 기존 데이터 백업
+            const backup = {
+                projects: projectService.getProjects(),
+                chats: chatService.getAllChats(),
+                messages: messageService.getAllMessages()
             };
-            projects[idx] = updated;
-            await this.saveProjects(projects);
-            return updated;
-        } catch (error) {
-            console.error('지침 삭제 오류:', error);
-            return null;
-        }
-    }
 
-    // 로컬 스토리지에 프로젝트 저장
-    private async saveProjects(projects: Project[]): Promise<void> {
-        try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(projects));
+            // 새 데이터로 교체
+            if (data.projects) {
+                localStorage.setItem('projects', JSON.stringify(data.projects));
+            }
+            if (data.chats) {
+                localStorage.setItem('chats', JSON.stringify(data.chats));
+            }
+            if (data.messages) {
+                localStorage.setItem('messages', JSON.stringify(data.messages));
+            }
+
+            return { success: true, backup };
         } catch (error) {
-            console.error('프로젝트 저장 오류:', error);
-            throw error;
+            console.error('시스템 데이터 복원 실패:', error);
+            return { success: false, error };
         }
     }
+};
+
+// 유틸리티 함수
+function generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-const projectService = new ProjectService();
-export default projectService;
+// 프로젝트 통계 계산
+export const getProjectStats = (projectId: string) => {
+    const project = projectService.getProject(projectId);
+    if (!project) return null;
+
+    const chats = chatService.getProjectChats(projectId);
+    const allMessages = messageService.getAllMessages();
+    const projectMessages = allMessages.filter(msg =>
+        chats.some(chat => chat.id === msg.chatId)
+    );
+
+    const totalChats = chats.length;
+    const totalMessages = projectMessages.length;
+    const averageResponseTime = projectMessages.length > 0
+        ? projectMessages
+            .filter(msg => msg.role === 'assistant' && msg.metadata?.responseTime)
+            .reduce((sum, msg) => sum + (msg.metadata?.responseTime || 0), 0) /
+        projectMessages.filter(msg => msg.role === 'assistant').length
+        : 0;
+
+    // 가장 활발한 날 계산
+    const messageDates = projectMessages.map(msg =>
+        new Date(msg.timestamp).toDateString()
+    );
+    const dateCounts = messageDates.reduce((acc, date) => {
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const mostActiveDay = Object.entries(dateCounts)
+        .sort(([, a], [, b]) => b - a)[0]?.[0] || '';
+
+    return {
+        totalChats,
+        totalMessages,
+        averageResponseTime,
+        mostActiveDay,
+        topKeywords: [] // 키워드 분석은 별도 구현 필요
+    };
+};

@@ -307,8 +307,8 @@ class ExternalAIService {
 - 상태: ${project.status}
 - 우선순위: ${project.priority}
 
-프로젝트 파일 수: ${project.files.length}개
-프로젝트 지침 수: ${project.guidelines.length}개
+프로젝트 파일 수: ${project.files?.length || 0}개
+프로젝트 지침 수: ${Array.isArray(project.guidelines) ? project.guidelines.length : (project.guidelines ? 1 : 0)}개
 
 이 정보를 바탕으로 프로젝트에 특화된 답변을 제공해주세요.
 `;

@@ -1,0 +1,500 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Brain,
+    Activity,
+    TrendingUp,
+    TrendingDown,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    Zap,
+    Shield,
+    Database,
+    Cpu,
+    HardDrive,
+    Wifi,
+    Play,
+    Pause,
+    RefreshCw,
+    Settings,
+    BarChart3,
+    Target,
+    Lightbulb,
+    Rocket,
+    Eye,
+    EyeOff,
+    Info,
+    X
+} from 'lucide-react';
+import {
+    SystemIntelligenceReport,
+    SystemHealthMetrics,
+    SystemAnomaly,
+    PredictiveInsight,
+    AutoOptimizationAction,
+    systemIntelligenceService
+} from '../services/systemIntelligenceService';
+import { Project, Chat, Message } from '../types/project';
+
+interface SystemIntelligenceDashboardProps {
+    projects: Project[];
+    chats: Chat[];
+    messages: Message[];
+    onOptimizationExecute?: (action: AutoOptimizationAction) => void;
+    onAnomalyResolve?: (anomalyId: string) => void;
+}
+
+const SystemIntelligenceDashboard: React.FC<SystemIntelligenceDashboardProps> = ({
+    projects,
+    chats,
+    messages,
+    onOptimizationExecute,
+    onAnomalyResolve
+}) => {
+    const [report, setReport] = useState<SystemIntelligenceReport | null>(null);
+    const [isAutoMode, setIsAutoMode] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [selectedTab, setSelectedTab] = useState<'overview' | 'anomalies' | 'insights' | 'optimizations'>('overview');
+    const [showDetails, setShowDetails] = useState<string | null>(null);
+
+    useEffect(() => {
+        generateReport();
+        const interval = setInterval(generateReport, 30000); // 30초마다 업데이트
+        return () => clearInterval(interval);
+    }, [projects, chats, messages]);
+
+    const generateReport = () => {
+        setIsRefreshing(true);
+        const newReport = systemIntelligenceService.generateIntelligenceReport(projects, chats, messages);
+        setReport(newReport);
+        setIsRefreshing(false);
+    };
+
+    const handleOptimizationExecute = async (action: AutoOptimizationAction) => {
+        if (action.automated) {
+            const success = await systemIntelligenceService.executeOptimization(action);
+            if (success) {
+                generateReport();
+                onOptimizationExecute?.(action);
+            }
+        } else {
+            onOptimizationExecute?.(action);
+        }
+    };
+
+    const handleAnomalyResolve = (anomalyId: string) => {
+        systemIntelligenceService.resolveAnomaly(anomalyId);
+        generateReport();
+        onAnomalyResolve?.(anomalyId);
+    };
+
+    const getHealthColor = (health: number) => {
+        if (health >= 80) return 'text-green-600';
+        if (health >= 60) return 'text-yellow-600';
+        if (health >= 40) return 'text-orange-600';
+        return 'text-red-600';
+    };
+
+    const getSeverityColor = (severity: string) => {
+        switch (severity) {
+            case 'critical': return 'text-red-600 bg-red-100';
+            case 'high': return 'text-orange-600 bg-orange-100';
+            case 'medium': return 'text-yellow-600 bg-yellow-100';
+            case 'low': return 'text-blue-600 bg-blue-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'critical': return 'text-red-600 bg-red-100';
+            case 'high': return 'text-orange-600 bg-orange-100';
+            case 'medium': return 'text-yellow-600 bg-yellow-100';
+            case 'low': return 'text-blue-600 bg-blue-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    if (!report) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <RefreshCw className="w-8 h-8 animate-spin text-purple-600" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                    <div className="bg-purple-100 p-2 rounded-lg">
+                        <Brain className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900">AI 시스템 지능</h2>
+                        <p className="text-sm text-gray-600">실시간 모니터링 및 예측 분석</p>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                    <button
+                        onClick={() => setIsAutoMode(!isAutoMode)}
+                        className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${isAutoMode
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
+                            }`}
+                    >
+                        {isAutoMode ? <Play className="w-4 h-4 mr-2" /> : <Pause className="w-4 h-4 mr-2" />}
+                        {isAutoMode ? '자동 모드' : '수동 모드'}
+                    </button>
+                    <button
+                        onClick={generateReport}
+                        disabled={isRefreshing}
+                        className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                    >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        새로고침
+                    </button>
+                </div>
+            </div>
+
+            {/* Health Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="bg-purple-100 p-2 rounded-lg">
+                            <Activity className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <span className={`text-2xl font-bold ${getHealthColor(report.overallHealth)}`}>
+                            {Math.round(report.overallHealth)}%
+                        </span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">전체 건강도</h3>
+                    <p className="text-sm text-gray-600">시스템 전반적인 상태</p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="bg-red-100 p-2 rounded-lg">
+                            <AlertTriangle className="h-5 w-5 text-red-600" />
+                        </div>
+                        <span className="text-2xl font-bold text-red-600">{report.criticalIssues}</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">심각한 문제</h3>
+                    <p className="text-sm text-gray-600">즉시 해결 필요</p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="bg-yellow-100 p-2 rounded-lg">
+                            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <span className="text-2xl font-bold text-yellow-600">{report.warnings}</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">경고</h3>
+                    <p className="text-sm text-gray-600">주의가 필요한 항목</p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="bg-blue-100 p-2 rounded-lg">
+                            <Lightbulb className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <span className="text-2xl font-bold text-blue-600">{report.recommendations.length}</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">추천사항</h3>
+                    <p className="text-sm text-gray-600">AI 제안 액션</p>
+                </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200">
+                    <nav className="flex space-x-8 px-6">
+                        {[
+                            { id: 'overview', name: '개요', icon: BarChart3 },
+                            { id: 'anomalies', name: '이상 징후', icon: AlertTriangle, count: report.anomalies.length },
+                            { id: 'insights', name: '예측 인사이트', icon: TrendingUp, count: report.insights.length },
+                            { id: 'optimizations', name: '최적화', icon: Rocket, count: report.optimizations.length }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setSelectedTab(tab.id as any)}
+                                className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 ${selectedTab === tab.id
+                                    ? 'border-purple-500 text-purple-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                <tab.icon className="w-4 h-4 mr-2" />
+                                {tab.name}
+                                {tab.count !== undefined && tab.count > 0 && (
+                                    <span className="ml-2 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-600 rounded-full">
+                                        {tab.count}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+
+                {/* Tab Content */}
+                <div className="p-6">
+                    <AnimatePresence mode="wait">
+                        {selectedTab === 'overview' && (
+                            <motion.div
+                                key="overview"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-6"
+                            >
+                                {/* Top Recommendations */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">주요 추천사항</h3>
+                                    <div className="space-y-3">
+                                        {report.recommendations.slice(0, 5).map((rec, index) => (
+                                            <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                                                <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
+                                                <span className="text-sm text-gray-700">{rec}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Recent Activity */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 활동</h3>
+                                    <div className="space-y-3">
+                                        {report.anomalies.slice(0, 3).map((anomaly) => (
+                                            <div key={anomaly.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                                                <div className="flex items-center space-x-3">
+                                                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">{anomaly.title}</div>
+                                                        <div className="text-xs text-gray-600">{anomaly.description}</div>
+                                                    </div>
+                                                </div>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(anomaly.severity)}`}>
+                                                    {anomaly.severity}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {selectedTab === 'anomalies' && (
+                            <motion.div
+                                key="anomalies"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-4"
+                            >
+                                {report.anomalies.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                                        <p className="text-gray-600">이상 징후가 없습니다</p>
+                                    </div>
+                                ) : (
+                                    report.anomalies.map((anomaly) => (
+                                        <div key={anomaly.id} className="border border-gray-200 rounded-lg p-4">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-start space-x-3">
+                                                    <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            <h4 className="font-medium text-gray-900">{anomaly.title}</h4>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(anomaly.severity)}`}>
+                                                                {anomaly.severity}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-3">{anomaly.description}</p>
+                                                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                                            <span>감지: {anomaly.detectedAt.toLocaleString('ko-KR')}</span>
+                                                            <span>영향: {anomaly.affectedComponents.join(', ')}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <button
+                                                        onClick={() => setShowDetails(showDetails === anomaly.id ? null : anomaly.id)}
+                                                        className="p-1 text-gray-400 hover:text-gray-600"
+                                                    >
+                                                        {showDetails === anomaly.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                    {!anomaly.resolvedAt && (
+                                                        <button
+                                                            onClick={() => handleAnomalyResolve(anomaly.id)}
+                                                            className="px-3 py-1 text-sm text-green-600 bg-green-100 rounded-md hover:bg-green-200"
+                                                        >
+                                                            해결
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {showDetails === anomaly.id && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="mt-4 pt-4 border-t border-gray-200"
+                                                >
+                                                    <h5 className="text-sm font-medium text-gray-900 mb-2">권장 조치사항:</h5>
+                                                    <ul className="space-y-1">
+                                                        {anomaly.recommendations.map((rec, index) => (
+                                                            <li key={index} className="text-sm text-gray-600 flex items-start space-x-2">
+                                                                <span className="text-blue-500 mt-1">•</span>
+                                                                <span>{rec}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </motion.div>
+                        )}
+
+                        {selectedTab === 'insights' && (
+                            <motion.div
+                                key="insights"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-4"
+                            >
+                                {report.insights.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <Info className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+                                        <p className="text-gray-600">예측 인사이트가 없습니다</p>
+                                    </div>
+                                ) : (
+                                    report.insights.map((insight) => (
+                                        <div key={insight.id} className="border border-gray-200 rounded-lg p-4">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-start space-x-3">
+                                                    <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5" />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            <h4 className="font-medium text-gray-900">{insight.title}</h4>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${insight.impact === 'high' ? 'bg-red-100 text-red-600' :
+                                                                insight.impact === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                                                                    'bg-blue-100 text-blue-600'
+                                                                }`}>
+                                                                {insight.impact}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-3">{insight.description}</p>
+                                                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                                            <span>예측일: {insight.predictedDate.toLocaleDateString('ko-KR')}</span>
+                                                            <span>신뢰도: {Math.round(insight.confidence * 100)}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setShowDetails(showDetails === insight.id ? null : insight.id)}
+                                                    className="p-1 text-gray-400 hover:text-gray-600"
+                                                >
+                                                    {showDetails === insight.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            </div>
+
+                                            {showDetails === insight.id && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="mt-4 pt-4 border-t border-gray-200"
+                                                >
+                                                    <h5 className="text-sm font-medium text-gray-900 mb-2">권장 조치사항:</h5>
+                                                    <ul className="space-y-1">
+                                                        {insight.recommendations.map((rec, index) => (
+                                                            <li key={index} className="text-sm text-gray-600 flex items-start space-x-2">
+                                                                <span className="text-blue-500 mt-1">•</span>
+                                                                <span>{rec}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </motion.div>
+                        )}
+
+                        {selectedTab === 'optimizations' && (
+                            <motion.div
+                                key="optimizations"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-4"
+                            >
+                                {report.optimizations.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <Rocket className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                                        <p className="text-gray-600">최적화 액션이 없습니다</p>
+                                    </div>
+                                ) : (
+                                    report.optimizations.map((optimization) => (
+                                        <div key={optimization.id} className="border border-gray-200 rounded-lg p-4">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-start space-x-3">
+                                                    <Rocket className="w-5 h-5 text-green-600 mt-0.5" />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            <h4 className="font-medium text-gray-900">{optimization.title}</h4>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(optimization.priority)}`}>
+                                                                {optimization.priority}
+                                                            </span>
+                                                            {optimization.automated && (
+                                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">
+                                                                    자동
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-3">{optimization.description}</p>
+                                                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                                            <span>예상 효과: {optimization.estimatedImpact}</span>
+                                                            <span>소요 시간: {optimization.estimatedDuration}분</span>
+                                                            <span>위험도: {optimization.riskLevel}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    {optimization.automated ? (
+                                                        <button
+                                                            onClick={() => handleOptimizationExecute(optimization)}
+                                                            className="px-3 py-1 text-sm text-green-600 bg-green-100 rounded-md hover:bg-green-200"
+                                                        >
+                                                            실행
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => onOptimizationExecute?.(optimization)}
+                                                            className="px-3 py-1 text-sm text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200"
+                                                        >
+                                                            수동 실행
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default SystemIntelligenceDashboard;

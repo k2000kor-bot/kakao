@@ -1,6 +1,6 @@
 import { Project } from '../types/project';
 import { ChatSession } from '../types/chat';
-import projectService from './projectService';
+import { projectService } from './projectService';
 import chatSessionService from './chatSessionService';
 
 // 사이드 메뉴 데이터 타입 정의

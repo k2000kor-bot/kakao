@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Message as ProjectMessage } from '../types/project';
 import {
     Plus,
     Search,
@@ -51,6 +52,16 @@ interface Message {
         issues?: string[];
         improvements?: string[];
         recommendations?: string[];
+    };
+    metadata?: {
+        workflowId?: string;
+        confidence?: number;
+        quality?: number;
+        executionTime?: number;
+        analysis?: any;
+        recommendations?: any;
+        nextSteps?: any;
+        intelligentMode?: boolean;
     };
 }
 
@@ -288,7 +299,7 @@ const ChatGPTMode: React.FC = () => {
 
                 // 보안 초기화 (임시 비밀번호)
                 if (!metrics.encryptionOperations) {
-                    await advancedSecurityService.initializeSecurity('CORBU_AI_SECURE_2024');
+                    await advancedSecurityService.initializeSecurity('CORBU.AI_SECURE_2024');
                 }
             } catch (error) {
                 console.error('보안 초기화 실패:', error);
@@ -526,10 +537,10 @@ const ChatGPTMode: React.FC = () => {
                             };
 
                             const workflowResponse = await advancedAIOrchestrationService.executeIntelligentWorkflow(workflowRequest);
-                            
+
                             // 지능형 응답으로 교체
                             aiContent = workflowResponse.mainResponse;
-                            
+
                             // 지능형 분석 결과를 메시지에 추가
                             const enhancedMessage: Message = {
                                 id: (Date.now() + 1).toString(),
@@ -547,9 +558,9 @@ const ChatGPTMode: React.FC = () => {
                                     intelligentMode: true
                                 }
                             };
-                            
+
                             setMessages(prev => [...prev, enhancedMessage]);
-                            
+
                             // 성능 추적 및 오류 보고
                             performanceOptimizationService.trackComponentRender('ChatGPTMode', Date.now());
                             await errorHandlingService.reportError(
@@ -557,17 +568,17 @@ const ChatGPTMode: React.FC = () => {
                                 {
                                     component: 'ChatGPTMode',
                                     action: 'intelligentWorkflow',
-                                    metadata: { 
-                                        input: currentInput, 
+                                    metadata: {
+                                        input: currentInput,
                                         workflowId: workflowResponse.workflowId,
-                                        executionTime: workflowResponse.metadata.executionTime 
+                                        executionTime: workflowResponse.metadata.executionTime
                                     }
                                 },
                                 '지능형 워크플로우가 성공적으로 실행되었습니다.'
                             );
-                            
+
                             return; // 지능형 모드에서는 여기서 종료
-                            
+
                         } catch (error) {
                             console.error('지능형 워크플로우 실행 실패:', error);
                             // 실패 시 기본 응답 사용
@@ -626,7 +637,7 @@ const ChatGPTMode: React.FC = () => {
                     }
                 } else {
                     // 백엔드 연결 실패 시 기본 응답
-                    let fallbackContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`;
+                    let fallbackContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU.AI가 도움을 드리겠습니다! 🤖`;
 
                     // 프로젝트 컨텍스트 추가
                     if (selectedProject) {
@@ -675,7 +686,7 @@ const ChatGPTMode: React.FC = () => {
             );
 
             // 오류 시 기본 응답
-            let errorContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU AI가 도움을 드리겠습니다! 🤖`;
+            let errorContent = `안녕하세요! "${currentInput}"에 대한 답변을 준비했습니다. CORBU.AI가 도움을 드리겠습니다! 🤖`;
 
             // 프로젝트 컨텍스트 추가
             if (selectedProject) {
@@ -1004,8 +1015,8 @@ const ChatGPTMode: React.FC = () => {
                         <button
                             onClick={() => setIsIntelligentMode(!isIntelligentMode)}
                             className={`flex items-center space-x-2 px-2 py-1 rounded ${isIntelligentMode
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'text-gray-700 hover:bg-gray-100'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
                             <Brain size={16} />
@@ -2735,7 +2746,7 @@ const ChatGPTMode: React.FC = () => {
                                                 <h4 className="font-medium text-indigo-800">성능 트렌드</h4>
                                                 <div className="flex items-center space-x-2">
                                                     <span className={`text-sm font-medium ${orchestrationMetrics.performanceTrend === 'improving' ? 'text-green-600' :
-                                                            orchestrationMetrics.performanceTrend === 'declining' ? 'text-red-600' : 'text-yellow-600'
+                                                        orchestrationMetrics.performanceTrend === 'declining' ? 'text-red-600' : 'text-yellow-600'
                                                         }`}>
                                                         {orchestrationMetrics.performanceTrend === 'improving' ? '개선 중' :
                                                             orchestrationMetrics.performanceTrend === 'declining' ? '하락 중' : '안정적'}
@@ -2764,7 +2775,7 @@ const ChatGPTMode: React.FC = () => {
                                                         </h4>
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm text-gray-600">사용 횟수:</span>
-                                                            <span className="font-medium text-blue-600">{count}</span>
+                                                            <span className="font-medium text-blue-600">{count as number}</span>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -2846,14 +2857,14 @@ const ChatGPTMode: React.FC = () => {
                                                 <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
                                                     <div className="flex items-center space-x-3">
                                                         <div className={`w-2 h-2 rounded-full ${workflow.status === 'completed' ? 'bg-green-500' :
-                                                                workflow.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
+                                                            workflow.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
                                                             }`}></div>
                                                         <span className="text-sm font-medium">{workflow.name}</span>
                                                         <span className="text-xs text-gray-500">{workflow.id.slice(0, 8)}...</span>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
                                                         <span className={`text-xs px-2 py-1 rounded ${workflow.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                                workflow.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                                                            workflow.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
                                                             }`}>
                                                             {workflow.status}
                                                         </span>

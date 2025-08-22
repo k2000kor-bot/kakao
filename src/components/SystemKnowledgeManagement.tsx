@@ -1,0 +1,649 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    BookOpen,
+    Search,
+    Filter,
+    Plus,
+    Edit,
+    Trash2,
+    Eye,
+    Copy,
+    Download,
+    Upload,
+    RefreshCw,
+    Clock,
+    Calendar,
+    CheckCircle,
+    XCircle,
+    AlertTriangle,
+    Info,
+    Star,
+    Heart,
+    Share2,
+    ExternalLink,
+    Tag,
+    Hash,
+    Link,
+    FileText,
+    Database,
+    Brain,
+    Zap,
+    Target,
+    TrendingUp,
+    Users,
+    MessageSquare,
+    Folder,
+    Globe,
+    Lock,
+    Unlock,
+    Key,
+    MoreVertical,
+    ChevronDown,
+    ChevronUp,
+    ArrowRight,
+    ArrowLeft,
+    BarChart3
+} from 'lucide-react';
+
+interface KnowledgeEntry {
+    id: string;
+    title: string;
+    content: string;
+    category: string;
+    tags: string[];
+    source: string;
+    sourceType: 'chat' | 'web_search' | 'manual' | 'ai_generated';
+    projectId?: string;
+    chatId?: string;
+    createdAt: Date;
+    updatedAt: Date;
+    lastAccessed: Date;
+    accessCount: number;
+    relevance: number;
+    quality: 'excellent' | 'good' | 'fair' | 'poor';
+    isPublic: boolean;
+    isVerified: boolean;
+    aiInsights?: string[];
+}
+
+interface SystemKnowledgeManagementProps {
+    onKnowledgeAction?: (action: string, entry: KnowledgeEntry) => void;
+}
+
+const SystemKnowledgeManagement: React.FC<SystemKnowledgeManagementProps> = ({ onKnowledgeAction }) => {
+    const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([]);
+    const [selectedEntry, setSelectedEntry] = useState<KnowledgeEntry | null>(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCategory, setFilterCategory] = useState<string>('all');
+    const [filterSource, setFilterSource] = useState<string>('all');
+    const [filterQuality, setFilterQuality] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<'title' | 'createdAt' | 'updatedAt' | 'accessCount' | 'relevance'>('updatedAt');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const [selectedView, setSelectedView] = useState<'overview' | 'entries' | 'analytics' | 'import'>('overview');
+
+    // Mock 데이터 생성
+    useEffect(() => {
+        const mockEntries: KnowledgeEntry[] = [
+            {
+                id: '1',
+                title: 'React 컴포넌트 최적화 방법',
+                content: 'React 컴포넌트의 성능을 최적화하는 다양한 방법들에 대한 가이드입니다. React.memo, useMemo, useCallback 등의 사용법과 실제 적용 사례를 포함합니다.',
+                category: 'development',
+                tags: ['react', 'performance', 'optimization', 'frontend'],
+                source: 'chat_analysis',
+                sourceType: 'chat',
+                projectId: 'proj-1',
+                chatId: 'chat-1',
+                createdAt: new Date('2024-01-15'),
+                updatedAt: new Date('2024-01-20'),
+                lastAccessed: new Date('2024-01-25'),
+                accessCount: 45,
+                relevance: 0.92,
+                quality: 'excellent',
+                isPublic: true,
+                isVerified: true,
+                aiInsights: ['성능 최적화에 대한 실용적인 가이드', '실제 프로젝트에서 적용 가능한 내용']
+            },
+            {
+                id: '2',
+                title: 'AI 기반 프로젝트 관리 시스템 설계',
+                content: 'AI를 활용한 프로젝트 관리 시스템의 설계 원칙과 구현 방법에 대한 문서입니다. 머신러닝 모델, 자연어 처리, 예측 분석 등의 기술적 세부사항을 다룹니다.',
+                category: 'ai_ml',
+                tags: ['ai', 'machine-learning', 'project-management', 'nlp'],
+                source: 'web_search',
+                sourceType: 'web_search',
+                createdAt: new Date('2024-01-10'),
+                updatedAt: new Date('2024-01-18'),
+                lastAccessed: new Date('2024-01-22'),
+                accessCount: 23,
+                relevance: 0.88,
+                quality: 'good',
+                isPublic: false,
+                isVerified: true,
+                aiInsights: ['최신 AI 기술 트렌드 반영', '실무 적용 가능한 설계 패턴']
+            },
+            {
+                id: '3',
+                title: 'TypeScript 고급 타입 시스템',
+                content: 'TypeScript의 고급 타입 시스템에 대한 심화 가이드입니다. 제네릭, 조건부 타입, 매핑 타입, 템플릿 리터럴 타입 등의 고급 기능을 다룹니다.',
+                category: 'development',
+                tags: ['typescript', 'types', 'advanced', 'programming'],
+                source: 'manual_entry',
+                sourceType: 'manual',
+                createdAt: new Date('2024-01-05'),
+                updatedAt: new Date('2024-01-12'),
+                lastAccessed: new Date('2024-01-19'),
+                accessCount: 67,
+                relevance: 0.85,
+                quality: 'excellent',
+                isPublic: true,
+                isVerified: true,
+                aiInsights: ['실무에서 자주 사용되는 패턴들', '타입 안전성 향상 기법']
+            },
+            {
+                id: '4',
+                title: '데이터베이스 성능 최적화 전략',
+                content: '대용량 데이터베이스의 성능을 최적화하는 전략과 기법에 대한 문서입니다. 인덱싱, 쿼리 최적화, 캐싱 전략 등을 포함합니다.',
+                category: 'database',
+                tags: ['database', 'performance', 'optimization', 'sql'],
+                source: 'ai_generated',
+                sourceType: 'ai_generated',
+                createdAt: new Date('2024-01-08'),
+                updatedAt: new Date('2024-01-15'),
+                lastAccessed: new Date('2024-01-21'),
+                accessCount: 34,
+                relevance: 0.78,
+                quality: 'good',
+                isPublic: true,
+                isVerified: false,
+                aiInsights: ['실제 성능 개선 사례 포함', '다양한 데이터베이스 시스템 적용 가능']
+            }
+        ];
+        setKnowledgeEntries(mockEntries);
+    }, []);
+
+    const getQualityColor = (quality: string) => {
+        switch (quality) {
+            case 'excellent': return 'text-green-600 bg-green-100';
+            case 'good': return 'text-blue-600 bg-blue-100';
+            case 'fair': return 'text-yellow-600 bg-yellow-100';
+            case 'poor': return 'text-red-600 bg-red-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    const getSourceColor = (sourceType: string) => {
+        switch (sourceType) {
+            case 'chat': return 'text-purple-600 bg-purple-100';
+            case 'web_search': return 'text-blue-600 bg-blue-100';
+            case 'manual': return 'text-green-600 bg-green-100';
+            case 'ai_generated': return 'text-orange-600 bg-orange-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    const getRelevanceColor = (relevance: number) => {
+        if (relevance >= 0.9) return 'text-green-600';
+        if (relevance >= 0.7) return 'text-blue-600';
+        if (relevance >= 0.5) return 'text-yellow-600';
+        return 'text-red-600';
+    };
+
+    const filteredEntries = knowledgeEntries
+        .filter(entry => {
+            const matchesSearch = entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                entry.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                entry.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+            const matchesCategory = filterCategory === 'all' || entry.category === filterCategory;
+            const matchesSource = filterSource === 'all' || entry.sourceType === filterSource;
+            const matchesQuality = filterQuality === 'all' || entry.quality === filterQuality;
+            return matchesSearch && matchesCategory && matchesSource && matchesQuality;
+        })
+        .sort((a, b) => {
+            let comparison = 0;
+            switch (sortBy) {
+                case 'title':
+                    comparison = a.title.localeCompare(b.title);
+                    break;
+                case 'createdAt':
+                    comparison = a.createdAt.getTime() - b.createdAt.getTime();
+                    break;
+                case 'updatedAt':
+                    comparison = a.updatedAt.getTime() - b.updatedAt.getTime();
+                    break;
+                case 'accessCount':
+                    comparison = a.accessCount - b.accessCount;
+                    break;
+                case 'relevance':
+                    comparison = a.relevance - b.relevance;
+                    break;
+            }
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+
+    const handleKnowledgeAction = (action: string, entry: KnowledgeEntry) => {
+        switch (action) {
+            case 'edit':
+                setSelectedEntry(entry);
+                setShowEditModal(true);
+                break;
+            case 'delete':
+                if (window.confirm(`정말로 "${entry.title}" 지식 항목을 삭제하시겠습니까?`)) {
+                    setKnowledgeEntries(prev => prev.filter(e => e.id !== entry.id));
+                }
+                break;
+            case 'duplicate':
+                const duplicated = {
+                    ...entry,
+                    id: `copy-${Date.now()}`,
+                    title: `${entry.title} (복사본)`,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    accessCount: 0
+                };
+                setKnowledgeEntries(prev => [...prev, duplicated]);
+                break;
+            case 'toggle_public':
+                setKnowledgeEntries(prev => prev.map(e =>
+                    e.id === entry.id ? { ...e, isPublic: !e.isPublic } : e
+                ));
+                break;
+        }
+        onKnowledgeAction?.(action, entry);
+    };
+
+    const categories = ['all', 'development', 'ai_ml', 'database', 'design', 'business', 'research'];
+    const sources = ['all', 'chat', 'web_search', 'manual', 'ai_generated'];
+    const qualities = ['all', 'excellent', 'good', 'fair', 'poor'];
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                    <div className="bg-purple-100 p-2 rounded-lg">
+                        <BookOpen className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900">지식베이스 관리</h2>
+                        <p className="text-sm text-gray-600">프로젝트 지식 및 AI 학습 데이터 관리</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700"
+                >
+                    <Plus className="w-4 h-4 mr-2" />
+                    새 지식 추가
+                </button>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200">
+                    <nav className="flex space-x-8 px-6">
+                        {[
+                            { id: 'overview', name: '개요', icon: BookOpen },
+                            { id: 'entries', name: '지식 항목', icon: FileText },
+                            { id: 'analytics', name: '분석', icon: BarChart3 },
+                            { id: 'import', name: '가져오기', icon: Upload }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setSelectedView(tab.id as any)}
+                                className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 ${selectedView === tab.id
+                                        ? 'border-purple-500 text-purple-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                <tab.icon className="w-4 h-4 mr-2" />
+                                {tab.name}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                    <AnimatePresence mode="wait">
+                        {selectedView === 'overview' && (
+                            <motion.div
+                                key="overview"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-6"
+                            >
+                                {/* Statistics */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center">
+                                            <div className="bg-purple-100 p-3 rounded-lg">
+                                                <BookOpen className="h-6 w-6 text-purple-600" />
+                                            </div>
+                                            <div className="ml-4">
+                                                <p className="text-sm font-medium text-gray-600">총 지식 항목</p>
+                                                <p className="text-2xl font-bold text-gray-900">{knowledgeEntries.length}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center">
+                                            <div className="bg-green-100 p-3 rounded-lg">
+                                                <CheckCircle className="h-6 w-6 text-green-600" />
+                                            </div>
+                                            <div className="ml-4">
+                                                <p className="text-sm font-medium text-gray-600">검증된 항목</p>
+                                                <p className="text-2xl font-bold text-gray-900">
+                                                    {knowledgeEntries.filter(e => e.isVerified).length}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center">
+                                            <div className="bg-blue-100 p-3 rounded-lg">
+                                                <Globe className="h-6 w-6 text-blue-600" />
+                                            </div>
+                                            <div className="ml-4">
+                                                <p className="text-sm font-medium text-gray-600">공개 항목</p>
+                                                <p className="text-2xl font-bold text-gray-900">
+                                                    {knowledgeEntries.filter(e => e.isPublic).length}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center">
+                                            <div className="bg-orange-100 p-3 rounded-lg">
+                                                <Brain className="h-6 w-6 text-orange-600" />
+                                            </div>
+                                            <div className="ml-4">
+                                                <p className="text-sm font-medium text-gray-600">AI 생성</p>
+                                                <p className="text-2xl font-bold text-gray-900">
+                                                    {knowledgeEntries.filter(e => e.sourceType === 'ai_generated').length}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Recent Entries */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 지식 항목</h3>
+                                    <div className="space-y-3">
+                                        {filteredEntries.slice(0, 5).map((entry) => (
+                                            <div key={entry.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            <h4 className="font-medium text-gray-900">{entry.title}</h4>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getQualityColor(entry.quality)}`}>
+                                                                {entry.quality === 'excellent' ? '우수' :
+                                                                    entry.quality === 'good' ? '양호' :
+                                                                        entry.quality === 'fair' ? '보통' : '낮음'}
+                                                            </span>
+                                                            {entry.isVerified && (
+                                                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{entry.content}</p>
+                                                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                                            <span>{entry.category}</span>
+                                                            <span>조회: {entry.accessCount}회</span>
+                                                            <span>관련도: {Math.round(entry.relevance * 100)}%</span>
+                                                            <span>{entry.updatedAt.toLocaleDateString('ko-KR')}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <button
+                                                            onClick={() => handleKnowledgeAction('edit', entry)}
+                                                            className="text-purple-600 hover:text-purple-900"
+                                                        >
+                                                            <Edit className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleKnowledgeAction('duplicate', entry)}
+                                                            className="text-blue-600 hover:text-blue-900"
+                                                        >
+                                                            <Copy className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleKnowledgeAction('delete', entry)}
+                                                            className="text-red-600 hover:text-red-900"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {selectedView === 'entries' && (
+                            <motion.div
+                                key="entries"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-6"
+                            >
+                                {/* Filters and Search */}
+                                <div className="bg-gray-50 rounded-lg p-6">
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                        <div className="flex-1">
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="지식 검색..."
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <select
+                                                value={filterCategory}
+                                                onChange={(e) => setFilterCategory(e.target.value)}
+                                                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            >
+                                                {categories.map(cat => (
+                                                    <option key={cat} value={cat}>
+                                                        {cat === 'all' ? '모든 카테고리' :
+                                                            cat === 'development' ? '개발' :
+                                                                cat === 'ai_ml' ? 'AI/ML' :
+                                                                    cat === 'database' ? '데이터베이스' :
+                                                                        cat === 'design' ? '디자인' :
+                                                                            cat === 'business' ? '비즈니스' :
+                                                                                cat === 'research' ? '연구' : cat}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                value={filterSource}
+                                                onChange={(e) => setFilterSource(e.target.value)}
+                                                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            >
+                                                {sources.map(source => (
+                                                    <option key={source} value={source}>
+                                                        {source === 'all' ? '모든 출처' :
+                                                            source === 'chat' ? '채팅' :
+                                                                source === 'web_search' ? '웹 검색' :
+                                                                    source === 'manual' ? '수동' :
+                                                                        source === 'ai_generated' ? 'AI 생성' : source}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                value={filterQuality}
+                                                onChange={(e) => setFilterQuality(e.target.value)}
+                                                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            >
+                                                {qualities.map(quality => (
+                                                    <option key={quality} value={quality}>
+                                                        {quality === 'all' ? '모든 품질' :
+                                                            quality === 'excellent' ? '우수' :
+                                                                quality === 'good' ? '양호' :
+                                                                    quality === 'fair' ? '보통' :
+                                                                        quality === 'poor' ? '낮음' : quality}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Entries List */}
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        지식 항목
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        카테고리
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        출처
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        품질
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        액션
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {filteredEntries.map((entry) => (
+                                                    <tr key={entry.id} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex items-center">
+                                                                <div className="bg-purple-100 p-2 rounded-lg mr-3">
+                                                                    <FileText className="h-4 w-4 text-purple-600" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-sm font-medium text-gray-900">{entry.title}</div>
+                                                                    <div className="text-sm text-gray-500 line-clamp-2">{entry.content}</div>
+                                                                    <div className="flex items-center space-x-2 mt-1">
+                                                                        {entry.tags.slice(0, 3).map(tag => (
+                                                                            <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                                                                {tag}
+                                                                            </span>
+                                                                        ))}
+                                                                        {entry.tags.length > 3 && (
+                                                                            <span className="text-xs text-gray-500">+{entry.tags.length - 3}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className="text-sm text-gray-900">{entry.category}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSourceColor(entry.sourceType)}`}>
+                                                                {entry.sourceType === 'chat' ? '채팅' :
+                                                                    entry.sourceType === 'web_search' ? '웹 검색' :
+                                                                        entry.sourceType === 'manual' ? '수동' : 'AI 생성'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex items-center space-x-2">
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getQualityColor(entry.quality)}`}>
+                                                                    {entry.quality === 'excellent' ? '우수' :
+                                                                        entry.quality === 'good' ? '양호' :
+                                                                            entry.quality === 'fair' ? '보통' : '낮음'}
+                                                                </span>
+                                                                <span className={`text-xs font-medium ${getRelevanceColor(entry.relevance)}`}>
+                                                                    {Math.round(entry.relevance * 100)}%
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                            <div className="flex items-center space-x-2">
+                                                                <button
+                                                                    onClick={() => handleKnowledgeAction('edit', entry)}
+                                                                    className="text-purple-600 hover:text-purple-900"
+                                                                >
+                                                                    <Edit className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleKnowledgeAction('duplicate', entry)}
+                                                                    className="text-blue-600 hover:text-blue-900"
+                                                                >
+                                                                    <Copy className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleKnowledgeAction('toggle_public', entry)}
+                                                                    className={entry.isPublic ? "text-green-600 hover:text-green-900" : "text-gray-600 hover:text-gray-900"}
+                                                                >
+                                                                    {entry.isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleKnowledgeAction('delete', entry)}
+                                                                    className="text-red-600 hover:text-red-900"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {selectedView === 'analytics' && (
+                            <motion.div
+                                key="analytics"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-6"
+                            >
+                                <div className="text-center py-12">
+                                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">지식베이스 분석</h3>
+                                    <p className="text-gray-600">지식베이스 사용 패턴 및 성능 분석이 곧 추가됩니다.</p>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {selectedView === 'import' && (
+                            <motion.div
+                                key="import"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-6"
+                            >
+                                <div className="text-center py-12">
+                                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">지식 가져오기</h3>
+                                    <p className="text-gray-600">외부 소스에서 지식을 가져오는 기능이 곧 추가됩니다.</p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default SystemKnowledgeManagement;

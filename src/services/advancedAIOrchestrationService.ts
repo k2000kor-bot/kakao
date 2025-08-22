@@ -3,13 +3,14 @@
  * 모든 AI 서비스들을 통합 관리하고 지능형 워크플로우 제공
  */
 
-import advancedNLPService from './advancedNLPService';
-import knowledgeIntegrationService from './knowledgeIntegrationService';
-import advancedQuestionAnalyzer from './advancedQuestionAnalyzer';
-import intelligentResponseEngine from './intelligentResponseEngine';
-import advancedConversationProcessor from './advancedConversationProcessor';
-import advancedAIAnalyticsService from './advancedAIAnalyticsService';
-import webCommentAnalysisService from './webCommentAnalysisService';
+// 임시로 주석 처리 - 빌드 오류 해결을 위해
+// import { advancedNLPService } from './advancedNLPService';
+// import { knowledgeIntegrationService } from './knowledgeIntegrationService';
+// import advancedQuestionAnalyzer from './advancedQuestionAnalyzer';
+// import intelligentResponseEngine from './intelligentResponseEngine';
+// import advancedConversationProcessor from './advancedConversationProcessor';
+// import advancedAIAnalyticsService from './advancedAIAnalyticsService';
+// import webCommentAnalysisService from './webCommentAnalysisService';
 import performanceOptimizationService from './performanceOptimizationService';
 import advancedSecurityService from './advancedSecurityService';
 

@@ -1,0 +1,1071 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Building2,
+  Users,
+  MessageSquare,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  MapPin,
+  DollarSign,
+  FileText,
+  Search,
+  Filter,
+  Star,
+  ThumbsUp,
+  ThumbsDown,
+  Eye,
+  BarChart3,
+  PieChart,
+  Calendar,
+  Home,
+  Hammer,
+  Shield,
+  Target,
+  Lightbulb,
+  Heart,
+  Zap
+} from 'lucide-react';
+import {
+  realEstateKnowledgeService,
+  ReconstructionProject,
+  ConstructionCompanyProfile,
+  CommunityFeedback,
+  MarketAnalysis,
+  PolicyUpdate,
+  TaxInformation,
+  TaxOptimization
+} from '../services/realEstateKnowledgeService';
+import ApartmentCommunityDashboard from './ApartmentCommunityDashboard';
+import ConstructionCompanyDashboard from './ConstructionCompanyDashboard';
+import RealEstateMarketDashboard from './RealEstateMarketDashboard';
+import DreamApartmentVisionDashboard from './DreamApartmentVisionDashboard';
+
+interface RealEstateDashboardProps {
+  projects: any[];
+  chats: any[];
+  messages: any[];
+}
+
+const RealEstateDashboard: React.FC<RealEstateDashboardProps> = ({
+  projects,
+  chats,
+  messages
+}) => {
+  const [selectedView, setSelectedView] = useState<'overview' | 'projects' | 'community' | 'companies' | 'market' | 'taxes' | 'policies' | 'knowledge' | 'dreams'>('overview');
+  const [reconstructionProjects, setReconstructionProjects] = useState<ReconstructionProject[]>([]);
+  const [companies, setCompanies] = useState<ConstructionCompanyProfile[]>([]);
+  const [communityFeedbacks, setCommunityFeedbacks] = useState<CommunityFeedback[]>([]);
+  const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis | null>(null);
+  const [policies, setPolicies] = useState<PolicyUpdate[]>([]);
+  const [taxInformation, setTaxInformation] = useState<TaxInformation[]>([]);
+  const [selectedProject, setSelectedProject] = useState<ReconstructionProject | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<ConstructionCompanyProfile | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 30000); // 30초마다 업데이트
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadData = () => {
+    setReconstructionProjects(realEstateKnowledgeService.getProjects());
+    setCompanies(realEstateKnowledgeService.getCompanies());
+    setPolicies(realEstateKnowledgeService.getPolicies());
+    setTaxInformation(realEstateKnowledgeService.getTaxInformation());
+
+    // 샘플 커뮤니티 피드백 로드
+    const sampleFeedbacks: CommunityFeedback[] = [
+      {
+        id: 'feedback_1',
+        platform: 'naver_cafe',
+        author: 'resident_001',
+        content: '공사 소음이 너무 심해서 잠을 잘 수가 없어요. 언제까지 이런 상황이 계속될까요?',
+        sentiment: 'negative',
+        topics: ['소음', '공사'],
+        timestamp: new Date('2024-01-15T09:30:00'),
+        responses: [],
+        engagement: { likes: 15, comments: 8, shares: 2 }
+      },
+      {
+        id: 'feedback_2',
+        platform: 'apt_app',
+        author: 'resident_002',
+        content: '새 아파트 설계도를 보니 정말 기대가 됩니다! 특히 커뮤니티 시설이 잘 되어 있네요.',
+        sentiment: 'positive',
+        topics: ['설계', '커뮤니티'],
+        timestamp: new Date('2024-01-14T14:20:00'),
+        responses: [],
+        engagement: { likes: 32, comments: 12, shares: 5 }
+      }
+    ];
+    setCommunityFeedbacks(sampleFeedbacks);
+
+    // 샘플 시장 분석 데이터
+    const sampleMarketAnalysis: MarketAnalysis = {
+      currentPrices: {
+        sale: { min: 800000000, max: 1500000000, average: 1100000000, perSquareMeter: 13000000 },
+        rent: { min: 50000000, max: 100000000, average: 70000000, perSquareMeter: 800000 }
+      },
+      trends: {
+        direction: 'increasing',
+        percentage: 8.5,
+        timeframe: '최근 6개월'
+      },
+      comparables: [
+        {
+          name: '래미안 강남',
+          distance: 0.5,
+          pricePerSqm: 14000000,
+          completionYear: 2022,
+          amenities: ['헬스장', '수영장', '키즈카페'],
+          similarityScore: 0.92
+        }
+      ],
+      projections: [
+        {
+          timeframe: '1year',
+          priceIncrease: 5.2,
+          confidence: 0.85,
+          factors: ['지하철 연장', '학군 개선']
+        }
+      ],
+      factors: [
+        {
+          type: 'infrastructure',
+          name: '지하철 9호선 연장',
+          impact: 'positive',
+          weight: 0.3,
+          description: '2025년 개통 예정으로 교통 접근성 크게 향상'
+        }
+      ]
+    };
+    setMarketAnalysis(sampleMarketAnalysis);
+  };
+
+  const updateKnowledge = async () => {
+    setIsLoading(true);
+    try {
+      await realEstateKnowledgeService.updateKnowledgeFromExternalSources();
+      loadData();
+    } catch (error) {
+      console.error('지식 업데이트 실패:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateCommunityResponse = async (feedback: CommunityFeedback) => {
+    if (reconstructionProjects.length === 0) return;
+
+    try {
+      const response = await realEstateKnowledgeService.analyzeCommunityFeedback(
+        reconstructionProjects[0].id,
+        feedback
+      );
+
+      // 피드백에 응답 추가
+      const updatedFeedbacks = communityFeedbacks.map(f =>
+        f.id === feedback.id
+          ? { ...f, responses: [...f.responses, response] }
+          : f
+      );
+      setCommunityFeedbacks(updatedFeedbacks);
+    } catch (error) {
+      console.error('커뮤니티 응답 생성 실패:', error);
+    }
+  };
+
+  const evaluateCompany = (company: ConstructionCompanyProfile) => {
+    try {
+      const evaluation = realEstateKnowledgeService.evaluateConstructionCompany(company.id);
+      setSelectedCompany({ ...company, evaluation } as any);
+    } catch (error) {
+      console.error('시공사 평가 실패:', error);
+    }
+  };
+
+  const navigationTabs = [
+    { id: 'overview', name: '종합 현황', icon: Home },
+    { id: 'projects', name: '재건축 프로젝트', icon: Building2 },
+    { id: 'community', name: '커뮤니티 분석', icon: Users },
+    { id: 'companies', name: '시공사 정보', icon: Hammer },
+    { id: 'market', name: '시장 분석', icon: TrendingUp },
+    { id: 'taxes', name: '세제 관리', icon: DollarSign },
+    { id: 'policies', name: '정책 동향', icon: FileText },
+    { id: 'knowledge', name: '전문 지식', icon: Lightbulb },
+    { id: 'dreams', name: '꿈의 아파트', icon: Heart }
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'text-green-600 bg-green-100';
+      case 'construction': return 'text-blue-600 bg-blue-100';
+      case 'approved': return 'text-purple-600 bg-purple-100';
+      case 'planning': return 'text-yellow-600 bg-yellow-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getSentimentColor = (sentiment: string) => {
+    switch (sentiment) {
+      case 'positive': return 'text-green-600 bg-green-100';
+      case 'negative': return 'text-red-600 bg-red-100';
+      case 'mixed': return 'text-orange-600 bg-orange-100';
+      case 'neutral': return 'text-gray-600 bg-gray-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 via-white to-green-50">
+      {/* 헤더 */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Building2 className="w-8 h-8 text-blue-600" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">부동산 재건축 AI</h1>
+                <p className="text-sm text-gray-600">재건축/재개발 전문 지능형 플랫폼</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="프로젝트, 시공사, 정책 검색..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <button
+              onClick={updateKnowledge}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              <span>지식 업데이트</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 네비게이션 탭 */}
+        <div className="flex space-x-1 mt-4 overflow-x-auto">
+          {navigationTabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedView(tab.id as any)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${selectedView === tab.id
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="font-medium">{tab.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 메인 콘텐츠 */}
+      <div className="flex-1 overflow-auto p-6">
+        <AnimatePresence mode="wait">
+          {/* 종합 현황 */}
+          {selectedView === 'overview' && (
+            <motion.div
+              key="overview"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              {/* 주요 지표 카드 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">진행 중인 프로젝트</p>
+                      <p className="text-2xl font-bold text-gray-900">{reconstructionProjects.length}</p>
+                    </div>
+                    <Building2 className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <div className="mt-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-gray-600">
+                        {reconstructionProjects.filter(p => p.status === 'construction').length}개 시공 중
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">등록된 시공사</p>
+                      <p className="text-2xl font-bold text-gray-900">{companies.length}</p>
+                    </div>
+                    <Hammer className="w-8 h-8 text-orange-600" />
+                  </div>
+                  <div className="mt-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-gray-600">
+                        {companies.filter(c => c.reputation.overallScore >= 80).length}개 우수 업체
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">커뮤니티 피드백</p>
+                      <p className="text-2xl font-bold text-gray-900">{communityFeedbacks.length}</p>
+                    </div>
+                    <MessageSquare className="w-8 h-8 text-green-600" />
+                  </div>
+                  <div className="mt-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-sm text-gray-600">
+                        {communityFeedbacks.filter(f => f.sentiment === 'negative').length}개 우려사항
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">시장 전망</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {marketAnalysis ? `+${marketAnalysis.trends.percentage}%` : 'N/A'}
+                      </p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-purple-600" />
+                  </div>
+                  <div className="mt-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-gray-600">
+                        {marketAnalysis?.trends.timeframe || '데이터 없음'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 최근 활동 및 알림 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 커뮤니티 활동</h3>
+                  <div className="space-y-3">
+                    {communityFeedbacks.slice(0, 5).map((feedback) => (
+                      <div key={feedback.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <MessageSquare className="w-5 h-5 text-blue-600 mt-1" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">{feedback.platform}</p>
+                          <p className="text-sm text-gray-600 line-clamp-2">{feedback.content}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSentimentColor(feedback.sentiment)}`}>
+                              {feedback.sentiment}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {feedback.timestamp.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">중요 알림</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <AlertTriangle className="w-5 h-5 text-yellow-600 mt-1" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">정책 변경 알림</p>
+                        <p className="text-sm text-gray-600">재건축 관련 새로운 세제 혜택이 발표되었습니다.</p>
+                        <p className="text-xs text-gray-500 mt-1">2시간 전</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <CheckCircle className="w-5 h-5 text-blue-600 mt-1" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">시공사 평가 완료</p>
+                        <p className="text-sm text-gray-600">대한건설의 최신 평가 결과가 업데이트되었습니다.</p>
+                        <p className="text-xs text-gray-500 mt-1">1일 전</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <TrendingUp className="w-5 h-5 text-green-600 mt-1" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">시장 분석 업데이트</p>
+                        <p className="text-sm text-gray-600">강남구 재건축 시장 전망이 긍정적으로 변화했습니다.</p>
+                        <p className="text-xs text-gray-500 mt-1">2일 전</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 재건축 프로젝트 */}
+          {selectedView === 'projects' && (
+            <motion.div
+              key="projects"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">재건축 프로젝트 현황</h3>
+                  <p className="text-sm text-gray-600 mt-1">진행 중인 재건축 프로젝트들의 상세 정보</p>
+                </div>
+
+                <div className="p-6">
+                  {reconstructionProjects.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">등록된 재건축 프로젝트가 없습니다.</p>
+                      <p className="text-sm text-gray-400 mt-1">새로운 프로젝트를 추가해보세요.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {reconstructionProjects.map((project) => (
+                        <div key={project.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{project.name}</h4>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <MapPin className="w-4 h-4 text-gray-400" />
+                                <span className="text-sm text-gray-600">{project.location.address}</span>
+                              </div>
+                            </div>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                              {project.status}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <p className="text-xs font-medium text-gray-700 mb-1">총 예산</p>
+                              <p className="text-sm text-gray-900">
+                                {project.financials.totalBudget.toLocaleString()}원
+                              </p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <p className="text-xs font-medium text-gray-700 mb-1">입주민 수</p>
+                              <p className="text-sm text-gray-900">{project.residents.length}세대</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <span className="text-xs text-gray-600">
+                                시작: {project.timeline.planningStart.toLocaleDateString()}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => setSelectedProject(project)}
+                              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            >
+                              자세히 보기
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 커뮤니티 분석 */}
+          {selectedView === 'community' && (
+            <motion.div
+              key="community"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">커뮤니티 피드백 분석</h3>
+                  <p className="text-sm text-gray-600 mt-1">입주민들의 의견과 AI 기반 맞춤 응답</p>
+                </div>
+
+                <div className="p-6">
+                  <div className="space-y-4">
+                    {communityFeedbacks.map((feedback) => (
+                      <div key={feedback.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="font-medium text-gray-900">{feedback.platform}</span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSentimentColor(feedback.sentiment)}`}>
+                                {feedback.sentiment}
+                              </span>
+                            </div>
+                            <p className="text-gray-700 mb-2">{feedback.content}</p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <div className="flex items-center space-x-1">
+                                <ThumbsUp className="w-4 h-4" />
+                                <span>{feedback.engagement.likes}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <MessageSquare className="w-4 h-4" />
+                                <span>{feedback.engagement.comments}</span>
+                              </div>
+                              <span>{feedback.timestamp.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {feedback.responses.length > 0 ? (
+                          <div className="bg-blue-50 rounded-lg p-3 mt-3">
+                            <p className="text-sm font-medium text-blue-900 mb-1">AI 생성 응답</p>
+                            <p className="text-sm text-blue-800">{feedback.responses[0].content}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-blue-600">톤: {feedback.responses[0].tone}</span>
+                              <span className="text-xs text-blue-600">
+                                효과 예상: {Math.round(feedback.responses[0].effectiveness * 100)}%
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => generateCommunityResponse(feedback)}
+                            className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                          >
+                            AI 응답 생성
+                          </button>
+                        )}
+
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {feedback.topics.map((topic, index) => (
+                            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                              #{topic}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 시공사 정보 */}
+          {selectedView === 'companies' && (
+            <motion.div
+              key="companies"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">시공사 정보 및 평가</h3>
+                  <p className="text-sm text-gray-600 mt-1">시공사별 상세 정보, 하자 이력, 평가 점수</p>
+                </div>
+
+                <div className="p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {companies.map((company) => (
+                      <div key={company.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h4 className="font-medium text-gray-900">{company.name}</h4>
+                            <p className="text-sm text-gray-600">{company.headquarters}</p>
+                            <p className="text-xs text-gray-500">설립: {company.established.getFullYear()}년</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center space-x-1">
+                              <Star className="w-4 h-4 text-yellow-500" />
+                              <span className="font-medium">{company.reputation.overallScore}</span>
+                            </div>
+                            <p className="text-xs text-gray-500">종합 점수</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="bg-gray-50 rounded p-2">
+                            <p className="text-xs text-gray-600">품질 점수</p>
+                            <p className="font-medium">{company.reputation.qualityScore}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded p-2">
+                            <p className="text-xs text-gray-600">일정 준수</p>
+                            <p className="font-medium">{company.reputation.timelinessScore}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded p-2">
+                            <p className="text-xs text-gray-600">고객 서비스</p>
+                            <p className="font-medium">{company.reputation.customerServiceScore}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded p-2">
+                            <p className="text-xs text-gray-600">하자 처리</p>
+                            <p className="font-medium">{company.reputation.defectResolutionScore}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Shield className="w-4 h-4 text-green-500" />
+                            <span className="text-sm text-gray-600">
+                              위험도: {company.financialHealth.riskLevel}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => evaluateCompany(company)}
+                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            상세 평가
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 시장 분석 */}
+          {selectedView === 'market' && marketAnalysis && (
+            <motion.div
+              key="market"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">부동산 시장 분석</h3>
+                  <p className="text-sm text-gray-600 mt-1">매매/전세 시세, 트렌드 분석, 투자 전망</p>
+                </div>
+
+                <div className="p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-900 mb-3">매매 시세</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">평균 가격:</span>
+                          <span className="font-medium text-blue-900">
+                            {(marketAnalysis.currentPrices.sale.average / 100000000).toFixed(1)}억원
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">㎡당 가격:</span>
+                          <span className="font-medium text-blue-900">
+                            {(marketAnalysis.currentPrices.sale.perSquareMeter / 10000).toFixed(0)}만원
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4">
+                      <h4 className="font-medium text-green-900 mb-3">전세 시세</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-green-700">평균 가격:</span>
+                          <span className="font-medium text-green-900">
+                            {(marketAnalysis.currentPrices.rent.average / 100000000).toFixed(1)}억원
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-green-700">㎡당 가격:</span>
+                          <span className="font-medium text-green-900">
+                            {(marketAnalysis.currentPrices.rent.perSquareMeter / 10000).toFixed(0)}만원
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-purple-50 rounded-lg p-4 mb-6">
+                    <h4 className="font-medium text-purple-900 mb-3">시장 트렌드</h4>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <TrendingUp className="w-5 h-5 text-purple-600" />
+                        <span className="text-purple-700">
+                          {marketAnalysis.trends.direction === 'increasing' ? '상승' :
+                            marketAnalysis.trends.direction === 'decreasing' ? '하락' : '보합'}
+                        </span>
+                      </div>
+                      <span className="font-medium text-purple-900">
+                        {marketAnalysis.trends.percentage}%
+                      </span>
+                      <span className="text-purple-700">
+                        ({marketAnalysis.trends.timeframe})
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-gray-900">시장 영향 요인</h4>
+                    {marketAnalysis.factors.map((factor, index) => (
+                      <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div className={`w-3 h-3 rounded-full mt-1 ${factor.impact === 'positive' ? 'bg-green-500' :
+                          factor.impact === 'negative' ? 'bg-red-500' : 'bg-gray-500'
+                          }`} />
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{factor.name}</p>
+                          <p className="text-sm text-gray-600">{factor.description}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-xs text-gray-500">영향도:</span>
+                            <div className="w-20 bg-gray-200 rounded-full h-1">
+                              <div
+                                className="bg-blue-600 h-1 rounded-full"
+                                style={{ width: `${factor.weight * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500">{Math.round(factor.weight * 100)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 세제 관리 */}
+          {selectedView === 'taxes' && (
+            <motion.div
+              key="taxes"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">부동산 세제 관리</h3>
+                  <p className="text-sm text-gray-600 mt-1">공시가격, 재산세, 종부세, 취득세, 양도소득세 관리</p>
+                </div>
+
+                <div className="p-6">
+                  {taxInformation.length === 0 ? (
+                    <div className="text-center py-12">
+                      <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">등록된 세금 정보가 없습니다.</p>
+                      <p className="text-sm text-gray-400 mt-1">새로운 부동산 세금 정보를 추가해보세요.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {taxInformation.map((taxInfo) => (
+                        <div key={taxInfo.id} className="border border-gray-200 rounded-lg p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{taxInfo.propertyAddress}</h4>
+                              <p className="text-sm text-gray-600">{taxInfo.ownershipInfo.ownerName} 소유</p>
+                              <div className="flex items-center space-x-4 mt-2">
+                                <span className="text-sm text-gray-600">
+                                  공시가격: {(taxInfo.assessedValue / 100000000).toFixed(1)}억원
+                                </span>
+                                <span className="text-sm text-gray-600">
+                                  시세: {(taxInfo.marketValue / 100000000).toFixed(1)}억원
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-gray-500">마지막 업데이트</p>
+                              <p className="text-sm font-medium">{taxInfo.lastUpdated.toLocaleDateString()}</p>
+                            </div>
+                          </div>
+
+                          {/* 세금 요약 */}
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                            <div className="bg-blue-50 rounded-lg p-3">
+                              <p className="text-xs font-medium text-blue-700 mb-1">재산세</p>
+                              <p className="text-sm font-medium text-blue-900">
+                                {taxInfo.taxes.propertyTax.finalTaxAmount.toLocaleString()}원
+                              </p>
+                              <p className="text-xs text-blue-600">
+                                {taxInfo.taxes.propertyTax.isPaid ? '납부완료' : '미납부'}
+                              </p>
+                            </div>
+
+                            <div className="bg-green-50 rounded-lg p-3">
+                              <p className="text-xs font-medium text-green-700 mb-1">종합부동산세</p>
+                              <p className="text-sm font-medium text-green-900">
+                                {taxInfo.taxes.comprehensiveRealEstateTax.finalTaxAmount.toLocaleString()}원
+                              </p>
+                              <p className="text-xs text-green-600">
+                                {taxInfo.taxes.comprehensiveRealEstateTax.isPaid ? '납부완료' : '미납부'}
+                              </p>
+                            </div>
+
+                            <div className="bg-purple-50 rounded-lg p-3">
+                              <p className="text-xs font-medium text-purple-700 mb-1">취득세</p>
+                              <p className="text-sm font-medium text-purple-900">
+                                {taxInfo.taxes.acquisitionTax.finalTaxAmount.toLocaleString()}원
+                              </p>
+                              <p className="text-xs text-purple-600">
+                                {taxInfo.taxes.acquisitionTax.isPaid ? '납부완료' : '미납부'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* 세금 상세 정보 */}
+                          <div className="space-y-4">
+                            <h5 className="font-medium text-gray-900">세금 상세 정보</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                  <span className="text-sm text-gray-600">과세표준</span>
+                                  <span className="text-sm font-medium">{taxInfo.taxes.propertyTax.taxableValue.toLocaleString()}원</span>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                  <span className="text-sm text-gray-600">세율</span>
+                                  <span className="text-sm font-medium">{(taxInfo.taxes.propertyTax.taxRate * 100).toFixed(2)}%</span>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                  <span className="text-sm text-gray-600">공제액</span>
+                                  <span className="text-sm font-medium">
+                                    {taxInfo.taxes.propertyTax.deductions.reduce((sum, d) => sum + d.amount, 0).toLocaleString()}원
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                  <span className="text-sm text-gray-600">납부기한</span>
+                                  <span className="text-sm font-medium">{taxInfo.taxes.propertyTax.dueDate.toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                  <span className="text-sm text-gray-600">보유기간</span>
+                                  <span className="text-sm font-medium">{taxInfo.ownershipInfo.ownershipPeriod}년</span>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                  <span className="text-sm text-gray-600">주거용 여부</span>
+                                  <span className="text-sm font-medium">{taxInfo.ownershipInfo.isMainResidence ? '예' : '아니오'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 액션 버튼 */}
+                          <div className="flex items-center space-x-3 mt-6 pt-4 border-t border-gray-200">
+                            <button
+                              onClick={() => {
+                                try {
+                                  const optimization = realEstateKnowledgeService.analyzeTaxOptimization(taxInfo.propertyId);
+                                  console.log('세금 최적화 분석 완료:', optimization);
+                                } catch (error) {
+                                  console.error('세금 최적화 분석 실패:', error);
+                                }
+                              }}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                            >
+                              세금 최적화 분석
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                realEstateKnowledgeService.payTax(taxInfo.propertyId, '재산세');
+                                loadData();
+                              }}
+                              disabled={taxInfo.taxes.propertyTax.isPaid}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
+                            >
+                              {taxInfo.taxes.propertyTax.isPaid ? '납부완료' : '재산세 납부'}
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                const newValue = prompt('새로운 공시가격을 입력하세요 (원):');
+                                if (newValue) {
+                                  realEstateKnowledgeService.updateAssessedValue(taxInfo.propertyId, parseInt(newValue));
+                                  loadData();
+                                }
+                              }}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                            >
+                              공시가격 업데이트
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 커뮤니티 분석 */}
+          {selectedView === 'community' && (
+            <motion.div
+              key="community"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <ApartmentCommunityDashboard apartmentId="default" />
+            </motion.div>
+          )}
+
+          {/* 시공사 정보 */}
+          {selectedView === 'companies' && (
+            <motion.div
+              key="companies"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <ConstructionCompanyDashboard projectId="default" />
+            </motion.div>
+          )}
+
+          {/* 시장 분석 */}
+          {selectedView === 'market' && (
+            <motion.div
+              key="market"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <RealEstateMarketDashboard region="강남구" />
+            </motion.div>
+          )}
+
+          {/* 꿈의 아파트 비전 */}
+          {selectedView === 'dreams' && (
+            <motion.div
+              key="dreams"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <DreamApartmentVisionDashboard userId="user_1" />
+            </motion.div>
+          )}
+
+          {/* 꿈의 아파트 */}
+          {selectedView === 'dreams' && (
+            <motion.div
+              key="dreams"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl p-8 text-center">
+                <Heart className="w-16 h-16 text-pink-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">꿈의 아파트 비전</h2>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  재건축을 통해 실현될 새로운 아파트의 모습을 그려보세요.
+                  AI가 여러분의 꿈과 희망을 분석하여 최적의 설계와 계획을 제안합니다.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">미래 아파트 특징</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Home className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">스마트 홈 시스템</h4>
+                        <p className="text-sm text-gray-600">IoT 기반 통합 관리 시스템으로 편리한 생활</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Shield className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">친환경 설계</h4>
+                        <p className="text-sm text-gray-600">에너지 효율성과 지속가능성을 고려한 설계</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <Users className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">커뮤니티 공간</h4>
+                        <p className="text-sm text-gray-600">주민 간 소통과 교류를 위한 다양한 공간</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">투자 가치 전망</h3>
+                  <div className="space-y-4">
+                    {marketAnalysis?.projections.map((projection, index) => (
+                      <div key={index} className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-gray-900">
+                            {projection.timeframe === '1year' ? '1년 후' :
+                              projection.timeframe === '3year' ? '3년 후' :
+                                projection.timeframe === '5year' ? '5년 후' : '10년 후'}
+                          </span>
+                          <span className="text-lg font-bold text-orange-600">
+                            +{projection.priceIncrease}%
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-orange-500 h-2 rounded-full"
+                              style={{ width: `${projection.confidence * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            신뢰도 {Math.round(projection.confidence * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+export default RealEstateDashboard;

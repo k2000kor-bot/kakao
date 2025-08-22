@@ -1,0 +1,380 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Brain,
+    TrendingUp,
+    TrendingDown,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    Users,
+    MessageSquare,
+    Target,
+    Lightbulb,
+    BarChart3,
+    PieChart,
+    Activity,
+    Zap,
+    Star,
+    ArrowUp,
+    ArrowDown,
+    Minus
+} from 'lucide-react';
+import { Project } from '../types/project';
+import { aiAnalysisEngine, ProjectAnalysis, ProjectInsight } from '../services/aiAnalysisEngine';
+
+interface AIAnalyticsDashboardProps {
+    project: Project;
+    onInsightAction?: (insight: ProjectInsight) => void;
+}
+
+const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({
+    project,
+    onInsightAction
+}) => {
+    const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedInsightType, setSelectedInsightType] = useState<string>('all');
+    const [showRecommendations, setShowRecommendations] = useState(false);
+
+    useEffect(() => {
+        loadAnalysis();
+    }, [project.id]);
+
+    const loadAnalysis = async () => {
+        setIsLoading(true);
+        try {
+            const projectAnalysis = await aiAnalysisEngine.analyzeProject(project.id);
+            setAnalysis(projectAnalysis);
+        } catch (error) {
+            console.error('분석 로드 실패:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getScoreColor = (score: number) => {
+        if (score >= 80) return 'text-green-600';
+        if (score >= 60) return 'text-yellow-600';
+        return 'text-red-600';
+    };
+
+    const getScoreBackground = (score: number) => {
+        if (score >= 80) return 'bg-green-100';
+        if (score >= 60) return 'bg-yellow-100';
+        return 'bg-red-100';
+    };
+
+    const getSeverityIcon = (severity: string) => {
+        switch (severity) {
+            case 'high': return <AlertTriangle className="h-4 w-4 text-red-500" />;
+            case 'medium': return <Clock className="h-4 w-4 text-yellow-500" />;
+            case 'low': return <CheckCircle className="h-4 w-4 text-green-500" />;
+            default: return <Minus className="h-4 w-4 text-gray-500" />;
+        }
+    };
+
+    const getTypeIcon = (type: string) => {
+        switch (type) {
+            case 'productivity': return <Target className="h-5 w-5 text-blue-600" />;
+            case 'engagement': return <Users className="h-5 w-5 text-purple-600" />;
+            case 'quality': return <Star className="h-5 w-5 text-yellow-600" />;
+            case 'trend': return <TrendingUp className="h-5 w-5 text-green-600" />;
+            case 'recommendation': return <Lightbulb className="h-5 w-5 text-orange-600" />;
+            default: return <Brain className="h-5 w-5 text-gray-600" />;
+        }
+    };
+
+    const getTrendIcon = (trend: string) => {
+        switch (trend) {
+            case 'increasing': return <ArrowUp className="h-4 w-4 text-green-500" />;
+            case 'decreasing': return <ArrowDown className="h-4 w-4 text-red-500" />;
+            case 'stable': return <Minus className="h-4 w-4 text-gray-500" />;
+            default: return <Minus className="h-4 w-4 text-gray-500" />;
+        }
+    };
+
+    const filteredInsights = analysis?.insights.filter(insight =>
+        selectedInsightType === 'all' || insight.type === selectedInsightType
+    ) || [];
+
+    const insightTypes = [
+        { id: 'all', name: '전체', icon: Brain },
+        { id: 'productivity', name: '생산성', icon: Target },
+        { id: 'engagement', name: '참여도', icon: Users },
+        { id: 'quality', name: '품질', icon: Star },
+        { id: 'trend', name: '트렌드', icon: TrendingUp },
+        { id: 'recommendation', name: '추천', icon: Lightbulb }
+    ];
+
+    if (isLoading) {
+        return (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                <div className="flex items-center justify-center">
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="mr-3"
+                    >
+                        <Brain className="h-8 w-8 text-purple-600" />
+                    </motion.div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">AI 분석 진행 중</h3>
+                        <p className="text-gray-600">프로젝트 데이터를 분석하고 있습니다...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!analysis) {
+        return (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">분석 데이터 없음</h3>
+                <p className="text-gray-600 mb-4">프로젝트 분석을 수행할 수 없습니다.</p>
+                <button
+                    onClick={loadAnalysis}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                    다시 시도
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* 종합 점수 */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                        <div className="bg-purple-100 p-2 rounded-lg">
+                            <Brain className="h-6 w-6 text-purple-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900">AI 프로젝트 분석</h2>
+                            <p className="text-gray-600">실시간 인사이트 및 추천사항</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={loadAnalysis}
+                        className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                        <Activity className="h-4 w-4" />
+                        <span className="text-sm">새로고침</span>
+                    </button>
+                </div>
+
+                {/* 종합 점수 표시 */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    <div className="text-center">
+                        <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${getScoreBackground(analysis.overallScore)} mb-3`}>
+                            <span className={`text-2xl font-bold ${getScoreColor(analysis.overallScore)}`}>
+                                {analysis.overallScore}
+                            </span>
+                        </div>
+                        <h3 className="font-semibold text-gray-900">종합 점수</h3>
+                        <p className="text-sm text-gray-600">전체 프로젝트 상태</p>
+                    </div>
+
+                    <div className="text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-3">
+                            <span className="text-2xl font-bold text-blue-600">{analysis.trends.productivity}</span>
+                        </div>
+                        <h3 className="font-semibold text-gray-900">생산성</h3>
+                        <div className="flex items-center justify-center space-x-1 text-sm text-gray-600">
+                            {getTrendIcon(analysis.trends.activity)}
+                            <span>{analysis.trends.activity}</span>
+                        </div>
+                    </div>
+
+                    <div className="text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-3">
+                            <span className="text-2xl font-bold text-purple-600">{analysis.trends.quality}</span>
+                        </div>
+                        <h3 className="font-semibold text-gray-900">품질</h3>
+                        <p className="text-sm text-gray-600">메시지 품질 점수</p>
+                    </div>
+
+                    <div className="text-center">
+                        <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${analysis.trends.engagement === 'high' ? 'bg-green-100' :
+                                analysis.trends.engagement === 'medium' ? 'bg-yellow-100' : 'bg-red-100'
+                            } mb-3`}>
+                            <Users className={`h-8 w-8 ${analysis.trends.engagement === 'high' ? 'text-green-600' :
+                                    analysis.trends.engagement === 'medium' ? 'text-yellow-600' : 'text-red-600'
+                                }`} />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">참여도</h3>
+                        <p className="text-sm text-gray-600 capitalize">{analysis.trends.engagement}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* 인사이트 필터 */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900">AI 인사이트</h3>
+                    <span className="text-sm text-gray-600">{filteredInsights.length}개 발견</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                    {insightTypes.map((type) => {
+                        const IconComponent = type.icon;
+                        return (
+                            <button
+                                key={type.id}
+                                onClick={() => setSelectedInsightType(type.id)}
+                                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedInsightType === type.id
+                                        ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                            >
+                                <IconComponent className="h-4 w-4" />
+                                <span>{type.name}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* 인사이트 목록 */}
+                <div className="space-y-4">
+                    <AnimatePresence>
+                        {filteredInsights.map((insight, index) => (
+                            <motion.div
+                                key={insight.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                            >
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center space-x-3">
+                                        {getTypeIcon(insight.type)}
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900">{insight.title}</h4>
+                                            <div className="flex items-center space-x-2 mt-1">
+                                                {getSeverityIcon(insight.severity)}
+                                                <span className="text-sm text-gray-600">
+                                                    신뢰도: {(insight.confidence * 100).toFixed(0)}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {insight.actionable && (
+                                        <button
+                                            onClick={() => onInsightAction?.(insight)}
+                                            className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+                                        >
+                                            조치하기
+                                        </button>
+                                    )}
+                                </div>
+
+                                <p className="text-gray-700 mb-3">{insight.description}</p>
+
+                                {insight.metrics && (
+                                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-600">현재: {insight.metrics.current} {insight.metrics.unit}</span>
+                                            <span className="text-gray-600">목표: {insight.metrics.target} {insight.metrics.unit}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                            <div
+                                                className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                                                style={{
+                                                    width: `${Math.min(100, (insight.metrics.current / insight.metrics.target) * 100)}%`
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {insight.suggestions.length > 0 && (
+                                    <div>
+                                        <h5 className="font-medium text-gray-900 mb-2">제안사항:</h5>
+                                        <ul className="space-y-1">
+                                            {insight.suggestions.map((suggestion, idx) => (
+                                                <li key={idx} className="flex items-start space-x-2 text-sm text-gray-700">
+                                                    <Lightbulb className="h-3 w-3 text-yellow-500 mt-0.5 flex-shrink-0" />
+                                                    <span>{suggestion}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+
+                    {filteredInsights.length === 0 && (
+                        <div className="text-center py-8">
+                            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">모든 것이 순조롭습니다!</h3>
+                            <p className="text-gray-600">현재 이 카테고리에서 특별한 인사이트가 없습니다.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 추천사항 */}
+            {analysis.recommendations.length > 0 && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-gray-900">AI 추천사항</h3>
+                        <button
+                            onClick={() => setShowRecommendations(!showRecommendations)}
+                            className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                        >
+                            {showRecommendations ? '접기' : '더보기'}
+                        </button>
+                    </div>
+
+                    <AnimatePresence>
+                        {showRecommendations && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="space-y-3"
+                            >
+                                {analysis.recommendations.map((rec, index) => (
+                                    <div
+                                        key={index}
+                                        className={`border-l-4 pl-4 py-2 ${rec.priority === 'high' ? 'border-red-500 bg-red-50' :
+                                                rec.priority === 'medium' ? 'border-yellow-500 bg-yellow-50' :
+                                                    'border-green-500 bg-green-50'
+                                            }`}
+                                    >
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${rec.priority === 'high' ? 'bg-red-100 text-red-700' :
+                                                    rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-green-100 text-green-700'
+                                                }`}>
+                                                {rec.priority === 'high' ? '높음' : rec.priority === 'medium' ? '보통' : '낮음'}
+                                            </span>
+                                            <span className="text-sm font-medium text-gray-900 capitalize">{rec.category}</span>
+                                        </div>
+                                        <p className="text-gray-800 mb-1">{rec.action}</p>
+                                        <p className="text-sm text-gray-600">예상 효과: {rec.impact}</p>
+                                    </div>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            )}
+
+            {/* 분석 정보 */}
+            <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>마지막 분석: {new Date(analysis.analysisDate).toLocaleString('ko-KR')}</span>
+                    <span>AI 엔진: CORBU Analytics v2.0</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default AIAnalyticsDashboard;

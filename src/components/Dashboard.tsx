@@ -170,7 +170,7 @@ const Dashboard: React.FC = () => {
             {/* 헤더 */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">CORBU AI 대시보드</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">CORBU.AI 대시보드</h1>
                     <p className="text-gray-600">시스템 성능 및 활동 현황</p>
                 </div>
                 <div className="text-right">

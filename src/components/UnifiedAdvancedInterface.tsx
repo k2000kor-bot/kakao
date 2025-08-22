@@ -738,7 +738,7 @@ ${advancedResponse.nextActions.slice(0, 2).map(action => `• ${action}`).join('
                     <div className="flex items-center space-x-3">
                         <Bot className="h-8 w-8 text-purple-600" />
                         <div>
-                            <h1 className="text-lg font-bold text-gray-900">CORBU AI</h1>
+                            <h1 className="text-lg font-bold text-gray-900">CORBU.AI</h1>
                             <p className="text-sm text-gray-500">통합 고도화 시스템</p>
                         </div>
                     </div>

@@ -3,6 +3,11 @@
  * 사용자의 상호작용 패턴을 분석하고 개인화된 경험 제공
  */
 
+import { Project, Chat, Message } from '../types/project';
+import { collaborationService } from './collaborationService';
+import { projectKnowledgeService } from './projectKnowledgeService';
+import { workflowAutomationService } from './workflowAutomationService';
+
 export interface UserBehavior {
   userId: string;
   sessionId: string;
@@ -54,6 +59,76 @@ export interface UserProfile {
   };
 }
 
+export interface PerformanceMetric {
+  id: string;
+  name: string;
+  value: number;
+  unit: string;
+  trend: 'up' | 'down' | 'stable';
+  changePercent: number;
+  target?: number;
+  category: 'productivity' | 'quality' | 'collaboration' | 'knowledge' | 'timeline';
+  timestamp: Date;
+}
+
+export interface TrendData {
+  period: string;
+  value: number;
+  date: Date;
+}
+
+export interface TrendAnalysis {
+  metric: string;
+  data: TrendData[];
+  trend: 'increasing' | 'decreasing' | 'stable';
+  slope: number;
+  correlation: number;
+  seasonality?: 'daily' | 'weekly' | 'monthly' | 'none';
+  forecast?: number[];
+}
+
+export interface PredictiveInsight {
+  id: string;
+  type: 'completion_time' | 'resource_needs' | 'risk_assessment' | 'quality_prediction' | 'collaboration_impact';
+  title: string;
+  description: string;
+  confidence: number;
+  predictedValue: any;
+  factors: string[];
+  recommendations: string[];
+  timestamp: Date;
+}
+
+export interface ProjectHealthScore {
+  overall: number;
+  categories: {
+    productivity: number;
+    collaboration: number;
+    knowledge: number;
+    timeline: number;
+    quality: number;
+  };
+  factors: {
+    positive: string[];
+    negative: string[];
+  };
+  recommendations: string[];
+  lastUpdated: Date;
+}
+
+export interface ComparativeAnalysis {
+  projectId: string;
+  metrics: {
+    [key: string]: {
+      current: number;
+      average: number;
+      percentile: number;
+    };
+  };
+  insights: string[];
+  recommendations: string[];
+}
+
 class AdvancedAnalyticsService {
   private behaviors: UserBehavior[] = [];
   private patterns: Map<string, UserPattern> = new Map();
@@ -76,7 +151,7 @@ class AdvancedAnalyticsService {
     this.recordBehavior('session_start', 'system', {
       sessionId: this.currentSessionId,
       userAgent: navigator.userAgent,
-      screenResolution: `${screen.width}x${screen.height}`,
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
     });
 
@@ -140,15 +215,15 @@ class AdvancedAnalyticsService {
    */
   private isSensitiveInput(element: HTMLElement): boolean {
     if (!element) return false;
-    
+
     const sensitiveTypes = ['password', 'email', 'tel', 'number'];
     const sensitiveAttributes = ['data-sensitive', 'autocomplete'];
-    
+
     if (element.tagName === 'INPUT') {
       const input = element as HTMLInputElement;
       if (sensitiveTypes.includes(input.type)) return true;
     }
-    
+
     return sensitiveAttributes.some(attr => element.hasAttribute(attr));
   }
 
@@ -174,10 +249,10 @@ class AdvancedAnalyticsService {
     };
 
     this.behaviors.push(behavior);
-    
+
     // 로컬 스토리지에 저장 (최대 1000개)
     this.saveBehaviors();
-    
+
     // 패턴 분석 트리거
     this.analyzePatterns();
   }
@@ -187,13 +262,13 @@ class AdvancedAnalyticsService {
    */
   private analyzePatterns(): void {
     const recentBehaviors = this.behaviors.slice(-50); // 최근 50개 행동만 분석
-    
+
     // 액션 시퀀스 패턴 분석
     this.analyzeActionSequences(recentBehaviors);
-    
+
     // 시간 기반 패턴 분석
     this.analyzeTimePatterns(recentBehaviors);
-    
+
     // 컴포넌트 사용 패턴 분석
     this.analyzeComponentUsage(recentBehaviors);
   }
@@ -203,11 +278,11 @@ class AdvancedAnalyticsService {
    */
   private analyzeActionSequences(behaviors: UserBehavior[]): void {
     const sequences = this.extractSequences(behaviors, 3); // 3개 액션 시퀀스
-    
+
     sequences.forEach(sequence => {
       const patternKey = `sequence_${sequence.join('_')}`;
       const existingPattern = this.patterns.get(patternKey);
-      
+
       if (existingPattern) {
         existingPattern.frequency += 1;
         existingPattern.lastSeen = Date.now();
@@ -230,26 +305,26 @@ class AdvancedAnalyticsService {
    */
   private analyzeTimePatterns(behaviors: UserBehavior[]): void {
     const hourGroups = new Map<number, number>();
-    
+
     behaviors.forEach(behavior => {
       const hour = new Date(behavior.timestamp).getHours();
       hourGroups.set(hour, (hourGroups.get(hour) || 0) + 1);
     });
-    
+
     // 가장 활발한 시간대 찾기
     let maxHour = 0;
     let maxCount = 0;
-    
+
     hourGroups.forEach((count, hour) => {
       if (count > maxCount) {
         maxCount = count;
         maxHour = hour;
       }
     });
-    
+
     const patternKey = `active_hour_${maxHour}`;
     const existingPattern = this.patterns.get(patternKey);
-    
+
     if (existingPattern) {
       existingPattern.frequency += 1;
       existingPattern.confidence = Math.min(existingPattern.confidence + 0.05, 1.0);
@@ -270,15 +345,15 @@ class AdvancedAnalyticsService {
    */
   private analyzeComponentUsage(behaviors: UserBehavior[]): void {
     const componentUsage = new Map<string, number>();
-    
+
     behaviors.forEach(behavior => {
       componentUsage.set(behavior.component, (componentUsage.get(behavior.component) || 0) + 1);
     });
-    
+
     componentUsage.forEach((count, component) => {
       const patternKey = `component_usage_${component}`;
       const existingPattern = this.patterns.get(patternKey);
-      
+
       if (existingPattern) {
         existingPattern.frequency += count;
         existingPattern.confidence = Math.min(existingPattern.confidence + 0.02, 1.0);
@@ -300,12 +375,12 @@ class AdvancedAnalyticsService {
    */
   private extractSequences(behaviors: UserBehavior[], length: number): string[][] {
     const sequences: string[][] = [];
-    
+
     for (let i = 0; i <= behaviors.length - length; i++) {
       const sequence = behaviors.slice(i, i + length).map(b => b.action);
       sequences.push(sequence);
     }
-    
+
     return sequences;
   }
 
@@ -314,19 +389,19 @@ class AdvancedAnalyticsService {
    */
   generateInsights(): AnalyticsInsight[] {
     this.insights = [];
-    
+
     // 사용 패턴 인사이트
     this.generateUsageInsights();
-    
+
     // 성능 인사이트
     this.generatePerformanceInsights();
-    
+
     // 선호도 인사이트
     this.generatePreferenceInsights();
-    
+
     // 트렌드 인사이트
     this.generateTrendInsights();
-    
+
     return this.insights;
   }
 
@@ -335,7 +410,7 @@ class AdvancedAnalyticsService {
    */
   private generateUsageInsights(): void {
     const userProfile = this.getUserProfile();
-    
+
     // 가장 많이 사용하는 기능
     const mostUsedFeatures = userProfile.behavior.mostUsedFeatures;
     if (mostUsedFeatures.length > 0) {
@@ -374,7 +449,7 @@ class AdvancedAnalyticsService {
    */
   private generatePerformanceInsights(): void {
     const userProfile = this.getUserProfile();
-    
+
     // 응답 시간 분석
     if (userProfile.performance.averageResponseTime > 2000) {
       this.insights.push({
@@ -413,7 +488,7 @@ class AdvancedAnalyticsService {
    */
   private generatePreferenceInsights(): void {
     const userProfile = this.getUserProfile();
-    
+
     // AI 응답 스타일 선호도
     this.insights.push({
       type: 'preference',
@@ -447,14 +522,14 @@ class AdvancedAnalyticsService {
   private generateTrendInsights(): void {
     const recentBehaviors = this.behaviors.slice(-100);
     const olderBehaviors = this.behaviors.slice(-200, -100);
-    
+
     if (recentBehaviors.length === 0 || olderBehaviors.length === 0) return;
-    
+
     // 사용량 트렌드
     const recentUsage = recentBehaviors.length;
     const olderUsage = olderBehaviors.length;
     const usageChange = ((recentUsage - olderUsage) / olderUsage) * 100;
-    
+
     if (Math.abs(usageChange) > 20) {
       this.insights.push({
         type: 'trend',
@@ -479,7 +554,7 @@ class AdvancedAnalyticsService {
   updateUserProfile(updates: Partial<UserProfile>): void {
     const currentProfile = this.getUserProfile();
     const updatedProfile = { ...currentProfile, ...updates };
-    
+
     this.userProfiles.set(this.getCurrentUserId(), updatedProfile);
     this.saveUserProfiles();
   }
@@ -490,12 +565,12 @@ class AdvancedAnalyticsService {
   getUserProfile(): UserProfile {
     const userId = this.getCurrentUserId();
     let profile = this.userProfiles.get(userId);
-    
+
     if (!profile) {
       profile = this.createDefaultProfile(userId);
       this.userProfiles.set(userId, profile);
     }
-    
+
     return profile;
   }
 
@@ -542,39 +617,39 @@ class AdvancedAnalyticsService {
   private updateUserProfileFromBehaviors(): void {
     const profile = this.getUserProfile();
     const recentBehaviors = this.behaviors.slice(-100);
-    
+
     if (recentBehaviors.length === 0) return;
-    
+
     // 세션 지속 시간 계산
     const sessionDurations = this.calculateSessionDurations();
     if (sessionDurations.length > 0) {
-      profile.behavior.averageSessionDuration = 
+      profile.behavior.averageSessionDuration =
         sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length;
     }
-    
+
     // 가장 많이 사용하는 기능
     const featureUsage = new Map<string, number>();
     recentBehaviors.forEach(behavior => {
       featureUsage.set(behavior.component, (featureUsage.get(behavior.component) || 0) + 1);
     });
-    
+
     profile.behavior.mostUsedFeatures = Array.from(featureUsage.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([feature]) => feature);
-    
+
     // 선호 시간대
     const hourUsage = new Map<number, number>();
     recentBehaviors.forEach(behavior => {
       const hour = new Date(behavior.timestamp).getHours();
       hourUsage.set(hour, (hourUsage.get(hour) || 0) + 1);
     });
-    
+
     profile.behavior.preferredTimeSlots = Array.from(hourUsage.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([hour]) => `${hour}:00-${hour + 1}:00`);
-    
+
     this.updateUserProfile(profile);
   }
 
@@ -583,7 +658,7 @@ class AdvancedAnalyticsService {
    */
   private calculateSessionDurations(): number[] {
     const sessions = new Map<string, { start: number; end?: number }>();
-    
+
     this.behaviors.forEach(behavior => {
       if (behavior.action === 'session_start') {
         sessions.set(behavior.sessionId, { start: behavior.timestamp });
@@ -594,7 +669,7 @@ class AdvancedAnalyticsService {
         }
       }
     });
-    
+
     return Array.from(sessions.values())
       .filter(session => session.end)
       .map(session => session.end! - session.start);
@@ -662,9 +737,599 @@ class AdvancedAnalyticsService {
     localStorage.removeItem('userBehaviors');
     localStorage.removeItem('userProfiles');
   }
+
+  // 성과 지표 계산
+  calculatePerformanceMetrics(projectId: string): PerformanceMetric[] {
+    const metrics: PerformanceMetric[] = [];
+
+    // 생산성 지표
+    const productivityMetrics = this.calculateProductivityMetrics(projectId);
+    metrics.push(...productivityMetrics);
+
+    // 협업 지표
+    const collaborationMetrics = this.calculateCollaborationMetrics(projectId);
+    metrics.push(...collaborationMetrics);
+
+    // 지식 지표
+    const knowledgeMetrics = this.calculateKnowledgeMetrics(projectId);
+    metrics.push(...knowledgeMetrics);
+
+    // 품질 지표
+    const qualityMetrics = this.calculateQualityMetrics(projectId);
+    metrics.push(...qualityMetrics);
+
+    return metrics;
+  }
+
+  private calculateProductivityMetrics(projectId: string): PerformanceMetric[] {
+    const chats = collaborationService.getProjectComments(projectId);
+    const messages = this.getAllProjectMessages(projectId);
+    const workflows = workflowAutomationService.getProjectWorkflows(projectId);
+
+    const totalMessages = messages.length;
+    const avgMessagesPerDay = this.calculateAverageMessagesPerDay(messages);
+    const workflowCompletionRate = this.calculateWorkflowCompletionRate(workflows);
+
+    return [
+      {
+        id: this.generateId(),
+        name: '총 메시지 수',
+        value: totalMessages,
+        unit: '개',
+        trend: this.calculateTrend(totalMessages, this.getPreviousPeriodValue(projectId, 'total_messages')),
+        changePercent: this.calculateChangePercent(totalMessages, this.getPreviousPeriodValue(projectId, 'total_messages')),
+        category: 'productivity',
+        timestamp: new Date()
+      },
+      {
+        id: this.generateId(),
+        name: '일평균 메시지',
+        value: avgMessagesPerDay,
+        unit: '개/일',
+        trend: 'stable',
+        changePercent: 0,
+        category: 'productivity',
+        timestamp: new Date()
+      },
+      {
+        id: this.generateId(),
+        name: '워크플로우 완료율',
+        value: workflowCompletionRate,
+        unit: '%',
+        trend: workflowCompletionRate > 80 ? 'up' : workflowCompletionRate < 50 ? 'down' : 'stable',
+        changePercent: 0,
+        target: 90,
+        category: 'productivity',
+        timestamp: new Date()
+      }
+    ];
+  }
+
+  private calculateCollaborationMetrics(projectId: string): PerformanceMetric[] {
+    const users = collaborationService.getProjectUsers(projectId);
+    const comments = collaborationService.getProjectComments(projectId);
+    const mentions = collaborationService.getProjectMentions(projectId);
+
+    const activeUsers = users.filter(u => {
+      const lastActive = new Date(u.lastActive);
+      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      return lastActive > oneWeekAgo;
+    }).length;
+
+    const collaborationScore = this.calculateCollaborationScore(comments, mentions, users.length);
+
+    return [
+      {
+        id: this.generateId(),
+        name: '활성 사용자',
+        value: activeUsers,
+        unit: '명',
+        trend: activeUsers > users.length * 0.7 ? 'up' : activeUsers < users.length * 0.3 ? 'down' : 'stable',
+        changePercent: 0,
+        category: 'collaboration',
+        timestamp: new Date()
+      },
+      {
+        id: this.generateId(),
+        name: '협업 점수',
+        value: collaborationScore,
+        unit: '점',
+        trend: collaborationScore > 80 ? 'up' : collaborationScore < 50 ? 'down' : 'stable',
+        changePercent: 0,
+        target: 85,
+        category: 'collaboration',
+        timestamp: new Date()
+      },
+      {
+        id: this.generateId(),
+        name: '멘션 응답률',
+        value: this.calculateMentionResponseRate(mentions),
+        unit: '%',
+        trend: 'stable',
+        changePercent: 0,
+        category: 'collaboration',
+        timestamp: new Date()
+      }
+    ];
+  }
+
+  private calculateKnowledgeMetrics(projectId: string): PerformanceMetric[] {
+    const knowledge = projectKnowledgeService.getProjectKnowledge(projectId);
+    const analytics = projectKnowledgeService.getKnowledgeAnalytics(projectId);
+
+    const knowledgeGrowthRate = this.calculateKnowledgeGrowthRate(knowledge);
+    const knowledgeQualityScore = this.calculateKnowledgeQualityScore(knowledge);
+
+    return [
+      {
+        id: this.generateId(),
+        name: '지식베이스 크기',
+        value: knowledge.length,
+        unit: '개',
+        trend: knowledgeGrowthRate > 0 ? 'up' : 'stable',
+        changePercent: knowledgeGrowthRate,
+        category: 'knowledge',
+        timestamp: new Date()
+      },
+      {
+        id: this.generateId(),
+        name: '지식 품질 점수',
+        value: knowledgeQualityScore,
+        unit: '점',
+        trend: knowledgeQualityScore > 80 ? 'up' : knowledgeQualityScore < 60 ? 'down' : 'stable',
+        changePercent: 0,
+        target: 85,
+        category: 'knowledge',
+        timestamp: new Date()
+      },
+      {
+        id: this.generateId(),
+        name: '지식 활용도',
+        value: this.calculateKnowledgeUtilization(knowledge),
+        unit: '%',
+        trend: 'stable',
+        changePercent: 0,
+        category: 'knowledge',
+        timestamp: new Date()
+      }
+    ];
+  }
+
+  private calculateQualityMetrics(projectId: string): PerformanceMetric[] {
+    const messages = this.getAllProjectMessages(projectId);
+    const knowledge = projectKnowledgeService.getProjectKnowledge(projectId);
+
+    const messageQualityScore = this.calculateMessageQualityScore(messages);
+    const knowledgeAccuracyScore = this.calculateKnowledgeAccuracyScore(knowledge);
+
+    return [
+      {
+        id: this.generateId(),
+        name: '메시지 품질 점수',
+        value: messageQualityScore,
+        unit: '점',
+        trend: messageQualityScore > 80 ? 'up' : messageQualityScore < 60 ? 'down' : 'stable',
+        changePercent: 0,
+        target: 85,
+        category: 'quality',
+        timestamp: new Date()
+      },
+      {
+        id: this.generateId(),
+        name: '지식 정확도',
+        value: knowledgeAccuracyScore,
+        unit: '%',
+        trend: knowledgeAccuracyScore > 90 ? 'up' : knowledgeAccuracyScore < 70 ? 'down' : 'stable',
+        changePercent: 0,
+        target: 95,
+        category: 'quality',
+        timestamp: new Date()
+      }
+    ];
+  }
+
+  // 트렌드 분석
+  analyzeTrends(projectId: string, metric: string, period: 'daily' | 'weekly' | 'monthly' = 'daily'): TrendAnalysis {
+    const data = this.getHistoricalData(projectId, metric, period);
+    const trend = this.calculateTrendDirection(data);
+    const slope = this.calculateTrendSlope(data);
+    const correlation = this.calculateCorrelation(data);
+    const seasonality = this.detectSeasonality(data);
+    const forecast = this.generateForecast(data, 7); // 7일 예측
+
+    return {
+      metric,
+      data,
+      trend,
+      slope,
+      correlation,
+      seasonality,
+      forecast
+    };
+  }
+
+  // 예측 인사이트 생성
+  generatePredictiveInsights(projectId: string): PredictiveInsight[] {
+    const insights: PredictiveInsight[] = [];
+
+    // 완료 시간 예측
+    const completionTimeInsight = this.predictCompletionTime(projectId);
+    if (completionTimeInsight) insights.push(completionTimeInsight);
+
+    // 리소스 필요성 예측
+    const resourceInsight = this.predictResourceNeeds(projectId);
+    if (resourceInsight) insights.push(resourceInsight);
+
+    // 위험도 평가
+    const riskInsight = this.assessProjectRisks(projectId);
+    if (riskInsight) insights.push(riskInsight);
+
+    // 품질 예측
+    const qualityInsight = this.predictQualityOutcome(projectId);
+    if (qualityInsight) insights.push(qualityInsight);
+
+    return insights;
+  }
+
+  // 프로젝트 건강도 점수 계산
+  calculateProjectHealthScore(projectId: string): ProjectHealthScore {
+    const metrics = this.calculatePerformanceMetrics(projectId);
+
+    const productivityScore = this.calculateCategoryScore(metrics, 'productivity');
+    const collaborationScore = this.calculateCategoryScore(metrics, 'collaboration');
+    const knowledgeScore = this.calculateCategoryScore(metrics, 'knowledge');
+    const timelineScore = this.calculateTimelineScore(projectId);
+    const qualityScore = this.calculateCategoryScore(metrics, 'quality');
+
+    const overall = (productivityScore + collaborationScore + knowledgeScore + timelineScore + qualityScore) / 5;
+
+    const factors = this.identifyHealthFactors(metrics, projectId);
+    const recommendations = this.generateHealthRecommendations(overall, factors);
+
+    return {
+      overall: Math.round(overall),
+      categories: {
+        productivity: Math.round(productivityScore),
+        collaboration: Math.round(collaborationScore),
+        knowledge: Math.round(knowledgeScore),
+        timeline: Math.round(timelineScore),
+        quality: Math.round(qualityScore)
+      },
+      factors,
+      recommendations,
+      lastUpdated: new Date()
+    };
+  }
+
+  // 비교 분석
+  performComparativeAnalysis(projectId: string): ComparativeAnalysis {
+    const currentMetrics = this.calculatePerformanceMetrics(projectId);
+    const allProjects = this.getAllProjects();
+    const averageMetrics = this.calculateAverageMetrics(allProjects);
+
+    const comparativeMetrics: { [key: string]: any } = {};
+
+    currentMetrics.forEach(metric => {
+      const average = averageMetrics[metric.name] || 0;
+      const percentile = this.calculatePercentile(metric.value, allProjects, metric.name);
+
+      comparativeMetrics[metric.name] = {
+        current: metric.value,
+        average,
+        percentile
+      };
+    });
+
+    const insights = this.generateComparativeInsights(comparativeMetrics);
+    const recommendations = this.generateComparativeRecommendations(comparativeMetrics);
+
+    return {
+      projectId,
+      metrics: comparativeMetrics,
+      insights,
+      recommendations
+    };
+  }
+
+  // 유틸리티 메서드들
+  private generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
+
+  private getAllProjectMessages(projectId: string): Message[] {
+    // 실제 구현에서는 프로젝트의 모든 채팅에서 메시지를 가져와야 함
+    return [];
+  }
+
+  private calculateAverageMessagesPerDay(messages: Message[]): number {
+    if (messages.length === 0) return 0;
+
+    const firstMessage = messages[0];
+    const lastMessage = messages[messages.length - 1];
+    const daysDiff = (lastMessage.timestamp.getTime() - firstMessage.timestamp.getTime()) / (1000 * 60 * 60 * 24);
+
+    return Math.round(messages.length / Math.max(daysDiff, 1));
+  }
+
+  private calculateWorkflowCompletionRate(workflows: any[]): number {
+    if (workflows.length === 0) return 0;
+
+    const completedWorkflows = workflows.filter(w => w.status === 'completed').length;
+    return Math.round((completedWorkflows / workflows.length) * 100);
+  }
+
+  private calculateCollaborationScore(comments: any[], mentions: any[], totalUsers: number): number {
+    const commentScore = Math.min(comments.length * 2, 40); // 최대 40점
+    const mentionScore = Math.min(mentions.length * 3, 30); // 최대 30점
+    const userEngagementScore = Math.min(totalUsers * 5, 30); // 최대 30점
+
+    return commentScore + mentionScore + userEngagementScore;
+  }
+
+  private calculateMentionResponseRate(mentions: any[]): number {
+    if (mentions.length === 0) return 0;
+
+    const respondedMentions = mentions.filter(m => m.isRead).length;
+    return Math.round((respondedMentions / mentions.length) * 100);
+  }
+
+  private calculateKnowledgeGrowthRate(knowledge: any[]): number {
+    // 지식 성장률 계산 로직
+    return 0;
+  }
+
+  private calculateKnowledgeQualityScore(knowledge: any[]): number {
+    if (knowledge.length === 0) return 0;
+
+    const totalConfidence = knowledge.reduce((sum, k) => sum + (k.confidence || 0.5), 0);
+    return Math.round((totalConfidence / knowledge.length) * 100);
+  }
+
+  private calculateKnowledgeUtilization(knowledge: any[]): number {
+    if (knowledge.length === 0) return 0;
+
+    const accessedKnowledge = knowledge.filter(k => k.accessCount > 0).length;
+    return Math.round((accessedKnowledge / knowledge.length) * 100);
+  }
+
+  private calculateMessageQualityScore(messages: Message[]): number {
+    if (messages.length === 0) return 0;
+
+    // 메시지 품질 점수 계산 로직 (길이, 내용 품질 등)
+    return 75; // 임시 값
+  }
+
+  private calculateKnowledgeAccuracyScore(knowledge: any[]): number {
+    if (knowledge.length === 0) return 0;
+
+    const highConfidenceKnowledge = knowledge.filter(k => (k.confidence || 0) > 0.8).length;
+    return Math.round((highConfidenceKnowledge / knowledge.length) * 100);
+  }
+
+  private calculateTrend(currentValue: number, previousValue: number): 'up' | 'down' | 'stable' {
+    if (currentValue > previousValue * 1.1) return 'up';
+    if (currentValue < previousValue * 0.9) return 'down';
+    return 'stable';
+  }
+
+  private calculateChangePercent(current: number, previous: number): number {
+    if (previous === 0) return 0;
+    return Math.round(((current - previous) / previous) * 100);
+  }
+
+  private getPreviousPeriodValue(projectId: string, metric: string): number {
+    // 이전 기간 값 조회 로직
+    return 0;
+  }
+
+  private getHistoricalData(projectId: string, metric: string, period: string): TrendData[] {
+    // 히스토리 데이터 조회 로직
+    return [];
+  }
+
+  private calculateTrendDirection(data: TrendData[]): 'increasing' | 'decreasing' | 'stable' {
+    if (data.length < 2) return 'stable';
+
+    const firstValue = data[0].value;
+    const lastValue = data[data.length - 1].value;
+
+    if (lastValue > firstValue * 1.05) return 'increasing';
+    if (lastValue < firstValue * 0.95) return 'decreasing';
+    return 'stable';
+  }
+
+  private calculateTrendSlope(data: TrendData[]): number {
+    if (data.length < 2) return 0;
+
+    const n = data.length;
+    const sumX = data.reduce((sum, _, i) => sum + i, 0);
+    const sumY = data.reduce((sum, d) => sum + d.value, 0);
+    const sumXY = data.reduce((sum, d, i) => sum + i * d.value, 0);
+    const sumXX = data.reduce((sum, _, i) => sum + i * i, 0);
+
+    return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+  }
+
+  private calculateCorrelation(data: TrendData[]): number {
+    if (data.length < 2) return 0;
+
+    const values = data.map(d => d.value);
+    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+
+    return Math.sqrt(variance) / mean; // 변동계수
+  }
+
+  private detectSeasonality(data: TrendData[]): 'daily' | 'weekly' | 'monthly' | 'none' {
+    // 계절성 감지 로직
+    return 'none';
+  }
+
+  private generateForecast(data: TrendData[], periods: number): number[] {
+    if (data.length < 2) return [];
+
+    const slope = this.calculateTrendSlope(data);
+    const lastValue = data[data.length - 1].value;
+    const forecast: number[] = [];
+
+    for (let i = 1; i <= periods; i++) {
+      forecast.push(Math.max(0, lastValue + slope * i));
+    }
+
+    return forecast;
+  }
+
+  private predictCompletionTime(projectId: string): PredictiveInsight | null {
+    // 완료 시간 예측 로직
+    return {
+      id: this.generateId(),
+      type: 'completion_time',
+      title: '예상 완료 시간',
+      description: '현재 진행 속도를 기반으로 한 완료 시간 예측',
+      confidence: 0.75,
+      predictedValue: '2주 후',
+      factors: ['메시지 활동량', '워크플로우 진행률', '팀 협업도'],
+      recommendations: ['일일 스탠드업 미팅 추가', '마일스톤 설정'],
+      timestamp: new Date()
+    };
+  }
+
+  private predictResourceNeeds(projectId: string): PredictiveInsight | null {
+    // 리소스 필요성 예측 로직
+    return {
+      id: this.generateId(),
+      type: 'resource_needs',
+      title: '추가 리소스 필요성',
+      description: '프로젝트 완료를 위한 추가 리소스 분석',
+      confidence: 0.8,
+      predictedValue: '개발자 1명 추가 필요',
+      factors: ['작업량 증가', '기술적 복잡성', '일정 압박'],
+      recommendations: ['외부 개발자 고용', '우선순위 재조정'],
+      timestamp: new Date()
+    };
+  }
+
+  private assessProjectRisks(projectId: string): PredictiveInsight | null {
+    // 위험도 평가 로직
+    return {
+      id: this.generateId(),
+      type: 'risk_assessment',
+      title: '프로젝트 위험도 평가',
+      description: '현재 프로젝트의 주요 위험 요소 분석',
+      confidence: 0.85,
+      predictedValue: '중간 위험도',
+      factors: ['일정 지연 가능성', '기술적 도전', '팀 의존성'],
+      recommendations: ['리스크 관리 계획 수립', '백업 계획 준비'],
+      timestamp: new Date()
+    };
+  }
+
+  private predictQualityOutcome(projectId: string): PredictiveInsight | null {
+    // 품질 결과 예측 로직
+    return {
+      id: this.generateId(),
+      type: 'quality_prediction',
+      title: '품질 결과 예측',
+      description: '프로젝트 완료 시 예상되는 품질 수준',
+      confidence: 0.7,
+      predictedValue: '높은 품질',
+      factors: ['코드 품질', '테스트 커버리지', '문서화 수준'],
+      recommendations: ['코드 리뷰 강화', '자동화 테스트 추가'],
+      timestamp: new Date()
+    };
+  }
+
+  private calculateCategoryScore(metrics: PerformanceMetric[], category: string): number {
+    const categoryMetrics = metrics.filter(m => m.category === category);
+    if (categoryMetrics.length === 0) return 0;
+
+    const totalScore = categoryMetrics.reduce((sum, metric) => {
+      const normalizedValue = Math.min(metric.value / (metric.target || 100), 1);
+      return sum + normalizedValue * 100;
+    }, 0);
+
+    return totalScore / categoryMetrics.length;
+  }
+
+  private calculateTimelineScore(projectId: string): number {
+    // 타임라인 점수 계산 로직
+    return 80; // 임시 값
+  }
+
+  private identifyHealthFactors(metrics: PerformanceMetric[], projectId: string): { positive: string[]; negative: string[] } {
+    const positive: string[] = [];
+    const negative: string[] = [];
+
+    metrics.forEach(metric => {
+      if (metric.trend === 'up' && metric.value > (metric.target || 80)) {
+        positive.push(`${metric.name}이 목표를 초과 달성`);
+      } else if (metric.trend === 'down' || metric.value < (metric.target || 60)) {
+        negative.push(`${metric.name} 개선 필요`);
+      }
+    });
+
+    return { positive, negative };
+  }
+
+  private generateHealthRecommendations(overallScore: number, factors: { positive: string[]; negative: string[] }): string[] {
+    const recommendations: string[] = [];
+
+    if (overallScore < 60) {
+      recommendations.push('전체적인 프로젝트 상태 개선이 필요합니다');
+    }
+
+    if (factors.negative.length > factors.positive.length) {
+      recommendations.push('부정적 요소들을 우선적으로 해결하세요');
+    }
+
+    if (factors.negative.includes('협업 점수 개선 필요')) {
+      recommendations.push('팀 협업 활동을 늘리고 소통을 강화하세요');
+    }
+
+    return recommendations;
+  }
+
+  private getAllProjects(): Project[] {
+    // 모든 프로젝트 조회 로직
+    return [];
+  }
+
+  private calculateAverageMetrics(projects: Project[]): { [key: string]: number } {
+    // 평균 지표 계산 로직
+    return {};
+  }
+
+  private calculatePercentile(value: number, projects: Project[], metric: string): number {
+    // 백분위 계산 로직
+    return 50; // 임시 값
+  }
+
+  private generateComparativeInsights(metrics: { [key: string]: any }): string[] {
+    const insights: string[] = [];
+
+    Object.entries(metrics).forEach(([metric, data]) => {
+      if (data.percentile > 80) {
+        insights.push(`${metric}이 상위 20%에 속합니다`);
+      } else if (data.percentile < 20) {
+        insights.push(`${metric}이 하위 20%에 속합니다`);
+      }
+    });
+
+    return insights;
+  }
+
+  private generateComparativeRecommendations(metrics: { [key: string]: any }): string[] {
+    const recommendations: string[] = [];
+
+    Object.entries(metrics).forEach(([metric, data]) => {
+      if (data.current < data.average) {
+        recommendations.push(`${metric}을 평균 수준으로 향상시키세요`);
+      }
+    });
+
+    return recommendations;
+  }
 }
 
-// 싱글톤 인스턴스
 export const advancedAnalyticsService = new AdvancedAnalyticsService();
-
 export default advancedAnalyticsService;

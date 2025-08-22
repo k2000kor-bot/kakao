@@ -5,24 +5,40 @@ import {
   Bot,
   BarChart3,
   Settings,
-  X
+  X,
+  Activity,
+  Folder
 } from 'lucide-react';
 import ChatGPTMode from './components/ChatGPTMode';
 import Dashboard from './components/Dashboard';
+import UnifiedProjectInterface from './components/UnifiedProjectInterface';
+import SystemStatus from './components/SystemStatus';
+import ProjectManagementInterface from './components/ProjectManagementInterface';
+import SystemManagementDashboard from './components/SystemManagementDashboard';
 
 function App() {
-  const [currentMode, setCurrentMode] = useState('chatgpt');
+  const [currentMode, setCurrentMode] = useState('project-management');
   const [showModeSelector, setShowModeSelector] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const modes = [
-    { id: 'gemini', name: 'CORBU AI', icon: Bot, color: 'text-purple-600' },
+    { id: 'gemini', name: 'CORBU.AI', icon: Bot, color: 'text-purple-600' },
+    { id: 'unified', name: '통합 프로젝트 관리', icon: BarChart3, color: 'text-blue-600' },
+    { id: 'project-management', name: '프로젝트 관리', icon: Folder, color: 'text-purple-600' },
+    { id: 'system-management', name: '시스템 관리', icon: Settings, color: 'text-red-600' },
     { id: 'chatgpt', name: 'ChatGPT 모드', icon: MessageSquare, color: 'text-green-600' },
-    { id: 'dashboard', name: '대시보드', icon: BarChart3, color: 'text-blue-600' }
+    { id: 'dashboard', name: '대시보드', icon: BarChart3, color: 'text-blue-600' },
+    { id: 'system-status', name: '시스템 상태', icon: Activity, color: 'text-orange-600' }
   ];
 
   const handleModeChange = (mode: string) => {
     setCurrentMode(mode);
     setShowModeSelector(false);
+  };
+
+  const handleNavigateToProject = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setCurrentMode('project-management');
   };
 
   return (
@@ -34,7 +50,7 @@ function App() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Bot className="h-8 w-8 text-purple-600" />
-                <h1 className="text-xl font-bold text-gray-900">CORBU AI</h1>
+                <h1 className="text-xl font-bold text-gray-900">CORBU.AI</h1>
               </div>
             </div>
 
@@ -119,7 +135,7 @@ function App() {
                       <Bot className="h-8 w-8 text-white" />
                     </div>
                     <div>
-                      <h1 className="text-2xl font-bold text-white">CORBU AI 도우미</h1>
+                      <h1 className="text-2xl font-bold text-white">CORBU.AI 도우미</h1>
                       <p className="text-purple-100 mt-1">
                         글쓰기, 웹 검색, 뉴스 분석, 모니터링을 도와드립니다
                       </p>
@@ -194,6 +210,44 @@ function App() {
             </motion.div>
           )}
 
+          {currentMode === 'unified' && (
+            <motion.div
+              key="unified"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <UnifiedProjectInterface />
+            </motion.div>
+          )}
+
+          {currentMode === 'project-management' && (
+            <motion.div
+              key="project-management"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="h-[calc(100vh-8rem)]"
+            >
+              <ProjectManagementInterface initialProjectId={selectedProjectId} />
+            </motion.div>
+          )}
+
+          {currentMode === 'system-management' && (
+            <motion.div
+              key="system-management"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="h-[calc(100vh-8rem)]"
+            >
+              <SystemManagementDashboard onNavigateToProject={handleNavigateToProject} />
+            </motion.div>
+          )}
+
           {currentMode === 'dashboard' && (
             <motion.div
               key="dashboard"
@@ -203,6 +257,18 @@ function App() {
               transition={{ duration: 0.3 }}
             >
               <Dashboard />
+            </motion.div>
+          )}
+
+          {currentMode === 'system-status' && (
+            <motion.div
+              key="system-status"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SystemStatus />
             </motion.div>
           )}
         </AnimatePresence>

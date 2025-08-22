@@ -1,5 +1,5 @@
 import { ChatSession, Message } from '../types/chat';
-import { Project } from '../types/project';
+import { Project, Guideline } from '../types/project';
 
 interface Pattern {
     id: string;
@@ -459,11 +459,13 @@ class PatternRecognitionEngine {
 
             sessions.forEach(session => {
                 session.messages.forEach(msg => {
-                    project.guidelines!.forEach(guideline => {
-                        if (msg.content.includes(guideline.title)) {
-                            guidelineUsage[guideline.title] = (guidelineUsage[guideline.title] || 0) + 1;
-                        }
-                    });
+                    if (Array.isArray(project.guidelines)) {
+                        (project.guidelines as Guideline[]).forEach((guideline: Guideline) => {
+                            if (msg.content.includes(guideline.title)) {
+                                guidelineUsage[guideline.title] = (guidelineUsage[guideline.title] || 0) + 1;
+                            }
+                        });
+                    }
                 });
             });
 

@@ -1,0 +1,930 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Home,
+    Heart,
+    Target,
+    TrendingUp,
+    Calendar,
+    DollarSign,
+    MapPin,
+    Users,
+    Star,
+    CheckCircle,
+    Clock,
+    AlertCircle,
+    Plus,
+    Edit,
+    Trash2,
+    Eye,
+    Download,
+    Share2,
+    Lightbulb,
+    Sparkles,
+    Award,
+    Zap,
+    Shield,
+    Leaf,
+    Wifi,
+    Camera,
+    Palette,
+    BookOpen,
+    Quote,
+    ArrowRight,
+    ArrowLeft,
+    ChevronRight,
+    ChevronLeft,
+    BarChart3,
+    PieChart,
+    LineChart,
+    Activity,
+    Settings,
+    RefreshCw,
+    Bell,
+    Search,
+    Filter,
+    Grid,
+    List,
+    Image,
+    Video,
+    Music,
+    FileText,
+    Folder,
+    Tag,
+    Hash,
+    AtSign,
+    Hash as Hashtag,
+    MessageSquare,
+    ThumbsUp,
+    ThumbsDown,
+    Bookmark,
+    Share,
+    MoreHorizontal,
+    ExternalLink,
+    Lock,
+    Unlock,
+    EyeOff,
+    Maximize2,
+    Minimize2,
+    RotateCcw,
+    Save,
+    Upload,
+    Cloud,
+    Database,
+    Server,
+    Cpu,
+    HardDrive,
+    Wifi as WifiIcon,
+    Bluetooth,
+    Smartphone,
+    Tablet,
+    Monitor,
+    Tv,
+    Speaker,
+    Headphones,
+    Gamepad2,
+    Mouse,
+    Keyboard,
+    Printer,
+    Phone,
+    Mail,
+    Globe,
+    Award as AwardIcon,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon,
+    Minus,
+    Equal,
+    X,
+    Check,
+    AlertTriangle,
+    Info,
+    HelpCircle,
+    User,
+    UserPlus,
+    UserMinus,
+    UserCheck,
+    UserX,
+    Users as UsersIcon,
+    UserCheck as UserCheckIcon,
+    UserX as UserXIcon,
+    UserPlus as UserPlusIcon,
+    UserMinus as UserMinusIcon,
+    User as UserIcon,
+    HelpCircle as HelpCircleIcon,
+    Info as InfoIcon,
+    AlertTriangle as AlertTriangleIcon,
+    Check as CheckIcon,
+    X as XIcon,
+    Equal as EqualIcon,
+    Minus as MinusIcon,
+    TrendingDown as TrendingDownIcon2,
+    TrendingUp as TrendingUpIcon2,
+    Award as AwardIcon2,
+    Globe as GlobeIcon,
+    Mail as MailIcon,
+    Phone as PhoneIcon,
+
+
+    Printer as PrinterIcon,
+    Keyboard as KeyboardIcon,
+    Mouse as MouseIcon,
+
+    Gamepad2 as Gamepad2Icon,
+    Headphones as HeadphonesIcon,
+    Speaker as SpeakerIcon,
+    Tv as TvIcon,
+    Monitor as MonitorIcon,
+    Tablet as TabletIcon,
+    Smartphone as SmartphoneIcon,
+    Bluetooth as BluetoothIcon,
+    Wifi as WifiIcon2,
+    HardDrive as HardDriveIcon,
+    Cpu as CpuIcon,
+    Server as ServerIcon,
+    Database as DatabaseIcon,
+    Cloud as CloudIcon,
+    Upload as UploadIcon,
+    Save as SaveIcon,
+    RotateCcw as RotateCcwIcon,
+    Minimize2 as Minimize2Icon,
+    Maximize2 as Maximize2Icon,
+    EyeOff as EyeOffIcon,
+    Unlock as UnlockIcon,
+    Lock as LockIcon,
+    ExternalLink as ExternalLinkIcon,
+    MoreHorizontal as MoreHorizontalIcon,
+    Share as ShareIcon,
+    Bookmark as BookmarkIcon,
+    ThumbsDown as ThumbsDownIcon,
+    ThumbsUp as ThumbsUpIcon,
+    MessageSquare as MessageSquareIcon,
+    Hashtag as HashtagIcon,
+    AtSign as AtSignIcon,
+    Tag as TagIcon,
+    Folder as FolderIcon,
+    FileText as FileTextIcon,
+    Music as MusicIcon,
+    Video as VideoIcon,
+    Image as ImageIcon,
+    List as ListIcon,
+    Grid as GridIcon,
+    Filter as FilterIcon,
+    Search as SearchIcon,
+    Bell as BellIcon,
+    RefreshCw as RefreshCwIcon,
+    Settings as SettingsIcon,
+    Activity as ActivityIcon,
+    LineChart as LineChartIcon,
+    PieChart as PieChartIcon,
+    BarChart3 as BarChart3Icon,
+    ChevronLeft as ChevronLeftIcon,
+    ChevronRight as ChevronRightIcon,
+    ArrowLeft as ArrowLeftIcon,
+    ArrowRight as ArrowRightIcon,
+    Quote as QuoteIcon,
+    BookOpen as BookOpenIcon,
+    Palette as PaletteIcon,
+    Camera as CameraIcon,
+    Wifi as WifiIcon3,
+    Leaf as LeafIcon,
+    Shield as ShieldIcon,
+    Zap as ZapIcon,
+    Award as AwardIcon3,
+    Sparkles as SparklesIcon,
+    Lightbulb as LightbulbIcon,
+    Share2 as Share2Icon,
+    Download as DownloadIcon,
+    Eye as EyeIcon,
+    Trash2 as Trash2Icon,
+    Edit as EditIcon,
+    Plus as PlusIcon,
+    AlertCircle as AlertCircleIcon,
+    Clock as ClockIcon,
+    CheckCircle as CheckCircleIcon,
+    Star as StarIcon,
+    Users as UsersIcon2,
+    MapPin as MapPinIcon,
+    DollarSign as DollarSignIcon,
+    Calendar as CalendarIcon,
+    TrendingUp as TrendingUpIcon3,
+    Target as TargetIcon,
+    Heart as HeartIcon,
+    Home as HomeIcon
+} from 'lucide-react';
+import {
+    dreamApartmentVisionService,
+    DreamApartment,
+    VisionBoard,
+    Roadmap,
+    FutureApartmentDesign,
+    DreamAnalysis
+} from '../services/dreamApartmentVisionService';
+
+interface DreamApartmentVisionDashboardProps {
+    userId?: string;
+}
+
+const DreamApartmentVisionDashboard: React.FC<DreamApartmentVisionDashboardProps> = ({ userId }) => {
+    const [selectedView, setSelectedView] = useState<'overview' | 'dreams' | 'vision' | 'roadmap' | 'future' | 'analysis'>('overview');
+    const [dreamApartments, setDreamApartments] = useState<DreamApartment[]>([]);
+    const [visionBoards, setVisionBoards] = useState<VisionBoard[]>([]);
+    const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
+    const [futureDesigns, setFutureDesigns] = useState<FutureApartmentDesign[]>([]);
+    const [selectedDream, setSelectedDream] = useState<DreamApartment | null>(null);
+    const [dreamAnalysis, setDreamAnalysis] = useState<DreamAnalysis | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        loadDreamData();
+    }, [userId]);
+
+    const loadDreamData = () => {
+        const dreams = dreamApartmentVisionService.getDreamApartments(userId);
+        setDreamApartments(dreams);
+
+        if (dreams.length > 0) {
+            setSelectedDream(dreams[0]);
+            const analysis = dreamApartmentVisionService.getDreamAnalysis(dreams[0].id);
+            setDreamAnalysis(analysis);
+        }
+
+        setVisionBoards(dreamApartmentVisionService.getVisionBoards());
+        setRoadmaps(dreamApartmentVisionService.getRoadmaps());
+        setFutureDesigns(dreamApartmentVisionService.getFutureDesigns());
+    };
+
+    const createNewDream = () => {
+        setIsCreating(true);
+        // 새로운 꿈의 아파트 생성 로직
+    };
+
+    const updateProgress = (dreamId: string, progress: number) => {
+        try {
+            const updatedDream = dreamApartmentVisionService.updateProgress(dreamId, progress);
+            setDreamApartments(prev => prev.map(d => d.id === dreamId ? updatedDream : d));
+            if (selectedDream?.id === dreamId) {
+                setSelectedDream(updatedDream);
+            }
+        } catch (error) {
+            console.error('진행률 업데이트 실패:', error);
+        }
+    };
+
+    const completeMilestone = (dreamId: string, milestoneId: string) => {
+        try {
+            const updatedDream = dreamApartmentVisionService.completeMilestone(dreamId, milestoneId);
+            setDreamApartments(prev => prev.map(d => d.id === dreamId ? updatedDream : d));
+            if (selectedDream?.id === dreamId) {
+                setSelectedDream(updatedDream);
+            }
+        } catch (error) {
+            console.error('마일스톤 완료 처리 실패:', error);
+        }
+    };
+
+    const getProgressColor = (progress: number) => {
+        if (progress >= 80) return 'text-green-600 bg-green-100';
+        if (progress >= 60) return 'text-blue-600 bg-blue-100';
+        if (progress >= 40) return 'text-yellow-600 bg-yellow-100';
+        return 'text-red-600 bg-red-100';
+    };
+
+    const getFeasibilityColor = (score: number) => {
+        if (score >= 80) return 'text-green-600 bg-green-100';
+        if (score >= 60) return 'text-blue-600 bg-blue-100';
+        if (score >= 40) return 'text-yellow-600 bg-yellow-100';
+        return 'text-red-600 bg-red-100';
+    };
+
+    const navigationTabs = [
+        { id: 'overview', name: '꿈 개요', icon: Home },
+        { id: 'dreams', name: '내 꿈의 아파트', icon: Heart },
+        { id: 'vision', name: '비전 보드', icon: Target },
+        { id: 'roadmap', name: '실현 로드맵', icon: TrendingUp },
+        { id: 'future', name: '미래 설계', icon: Sparkles },
+        { id: 'analysis', name: '꿈 분석', icon: BarChart3 }
+    ];
+
+    const filteredDreams = dreamApartments.filter(dream =>
+        !searchTerm ||
+        dream.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dream.location.region.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <div className="h-full bg-gradient-to-br from-purple-50 to-pink-50 p-6">
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        꿈의 아파트 비전
+                    </h1>
+                    <p className="text-gray-600 mt-2">미래의 완벽한 집을 설계하고 실현하는 여정</p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={createNewDream}
+                        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-white hover:from-purple-700 hover:to-pink-700 transition-all"
+                    >
+                        <Plus className="h-4 w-4" />
+                        새로운 꿈 만들기
+                    </button>
+                    <button className="flex items-center gap-2 rounded-lg bg-white border border-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-50">
+                        <Share2 className="h-4 w-4" />
+                        꿈 공유하기
+                    </button>
+                </div>
+            </div>
+
+            {/* Search and Filter */}
+            <div className="mb-6 flex items-center space-x-4">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="꿈의 아파트 검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                    />
+                </div>
+                <select className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white">
+                    <option value="">전체 지역</option>
+                    <option value="강남구">강남구</option>
+                    <option value="서초구">서초구</option>
+                    <option value="마포구">마포구</option>
+                </select>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="mb-6">
+                <nav className="flex space-x-1 overflow-x-auto">
+                    {navigationTabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setSelectedView(tab.id as any)}
+                            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all ${selectedView === tab.id
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                                : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-md'
+                                }`}
+                        >
+                            <tab.icon className="h-4 w-4" />
+                            {tab.name}
+                        </button>
+                    ))}
+                </nav>
+            </div>
+
+            {/* Main Content */}
+            <div className="space-y-6">
+                <AnimatePresence mode="wait">
+                    {/* Overview */}
+                    {selectedView === 'overview' && (
+                        <motion.div
+                            key="overview"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            {/* Key Metrics */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                                    <div className="flex items-center">
+                                        <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-3 rounded-lg">
+                                            <Heart className="h-6 w-6 text-purple-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">내 꿈의 아파트</p>
+                                            <p className="text-2xl font-bold text-gray-900">{dreamApartments.length}개</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                                    <div className="flex items-center">
+                                        <div className="bg-gradient-to-r from-blue-100 to-cyan-100 p-3 rounded-lg">
+                                            <Target className="h-6 w-6 text-blue-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">비전 보드</p>
+                                            <p className="text-2xl font-bold text-gray-900">{visionBoards.length}개</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                                    <div className="flex items-center">
+                                        <div className="bg-gradient-to-r from-green-100 to-emerald-100 p-3 rounded-lg">
+                                            <TrendingUp className="h-6 w-6 text-green-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">실현 로드맵</p>
+                                            <p className="text-2xl font-bold text-gray-900">{roadmaps.length}개</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                                    <div className="flex items-center">
+                                        <div className="bg-gradient-to-r from-orange-100 to-red-100 p-3 rounded-lg">
+                                            <Sparkles className="h-6 w-6 text-orange-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">미래 설계</p>
+                                            <p className="text-2xl font-bold text-gray-900">{futureDesigns.length}개</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Dream Progress */}
+                            {selectedDream && (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                                    <div className="p-6 border-b border-gray-200">
+                                        <h3 className="text-lg font-semibold text-gray-900">현재 꿈 실현 진행률</h3>
+                                        <p className="text-sm text-gray-600 mt-1">{selectedDream.name}</p>
+                                    </div>
+                                    <div className="p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-sm font-medium text-gray-700">전체 진행률</span>
+                                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getProgressColor(selectedDream.timeline.currentProgress)}`}>
+                                                {selectedDream.timeline.currentProgress}%
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+                                            <div
+                                                className="h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
+                                                style={{ width: `${selectedDream.timeline.currentProgress}%` }}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 mb-3">다음 마일스톤</h4>
+                                                {selectedDream.timeline.milestones
+                                                    .filter(m => !m.completed)
+                                                    .slice(0, 2)
+                                                    .map((milestone) => (
+                                                        <div key={milestone.id} className="flex items-center space-x-3 mb-2">
+                                                            <div className={`w-2 h-2 rounded-full ${milestone.progress > 0 ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                                                            <span className="text-sm text-gray-700">{milestone.name}</span>
+                                                            <span className="text-xs text-gray-500">
+                                                                {milestone.targetDate.toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 mb-3">예산 현황</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">목표 금액:</span>
+                                                        <span className="font-medium">{(selectedDream.budget.targetPrice / 100000000).toFixed(1)}억원</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">현재 저축:</span>
+                                                        <span className="font-medium">{(selectedDream.budget.currentSavings / 100000000).toFixed(1)}억원</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">달성률:</span>
+                                                        <span className="font-medium">
+                                                            {((selectedDream.budget.currentSavings / selectedDream.budget.targetPrice) * 100).toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Recent Dreams */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">내 꿈의 아파트</h3>
+                                    <p className="text-sm text-gray-600 mt-1">가장 최근에 만든 꿈들</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {filteredDreams.slice(0, 3).map((dream) => (
+                                            <div key={dream.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h4 className="font-medium text-gray-900">{dream.name}</h4>
+                                                    <Heart className="h-4 w-4 text-red-500" />
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-3">{dream.description}</p>
+                                                <div className="flex items-center space-x-2 mb-3">
+                                                    <MapPin className="h-4 w-4 text-gray-400" />
+                                                    <span className="text-sm text-gray-600">{dream.location.region} {dream.location.district}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-500">
+                                                        {(dream.budget.targetPrice / 100000000).toFixed(1)}억원
+                                                    </span>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getProgressColor(dream.timeline.currentProgress)}`}>
+                                                        {dream.timeline.currentProgress}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Dreams List */}
+                    {selectedView === 'dreams' && (
+                        <motion.div
+                            key="dreams"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">내 꿈의 아파트</h3>
+                                    <p className="text-sm text-gray-600 mt-1">모든 꿈의 아파트를 관리하고 실현해보세요</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {filteredDreams.map((dream) => (
+                                            <div key={dream.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all cursor-pointer">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h4 className="font-semibold text-gray-900">{dream.name}</h4>
+                                                    <div className="flex space-x-2">
+                                                        <button className="p-1 hover:bg-gray-100 rounded">
+                                                            <Edit className="h-4 w-4 text-gray-500" />
+                                                        </button>
+                                                        <button className="p-1 hover:bg-gray-100 rounded">
+                                                            <Eye className="h-4 w-4 text-gray-500" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{dream.description}</p>
+
+                                                <div className="space-y-3 mb-4">
+                                                    <div className="flex items-center space-x-2">
+                                                        <MapPin className="h-4 w-4 text-gray-400" />
+                                                        <span className="text-sm text-gray-600">{dream.location.region} {dream.location.district}</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Home className="h-4 w-4 text-gray-400" />
+                                                        <span className="text-sm text-gray-600">{dream.specifications.size}㎡ • {dream.specifications.rooms}룸</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <DollarSign className="h-4 w-4 text-gray-400" />
+                                                        <span className="text-sm text-gray-600">{(dream.budget.targetPrice / 100000000).toFixed(1)}억원</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-medium text-gray-700">진행률</span>
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getProgressColor(dream.timeline.currentProgress)}`}>
+                                                            {dream.timeline.currentProgress}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div
+                                                            className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
+                                                            style={{ width: `${dream.timeline.currentProgress}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-4 pt-4 border-t border-gray-100">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {dream.amenities.interior.slice(0, 2).map((amenity, index) => (
+                                                            <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
+                                                                {amenity}
+                                                            </span>
+                                                        ))}
+                                                        {dream.amenities.interior.length > 2 && (
+                                                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                                                                +{dream.amenities.interior.length - 2}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Vision Boards */}
+                    {selectedView === 'vision' && (
+                        <motion.div
+                            key="vision"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">비전 보드</h3>
+                                    <p className="text-sm text-gray-600 mt-1">꿈의 아파트를 시각적으로 표현하고 영감을 얻어보세요</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {visionBoards.map((vision) => (
+                                            <div key={vision.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h4 className="font-semibold text-gray-900">{vision.title}</h4>
+                                                    <button className="p-1 hover:bg-gray-100 rounded">
+                                                        <Edit className="h-4 w-4 text-gray-500" />
+                                                    </button>
+                                                </div>
+
+                                                <p className="text-sm text-gray-600 mb-4">{vision.description}</p>
+
+                                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                                    {vision.images.slice(0, 3).map((image) => (
+                                                        <div key={image.id} className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
+                                                            <Image className="h-6 w-6 text-gray-400" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <h5 className="text-sm font-medium text-gray-700 mb-2">컬러 팔레트</h5>
+                                                        <div className="flex space-x-2">
+                                                            {vision.moodBoard.colors.slice(0, 4).map((color, index) => (
+                                                                <div
+                                                                    key={index}
+                                                                    className="w-6 h-6 rounded-full border border-gray-200"
+                                                                    style={{ backgroundColor: color }}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <h5 className="text-sm font-medium text-gray-700 mb-2">키워드</h5>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {vision.moodBoard.keywords.slice(0, 3).map((keyword, index) => (
+                                                                <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
+                                                                    {keyword}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Roadmap */}
+                    {selectedView === 'roadmap' && (
+                        <motion.div
+                            key="roadmap"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">실현 로드맵</h3>
+                                    <p className="text-sm text-gray-600 mt-1">꿈의 아파트를 실현하기 위한 단계별 계획</p>
+                                </div>
+                                <div className="p-6">
+                                    {roadmaps.map((roadmap) => (
+                                        <div key={roadmap.id} className="space-y-6">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="font-semibold text-gray-900">{roadmap.title}</h4>
+                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getProgressColor(roadmap.progress)}`}>
+                                                    {roadmap.progress}% 완료
+                                                </span>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                {roadmap.phases.map((phase, index) => (
+                                                    <div key={phase.id} className="border border-gray-200 rounded-lg p-4">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <h5 className="font-medium text-gray-900">
+                                                                {index + 1}. {phase.name}
+                                                            </h5>
+                                                            <span className="text-sm text-gray-500">{phase.duration}개월</span>
+                                                        </div>
+
+                                                        <p className="text-sm text-gray-600 mb-3">{phase.description}</p>
+
+                                                        <div className="space-y-2">
+                                                            {phase.tasks.map((task) => (
+                                                                <div key={task.id} className="flex items-center space-x-3">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={task.completed}
+                                                                        onChange={() => {
+                                                                            // Task completion logic
+                                                                        }}
+                                                                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                                                    />
+                                                                    <span className={`text-sm ${task.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                                                                        {task.name}
+                                                                    </span>
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.priority === 'high' ? 'bg-red-100 text-red-700' :
+                                                                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                                                            'bg-green-100 text-green-700'
+                                                                        }`}>
+                                                                        {task.priority === 'high' ? '높음' :
+                                                                            task.priority === 'medium' ? '보통' : '낮음'}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Future Design */}
+                    {selectedView === 'future' && (
+                        <motion.div
+                            key="future"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">미래 아파트 설계</h3>
+                                    <p className="text-sm text-gray-600 mt-1">AI와 기술이 만드는 미래의 완벽한 아파트</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {futureDesigns.map((design) => (
+                                            <div key={design.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h4 className="font-semibold text-gray-900">{design.name}</h4>
+                                                    <Sparkles className="h-5 w-5 text-purple-600" />
+                                                </div>
+
+                                                <p className="text-sm text-gray-600 mb-4">{design.concept}</p>
+
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <h5 className="text-sm font-medium text-gray-700 mb-2">주요 기능</h5>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {Object.entries(design.features).map(([category, features]) => (
+                                                                <div key={category} className="space-y-1">
+                                                                    <span className="text-xs font-medium text-gray-500 uppercase">
+                                                                        {category === 'smart' ? '스마트' :
+                                                                            category === 'sustainable' ? '친환경' :
+                                                                                category === 'wellness' ? '웰빙' :
+                                                                                    category === 'community' ? '커뮤니티' : '기술'}
+                                                                    </span>
+                                                                    <div className="space-y-1">
+                                                                        {features.slice(0, 2).map((feature, index) => (
+                                                                            <div key={index} className="text-xs text-gray-600">• {feature}</div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <h5 className="text-sm font-medium text-gray-700 mb-2">지속가능성</h5>
+                                                        <div className="space-y-2">
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>에너지 효율성</span>
+                                                                <span className="font-medium">{design.sustainability.energyEfficiency}%</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                                                <div
+                                                                    className="h-2 rounded-full bg-green-500"
+                                                                    style={{ width: `${design.sustainability.energyEfficiency}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <h5 className="text-sm font-medium text-gray-700 mb-2">예상 비용</h5>
+                                                        <div className="text-2xl font-bold text-gray-900">
+                                                            {(design.cost.totalCost / 100000000).toFixed(1)}억원
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Analysis */}
+                    {selectedView === 'analysis' && dreamAnalysis && (
+                        <motion.div
+                            key="analysis"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">꿈 실현 가능성 분석</h3>
+                                    <p className="text-sm text-gray-600 mt-1">AI 기반 종합 분석 결과</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {/* Feasibility Analysis */}
+                                        <div className="space-y-4">
+                                            <h4 className="font-semibold text-gray-900">실현 가능성</h4>
+                                            <div className="text-center mb-4">
+                                                <div className="text-4xl font-bold text-gray-900 mb-2">
+                                                    {dreamAnalysis.feasibility.score.toFixed(0)}
+                                                </div>
+                                                <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getFeasibilityColor(dreamAnalysis.feasibility.score)}`}>
+                                                    {dreamAnalysis.feasibility.score >= 80 ? '매우 높음' :
+                                                        dreamAnalysis.feasibility.score >= 60 ? '높음' :
+                                                            dreamAnalysis.feasibility.score >= 40 ? '보통' : '낮음'}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {dreamAnalysis.feasibility.factors.map((factor, index) => (
+                                                    <div key={index} className="border border-gray-200 rounded-lg p-3">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-sm font-medium text-gray-700">{factor.factor}</span>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${factor.impact === 'positive' ? 'bg-green-100 text-green-700' :
+                                                                factor.impact === 'negative' ? 'bg-red-100 text-red-700' :
+                                                                    'bg-gray-100 text-gray-700'
+                                                                }`}>
+                                                                {factor.score.toFixed(0)}점
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-600">{factor.description}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Financial Analysis */}
+                                        <div className="space-y-4">
+                                            <h4 className="font-semibold text-gray-900">재무 분석</h4>
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-600">부담 가능성</span>
+                                                    <span className="font-medium">{dreamAnalysis.financialAnalysis.affordability.toFixed(0)}%</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-600">추가 저축 필요</span>
+                                                    <span className="font-medium">{(dreamAnalysis.financialAnalysis.savingsRequired / 100000000).toFixed(1)}억원</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-600">월 상환금</span>
+                                                    <span className="font-medium">{(dreamAnalysis.financialAnalysis.monthlyPayment / 10000).toFixed(0)}만원</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-600">예상 수익률</span>
+                                                    <span className="font-medium">{dreamAnalysis.financialAnalysis.roi.toFixed(1)}%</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-gray-200">
+                                                <h5 className="text-sm font-medium text-gray-700 mb-3">추천사항</h5>
+                                                <div className="space-y-2">
+                                                    {dreamAnalysis.recommendations.immediate.map((rec, index) => (
+                                                        <div key={index} className="flex items-start space-x-2">
+                                                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                                            <span className="text-sm text-gray-700">{rec}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+};
+
+export default DreamApartmentVisionDashboard;

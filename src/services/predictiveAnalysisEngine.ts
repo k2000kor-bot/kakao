@@ -1,5 +1,5 @@
 import { ChatSession, Message } from '../types/chat';
-import { Project } from '../types/project';
+import { Project, Guideline } from '../types/project';
 
 interface PredictionModel {
   id: string;
@@ -90,10 +90,10 @@ class PredictiveAnalysisEngine {
   async predictConversationTrend(sessions: ChatSession[]): Promise<TrendAnalysis> {
     const recentSessions = sessions.slice(-10);
     const messageCounts = recentSessions.map(s => s.messages.length);
-    
+
     // 선형 회귀를 통한 트렌드 분석
     const trend = this.calculateLinearTrend(messageCounts);
-    
+
     return {
       trend: trend.slope > 0.1 ? 'increasing' : trend.slope < -0.1 ? 'decreasing' : 'stable',
       slope: trend.slope,
@@ -106,7 +106,7 @@ class PredictiveAnalysisEngine {
   // 사용자 행동 패턴 분석
   async analyzeUserBehavior(userId: string, sessions: ChatSession[]): Promise<UserBehaviorPattern> {
     const userSessions = sessions.filter(s => s.participants?.includes(userId) || true);
-    
+
     const pattern: UserBehaviorPattern = {
       userId,
       preferredTopics: this.extractPreferredTopics(userSessions),
@@ -120,14 +120,14 @@ class PredictiveAnalysisEngine {
 
     this.userPatterns.set(userId, pattern);
     this.saveData();
-    
+
     return pattern;
   }
 
   // 프로젝트 성공률 예측
   async predictProjectSuccess(project: Project, sessions: ChatSession[]): Promise<PredictionResult> {
     const projectSessions = sessions.filter(s => s.projectId === project.id);
-    
+
     const features = {
       fileCount: project.files?.length || 0,
       guidelineCount: project.guidelines?.length || 0,
@@ -295,7 +295,7 @@ class PredictiveAnalysisEngine {
   // 평균 응답 시간 계산
   private calculateAverageResponseTime(sessions: ChatSession[]): number {
     const responseTimes: number[] = [];
-    
+
     sessions.forEach(session => {
       const messages = session.messages;
       for (let i = 1; i < messages.length; i++) {
@@ -305,8 +305,8 @@ class PredictiveAnalysisEngine {
       }
     });
 
-    return responseTimes.length > 0 
-      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length 
+    return responseTimes.length > 0
+      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
       : 0;
   }
 
@@ -337,15 +337,15 @@ class PredictiveAnalysisEngine {
       return end - start;
     });
 
-    return durations.length > 0 
-      ? durations.reduce((a, b) => a + b, 0) / durations.length 
+    return durations.length > 0
+      ? durations.reduce((a, b) => a + b, 0) / durations.length
       : 0;
   }
 
   // 자주 묻는 질문 추출
   private extractCommonQuestions(sessions: ChatSession[]): string[] {
     const questions: { [key: string]: number } = {};
-    
+
     sessions.forEach(session => {
       session.messages.forEach(msg => {
         if (msg.isUser && msg.content.includes('?')) {
@@ -387,8 +387,8 @@ class PredictiveAnalysisEngine {
 
   // 완료율 계산
   private calculateCompletionRate(sessions: ChatSession[]): number {
-    const completedSessions = sessions.filter(s => 
-      s.messages.length > 2 && 
+    const completedSessions = sessions.filter(s =>
+      s.messages.length > 2 &&
       s.messages[s.messages.length - 1].content.includes('감사') ||
       s.messages[s.messages.length - 1].content.includes('해결') ||
       s.messages[s.messages.length - 1].content.includes('완료')
@@ -403,7 +403,7 @@ class PredictiveAnalysisEngine {
       project.name,
       project.description,
       ...(project.files?.map(f => f.name) || []),
-      ...(project.guidelines?.map(g => g.title) || [])
+      ...(Array.isArray(project.guidelines) ? (project.guidelines as Guideline[]).map((g: Guideline) => g.title) : [])
     ].join(' ').toLowerCase();
 
     const allMessages = sessions.flatMap(s => s.messages);
@@ -412,8 +412,8 @@ class PredictiveAnalysisEngine {
     allMessages.forEach(msg => {
       const messageWords = msg.content.toLowerCase().match(/[가-힣]+/g) || [];
       const projectWords = projectKeywords.match(/[가-힣]+/g) || [];
-      
-      const commonWords = messageWords.filter(word => 
+
+      const commonWords = messageWords.filter(word =>
         projectWords.some(w => w === word) && word.length > 1
       );
 
@@ -444,12 +444,12 @@ class PredictiveAnalysisEngine {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
         const data = JSON.parse(stored);
-        
+
         // 모델 데이터 복원
         if (data.models) {
           this.models = new Map(Object.entries(data.models));
         }
-        
+
         // 사용자 패턴 데이터 복원
         if (data.userPatterns) {
           this.userPatterns = new Map(Object.entries(data.userPatterns));
