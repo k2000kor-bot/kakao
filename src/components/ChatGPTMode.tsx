@@ -17,13 +17,15 @@ import {
     AlertTriangle,
     CheckCircle,
     Info,
-    BarChart3
+    BarChart3,
+    Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import websocketService from '../services/websocketService';
 import errorHandlingService from '../services/errorHandlingService';
 import performanceOptimizationService from '../services/performanceOptimizationService';
 import webCommentAnalysisService from '../services/webCommentAnalysisService';
+import mobileOptimizationService from '../services/mobileOptimizationService';
 import ErrorFeedbackContainer from './ErrorFeedback/ErrorFeedbackContainer';
 
 interface Message {
@@ -130,6 +132,13 @@ const ChatGPTMode: React.FC = () => {
         avoidKeywords: [] as string[]
     });
 
+    // 모바일 최적화 상태
+    const [showMobileOptimizationModal, setShowMobileOptimizationModal] = useState(false);
+    const [deviceInfo, setDeviceInfo] = useState<any>(null);
+    const [optimizationSettings, setOptimizationSettings] = useState<any>(null);
+    const [isOnline, setIsOnline] = useState(true);
+    const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+
     // WebSocket 연결
     useEffect(() => {
         const connectWebSocket = async () => {
@@ -206,6 +215,34 @@ const ChatGPTMode: React.FC = () => {
         const performanceInterval = setInterval(updatePerformanceMetrics, 60000); // 1분마다
 
         return () => clearInterval(performanceInterval);
+    }, []);
+
+    // 모바일 최적화 초기화
+    useEffect(() => {
+        const initializeMobileOptimization = () => {
+            const device = mobileOptimizationService.getDeviceInfo();
+            const settings = mobileOptimizationService.getOptimizationSettings();
+            const onlineStatus = mobileOptimizationService.isOnlineStatus();
+
+            setDeviceInfo(device);
+            setOptimizationSettings(settings);
+            setIsOnline(onlineStatus);
+        };
+
+        initializeMobileOptimization();
+
+        // 온라인 상태 변경 감지
+        const handleOnlineStatusChange = () => {
+            setIsOnline(mobileOptimizationService.isOnlineStatus());
+        };
+
+        window.addEventListener('online', handleOnlineStatusChange);
+        window.addEventListener('offline', handleOnlineStatusChange);
+
+        return () => {
+            window.removeEventListener('online', handleOnlineStatusChange);
+            window.removeEventListener('offline', handleOnlineStatusChange);
+        };
     }, []);
 
     // 프로젝트 목록
@@ -709,6 +746,15 @@ const ChatGPTMode: React.FC = () => {
                         >
                             <BookOpen size={16} />
                             <span className="text-sm">댓글 분석</span>
+                        </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setShowMobileOptimizationModal(true)}
+                            className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            <Smartphone size={16} />
+                            <span className="text-sm">모바일</span>
                         </button>
                     </div>
                 </div>
@@ -1692,6 +1738,143 @@ const ChatGPTMode: React.FC = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* 모바일 최적화 모달 */}
+            <AnimatePresence>
+                {showMobileOptimizationModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-lg p-6 w-4/5 max-w-4xl max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold">모바일 최적화 및 PWA</h2>
+                                <button onClick={() => setShowMobileOptimizationModal(false)}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* 디바이스 정보 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">디바이스 정보</h3>
+                                    
+                                    {deviceInfo ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800">디바이스 타입</h4>
+                                                <p className="text-blue-600 capitalize">{deviceInfo.type}</p>
+                                            </div>
+
+                                            <div className="bg-green-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-green-800">운영체제</h4>
+                                                <p className="text-green-600 capitalize">{deviceInfo.os}</p>
+                                            </div>
+
+                                            <div className="bg-yellow-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-yellow-800">브라우저</h4>
+                                                <p className="text-yellow-600 capitalize">{deviceInfo.browser}</p>
+                                            </div>
+
+                                            <div className="bg-purple-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-purple-800">화면 크기</h4>
+                                                <p className="text-purple-600">{deviceInfo.screenSize.width} x {deviceInfo.screenSize.height}</p>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-gray-800">방향</h4>
+                                                <p className="text-gray-600 capitalize">{deviceInfo.orientation}</p>
+                                            </div>
+
+                                            <div className="bg-indigo-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-indigo-800">터치 지원</h4>
+                                                <p className="text-indigo-600">{deviceInfo.touchSupport ? '지원' : '미지원'}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">디바이스 정보를 불러오는 중...</p>
+                                    )}
+                                </div>
+
+                                {/* 최적화 설정 */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">최적화 설정</h3>
+                                    
+                                    {optimizationSettings ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-3">기능 설정</h4>
+                                                <div className="space-y-2">
+                                                    {Object.entries(optimizationSettings).map(([key, value]) => (
+                                                        <div key={key} className="flex items-center justify-between">
+                                                            <span className="text-sm text-gray-600">
+                                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                                            </span>
+                                                            <span className={`text-sm font-medium ${value ? 'text-green-600' : 'text-red-600'}`}>
+                                                                {value ? '활성화' : '비활성화'}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                                <h4 className="font-medium text-blue-800 mb-2">네트워크 상태</h4>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                    <span className="text-blue-700">{isOnline ? '온라인' : '오프라인'}</span>
+                                                </div>
+                                            </div>
+
+                                            {showInstallPrompt && (
+                                                <div className="bg-green-50 p-3 rounded-lg">
+                                                    <h4 className="font-medium text-green-800 mb-2">PWA 설치</h4>
+                                                    <p className="text-green-700 text-sm mb-2">이 앱을 홈 화면에 설치할 수 있습니다.</p>
+                                                    <button
+                                                        onClick={() => mobileOptimizationService.showInstallPrompt()}
+                                                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm"
+                                                    >
+                                                        설치하기
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">설정을 불러오는 중...</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowMobileOptimizationModal(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Pull to Refresh 인디케이터 */}
+            <div
+                id="pull-to-refresh-indicator"
+                className="fixed top-0 left-0 right-0 h-16 bg-blue-500 text-white flex items-center justify-center transform -translate-y-full transition-all duration-300 opacity-0 z-40"
+            >
+                <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                    <span className="text-sm font-medium">새로고침 중...</span>
+                </div>
+            </div>
 
             {/* 에러 피드백 컨테이너 */}
             <ErrorFeedbackContainer />
