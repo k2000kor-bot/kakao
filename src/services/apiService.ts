@@ -1436,5 +1436,218 @@ ${content.substring(0, 200)}${content.length > 200 ? '...' : ''}
     }
 }
 
+// 데이터 분석 시스템 API
+export const dataAnalyticsAPI = {
+  // 데이터 소스 관리
+  getDataSources: async (): Promise<any[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/data-analytics/sources`);
+      const data = await response.json();
+      return data.success ? data.data : [];
+    } catch (error) {
+      console.error('데이터 소스 조회 오류:', error);
+      return [];
+    }
+  },
+
+  createDataSource: async (sourceData: any): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/data-analytics/sources`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sourceData),
+      });
+      const data = await response.json();
+      return data.success ? data.data : null;
+    } catch (error) {
+      console.error('데이터 소스 생성 오류:', error);
+      return null;
+    }
+  },
+
+  // 데이터 분석 작업 관리
+  getDataAnalyses: async (): Promise<any[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/data-analytics/analyses`);
+      const data = await response.json();
+      return data.success ? data.data : [];
+    } catch (error) {
+      console.error('데이터 분석 작업 조회 오류:', error);
+      return [];
+    }
+  },
+
+  createDataAnalysis: async (analysisData: any): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/data-analytics/analyses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(analysisData),
+      });
+      const data = await response.json();
+      return data.success ? data.data : null;
+    } catch (error) {
+      console.error('데이터 분석 작업 생성 오류:', error);
+      return null;
+    }
+  },
+
+  // 데이터 시각화 관리
+  getDataVisualizations: async (): Promise<any[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/data-analytics/visualizations`);
+      const data = await response.json();
+      return data.success ? data.data : [];
+    } catch (error) {
+      console.error('데이터 시각화 조회 오류:', error);
+      return [];
+    }
+  },
+
+  createDataVisualization: async (vizData: any): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/data-analytics/visualizations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(vizData),
+      });
+      const data = await response.json();
+      return data.success ? data.data : null;
+    } catch (error) {
+      console.error('데이터 시각화 생성 오류:', error);
+      return null;
+    }
+  },
+
+  // 데이터 인사이트 조회
+  getDataInsights: async (): Promise<any[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/data-analytics/insights`);
+      const data = await response.json();
+      return data.success ? data.data : [];
+    } catch (error) {
+      console.error('데이터 인사이트 조회 오류:', error);
+      return [];
+    }
+  },
+
+  // 데이터 분석 메트릭 조회
+  getDataAnalyticsMetrics: async (): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/data-analytics/metrics`);
+      const data = await response.json();
+      return data.success ? data.data : {};
+    } catch (error) {
+      console.error('데이터 분석 메트릭 조회 오류:', error);
+      return {};
+    }
+  },
+};
+
+// 품질 보증 시스템 API
+export const qualityAssuranceAPI = {
+  // 품질 테스트 관리
+  getQualityTests: async (): Promise<any[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/quality-assurance/tests`);
+      const data = await response.json();
+      return data.success ? data.data : [];
+    } catch (error) {
+      console.error('품질 테스트 조회 오류:', error);
+      return [];
+    }
+  },
+
+  createQualityTest: async (testData: any): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/quality-assurance/tests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testData),
+      });
+      const data = await response.json();
+      return data.success ? data.data : null;
+    } catch (error) {
+      console.error('품질 테스트 생성 오류:', error);
+      return null;
+    }
+  },
+
+  // 품질 보증 메트릭 조회
+  getQualityMetrics: async (): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/quality-assurance/metrics`);
+      const data = await response.json();
+      return data.success ? data.data : {};
+    } catch (error) {
+      console.error('품질 보증 메트릭 조회 오류:', error);
+      return {};
+    }
+  },
+
+  // 품질 보고서 조회
+  getQualityReports: async (): Promise<any[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/quality-assurance/reports`);
+      const data = await response.json();
+      return data.success ? data.data : [];
+    } catch (error) {
+      console.error('품질 보고서 조회 오류:', error);
+      return [];
+    }
+  },
+};
+
+export const performanceOptimizationAPI = {
+  getPerformanceMetrics: async (): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/performance-optimization/metrics`);
+    return response.json();
+  },
+  createPerformanceMetric: async (metricData: any): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/performance-optimization/metrics`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(metricData)
+    });
+    return response.json();
+  },
+  getOptimizationRules: async (): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/performance-optimization/rules`);
+    return response.json();
+  },
+  createOptimizationRule: async (ruleData: any): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/performance-optimization/rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ruleData)
+    });
+    return response.json();
+  },
+  getSystemHealth: async (): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/performance-optimization/health`);
+    return response.json();
+  },
+  performManualOptimization: async (optimizationData: any): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/performance-optimization/optimize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(optimizationData)
+    });
+    return response.json();
+  },
+  getPerformanceReport: async (): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/performance-optimization/report`);
+    return response.json();
+  }
+};
+
 export const apiService = new ApiService();
 export default apiService; 

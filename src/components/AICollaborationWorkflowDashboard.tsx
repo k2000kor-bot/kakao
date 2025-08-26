@@ -1,0 +1,1277 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Typography,
+    Paper,
+    Grid,
+    Card,
+    CardContent,
+    Chip,
+    Button,
+    Tabs,
+    Tab,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    LinearProgress,
+    IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    Divider,
+    Alert,
+    Badge,
+    Tooltip,
+    Switch,
+    FormControlLabel
+} from '@mui/material';
+import {
+    PlayArrow,
+    Pause,
+    Stop,
+    Add,
+    Edit,
+    Delete,
+    Visibility,
+    TrendingUp,
+    TrendingDown,
+    Schedule,
+    Assignment,
+    AutoFixHigh,
+    Analytics,
+    Settings,
+    Notifications,
+    Warning,
+    CheckCircle,
+    Error,
+    Info,
+    Workflow,
+    Group,
+    Timeline,
+    Speed,
+    Quality,
+    Collaboration,
+    Optimization,
+    Prediction,
+    Insight,
+    Recommendation,
+    Bottleneck,
+    Milestone,
+    Deadline,
+    Task,
+    Stage,
+    Participant,
+    Performance,
+    Efficiency,
+    Quality as QualityIcon,
+    Collaboration as CollaborationIcon,
+    AutoFixHigh as AutomationIcon,
+    Analytics as AnalyticsIcon,
+    Settings as SettingsIcon,
+    AccountTree as WorkflowIcon,
+    Group as GroupIcon,
+    Timeline as TimelineIcon,
+    Speed as SpeedIcon,
+    Quality as QualityIcon2,
+    Collaboration as CollaborationIcon2,
+    Optimization as OptimizationIcon,
+    Prediction as PredictionIcon,
+    Insight as InsightIcon,
+    Recommendation as RecommendationIcon,
+    Bottleneck as BottleneckIcon,
+    Milestone as MilestoneIcon,
+    Deadline as DeadlineIcon,
+    Task as TaskIcon,
+    Stage as StageIcon,
+    Participant as ParticipantIcon,
+    Performance as PerformanceIcon,
+    Efficiency as EfficiencyIcon
+} from '@mui/icons-material';
+import {
+    PieChart,
+    Pie,
+    Cell,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
+    Legend,
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar,
+    AreaChart,
+    Area
+} from 'recharts';
+import aiCollaborationWorkflowSystem, {
+    CollaborationWorkflow,
+    WorkflowMetrics,
+    WorkflowParticipant,
+    WorkflowStage,
+    WorkflowTask,
+    WorkflowPrediction,
+    WorkflowInsight,
+    WorkflowRecommendation
+} from '../services/aiCollaborationWorkflowSystem';
+
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+    const { children, value, index, ...other } = props;
+
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`workflow-tabpanel-${index}`}
+            aria-labelledby={`workflow-tab-${index}`}
+            {...other}
+        >
+            {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+        </div>
+    );
+}
+
+const AICollaborationWorkflowDashboard: React.FC = () => {
+    const [tabValue, setTabValue] = useState(0);
+    const [workflows, setWorkflows] = useState<CollaborationWorkflow[]>([]);
+    const [metrics, setMetrics] = useState<WorkflowMetrics>({
+        totalWorkflows: 0,
+        activeWorkflows: 0,
+        averageCompletionRate: 0,
+        averageEfficiency: 0,
+        automationRate: 0,
+        qualityScore: 0,
+        participantSatisfaction: 0,
+        optimizationOpportunities: 0
+    });
+    const [selectedWorkflow, setSelectedWorkflow] = useState<CollaborationWorkflow | null>(null);
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+    const [isSystemRunning, setIsSystemRunning] = useState(false);
+
+    useEffect(() => {
+        const updateData = () => {
+            setWorkflows(aiCollaborationWorkflowSystem.getWorkflows());
+            setMetrics(aiCollaborationWorkflowSystem.getMetrics());
+            setIsSystemRunning(aiCollaborationWorkflowSystem.isSystemRunning());
+        };
+
+        updateData();
+        const interval = setInterval(updateData, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'active': return 'success';
+            case 'paused': return 'warning';
+            case 'completed': return 'info';
+            case 'cancelled': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'critical': return 'error';
+            case 'high': return 'warning';
+            case 'medium': return 'info';
+            case 'low': return 'success';
+            default: return 'default';
+        }
+    };
+
+    const getTypeColor = (type: string) => {
+        switch (type) {
+            case 'project': return 'primary';
+            case 'meeting': return 'secondary';
+            case 'decision': return 'success';
+            case 'review': return 'warning';
+            case 'innovation': return 'info';
+            case 'training': return 'default';
+            default: return 'default';
+        }
+    };
+
+    const formatDuration = (duration: number) => {
+        if (duration < 60) return `${duration}분`;
+        if (duration < 1440) return `${Math.floor(duration / 60)}시간`;
+        return `${Math.floor(duration / 1440)}일`;
+    };
+
+    const formatDate = (timestamp: number) => {
+        return new Date(timestamp).toLocaleString('ko-KR');
+    };
+
+    const calculateProgress = (workflow: CollaborationWorkflow) => {
+        const completedStages = workflow.stages.filter(stage => stage.status === 'completed').length;
+        return (completedStages / workflow.stages.length) * 100;
+    };
+
+    const getPerformanceData = () => {
+        return workflows.map(workflow => ({
+            name: workflow.name,
+            completionRate: workflow.analytics.performance.completionRate * 100,
+            qualityScore: workflow.analytics.performance.qualityScore * 100,
+            efficiencyScore: workflow.analytics.performance.efficiencyScore * 100,
+            overallScore: workflow.analytics.performance.overallScore * 100
+        }));
+    };
+
+    const getEfficiencyData = () => {
+        return workflows.map(workflow => ({
+            name: workflow.name,
+            cycleTime: workflow.analytics.efficiency.cycleTime,
+            throughput: workflow.analytics.efficiency.throughput * 100,
+            automationRate: workflow.analytics.efficiency.automationRate * 100,
+            resourceUtilization: workflow.analytics.efficiency.resourceUtilization * 100
+        }));
+    };
+
+    const getQualityData = () => {
+        return workflows.map(workflow => ({
+            name: workflow.name,
+            defectRate: workflow.analytics.quality.defectRate * 100,
+            reworkRate: workflow.analytics.quality.reworkRate * 100,
+            customerSatisfaction: workflow.analytics.quality.customerSatisfaction * 100,
+            complianceScore: workflow.analytics.quality.complianceScore * 100
+        }));
+    };
+
+    const getCollaborationData = () => {
+        return workflows.map(workflow => ({
+            name: workflow.name,
+            communicationEffectiveness: workflow.analytics.collaboration.communicationEffectiveness * 100,
+            teamCoordination: workflow.analytics.collaboration.teamCoordination * 100,
+            knowledgeSharing: workflow.analytics.collaboration.knowledgeSharing * 100,
+            conflictResolution: workflow.analytics.collaboration.conflictResolution * 100
+        }));
+    };
+
+    const getWorkflowTypeData = () => {
+        const typeCounts = workflows.reduce((acc, workflow) => {
+            acc[workflow.type] = (acc[workflow.type] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(typeCounts).map(([type, count]) => ({
+            name: type,
+            value: count
+        }));
+    };
+
+    const getStatusData = () => {
+        const statusCounts = workflows.reduce((acc, workflow) => {
+            acc[workflow.status] = (acc[workflow.status] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(statusCounts).map(([status, count]) => ({
+            name: status,
+            value: count
+        }));
+    };
+
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+
+    return (
+        <Box sx={{ p: 3 }}>
+            {/* 헤더 */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box>
+                    <Typography variant="h4" gutterBottom>
+                        🤖 AI 기반 협업 워크플로우 자동화
+                    </Typography>
+                    <Typography variant="body1" color="textSecondary">
+                        팀 역학 분석을 기반으로 한 워크플로우 최적화 및 자동화 시스템
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Chip
+                        icon={isSystemRunning ? <CheckCircle /> : <Error />}
+                        label={isSystemRunning ? '시스템 실행 중' : '시스템 중지됨'}
+                        color={isSystemRunning ? 'success' : 'error'}
+                    />
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={() => setCreateDialogOpen(true)}
+                    >
+                        새 워크플로우
+                    </Button>
+                </Box>
+            </Box>
+
+            {/* 전체 지표 */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom>
+                                        전체 워크플로우
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {metrics.totalWorkflows}
+                                    </Typography>
+                                </Box>
+                                <WorkflowIcon color="primary" sx={{ fontSize: 40 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom>
+                                        활성 워크플로우
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {metrics.activeWorkflows}
+                                    </Typography>
+                                </Box>
+                                <PlayArrow color="success" sx={{ fontSize: 40 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom>
+                                        평균 완료율
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {(metrics.averageCompletionRate * 100).toFixed(1)}%
+                                    </Typography>
+                                </Box>
+                                <TrendingUp color="info" sx={{ fontSize: 40 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom>
+                                        자동화율
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {(metrics.automationRate * 100).toFixed(1)}%
+                                    </Typography>
+                                </Box>
+                                <Automation color="secondary" sx={{ fontSize: 40 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* 탭 네비게이션 */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                <Tabs value={tabValue} onChange={handleTabChange} aria-label="workflow tabs">
+                    <Tab icon={<WorkflowIcon />} label="워크플로우 개요" />
+                    <Tab icon={<GroupIcon />} label="참가자 분석" />
+                    <Tab icon={<StageIcon />} label="단계별 분석" />
+                    <Tab icon={<TaskIcon />} label="작업 관리" />
+                    <Tab icon={<AnalyticsIcon />} label="성과 분석" />
+                    <Tab icon={<OptimizationIcon />} label="최적화 추천" />
+                    <Tab icon={<SettingsIcon />} label="설정" />
+                </Tabs>
+            </Box>
+
+            {/* 탭 콘텐츠 */}
+            <TabPanel value={tabValue} index={0}>
+                {/* 워크플로우 개요 */}
+                <Grid container spacing={3}>
+                    {/* 워크플로우 목록 */}
+                    <Grid item xs={12} lg={8}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    워크플로우 목록
+                                </Typography>
+                                <TableContainer>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>워크플로우</TableCell>
+                                                <TableCell>타입</TableCell>
+                                                <TableCell>상태</TableCell>
+                                                <TableCell>우선순위</TableCell>
+                                                <TableCell>진행률</TableCell>
+                                                <TableCell>작업</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {workflows.map((workflow) => (
+                                                <TableRow key={workflow.workflowId}>
+                                                    <TableCell>
+                                                        <Box>
+                                                            <Typography variant="subtitle2">{workflow.name}</Typography>
+                                                            <Typography variant="body2" color="textSecondary">
+                                                                {workflow.description}
+                                                            </Typography>
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={workflow.type}
+                                                            color={getTypeColor(workflow.type) as any}
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={workflow.status}
+                                                            color={getStatusColor(workflow.status) as any}
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={workflow.priority}
+                                                            color={getPriorityColor(workflow.priority) as any}
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <Box sx={{ width: '100%', mr: 1 }}>
+                                                                <LinearProgress
+                                                                    variant="determinate"
+                                                                    value={calculateProgress(workflow)}
+                                                                    sx={{ height: 8, borderRadius: 5 }}
+                                                                />
+                                                            </Box>
+                                                            <Box sx={{ minWidth: 35 }}>
+                                                                <Typography variant="body2" color="textSecondary">
+                                                                    {calculateProgress(workflow).toFixed(0)}%
+                                                                </Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => {
+                                                                setSelectedWorkflow(workflow);
+                                                                setDetailDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <Visibility />
+                                                        </IconButton>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    {/* 차트 */}
+                    <Grid item xs={12} lg={4}>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <Card>
+                                    <CardContent>
+                                        <Typography variant="h6" gutterBottom>
+                                            워크플로우 타입 분포
+                                        </Typography>
+                                        <ResponsiveContainer width="100%" height={200}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={getWorkflowTypeData()}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                    outerRadius={80}
+                                                    fill="#8884d8"
+                                                    dataKey="value"
+                                                >
+                                                    {getWorkflowTypeData().map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <RechartsTooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Card>
+                                    <CardContent>
+                                        <Typography variant="h6" gutterBottom>
+                                            워크플로우 상태 분포
+                                        </Typography>
+                                        <ResponsiveContainer width="100%" height={200}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={getStatusData()}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                    outerRadius={80}
+                                                    fill="#8884d8"
+                                                    dataKey="value"
+                                                >
+                                                    {getStatusData().map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <RechartsTooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={1}>
+                {/* 참가자 분석 */}
+                <Grid container spacing={3}>
+                    {workflows.map((workflow) => (
+                        <Grid item xs={12} key={workflow.workflowId}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom>
+                                        {workflow.name} - 참가자 분석
+                                    </Typography>
+                                    <TableContainer>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>참가자</TableCell>
+                                                    <TableCell>역할</TableCell>
+                                                    <TableCell>가용성</TableCell>
+                                                    <TableCell>완료율</TableCell>
+                                                    <TableCell>품질 점수</TableCell>
+                                                    <TableCell>협업 점수</TableCell>
+                                                    <TableCell>반응성</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {workflow.participants.map((participant) => (
+                                                    <TableRow key={participant.participantId}>
+                                                        <TableCell>
+                                                            <Typography variant="subtitle2">{participant.name}</Typography>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Chip label={participant.role} size="small" />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Chip
+                                                                label={participant.availability.status}
+                                                                color={participant.availability.status === 'available' ? 'success' : 'warning'}
+                                                                size="small"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <Box sx={{ width: '100%', mr: 1 }}>
+                                                                    <LinearProgress
+                                                                        variant="determinate"
+                                                                        value={participant.performance.completionRate * 100}
+                                                                        sx={{ height: 8, borderRadius: 5 }}
+                                                                    />
+                                                                </Box>
+                                                                <Box sx={{ minWidth: 35 }}>
+                                                                    <Typography variant="body2" color="textSecondary">
+                                                                        {(participant.performance.completionRate * 100).toFixed(0)}%
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography variant="body2">
+                                                                {(participant.performance.qualityScore * 100).toFixed(1)}%
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography variant="body2">
+                                                                {(participant.performance.collaborationScore * 100).toFixed(1)}%
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography variant="body2">
+                                                                {(participant.performance.responsiveness * 100).toFixed(1)}%
+                                                            </Typography>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={2}>
+                {/* 단계별 분석 */}
+                <Grid container spacing={3}>
+                    {workflows.map((workflow) => (
+                        <Grid item xs={12} key={workflow.workflowId}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom>
+                                        {workflow.name} - 단계별 분석
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        {workflow.stages.map((stage) => (
+                                            <Grid item xs={12} md={6} key={stage.stageId}>
+                                                <Paper sx={{ p: 2, border: 1, borderColor: 'divider' }}>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                                        <Typography variant="subtitle1">{stage.name}</Typography>
+                                                        <Chip
+                                                            label={stage.status}
+                                                            color={getStatusColor(stage.status) as any}
+                                                            size="small"
+                                                        />
+                                                    </Box>
+                                                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                                                        {stage.description}
+                                                    </Typography>
+                                                    <Box sx={{ mb: 2 }}>
+                                                        <Typography variant="body2" gutterBottom>
+                                                            완료율: {(stage.metrics.completionRate * 100).toFixed(1)}%
+                                                        </Typography>
+                                                        <Typography variant="body2" gutterBottom>
+                                                            평균 소요시간: {formatDuration(stage.metrics.averageDuration)}
+                                                        </Typography>
+                                                        <Typography variant="body2" gutterBottom>
+                                                            품질 점수: {(stage.metrics.qualityScore * 100).toFixed(1)}%
+                                                        </Typography>
+                                                        <Typography variant="body2" gutterBottom>
+                                                            효율성: {(stage.metrics.efficiency * 100).toFixed(1)}%
+                                                        </Typography>
+                                                    </Box>
+                                                    {stage.metrics.bottlenecks.length > 0 && (
+                                                        <Alert severity="warning" sx={{ mb: 2 }}>
+                                                            <Typography variant="body2">
+                                                                병목 감지: {stage.metrics.bottlenecks.length}개
+                                                            </Typography>
+                                                        </Alert>
+                                                    )}
+                                                </Paper>
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={3}>
+                {/* 작업 관리 */}
+                <Grid container spacing={3}>
+                    {workflows.map((workflow) => (
+                        <Grid item xs={12} key={workflow.workflowId}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom>
+                                        {workflow.name} - 작업 관리
+                                    </Typography>
+                                    <TableContainer>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>작업</TableCell>
+                                                    <TableCell>담당자</TableCell>
+                                                    <TableCell>타입</TableCell>
+                                                    <TableCell>상태</TableCell>
+                                                    <TableCell>우선순위</TableCell>
+                                                    <TableCell>예상 시간</TableCell>
+                                                    <TableCell>실제 시간</TableCell>
+                                                    <TableCell>품질 점수</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {workflow.stages.flatMap(stage => stage.tasks).map((task) => (
+                                                    <TableRow key={task.taskId}>
+                                                        <TableCell>
+                                                            <Box>
+                                                                <Typography variant="subtitle2">{task.name}</Typography>
+                                                                <Typography variant="body2" color="textSecondary">
+                                                                    {task.description}
+                                                                </Typography>
+                                                            </Box>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography variant="body2">
+                                                                {workflow.participants.find(p => p.participantId === task.assignee)?.name}
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Chip
+                                                                label={task.type}
+                                                                color={task.automation.enabled ? 'success' : 'default'}
+                                                                size="small"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Chip
+                                                                label={task.status}
+                                                                color={getStatusColor(task.status) as any}
+                                                                size="small"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Chip
+                                                                label={task.priority}
+                                                                color={getPriorityColor(task.priority) as any}
+                                                                size="small"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography variant="body2">
+                                                                {task.estimatedEffort}시간
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography variant="body2">
+                                                                {task.actualEffort > 0 ? `${task.actualEffort}시간` : '-'}
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography variant="body2">
+                                                                {(task.quality.score * 100).toFixed(1)}%
+                                                            </Typography>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={4}>
+                {/* 성과 분석 */}
+                <Grid container spacing={3}>
+                    {/* 성과 차트 */}
+                    <Grid item xs={12} lg={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    워크플로우 성과 비교
+                                </Typography>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={getPerformanceData()}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <RechartsTooltip />
+                                        <Legend />
+                                        <Bar dataKey="completionRate" fill="#8884d8" name="완료율" />
+                                        <Bar dataKey="qualityScore" fill="#82ca9d" name="품질 점수" />
+                                        <Bar dataKey="efficiencyScore" fill="#ffc658" name="효율성 점수" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    <Grid item xs={12} lg={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    효율성 지표
+                                </Typography>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={getEfficiencyData()}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <RechartsTooltip />
+                                        <Legend />
+                                        <Bar dataKey="throughput" fill="#8884d8" name="처리량" />
+                                        <Bar dataKey="automationRate" fill="#82ca9d" name="자동화율" />
+                                        <Bar dataKey="resourceUtilization" fill="#ffc658" name="자원 활용률" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    <Grid item xs={12} lg={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    품질 지표
+                                </Typography>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={getQualityData()}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <RechartsTooltip />
+                                        <Legend />
+                                        <Bar dataKey="customerSatisfaction" fill="#8884d8" name="고객 만족도" />
+                                        <Bar dataKey="complianceScore" fill="#82ca9d" name="준수 점수" />
+                                        <Bar dataKey="defectRate" fill="#ffc658" name="결함률" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    <Grid item xs={12} lg={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    협업 지표
+                                </Typography>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={getCollaborationData()}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <RechartsTooltip />
+                                        <Legend />
+                                        <Bar dataKey="communicationEffectiveness" fill="#8884d8" name="의사소통 효과성" />
+                                        <Bar dataKey="teamCoordination" fill="#82ca9d" name="팀 조율" />
+                                        <Bar dataKey="knowledgeSharing" fill="#ffc658" name="지식 공유" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={5}>
+                {/* 최적화 추천 */}
+                <Grid container spacing={3}>
+                    {workflows.map((workflow) => (
+                        <Grid item xs={12} key={workflow.workflowId}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom>
+                                        {workflow.name} - 최적화 추천
+                                    </Typography>
+
+                                    {/* 예측 */}
+                                    {workflow.analytics.predictions.length > 0 && (
+                                        <Box sx={{ mb: 3 }}>
+                                            <Typography variant="subtitle1" gutterBottom>
+                                                📊 예측 분석
+                                            </Typography>
+                                            <Grid container spacing={2}>
+                                                {workflow.analytics.predictions.map((prediction) => (
+                                                    <Grid item xs={12} md={6} key={prediction.predictionId}>
+                                                        <Alert severity="info">
+                                                            <Typography variant="body2" gutterBottom>
+                                                                <strong>{prediction.title}</strong>
+                                                            </Typography>
+                                                            <Typography variant="body2">
+                                                                {prediction.description}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                                                확률: {(prediction.probability * 100).toFixed(1)}% |
+                                                                기간: {prediction.timeframe}
+                                                            </Typography>
+                                                        </Alert>
+                                                    </Grid>
+                                                ))}
+                                            </Grid>
+                                        </Box>
+                                    )}
+
+                                    {/* 인사이트 */}
+                                    {workflow.analytics.insights.length > 0 && (
+                                        <Box sx={{ mb: 3 }}>
+                                            <Typography variant="subtitle1" gutterBottom>
+                                                💡 인사이트
+                                            </Typography>
+                                            <Grid container spacing={2}>
+                                                {workflow.analytics.insights.map((insight) => (
+                                                    <Grid item xs={12} md={6} key={insight.insightId}>
+                                                        <Alert severity={insight.urgency === 'high' ? 'error' : insight.urgency === 'medium' ? 'warning' : 'info'}>
+                                                            <Typography variant="body2" gutterBottom>
+                                                                <strong>{insight.title}</strong>
+                                                            </Typography>
+                                                            <Typography variant="body2">
+                                                                {insight.description}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                                                영향도: {(insight.impact * 100).toFixed(1)}% |
+                                                                신뢰도: {(insight.confidence * 100).toFixed(1)}%
+                                                            </Typography>
+                                                        </Alert>
+                                                    </Grid>
+                                                ))}
+                                            </Grid>
+                                        </Box>
+                                    )}
+
+                                    {/* 추천사항 */}
+                                    {workflow.analytics.recommendations.length > 0 && (
+                                        <Box>
+                                            <Typography variant="subtitle1" gutterBottom>
+                                                🎯 최적화 추천
+                                            </Typography>
+                                            <Grid container spacing={2}>
+                                                {workflow.analytics.recommendations.map((recommendation) => (
+                                                    <Grid item xs={12} md={6} key={recommendation.recommendationId}>
+                                                        <Alert severity={recommendation.priority === 'high' ? 'error' : recommendation.priority === 'medium' ? 'warning' : 'info'}>
+                                                            <Typography variant="body2" gutterBottom>
+                                                                <strong>{recommendation.title}</strong>
+                                                            </Typography>
+                                                            <Typography variant="body2">
+                                                                {recommendation.description}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                                                영향도: {(recommendation.impact * 100).toFixed(1)}% |
+                                                                노력: {recommendation.effort}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                                                <strong>구현 방법:</strong> {recommendation.implementation}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                                                <strong>기대 효과:</strong> {recommendation.expectedOutcome}
+                                                            </Typography>
+                                                        </Alert>
+                                                    </Grid>
+                                                ))}
+                                            </Grid>
+                                        </Box>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={6}>
+                {/* 설정 */}
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    시스템 설정
+                                </Typography>
+                                <List>
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <Automation />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="자동 최적화"
+                                            secondary="워크플로우 자동 최적화 기능"
+                                        />
+                                        <Switch defaultChecked />
+                                    </ListItem>
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <Notifications />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="스마트 알림"
+                                            secondary="지능형 알림 시스템"
+                                        />
+                                        <Switch defaultChecked />
+                                    </ListItem>
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <Speed />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="적응형 라우팅"
+                                            secondary="동적 작업 라우팅"
+                                        />
+                                        <Switch defaultChecked />
+                                    </ListItem>
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <Quality />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="품질 게이트"
+                                            secondary="품질 검증 자동화"
+                                        />
+                                        <Switch defaultChecked />
+                                    </ListItem>
+                                </List>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    AI 지원 설정
+                                </Typography>
+                                <List>
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <Assignment />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="AI 작업 할당"
+                                            secondary="AI 기반 최적 작업 할당"
+                                        />
+                                        <Switch defaultChecked />
+                                    </ListItem>
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <Schedule />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="스마트 스케줄링"
+                                            secondary="AI 기반 스케줄 최적화"
+                                        />
+                                        <Switch defaultChecked />
+                                    </ListItem>
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <Bottleneck />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="병목 감지"
+                                            secondary="실시간 병목 감지 및 해결"
+                                        />
+                                        <Switch defaultChecked />
+                                    </ListItem>
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <Optimization />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="성능 예측"
+                                            secondary="AI 기반 성능 예측"
+                                        />
+                                        <Switch defaultChecked />
+                                    </ListItem>
+                                </List>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            </TabPanel>
+
+            {/* 워크플로우 상세 다이얼로그 */}
+            <Dialog
+                open={detailDialogOpen}
+                onClose={() => setDetailDialogOpen(false)}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogTitle>
+                    워크플로우 상세 정보
+                </DialogTitle>
+                <DialogContent>
+                    {selectedWorkflow && (
+                        <Box>
+                            <Typography variant="h6" gutterBottom>
+                                {selectedWorkflow.name}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary" gutterBottom>
+                                {selectedWorkflow.description}
+                            </Typography>
+
+                            <Grid container spacing={3} sx={{ mt: 2 }}>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        기본 정보
+                                    </Typography>
+                                    <List dense>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="타입"
+                                                secondary={selectedWorkflow.type}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="상태"
+                                                secondary={selectedWorkflow.status}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="우선순위"
+                                                secondary={selectedWorkflow.priority}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="시작일"
+                                                secondary={formatDate(selectedWorkflow.timeline.startDate)}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="종료일"
+                                                secondary={formatDate(selectedWorkflow.timeline.endDate)}
+                                            />
+                                        </ListItem>
+                                    </List>
+                                </Grid>
+
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        성과 지표
+                                    </Typography>
+                                    <List dense>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="전체 점수"
+                                                secondary={`${(selectedWorkflow.analytics.performance.overallScore * 100).toFixed(1)}%`}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="완료율"
+                                                secondary={`${(selectedWorkflow.analytics.performance.completionRate * 100).toFixed(1)}%`}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="품질 점수"
+                                                secondary={`${(selectedWorkflow.analytics.performance.qualityScore * 100).toFixed(1)}%`}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="효율성 점수"
+                                                secondary={`${(selectedWorkflow.analytics.performance.efficiencyScore * 100).toFixed(1)}%`}
+                                            />
+                                        </ListItem>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary="참가자 만족도"
+                                                secondary={`${(selectedWorkflow.analytics.performance.participantSatisfaction * 100).toFixed(1)}%`}
+                                            />
+                                        </ListItem>
+                                    </List>
+                                </Grid>
+                            </Grid>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDetailDialogOpen(false)}>닫기</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 새 워크플로우 생성 다이얼로그 */}
+            <Dialog
+                open={createDialogOpen}
+                onClose={() => setCreateDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    새 워크플로우 생성
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="워크플로우 이름"
+                                variant="outlined"
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="설명"
+                                variant="outlined"
+                                multiline
+                                rows={3}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>타입</InputLabel>
+                                <Select label="타입">
+                                    <MenuItem value="project">프로젝트</MenuItem>
+                                    <MenuItem value="meeting">회의</MenuItem>
+                                    <MenuItem value="decision">의사결정</MenuItem>
+                                    <MenuItem value="review">검토</MenuItem>
+                                    <MenuItem value="innovation">혁신</MenuItem>
+                                    <MenuItem value="training">교육</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>우선순위</InputLabel>
+                                <Select label="우선순위">
+                                    <MenuItem value="low">낮음</MenuItem>
+                                    <MenuItem value="medium">보통</MenuItem>
+                                    <MenuItem value="high">높음</MenuItem>
+                                    <MenuItem value="critical">긴급</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCreateDialogOpen(false)}>취소</Button>
+                    <Button variant="contained" onClick={() => setCreateDialogOpen(false)}>
+                        생성
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default AICollaborationWorkflowDashboard;

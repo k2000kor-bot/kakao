@@ -815,7 +815,7 @@ class DreamApartmentVisionService {
         factors.push({
             factor: '지역 발전성',
             score: locationScore,
-            impact: 'positive' as const,
+            impact: 'positive' as 'positive' | 'negative' | 'neutral',
             description: '강남구는 지속적인 발전이 예상되는 지역입니다.'
         });
 

@@ -1,0 +1,1086 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    IconButton,
+    Tooltip,
+    LinearProgress,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Switch,
+    FormControlLabel,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Badge,
+    Alert,
+    TextField,
+    InputAdornment,
+    Tabs,
+    Tab
+} from '@mui/material';
+import {
+    Description,
+    Api,
+    Code,
+    Search,
+    TrendingUp,
+    TrendingDown,
+    TrendingFlat,
+    Speed,
+    CheckCircle,
+    Warning,
+    Error,
+    Refresh,
+    Fullscreen,
+    FullscreenExit,
+    Settings,
+    Timeline,
+    Assessment,
+    Build,
+    Visibility,
+    ExpandMore,
+    PlayArrow,
+    Stop,
+    Pause,
+    Undo,
+    SmartToy,
+    Analytics,
+    ModelTraining,
+    Book,
+    Article,
+    CodeOff,
+    CodeRounded
+} from '@mui/icons-material';
+
+interface APIDocumentation {
+    id: string;
+    service_name: string;
+    version: string;
+    endpoints: APIEndpoint[];
+    schemas: APISchema[];
+    examples: APIExample[];
+    changelog: APIChange[];
+    last_updated: Date;
+    status: 'active' | 'deprecated' | 'beta';
+}
+
+interface APIEndpoint {
+    id: string;
+    path: string;
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+    description: string;
+    parameters: APIParameter[];
+    request_body?: APIRequestBody;
+    responses: APIResponse[];
+    authentication: string[];
+    rate_limit?: string;
+    deprecated: boolean;
+    tags: string[];
+}
+
+interface APIParameter {
+    name: string;
+    type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+    required: boolean;
+    description: string;
+    default_value?: any;
+    example?: any;
+    validation_rules?: string[];
+}
+
+interface APIRequestBody {
+    content_type: string;
+    schema: any;
+    required: boolean;
+    description: string;
+    example?: any;
+}
+
+interface APIResponse {
+    status_code: number;
+    description: string;
+    content_type: string;
+    schema: any;
+    example?: any;
+}
+
+interface APISchema {
+    name: string;
+    type: 'object' | 'array' | 'string' | 'number' | 'boolean';
+    properties?: Record<string, any>;
+    required?: string[];
+    description: string;
+    example?: any;
+}
+
+interface APIExample {
+    id: string;
+    title: string;
+    description: string;
+    endpoint_id: string;
+    request: {
+        method: string;
+        url: string;
+        headers: Record<string, string>;
+        body?: any;
+    };
+    response: {
+        status_code: number;
+        headers: Record<string, string>;
+        body: any;
+    };
+    language: 'javascript' | 'python' | 'curl' | 'typescript';
+    tags: string[];
+}
+
+interface APIChange {
+    version: string;
+    date: Date;
+    type: 'added' | 'changed' | 'deprecated' | 'removed' | 'fixed';
+    description: string;
+    breaking_change: boolean;
+    migration_guide?: string;
+}
+
+interface DocumentationMetrics {
+    total_endpoints: number;
+    documented_endpoints: number;
+    coverage_percentage: number;
+    last_documentation_update: Date;
+    documentation_quality_score: number;
+    api_usage_statistics: APIUsageStats[];
+    popular_endpoints: string[];
+    deprecated_endpoints: number;
+}
+
+interface APIUsageStats {
+    endpoint_id: string;
+    total_requests: number;
+    success_rate: number;
+    average_response_time: number;
+    error_rate: number;
+    last_used: Date;
+    unique_users: number;
+}
+
+const AdvancedAIDocumentationAPIDashboard: React.FC = () => {
+    const [apiDocumentations, setApiDocumentations] = useState<APIDocumentation[]>([]);
+    const [documentationMetrics, setDocumentationMetrics] = useState<DocumentationMetrics | null>(null);
+    const [selectedTab, setSelectedTab] = useState(0);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedService, setSelectedService] = useState<string>('');
+    const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null);
+    const [endpointDialogOpen, setEndpointDialogOpen] = useState(false);
+    const [lastUpdate, setLastUpdate] = useState(new Date());
+
+    // 탭 정의
+    const tabs = [
+        { label: 'API 개요', icon: <Api /> },
+        { label: '서비스별 문서', icon: <Description /> },
+        { label: '엔드포인트 검색', icon: <Search /> },
+        { label: '사용 통계', icon: <Analytics /> },
+        { label: '변경 로그', icon: <Timeline /> },
+        { label: '설정', icon: <Settings /> }
+    ];
+
+    // 데이터 새로고침
+    const refreshData = async () => {
+        try {
+            // 실제로는 API 호출
+            const mockDocumentations: APIDocumentation[] = [
+                {
+                    id: 'api-doc-integrated-ai-service',
+                    service_name: 'integrated-ai-service',
+                    version: '1.2.0',
+                    endpoints: [
+                        {
+                            id: 'process-ai-request',
+                            path: '/api/ai/process',
+                            method: 'POST',
+                            description: 'AI 요청 처리 및 응답 생성',
+                            parameters: [
+                                {
+                                    name: 'user_id',
+                                    type: 'string',
+                                    required: true,
+                                    description: '사용자 식별자',
+                                    example: 'user-123'
+                                }
+                            ],
+                            responses: [
+                                {
+                                    status_code: 200,
+                                    description: '성공적인 AI 응답',
+                                    content_type: 'application/json',
+                                    schema: { type: 'object' }
+                                }
+                            ],
+                            authentication: ['Bearer Token'],
+                            rate_limit: '100 requests/minute',
+                            deprecated: false,
+                            tags: ['AI', 'Processing', 'Core']
+                        }
+                    ],
+                    schemas: [
+                        {
+                            name: 'AIRequest',
+                            type: 'object',
+                            description: 'AI 요청을 위한 표준 요청 스키마'
+                        }
+                    ],
+                    examples: [
+                        {
+                            id: 'example-ai-process-request',
+                            title: 'AI 요청 처리 예제',
+                            description: '텍스트 기반 AI 요청 처리 예제',
+                            endpoint_id: 'process-ai-request',
+                            request: {
+                                method: 'POST',
+                                url: '/api/ai/process',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: { user_id: 'user-123' }
+                            },
+                            response: {
+                                status_code: 200,
+                                headers: { 'Content-Type': 'application/json' },
+                                body: { id: 'response-789' }
+                            },
+                            language: 'javascript',
+                            tags: ['AI', 'Processing', 'Example']
+                        }
+                    ],
+                    changelog: [
+                        {
+                            version: '1.2.0',
+                            date: new Date(),
+                            type: 'changed',
+                            description: '응답 형식 개선 및 성능 최적화',
+                            breaking_change: false
+                        }
+                    ],
+                    last_updated: new Date(),
+                    status: 'active'
+                },
+                {
+                    id: 'api-doc-ai-psychology-engine',
+                    service_name: 'ai-psychology-engine',
+                    version: '1.1.0',
+                    endpoints: [
+                        {
+                            id: 'analyze-emotional-state',
+                            path: '/api/psychology/emotions',
+                            method: 'POST',
+                            description: '사용자의 감정 상태 분석',
+                            parameters: [
+                                {
+                                    name: 'user_id',
+                                    type: 'string',
+                                    required: true,
+                                    description: '분석할 사용자 ID',
+                                    example: 'user-123'
+                                }
+                            ],
+                            responses: [
+                                {
+                                    status_code: 200,
+                                    description: '감정 분석 결과',
+                                    content_type: 'application/json',
+                                    schema: { type: 'object' }
+                                }
+                            ],
+                            authentication: ['Bearer Token'],
+                            deprecated: false,
+                            tags: ['Psychology', 'Analysis', 'Emotions']
+                        }
+                    ],
+                    schemas: [],
+                    examples: [],
+                    changelog: [],
+                    last_updated: new Date(Date.now() - 86400000),
+                    status: 'active'
+                }
+            ];
+
+            const mockMetrics: DocumentationMetrics = {
+                total_endpoints: 15,
+                documented_endpoints: 14,
+                coverage_percentage: 93.3,
+                last_documentation_update: new Date(),
+                documentation_quality_score: 0.87,
+                api_usage_statistics: [
+                    {
+                        endpoint_id: 'process-ai-request',
+                        total_requests: 15420,
+                        success_rate: 0.96,
+                        average_response_time: 245,
+                        error_rate: 0.04,
+                        last_used: new Date(),
+                        unique_users: 892
+                    },
+                    {
+                        endpoint_id: 'analyze-emotional-state',
+                        total_requests: 8234,
+                        success_rate: 0.91,
+                        average_response_time: 180,
+                        error_rate: 0.09,
+                        last_used: new Date(Date.now() - 3600000),
+                        unique_users: 456
+                    }
+                ],
+                popular_endpoints: ['process-ai-request', 'analyze-emotional-state', 'get-ai-capabilities'],
+                deprecated_endpoints: 1
+            };
+
+            setApiDocumentations(mockDocumentations);
+            setDocumentationMetrics(mockMetrics);
+            setLastUpdate(new Date());
+        } catch (error) {
+            console.error('API 문서화 데이터 새로고침 오류:', error);
+        }
+    };
+
+    // 자동 새로고침
+    useEffect(() => {
+        refreshData();
+
+        if (autoRefresh) {
+            const interval = setInterval(refreshData, 30000); // 30초마다
+            return () => clearInterval(interval);
+        }
+    }, [autoRefresh]);
+
+    // HTTP 메서드 색상
+    const getMethodColor = (method: string) => {
+        switch (method) {
+            case 'GET': return 'success';
+            case 'POST': return 'primary';
+            case 'PUT': return 'warning';
+            case 'DELETE': return 'error';
+            case 'PATCH': return 'info';
+            default: return 'default';
+        }
+    };
+
+    // 상태 색상
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'active': return 'success';
+            case 'deprecated': return 'error';
+            case 'beta': return 'warning';
+            default: return 'default';
+        }
+    };
+
+    // 변경 타입 색상
+    const getChangeTypeColor = (type: string) => {
+        switch (type) {
+            case 'added': return 'success';
+            case 'changed': return 'warning';
+            case 'deprecated': return 'error';
+            case 'removed': return 'error';
+            case 'fixed': return 'info';
+            default: return 'default';
+        }
+    };
+
+    const renderAPIOverview = () => (
+        <Grid container spacing={3}>
+            {/* 문서화 메트릭 카드들 */}
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <Api color="primary" sx={{ mr: 1 }} />
+                            <Typography variant="h6">총 엔드포인트</Typography>
+                        </Box>
+                        <Typography variant="h4" color="primary">
+                            {documentationMetrics?.total_endpoints || 0}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            API 엔드포인트 수
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <Description color="success" sx={{ mr: 1 }} />
+                            <Typography variant="h6">문서화 완성도</Typography>
+                        </Box>
+                        <Typography variant="h4" color="success.main">
+                            {documentationMetrics?.coverage_percentage.toFixed(1) || 0}%
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            문서화된 엔드포인트 비율
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <Assessment color="info" sx={{ mr: 1 }} />
+                            <Typography variant="h6">문서화 품질</Typography>
+                        </Box>
+                        <Typography variant="h4" color="info.main">
+                            {((documentationMetrics?.documentation_quality_score || 0) * 100).toFixed(0)}%
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            문서화 품질 점수
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <Warning color="warning" sx={{ mr: 1 }} />
+                            <Typography variant="h6">사용 중단 예정</Typography>
+                        </Box>
+                        <Typography variant="h4" color="warning.main">
+                            {documentationMetrics?.deprecated_endpoints || 0}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            deprecated 엔드포인트
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* 서비스별 문서화 상태 */}
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>서비스별 API 문서화 상태</Typography>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>서비스명</TableCell>
+                                        <TableCell>버전</TableCell>
+                                        <TableCell>엔드포인트 수</TableCell>
+                                        <TableCell>문서화 완성도</TableCell>
+                                        <TableCell>상태</TableCell>
+                                        <TableCell>마지막 업데이트</TableCell>
+                                        <TableCell>작업</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {apiDocumentations.map((doc) => (
+                                        <TableRow key={doc.id}>
+                                            <TableCell>
+                                                <Typography variant="body1" fontWeight="medium">
+                                                    {doc.service_name}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip label={doc.version} size="small" />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {doc.endpoints.length}개
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {((doc.endpoints.filter(ep => ep.description).length / doc.endpoints.length) * 100).toFixed(0)}%
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={(doc.endpoints.filter(ep => ep.description).length / doc.endpoints.length) * 100}
+                                                        sx={{ width: 60, height: 6 }}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={doc.status}
+                                                    size="small"
+                                                    color={getStatusColor(doc.status) as any}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {doc.last_updated.toLocaleDateString()}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Tooltip title="상세 보기">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setSelectedService(doc.service_name)}
+                                                    >
+                                                        <Visibility />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderServiceDocumentation = () => (
+        <Grid container spacing={3}>
+            {selectedService ? (
+                <Grid item xs={12}>
+                    <Card>
+                        <CardContent>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                <Typography variant="h6">{selectedService} API 문서</Typography>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => setSelectedService('')}
+                                >
+                                    전체 보기
+                                </Button>
+                            </Box>
+                            {(() => {
+                                const doc = apiDocumentations.find(d => d.service_name === selectedService);
+                                if (!doc) return <Alert severity="info">서비스를 찾을 수 없습니다.</Alert>;
+
+                                return (
+                                    <Box>
+                                        <Box display="flex" gap={2} mb={3}>
+                                            <Chip label={`v${doc.version}`} color="primary" />
+                                            <Chip label={doc.status} color={getStatusColor(doc.status) as any} />
+                                            <Chip label={`${doc.endpoints.length} endpoints`} />
+                                        </Box>
+
+                                        <Typography variant="h6" mb={2}>엔드포인트</Typography>
+                                        {doc.endpoints.map((endpoint) => (
+                                            <Accordion key={endpoint.id} sx={{ mb: 1 }}>
+                                                <AccordionSummary expandIcon={<ExpandMore />}>
+                                                    <Box display="flex" alignItems="center" width="100%">
+                                                        <Chip
+                                                            label={endpoint.method}
+                                                            size="small"
+                                                            color={getMethodColor(endpoint.method) as any}
+                                                            sx={{ mr: 1 }}
+                                                        />
+                                                        <Typography variant="body1" sx={{ flexGrow: 1 }}>
+                                                            {endpoint.path}
+                                                        </Typography>
+                                                        <Chip
+                                                            label={endpoint.deprecated ? 'Deprecated' : 'Active'}
+                                                            size="small"
+                                                            color={endpoint.deprecated ? 'error' : 'success'}
+                                                        />
+                                                    </Box>
+                                                </AccordionSummary>
+                                                <AccordionDetails>
+                                                    <Grid container spacing={2}>
+                                                        <Grid item xs={12}>
+                                                            <Typography variant="body1" mb={2}>
+                                                                {endpoint.description}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={12} md={6}>
+                                                            <Typography variant="subtitle2" mb={1}>파라미터</Typography>
+                                                            <List dense>
+                                                                {endpoint.parameters.map((param) => (
+                                                                    <ListItem key={param.name}>
+                                                                        <ListItemText
+                                                                            primary={`${param.name} (${param.type})`}
+                                                                            secondary={`${param.description} ${param.required ? '(필수)' : '(선택)'}`}
+                                                                        />
+                                                                    </ListItem>
+                                                                ))}
+                                                            </List>
+                                                        </Grid>
+                                                        <Grid item xs={12} md={6}>
+                                                            <Typography variant="subtitle2" mb={1}>응답</Typography>
+                                                            <List dense>
+                                                                {endpoint.responses.map((response) => (
+                                                                    <ListItem key={response.status_code}>
+                                                                        <ListItemText
+                                                                            primary={`${response.status_code} - ${response.description}`}
+                                                                            secondary={response.content_type}
+                                                                        />
+                                                                    </ListItem>
+                                                                ))}
+                                                            </List>
+                                                        </Grid>
+                                                        <Grid item xs={12}>
+                                                            <Box display="flex" gap={1}>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    size="small"
+                                                                    onClick={() => {
+                                                                        setSelectedEndpoint(endpoint);
+                                                                        setEndpointDialogOpen(true);
+                                                                    }}
+                                                                >
+                                                                    상세 보기
+                                                                </Button>
+                                                                <Button variant="outlined" size="small">
+                                                                    테스트
+                                                                </Button>
+                                                            </Box>
+                                                        </Grid>
+                                                    </Grid>
+                                                </AccordionDetails>
+                                            </Accordion>
+                                        ))}
+                                    </Box>
+                                );
+                            })()}
+                        </CardContent>
+                    </Card>
+                </Grid>
+            ) : (
+                <Grid item xs={12}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" mb={2}>API 서비스 목록</Typography>
+                            <Grid container spacing={2}>
+                                {apiDocumentations.map((doc) => (
+                                    <Grid item xs={12} md={6} key={doc.id}>
+                                        <Card variant="outlined">
+                                            <CardContent>
+                                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                                    <Typography variant="h6">{doc.service_name}</Typography>
+                                                    <Chip label={doc.status} size="small" color={getStatusColor(doc.status) as any} />
+                                                </Box>
+                                                <Typography variant="body2" color="textSecondary" mb={2}>
+                                                    버전 {doc.version} • {doc.endpoints.length}개 엔드포인트
+                                                </Typography>
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    onClick={() => setSelectedService(doc.service_name)}
+                                                >
+                                                    문서 보기
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            )}
+        </Grid>
+    );
+
+    const renderEndpointSearch = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>엔드포인트 검색</Typography>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            placeholder="엔드포인트 경로, 설명, 태그로 검색..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Search />
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{ mb: 3 }}
+                        />
+
+                        {searchQuery && (
+                            <Box>
+                                <Typography variant="subtitle1" mb={2}>
+                                    검색 결과: "{searchQuery}"
+                                </Typography>
+                                {(() => {
+                                    const results = apiDocumentations.flatMap(doc =>
+                                        doc.endpoints.filter(endpoint =>
+                                            endpoint.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                            endpoint.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                            endpoint.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+                                        ).map(endpoint => ({ ...endpoint, service: doc.service_name }))
+                                    );
+
+                                    if (results.length === 0) {
+                                        return <Alert severity="info">검색 결과가 없습니다.</Alert>;
+                                    }
+
+                                    return (
+                                        <List>
+                                            {results.map((endpoint) => (
+                                                <ListItem key={`${endpoint.service}-${endpoint.id}`} divider>
+                                                    <ListItemIcon>
+                                                        <Chip
+                                                            label={endpoint.method}
+                                                            size="small"
+                                                            color={getMethodColor(endpoint.method) as any}
+                                                        />
+                                                    </ListItemIcon>
+                                                    <ListItemText
+                                                        primary={endpoint.path}
+                                                        secondary={`${endpoint.service} • ${endpoint.description}`}
+                                                    />
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        onClick={() => {
+                                                            setSelectedEndpoint(endpoint);
+                                                            setEndpointDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        상세 보기
+                                                    </Button>
+                                                </ListItem>
+                                            ))}
+                                        </List>
+                                    );
+                                })()}
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderUsageStatistics = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>API 사용 통계</Typography>
+                        {documentationMetrics?.api_usage_statistics && (
+                            <TableContainer>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>엔드포인트</TableCell>
+                                            <TableCell>총 요청</TableCell>
+                                            <TableCell>성공률</TableCell>
+                                            <TableCell>평균 응답시간</TableCell>
+                                            <TableCell>오류율</TableCell>
+                                            <TableCell>고유 사용자</TableCell>
+                                            <TableCell>마지막 사용</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {documentationMetrics.api_usage_statistics.map((stat) => (
+                                            <TableRow key={stat.endpoint_id}>
+                                                <TableCell>
+                                                    <Typography variant="body2" fontFamily="monospace">
+                                                        {stat.endpoint_id}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2">
+                                                        {stat.total_requests.toLocaleString()}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box display="flex" alignItems="center">
+                                                        <Typography variant="body2" sx={{ mr: 1 }}>
+                                                            {(stat.success_rate * 100).toFixed(1)}%
+                                                        </Typography>
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={stat.success_rate * 100}
+                                                            sx={{ width: 60, height: 6 }}
+                                                            color="success"
+                                                        />
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2">
+                                                        {stat.average_response_time}ms
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" color="error.main">
+                                                        {(stat.error_rate * 100).toFixed(1)}%
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2">
+                                                        {stat.unique_users}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2">
+                                                        {stat.last_used.toLocaleString()}
+                                                    </Typography>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderChangelog = () => (
+        <Grid container spacing={3}>
+            {apiDocumentations.map((doc) => (
+                <Grid item xs={12} key={doc.id}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" mb={2}>{doc.service_name} 변경 로그</Typography>
+                            {doc.changelog.length > 0 ? (
+                                doc.changelog.map((change, index) => (
+                                    <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                            <Typography variant="subtitle1" fontWeight="medium">
+                                                v{change.version}
+                                            </Typography>
+                                            <Box display="flex" gap={1}>
+                                                <Chip
+                                                    label={change.type}
+                                                    size="small"
+                                                    color={getChangeTypeColor(change.type) as any}
+                                                />
+                                                {change.breaking_change && (
+                                                    <Chip label="Breaking Change" size="small" color="error" />
+                                                )}
+                                            </Box>
+                                        </Box>
+                                        <Typography variant="body2" color="textSecondary" mb={1}>
+                                            {change.date.toLocaleDateString()}
+                                        </Typography>
+                                        <Typography variant="body1">
+                                            {change.description}
+                                        </Typography>
+                                    </Box>
+                                ))
+                            ) : (
+                                <Alert severity="info">변경 로그가 없습니다.</Alert>
+                            )}
+                        </CardContent>
+                    </Card>
+                </Grid>
+            ))}
+        </Grid>
+    );
+
+    const renderSettings = () => (
+        <Card>
+            <CardContent>
+                <Typography variant="h6" mb={2}>API 문서화 시스템 설정</Typography>
+                <List>
+                    <ListItem>
+                        <ListItemIcon><Refresh /></ListItemIcon>
+                        <ListItemText
+                            primary="자동 새로고침"
+                            secondary="30초마다 데이터 자동 업데이트"
+                        />
+                        <Switch
+                            checked={autoRefresh}
+                            onChange={(e) => setAutoRefresh(e.target.checked)}
+                        />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemIcon><Description /></ListItemIcon>
+                        <ListItemText
+                            primary="자동 문서화 생성"
+                            secondary="새로운 서비스 발견 시 자동 문서화 생성"
+                        />
+                        <Switch defaultChecked />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemIcon><Assessment /></ListItemIcon>
+                        <ListItemText
+                            primary="문서화 품질 검사"
+                            secondary="1시간마다 문서화 품질 자동 검사"
+                        />
+                        <Switch defaultChecked />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemIcon><Analytics /></ListItemIcon>
+                        <ListItemText
+                            primary="사용 통계 수집"
+                            secondary="30분마다 API 사용 통계 수집"
+                        />
+                        <Switch defaultChecked />
+                    </ListItem>
+                </List>
+            </CardContent>
+        </Card>
+    );
+
+    const renderContent = () => {
+        switch (selectedTab) {
+            case 0: return renderAPIOverview();
+            case 1: return renderServiceDocumentation();
+            case 2: return renderEndpointSearch();
+            case 3: return renderUsageStatistics();
+            case 4: return renderChangelog();
+            case 5: return renderSettings();
+            default: return renderAPIOverview();
+        }
+    };
+
+    return (
+        <Box sx={{ p: 3, height: '100vh', overflow: 'auto' }}>
+            {/* 헤더 */}
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Box display="flex" alignItems="center">
+                    <Description sx={{ mr: 1, fontSize: 32 }} color="primary" />
+                    <Typography variant="h4">고급 AI 문서화 및 API 대시보드</Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="body2" color="textSecondary">
+                        마지막 업데이트: {lastUpdate.toLocaleTimeString()}
+                    </Typography>
+                    <Tooltip title="전체화면">
+                        <IconButton onClick={() => setFullscreen(!fullscreen)}>
+                            {fullscreen ? <FullscreenExit /> : <Fullscreen />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            </Box>
+
+            {/* 탭 네비게이션 */}
+            <Paper sx={{ mb: 3 }}>
+                <Box display="flex" overflow="auto">
+                    {tabs.map((tab, index) => (
+                        <Button
+                            key={index}
+                            variant={selectedTab === index ? "contained" : "text"}
+                            startIcon={tab.icon}
+                            onClick={() => setSelectedTab(index)}
+                            sx={{
+                                minWidth: 'auto',
+                                px: 2,
+                                py: 1.5,
+                                borderRadius: 0,
+                                borderBottom: selectedTab === index ? 2 : 0,
+                                borderColor: 'primary.main'
+                            }}
+                        >
+                            {tab.label}
+                        </Button>
+                    ))}
+                </Box>
+            </Paper>
+
+            {/* 메인 콘텐츠 */}
+            {renderContent()}
+
+            {/* 엔드포인트 상세 다이얼로그 */}
+            <Dialog
+                open={endpointDialogOpen}
+                onClose={() => setEndpointDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box display="flex" alignItems="center">
+                        <Api />
+                        <Typography variant="h6" sx={{ ml: 1 }}>
+                            엔드포인트 상세 정보
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    {selectedEndpoint && (
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <Box display="flex" alignItems="center" mb={2}>
+                                    <Chip
+                                        label={selectedEndpoint.method}
+                                        color={getMethodColor(selectedEndpoint.method) as any}
+                                        sx={{ mr: 1 }}
+                                    />
+                                    <Typography variant="h6" fontFamily="monospace">
+                                        {selectedEndpoint.path}
+                                    </Typography>
+                                </Box>
+                                <Typography variant="body1" mb={2}>
+                                    {selectedEndpoint.description}
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="subtitle2" mb={1}>파라미터</Typography>
+                                <List dense>
+                                    {selectedEndpoint.parameters.map((param) => (
+                                        <ListItem key={param.name}>
+                                            <ListItemText
+                                                primary={`${param.name} (${param.type})`}
+                                                secondary={`${param.description} ${param.required ? '(필수)' : '(선택)'}`}
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="subtitle2" mb={1}>응답</Typography>
+                                <List dense>
+                                    {selectedEndpoint.responses.map((response) => (
+                                        <ListItem key={response.status_code}>
+                                            <ListItemText
+                                                primary={`${response.status_code} - ${response.description}`}
+                                                secondary={response.content_type}
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" mb={1}>태그</Typography>
+                                <Box display="flex" gap={1} flexWrap="wrap">
+                                    {selectedEndpoint.tags.map((tag) => (
+                                        <Chip key={tag} label={tag} size="small" />
+                                    ))}
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEndpointDialogOpen(false)}>닫기</Button>
+                    <Button variant="contained" color="primary">
+                        API 테스트
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default AdvancedAIDocumentationAPIDashboard;

@@ -1,0 +1,841 @@
+import React, { useState, useEffect } from 'react';
+import { Box, Card, CardContent, Typography, Grid, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, ListItemIcon, IconButton, Tooltip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Badge, Alert, TextField, InputAdornment, Tabs, Tab, Divider, CircularProgress, Slider, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Gavel, TrendingUp, TrendingDown, TrendingFlat, CheckCircle, Warning, Error, Refresh, Add, Delete, Edit, Visibility, Settings, Timeline, Assessment, Build, ExpandMore, PlayArrow, Pause, Stop, Science, Psychology, Code, DataUsage, Workflow, Task, Queue, PriorityHigh, PriorityMedium, PriorityLow, CriticalPriority, ModelTraining, Tune, Optimization, SmartToy, Psychology as PsychologyIcon, Science as ScienceIcon, Code as CodeIcon, DataUsage as DataUsageIcon, Workflow as WorkflowIcon, Task as TaskIcon, Queue as QueueIcon, PriorityHigh as PriorityHighIcon, PriorityMedium as PriorityMediumIcon, PriorityLow as PriorityLowIcon, CriticalPriority as CriticalPriorityIcon, ModelTraining as ModelTrainingIcon, Tune as TuneIcon, Optimization as OptimizationIcon, SmartToy as SmartToyIcon, Gavel as GavelIcon } from '@mui/icons-material';
+import ultraAdvancedAIEthicsAndGovernanceSystem, { EthicsPolicy, GovernanceFramework, EthicsViolation, ComplianceRequirement, EthicsConfig, EthicsMetrics } from '../services/ultraAdvancedAIEthicsAndGovernanceSystem';
+
+interface EthicsDashboardState {
+    policies: EthicsPolicy[];
+    frameworks: GovernanceFramework[];
+    violations: EthicsViolation[];
+    config: EthicsConfig;
+    metrics: EthicsMetrics;
+    isLoading: boolean;
+    error: string | null;
+}
+
+const UltraAdvancedAIEthicsAndGovernanceDashboard: React.FC = () => {
+    const [state, setState] = useState<EthicsDashboardState>({
+        policies: [],
+        frameworks: [],
+        violations: [],
+        config: {
+            auto_monitoring: true,
+            real_time_validation: true,
+            violation_alerting: true,
+            compliance_reporting: true,
+            audit_automation: true,
+            risk_assessment: {
+                enabled: true,
+                frequency: 'weekly',
+                threshold: 0.7
+            },
+            privacy_protection: {
+                data_anonymization: true,
+                consent_management: true,
+                data_retention: true,
+                access_control: true
+            },
+            fairness_monitoring: {
+                bias_detection: true,
+                demographic_parity: true,
+                equal_opportunity: true,
+                individual_fairness: true
+            }
+        },
+        metrics: {
+            total_policies: 0,
+            active_policies: 0,
+            total_violations: 0,
+            open_violations: 0,
+            compliance_rate: 0,
+            risk_score: 0,
+            audit_status: {
+                total_audits: 0,
+                passed_audits: 0,
+                failed_audits: 0,
+                next_audit_due: null
+            },
+            policy_effectiveness: {
+                privacy_score: 0,
+                fairness_score: 0,
+                transparency_score: 0,
+                accountability_score: 0,
+                safety_score: 0,
+                security_score: 0
+            }
+        },
+        isLoading: true,
+        error: null
+    });
+
+    const [activeTab, setActiveTab] = useState(0);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [refreshInterval, setRefreshInterval] = useState(10000);
+    const [selectedPolicy, setSelectedPolicy] = useState<EthicsPolicy | null>(null);
+    const [selectedFramework, setSelectedFramework] = useState<GovernanceFramework | null>(null);
+    const [selectedViolation, setSelectedViolation] = useState<EthicsViolation | null>(null);
+    const [createPolicyDialog, setCreatePolicyDialog] = useState(false);
+    const [createFrameworkDialog, setCreateFrameworkDialog] = useState(false);
+    const [configDialog, setConfigDialog] = useState(false);
+    const [auditDialog, setAuditDialog] = useState(false);
+    const [validationDialog, setValidationDialog] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+                const policies = ultraAdvancedAIEthicsAndGovernanceSystem.getPolicies();
+                const frameworks = ultraAdvancedAIEthicsAndGovernanceSystem.getFrameworks();
+                const violations = ultraAdvancedAIEthicsAndGovernanceSystem.getViolations(50);
+                const config = ultraAdvancedAIEthicsAndGovernanceSystem.getConfig();
+                const metrics = ultraAdvancedAIEthicsAndGovernanceSystem.getMetrics();
+
+                setState(prev => ({
+                    ...prev,
+                    policies,
+                    frameworks,
+                    violations,
+                    config,
+                    metrics,
+                    isLoading: false
+                }));
+            } catch (error) {
+                setState(prev => ({
+                    ...prev,
+                    error: error.message,
+                    isLoading: false
+                }));
+            }
+        };
+
+        fetchData();
+
+        if (autoRefresh) {
+            const interval = setInterval(fetchData, refreshInterval);
+            return () => clearInterval(interval);
+        }
+    }, [autoRefresh, refreshInterval]);
+
+    useEffect(() => {
+        const handleMetricsUpdate = (metrics: EthicsMetrics) => {
+            setState(prev => ({ ...prev, metrics }));
+        };
+
+        const handlePolicyCreated = (policy: EthicsPolicy) => {
+            setState(prev => ({
+                ...prev,
+                policies: [...prev.policies, policy]
+            }));
+        };
+
+        const handleFrameworkCreated = (framework: GovernanceFramework) => {
+            setState(prev => ({
+                ...prev,
+                frameworks: [...prev.frameworks, framework]
+            }));
+        };
+
+        const handleViolationDetected = (violation: EthicsViolation) => {
+            setState(prev => ({
+                ...prev,
+                violations: [violation, ...prev.violations.slice(0, 49)]
+            }));
+        };
+
+        ultraAdvancedAIEthicsAndGovernanceSystem.on('metrics_updated', handleMetricsUpdate);
+        ultraAdvancedAIEthicsAndGovernanceSystem.on('policy_created', handlePolicyCreated);
+        ultraAdvancedAIEthicsAndGovernanceSystem.on('framework_created', handleFrameworkCreated);
+        ultraAdvancedAIEthicsAndGovernanceSystem.on('violation_detected', handleViolationDetected);
+
+        return () => {
+            ultraAdvancedAIEthicsAndGovernanceSystem.off('metrics_updated', handleMetricsUpdate);
+            ultraAdvancedAIEthicsAndGovernanceSystem.off('policy_created', handlePolicyCreated);
+            ultraAdvancedAIEthicsAndGovernanceSystem.off('framework_created', handleFrameworkCreated);
+            ultraAdvancedAIEthicsAndGovernanceSystem.off('violation_detected', handleViolationDetected);
+        };
+    }, []);
+
+    const handlePerformAudit = async (frameworkId: string) => {
+        try {
+            await ultraAdvancedAIEthicsAndGovernanceSystem.performAudit(frameworkId);
+            setAuditDialog(false);
+        } catch (error) {
+            setState(prev => ({ ...prev, error: error.message }));
+        }
+    };
+
+    const handleValidateData = async (data: any) => {
+        try {
+            const result = await ultraAdvancedAIEthicsAndGovernanceSystem.validateData(data);
+            console.log('데이터 검증 결과:', result);
+            setValidationDialog(false);
+        } catch (error) {
+            setState(prev => ({ ...prev, error: error.message }));
+        }
+    };
+
+    const handleResolveViolation = async (violationId: string, resolution: string) => {
+        try {
+            await ultraAdvancedAIEthicsAndGovernanceSystem.resolveViolation(violationId, resolution);
+            setState(prev => ({
+                ...prev,
+                violations: prev.violations.map(v =>
+                    v.id === violationId ? { ...v, status: 'resolved', resolved_at: new Date() } : v
+                )
+            }));
+        } catch (error) {
+            setState(prev => ({ ...prev, error: error.message }));
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'active': return 'success';
+            case 'compliant': return 'success';
+            case 'open': return 'error';
+            case 'resolved': return 'success';
+            case 'investigating': return 'warning';
+            case 'partial': return 'warning';
+            case 'non_compliant': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const getPriorityIcon = (priority: string) => {
+        switch (priority) {
+            case 'critical': return <CriticalPriorityIcon />;
+            case 'high': return <PriorityHighIcon />;
+            case 'medium': return <PriorityMediumIcon />;
+            case 'low': return <PriorityLowIcon />;
+            default: return <PriorityMediumIcon />;
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'critical': return 'error';
+            case 'high': return 'warning';
+            case 'medium': return 'info';
+            case 'low': return 'default';
+            default: return 'default';
+        }
+    };
+
+    const getCategoryColor = (category: string) => {
+        switch (category) {
+            case 'privacy': return 'primary';
+            case 'fairness': return 'secondary';
+            case 'transparency': return 'info';
+            case 'accountability': return 'warning';
+            case 'safety': return 'error';
+            case 'security': return 'success';
+            default: return 'default';
+        }
+    };
+
+    const getComplianceColor = (score: number) => {
+        if (score >= 0.9) return 'success';
+        if (score >= 0.7) return 'warning';
+        return 'error';
+    };
+
+    if (state.isLoading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ flexGrow: 1, p: 3 }}>
+            <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <GavelIcon color="primary" />
+                고도화된 AI 윤리 및 거버넌스 시스템 대시보드
+            </Typography>
+
+            {state.error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {state.error}
+                </Alert>
+            )}
+
+            {/* 제어 패널 */}
+            <Card sx={{ mb: 3 }}>
+                <CardContent>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="h6" gutterBottom>
+                                시스템 제어
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={autoRefresh}
+                                            onChange={(e) => setAutoRefresh(e.target.checked)}
+                                        />
+                                    }
+                                    label="자동 새로고침"
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={state.config.auto_monitoring}
+                                            onChange={(e) => {
+                                                ultraAdvancedAIEthicsAndGovernanceSystem.updateConfig({
+                                                    auto_monitoring: e.target.checked
+                                                });
+                                            }}
+                                        />
+                                    }
+                                    label="자동 모니터링"
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={state.config.violation_alerting}
+                                            onChange={(e) => {
+                                                ultraAdvancedAIEthicsAndGovernanceSystem.updateConfig({
+                                                    violation_alerting: e.target.checked
+                                                });
+                                            }}
+                                        />
+                                    }
+                                    label="위반 알림"
+                                />
+                            </Box>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Settings />}
+                                    onClick={() => setConfigDialog(true)}
+                                >
+                                    설정
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Assessment />}
+                                    onClick={() => setAuditDialog(true)}
+                                >
+                                    감사 실행
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Visibility />}
+                                    onClick={() => setValidationDialog(true)}
+                                >
+                                    데이터 검증
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Add />}
+                                    onClick={() => setCreatePolicyDialog(true)}
+                                >
+                                    정책 생성
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Add />}
+                                    onClick={() => setCreateFrameworkDialog(true)}
+                                >
+                                    프레임워크 생성
+                                </Button>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
+
+            {/* 시스템 상태 */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography color="textSecondary" gutterBottom>
+                                전체 정책
+                            </Typography>
+                            <Typography variant="h4">
+                                {state.metrics.total_policies}
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={(state.metrics.active_policies / state.metrics.total_policies) * 100}
+                                sx={{ mt: 1 }}
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                                활성: {state.metrics.active_policies}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography color="textSecondary" gutterBottom>
+                                준수율
+                            </Typography>
+                            <Typography variant="h4">
+                                {Math.round(state.metrics.compliance_rate * 100)}%
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={state.metrics.compliance_rate * 100}
+                                color={getComplianceColor(state.metrics.compliance_rate) as any}
+                                sx={{ mt: 1 }}
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                                위험도: {Math.round(state.metrics.risk_score)}%
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography color="textSecondary" gutterBottom>
+                                위반 사항
+                            </Typography>
+                            <Typography variant="h4">
+                                {state.metrics.total_violations}
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={state.metrics.total_violations > 0 ? (state.metrics.open_violations / state.metrics.total_violations) * 100 : 0}
+                                color="error"
+                                sx={{ mt: 1 }}
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                                미해결: {state.metrics.open_violations}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography color="textSecondary" gutterBottom>
+                                감사 상태
+                            </Typography>
+                            <Typography variant="h4">
+                                {state.metrics.audit_status.total_audits}
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={state.metrics.audit_status.total_audits > 0 ? (state.metrics.audit_status.passed_audits / state.metrics.audit_status.total_audits) * 100 : 0}
+                                color="success"
+                                sx={{ mt: 1 }}
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                                통과: {state.metrics.audit_status.passed_audits}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* 탭 네비게이션 */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+                    <Tab label="윤리 정책" />
+                    <Tab label="거버넌스 프레임워크" />
+                    <Tab label="위반 모니터링" />
+                    <Tab label="정책 효과성" />
+                </Tabs>
+            </Box>
+
+            {/* 윤리 정책 탭 */}
+            {activeTab === 0 && (
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        윤리 정책 ({state.policies.length})
+                    </Typography>
+                    <Grid container spacing={2}>
+                        {state.policies.map((policy) => (
+                            <Grid item xs={12} md={6} key={policy.id}>
+                                <Card>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                            <Typography variant="h6">
+                                                {policy.name}
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                <Chip
+                                                    label={policy.status}
+                                                    color={getStatusColor(policy.status) as any}
+                                                    size="small"
+                                                />
+                                                <Chip
+                                                    icon={getPriorityIcon(policy.priority)}
+                                                    label={policy.priority}
+                                                    color={getPriorityColor(policy.priority) as any}
+                                                    size="small"
+                                                />
+                                                <Chip
+                                                    label={policy.category}
+                                                    color={getCategoryColor(policy.category) as any}
+                                                    size="small"
+                                                />
+                                            </Box>
+                                        </Box>
+                                        <Typography color="textSecondary" sx={{ mb: 2 }}>
+                                            {policy.description}
+                                        </Typography>
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="textSecondary">
+                                                규칙: {policy.rules.length} | 준수 임계값: {Math.round(policy.compliance_threshold * 100)}%
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={policy.compliance_threshold * 100}
+                                                sx={{ mt: 1 }}
+                                            />
+                                        </Box>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="textSecondary">
+                                                버전: {policy.metadata.version}
+                                            </Typography>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                onClick={() => setSelectedPolicy(policy)}
+                                            >
+                                                상세보기
+                                            </Button>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
+            )}
+
+            {/* 거버넌스 프레임워크 탭 */}
+            {activeTab === 1 && (
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        거버넌스 프레임워크 ({state.frameworks.length})
+                    </Typography>
+                    <Grid container spacing={2}>
+                        {state.frameworks.map((framework) => (
+                            <Grid item xs={12} md={6} key={framework.id}>
+                                <Card>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                            <Typography variant="h6">
+                                                {framework.name}
+                                            </Typography>
+                                            <Chip
+                                                label={framework.status}
+                                                color={getStatusColor(framework.status) as any}
+                                                size="small"
+                                            />
+                                        </Box>
+                                        <Typography color="textSecondary" sx={{ mb: 2 }}>
+                                            {framework.description}
+                                        </Typography>
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="textSecondary">
+                                                정책: {framework.policies.length} | 요구사항: {framework.compliance_requirements.length}
+                                            </Typography>
+                                            <Typography variant="body2" color="textSecondary">
+                                                다음 감사: {framework.audit_schedule.next_audit?.toLocaleDateString() || '미정'}
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                size="small"
+                                                variant="contained"
+                                                startIcon={<Assessment />}
+                                                onClick={() => handlePerformAudit(framework.id)}
+                                            >
+                                                감사 실행
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                onClick={() => setSelectedFramework(framework)}
+                                            >
+                                                상세보기
+                                            </Button>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
+            )}
+
+            {/* 위반 모니터링 탭 */}
+            {activeTab === 2 && (
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        위반 모니터링 ({state.violations.length})
+                    </Typography>
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>위반 ID</TableCell>
+                                    <TableCell>정책</TableCell>
+                                    <TableCell>심각도</TableCell>
+                                    <TableCell>상태</TableCell>
+                                    <TableCell>감지 시간</TableCell>
+                                    <TableCell>해결 시간</TableCell>
+                                    <TableCell>작업</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {state.violations.map((violation) => (
+                                    <TableRow key={violation.id}>
+                                        <TableCell>{violation.id}</TableCell>
+                                        <TableCell>{violation.policy_id}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={violation.severity}
+                                                color={getPriorityColor(violation.severity) as any}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={violation.status}
+                                                color={getStatusColor(violation.status) as any}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            {violation.detected_at.toLocaleString()}
+                                        </TableCell>
+                                        <TableCell>
+                                            {violation.resolved_at?.toLocaleString() || '-'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {violation.status === 'open' && (
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    onClick={() => setSelectedViolation(violation)}
+                                                >
+                                                    해결
+                                                </Button>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Box>
+            )}
+
+            {/* 정책 효과성 탭 */}
+            {activeTab === 3 && (
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    정책 효과성 점수
+                                </Typography>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        개인정보 보호
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.policy_effectiveness.privacy_score * 100}
+                                        color={getComplianceColor(state.metrics.policy_effectiveness.privacy_score) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.policy_effectiveness.privacy_score * 100)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        공정성
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.policy_effectiveness.fairness_score * 100}
+                                        color={getComplianceColor(state.metrics.policy_effectiveness.fairness_score) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.policy_effectiveness.fairness_score * 100)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        투명성
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.policy_effectiveness.transparency_score * 100}
+                                        color={getComplianceColor(state.metrics.policy_effectiveness.transparency_score) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.policy_effectiveness.transparency_score * 100)}%
+                                    </Typography>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    추가 효과성 지표
+                                </Typography>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        책임성
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.policy_effectiveness.accountability_score * 100}
+                                        color={getComplianceColor(state.metrics.policy_effectiveness.accountability_score) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.policy_effectiveness.accountability_score * 100)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        안전성
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.policy_effectiveness.safety_score * 100}
+                                        color={getComplianceColor(state.metrics.policy_effectiveness.safety_score) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.policy_effectiveness.safety_score * 100)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        보안성
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.policy_effectiveness.security_score * 100}
+                                        color={getComplianceColor(state.metrics.policy_effectiveness.security_score) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.policy_effectiveness.security_score * 100)}%
+                                    </Typography>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            )}
+
+            {/* 설정 다이얼로그 */}
+            <Dialog open={configDialog} onClose={() => setConfigDialog(false)} maxWidth="md" fullWidth>
+                <DialogTitle>윤리 및 거버넌스 시스템 설정</DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="h6" gutterBottom>
+                                모니터링 설정
+                            </Typography>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.auto_monitoring}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIEthicsAndGovernanceSystem.updateConfig({
+                                                auto_monitoring: e.target.checked
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="자동 모니터링"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.real_time_validation}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIEthicsAndGovernanceSystem.updateConfig({
+                                                real_time_validation: e.target.checked
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="실시간 검증"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.violation_alerting}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIEthicsAndGovernanceSystem.updateConfig({
+                                                violation_alerting: e.target.checked
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="위반 알림"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="h6" gutterBottom>
+                                개인정보 보호 설정
+                            </Typography>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.privacy_protection.data_anonymization}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIEthicsAndGovernanceSystem.updateConfig({
+                                                privacy_protection: {
+                                                    ...state.config.privacy_protection,
+                                                    data_anonymization: e.target.checked
+                                                }
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="데이터 익명화"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.privacy_protection.consent_management}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIEthicsAndGovernanceSystem.updateConfig({
+                                                privacy_protection: {
+                                                    ...state.config.privacy_protection,
+                                                    consent_management: e.target.checked
+                                                }
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="동의 관리"
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfigDialog(false)}>닫기</Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default UltraAdvancedAIEthicsAndGovernanceDashboard;

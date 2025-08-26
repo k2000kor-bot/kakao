@@ -212,7 +212,7 @@ class AdaptiveLearningEngine {
         if (recentChats.length === 0) return null;
 
         const avgMessagesPerChat = messages.length / chats.length;
-        const activeChats = recentChats.filter(c => c.messageCount > 0).length;
+        const activeChats = recentChats.filter(c => c.messages.length > 0).length;
         const activityRate = activeChats / recentChats.length;
 
         return {

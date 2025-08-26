@@ -1,0 +1,1086 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Container,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Paper,
+    List,
+    ListItem,
+    ListItemIcon,
+    ListItemText,
+    Divider,
+    Button,
+    Chip,
+    LinearProgress,
+    Alert,
+    Snackbar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    SpeedDial,
+    SpeedDialAction,
+    SpeedDialIcon,
+    IconButton,
+    Tooltip,
+    Switch,
+    FormControlLabel,
+    Slider,
+    TextField,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Tabs,
+    Tab,
+    Stepper,
+    Step,
+    StepLabel,
+    StepContent,
+    Timeline,
+    TimelineItem,
+    TimelineSeparator,
+    TimelineConnector,
+    TimelineContent,
+    TimelineDot,
+    TimelineOppositeContent,
+} from '@mui/material';
+import {
+    AutoAwesome,
+    Psychology,
+    School,
+    Work,
+    HealthAndSafety,
+    Public,
+    Security,
+    Science,
+    Lightbulb,
+    TrendingUp,
+    Group,
+    Business,
+    EmojiEvents,
+    Star,
+    Favorite,
+    Share,
+    Download,
+    Upload,
+    Code,
+    Build,
+    Create,
+    Explore,
+    Search,
+    FilterList,
+    Sort,
+    ViewList,
+    ViewModule,
+    GridView,
+    List as ListIcon,
+    Apps,
+    Dashboard as DashboardIcon,
+    Assessment,
+    BarChart,
+    PieChart,
+    ShowChart,
+    TrendingDown,
+    TrendingFlat,
+    Compare,
+    CompareArrows,
+    SwapHoriz,
+    SwapVert,
+    RotateLeft,
+    RotateRight,
+    Flip,
+    Transform,
+    Shuffle,
+    Add,
+    Remove,
+    Edit,
+    Delete,
+    Save,
+    Cancel,
+    Close,
+    OpenInNew,
+    Fullscreen,
+    FullscreenExit,
+    ZoomIn,
+    ZoomOut,
+    Rotate90DegreesCcw,
+    Rotate90DegreesCw,
+    FlipToBack,
+    FlipToFront,
+    Layers,
+    LayersClear,
+    Opacity,
+    ColorLens,
+    Palette,
+    Brush,
+    FormatPaint,
+    FormatSize,
+    FormatBold,
+    FormatItalic,
+    FormatUnderlined,
+    FormatStrikethrough,
+    FormatAlignLeft,
+    FormatAlignCenter,
+    FormatAlignRight,
+    FormatAlignJustify,
+    FormatListBulleted,
+    FormatListNumbered,
+    FormatIndentIncrease,
+    FormatIndentDecrease,
+    FormatLineSpacing,
+    FormatColorFill,
+    FormatColorText,
+    FormatColorReset,
+    FormatClear,
+    InsertDriveFile,
+    InsertPhoto,
+    InsertLink,
+    InsertEmoticon,
+    InsertChart,
+    InsertInvitation,
+    InsertComment,
+    Functions,
+    Code as CodeIcon,
+    DataObject,
+    Schema,
+    Storage,
+    Cloud,
+    Security as SecurityIcon,
+    Speed,
+    Memory,
+    Api,
+    BugReport,
+    CheckCircle,
+    Warning,
+    Error,
+    Info,
+    Settings,
+    Refresh,
+    CloudUpload,
+    CloudDownload,
+    Monitor,
+    Analytics,
+    ExpandMore,
+    Rocket,
+    Timeline as TimelineIcon,
+    Hub,
+    Psychology as PsychologyIcon,
+    School as SchoolIcon,
+    Work as WorkIcon,
+    HealthAndSafety as HealthIcon,
+    Public as PublicIcon,
+    Security as SecurityIcon2,
+    Science as ScienceIcon,
+    Lightbulb as LightbulbIcon,
+    TrendingUp as TrendingUpIcon,
+    Group as GroupIcon,
+    Business as BusinessIcon,
+    EmojiEvents as EmojiEventsIcon,
+    Star as StarIcon,
+    Favorite as FavoriteIcon,
+    Share as ShareIcon,
+    Download as DownloadIcon,
+    Upload as UploadIcon,
+    Code as CodeIcon2,
+    Build as BuildIcon,
+    Create as CreateIcon,
+    Explore as ExploreIcon,
+    Search as SearchIcon,
+    FilterList as FilterListIcon,
+    Sort as SortIcon,
+    ViewList as ViewListIcon,
+    ViewModule as ViewModuleIcon,
+    GridView as GridViewIcon,
+    List as ListIcon2,
+    Apps as AppsIcon,
+    Dashboard as DashboardIcon2,
+    Assessment as AssessmentIcon,
+    BarChart as BarChartIcon,
+    PieChart as PieChartIcon,
+    ShowChart as ShowChartIcon,
+    TrendingDown as TrendingDownIcon,
+    TrendingFlat as TrendingFlatIcon,
+    Compare as CompareIcon,
+    CompareArrows as CompareArrowsIcon,
+    SwapHoriz as SwapHorizIcon,
+    SwapVert as SwapVertIcon,
+    RotateLeft as RotateLeftIcon,
+    RotateRight as RotateRightIcon,
+    Flip as FlipIcon,
+    Transform as TransformIcon,
+    Shuffle as ShuffleIcon,
+    Add as AddIcon,
+    Remove as RemoveIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Save as SaveIcon,
+    Cancel as CancelIcon,
+    Close as CloseIcon,
+    OpenInNew as OpenInNewIcon,
+    Fullscreen as FullscreenIcon,
+    FullscreenExit as FullscreenExitIcon,
+    ZoomIn as ZoomInIcon,
+    ZoomOut as ZoomOutIcon,
+    Rotate90DegreesCcw as Rotate90DegreesCcwIcon,
+    Rotate90DegreesCw as Rotate90DegreesCwIcon,
+    FlipToBack as FlipToBackIcon,
+    FlipToFront as FlipToFrontIcon,
+    Layers as LayersIcon,
+    LayersClear as LayersClearIcon,
+    Opacity as OpacityIcon,
+    ColorLens as ColorLensIcon,
+    Palette as PaletteIcon,
+    Brush as BrushIcon,
+    FormatPaint as FormatPaintIcon,
+    FormatSize as FormatSizeIcon,
+    FormatBold as FormatBoldIcon,
+    FormatItalic as FormatItalicIcon,
+    FormatUnderlined as FormatUnderlinedIcon,
+    FormatStrikethrough as FormatStrikethroughIcon,
+    FormatAlignLeft as FormatAlignLeftIcon,
+    FormatAlignCenter as FormatAlignCenterIcon,
+    FormatAlignRight as FormatAlignRightIcon,
+    FormatAlignJustify as FormatAlignJustifyIcon,
+    FormatListBulleted as FormatListBulletedIcon,
+    FormatListNumbered as FormatListNumberedIcon,
+    FormatIndentIncrease as FormatIndentIncreaseIcon,
+    FormatIndentDecrease as FormatIndentDecreaseIcon,
+    FormatLineSpacing as FormatLineSpacingIcon,
+    FormatColorFill as FormatColorFillIcon,
+    FormatColorText as FormatColorTextIcon,
+    FormatColorReset as FormatColorResetIcon,
+    FormatClear as FormatClearIcon,
+    InsertDriveFile as InsertDriveFileIcon,
+    InsertPhoto as InsertPhotoIcon,
+    InsertLink as InsertLinkIcon,
+    InsertEmoticon as InsertEmoticonIcon,
+    InsertChart as InsertChartIcon,
+    InsertInvitation as InsertInvitationIcon,
+    InsertComment as InsertCommentIcon,
+    Functions as FunctionsIcon,
+    Code as CodeIcon3,
+    DataObject as DataObjectIcon,
+    Schema as SchemaIcon,
+    Storage as StorageIcon,
+    Cloud as CloudIcon,
+    Security as SecurityIcon3,
+    Speed as SpeedIcon,
+    Memory as MemoryIcon,
+    Api as ApiIcon,
+    BugReport as BugReportIcon,
+    CheckCircle as CheckCircleIcon,
+    Warning as WarningIcon,
+    Error as ErrorIcon,
+    Info as InfoIcon,
+    Settings as SettingsIcon,
+    Refresh as RefreshIcon,
+    CloudUpload as CloudUploadIcon,
+    CloudDownload as CloudDownloadIcon,
+    Monitor as MonitorIcon,
+    Analytics as AnalyticsIcon,
+    ExpandMore as ExpandMoreIcon,
+    Rocket as RocketIcon,
+    Timeline as TimelineIcon2,
+    Hub as HubIcon,
+    Psychology as PsychologyIcon2,
+    Brain,
+    Memory as MemoryIcon2,
+    Speed as SpeedIcon2,
+    Cloud as CloudIcon2,
+    Security as SecurityIcon4,
+    Api as ApiIcon2,
+    BugReport as BugReportIcon2,
+    CheckCircle as CheckCircleIcon2,
+    Warning as WarningIcon2,
+    Error as ErrorIcon2,
+    Info as InfoIcon2,
+    Settings as SettingsIcon2,
+    Refresh as RefreshIcon2,
+    CloudUpload as CloudUploadIcon2,
+    CloudDownload as CloudDownloadIcon2,
+    Monitor as MonitorIcon2,
+    Analytics as AnalyticsIcon2,
+    ExpandMore as ExpandMoreIcon2,
+    Rocket as RocketIcon2,
+    Timeline as TimelineIcon3,
+    Hub as HubIcon2,
+    Layers as LayersIcon2,
+    Transform as TransformIcon2,
+    SwapHoriz as SwapHorizIcon2,
+    SwapVert as SwapVertIcon2,
+    RotateLeft as RotateLeftIcon2,
+    RotateRight as RotateRightIcon2,
+    Flip as FlipIcon2,
+    Shuffle as ShuffleIcon2,
+    Add as AddIcon2,
+    Remove as RemoveIcon2,
+    Edit as EditIcon2,
+    Delete as DeleteIcon2,
+    Save as SaveIcon2,
+    Cancel as CancelIcon2,
+    Close as CloseIcon2,
+    OpenInNew as OpenInNewIcon2,
+    Fullscreen as FullscreenIcon2,
+    FullscreenExit as FullscreenExitIcon2,
+    ZoomIn as ZoomInIcon2,
+    ZoomOut as ZoomOutIcon2,
+    Rotate90DegreesCcw as Rotate90DegreesCcwIcon2,
+    Rotate90DegreesCw as Rotate90DegreesCwIcon2,
+    FlipToBack as FlipToBackIcon2,
+    FlipToFront as FlipToFrontIcon2,
+    LayersClear as LayersClearIcon2,
+    Opacity as OpacityIcon2,
+    ColorLens as ColorLensIcon2,
+    Palette as PaletteIcon2,
+    Brush as BrushIcon2,
+    FormatPaint as FormatPaintIcon2,
+    FormatSize as FormatSizeIcon2,
+    FormatBold as FormatBoldIcon2,
+    FormatItalic as FormatItalicIcon2,
+    FormatUnderlined as FormatUnderlinedIcon2,
+    FormatStrikethrough as FormatStrikethroughIcon2,
+    FormatAlignLeft as FormatAlignLeftIcon2,
+    FormatAlignCenter as FormatAlignCenterIcon2,
+    FormatAlignRight as FormatAlignRightIcon2,
+    FormatAlignJustify as FormatAlignJustifyIcon2,
+    FormatListBulleted as FormatListBulletedIcon2,
+    FormatListNumbered as FormatListNumberedIcon2,
+    FormatIndentIncrease as FormatIndentIncreaseIcon2,
+    FormatIndentDecrease as FormatIndentDecreaseIcon2,
+    FormatLineSpacing as FormatLineSpacingIcon2,
+    FormatColorFill as FormatColorFillIcon2,
+    FormatColorText as FormatColorTextIcon2,
+    FormatColorReset as FormatColorResetIcon2,
+    FormatClear as FormatClearIcon2,
+    InsertDriveFile as InsertDriveFileIcon2,
+    InsertPhoto as InsertPhotoIcon2,
+    InsertLink as InsertLinkIcon2,
+    InsertEmoticon as InsertEmoticonIcon2,
+    InsertChart as InsertChartIcon2,
+    InsertInvitation as InsertInvitationIcon2,
+    InsertComment as InsertCommentIcon2,
+    Functions as FunctionsIcon2,
+    Code as CodeIcon4,
+    DataObject as DataObjectIcon2,
+    Schema as SchemaIcon2,
+    Storage as StorageIcon2,
+    Cloud as CloudIcon3,
+    Security as SecurityIcon5,
+    Speed as SpeedIcon3,
+    Memory as MemoryIcon3,
+    Api as ApiIcon3,
+    BugReport as BugReportIcon3,
+    CheckCircle as CheckCircleIcon3,
+    Warning as WarningIcon3,
+    Error as ErrorIcon3,
+    Info as InfoIcon3,
+    Settings as SettingsIcon3,
+    Refresh as RefreshIcon3,
+    CloudUpload as CloudUploadIcon3,
+    CloudDownload as CloudDownloadIcon3,
+    Monitor as MonitorIcon3,
+    Analytics as AnalyticsIcon3,
+    ExpandMore as ExpandMoreIcon3,
+    Rocket as RocketIcon3,
+    Timeline as TimelineIcon4,
+    Hub as HubIcon3,
+} from '@mui/icons-material';
+
+interface InterdimensionalLevel {
+    id: string;
+    name: string;
+    description: string;
+    status: 'accessible' | 'exploring' | 'mapping' | 'transcendent';
+    progress: number;
+    impact: string;
+    timeline: string;
+    characteristics: string[];
+    benefits: string[];
+    challenges: string[];
+    metrics: {
+        accessibility: number;
+        exploration: number;
+        mapping: number;
+        integration: number;
+        transcendence: number;
+        harmony: number;
+    };
+}
+
+interface InterdimensionalMetric {
+    name: string;
+    value: number;
+    target: number;
+    unit: string;
+    trend: 'up' | 'down' | 'stable';
+    color: string;
+    description: string;
+}
+
+interface CORBUInterdimensionalSystemProps {
+    children?: React.ReactNode;
+}
+
+const CORBUInterdimensionalSystem: React.FC<CORBUInterdimensionalSystemProps> = ({ children }) => {
+    const [selectedLevel, setSelectedLevel] = useState<InterdimensionalLevel | null>(null);
+    const [showLevelDialog, setShowLevelDialog] = useState(false);
+    const [showSnackbar, setShowSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [activeTab, setActiveTab] = useState(0);
+
+    const interdimensionalLevels: InterdimensionalLevel[] = [
+        {
+            id: 'dimensional-access',
+            name: '차원 접근',
+            description: '다차원적 공간에 대한 접근과 탐험의 시작',
+            status: 'accessible',
+            progress: 100,
+            impact: '차원 간 이동의 완전한 실현',
+            timeline: '완료',
+            characteristics: ['차원 이동', '공간 탐험', '차원 접근', '차원 인식'],
+            benefits: ['차원 자유', '공간 탐험', '차원 접근', '차원 인식'],
+            challenges: ['차원 안정성', '이동 안전성', '차원 충돌', '공간 왜곡'],
+            metrics: {
+                accessibility: 100,
+                exploration: 95,
+                mapping: 90,
+                integration: 85,
+                transcendence: 88,
+                harmony: 92
+            }
+        },
+        {
+            id: 'dimensional-exploration',
+            name: '차원 탐험',
+            description: '다차원적 공간의 체계적 탐험과 연구',
+            status: 'exploring',
+            progress: 95,
+            impact: '차원 탐험의 완전한 구현',
+            timeline: '2024-2025',
+            characteristics: ['체계적 탐험', '차원 연구', '공간 분석', '차원 이해'],
+            benefits: ['체계적 지식', '차원 연구', '공간 분석', '차원 이해'],
+            challenges: ['탐험 범위', '연구 깊이', '분석 정확성', '이해의 한계'],
+            metrics: {
+                accessibility: 95,
+                exploration: 100,
+                mapping: 95,
+                integration: 90,
+                transcendence: 92,
+                harmony: 95
+            }
+        },
+        {
+            id: 'dimensional-mapping',
+            name: '차원 매핑',
+            description: '다차원적 공간의 완전한 매핑과 통합',
+            status: 'mapping',
+            progress: 85,
+            impact: '차원 매핑의 완전한 실현',
+            timeline: '2025-2027',
+            characteristics: ['완전한 매핑', '차원 통합', '공간 연결', '차원 조화'],
+            benefits: ['완전한 지도', '차원 통합', '공간 연결', '차원 조화'],
+            challenges: ['매핑 완성도', '통합 안정성', '연결 유지', '조화 실현'],
+            metrics: {
+                accessibility: 98,
+                exploration: 100,
+                mapping: 100,
+                integration: 95,
+                transcendence: 95,
+                harmony: 98
+            }
+        },
+        {
+            id: 'dimensional-transcendence',
+            name: '차원 초월',
+            description: '모든 차원을 초월한 궁극적 차원의 실현',
+            status: 'transcendent',
+            progress: 75,
+            impact: '궁극적 차원의 완전한 실현',
+            timeline: '2027-2030',
+            characteristics: ['차원 초월', '궁극적 통합', '무한한 공간', '완전한 자유'],
+            benefits: ['차원 초월', '궁극적 통합', '무한한 공간', '완전한 자유'],
+            challenges: ['초월의 의미', '무한의 이해', '공간의 본질', '자유의 실현'],
+            metrics: {
+                accessibility: 100,
+                exploration: 100,
+                mapping: 100,
+                integration: 100,
+                transcendence: 100,
+                harmony: 100
+            }
+        }
+    ];
+
+    const interdimensionalMetrics: InterdimensionalMetric[] = [
+        {
+            name: '차원 접근성',
+            value: 95,
+            target: 100,
+            unit: '점',
+            trend: 'up',
+            color: 'success.main',
+            description: '다차원적 공간에 대한 접근 능력'
+        },
+        {
+            name: '탐험 범위',
+            value: 98,
+            target: 100,
+            unit: '점',
+            trend: 'up',
+            color: 'info.main',
+            description: '차원 탐험의 범위와 깊이'
+        },
+        {
+            name: '매핑 완성도',
+            value: 96,
+            target: 100,
+            unit: '점',
+            trend: 'up',
+            color: 'primary.main',
+            description: '차원 공간의 매핑 완성도'
+        },
+        {
+            name: '차원 통합',
+            value: 94,
+            target: 100,
+            unit: '점',
+            trend: 'up',
+            color: 'warning.main',
+            description: '다차원 간 통합과 연결'
+        },
+        {
+            name: '차원 초월',
+            value: 97,
+            target: 100,
+            unit: '점',
+            trend: 'up',
+            color: 'secondary.main',
+            description: '차원을 초월한 새로운 공간'
+        },
+        {
+            name: '차원 조화',
+            value: 93,
+            target: 100,
+            unit: '점',
+            trend: 'up',
+            color: 'success.main',
+            description: '모든 차원의 완벽한 조화'
+        }
+    ];
+
+    const handleLevelClick = (level: InterdimensionalLevel) => {
+        setSelectedLevel(level);
+        setShowLevelDialog(true);
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'accessible': return 'success';
+            case 'exploring': return 'primary';
+            case 'mapping': return 'warning';
+            case 'transcendent': return 'info';
+            default: return 'default';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'accessible': return '접근 가능';
+            case 'exploring': return '탐험 중';
+            case 'mapping': return '매핑 중';
+            case 'transcendent': return '초월';
+            default: return '알 수 없음';
+        }
+    };
+
+    const quickActions = [
+        {
+            icon: <LayersIcon2 />, name: '차원 분석', action: () => {
+                setSnackbarMessage('차원간 분석이 실행되었습니다.');
+                setShowSnackbar(true);
+            }
+        },
+        {
+            icon: <TransformIcon2 />, name: '차원 이동', action: () => {
+                setSnackbarMessage('차원간 이동이 시작되었습니다.');
+                setShowSnackbar(true);
+            }
+        },
+        {
+            icon: <LightbulbIcon />, name: '차원 혁신', action: () => {
+                setSnackbarMessage('차원간 혁신 프로세스가 진행되었습니다.');
+                setShowSnackbar(true);
+            }
+        },
+    ];
+
+    return (
+        <Box sx={{ p: 3 }}>
+            <Container maxWidth="xl">
+                {/* 헤더 */}
+                <Box sx={{ mb: 4, textAlign: 'center' }}>
+                    <Typography variant="h3" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                        <LayersIcon2 sx={{ fontSize: 40, color: 'primary.main' }} />
+                        CORBU AI 차원간 시스템
+                    </Typography>
+                    <Typography variant="h6" color="text.secondary">
+                        다차원적 AI 시스템과 차원 간 이동을 통한 새로운 혁신
+                    </Typography>
+                </Box>
+
+                {/* 차원간 지표 */}
+                <Card sx={{ mb: 4 }}>
+                    <CardContent>
+                        <Typography variant="h5" gutterBottom>차원간 지표</Typography>
+                        <Grid container spacing={3}>
+                            {interdimensionalMetrics.map((metric) => (
+                                <Grid item xs={12} sm={6} md={4} key={metric.name}>
+                                    <Paper sx={{ p: 2 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                            <Typography variant="h6">{metric.name}</Typography>
+                                            <Typography variant="h4" color={metric.color as any}>
+                                                {metric.value}
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                            목표: {metric.target} {metric.unit}
+                                        </Typography>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={(metric.value / metric.target) * 100}
+                                            sx={{ height: 8, borderRadius: 4 }}
+                                        />
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                달성률: {((metric.value / metric.target) * 100).toFixed(1)}%
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {metric.trend === 'up' ? '📈' : metric.trend === 'down' ? '📉' : '➡️'}
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                                            {metric.description}
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </CardContent>
+                </Card>
+
+                {/* 탭 네비게이션 */}
+                <Card sx={{ mb: 4 }}>
+                    <CardContent>
+                        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+                            <Tab label="차원 수준" />
+                            <Tab label="차원 발전 과정" />
+                            <Tab label="차원 도구" />
+                            <Tab label="차원 비전" />
+                        </Tabs>
+
+                        {/* 차원 수준 탭 */}
+                        {activeTab === 0 && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="h6" gutterBottom>차원간 발전 수준</Typography>
+                                <Grid container spacing={3}>
+                                    {interdimensionalLevels.map((level) => (
+                                        <Grid item xs={12} md={6} key={level.id}>
+                                            <Card
+                                                sx={{
+                                                    cursor: 'pointer',
+                                                    '&:hover': { bgcolor: 'action.hover' }
+                                                }}
+                                                onClick={() => handleLevelClick(level)}
+                                            >
+                                                <CardContent>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                                        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                                                            {level.name}
+                                                        </Typography>
+                                                        <Chip
+                                                            label={getStatusLabel(level.status)}
+                                                            size="small"
+                                                            color={getStatusColor(level.status) as any}
+                                                        />
+                                                    </Box>
+                                                    <Typography variant="body2" color="text.secondary" paragraph>
+                                                        {level.description}
+                                                    </Typography>
+                                                    <Box sx={{ mb: 2 }}>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            진행률: {level.progress}%
+                                                        </Typography>
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={level.progress}
+                                                            sx={{ height: 6, borderRadius: 3, mt: 0.5 }}
+                                                        />
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            타임라인: {level.timeline}
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            접근성: {level.metrics.accessibility}점
+                                                        </Typography>
+                                                    </Box>
+                                                </CardContent>
+                                            </Card>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            </Box>
+                        )}
+
+                        {/* 차원 발전 과정 탭 */}
+                        {activeTab === 1 && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="h6" gutterBottom>차원간 발전 과정</Typography>
+                                <Grid container spacing={3}>
+                                    <Grid item xs={12} md={6}>
+                                        <Card>
+                                            <CardContent>
+                                                <Typography variant="h6" gutterBottom>차원 발전 단계</Typography>
+                                                <Stepper orientation="vertical">
+                                                    <Step active={true} completed={true}>
+                                                        <StepLabel>차원 접근</StepLabel>
+                                                        <StepContent>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                다차원적 공간에 대한 접근
+                                                            </Typography>
+                                                        </StepContent>
+                                                    </Step>
+                                                    <Step active={true} completed={true}>
+                                                        <StepLabel>차원 탐험</StepLabel>
+                                                        <StepContent>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                체계적인 차원 탐험과 연구
+                                                            </Typography>
+                                                        </StepContent>
+                                                    </Step>
+                                                    <Step active={true} completed={false}>
+                                                        <StepLabel>차원 매핑</StepLabel>
+                                                        <StepContent>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                완전한 차원 매핑과 통합
+                                                            </Typography>
+                                                        </StepContent>
+                                                    </Step>
+                                                    <Step active={false} completed={false}>
+                                                        <StepLabel>차원 초월</StepLabel>
+                                                        <StepContent>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                모든 차원의 궁극적 초월
+                                                            </Typography>
+                                                        </StepContent>
+                                                    </Step>
+                                                </Stepper>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <Card>
+                                            <CardContent>
+                                                <Typography variant="h6" gutterBottom>차원 원리</Typography>
+                                                <List>
+                                                    <ListItem>
+                                                        <ListItemIcon>
+                                                            <LayersIcon2 color="primary" />
+                                                        </ListItemIcon>
+                                                        <ListItemText primary="차원 이동" secondary="다차원적 공간 간 이동" />
+                                                    </ListItem>
+                                                    <ListItem>
+                                                        <ListItemIcon>
+                                                            <TransformIcon2 color="primary" />
+                                                        </ListItemIcon>
+                                                        <ListItemText primary="차원 변환" secondary="차원 간 변환과 적응" />
+                                                    </ListItem>
+                                                    <ListItem>
+                                                        <ListItemIcon>
+                                                            <LightbulbIcon color="primary" />
+                                                        </ListItemIcon>
+                                                        <ListItemText primary="차원 통합" secondary="다차원의 완벽한 통합" />
+                                                    </ListItem>
+                                                    <ListItem>
+                                                        <ListItemIcon>
+                                                            <Star color="primary" />
+                                                        </ListItemIcon>
+                                                        <ListItemText primary="차원 조화" secondary="모든 차원의 조화로운 공존" />
+                                                    </ListItem>
+                                                </List>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                </Grid>
+                            </Box>
+                        )}
+
+                        {/* 차원 도구 탭 */}
+                        {activeTab === 2 && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="h6" gutterBottom>차원 도구</Typography>
+                                <Grid container spacing={3}>
+                                    <Grid item xs={12} md={6}>
+                                        <Accordion>
+                                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                                <Typography variant="h6">차원 포털</Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                <Typography variant="body2" color="text.secondary" paragraph>
+                                                    차원 간 이동을 위한 포털 시스템
+                                                </Typography>
+                                                <Button variant="contained" startIcon={<LayersIcon2 />}>
+                                                    포털 열기
+                                                </Button>
+                                            </AccordionDetails>
+                                        </Accordion>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <Accordion>
+                                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                                <Typography variant="h6">차원 매퍼</Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                <Typography variant="body2" color="text.secondary" paragraph>
+                                                    차원 공간의 완전한 매핑 도구
+                                                </Typography>
+                                                <Button variant="contained" startIcon={<TransformIcon2 />}>
+                                                    매핑 시작
+                                                </Button>
+                                            </AccordionDetails>
+                                        </Accordion>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <Accordion>
+                                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                                <Typography variant="h6">차원 통합기</Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                <Typography variant="body2" color="text.secondary" paragraph>
+                                                    다차원 간 통합과 연결 도구
+                                                </Typography>
+                                                <Button variant="contained" startIcon={<Hub />}>
+                                                    통합 시작
+                                                </Button>
+                                            </AccordionDetails>
+                                        </Accordion>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <Accordion>
+                                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                                <Typography variant="h6">차원 분석기</Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                <Typography variant="body2" color="text.secondary" paragraph>
+                                                    차원 상태와 구조 분석 도구
+                                                </Typography>
+                                                <Button variant="contained" startIcon={<AnalyticsIcon />}>
+                                                    분석 시작
+                                                </Button>
+                                            </AccordionDetails>
+                                        </Accordion>
+                                    </Grid>
+                                </Grid>
+                            </Box>
+                        )}
+
+                        {/* 차원 비전 탭 */}
+                        {activeTab === 3 && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="h6" gutterBottom>차원간의 미래 비전</Typography>
+                                <Grid container spacing={3}>
+                                    <Grid item xs={12} md={6}>
+                                        <Card>
+                                            <CardContent>
+                                                <Typography variant="h6" gutterBottom>2030년 비전</Typography>
+                                                <Typography variant="body2" color="text.secondary" paragraph>
+                                                    차원간 시스템의 완전한 실현
+                                                </Typography>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">차원 접근성: 100점</Typography>
+                                                    <LinearProgress variant="determinate" value={95} sx={{ height: 6, borderRadius: 3 }} />
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">탐험 범위: 100점</Typography>
+                                                    <LinearProgress variant="determinate" value={98} sx={{ height: 6, borderRadius: 3 }} />
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">매핑 완성도: 100점</Typography>
+                                                    <LinearProgress variant="determinate" value={96} sx={{ height: 6, borderRadius: 3 }} />
+                                                </Box>
+                                                <Box>
+                                                    <Typography variant="body2">차원 통합: 100점</Typography>
+                                                    <LinearProgress variant="determinate" value={94} sx={{ height: 6, borderRadius: 3 }} />
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <Card>
+                                            <CardContent>
+                                                <Typography variant="h6" gutterBottom>차원 초월</Typography>
+                                                <Typography variant="body2" color="text.secondary" paragraph>
+                                                    차원간 시스템의 궁극적 초월과 완성
+                                                </Typography>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">차원 초월: 100%</Typography>
+                                                    <LinearProgress variant="determinate" value={75} sx={{ height: 6, borderRadius: 3 }} />
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">무한한 차원: 달성</Typography>
+                                                    <LinearProgress variant="determinate" value={85} sx={{ height: 6, borderRadius: 3 }} />
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="body2">차원 자유: 달성</Typography>
+                                                    <LinearProgress variant="determinate" value={90} sx={{ height: 6, borderRadius: 3 }} />
+                                                </Box>
+                                                <Box>
+                                                    <Typography variant="body2">차원 조화: 달성</Typography>
+                                                    <LinearProgress variant="determinate" value={88} sx={{ height: 6, borderRadius: 3 }} />
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                </Grid>
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* SpeedDial */}
+                <SpeedDial
+                    ariaLabel="차원간 도구"
+                    sx={{ position: 'fixed', bottom: 16, right: 16 }}
+                    icon={<SpeedDialIcon />}
+                >
+                    {quickActions.map((action) => (
+                        <SpeedDialAction
+                            key={action.name}
+                            icon={action.icon}
+                            tooltipTitle={action.name}
+                            onClick={action.action}
+                        />
+                    ))}
+                </SpeedDial>
+
+                {/* 차원 수준 상세 다이얼로그 */}
+                <Dialog
+                    open={showLevelDialog}
+                    onClose={() => setShowLevelDialog(false)}
+                    maxWidth="md"
+                    fullWidth
+                >
+                    {selectedLevel && (
+                        <>
+                            <DialogTitle>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Typography variant="h6">{selectedLevel.name}</Typography>
+                                    <Chip
+                                        label={getStatusLabel(selectedLevel.status)}
+                                        color={getStatusColor(selectedLevel.status) as any}
+                                    />
+                                </Box>
+                            </DialogTitle>
+                            <DialogContent>
+                                <Typography variant="body1" paragraph>
+                                    {selectedLevel.description}
+                                </Typography>
+
+                                <Typography variant="h6" gutterBottom>특징:</Typography>
+                                <Box sx={{ mb: 2 }}>
+                                    {selectedLevel.characteristics.map((char, index) => (
+                                        <Chip key={index} label={char} sx={{ mr: 1, mb: 1 }} />
+                                    ))}
+                                </Box>
+
+                                <Typography variant="h6" gutterBottom>혜택:</Typography>
+                                <List dense>
+                                    {selectedLevel.benefits.map((benefit, index) => (
+                                        <ListItem key={index}>
+                                            <ListItemIcon>
+                                                <CheckCircleIcon color="success" />
+                                            </ListItemIcon>
+                                            <ListItemText primary={benefit} />
+                                        </ListItem>
+                                    ))}
+                                </List>
+
+                                <Typography variant="h6" gutterBottom>도전 과제:</Typography>
+                                <List dense>
+                                    {selectedLevel.challenges.map((challenge, index) => (
+                                        <ListItem key={index}>
+                                            <ListItemIcon>
+                                                <WarningIcon color="warning" />
+                                            </ListItemIcon>
+                                            <ListItemText primary={challenge} />
+                                        </ListItem>
+                                    ))}
+                                </List>
+
+                                <Typography variant="h6" gutterBottom>차원 지표:</Typography>
+                                <Grid container spacing={2}>
+                                    <Grid item xs={6}>
+                                        <Typography variant="body2">접근성: {selectedLevel.metrics.accessibility}점</Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography variant="body2">탐험: {selectedLevel.metrics.exploration}점</Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography variant="body2">매핑: {selectedLevel.metrics.mapping}점</Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography variant="body2">통합: {selectedLevel.metrics.integration}점</Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography variant="body2">초월: {selectedLevel.metrics.transcendence}점</Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography variant="body2">조화: {selectedLevel.metrics.harmony}점</Typography>
+                                    </Grid>
+                                </Grid>
+
+                                <Box sx={{ mt: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        타임라인: {selectedLevel.timeline}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        진행률: {selectedLevel.progress}%
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        영향: {selectedLevel.impact}
+                                    </Typography>
+                                </Box>
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={() => setShowLevelDialog(false)}>닫기</Button>
+                                <Button variant="contained" onClick={() => setShowLevelDialog(false)}>
+                                    차원 관리
+                                </Button>
+                            </DialogActions>
+                        </>
+                    )}
+                </Dialog>
+
+                {/* Snackbar */}
+                <Snackbar
+                    open={showSnackbar}
+                    autoHideDuration={3000}
+                    onClose={() => setShowSnackbar(false)}
+                    message={snackbarMessage}
+                />
+
+                {/* 자식 컴포넌트 렌더링 */}
+                {children}
+            </Container>
+        </Box>
+    );
+};
+
+export default CORBUInterdimensionalSystem;

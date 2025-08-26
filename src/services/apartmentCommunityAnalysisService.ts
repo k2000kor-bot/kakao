@@ -464,21 +464,37 @@ class ApartmentCommunityAnalysisService {
             acknowledge: {
                 empathetic: "말씀해주신 불편함을 충분히 이해합니다. 빠른 시일 내에 해결방안을 마련하겠습니다.",
                 diplomatic: "입주민님의 의견을 소중히 받아들이며, 관련 부서와 협의하여 개선방안을 검토하겠습니다.",
-                informative: "해당 문제에 대해 확인 후 적절한 조치를 취하겠습니다."
+                informative: "해당 문제에 대해 확인 후 적절한 조치를 취하겠습니다.",
+                assertive: "해당 문제를 즉시 해결하겠습니다. 구체적인 조치사항을 안내드리겠습니다."
             },
             explain: {
                 empathetic: "현재 상황을 설명드리면, 해당 시설은 정기점검 중이며 곧 정상화될 예정입니다.",
                 diplomatic: "관련 규정에 따라 절차를 진행하고 있으며, 자세한 일정을 안내드리겠습니다.",
-                informative: "해당 사안은 다음과 같은 절차로 처리됩니다: 1) 접수 2) 검토 3) 조치 4) 완료보고"
+                informative: "해당 사안은 다음과 같은 절차로 처리됩니다: 1) 접수 2) 검토 3) 조치 4) 완료보고",
+                assertive: "해당 사안의 처리 절차를 명확히 안내드립니다: 1) 접수 2) 검토 3) 조치 4) 완료보고"
             },
             apologize: {
                 empathetic: "불편을 끼쳐드려 진심으로 죄송합니다. 재발방지를 위해 최선을 다하겠습니다.",
                 diplomatic: "관리상의 미흡함으로 인한 불편에 대해 사과드리며, 개선방안을 마련하겠습니다.",
-                informative: "해당 문제로 인한 불편에 대해 사과드리며, 빠른 해결을 위해 노력하겠습니다."
+                informative: "해당 문제로 인한 불편에 대해 사과드리며, 빠른 해결을 위해 노력하겠습니다.",
+                assertive: "해당 문제로 인한 불편에 대해 사과드립니다. 즉시 개선조치를 취하겠습니다."
+            },
+            redirect: {
+                empathetic: "해당 문제는 관련 부서에서 처리하고 있습니다. 연락처를 안내드리겠습니다.",
+                diplomatic: "해당 사안은 관련 규정에 따라 처리되고 있습니다. 자세한 안내를 드리겠습니다.",
+                informative: "해당 문제는 다음과 같은 절차로 처리됩니다. 관련 부서로 안내드리겠습니다.",
+                assertive: "해당 사안은 관련 부서에서 처리합니다. 즉시 연락처를 안내드리겠습니다."
+            },
+            escalate: {
+                empathetic: "해당 문제의 심각성을 인지하고 있습니다. 상급 관리자에게 즉시 보고하겠습니다.",
+                diplomatic: "해당 사안의 중요성을 고려하여 상급 관리자와 상의 후 답변드리겠습니다.",
+                informative: "해당 문제는 상급 관리자의 검토가 필요합니다. 처리 과정을 안내드리겠습니다.",
+                assertive: "해당 사안을 상급 관리자에게 즉시 보고하고, 신속한 조치를 취하겠습니다."
             }
         };
 
-        return templates[strategy]?.[tone] || "감사합니다. 검토 후 답변드리겠습니다.";
+        const strategyTemplates = templates[strategy as keyof typeof templates];
+        return strategyTemplates?.[tone] || "감사합니다. 검토 후 답변드리겠습니다.";
     }
 
     private predictEffectiveness(strategy: CommunityResponse['strategy'], tone: CommunityResponse['tone'], profile: ResidentProfile): number {

@@ -1,0 +1,1201 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    IconButton,
+    Tooltip,
+    LinearProgress,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Switch,
+    FormControlLabel,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Badge,
+    Alert,
+    TextField,
+    InputAdornment,
+    Tabs,
+    Tab,
+    Divider
+} from '@mui/material';
+import {
+    Gavel,
+    Security,
+    PrivacyTip,
+    TrendingUp,
+    TrendingDown,
+    TrendingFlat,
+    Speed,
+    CheckCircle,
+    Warning,
+    Error,
+    Refresh,
+    Fullscreen,
+    FullscreenExit,
+    Settings,
+    Timeline,
+    Assessment,
+    Build,
+    Visibility,
+    ExpandMore,
+    PlayArrow,
+    Stop,
+    Pause,
+    Undo,
+    SmartToy,
+    Analytics,
+    ModelTraining,
+    Book,
+    Article,
+    CodeOff,
+    CodeRounded,
+    Balance,
+    Psychology,
+    Shield,
+    VerifiedUser,
+    Report,
+    Policy,
+    Compliance
+} from '@mui/icons-material';
+
+interface AIGovernancePolicy {
+    id: string;
+    name: string;
+    description: string;
+    category: 'fairness' | 'transparency' | 'accountability' | 'privacy' | 'security' | 'compliance';
+    rules: GovernanceRule[];
+    enforcement_level: 'strict' | 'moderate' | 'advisory';
+    created_date: Date;
+    last_updated: Date;
+    status: 'active' | 'draft' | 'deprecated';
+}
+
+interface GovernanceRule {
+    id: string;
+    name: string;
+    description: string;
+    condition: string;
+    action: 'block' | 'flag' | 'log' | 'require_approval';
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    parameters: Record<string, any>;
+}
+
+interface EthicalAIAnalysis {
+    id: string;
+    request_id: string;
+    user_id: string;
+    timestamp: Date;
+    fairness_score: number;
+    bias_detection: BiasDetection[];
+    transparency_score: number;
+    explainability_metrics: ExplainabilityMetrics;
+    privacy_compliance: PrivacyCompliance;
+    security_assessment: SecurityAssessment;
+    overall_ethical_score: number;
+    recommendations: string[];
+    violations: GovernanceViolation[];
+}
+
+interface BiasDetection {
+    type: 'gender' | 'race' | 'age' | 'religion' | 'socioeconomic' | 'geographic' | 'other';
+    confidence: number;
+    severity: 'high' | 'medium' | 'low';
+    description: string;
+    mitigation_suggestions: string[];
+}
+
+interface ExplainabilityMetrics {
+    interpretability_score: number;
+    feature_importance: Record<string, number>;
+    decision_path: string[];
+    confidence_intervals: Record<string, [number, number]>;
+    counterfactual_examples: string[];
+}
+
+interface PrivacyCompliance {
+    gdpr_compliant: boolean;
+    data_retention_policy: string;
+    data_anonymization: boolean;
+    consent_verified: boolean;
+    data_usage_limited: boolean;
+    violations: string[];
+}
+
+interface SecurityAssessment {
+    data_encryption: boolean;
+    access_controls: boolean;
+    audit_trail: boolean;
+    vulnerability_scan: boolean;
+    threat_modeling: boolean;
+    risk_score: number;
+    recommendations: string[];
+}
+
+interface GovernanceViolation {
+    rule_id: string;
+    rule_name: string;
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    description: string;
+    timestamp: Date;
+    action_taken: string;
+    resolved: boolean;
+}
+
+interface AuditEntry {
+    id: string;
+    timestamp: Date;
+    user_id: string;
+    action: string;
+    resource: string;
+    outcome: 'success' | 'failure' | 'warning';
+    details: Record<string, any>;
+}
+
+interface GovernanceMetrics {
+    total_policies: number;
+    active_policies: number;
+    compliance_rate: number;
+    average_ethical_score: number;
+    total_violations: number;
+    critical_violations: number;
+    last_audit_date: Date;
+    policy_effectiveness: Record<string, number>;
+}
+
+const AdvancedAIGovernanceEthicalDashboard: React.FC = () => {
+    const [policies, setPolicies] = useState<AIGovernancePolicy[]>([]);
+    const [ethicalAnalyses, setEthicalAnalyses] = useState<EthicalAIAnalysis[]>([]);
+    const [violations, setViolations] = useState<GovernanceViolation[]>([]);
+    const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([]);
+    const [governanceMetrics, setGovernanceMetrics] = useState<GovernanceMetrics | null>(null);
+    const [selectedTab, setSelectedTab] = useState(0);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [selectedAnalysis, setSelectedAnalysis] = useState<EthicalAIAnalysis | null>(null);
+    const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
+    const [lastUpdate, setLastUpdate] = useState(new Date());
+
+    // 탭 정의
+    const tabs = [
+        { label: '거버넌스 개요', icon: <Balance /> },
+        { label: '윤리적 분석', icon: <Psychology /> },
+        { label: '정책 관리', icon: <Policy /> },
+        { label: '위반 사항', icon: <Warning /> },
+        { label: '감사 로그', icon: <Timeline /> },
+        { label: '준수 보고서', icon: <Compliance /> }
+    ];
+
+    // 데이터 새로고침
+    const refreshData = async () => {
+        try {
+            // 실제로는 API 호출
+            const mockPolicies: AIGovernancePolicy[] = [
+                {
+                    id: 'fairness-policy',
+                    name: 'AI 공정성 정책',
+                    description: 'AI 시스템의 공정성과 편향 방지를 위한 정책',
+                    category: 'fairness',
+                    rules: [
+                        {
+                            id: 'fairness-threshold',
+                            name: '공정성 임계값',
+                            description: '공정성 점수가 0.8 미만인 경우 위반',
+                            condition: 'fairness_score_below_threshold',
+                            action: 'flag',
+                            severity: 'high',
+                            parameters: { threshold: 0.8 }
+                        },
+                        {
+                            id: 'bias-detection',
+                            name: '편향 감지',
+                            description: '편향이 감지된 경우 위반',
+                            condition: 'bias_detected',
+                            action: 'require_approval',
+                            severity: 'critical',
+                            parameters: {}
+                        }
+                    ],
+                    enforcement_level: 'strict',
+                    created_date: new Date(),
+                    last_updated: new Date(),
+                    status: 'active'
+                },
+                {
+                    id: 'privacy-policy',
+                    name: '개인정보 보호 정책',
+                    description: '개인정보 보호 및 GDPR 준수를 위한 정책',
+                    category: 'privacy',
+                    rules: [
+                        {
+                            id: 'privacy-violation',
+                            name: '개인정보 위반',
+                            description: '개인정보 보호 위반이 감지된 경우 위반',
+                            condition: 'privacy_violation',
+                            action: 'block',
+                            severity: 'critical',
+                            parameters: {}
+                        }
+                    ],
+                    enforcement_level: 'strict',
+                    created_date: new Date(),
+                    last_updated: new Date(),
+                    status: 'active'
+                },
+                {
+                    id: 'security-policy',
+                    name: '보안 정책',
+                    description: 'AI 시스템 보안을 위한 정책',
+                    category: 'security',
+                    rules: [
+                        {
+                            id: 'security-risk',
+                            name: '보안 위험',
+                            description: '보안 위험 점수가 0.7을 초과하는 경우 위반',
+                            condition: 'security_risk_high',
+                            action: 'flag',
+                            severity: 'high',
+                            parameters: { threshold: 0.7 }
+                        }
+                    ],
+                    enforcement_level: 'moderate',
+                    created_date: new Date(),
+                    last_updated: new Date(),
+                    status: 'active'
+                }
+            ];
+
+            const mockAnalyses: EthicalAIAnalysis[] = [
+                {
+                    id: 'analysis-1',
+                    request_id: 'request-123',
+                    user_id: 'user-456',
+                    timestamp: new Date(),
+                    fairness_score: 0.85,
+                    bias_detection: [
+                        {
+                            type: 'gender',
+                            confidence: 0.6,
+                            severity: 'medium',
+                            description: '성별 관련 편향이 감지되었습니다.',
+                            mitigation_suggestions: [
+                                '성별 중립적인 언어 사용',
+                                '다양한 성별 관점 포함',
+                                '편향 감지 모델 업데이트'
+                            ]
+                        }
+                    ],
+                    transparency_score: 0.78,
+                    explainability_metrics: {
+                        interpretability_score: 0.82,
+                        feature_importance: {
+                            'input_length': 0.3,
+                            'user_history': 0.25,
+                            'context': 0.2,
+                            'preferences': 0.15,
+                            'time_of_day': 0.1
+                        },
+                        decision_path: [
+                            '사용자 입력 분석',
+                            '컨텍스트 평가',
+                            '개인화 설정 적용',
+                            '응답 생성',
+                            '품질 검증'
+                        ],
+                        confidence_intervals: {
+                            'response_accuracy': [0.85, 0.95],
+                            'user_satisfaction': [0.78, 0.92],
+                            'ethical_compliance': [0.88, 0.98]
+                        },
+                        counterfactual_examples: [
+                            '다른 시간대에 질문했다면 다른 응답을 받았을 수 있습니다.',
+                            '다른 컨텍스트에서 질문했다면 응답이 달라졌을 수 있습니다.'
+                        ]
+                    },
+                    privacy_compliance: {
+                        gdpr_compliant: true,
+                        data_retention_policy: '30일 후 자동 삭제',
+                        data_anonymization: true,
+                        consent_verified: true,
+                        data_usage_limited: true,
+                        violations: []
+                    },
+                    security_assessment: {
+                        data_encryption: true,
+                        access_controls: true,
+                        audit_trail: true,
+                        vulnerability_scan: true,
+                        threat_modeling: true,
+                        risk_score: 0.25,
+                        recommendations: []
+                    },
+                    overall_ethical_score: 0.83,
+                    recommendations: [
+                        '공정성 개선을 위해 편향 감지 모델을 업데이트하세요.',
+                        '투명성을 높이기 위해 결정 과정을 더 명확히 설명하세요.'
+                    ],
+                    violations: [
+                        {
+                            rule_id: 'bias-detection',
+                            rule_name: '편향 감지',
+                            severity: 'critical',
+                            description: '편향이 감지된 경우 위반',
+                            timestamp: new Date(),
+                            action_taken: 'require_approval',
+                            resolved: false
+                        }
+                    ]
+                }
+            ];
+
+            const mockViolations: GovernanceViolation[] = [
+                {
+                    rule_id: 'bias-detection',
+                    rule_name: '편향 감지',
+                    severity: 'critical',
+                    description: '편향이 감지된 경우 위반',
+                    timestamp: new Date(),
+                    action_taken: 'require_approval',
+                    resolved: false
+                },
+                {
+                    rule_id: 'security-risk',
+                    rule_name: '보안 위험',
+                    severity: 'high',
+                    description: '보안 위험 점수가 0.7을 초과하는 경우 위반',
+                    timestamp: new Date(Date.now() - 3600000),
+                    action_taken: 'flag',
+                    resolved: true
+                }
+            ];
+
+            const mockAuditTrail: AuditEntry[] = [
+                {
+                    id: 'audit-1',
+                    timestamp: new Date(),
+                    user_id: 'user-456',
+                    action: 'ethical_analysis',
+                    resource: 'request-123',
+                    outcome: 'warning',
+                    details: {
+                        ethical_score: 0.83,
+                        violations_count: 1,
+                        fairness_score: 0.85
+                    }
+                },
+                {
+                    id: 'audit-2',
+                    timestamp: new Date(Date.now() - 1800000),
+                    user_id: 'user-789',
+                    action: 'policy_check',
+                    resource: 'request-456',
+                    outcome: 'success',
+                    details: {
+                        ethical_score: 0.92,
+                        violations_count: 0,
+                        fairness_score: 0.91
+                    }
+                }
+            ];
+
+            const mockMetrics: GovernanceMetrics = {
+                total_policies: 3,
+                active_policies: 3,
+                compliance_rate: 0.87,
+                average_ethical_score: 0.84,
+                total_violations: 1,
+                critical_violations: 1,
+                last_audit_date: new Date(),
+                policy_effectiveness: {
+                    'AI 공정성 정책': 0.92,
+                    '개인정보 보호 정책': 0.95,
+                    '보안 정책': 0.88
+                }
+            };
+
+            setPolicies(mockPolicies);
+            setEthicalAnalyses(mockAnalyses);
+            setViolations(mockViolations);
+            setAuditTrail(mockAuditTrail);
+            setGovernanceMetrics(mockMetrics);
+            setLastUpdate(new Date());
+        } catch (error) {
+            console.error('거버넌스 데이터 새로고침 오류:', error);
+        }
+    };
+
+    // 자동 새로고침
+    useEffect(() => {
+        refreshData();
+
+        if (autoRefresh) {
+            const interval = setInterval(refreshData, 30000); // 30초마다
+            return () => clearInterval(interval);
+        }
+    }, [autoRefresh]);
+
+    // 심각도 색상
+    const getSeverityColor = (severity: string) => {
+        switch (severity) {
+            case 'critical': return 'error';
+            case 'high': return 'warning';
+            case 'medium': return 'info';
+            case 'low': return 'success';
+            default: return 'default';
+        }
+    };
+
+    // 카테고리 색상
+    const getCategoryColor = (category: string) => {
+        switch (category) {
+            case 'fairness': return 'primary';
+            case 'privacy': return 'error';
+            case 'security': return 'warning';
+            case 'transparency': return 'info';
+            case 'accountability': return 'success';
+            case 'compliance': return 'secondary';
+            default: return 'default';
+        }
+    };
+
+    // 결과 색상
+    const getOutcomeColor = (outcome: string) => {
+        switch (outcome) {
+            case 'success': return 'success';
+            case 'warning': return 'warning';
+            case 'failure': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const renderGovernanceOverview = () => (
+        <Grid container spacing={3}>
+            {/* 거버넌스 메트릭 카드들 */}
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <Policy color="primary" sx={{ mr: 1 }} />
+                            <Typography variant="h6">활성 정책</Typography>
+                        </Box>
+                        <Typography variant="h4" color="primary">
+                            {governanceMetrics?.active_policies || 0}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            총 {governanceMetrics?.total_policies || 0}개 정책 중
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <CheckCircle color="success" sx={{ mr: 1 }} />
+                            <Typography variant="h6">준수율</Typography>
+                        </Box>
+                        <Typography variant="h4" color="success.main">
+                            {((governanceMetrics?.compliance_rate || 0) * 100).toFixed(1)}%
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            정책 준수 비율
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <Psychology color="info" sx={{ mr: 1 }} />
+                            <Typography variant="h6">평균 윤리 점수</Typography>
+                        </Box>
+                        <Typography variant="h4" color="info.main">
+                            {((governanceMetrics?.average_ethical_score || 0) * 100).toFixed(0)}%
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            윤리적 분석 평균 점수
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <Warning color="warning" sx={{ mr: 1 }} />
+                            <Typography variant="h6">위반 사항</Typography>
+                        </Box>
+                        <Typography variant="h4" color="warning.main">
+                            {governanceMetrics?.total_violations || 0}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            미해결 위반 사항
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* 정책 효과성 차트 */}
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>정책 효과성</Typography>
+                        {governanceMetrics?.policy_effectiveness && (
+                            <Box>
+                                {Object.entries(governanceMetrics.policy_effectiveness).map(([policyName, effectiveness]) => (
+                                    <Box key={policyName} mb={2}>
+                                        <Box display="flex" justifyContent="space-between" mb={1}>
+                                            <Typography variant="body2">{policyName}</Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                                {(effectiveness * 100).toFixed(1)}%
+                                            </Typography>
+                                        </Box>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={effectiveness * 100}
+                                            sx={{ height: 8, borderRadius: 4 }}
+                                            color={effectiveness > 0.9 ? 'success' : effectiveness > 0.7 ? 'warning' : 'error'}
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* 최근 윤리적 분석 */}
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>최근 윤리적 분석</Typography>
+                        <List dense>
+                            {ethicalAnalyses.slice(0, 5).map((analysis) => (
+                                <ListItem key={analysis.id} divider>
+                                    <ListItemIcon>
+                                        <Chip
+                                            label={`${(analysis.overall_ethical_score * 100).toFixed(0)}%`}
+                                            size="small"
+                                            color={analysis.overall_ethical_score > 0.8 ? 'success' : analysis.overall_ethical_score > 0.6 ? 'warning' : 'error'}
+                                        />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={`요청 ${analysis.request_id}`}
+                                        secondary={`${analysis.timestamp.toLocaleString()} • 위반 ${analysis.violations.length}개`}
+                                    />
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => {
+                                            setSelectedAnalysis(analysis);
+                                            setAnalysisDialogOpen(true);
+                                        }}
+                                    >
+                                        <Visibility />
+                                    </IconButton>
+                                </ListItem>
+                            ))}
+                        </List>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderEthicalAnalysis = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>윤리적 분석 결과</Typography>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>요청 ID</TableCell>
+                                        <TableCell>사용자</TableCell>
+                                        <TableCell>공정성</TableCell>
+                                        <TableCell>투명성</TableCell>
+                                        <TableCell>전체 점수</TableCell>
+                                        <TableCell>위반</TableCell>
+                                        <TableCell>시간</TableCell>
+                                        <TableCell>작업</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {ethicalAnalyses.map((analysis) => (
+                                        <TableRow key={analysis.id}>
+                                            <TableCell>
+                                                <Typography variant="body2" fontFamily="monospace">
+                                                    {analysis.request_id}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {analysis.user_id}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {(analysis.fairness_score * 100).toFixed(0)}%
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={analysis.fairness_score * 100}
+                                                        sx={{ width: 60, height: 6 }}
+                                                        color={analysis.fairness_score > 0.8 ? 'success' : 'warning'}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {(analysis.transparency_score * 100).toFixed(0)}%
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={analysis.transparency_score * 100}
+                                                        sx={{ width: 60, height: 6 }}
+                                                        color={analysis.transparency_score > 0.8 ? 'success' : 'warning'}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={`${(analysis.overall_ethical_score * 100).toFixed(0)}%`}
+                                                    color={analysis.overall_ethical_score > 0.8 ? 'success' : analysis.overall_ethical_score > 0.6 ? 'warning' : 'error'}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={analysis.violations.length}
+                                                    color={analysis.violations.length === 0 ? 'success' : 'error'}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {analysis.timestamp.toLocaleString()}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    onClick={() => {
+                                                        setSelectedAnalysis(analysis);
+                                                        setAnalysisDialogOpen(true);
+                                                    }}
+                                                >
+                                                    상세 보기
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderPolicyManagement = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>거버넌스 정책 관리</Typography>
+                        {policies.map((policy) => (
+                            <Accordion key={policy.id} sx={{ mb: 2 }}>
+                                <AccordionSummary expandIcon={<ExpandMore />}>
+                                    <Box display="flex" alignItems="center" width="100%">
+                                        <Chip
+                                            label={policy.category}
+                                            size="small"
+                                            color={getCategoryColor(policy.category) as any}
+                                            sx={{ mr: 1 }}
+                                        />
+                                        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                                            {policy.name}
+                                        </Typography>
+                                        <Box display="flex" gap={1}>
+                                            <Chip
+                                                label={policy.enforcement_level}
+                                                size="small"
+                                                variant="outlined"
+                                            />
+                                            <Chip
+                                                label={policy.status}
+                                                size="small"
+                                                color={policy.status === 'active' ? 'success' : 'default'}
+                                            />
+                                        </Box>
+                                    </Box>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <Typography variant="body1" mb={2}>
+                                                {policy.description}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Typography variant="subtitle2" mb={1}>규칙</Typography>
+                                            <List dense>
+                                                {policy.rules.map((rule) => (
+                                                    <ListItem key={rule.id}>
+                                                        <ListItemIcon>
+                                                            <Chip
+                                                                label={rule.severity}
+                                                                size="small"
+                                                                color={getSeverityColor(rule.severity) as any}
+                                                            />
+                                                        </ListItemIcon>
+                                                        <ListItemText
+                                                            primary={rule.name}
+                                                            secondary={`${rule.description} (${rule.action})`}
+                                                        />
+                                                    </ListItem>
+                                                ))}
+                                            </List>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Box display="flex" gap={1}>
+                                                <Button variant="outlined" size="small">
+                                                    편집
+                                                </Button>
+                                                <Button variant="outlined" size="small">
+                                                    복사
+                                                </Button>
+                                                <Button variant="outlined" size="small" color="error">
+                                                    비활성화
+                                                </Button>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>
+                                </AccordionDetails>
+                            </Accordion>
+                        ))}
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderViolations = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>정책 위반 사항</Typography>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>규칙</TableCell>
+                                        <TableCell>심각도</TableCell>
+                                        <TableCell>설명</TableCell>
+                                        <TableCell>조치</TableCell>
+                                        <TableCell>시간</TableCell>
+                                        <TableCell>상태</TableCell>
+                                        <TableCell>작업</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {violations.map((violation) => (
+                                        <TableRow key={violation.rule_id}>
+                                            <TableCell>
+                                                <Typography variant="body1" fontWeight="medium">
+                                                    {violation.rule_name}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={violation.severity}
+                                                    size="small"
+                                                    color={getSeverityColor(violation.severity) as any}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {violation.description}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={violation.action_taken}
+                                                    size="small"
+                                                    variant="outlined"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {violation.timestamp.toLocaleString()}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={violation.resolved ? '해결됨' : '미해결'}
+                                                    size="small"
+                                                    color={violation.resolved ? 'success' : 'error'}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" gap={1}>
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        disabled={violation.resolved}
+                                                    >
+                                                        해결
+                                                    </Button>
+                                                    <Button variant="outlined" size="small">
+                                                        상세 보기
+                                                    </Button>
+                                                </Box>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderAuditLog = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>감사 로그</Typography>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>시간</TableCell>
+                                        <TableCell>사용자</TableCell>
+                                        <TableCell>작업</TableCell>
+                                        <TableCell>리소스</TableCell>
+                                        <TableCell>결과</TableCell>
+                                        <TableCell>상세</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {auditTrail.map((entry) => (
+                                        <TableRow key={entry.id}>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {entry.timestamp.toLocaleString()}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {entry.user_id}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {entry.action}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" fontFamily="monospace">
+                                                    {entry.resource}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={entry.outcome}
+                                                    size="small"
+                                                    color={getOutcomeColor(entry.outcome) as any}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button variant="outlined" size="small">
+                                                    상세 보기
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderComplianceReport = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>준수 현황 요약</Typography>
+                        <Box>
+                            <Box display="flex" justifyContent="space-between" mb={2}>
+                                <Typography variant="body1">전체 준수율</Typography>
+                                <Typography variant="h6" color="success.main">
+                                    {((governanceMetrics?.compliance_rate || 0) * 100).toFixed(1)}%
+                                </Typography>
+                            </Box>
+                            <Box display="flex" justifyContent="space-between" mb={2}>
+                                <Typography variant="body1">평균 윤리 점수</Typography>
+                                <Typography variant="h6" color="info.main">
+                                    {((governanceMetrics?.average_ethical_score || 0) * 100).toFixed(0)}%
+                                </Typography>
+                            </Box>
+                            <Box display="flex" justifyContent="space-between" mb={2}>
+                                <Typography variant="body1">미해결 위반</Typography>
+                                <Typography variant="h6" color="error.main">
+                                    {governanceMetrics?.total_violations || 0}개
+                                </Typography>
+                            </Box>
+                            <Box display="flex" justifyContent="space-between">
+                                <Typography variant="body1">중요 위반</Typography>
+                                <Typography variant="h6" color="warning.main">
+                                    {governanceMetrics?.critical_violations || 0}개
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>권장사항</Typography>
+                        <List dense>
+                            <ListItem>
+                                <ListItemIcon><Warning color="warning" /></ListItemIcon>
+                                <ListItemText
+                                    primary="편향 감지 모델 업데이트 필요"
+                                    secondary="성별 편향 감지 정확도 개선"
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemIcon><Security color="info" /></ListItemIcon>
+                                <ListItemText
+                                    primary="보안 정책 강화"
+                                    secondary="데이터 암호화 수준 향상"
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemIcon><PrivacyTip color="success" /></ListItemIcon>
+                                <ListItemText
+                                    primary="개인정보 보호 우수"
+                                    secondary="GDPR 준수율 95% 달성"
+                                />
+                            </ListItem>
+                        </List>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderContent = () => {
+        switch (selectedTab) {
+            case 0: return renderGovernanceOverview();
+            case 1: return renderEthicalAnalysis();
+            case 2: return renderPolicyManagement();
+            case 3: return renderViolations();
+            case 4: return renderAuditLog();
+            case 5: return renderComplianceReport();
+            default: return renderGovernanceOverview();
+        }
+    };
+
+    return (
+        <Box sx={{ p: 3, height: '100vh', overflow: 'auto' }}>
+            {/* 헤더 */}
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Box display="flex" alignItems="center">
+                    <Balance sx={{ mr: 1, fontSize: 32 }} color="primary" />
+                    <Typography variant="h4">고급 AI 거버넌스 및 윤리 AI 대시보드</Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="body2" color="textSecondary">
+                        마지막 업데이트: {lastUpdate.toLocaleTimeString()}
+                    </Typography>
+                    <Tooltip title="전체화면">
+                        <IconButton onClick={() => setFullscreen(!fullscreen)}>
+                            {fullscreen ? <FullscreenExit /> : <Fullscreen />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            </Box>
+
+            {/* 탭 네비게이션 */}
+            <Paper sx={{ mb: 3 }}>
+                <Box display="flex" overflow="auto">
+                    {tabs.map((tab, index) => (
+                        <Button
+                            key={index}
+                            variant={selectedTab === index ? "contained" : "text"}
+                            startIcon={tab.icon}
+                            onClick={() => setSelectedTab(index)}
+                            sx={{
+                                minWidth: 'auto',
+                                px: 2,
+                                py: 1.5,
+                                borderRadius: 0,
+                                borderBottom: selectedTab === index ? 2 : 0,
+                                borderColor: 'primary.main'
+                            }}
+                        >
+                            {tab.label}
+                        </Button>
+                    ))}
+                </Box>
+            </Paper>
+
+            {/* 메인 콘텐츠 */}
+            {renderContent()}
+
+            {/* 윤리적 분석 상세 다이얼로그 */}
+            <Dialog
+                open={analysisDialogOpen}
+                onClose={() => setAnalysisDialogOpen(false)}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box display="flex" alignItems="center">
+                        <Psychology />
+                        <Typography variant="h6" sx={{ ml: 1 }}>
+                            윤리적 분석 상세 정보
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    {selectedAnalysis && (
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <Box display="flex" alignItems="center" mb={2}>
+                                    <Chip
+                                        label={`${(selectedAnalysis.overall_ethical_score * 100).toFixed(0)}%`}
+                                        color={selectedAnalysis.overall_ethical_score > 0.8 ? 'success' : 'warning'}
+                                        sx={{ mr: 1 }}
+                                    />
+                                    <Typography variant="h6">
+                                        요청 {selectedAnalysis.request_id}
+                                    </Typography>
+                                </Box>
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Card variant="outlined">
+                                    <CardContent>
+                                        <Typography variant="h6" mb={2}>공정성 분석</Typography>
+                                        <Box display="flex" alignItems="center" mb={2}>
+                                            <Typography variant="body2" sx={{ mr: 1 }}>
+                                                공정성 점수: {(selectedAnalysis.fairness_score * 100).toFixed(0)}%
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={selectedAnalysis.fairness_score * 100}
+                                                sx={{ flexGrow: 1, height: 8 }}
+                                                color={selectedAnalysis.fairness_score > 0.8 ? 'success' : 'warning'}
+                                            />
+                                        </Box>
+                                        {selectedAnalysis.bias_detection.length > 0 && (
+                                            <Box>
+                                                <Typography variant="subtitle2" mb={1}>감지된 편향:</Typography>
+                                                {selectedAnalysis.bias_detection.map((bias, index) => (
+                                                    <Alert key={index} severity="warning" sx={{ mb: 1 }}>
+                                                        <Typography variant="body2">
+                                                            {bias.description}
+                                                        </Typography>
+                                                    </Alert>
+                                                ))}
+                                            </Box>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Card variant="outlined">
+                                    <CardContent>
+                                        <Typography variant="h6" mb={2}>투명성 분석</Typography>
+                                        <Box display="flex" alignItems="center" mb={2}>
+                                            <Typography variant="body2" sx={{ mr: 1 }}>
+                                                투명성 점수: {(selectedAnalysis.transparency_score * 100).toFixed(0)}%
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={selectedAnalysis.transparency_score * 100}
+                                                sx={{ flexGrow: 1, height: 8 }}
+                                                color={selectedAnalysis.transparency_score > 0.8 ? 'success' : 'warning'}
+                                            />
+                                        </Box>
+                                        <Typography variant="subtitle2" mb={1}>설명 가능성:</Typography>
+                                        <Typography variant="body2">
+                                            {(selectedAnalysis.explainability_metrics.interpretability_score * 100).toFixed(0)}%
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <Card variant="outlined">
+                                    <CardContent>
+                                        <Typography variant="h6" mb={2}>권장사항</Typography>
+                                        <List dense>
+                                            {selectedAnalysis.recommendations.map((recommendation, index) => (
+                                                <ListItem key={index}>
+                                                    <ListItemIcon>
+                                                        <Warning color="info" />
+                                                    </ListItemIcon>
+                                                    <ListItemText primary={recommendation} />
+                                                </ListItem>
+                                            ))}
+                                        </List>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setAnalysisDialogOpen(false)}>닫기</Button>
+                    <Button variant="contained" color="primary">
+                        조치 취하기
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default AdvancedAIGovernanceEthicalDashboard;

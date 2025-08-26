@@ -375,7 +375,15 @@ const UnifiedProjectInterface: React.FC = () => {
                 updatedAt: '2024-01-21',
                 tags: ['부동산', '아파트', '개포동'],
                 messageCount: 24,
-                fileCount: 8
+                fileCount: 8,
+                files: [
+                    { id: '1', name: '분양계획서.pdf', type: 'application/pdf', size: 2048576 },
+                    { id: '2', name: '설계도면.jpg', type: 'image/jpeg', size: 1048576 }
+                ],
+                guidelines: [
+                    { id: '1', title: '부동산 전문 용어 사용', content: '부동산 관련 전문 용어를 정확히 사용하세요.', isActive: true },
+                    { id: '2', title: '분양 정보 정확성', content: '분양 정보는 항상 최신 자료를 기준으로 제공하세요.', isActive: true }
+                ]
             },
             {
                 id: '2',
@@ -387,7 +395,13 @@ const UnifiedProjectInterface: React.FC = () => {
                 updatedAt: '2024-01-20',
                 tags: ['AI', '개발', '요약'],
                 messageCount: 15,
-                fileCount: 3
+                fileCount: 3,
+                files: [
+                    { id: '3', name: '요약알고리즘.pdf', type: 'application/pdf', size: 1536000 }
+                ],
+                guidelines: [
+                    { id: '3', title: '요약 형식', content: '핵심 내용을 3-5개 항목으로 요약하세요.', isActive: true }
+                ]
             },
             {
                 id: '3',
@@ -399,7 +413,14 @@ const UnifiedProjectInterface: React.FC = () => {
                 updatedAt: '2024-01-18',
                 tags: ['웹사이트', '디자인', '개발'],
                 messageCount: 32,
-                fileCount: 12
+                fileCount: 12,
+                files: [
+                    { id: '4', name: '디자인가이드.pdf', type: 'application/pdf', size: 3072000 },
+                    { id: '5', name: '와이어프레임.png', type: 'image/png', size: 512000 }
+                ],
+                guidelines: [
+                    { id: '4', title: '반응형 디자인', content: '모든 디자인은 모바일 우선으로 제작하세요.', isActive: true }
+                ]
             },
             {
                 id: '4',
@@ -411,7 +432,13 @@ const UnifiedProjectInterface: React.FC = () => {
                 updatedAt: '2024-01-19',
                 tags: ['마케팅', '전략', '2024'],
                 messageCount: 8,
-                fileCount: 5
+                fileCount: 5,
+                files: [
+                    { id: '6', name: '마케팅계획서.pdf', type: 'application/pdf', size: 1024000 }
+                ],
+                guidelines: [
+                    { id: '5', title: '브랜드 일관성', content: '모든 마케팅 자료는 브랜드 가이드라인을 준수하세요.', isActive: true }
+                ]
             }
         ];
 
@@ -466,6 +493,7 @@ const UnifiedProjectInterface: React.FC = () => {
                 createdAt: '2024-01-01T00:00:00Z',
                 updatedAt: '2024-01-15T00:00:00Z',
                 messageCount: 24,
+                fileCount: 2,
                 files: [
                     { id: '1', name: '분양계획서.pdf', type: 'application/pdf', size: 2048576 },
                     { id: '2', name: '설계도면.jpg', type: 'image/jpeg', size: 1048576 }
@@ -485,6 +513,7 @@ const UnifiedProjectInterface: React.FC = () => {
                 createdAt: '2024-01-10T00:00:00Z',
                 updatedAt: '2024-01-20T00:00:00Z',
                 messageCount: 15,
+                fileCount: 0,
                 files: [],
                 guidelines: [
                     { id: '3', title: '요약 형식', content: '핵심 내용을 3-5개 항목으로 요약하세요.', isActive: true }
@@ -510,6 +539,7 @@ const UnifiedProjectInterface: React.FC = () => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             messageCount: 0,
+            fileCount: 0,
             files: [],
             guidelines: projectData.initialGuidelines.map((guideline: string, index: number) => ({
                 id: `guideline_${Date.now()}_${index}`,
@@ -1269,7 +1299,7 @@ const UnifiedProjectInterface: React.FC = () => {
 
     const handleAIConfigUpdate = (config: any) => {
         console.log('AI config updated:', config);
-        setAiProcessingConfig(prev => ({ ...prev, ...config }));
+        setAiProcessingConfig((prev: any) => ({ ...prev, ...config }));
     };
 
     const handleAIExportResults = (results: any[], format: string) => {

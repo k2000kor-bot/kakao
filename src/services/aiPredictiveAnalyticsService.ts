@@ -10,11 +10,13 @@ export interface PredictiveModel {
     status: 'active' | 'training' | 'optimizing' | 'error';
     accuracy: number;
     lastUpdated: Date;
+    lastTrained: Date;
     version: string;
     parameters: Record<string, any>;
     learningRate: number;
     confidence: number;
     autoOptimize: boolean;
+    trainingDataSize: number;
     adaptiveThresholds: {
         min: number;
         max: number;
@@ -27,6 +29,7 @@ export interface Prediction {
     id: string;
     modelId: string;
     metric: string;
+    target: string;
     predictedValue: number;
     confidence: number;
     timestamp: Date;
@@ -86,7 +89,10 @@ export interface AutoDecision {
     priority: 'low' | 'medium' | 'high' | 'critical';
     status: 'pending' | 'executing' | 'completed' | 'failed' | 'cancelled';
     trigger: string;
+    condition: string;
+    action: string;
     description: string;
+    confidence: number;
     estimatedImpact: number; // 0-100
     estimatedCost: number;
     risk: 'low' | 'medium' | 'high';
@@ -189,6 +195,7 @@ class AIPredictiveAnalyticsService {
     private adaptiveThresholds: AdaptiveThreshold[] = [];
     private realTimeLearning: RealTimeLearning[] = [];
     private isLearning: boolean = false;
+    private isTraining: boolean = false;
     private autoOptimizationEnabled: boolean = true;
     private continuousLearningEnabled: boolean = true;
 
@@ -203,34 +210,64 @@ class AIPredictiveAnalyticsService {
             {
                 id: 'performance-predictor',
                 name: '성능 예측 모델',
-                type: 'time_series',
+                type: 'performance',
                 accuracy: 0.85,
+                lastUpdated: new Date(),
                 lastTrained: new Date(),
+                version: '1.0.0',
+                parameters: {},
+                learningRate: 0.01,
+                confidence: 0.85,
+                autoOptimize: true,
                 trainingDataSize: 1000,
-                features: ['cpu_usage', 'memory_usage', 'response_time', 'error_rate', 'user_activity'],
-                predictions: [],
+                adaptiveThresholds: {
+                    min: 0.1,
+                    max: 0.9,
+                    critical: 0.95,
+                    warning: 0.8
+                },
                 status: 'active'
             },
             {
                 id: 'user-behavior-predictor',
                 name: '사용자 행동 예측 모델',
-                type: 'classification',
+                type: 'user_behavior',
                 accuracy: 0.78,
+                lastUpdated: new Date(),
                 lastTrained: new Date(),
+                version: '1.0.0',
+                parameters: {},
+                learningRate: 0.01,
+                confidence: 0.78,
+                autoOptimize: true,
                 trainingDataSize: 800,
-                features: ['session_duration', 'feature_usage', 'interaction_patterns', 'time_of_day'],
-                predictions: [],
+                adaptiveThresholds: {
+                    min: 0.1,
+                    max: 0.9,
+                    critical: 0.95,
+                    warning: 0.8
+                },
                 status: 'active'
             },
             {
                 id: 'resource-demand-predictor',
                 name: '리소스 수요 예측 모델',
-                type: 'regression',
+                type: 'resource_demand',
                 accuracy: 0.82,
+                lastUpdated: new Date(),
                 lastTrained: new Date(),
+                version: '1.0.0',
+                parameters: {},
+                learningRate: 0.01,
+                confidence: 0.82,
+                autoOptimize: true,
                 trainingDataSize: 600,
-                features: ['concurrent_users', 'data_volume', 'processing_load', 'network_traffic'],
-                predictions: [],
+                adaptiveThresholds: {
+                    min: 0.1,
+                    max: 0.9,
+                    critical: 0.95,
+                    warning: 0.8
+                },
                 status: 'active'
             },
             {
@@ -238,10 +275,20 @@ class AIPredictiveAnalyticsService {
                 name: '이상 징후 감지 모델',
                 type: 'anomaly_detection',
                 accuracy: 0.91,
+                lastUpdated: new Date(),
                 lastTrained: new Date(),
+                version: '1.0.0',
+                parameters: {},
+                learningRate: 0.01,
+                confidence: 0.91,
+                autoOptimize: true,
                 trainingDataSize: 1200,
-                features: ['system_metrics', 'user_patterns', 'error_logs', 'performance_indicators'],
-                predictions: [],
+                adaptiveThresholds: {
+                    min: 0.1,
+                    max: 0.9,
+                    critical: 0.95,
+                    warning: 0.8
+                },
                 status: 'active'
             }
         ];
@@ -322,23 +369,23 @@ class AIPredictiveAnalyticsService {
         const metrics = realTimeMonitoringService.getMetrics();
 
         // CPU 사용률 예측
-        const cpuPrediction = await this.predictMetric('cpu_usage', metrics, 'short_term');
+        const cpuPrediction = await this.predictMetric('cpu_usage', metrics, '1h');
         if (cpuPrediction) predictions.push(cpuPrediction);
 
         // 메모리 사용률 예측
-        const memoryPrediction = await this.predictMetric('memory_usage', metrics, 'short_term');
+        const memoryPrediction = await this.predictMetric('memory_usage', metrics, '1h');
         if (memoryPrediction) predictions.push(memoryPrediction);
 
         // 응답 시간 예측
-        const responseTimePrediction = await this.predictMetric('response_time', metrics, 'short_term');
+        const responseTimePrediction = await this.predictMetric('response_time', metrics, '1h');
         if (responseTimePrediction) predictions.push(responseTimePrediction);
 
         // 오류율 예측
-        const errorRatePrediction = await this.predictMetric('error_rate', metrics, 'short_term');
+        const errorRatePrediction = await this.predictMetric('error_rate', metrics, '1h');
         if (errorRatePrediction) predictions.push(errorRatePrediction);
 
         // 사용자 만족도 예측
-        const satisfactionPrediction = await this.predictMetric('user_satisfaction', metrics, 'short_term');
+        const satisfactionPrediction = await this.predictMetric('user_satisfaction', metrics, '1h');
         if (satisfactionPrediction) predictions.push(satisfactionPrediction);
 
         this.predictions.push(...predictions);
@@ -347,7 +394,7 @@ class AIPredictiveAnalyticsService {
         return predictions;
     }
 
-    private async predictMetric(metricName: string, currentMetrics: any[], timeframe: 'short_term' | 'medium_term' | 'long_term'): Promise<Prediction | null> {
+    private async predictMetric(metricName: string, currentMetrics: any[], timeframe: '1h' | '6h' | '24h' | '7d' | '30d'): Promise<Prediction | null> {
         const metric = currentMetrics.find(m => m.id === metricName);
         if (!metric) return null;
 
@@ -357,7 +404,7 @@ class AIPredictiveAnalyticsService {
         const confidence = 0.7 + Math.random() * 0.2; // 70-90% 신뢰도
 
         let predictedValue = baseValue;
-        const timeMultiplier = timeframe === 'short_term' ? 1.1 : timeframe === 'medium_term' ? 1.2 : 1.3;
+        const timeMultiplier = timeframe === '1h' ? 1.1 : timeframe === '6h' ? 1.2 : 1.3;
 
         if (trend === 'improving') {
             predictedValue = baseValue * (1 - 0.1 * timeMultiplier);
@@ -370,16 +417,16 @@ class AIPredictiveAnalyticsService {
         const prediction: Prediction = {
             id: `pred-${metricName}-${Date.now()}`,
             modelId: 'performance-predictor',
+            metric: metricName,
             target: metricName,
             predictedValue: Math.max(0, Math.min(100, predictedValue)),
             confidence,
             timeframe,
             timestamp: new Date(),
-            metadata: {
-                currentValue: baseValue,
-                trend: trend,
-                modelAccuracy: 0.85
-            }
+            trend: 'stable',
+            impact: 'low',
+            recommendations: [],
+            autoActions: []
         };
 
         return prediction;
@@ -418,13 +465,16 @@ class AIPredictiveAnalyticsService {
             return {
                 id: `anomaly-${metric.id}-${Date.now()}`,
                 metric: metric.id,
-                value,
+                detectedValue: value,
                 expectedRange,
                 severity,
                 timestamp: new Date(),
-                description: `${metric.name}이(가) 예상 범위를 벗어났습니다. 현재 값: ${value}${metric.unit}`,
-                recommendations: this.generateAnomalyRecommendations(metric, severity),
-                autoResolved: false
+                confidence: 0.85,
+                suggestedActions: this.generateAnomalyRecommendations(metric, severity),
+                autoResolve: false,
+                resolved: false,
+                impact: severity as 'low' | 'medium' | 'high' | 'critical',
+                affectedServices: [metric.id]
             };
         }
 
@@ -478,22 +528,25 @@ class AIPredictiveAnalyticsService {
         const confidence = 0.6 + strength * 0.3;
 
         const forecast = {
-            nextDay: this.forecastValue(metric.value, trend, 1),
-            nextWeek: this.forecastValue(metric.value, trend, 7),
-            nextMonth: this.forecastValue(metric.value, trend, 30)
+            nextValue: this.forecastValue(metric.value, trend, 1),
+            confidence: confidence,
+            timeframe: new Date(Date.now() + 24 * 60 * 60 * 1000)
         };
 
         return {
             id: `trend-${metric.id}-${Date.now()}`,
             metric: metric.id,
-            trend: trend.trend,
+            period: '24h',
+            trend: trend.trend === 'fluctuating' ? 'cyclical' : trend.trend,
             direction: trend.direction,
             strength,
-            duration: 5,
             confidence,
+            startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+            endDate: new Date(),
+            dataPoints: 5,
             forecast,
-            factors: this.identifyTrendFactors(metric),
-            timestamp: new Date()
+            insights: this.identifyTrendFactors(metric),
+            recommendations: [`${metric.id} 트렌드 모니터링 지속`]
         };
     }
 
@@ -565,7 +618,7 @@ class AIPredictiveAnalyticsService {
     async generateAutoDecisions(projects: Project[], chats: Chat[], messages: Message[]): Promise<AutoDecision[]> {
         const decisions: AutoDecision[] = [];
         const predictions = this.predictions.slice(-10);
-        const anomalies = this.anomalies.filter(a => !a.autoResolved);
+        const anomalies = this.anomalies.filter(a => !a.autoResolve);
         const trends = this.trends.slice(-5);
 
         // 성능 기반 의사결정
@@ -600,10 +653,15 @@ class AIPredictiveAnalyticsService {
                 action: '서버 리소스 자동 확장',
                 priority: 'high',
                 status: 'pending',
+                description: 'CPU 사용률 증가에 따른 자동 스케일링',
                 confidence: cpuPrediction.confidence,
                 estimatedImpact: 0.8,
-                riskLevel: 'low',
-                createdAt: new Date()
+                estimatedCost: 100,
+                risk: 'low',
+                timestamp: new Date(),
+                dependencies: [],
+                autoExecute: true,
+                approvalRequired: false
             });
         }
 
@@ -618,10 +676,15 @@ class AIPredictiveAnalyticsService {
                 action: '자동 최적화 실행',
                 priority: 'critical',
                 status: 'pending',
+                description: '이상 징후 감지에 따른 자동 최적화',
                 confidence: 0.9,
                 estimatedImpact: 0.7,
-                riskLevel: 'medium',
-                createdAt: new Date()
+                estimatedCost: 200,
+                risk: 'medium',
+                timestamp: new Date(),
+                dependencies: [],
+                autoExecute: true,
+                approvalRequired: false
             });
         }
 
@@ -645,10 +708,15 @@ class AIPredictiveAnalyticsService {
                 action: '시스템 리소스 사전 확장',
                 priority: 'medium',
                 status: 'pending',
+                description: '사용자 활동 증가에 따른 자동 스케일링',
                 confidence: 0.75,
                 estimatedImpact: 0.6,
-                riskLevel: 'low',
-                createdAt: new Date()
+                estimatedCost: 50,
+                risk: 'low',
+                timestamp: new Date(),
+                dependencies: [],
+                autoExecute: true,
+                approvalRequired: false
             });
         }
 
@@ -669,10 +737,15 @@ class AIPredictiveAnalyticsService {
                 action: '메모리 정리 및 최적화 실행',
                 priority: 'medium',
                 status: 'pending',
+                description: '메모리 사용률 증가에 따른 유지보수',
                 confidence: memoryTrend.confidence,
                 estimatedImpact: 0.5,
-                riskLevel: 'low',
-                createdAt: new Date()
+                estimatedCost: 30,
+                risk: 'low',
+                timestamp: new Date(),
+                dependencies: [],
+                autoExecute: true,
+                approvalRequired: false
             });
         }
 
@@ -715,19 +788,23 @@ class AIPredictiveAnalyticsService {
             if (avgPrediction > 70) {
                 insights.push({
                     id: `insight-cpu-${Date.now()}`,
-                    category: 'performance',
-                    insight: 'CPU 사용률이 높은 수준을 유지할 것으로 예측됩니다. 리소스 확장을 고려하세요.',
+                    type: 'performance',
+                    title: 'CPU 사용률 최적화 필요',
+                    description: 'CPU 사용률이 높은 수준을 유지할 것으로 예측됩니다. 리소스 확장을 고려하세요.',
                     confidence: 0.8,
-                    timeframe: 'short_term',
-                    impact: 'negative',
-                    probability: 0.75,
+                    impact: 'high',
+                    timestamp: new Date(),
+                    category: 'performance',
+                    tags: ['cpu', 'performance', 'optimization'],
+                    data: { avgPrediction, dataPoints: cpuPredictions.length },
                     recommendations: [
                         '서버 리소스 사전 확장',
                         '불필요한 프로세스 정리',
                         '로드 밸런싱 최적화'
                     ],
-                    dataPoints: cpuPredictions.length,
-                    lastUpdated: new Date()
+                    actions: ['scale_resources', 'optimize_processes'],
+                    priority: 'high',
+                    status: 'new'
                 });
             }
         }
@@ -753,19 +830,23 @@ class AIPredictiveAnalyticsService {
         if (recentActivity > previousWeekActivity * 1.5) {
             insights.push({
                 id: `insight-activity-${Date.now()}`,
-                category: 'user_behavior',
-                insight: '사용자 활동이 이전 주 대비 50% 증가했습니다. 시스템 부하 증가를 예상하세요.',
+                type: 'trend',
+                title: '사용자 활동 증가 트렌드',
+                description: '사용자 활동이 이전 주 대비 50% 증가했습니다. 시스템 부하 증가를 예상하세요.',
                 confidence: 0.85,
-                timeframe: 'short_term',
-                impact: 'positive',
-                probability: 0.8,
+                impact: 'medium',
+                timestamp: new Date(),
+                category: 'user_behavior',
+                tags: ['activity', 'trend', 'user_behavior'],
+                data: { recentActivity, previousWeekActivity, increase: '50%' },
                 recommendations: [
                     '시스템 리소스 사전 확장',
                     '사용자 경험 최적화',
                     '성능 모니터링 강화'
                 ],
-                dataPoints: recentActivity + previousWeekActivity,
-                lastUpdated: new Date()
+                actions: ['scale_resources', 'optimize_ux'],
+                priority: 'medium',
+                status: 'new'
             });
         }
 
@@ -783,19 +864,23 @@ class AIPredictiveAnalyticsService {
             if (avgErrorRate > 3) {
                 insights.push({
                     id: `insight-health-${Date.now()}`,
-                    category: 'system_health',
-                    insight: '오류율이 증가 추세를 보이고 있습니다. 시스템 안정성을 점검하세요.',
+                    type: 'anomaly',
+                    title: '시스템 안정성 경고',
+                    description: '오류율이 증가 추세를 보이고 있습니다. 시스템 안정성을 점검하세요.',
                     confidence: 0.75,
-                    timeframe: 'short_term',
-                    impact: 'negative',
-                    probability: 0.7,
+                    impact: 'high',
+                    timestamp: new Date(),
+                    category: 'system_health',
+                    tags: ['error_rate', 'stability', 'health'],
+                    data: { avgErrorRate, dataPoints: errorRatePredictions.length },
                     recommendations: [
                         '오류 로그 상세 분석',
                         '시스템 안정성 점검',
                         '백업 및 복구 계획 검토'
                     ],
-                    dataPoints: errorRatePredictions.length,
-                    lastUpdated: new Date()
+                    actions: ['analyze_logs', 'check_stability'],
+                    priority: 'high',
+                    status: 'new'
                 });
             }
         }
@@ -875,7 +960,7 @@ class AIPredictiveAnalyticsService {
     resolveAnomaly(anomalyId: string): void {
         const anomaly = this.anomalies.find(a => a.id === anomalyId);
         if (anomaly) {
-            anomaly.autoResolved = true;
+            anomaly.autoResolve = true;
         }
     }
 
@@ -900,7 +985,8 @@ class AIPredictiveAnalyticsService {
             decision.result = {
                 success,
                 actualImpact,
-                details: success ? '의사결정이 성공적으로 실행되었습니다.' : '의사결정 실행 중 오류가 발생했습니다.',
+                actualCost: decision.estimatedCost * (success ? 1 : 0.5),
+                duration: 1000,
                 errors: success ? undefined : ['시스템 오류', '리소스 부족']
             };
 
@@ -1091,9 +1177,9 @@ class AIPredictiveAnalyticsService {
 
         const cpuPredictions = predictions.filter(p => p.metric === 'cpu');
         if (cpuPredictions.length >= 3) {
-            const trend = this.calculateTrend(cpuPredictions.map(p => p.predictedValue));
+            const trend = this.calculateSimpleTrend(cpuPredictions.map(p => p.predictedValue));
 
-            if (trend.direction === 'negative' && trend.strength > 0.7) {
+            if (trend && trend.direction === 'negative' && trend.strength > 0.7) {
                 return {
                     id: `trend-insight-${Date.now()}-${Math.random()}`,
                     type: 'trend',
@@ -1120,7 +1206,7 @@ class AIPredictiveAnalyticsService {
         return null;
     }
 
-    private calculateTrend(values: number[]): { direction: 'positive' | 'negative' | 'stable'; strength: number } {
+    private calculateSimpleTrend(values: number[]): { direction: 'positive' | 'negative' | 'stable'; strength: number } {
         if (values.length < 2) return { direction: 'stable', strength: 0 };
 
         let increasing = 0;
