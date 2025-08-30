@@ -764,13 +764,16 @@ class RealTimeAIMultimodalLearningSystem {
 
         // 알림 생성
         realTimeAIAlertSystem.createAlert({
-            id: `multimodal-start-${Date.now()}`,
+
             type: 'info',
             severity: 'medium',
             title: '실시간 AI 멀티모달 학습 시스템 시작',
             message: '멀티모달 학습 시스템이 성공적으로 시작되었습니다.',
-            timestamp: new Date(),
             source: 'realTimeAIMultimodalLearningSystem',
+            category: 'learning',
+            auto_resolve: true,
+            priority: 'medium',
+            tags: ['multimodal', 'learning', 'startup'],
             metadata: {
                 modulesCount: this.modules.length,
                 features: 'multimodal learning, pattern detection, adaptive paths'

@@ -59,7 +59,7 @@ import {
   ZoomOut,
   VolumeUp,
   VolumeOff,
-  HighContrast,
+  Contrast,
   Accessibility,
   Keyboard,
   Mouse,
@@ -93,7 +93,7 @@ import {
   ZoomOut as ZoomOutIcon,
   VolumeUp as VolumeUpIcon,
   VolumeOff as VolumeOffIcon,
-  HighContrast as HighContrastIcon,
+  Contrast as HighContrastIcon,
   Accessibility as AccessibilityIcon,
   Keyboard as KeyboardIcon,
   Mouse as MouseIcon,
@@ -127,7 +127,7 @@ import {
   ZoomOut as ZoomOutIcon2,
   VolumeUp as VolumeUpIcon2,
   VolumeOff as VolumeOffIcon2,
-  HighContrast as HighContrastIcon2,
+  Contrast as HighContrastIcon2,
   Accessibility as AccessibilityIcon2,
   Keyboard as KeyboardIcon2,
   Mouse as MouseIcon2,
@@ -161,7 +161,7 @@ import {
   ZoomOut as ZoomOutIcon3,
   VolumeUp as VolumeUpIcon3,
   VolumeOff as VolumeOffIcon3,
-  HighContrast as HighContrastIcon3,
+  Contrast as HighContrastIcon3,
   Accessibility as AccessibilityIcon3,
   Keyboard as KeyboardIcon3,
   Mouse as MouseIcon3,
@@ -190,7 +190,7 @@ const translations = {
     manualTranslate: '수동 번역',
     saveSettings: '설정 저장',
     resetSettings: '설정 초기화',
-    
+
     // 언어별 정보
     korean: '한국어',
     english: '영어',
@@ -202,7 +202,7 @@ const translations = {
     russian: '러시아어',
     arabic: '아랍어',
     portuguese: '포르투갈어',
-    
+
     // 기능 설명
     features: {
       realTimeTranslation: '실시간 번역',
@@ -216,7 +216,7 @@ const translations = {
       regionalVariants: '지역별 변형',
       accessibilityTranslation: '접근성 번역',
     },
-    
+
     // 상태 메시지
     messages: {
       languageChanged: '언어가 변경되었습니다.',
@@ -226,7 +226,7 @@ const translations = {
       loading: '로딩 중...',
       ready: '준비됨',
     },
-    
+
     // 품질 지표
     quality: {
       excellent: '우수',
@@ -251,7 +251,7 @@ const translations = {
     manualTranslate: 'Manual Translate',
     saveSettings: 'Save Settings',
     resetSettings: 'Reset Settings',
-    
+
     korean: 'Korean',
     english: 'English',
     japanese: 'Japanese',
@@ -262,7 +262,7 @@ const translations = {
     russian: 'Russian',
     arabic: 'Arabic',
     portuguese: 'Portuguese',
-    
+
     features: {
       realTimeTranslation: 'Real-time Translation',
       culturalAdaptation: 'Cultural Adaptation',
@@ -275,7 +275,7 @@ const translations = {
       regionalVariants: 'Regional Variants',
       accessibilityTranslation: 'Accessibility Translation',
     },
-    
+
     messages: {
       languageChanged: 'Language changed successfully.',
       translationComplete: 'Translation completed.',
@@ -284,7 +284,7 @@ const translations = {
       loading: 'Loading...',
       ready: 'Ready',
     },
-    
+
     quality: {
       excellent: 'Excellent',
       good: 'Good',
@@ -308,7 +308,7 @@ const translations = {
     manualTranslate: '手動翻訳',
     saveSettings: '設定保存',
     resetSettings: '設定リセット',
-    
+
     korean: '韓国語',
     english: '英語',
     japanese: '日本語',
@@ -319,7 +319,7 @@ const translations = {
     russian: 'ロシア語',
     arabic: 'アラビア語',
     portuguese: 'ポルトガル語',
-    
+
     features: {
       realTimeTranslation: 'リアルタイム翻訳',
       culturalAdaptation: '文化的適応',
@@ -332,7 +332,7 @@ const translations = {
       regionalVariants: '地域変種',
       accessibilityTranslation: 'アクセシビリティ翻訳',
     },
-    
+
     messages: {
       languageChanged: '言語が変更されました。',
       translationComplete: '翻訳が完了しました。',
@@ -341,7 +341,7 @@ const translations = {
       loading: '読み込み中...',
       ready: '準備完了',
     },
-    
+
     quality: {
       excellent: '優秀',
       good: '良好',
@@ -365,7 +365,7 @@ const translations = {
     manualTranslate: '手动翻译',
     saveSettings: '保存设置',
     resetSettings: '重置设置',
-    
+
     korean: '韩语',
     english: '英语',
     japanese: '日语',
@@ -376,7 +376,7 @@ const translations = {
     russian: '俄语',
     arabic: '阿拉伯语',
     portuguese: '葡萄牙语',
-    
+
     features: {
       realTimeTranslation: '实时翻译',
       culturalAdaptation: '文化适应',
@@ -389,7 +389,7 @@ const translations = {
       regionalVariants: '地区变体',
       accessibilityTranslation: '无障碍翻译',
     },
-    
+
     messages: {
       languageChanged: '语言已更改。',
       translationComplete: '翻译完成。',
@@ -398,7 +398,7 @@ const translations = {
       loading: '加载中...',
       ready: '就绪',
     },
-    
+
     quality: {
       excellent: '优秀',
       good: '良好',
@@ -419,7 +419,7 @@ const LanguageContext = createContext<{
   t: (key: string) => string;
 }>({
   currentLanguage: 'ko',
-  setLanguage: () => {},
+  setLanguage: () => { },
   t: () => '',
 });
 
@@ -456,7 +456,7 @@ const MultilingualSupportSystem: React.FC<MultilingualSupportSystemProps> = ({ c
   const t = (key: string): string => {
     const keys = key.split('.');
     let value: any = translations[currentLanguage as keyof typeof translations];
-    
+
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
@@ -464,7 +464,7 @@ const MultilingualSupportSystem: React.FC<MultilingualSupportSystemProps> = ({ c
         return key; // 번역이 없으면 키 반환
       }
     }
-    
+
     return typeof value === 'string' ? value : key;
   };
 
@@ -503,10 +503,12 @@ const MultilingualSupportSystem: React.FC<MultilingualSupportSystemProps> = ({ c
   const quickActions = [
     { icon: <Translate />, name: t('autoTranslate'), action: () => setAutoTranslate(!autoTranslate) },
     { icon: <Language />, name: t('culturalContext'), action: () => setCulturalContext(!culturalContext) },
-    { icon: <Settings />, name: t('saveSettings'), action: () => {
-      setSnackbarMessage(t('messages.settingsSaved'));
-      setShowSnackbar(true);
-    }},
+    {
+      icon: <Settings />, name: t('saveSettings'), action: () => {
+        setSnackbarMessage(t('messages.settingsSaved'));
+        setShowSnackbar(true);
+      }
+    },
   ];
 
   return (
@@ -529,20 +531,20 @@ const MultilingualSupportSystem: React.FC<MultilingualSupportSystemProps> = ({ c
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h5">{t('selectLanguage')}</Typography>
-                <Chip 
+                <Chip
                   label={`${languageFlags[currentLanguage as keyof typeof languageFlags]} ${t(currentLanguage)}`}
                   color="primary"
                   icon={<Language />}
                 />
               </Box>
-              
+
               <Grid container spacing={2}>
                 {supportedLanguages.map((lang) => (
                   <Grid item xs={12} sm={6} md={3} key={lang.code}>
-                    <Paper 
-                      sx={{ 
-                        p: 2, 
-                        textAlign: 'center', 
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
                         cursor: 'pointer',
                         border: currentLanguage === lang.code ? 2 : 1,
                         borderColor: currentLanguage === lang.code ? 'primary.main' : 'divider',
@@ -575,23 +577,23 @@ const MultilingualSupportSystem: React.FC<MultilingualSupportSystemProps> = ({ c
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Box sx={{ flexGrow: 1 }}>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={translationQuality} 
+                        <LinearProgress
+                          variant="determinate"
+                          value={translationQuality}
                           sx={{ height: 8, borderRadius: 4 }}
                           color={translationQuality >= 90 ? 'success' : translationQuality >= 70 ? 'warning' : 'error'}
                         />
                       </Box>
-                      <Chip 
-                        label={translationQuality >= 90 ? t('quality.excellent') : 
-                               translationQuality >= 70 ? t('quality.good') : 
-                               translationQuality >= 50 ? t('quality.fair') : t('quality.poor')}
+                      <Chip
+                        label={translationQuality >= 90 ? t('quality.excellent') :
+                          translationQuality >= 70 ? t('quality.good') :
+                            translationQuality >= 50 ? t('quality.fair') : t('quality.poor')}
                         size="small"
                         color={translationQuality >= 90 ? 'success' : translationQuality >= 70 ? 'warning' : 'error'}
                       />
                     </Box>
                   </Box>
-                  
+
                   <List>
                     <ListItem>
                       <ListItemIcon><CheckCircleIcon color="success" /></ListItemIcon>
@@ -614,7 +616,7 @@ const MultilingualSupportSystem: React.FC<MultilingualSupportSystemProps> = ({ c
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>{t('features.realTimeTranslation')}</Typography>
-                  
+
                   <FormControlLabel
                     control={
                       <Switch
@@ -626,7 +628,7 @@ const MultilingualSupportSystem: React.FC<MultilingualSupportSystemProps> = ({ c
                     label={t('autoTranslate')}
                     sx={{ mb: 2 }}
                   />
-                  
+
                   <FormControlLabel
                     control={
                       <Switch
@@ -638,10 +640,10 @@ const MultilingualSupportSystem: React.FC<MultilingualSupportSystemProps> = ({ c
                     label={t('culturalContext')}
                     sx={{ mb: 2 }}
                   />
-                  
-                  <Button 
-                    variant="contained" 
-                    fullWidth 
+
+                  <Button
+                    variant="contained"
+                    fullWidth
                     onClick={() => setShowSettings(true)}
                     startIcon={<Settings />}
                   >

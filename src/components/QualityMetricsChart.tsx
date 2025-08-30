@@ -1,0 +1,662 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    Button,
+    IconButton,
+    Tooltip,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Switch,
+    FormControlLabel,
+    useTheme,
+    alpha
+} from '@mui/material';
+import {
+    TrendingUp,
+    TrendingDown,
+    Warning,
+    Error,
+    CheckCircle,
+    Info,
+    Refresh,
+    AutoAwesome,
+    Psychology,
+    Science,
+    Timeline,
+    Analytics,
+    Speed,
+    Memory,
+    Storage,
+    NetworkCheck,
+    Lightbulb,
+    Rocket,
+    Assessment,
+    ShowChart,
+    BarChart,
+    PieChart,
+    Radar,
+    ScatterPlot,
+    BubbleChart,
+    Timeline as TimelineIcon,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon,
+    Speed as SpeedIcon,
+    Memory as MemoryIcon,
+    Storage as StorageIcon,
+    NetworkCheck as NetworkIcon,
+    Notifications as NotificationsIcon,
+    NotificationsActive as NotificationsActiveIcon,
+    NotificationsOff as NotificationsOffIcon
+} from '@mui/icons-material';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    RadialLinearScale,
+    Title,
+    Tooltip as ChartTooltip,
+    Legend,
+    Filler
+} from 'chart.js';
+import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    RadialLinearScale,
+    Title,
+    ChartTooltip,
+    Legend,
+    Filler
+);
+
+interface QualityMetric {
+    id: string;
+    name: string;
+    value: number;
+    target: number;
+    status: 'excellent' | 'good' | 'warning' | 'critical';
+    trend: 'up' | 'down' | 'stable';
+    lastUpdated: string;
+    description: string;
+}
+
+interface PerformanceMetric {
+    id: string;
+    name: string;
+    value: number;
+    unit: string;
+    threshold: number;
+    status: 'normal' | 'warning' | 'critical';
+    trend: 'up' | 'down' | 'stable';
+    lastUpdated: string;
+}
+
+const QualityMetricsChart: React.FC = () => {
+    const theme = useTheme();
+    const [chartType, setChartType] = useState<'line' | 'bar' | 'doughnut' | 'radar'>('line');
+    const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['overall-quality', 'test-coverage']);
+
+    // 실시간 데이터 상태
+    const [qualityMetrics, setQualityMetrics] = useState<QualityMetric[]>([
+        {
+            id: 'overall-quality',
+            name: '전체 품질 점수',
+            value: 94.2,
+            target: 95,
+            status: 'good',
+            trend: 'up',
+            lastUpdated: '2024-01-15 14:30',
+            description: 'AI 시스템의 전반적인 품질 지표'
+        },
+        {
+            id: 'test-coverage',
+            name: '테스트 커버리지',
+            value: 87.5,
+            target: 90,
+            status: 'warning',
+            trend: 'up',
+            lastUpdated: '2024-01-15 14:30',
+            description: '코드 커버리지 및 테스트 범위'
+        },
+        {
+            id: 'automation-rate',
+            name: '자동화율',
+            value: 92.8,
+            target: 95,
+            status: 'good',
+            trend: 'up',
+            lastUpdated: '2024-01-15 14:30',
+            description: '자동화된 테스트 비율'
+        },
+        {
+            id: 'defect-density',
+            name: '결함 밀도',
+            value: 2.1,
+            target: 1.5,
+            status: 'warning',
+            trend: 'down',
+            lastUpdated: '2024-01-15 14:30',
+            description: '1000줄당 결함 수'
+        }
+    ]);
+
+    const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([
+        {
+            id: 'response-time',
+            name: '응답 시간',
+            value: 245,
+            unit: 'ms',
+            threshold: 300,
+            status: 'normal',
+            trend: 'stable',
+            lastUpdated: '2024-01-15 14:30'
+        },
+        {
+            id: 'throughput',
+            name: '처리량',
+            value: 1250,
+            unit: 'req/s',
+            threshold: 1000,
+            status: 'normal',
+            trend: 'up',
+            lastUpdated: '2024-01-15 14:30'
+        },
+        {
+            id: 'cpu-usage',
+            name: 'CPU 사용률',
+            value: 68,
+            unit: '%',
+            threshold: 80,
+            status: 'normal',
+            trend: 'stable',
+            lastUpdated: '2024-01-15 14:30'
+        },
+        {
+            id: 'memory-usage',
+            name: '메모리 사용률',
+            value: 72,
+            unit: '%',
+            threshold: 85,
+            status: 'normal',
+            trend: 'up',
+            lastUpdated: '2024-01-15 14:30'
+        }
+    ]);
+
+    // 실시간 데이터 업데이트
+    useEffect(() => {
+        if (!autoRefresh) return;
+
+        const interval = setInterval(() => {
+            // 품질 메트릭 업데이트
+            setQualityMetrics(prev => prev.map(metric => {
+                const change = (Math.random() - 0.5) * 1.5;
+                const newValue = Math.max(0, Math.min(100, metric.value + change));
+
+                let newTrend = metric.trend;
+                if (change > 0.5) newTrend = 'up';
+                else if (change < -0.5) newTrend = 'down';
+
+                let newStatus = metric.status;
+                if (newValue >= 95) newStatus = 'excellent';
+                else if (newValue >= 85) newStatus = 'good';
+                else if (newValue >= 70) newStatus = 'warning';
+                else newStatus = 'critical';
+
+                return {
+                    ...metric,
+                    value: newValue,
+                    trend: newTrend,
+                    status: newStatus,
+                    lastUpdated: new Date().toLocaleString('ko-KR')
+                };
+            }));
+
+            // 성능 메트릭 업데이트
+            setPerformanceMetrics(prev => prev.map(metric => {
+                const change = (Math.random() - 0.5) * 8;
+                const newValue = Math.max(0, metric.value + change);
+
+                let newTrend = metric.trend;
+                if (change > 2) newTrend = 'up';
+                else if (change < -2) newTrend = 'down';
+
+                let newStatus = metric.status;
+                const thresholdRatio = newValue / metric.threshold;
+                if (thresholdRatio <= 0.7) newStatus = 'normal';
+                else if (thresholdRatio <= 0.9) newStatus = 'warning';
+                else newStatus = 'critical';
+
+                return {
+                    ...metric,
+                    value: newValue,
+                    trend: newTrend,
+                    status: newStatus,
+                    lastUpdated: new Date().toLocaleString('ko-KR')
+                };
+            }));
+        }, 5000); // 5초마다 업데이트
+
+        return () => clearInterval(interval);
+    }, [autoRefresh]);
+
+    // 차트 데이터 생성
+    const generateTimeData = () => {
+        const now = new Date();
+        const timePoints = [];
+        const dataPoints = [];
+
+        for (let i = 23; i >= 0; i--) {
+            const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+            timePoints.push(time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
+            dataPoints.push(85 + Math.random() * 15); // 85-100 범위의 랜덤 데이터
+        }
+
+        return { timePoints, dataPoints };
+    };
+
+    const { timePoints, dataPoints } = generateTimeData();
+
+    // 라인 차트 데이터
+    const lineChartData = {
+        labels: timePoints,
+        datasets: [
+            {
+                label: '전체 품질 점수',
+                data: dataPoints,
+                borderColor: theme.palette.primary.main,
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                fill: true,
+                tension: 0.4
+            },
+            {
+                label: '테스트 커버리지',
+                data: dataPoints.map(d => d - 5 + Math.random() * 10),
+                borderColor: theme.palette.secondary.main,
+                backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                fill: true,
+                tension: 0.4
+            }
+        ]
+    };
+
+    // 바 차트 데이터
+    const barChartData = {
+        labels: qualityMetrics.map(m => m.name),
+        datasets: [
+            {
+                label: '현재 값',
+                data: qualityMetrics.map(m => m.value),
+                backgroundColor: qualityMetrics.map(m => {
+                    switch (m.status) {
+                        case 'excellent': return theme.palette.success.main;
+                        case 'good': return theme.palette.primary.main;
+                        case 'warning': return theme.palette.warning.main;
+                        case 'critical': return theme.palette.error.main;
+                        default: return theme.palette.grey[500];
+                    }
+                }),
+                borderColor: qualityMetrics.map(m => {
+                    switch (m.status) {
+                        case 'excellent': return theme.palette.success.dark;
+                        case 'good': return theme.palette.primary.dark;
+                        case 'warning': return theme.palette.warning.dark;
+                        case 'critical': return theme.palette.error.dark;
+                        default: return theme.palette.grey[700];
+                    }
+                }),
+                borderWidth: 2
+            },
+            {
+                label: '목표 값',
+                data: qualityMetrics.map(m => m.target),
+                backgroundColor: alpha(theme.palette.info.main, 0.3),
+                borderColor: theme.palette.info.main,
+                borderWidth: 2,
+                type: 'line'
+            }
+        ]
+    };
+
+    // 도넛 차트 데이터
+    const doughnutChartData = {
+        labels: ['우수', '양호', '경고', '위험'],
+        datasets: [
+            {
+                data: [
+                    qualityMetrics.filter(m => m.status === 'excellent').length,
+                    qualityMetrics.filter(m => m.status === 'good').length,
+                    qualityMetrics.filter(m => m.status === 'warning').length,
+                    qualityMetrics.filter(m => m.status === 'critical').length
+                ],
+                backgroundColor: [
+                    theme.palette.success.main,
+                    theme.palette.primary.main,
+                    theme.palette.warning.main,
+                    theme.palette.error.main
+                ],
+                borderColor: [
+                    theme.palette.success.dark,
+                    theme.palette.primary.dark,
+                    theme.palette.warning.dark,
+                    theme.palette.error.dark
+                ],
+                borderWidth: 2
+            }
+        ]
+    };
+
+    // 레이더 차트 데이터
+    const radarChartData = {
+        labels: performanceMetrics.map(m => m.name),
+        datasets: [
+            {
+                label: '현재 성능',
+                data: performanceMetrics.map(m => (m.value / m.threshold) * 100),
+                backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+                pointBackgroundColor: theme.palette.primary.main,
+                pointBorderColor: theme.palette.primary.dark,
+                pointHoverBackgroundColor: theme.palette.primary.light,
+                pointHoverBorderColor: theme.palette.primary.dark
+            },
+            {
+                label: '목표 성능',
+                data: performanceMetrics.map(() => 100),
+                backgroundColor: alpha(theme.palette.success.main, 0.1),
+                borderColor: theme.palette.success.main,
+                borderWidth: 1,
+                borderDash: [5, 5],
+                pointBackgroundColor: theme.palette.success.main,
+                pointBorderColor: theme.palette.success.dark,
+                pointHoverBackgroundColor: theme.palette.success.light,
+                pointHoverBorderColor: theme.palette.success.dark
+            }
+        ]
+    };
+
+    // 차트 옵션
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top' as const,
+                labels: {
+                    color: theme.palette.text.primary
+                }
+            },
+            title: {
+                display: true,
+                text: '실시간 품질 메트릭',
+                color: theme.palette.text.primary
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: theme.palette.text.secondary
+                },
+                grid: {
+                    color: alpha(theme.palette.divider, 0.1)
+                }
+            },
+            y: {
+                ticks: {
+                    color: theme.palette.text.secondary
+                },
+                grid: {
+                    color: alpha(theme.palette.divider, 0.1)
+                }
+            }
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'excellent':
+            case 'normal':
+                return 'success';
+            case 'good':
+                return 'primary';
+            case 'warning':
+                return 'warning';
+            case 'critical':
+                return 'error';
+            default:
+                return 'default';
+        }
+    };
+
+    const getTrendIcon = (trend: string) => {
+        switch (trend) {
+            case 'up':
+                return <TrendingUp color="success" />;
+            case 'down':
+                return <TrendingDown color="error" />;
+            default:
+                return <Timeline color="action" />;
+        }
+    };
+
+    const renderChart = () => {
+        switch (chartType) {
+            case 'line':
+                return <Line data={lineChartData} options={chartOptions} height={400} />;
+            case 'bar':
+                return <Bar data={barChartData} options={chartOptions} height={400} />;
+            case 'doughnut':
+                return <Doughnut data={doughnutChartData} options={chartOptions} height={400} />;
+            case 'radar':
+                return <Radar data={radarChartData} options={chartOptions} height={400} />;
+            default:
+                return <Line data={lineChartData} options={chartOptions} height={400} />;
+        }
+    };
+
+    return (
+        <Box sx={{ p: 3 }}>
+            {/* 헤더 */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <ShowChart sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="h5" component="h2">
+                    실시간 품질 메트릭 차트
+                </Typography>
+                <Box sx={{ ml: 'auto' }}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={autoRefresh}
+                                onChange={(e) => setAutoRefresh(e.target.checked)}
+                            />
+                        }
+                        label="실시간 업데이트"
+                        sx={{ mr: 2 }}
+                    />
+                    <Button
+                        variant="outlined"
+                        startIcon={<Refresh />}
+                        onClick={() => window.location.reload()}
+                    >
+                        새로고침
+                    </Button>
+                </Box>
+            </Box>
+
+            {/* 컨트롤 패널 */}
+            <Card sx={{ mb: 3, background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})` }}>
+                <CardContent>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} sm={6} md={3}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>차트 유형</InputLabel>
+                                <Select
+                                    value={chartType}
+                                    onChange={(e) => setChartType(e.target.value as any)}
+                                    label="차트 유형"
+                                >
+                                    <MenuItem value="line">라인 차트</MenuItem>
+                                    <MenuItem value="bar">바 차트</MenuItem>
+                                    <MenuItem value="doughnut">도넛 차트</MenuItem>
+                                    <MenuItem value="radar">레이더 차트</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>시간 범위</InputLabel>
+                                <Select
+                                    value={timeRange}
+                                    onChange={(e) => setTimeRange(e.target.value as any)}
+                                    label="시간 범위"
+                                >
+                                    <MenuItem value="1h">1시간</MenuItem>
+                                    <MenuItem value="6h">6시간</MenuItem>
+                                    <MenuItem value="24h">24시간</MenuItem>
+                                    <MenuItem value="7d">7일</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Chip
+                                label={autoRefresh ? '실시간' : '수동'}
+                                color={autoRefresh ? 'success' : 'default'}
+                                icon={autoRefresh ? <TrendingUp /> : <Timeline />}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Typography variant="body2" color="text.secondary">
+                                마지막 업데이트: {new Date().toLocaleTimeString('ko-KR')}
+                            </Typography>
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
+
+            <Grid container spacing={3}>
+                {/* 메인 차트 */}
+                <Grid item xs={12} lg={8}>
+                    <Card sx={{ height: 500 }}>
+                        <CardContent>
+                            <Box sx={{ height: 400 }}>
+                                {renderChart()}
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* 메트릭 요약 */}
+                <Grid item xs={12} lg={4}>
+                    <Card sx={{ height: 500, overflow: 'auto' }}>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                실시간 메트릭
+                            </Typography>
+
+                            {qualityMetrics.map((metric) => (
+                                <Box key={metric.id} sx={{ mb: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                        <Typography variant="subtitle2" sx={{ flex: 1 }}>
+                                            {metric.name}
+                                        </Typography>
+                                        {getTrendIcon(metric.trend)}
+                                    </Box>
+
+                                    <Typography variant="h4" component="div" sx={{ mb: 1 }}>
+                                        {metric.value.toFixed(1)}
+                                        <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                            / {metric.target}
+                                        </Typography>
+                                    </Typography>
+
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <Chip
+                                            label={metric.status}
+                                            color={getStatusColor(metric.status) as any}
+                                            size="small"
+                                        />
+                                        <Typography variant="caption" color="text.secondary">
+                                            {metric.lastUpdated}
+                                        </Typography>
+                                    </Box>
+
+                                    <Typography variant="body2" color="text.secondary">
+                                        {metric.description}
+                                    </Typography>
+                                </Box>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* 성능 메트릭 */}
+                <Grid item xs={12}>
+                    <Card sx={{ background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.1)}, ${alpha(theme.palette.primary.main, 0.1)})` }}>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                성능 메트릭 모니터링
+                            </Typography>
+
+                            <Grid container spacing={2}>
+                                {performanceMetrics.map((metric) => (
+                                    <Grid item xs={12} sm={6} md={3} key={metric.id}>
+                                        <Card variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                                                {metric.id === 'response-time' && <SpeedIcon color="primary" />}
+                                                {metric.id === 'throughput' && <NetworkIcon color="success" />}
+                                                {metric.id === 'cpu-usage' && <MemoryIcon color="warning" />}
+                                                {metric.id === 'memory-usage' && <StorageIcon color="info" />}
+                                            </Box>
+
+                                            <Typography variant="h5" component="div" sx={{ mb: 1 }}>
+                                                {metric.value.toFixed(1)}
+                                                <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                                    {metric.unit}
+                                                </Typography>
+                                            </Typography>
+
+                                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                {metric.name}
+                                            </Typography>
+
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {getTrendIcon(metric.trend)}
+                                                <Chip
+                                                    label={metric.status}
+                                                    color={getStatusColor(metric.status) as any}
+                                                    size="small"
+                                                    sx={{ ml: 1 }}
+                                                />
+                                            </Box>
+                                        </Card>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+};
+
+export default QualityMetricsChart;

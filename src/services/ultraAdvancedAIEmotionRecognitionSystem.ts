@@ -199,7 +199,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
         ];
 
         for (const pattern of defaultPatterns) {
-            this.emotionPatterns.set(pattern.id, pattern);
+            this.emotionPatterns.set(pattern.id, pattern as EmotionPattern);
         }
     }
 
@@ -588,7 +588,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
             relief: { type: 'supportive' as const, tone: 'friendly' as const, name: '안도감 공유 전략' }
         };
 
-        return strategies[emotion.emotion] || { type: 'adaptive', tone: 'professional', name: '기본 적응 전략' };
+        return (strategies as any)[emotion.emotion] || { type: 'adaptive', tone: 'professional', name: '기본 적응 전략' };
     }
 
     private async generateResponseContent(emotion: EmotionResult, strategy: any): Promise<string> {
@@ -620,7 +620,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
             ]
         };
 
-        const templates = responseTemplates[emotion.emotion] || [
+        const templates = (responseTemplates as any)[emotion.emotion] || [
             "지금 어떤 감정을 느끼고 계신지 이해하려고 해요. 🤗 필요하시면 언제든 말씀해 주세요."
         ];
 

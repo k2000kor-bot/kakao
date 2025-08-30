@@ -209,12 +209,11 @@ class UltraAdvancedAIEthicsAndGovernanceSystem extends EventEmitter {
             security_score: 0
         }
     };
-    private _isInitialized: boolean = false;
 
     constructor() {
         super();
         this.initializeSystem();
-        this.isInitialized = true;
+        this._isInitialized = true;
         console.log('⚖️ 고도화된 AI 윤리 및 거버넌스 시스템이 초기화되었습니다.');
     }
 
@@ -424,7 +423,7 @@ class UltraAdvancedAIEthicsAndGovernanceSystem extends EventEmitter {
                 }
             });
 
-            this.isInitialized = true;
+            this._isInitialized = true;
             this.startMonitoring();
             this.updateMetrics();
             this.emit('system_initialized', this.metrics);

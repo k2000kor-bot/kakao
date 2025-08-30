@@ -37,7 +37,7 @@ import {
     Fab
 } from '@mui/material';
 import {
-    Eco,
+    Eco as EcoIcon,
     AccountTree,
     Group,
     TrendingUp,

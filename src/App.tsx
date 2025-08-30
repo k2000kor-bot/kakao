@@ -70,7 +70,7 @@ import {
   Science,
   Hub,
   AutoAwesome,
-  Timeline,
+  TrendingUp,
   Lightbulb,
   Balance,
   Sync,
@@ -155,6 +155,8 @@ import UltraAdvancedConversationalAI from './components/UltraAdvancedConversatio
 import ConversationalWritingAI from './components/ConversationalWritingAI';
 import UltraIntegratedConversationalAI from './components/UltraIntegratedConversationalAI';
 import UltraAdvancedAIFutureVisionSystem from './components/UltraAdvancedAIFutureVisionSystem';
+import ConversationalQualityAssuranceSystem from './components/ConversationalQualityAssuranceSystem';
+import QualityMetricsDashboard from './components/QualityMetricsDashboard';
 
 // 새로운 고도화된 시스템들
 import CORBUHumanityEvolutionSystem from './components/CORBUHumanityEvolutionSystem';
@@ -490,6 +492,18 @@ const navigationItems = [
     description: '실시간 AI 성능 최적화 시스템'
   },
   {
+    id: 'conversational-quality-assurance',
+    label: '대화형 품질 보증',
+    icon: <Assessment />,
+    description: '대화형 AI 품질 보증 및 테스트 자동화 시스템'
+  },
+  {
+    id: 'quality-metrics-dashboard',
+    label: '품질 메트릭 대시보드',
+    icon: <AnalyticsIcon />,
+    description: '실시간 품질 메트릭 모니터링 및 분석 대시보드'
+  },
+  {
     id: 'ultra-advanced-chat',
     label: '고도화된 AI 채팅',
     icon: <SmartToy />,
@@ -654,7 +668,7 @@ const navigationItems = [
   {
     id: 'ai-future-prediction-system',
     label: 'AI 미래 예측 시스템',
-    icon: <Timeline />,
+    icon: <TrendingUp />,
     description: 'AI 기술의 미래 발전 방향, 트렌드, 시나리오 예측'
   },
   {
@@ -800,7 +814,7 @@ const navigationItems = [
 const App: React.FC = () => {
   // 상태 관리
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('chat');
+  const [currentView, setCurrentView] = useState('ai-quality-assurance-dashboard');
   const [darkMode, setDarkMode] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState(3);
@@ -885,6 +899,8 @@ const App: React.FC = () => {
         return <RealTimeAICollaborationNetworkDashboard />;
       case 'ai-quality-assurance-system':
         return <AIQualityAssuranceDashboard />;
+      case 'ai-quality-assurance-dashboard':
+        return <AdvancedAIQualityAssuranceDashboard />;
       case 'ai-ethics-governance-system':
         return <AIEthicsGovernanceDashboard />;
       case 'ai-future-prediction-system':
@@ -935,6 +951,10 @@ const App: React.FC = () => {
         return <CORBUQuantumConsciousnessSystem />;
       case 'corbu-interdimensional-system':
         return <CORBUInterdimensionalSystem />;
+      case 'conversational-quality-assurance':
+        return <ConversationalQualityAssuranceSystem />;
+      case 'quality-metrics-dashboard':
+        return <QualityMetricsDashboard />;
       default:
         return <AdvancedChatInterface />;
     }

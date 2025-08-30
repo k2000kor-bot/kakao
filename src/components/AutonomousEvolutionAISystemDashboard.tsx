@@ -16,19 +16,19 @@ import {
     NetworkCheck as NetworkIcon, Psychology as Brain, Speed, FlashOn, BubbleChart, ScatterPlot,
     Timeline as TimelineIcon, DataUsage, Hub, DeviceHub, Router, Add, Close, Upload, Download,
     School, Science, Lightbulb, Innovation, Rocket, Star, Diamond, EmojiEvents, WorkspacePremium,
-    PsychologyAlt, Brain, Cognitive, NeuralNetwork, Synapse, Dendrite, Axon, Neuron,
+    PsychologyAlt, Cognitive, NeuralNetwork, Synapse, Dendrite, Axon, Neuron,
     AutoGraph, TrendingAuto, SelfImprovement, Psychology as PsychologyIcon, AutoMode,
     SmartToy, SmartButton, SmartDisplay, SmartScreen, SmartSpeaker, SmartToy as SmartToyIcon
 } from '@mui/icons-material';
 import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
 import {
     Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement,
-    ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale
+    ArcElement, Title, Tooltip as ChartTooltip, Legend, Filler, RadialLinearScale
 } from 'chart.js';
 
 ChartJS.register(
     CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement,
-    Title, Tooltip, Legend, Filler, RadialLinearScale
+    Title, ChartTooltip, Legend, Filler, RadialLinearScale
 );
 
 interface EvolutionStage {

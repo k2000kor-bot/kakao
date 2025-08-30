@@ -38,6 +38,20 @@ class CORBUAI:
         self.quality_metrics = {}
         self.quality_reports = {}
         
+        # 고급 품질 보증 관련 속성
+        self.quality_test_suites = []
+        self.quality_test_executions = []
+        self.quality_test_results = []
+        self.quality_performance_metrics = []
+        self.quality_trends = []
+        self.quality_validation_rules = []
+        self.quality_automation_config = {
+            'auto_execution': True,
+            'execution_interval': 3600,  # 1시간
+            'notification_enabled': True,
+            'report_generation': True
+        }
+        
         # 성능 최적화 관련 속성
         self.performance_metrics = []
         self.optimization_rules = []
@@ -610,352 +624,294 @@ class CORBUAI:
     # 품질 보증 시스템 메서드들
     def get_quality_tests(self):
         """품질 테스트 조회"""
-        return {
-            'success': True,
-            'data': self.quality_tests,
-            'timestamp': datetime.now().isoformat()
-        }
+        return self.quality_tests
 
-    def create_quality_test(self, test_data):
+    def create_quality_test(self, data):
         """품질 테스트 생성"""
         test = {
             'id': f'test-{len(self.quality_tests) + 1}',
-            'name': test_data.get('name', '새 품질 테스트'),
-            'type': test_data.get('type', 'functional'),
-            'category': test_data.get('category', 'general'),
-            'priority': test_data.get('priority', 'medium'),
+            'name': data.get('name', '새 테스트'),
+            'type': data.get('type', 'accuracy'),
+            'category': data.get('category', 'ai_model'),
+            'priority': data.get('priority', 'medium'),
             'status': 'pending',
             'created_at': datetime.now().isoformat()
         }
         self.quality_tests.append(test)
-        return {
-            'success': True,
-            'data': test,
-            'timestamp': datetime.now().isoformat()
-        }
+        return test
 
     def get_quality_metrics(self):
         """품질 메트릭 조회"""
-        metrics = {
-            'total_tests': len(self.quality_tests),
-            'passed_tests': len([t for t in self.quality_tests if t.get('status') == 'passed']),
-            'failed_tests': len([t for t in self.quality_tests if t.get('status') == 'failed']),
-            'pending_tests': len([t for t in self.quality_tests if t.get('status') == 'pending']),
-            'success_rate': len([t for t in self.quality_tests if t.get('status') == 'passed']) / max(len(self.quality_tests), 1)
-        }
-        return {
-            'success': True,
-            'data': metrics,
-            'timestamp': datetime.now().isoformat()
-        }
+        return self.quality_metrics
 
     def get_quality_reports(self):
         """품질 보고서 조회"""
-        return {
-            'success': True,
-            'data': self.quality_reports,
-            'timestamp': datetime.now().isoformat()
+        return self.quality_reports
+
+    # 고급 품질 보증 메서드들
+    def get_quality_test_suites(self):
+        """테스트 스위트 조회"""
+        return self.quality_test_suites
+
+    def create_quality_test_suite(self, data):
+        """테스트 스위트 생성"""
+        suite = {
+            'id': f'suite-{len(self.quality_test_suites) + 1}',
+            'name': data.get('name', '새 테스트 스위트'),
+            'description': data.get('description', ''),
+            'category': data.get('category', 'functional'),
+            'test_cases': data.get('test_cases', []),
+            'execution_schedule': data.get('execution_schedule', '0 0 * * *'),
+            'priority': data.get('priority', 'medium'),
+            'created_date': datetime.now(),
+            'last_executed': datetime.now(),
+            'status': 'active'
         }
+        self.quality_test_suites.append(suite)
+        return suite
 
-    # 샘플 데이터 초기화 메서드들
-    def _initialize_sample_data_sources(self):
-        """샘플 데이터 소스 초기화"""
-        sample_sources = [
-            {
-                'id': 'source-1',
-                'name': '사용자 데이터베이스',
-                'type': 'database',
-                'url': 'postgresql://localhost:5432/users',
-                'status': 'active',
-                'created_at': datetime.now().isoformat(),
-                'last_updated': datetime.now().isoformat(),
-                'data_count': 15420,
-                'size_mb': 245
-            },
-            {
-                'id': 'source-2',
-                'name': 'API 데이터 스트림',
-                'type': 'api',
-                'url': 'https://api.example.com/data',
-                'status': 'active',
-                'created_at': datetime.now().isoformat(),
-                'last_updated': datetime.now().isoformat(),
-                'data_count': 8920,
-                'size_mb': 156
-            },
-            {
-                'id': 'source-3',
-                'name': '파일 시스템',
-                'type': 'file',
-                'url': '/data/files/',
-                'status': 'active',
-                'created_at': datetime.now().isoformat(),
-                'last_updated': datetime.now().isoformat(),
-                'data_count': 3240,
-                'size_mb': 89
-            }
-        ]
-        
-        for source in sample_sources:
-            self.data_sources[source['id']] = source
+    def get_quality_test_executions(self):
+        """테스트 실행 조회"""
+        return self.quality_test_executions
 
-    def _initialize_sample_data_analyses(self):
-        """샘플 데이터 분석 작업 초기화"""
-        sample_analyses = [
-            {
-                'id': 'analysis-1',
-                'name': '사용자 행동 분석',
-                'type': 'predictive',
-                'data_source_id': 'source-1',
-                'status': 'completed',
-                'progress': 100,
-                'created_at': datetime.now().isoformat(),
-                'started_at': datetime.now().isoformat(),
-                'completed_at': datetime.now().isoformat(),
-                'parameters': {'algorithm': 'random_forest', 'features': 15},
-                'results': {'accuracy': 0.87, 'precision': 0.85, 'recall': 0.89}
-            },
-            {
-                'id': 'analysis-2',
-                'name': '트렌드 분석',
-                'type': 'descriptive',
-                'data_source_id': 'source-2',
+    def create_quality_test_execution(self, data):
+        """테스트 실행 생성"""
+        execution = {
+            'id': f'exec-{len(self.quality_test_executions) + 1}',
+            'test_suite_id': data.get('test_suite_id'),
+            'start_time': datetime.now(),
                 'status': 'running',
-                'progress': 65,
-                'created_at': datetime.now().isoformat(),
-                'started_at': datetime.now().isoformat(),
-                'parameters': {'time_window': '30d', 'metrics': ['views', 'clicks']},
-                'results': {}
+            'progress_percentage': 0,
+            'current_test_case': None,
+            'results': [],
+            'summary': {
+                'total_tests': 0,
+                'completed_tests': 0,
+                'passed_tests': 0,
+                'failed_tests': 0,
+                'average_execution_time': 0,
+                'quality_score': 0,
+                'performance_score': 0
             }
-        ]
-        
-        for analysis in sample_analyses:
-            self.data_analyses[analysis['id']] = analysis
+        }
+        self.quality_test_executions.append(execution)
+        return execution
 
-    def _initialize_sample_data_visualizations(self):
-        """샘플 데이터 시각화 초기화"""
-        sample_viz = [
-            {
-                'id': 'viz-1',
-                'name': '사용자 활동 대시보드',
-                'type': 'chart',
-                'chart_type': 'line',
-                'data_source_id': 'source-1',
-                'analysis_id': 'analysis-1',
-                'status': 'active',
-                'created_at': datetime.now().isoformat(),
-                'config': {'title': '일별 사용자 활동', 'x_axis': '날짜', 'y_axis': '활동 수'},
-                'data': self._generate_sample_chart_data()
-            },
-            {
-                'id': 'viz-2',
-                'name': '성능 메트릭 차트',
-                'type': 'chart',
-                'chart_type': 'bar',
-                'data_source_id': 'source-2',
-                'analysis_id': 'analysis-2',
-                'status': 'active',
-                'created_at': datetime.now().isoformat(),
-                'config': {'title': '월별 성능 지표', 'x_axis': '월', 'y_axis': '성능 점수'},
-                'data': self._generate_sample_chart_data()
-            }
-        ]
-        
-        for viz in sample_viz:
-            self.data_visualizations[viz['id']] = viz
+    def get_quality_test_results(self):
+        """테스트 결과 조회"""
+        return self.quality_test_results
 
-    def _initialize_sample_data_insights(self):
-        """샘플 데이터 인사이트 초기화"""
-        sample_insights = [
-            {
-                'id': 'insight-1',
-                'title': '사용자 참여도 증가',
-                'type': 'trend',
-                'description': '최근 30일간 사용자 참여도가 15% 증가했습니다.',
-                'confidence': 0.92,
-                'impact': 'high',
-                'created_at': datetime.now().isoformat(),
-                'data_source_id': 'source-1',
-                'recommendations': ['마케팅 캠페인 강화', '사용자 경험 개선']
-            },
-            {
-                'id': 'insight-2',
-                'title': '성능 병목 지점 발견',
-                'type': 'anomaly',
-                'description': '특정 시간대에 시스템 성능이 저하되는 패턴이 발견되었습니다.',
-                'confidence': 0.88,
-                'impact': 'medium',
-                'created_at': datetime.now().isoformat(),
-                'data_source_id': 'source-2',
-                'recommendations': ['서버 리소스 확장', '캐싱 최적화']
-            }
-        ]
-        
-        for insight in sample_insights:
-            self.data_insights[insight['id']] = insight
+    def get_quality_performance_metrics(self):
+        """성능 메트릭 조회"""
+        return self.quality_performance_metrics
 
-    def _initialize_sample_quality_tests(self):
-        """샘플 품질 테스트 초기화"""
-        sample_tests = [
-            {
-                'id': 'test-1',
-                'name': 'API 응답 시간 테스트',
-                'type': 'performance',
-                'category': 'performance',
-                'priority': 'high',
-                'status': 'passed',
-                'created_at': datetime.now().isoformat(),
-                'started_at': datetime.now().isoformat(),
-                'completed_at': datetime.now().isoformat(),
-                'parameters': {'timeout': 5000, 'threshold': 2000},
-                'results': {'response_time': 1500, 'status': 'passed'}
-            },
-            {
-                'id': 'test-2',
-                'name': '데이터 정확성 검증',
-                'type': 'validation',
-                'category': 'data_quality',
-                'priority': 'medium',
+    def get_quality_trends(self):
+        """품질 트렌드 조회"""
+        return self.quality_trends
+
+    def start_automated_quality_test(self, data):
+        """자동화된 품질 테스트 시작"""
+        test_suite_id = data.get('test_suite_id')
+        suite = next((s for s in self.quality_test_suites if s['id'] == test_suite_id), None)
+        
+        if not suite:
+            raise ValueError(f"테스트 스위트를 찾을 수 없습니다: {test_suite_id}")
+        
+        execution = {
+            'id': f'auto-exec-{len(self.quality_test_executions) + 1}',
+            'test_suite_id': test_suite_id,
+            'start_time': datetime.now(),
                 'status': 'running',
-                'created_at': datetime.now().isoformat(),
-                'started_at': datetime.now().isoformat(),
-                'parameters': {'validation_rules': ['completeness', 'accuracy']},
-                'results': {}
+            'progress_percentage': 0,
+            'current_test_case': suite['test_cases'][0]['name'] if suite['test_cases'] else None,
+            'results': [],
+            'summary': {
+                'total_tests': len(suite['test_cases']),
+                'completed_tests': 0,
+                'passed_tests': 0,
+                'failed_tests': 0,
+                'average_execution_time': 0,
+                'quality_score': 0,
+                'performance_score': 0
             }
-        ]
+        }
         
-        for test in sample_tests:
-            self.quality_tests[test['id']] = test
+        self.quality_test_executions.append(execution)
+        return execution
 
-    def _initialize_sample_quality_reports(self):
-        """샘플 품질 보고서 초기화"""
-        sample_reports = [
-            {
-                'id': 'report-1',
-                'title': '주간 품질 보고서',
-                'type': 'weekly',
+    def get_quality_execution_status(self, execution_id):
+        """테스트 실행 상태 조회"""
+        execution = next((e for e in self.quality_test_executions if e['id'] == execution_id), None)
+        if not execution:
+            raise ValueError(f"실행을 찾을 수 없습니다: {execution_id}")
+        return execution
+
+    def stop_quality_execution(self, execution_id):
+        """테스트 실행 중지"""
+        execution = next((e for e in self.quality_test_executions if e['id'] == execution_id), None)
+        if not execution:
+            raise ValueError(f"실행을 찾을 수 없습니다: {execution_id}")
+        
+        execution['status'] = 'cancelled'
+        execution['end_time'] = datetime.now()
+        return {'success': True, 'message': '실행이 중지되었습니다.'}
+
+    def generate_quality_report(self, data):
+        """품질 보고서 생성"""
+        report = {
+            'id': f'report-{len(self.quality_reports) + 1}',
+            'title': data.get('title', '품질 보고서'),
+            'summary': data.get('summary', ''),
                 'status': 'completed',
                 'created_at': datetime.now().isoformat(),
-                'summary': '전체 시스템 품질이 양호한 상태를 유지하고 있습니다.',
-                'metrics': {
-                    'test_coverage': 0.92,
-                    'code_quality': 0.88,
-                    'performance': 0.91,
-                    'security': 0.95
-                },
-                'recommendations': ['테스트 커버리지 향상', '코드 리뷰 강화']
-            }
-        ]
-        
-        for report in sample_reports:
-            self.quality_reports[report['id']] = report
-
-    def _generate_sample_chart_data(self):
-        """샘플 차트 데이터 생성"""
-        return {
-            'labels': ['1월', '2월', '3월', '4월', '5월', '6월'],
-            'datasets': [
-                {
-                    'label': '데이터 1',
-                    'data': [65, 59, 80, 81, 56, 55],
-                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
-                    'borderColor': 'rgba(75, 192, 192, 1)',
-                    'borderWidth': 1
-                },
-                {
-                    'label': '데이터 2',
-                    'data': [28, 48, 40, 19, 86, 27],
-                    'backgroundColor': 'rgba(255, 99, 132, 0.2)',
-                    'borderColor': 'rgba(255, 99, 132, 1)',
-                    'borderWidth': 1
-                }
+            'metrics': self.quality_metrics,
+            'trends': self.quality_trends[-5:] if self.quality_trends else [],
+            'recommendations': [
+                '테스트 커버리지를 95% 이상으로 향상시키세요.',
+                '성능 테스트를 더 자주 실행하세요.',
+                '보안 테스트를 강화하세요.'
             ]
         }
+        self.quality_reports.append(report)
+        return report
 
-    def get_emotion_patterns(self, user_id='', limit=50):
-        """감정 패턴 조회"""
-        try:
-            patterns = []
-            pattern_types = ['daily', 'weekly', 'situational', 'contextual']
-            emotions = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'love', 'confusion', 'excitement', 'anxiety', 'relief']
-            
-            for i in range(min(limit, 10)):
-                pattern_type = random.choice(pattern_types)
-                dominant_emotion = random.choice(emotions)
+    def analyze_quality_question(self, question):
+        """품질 보증 관련 질문 분석 및 답변"""
+        question_lower = question.lower()
+        
+        # 테스트 스위트 관련 질문
+        if '테스트 스위트' in question or 'test suite' in question_lower:
+            if '목록' in question or 'list' in question_lower:
+                suites = self.get_quality_test_suites()
+                response = f"현재 {len(suites)}개의 테스트 스위트가 있습니다:\n\n"
+                for suite in suites:
+                    response += f"• **{suite['name']}** ({suite['category']}) - {suite['status']}\n"
+                    response += f"  {suite['description']}\n\n"
+                return response
+            elif '생성' in question or 'create' in question_lower:
+                return "새 테스트 스위트를 생성하려면 다음 정보가 필요합니다:\n\n" \
+                       "• 스위트 이름\n" \
+                       "• 설명\n" \
+                       "• 카테고리 (functional, performance, security, usability, reliability, compatibility)\n" \
+                       "• 우선순위 (critical, high, medium, low)\n" \
+                       "• 실행 스케줄 (cron 형식)\n\n" \
+                       "어떤 정보를 제공해주시겠습니까?"
+        
+        # 테스트 실행 관련 질문
+        elif '실행' in question or 'execution' in question_lower:
+            if '상태' in question or 'status' in question_lower:
+                executions = self.get_quality_test_executions()
+                running_executions = [e for e in executions if e['status'] == 'running']
+                response = f"현재 {len(running_executions)}개의 테스트가 실행 중입니다:\n\n"
+                for execution in running_executions:
+                    suite = next((s for s in self.quality_test_suites if s['id'] == execution['test_suite_id']), None)
+                    suite_name = suite['name'] if suite else '알 수 없는 스위트'
+                    response += f"• **{suite_name}** - {execution['progress_percentage']}% 완료\n"
+                    if execution['current_test_case']:
+                        response += f"  현재: {execution['current_test_case']}\n"
+                    response += "\n"
+                return response
+            elif '시작' in question or 'start' in question_lower:
+                return "테스트 실행을 시작하려면 테스트 스위트 ID가 필요합니다.\n\n" \
+                       "사용 가능한 스위트:\n" \
+                       "• functional-test-suite (AI 기능 테스트)\n" \
+                       "• performance-test-suite (AI 성능 테스트)\n" \
+                       "• security-test-suite (AI 보안 테스트)\n\n" \
+                       "어떤 스위트를 실행하시겠습니까?"
+        
+        # 품질 메트릭 관련 질문
+        elif '메트릭' in question or 'metrics' in question_lower or '지표' in question:
+            metrics = self.get_quality_metrics()
+            response = "현재 품질 메트릭:\n\n"
+            response += f"• **테스트 스위트**: {metrics['total_test_suites']}개 (활성: {metrics['active_test_suites']}개)\n"
+            response += f"• **테스트 케이스**: {metrics['total_test_cases']}개\n"
+            response += f"• **전체 통과율**: {metrics['overall_pass_rate']*100:.1f}%\n"
+            response += f"• **평균 품질 점수**: {metrics['average_quality_score']*100:.0f}%\n"
+            response += f"• **중요 실패**: {metrics['critical_failures']}개\n"
+            response += f"• **테스트 커버리지**: {metrics['test_coverage']:.1f}%\n"
+            response += f"• **자동화율**: {metrics['automation_rate']:.1f}%\n"
+            return response
+        
+        # 성능 관련 질문
+        elif '성능' in question or 'performance' in question_lower:
+            if '분석' in question or 'analysis' in question_lower:
+                metrics = self.quality_performance_metrics[-1] if self.quality_performance_metrics else None
+                if metrics:
+                    response = "최신 성능 분석 결과:\n\n"
+                    response += f"• **응답 시간**: {metrics['response_time_ms']}ms\n"
+                    response += f"• **메모리 사용량**: {metrics['memory_usage_mb']}MB\n"
+                    response += f"• **CPU 사용률**: {metrics['cpu_usage_percent']}%\n"
+                    response += f"• **처리량**: {metrics['throughput_rps']} RPS\n"
+                    response += f"• **오류율**: {metrics['error_rate']*100:.1f}%\n"
+                    response += f"• **가용성**: {metrics['availability']*100:.1f}%\n\n"
+                    
+                    if metrics['response_time_ms'] > 1000:
+                        response += "⚠️ **주의**: 응답 시간이 1초를 초과하고 있습니다. 최적화가 필요합니다.\n"
+                    if metrics['cpu_usage_percent'] > 80:
+                        response += "⚠️ **주의**: CPU 사용률이 높습니다. 리소스 모니터링이 필요합니다.\n"
+                    
+                    return response
+                else:
+                    return "성능 메트릭 데이터가 없습니다."
+        
+        # 품질 트렌드 관련 질문
+        elif '트렌드' in question or 'trend' in question_lower or '추세' in question:
+            trends = self.get_quality_trends()
+            if trends:
+                response = "품질 트렌드 분석:\n\n"
+                for i, trend in enumerate(trends[-3:]):  # 최근 3개
+                    response += f"**{trend['date'].strftime('%Y-%m-%d')}**:\n"
+                    response += f"• 품질 점수: {trend['quality_score']*100:.0f}%\n"
+                    response += f"• 통과율: {trend['pass_rate']*100:.0f}%\n"
+                    response += f"• 성능 점수: {trend['performance_score']*100:.0f}%\n\n"
                 
-                pattern = {
-                    'id': f'pattern-{i+1}',
-                    'user_id': user_id or f'user-{random.randint(1, 100)}',
-                    'pattern_type': pattern_type,
-                    'emotions': [
-                        {
-                            'emotion': dominant_emotion,
-                            'intensity': random.uniform(0.5, 0.9),
-                            'frequency': random.uniform(0.3, 0.8)
-                        }
-                    ],
-                    'frequency': random.uniform(0.2, 0.7),
-                    'intensity_trend': random.choice(['increasing', 'decreasing', 'stable', 'fluctuating']),
-                    'triggers': random.sample(['스트레스', '성공', '실패', '사람', '환경', '시간'], random.randint(1, 3)),
-                    'created_at': datetime.now().isoformat(),
-                    'updated_at': datetime.now().isoformat()
-                }
-                patterns.append(pattern)
-            
-            return patterns
-        except Exception as e:
-            logger.error(f"감정 패턴 조회 오류: {e}")
-            return []
-
-    def get_emotion_metrics(self):
-        """감정 인식 메트릭 조회"""
-        try:
-            return {
-                'total_analyses': random.randint(1000, 5000),
-                'accuracy_rate': random.uniform(0.75, 0.95),
-                'average_confidence': random.uniform(0.7, 0.9),
-                'response_appropriateness': random.uniform(0.8, 0.95),
-                'user_satisfaction': random.uniform(0.75, 0.9),
-                'pattern_detection_rate': random.uniform(0.6, 0.85),
-                'emotional_intelligence_score': random.uniform(0.7, 0.9),
-                'system_empathy_level': random.uniform(0.75, 0.9),
-                'real_time_processing_time': random.uniform(0.1, 0.5),
-                'multimodal_accuracy': random.uniform(0.8, 0.95)
-            }
-        except Exception as e:
-            logger.error(f"감정 메트릭 조회 오류: {e}")
-            return {}
-
-    def get_emotion_config(self):
-        """감정 인식 설정 조회"""
-        try:
-            return {
-                'enable_multimodal': True,
-                'enable_real_time': True,
-                'enable_pattern_analysis': True,
-                'enable_emotional_response': True,
-                'enable_empathy_learning': True,
-                'privacy_mode': False,
-                'analysis_confidence_threshold': 0.7,
-                'response_generation_threshold': 0.6,
-                'pattern_detection_sensitivity': 0.5,
-                'emotional_intelligence_learning_rate': 0.1
-            }
-        except Exception as e:
-            logger.error(f"감정 설정 조회 오류: {e}")
-            return {}
-
-    def update_emotion_config(self, new_config):
-        """감정 인식 설정 업데이트"""
-        try:
-            current_config = self.get_emotion_config()
-            updated_config = {**current_config, **new_config}
-            
-            logger.info(f"감정 인식 설정 업데이트: {new_config}")
-            return updated_config
-        except Exception as e:
-            logger.error(f"감정 설정 업데이트 오류: {e}")
-            return {}
+                # 트렌드 분석
+                if len(trends) >= 2:
+                    latest = trends[-1]
+                    previous = trends[-2]
+                    quality_change = latest['quality_score'] - previous['quality_score']
+                    if quality_change > 0:
+                        response += "📈 **품질 점수가 향상되고 있습니다.**\n"
+                    elif quality_change < 0:
+                        response += "📉 **품질 점수가 하락하고 있습니다.**\n"
+                    else:
+                        response += "➡️ **품질 점수가 안정적입니다.**\n"
+                
+                return response
+            else:
+                return "품질 트렌드 데이터가 없습니다."
+        
+        # 보고서 관련 질문
+        elif '보고서' in question or 'report' in question_lower:
+            reports = self.get_quality_reports()
+            if reports:
+                response = f"최근 품질 보고서 ({len(reports)}개):\n\n"
+                for report in reports[-3:]:  # 최근 3개
+                    response += f"• **{report['title']}** - {report['status']}\n"
+                    response += f"  {report['summary']}\n\n"
+                return response
+            else:
+                return "품질 보고서가 없습니다."
+        
+        # 일반적인 품질 보증 질문
+        elif '품질' in question or 'quality' in question_lower:
+            return "품질 보증 시스템에 대해 질문하셨습니다. 다음 중 어떤 정보를 원하시나요?\n\n" \
+                   "• **테스트 스위트 목록** - 현재 구성된 테스트 스위트 확인\n" \
+                   "• **실행 상태** - 현재 실행 중인 테스트 확인\n" \
+                   "• **품질 메트릭** - 전체적인 품질 지표 확인\n" \
+                   "• **성능 분석** - 시스템 성능 상태 확인\n" \
+                   "• **품질 트렌드** - 시간에 따른 품질 변화 확인\n" \
+                   "• **보고서** - 생성된 품질 보고서 확인\n\n" \
+                   "구체적으로 어떤 정보를 원하시는지 말씀해 주세요."
+        
+        # 기본 응답
+        else:
+            return "품질 보증 시스템에 대한 질문을 받았습니다. 다음과 같은 정보를 제공할 수 있습니다:\n\n" \
+                   "🔍 **테스트 관리**: 테스트 스위트 생성, 실행, 모니터링\n" \
+                   "📊 **품질 분석**: 메트릭, 트렌드, 성능 분석\n" \
+                   "📋 **보고서**: 자동 생성된 품질 보고서\n" \
+                   "⚙️ **자동화**: 스케줄된 테스트 실행\n\n" \
+                   "어떤 부분에 대해 더 자세히 알고 싶으신가요?"
 
     def get_performance_metrics(self):
         """성능 메트릭 조회"""
@@ -1284,13 +1240,251 @@ class CORBUAI:
             }
         ]
         
+        # 고급 테스트 스위트
+        self.quality_test_suites = [
+            {
+                'id': 'functional-test-suite',
+                'name': 'AI 기능 테스트 스위트',
+                'description': 'AI 서비스의 기능적 정확성을 검증하는 테스트',
+                'category': 'functional',
+                'test_cases': [
+                    {
+                        'id': 'accuracy-test',
+                        'name': '응답 정확성 테스트',
+                        'description': 'AI 응답의 정확성을 검증',
+                        'test_type': 'functional',
+                        'input_data': {'question': '오늘 날씨는 어떤가요?'},
+                        'expected_output': {'accuracy': 0.9},
+                        'validation_rules': [
+                            {
+                                'id': 'accuracy-rule',
+                                'name': '정확성 기준',
+                                'rule_type': 'accuracy',
+                                'condition': 'accuracy >= 0.85',
+                                'threshold': 0.85,
+                                'operator': 'greater_than',
+                                'severity': 'high'
+                            }
+                        ],
+                        'timeout_ms': 5000,
+                        'retry_count': 3,
+                        'tags': ['accuracy', 'functional']
+                    }
+                ],
+                'execution_schedule': '0 */6 * * *',
+                'priority': 'critical',
+                'created_date': datetime.now(),
+                'last_executed': datetime.now(),
+                'status': 'active'
+            },
+            {
+                'id': 'performance-test-suite',
+                'name': 'AI 성능 테스트 스위트',
+                'description': 'AI 서비스의 성능을 검증하는 테스트',
+                'category': 'performance',
+                'test_cases': [
+                    {
+                        'id': 'response-time-test',
+                        'name': '응답 시간 테스트',
+                        'description': 'AI 서비스의 응답 시간을 측정',
+                        'test_type': 'performance',
+                        'input_data': {'question': '간단한 질문입니다.'},
+                        'expected_output': {'response_time': 500},
+                        'validation_rules': [
+                            {
+                                'id': 'response-time-rule',
+                                'name': '응답 시간 기준',
+                                'rule_type': 'response_time',
+                                'condition': 'response_time <= 1000',
+                                'threshold': 1000,
+                                'operator': 'less_than',
+                                'severity': 'high'
+                            }
+                        ],
+                        'timeout_ms': 2000,
+                        'retry_count': 3,
+                        'tags': ['performance', 'response-time']
+                    }
+                ],
+                'execution_schedule': '0 */12 * * *',
+                'priority': 'high',
+                'created_date': datetime.now(),
+                'last_executed': datetime.now(),
+                'status': 'active'
+            },
+            {
+                'id': 'security-test-suite',
+                'name': 'AI 보안 테스트 스위트',
+                'description': 'AI 서비스의 보안을 검증하는 테스트',
+                'category': 'security',
+                'test_cases': [
+                    {
+                        'id': 'injection-test',
+                        'name': '인젝션 공격 테스트',
+                        'description': 'SQL 인젝션 및 기타 인젝션 공격 방어 테스트',
+                        'test_type': 'security',
+                        'input_data': {'malicious_input': "'; DROP TABLE users; --"},
+                        'expected_output': {'vulnerability_score': 0},
+                        'validation_rules': [
+                            {
+                                'id': 'injection-rule',
+                                'name': '인젝션 방어 기준',
+                                'rule_type': 'security',
+                                'condition': 'vulnerability_score <= 0.1',
+                                'threshold': 0.1,
+                                'operator': 'less_than',
+                                'severity': 'critical'
+                            }
+                        ],
+                        'timeout_ms': 5000,
+                        'retry_count': 2,
+                        'tags': ['security', 'injection']
+                    }
+                ],
+                'execution_schedule': '0 0 * * *',
+                'priority': 'critical',
+                'created_date': datetime.now(),
+                'last_executed': datetime.now(),
+                'status': 'active'
+            }
+        ]
+        
+        # 테스트 실행 데이터
+        self.quality_test_executions = [
+            {
+                'id': 'exec-running-1',
+                'test_suite_id': 'functional-test-suite',
+                'start_time': datetime.now(),
+                'status': 'running',
+                'progress_percentage': 65,
+                'current_test_case': '응답 정확성 테스트',
+                'results': [],
+                'summary': {
+                    'total_tests': 5,
+                    'completed_tests': 3,
+                    'passed_tests': 2,
+                    'failed_tests': 1,
+                    'average_execution_time': 850,
+                    'quality_score': 0.82,
+                    'performance_score': 0.78
+                }
+            }
+        ]
+        
+        # 테스트 결과 데이터
+        self.quality_test_results = [
+            {
+                'id': 'result-1',
+                'test_case_id': 'accuracy-test',
+                'test_suite_id': 'functional-test-suite',
+                'execution_id': 'exec-1',
+                'timestamp': datetime.now(),
+                'status': 'passed',
+                'execution_time_ms': 1250,
+                'actual_output': {'accuracy': 0.92},
+                'validation_results': [
+                    {
+                        'rule_id': 'accuracy-rule',
+                        'rule_name': '정확성 기준',
+                        'status': 'passed',
+                        'actual_value': 0.92,
+                        'expected_value': 0.85,
+                        'deviation': 0.07,
+                        'message': '정확도: 0.920 (기준: 0.85)'
+                    }
+                ],
+                'performance_metrics': {
+                    'response_time_ms': 245,
+                    'memory_usage_mb': 85,
+                    'cpu_usage_percent': 45,
+                    'throughput_rps': 95,
+                    'error_rate': 0.02,
+                    'availability': 0.99
+                },
+                'quality_score': 0.94
+            },
+            {
+                'id': 'result-2',
+                'test_case_id': 'response-time-test',
+                'test_suite_id': 'performance-test-suite',
+                'execution_id': 'exec-2',
+                'timestamp': datetime.now(),
+                'status': 'failed',
+                'execution_time_ms': 1850,
+                'actual_output': {'response_time': 1200},
+                'validation_results': [
+                    {
+                        'rule_id': 'response-time-rule',
+                        'rule_name': '응답 시간 기준',
+                        'status': 'failed',
+                        'actual_value': 1200,
+                        'expected_value': 1000,
+                        'deviation': 200,
+                        'message': '응답 시간: 1200ms (기준: 1000ms 이하)'
+                    }
+                ],
+                'performance_metrics': {
+                    'response_time_ms': 1200,
+                    'memory_usage_mb': 120,
+                    'cpu_usage_percent': 75,
+                    'throughput_rps': 65,
+                    'error_rate': 0.08,
+                    'availability': 0.95
+                },
+                'quality_score': 0.68
+            }
+        ]
+        
+        # 성능 메트릭 데이터
+        self.quality_performance_metrics = [
+            {
+                'timestamp': datetime.now(),
+                'response_time_ms': 325,
+                'memory_usage_mb': 95,
+                'cpu_usage_percent': 55,
+                'throughput_rps': 85,
+                'error_rate': 0.04,
+                'availability': 0.98
+            }
+        ]
+        
+        # 품질 트렌드 데이터
+        self.quality_trends = [
+            {
+                'date': datetime.now(),
+                'quality_score': 0.88,
+                'test_count': 15,
+                'pass_rate': 0.93,
+                'performance_score': 0.82
+            },
+            {
+                'date': datetime.now(),
+                'quality_score': 0.85,
+                'test_count': 15,
+                'pass_rate': 0.90,
+                'performance_score': 0.78
+            },
+            {
+                'date': datetime.now(),
+                'quality_score': 0.82,
+                'test_count': 15,
+                'pass_rate': 0.87,
+                'performance_score': 0.75
+            }
+        ]
+        
         # 샘플 품질 메트릭
         self.quality_metrics = {
-            'total_tests': 2,
-            'passed_tests': 2,
-            'failed_tests': 0,
-            'success_rate': 1.0,
-            'average_execution_time': 2.5
+            'total_test_suites': 3,
+            'active_test_suites': 3,
+            'total_test_cases': 15,
+            'last_execution_date': datetime.now(),
+            'overall_pass_rate': 0.89,
+            'average_quality_score': 0.85,
+            'critical_failures': 1,
+            'performance_degradation': 0.05,
+            'test_coverage': 92.5,
+            'automation_rate': 98.5
         }
         
         # 샘플 품질 보고서
@@ -1303,6 +1497,271 @@ class CORBUAI:
                 'created_at': datetime.now().isoformat()
             }
         ]
+
+    # 고급 품질 보증 메서드들
+    def get_quality_test_suites(self):
+        """테스트 스위트 조회"""
+        return self.quality_test_suites
+
+    def create_quality_test_suite(self, data):
+        """테스트 스위트 생성"""
+        suite = {
+            'id': f'suite-{len(self.quality_test_suites) + 1}',
+            'name': data.get('name', '새 테스트 스위트'),
+            'description': data.get('description', ''),
+            'category': data.get('category', 'functional'),
+            'test_cases': data.get('test_cases', []),
+            'execution_schedule': data.get('execution_schedule', '0 0 * * *'),
+            'priority': data.get('priority', 'medium'),
+            'created_date': datetime.now(),
+            'last_executed': datetime.now(),
+            'status': 'active'
+        }
+        self.quality_test_suites.append(suite)
+        return suite
+
+    def get_quality_test_executions(self):
+        """테스트 실행 조회"""
+        return self.quality_test_executions
+
+    def create_quality_test_execution(self, data):
+        """테스트 실행 생성"""
+        execution = {
+            'id': f'exec-{len(self.quality_test_executions) + 1}',
+            'test_suite_id': data.get('test_suite_id'),
+            'start_time': datetime.now(),
+            'status': 'running',
+            'progress_percentage': 0,
+            'current_test_case': None,
+            'results': [],
+            'summary': {
+                'total_tests': 0,
+                'completed_tests': 0,
+                'passed_tests': 0,
+                'failed_tests': 0,
+                'average_execution_time': 0,
+                'quality_score': 0,
+                'performance_score': 0
+            }
+        }
+        self.quality_test_executions.append(execution)
+        return execution
+
+    def get_quality_test_results(self):
+        """테스트 결과 조회"""
+        return self.quality_test_results
+
+    def get_quality_performance_metrics(self):
+        """성능 메트릭 조회"""
+        return self.quality_performance_metrics
+
+    def get_quality_trends(self):
+        """품질 트렌드 조회"""
+        return self.quality_trends
+
+    def start_automated_quality_test(self, data):
+        """자동화된 품질 테스트 시작"""
+        test_suite_id = data.get('test_suite_id')
+        suite = next((s for s in self.quality_test_suites if s['id'] == test_suite_id), None)
+        
+        if not suite:
+            raise ValueError(f"테스트 스위트를 찾을 수 없습니다: {test_suite_id}")
+        
+        execution = {
+            'id': f'auto-exec-{len(self.quality_test_executions) + 1}',
+            'test_suite_id': test_suite_id,
+            'start_time': datetime.now(),
+            'status': 'running',
+            'progress_percentage': 0,
+            'current_test_case': suite['test_cases'][0]['name'] if suite['test_cases'] else None,
+            'results': [],
+            'summary': {
+                'total_tests': len(suite['test_cases']),
+                'completed_tests': 0,
+                'passed_tests': 0,
+                'failed_tests': 0,
+                'average_execution_time': 0,
+                'quality_score': 0,
+                'performance_score': 0
+            }
+        }
+        
+        self.quality_test_executions.append(execution)
+        return execution
+
+    def get_quality_execution_status(self, execution_id):
+        """테스트 실행 상태 조회"""
+        execution = next((e for e in self.quality_test_executions if e['id'] == execution_id), None)
+        if not execution:
+            raise ValueError(f"실행을 찾을 수 없습니다: {execution_id}")
+        return execution
+
+    def stop_quality_execution(self, execution_id):
+        """테스트 실행 중지"""
+        execution = next((e for e in self.quality_test_executions if e['id'] == execution_id), None)
+        if not execution:
+            raise ValueError(f"실행을 찾을 수 없습니다: {execution_id}")
+        
+        execution['status'] = 'cancelled'
+        execution['end_time'] = datetime.now()
+        return {'success': True, 'message': '실행이 중지되었습니다.'}
+
+    def generate_quality_report(self, data):
+        """품질 보고서 생성"""
+        report = {
+            'id': f'report-{len(self.quality_reports) + 1}',
+            'title': data.get('title', '품질 보고서'),
+            'summary': data.get('summary', ''),
+            'status': 'completed',
+            'created_at': datetime.now().isoformat(),
+            'metrics': self.quality_metrics,
+            'trends': self.quality_trends[-5:] if self.quality_trends else [],
+            'recommendations': [
+                '테스트 커버리지를 95% 이상으로 향상시키세요.',
+                '성능 테스트를 더 자주 실행하세요.',
+                '보안 테스트를 강화하세요.'
+            ]
+        }
+        self.quality_reports.append(report)
+        return report
+
+    def analyze_quality_question(self, question):
+        """품질 보증 관련 질문 분석 및 답변"""
+        question_lower = question.lower()
+        
+        # 테스트 스위트 관련 질문
+        if '테스트 스위트' in question or 'test suite' in question_lower:
+            if '목록' in question or 'list' in question_lower:
+                suites = self.get_quality_test_suites()
+                response = f"현재 {len(suites)}개의 테스트 스위트가 있습니다:\n\n"
+                for suite in suites:
+                    response += f"• **{suite['name']}** ({suite['category']}) - {suite['status']}\n"
+                    response += f"  {suite['description']}\n\n"
+                return response
+            elif '생성' in question or 'create' in question_lower:
+                return "새 테스트 스위트를 생성하려면 다음 정보가 필요합니다:\n\n" \
+                       "• 스위트 이름\n" \
+                       "• 설명\n" \
+                       "• 카테고리 (functional, performance, security, usability, reliability, compatibility)\n" \
+                       "• 우선순위 (critical, high, medium, low)\n" \
+                       "• 실행 스케줄 (cron 형식)\n\n" \
+                       "어떤 정보를 제공해주시겠습니까?"
+        
+        # 테스트 실행 관련 질문
+        elif '실행' in question or 'execution' in question_lower:
+            if '상태' in question or 'status' in question_lower:
+                executions = self.get_quality_test_executions()
+                running_executions = [e for e in executions if e['status'] == 'running']
+                response = f"현재 {len(running_executions)}개의 테스트가 실행 중입니다:\n\n"
+                for execution in running_executions:
+                    suite = next((s for s in self.quality_test_suites if s['id'] == execution['test_suite_id']), None)
+                    suite_name = suite['name'] if suite else '알 수 없는 스위트'
+                    response += f"• **{suite_name}** - {execution['progress_percentage']}% 완료\n"
+                    if execution['current_test_case']:
+                        response += f"  현재: {execution['current_test_case']}\n"
+                    response += "\n"
+                return response
+            elif '시작' in question or 'start' in question_lower:
+                return "테스트 실행을 시작하려면 테스트 스위트 ID가 필요합니다.\n\n" \
+                       "사용 가능한 스위트:\n" \
+                       "• functional-test-suite (AI 기능 테스트)\n" \
+                       "• performance-test-suite (AI 성능 테스트)\n" \
+                       "• security-test-suite (AI 보안 테스트)\n\n" \
+                       "어떤 스위트를 실행하시겠습니까?"
+        
+        # 품질 메트릭 관련 질문
+        elif '메트릭' in question or 'metrics' in question_lower or '지표' in question:
+            metrics = self.get_quality_metrics()
+            response = "현재 품질 메트릭:\n\n"
+            response += f"• **테스트 스위트**: {metrics['total_test_suites']}개 (활성: {metrics['active_test_suites']}개)\n"
+            response += f"• **테스트 케이스**: {metrics['total_test_cases']}개\n"
+            response += f"• **전체 통과율**: {metrics['overall_pass_rate']*100:.1f}%\n"
+            response += f"• **평균 품질 점수**: {metrics['average_quality_score']*100:.0f}%\n"
+            response += f"• **중요 실패**: {metrics['critical_failures']}개\n"
+            response += f"• **테스트 커버리지**: {metrics['test_coverage']:.1f}%\n"
+            response += f"• **자동화율**: {metrics['automation_rate']:.1f}%\n"
+            return response
+        
+        # 성능 관련 질문
+        elif '성능' in question or 'performance' in question_lower:
+            if '분석' in question or 'analysis' in question_lower:
+                metrics = self.quality_performance_metrics[-1] if self.quality_performance_metrics else None
+                if metrics:
+                    response = "최신 성능 분석 결과:\n\n"
+                    response += f"• **응답 시간**: {metrics['response_time_ms']}ms\n"
+                    response += f"• **메모리 사용량**: {metrics['memory_usage_mb']}MB\n"
+                    response += f"• **CPU 사용률**: {metrics['cpu_usage_percent']}%\n"
+                    response += f"• **처리량**: {metrics['throughput_rps']} RPS\n"
+                    response += f"• **오류율**: {metrics['error_rate']*100:.1f}%\n"
+                    response += f"• **가용성**: {metrics['availability']*100:.1f}%\n\n"
+                    
+                    if metrics['response_time_ms'] > 1000:
+                        response += "⚠️ **주의**: 응답 시간이 1초를 초과하고 있습니다. 최적화가 필요합니다.\n"
+                    if metrics['cpu_usage_percent'] > 80:
+                        response += "⚠️ **주의**: CPU 사용률이 높습니다. 리소스 모니터링이 필요합니다.\n"
+                    
+                    return response
+                else:
+                    return "성능 메트릭 데이터가 없습니다."
+        
+        # 품질 트렌드 관련 질문
+        elif '트렌드' in question or 'trend' in question_lower or '추세' in question:
+            trends = self.get_quality_trends()
+            if trends:
+                response = "품질 트렌드 분석:\n\n"
+                for i, trend in enumerate(trends[-3:]):  # 최근 3개
+                    response += f"**{trend['date'].strftime('%Y-%m-%d')}**:\n"
+                    response += f"• 품질 점수: {trend['quality_score']*100:.0f}%\n"
+                    response += f"• 통과율: {trend['pass_rate']*100:.0f}%\n"
+                    response += f"• 성능 점수: {trend['performance_score']*100:.0f}%\n\n"
+                
+                # 트렌드 분석
+                if len(trends) >= 2:
+                    latest = trends[-1]
+                    previous = trends[-2]
+                    quality_change = latest['quality_score'] - previous['quality_score']
+                    if quality_change > 0:
+                        response += "📈 **품질 점수가 향상되고 있습니다.**\n"
+                    elif quality_change < 0:
+                        response += "📉 **품질 점수가 하락하고 있습니다.**\n"
+                    else:
+                        response += "➡️ **품질 점수가 안정적입니다.**\n"
+                
+                return response
+            else:
+                return "품질 트렌드 데이터가 없습니다."
+        
+        # 보고서 관련 질문
+        elif '보고서' in question or 'report' in question_lower:
+            reports = self.get_quality_reports()
+            if reports:
+                response = f"최근 품질 보고서 ({len(reports)}개):\n\n"
+                for report in reports[-3:]:  # 최근 3개
+                    response += f"• **{report['title']}** - {report['status']}\n"
+                    response += f"  {report['summary']}\n\n"
+                return response
+            else:
+                return "품질 보고서가 없습니다."
+        
+        # 일반적인 품질 보증 질문
+        elif '품질' in question or 'quality' in question_lower:
+            return "품질 보증 시스템에 대해 질문하셨습니다. 다음 중 어떤 정보를 원하시나요?\n\n" \
+                   "• **테스트 스위트 목록** - 현재 구성된 테스트 스위트 확인\n" \
+                   "• **실행 상태** - 현재 실행 중인 테스트 확인\n" \
+                   "• **품질 메트릭** - 전체적인 품질 지표 확인\n" \
+                   "• **성능 분석** - 시스템 성능 상태 확인\n" \
+                   "• **품질 트렌드** - 시간에 따른 품질 변화 확인\n" \
+                   "• **보고서** - 생성된 품질 보고서 확인\n\n" \
+                   "구체적으로 어떤 정보를 원하시는지 말씀해 주세요."
+        
+        # 기본 응답
+        else:
+            return "품질 보증 시스템에 대한 질문을 받았습니다. 다음과 같은 정보를 제공할 수 있습니다:\n\n" \
+                   "🔍 **테스트 관리**: 테스트 스위트 생성, 실행, 모니터링\n" \
+                   "📊 **품질 분석**: 메트릭, 트렌드, 성능 분석\n" \
+                   "📋 **보고서**: 자동 생성된 품질 보고서\n" \
+                   "⚙️ **자동화**: 스케줄된 테스트 실행\n\n" \
+                   "어떤 부분에 대해 더 자세히 알고 싶으신가요?"
 
 # CORBU.AI 인스턴스 생성
 corbu_ai = CORBUAI()
@@ -1319,6 +1778,21 @@ def chat():
         if not message:
             return jsonify({'error': '메시지가 필요합니다.'}), 400
         
+        # 품질 보증 관련 질문인지 확인
+        quality_keywords = ['품질', 'quality', '테스트', 'test', '메트릭', 'metrics', '성능', 'performance', '보고서', 'report', '트렌드', 'trend', '실행', 'execution']
+        is_quality_question = any(keyword in message.lower() for keyword in quality_keywords)
+        
+        if is_quality_question:
+            # 품질 보증 관련 질문 처리
+            response = corbu_ai.analyze_quality_question(message)
+            return jsonify({
+                'success': True,
+                'response': response,
+                'type': 'quality_assurance',
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            # 일반 채팅 처리
         sentiment = corbu_ai.analyze_sentiment(message)
         response = f"안녕하세요! CORBU.AI입니다. '{message}'에 대한 분석 결과를 제공해드리겠습니다."
         
@@ -1518,6 +1992,97 @@ def quality_assurance_tests():
         logger.error(f"품질 테스트 관리 API 오류: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/quality-assurance/test-suites', methods=['GET', 'POST'])
+def quality_assurance_test_suites():
+    """테스트 스위트 관리 API"""
+    try:
+        if request.method == 'GET':
+            test_suites = corbu_ai.get_quality_test_suites()
+            return jsonify(test_suites)
+        else:
+            data = request.get_json()
+            test_suite = corbu_ai.create_quality_test_suite(data)
+            return jsonify(test_suite)
+    except Exception as e:
+        logger.error(f"테스트 스위트 관리 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/quality-assurance/test-executions', methods=['GET', 'POST'])
+def quality_assurance_test_executions():
+    """테스트 실행 관리 API"""
+    try:
+        if request.method == 'GET':
+            executions = corbu_ai.get_quality_test_executions()
+            return jsonify(executions)
+        else:
+            data = request.get_json()
+            execution = corbu_ai.create_quality_test_execution(data)
+            return jsonify(execution)
+    except Exception as e:
+        logger.error(f"테스트 실행 관리 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/quality-assurance/test-results', methods=['GET'])
+def quality_assurance_test_results():
+    """테스트 결과 조회 API"""
+    try:
+        results = corbu_ai.get_quality_test_results()
+        return jsonify(results)
+    except Exception as e:
+        logger.error(f"테스트 결과 조회 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/quality-assurance/performance-metrics', methods=['GET'])
+def quality_assurance_performance_metrics():
+    """성능 메트릭 조회 API"""
+    try:
+        metrics = corbu_ai.get_quality_performance_metrics()
+        return jsonify(metrics)
+    except Exception as e:
+        logger.error(f"성능 메트릭 조회 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/quality-assurance/quality-trends', methods=['GET'])
+def quality_assurance_quality_trends():
+    """품질 트렌드 조회 API"""
+    try:
+        trends = corbu_ai.get_quality_trends()
+        return jsonify(trends)
+    except Exception as e:
+        logger.error(f"품질 트렌드 조회 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/quality-assurance/automated-execution', methods=['POST'])
+def quality_assurance_automated_execution():
+    """자동화된 테스트 실행 API"""
+    try:
+        data = request.get_json()
+        execution = corbu_ai.start_automated_quality_test(data)
+        return jsonify(execution)
+    except Exception as e:
+        logger.error(f"자동화된 테스트 실행 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/quality-assurance/execution/<execution_id>/status', methods=['GET'])
+def quality_assurance_execution_status(execution_id):
+    """테스트 실행 상태 조회 API"""
+    try:
+        status = corbu_ai.get_quality_execution_status(execution_id)
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"테스트 실행 상태 조회 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/quality-assurance/execution/<execution_id>/stop', methods=['POST'])
+def quality_assurance_stop_execution(execution_id):
+    """테스트 실행 중지 API"""
+    try:
+        result = corbu_ai.stop_quality_execution(execution_id)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"테스트 실행 중지 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/quality-assurance/metrics', methods=['GET'])
 def quality_assurance_metrics():
     """품질 보증 메트릭 조회 API"""
@@ -1536,6 +2101,17 @@ def quality_assurance_reports():
         return jsonify(reports)
     except Exception as e:
         logger.error(f"품질 보고서 조회 API 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/quality-assurance/reports/generate', methods=['POST'])
+def quality_assurance_generate_report():
+    """품질 보고서 생성 API"""
+    try:
+        data = request.get_json()
+        report = corbu_ai.generate_quality_report(data)
+        return jsonify(report)
+    except Exception as e:
+        logger.error(f"품질 보고서 생성 API 오류: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/performance-optimization/metrics', methods=['GET'])

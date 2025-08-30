@@ -24,7 +24,7 @@ import {
     ChevronDown,
     ChevronRight,
     Zap,
-    Target,
+    Aim,
     Repeat,
     Timer,
     CalendarDays,

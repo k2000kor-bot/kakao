@@ -467,13 +467,15 @@ class RealTimeAIPredictiveAnalyticsEnhancementSystem {
 
     private createAlert(type: string, insight: PredictiveInsight): void {
         realTimeAIAlertSystem.createAlert({
-            id: `predictive-${Date.now()}`,
             type: 'info',
             severity: insight.impact === 'high' ? 'high' : 'medium',
             title: insight.title,
             message: insight.description,
-            timestamp: new Date(),
             source: 'realTimeAIPredictiveAnalyticsEnhancementSystem',
+            category: 'prediction',
+            auto_resolve: false,
+            priority: insight.impact === 'high' ? 'high' : 'medium',
+            tags: ['prediction', 'analytics', 'insight'],
             metadata: {
                 insightId: insight.id,
                 confidence: insight.confidence,
@@ -491,13 +493,15 @@ class RealTimeAIPredictiveAnalyticsEnhancementSystem {
 
         // 알림 생성
         realTimeAIAlertSystem.createAlert({
-            id: `predictive-start-${Date.now()}`,
             type: 'info',
             severity: 'medium',
             title: '실시간 AI 예측 분석 고도화 시스템 시작',
             message: '고급 예측 분석 시스템이 성공적으로 시작되었습니다.',
-            timestamp: new Date(),
             source: 'realTimeAIPredictiveAnalyticsEnhancementSystem',
+            category: 'prediction',
+            auto_resolve: true,
+            priority: 'medium',
+            tags: ['prediction', 'analytics', 'startup'],
             metadata: {
                 modelsCount: this.models.size,
                 features: 'real-time prediction, anomaly detection, trend analysis'

@@ -207,7 +207,7 @@ import {
     DollarSign as DollarSignIcon,
     Calendar as CalendarIcon,
     TrendingUp as TrendingUpIcon3,
-    Target as TargetIcon,
+    Aim as TargetIcon,
     Heart as HeartIcon,
     Home as HomeIcon
 } from 'lucide-react';

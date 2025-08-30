@@ -186,11 +186,15 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
 
                 // 즉시 알림 생성
                 await realTimeAIAlertSystem.createAlert({
-                    type: 'learning',
+                    type: 'info',
                     severity: 'high',
                     title: '사용자 만족도 급락 감지',
                     message: `사용자 ${data.user_id}의 만족도가 ${(data.learning_signals.user_satisfaction * 100).toFixed(1)}%로 급락했습니다.`,
                     source: 'learning-system',
+                    category: 'learning',
+                    auto_resolve: false,
+                    priority: 'high',
+                    tags: ['learning', 'satisfaction', 'alert'],
                     metadata: { pattern_id: pattern.pattern_id, user_id: data.user_id }
                 });
             }

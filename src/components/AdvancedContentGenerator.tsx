@@ -14,7 +14,7 @@ import {
     Copy,
     Eye,
     BarChart3,
-    Target,
+    MyLocation,
     Users,
     FileText,
     Sparkles,

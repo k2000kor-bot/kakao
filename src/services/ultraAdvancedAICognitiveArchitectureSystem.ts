@@ -93,7 +93,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
     private modules: Map<string, CognitiveModule> = new Map();
     private processes: Map<string, CognitiveProcess> = new Map();
     private insights: Map<string, CognitiveInsight> = new Map();
-    private isInitialized: boolean = false;
+    private _isInitialized: boolean = false;
     private config: CognitiveArchitectureConfig = {
         auto_learning: true,
         adaptive_reasoning: true,
@@ -120,7 +120,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
     constructor() {
         super();
         this.initializeSystem();
-        this.isInitialized = true;
+        this._isInitialized = true;
         console.log('🧠 고도화된 AI 인지 아키텍처 시스템이 초기화되었습니다.');
     }
 
@@ -594,7 +594,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
     }
 
     public isInitialized(): boolean {
-        return this.isInitialized;
+        return this._isInitialized;
     }
 
     // Public methods for management

@@ -259,7 +259,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
                 }
             });
 
-            this.isInitialized = true;
+            this._isInitialized = true;
             this.startMonitoring();
             this.emit('system_initialized', this.metrics);
 

@@ -35,7 +35,7 @@ import {
     TrendingUp as TrendingUpIcon,
     TrendingDown as TrendingDownIcon,
     Activity as ActivityIcon,
-    Target as TargetIcon,
+    MyLocation as TargetIcon,
     Users as UsersIcon,
     FileText as FileTextIcon,
     MessageSquare as MessageSquareIcon,

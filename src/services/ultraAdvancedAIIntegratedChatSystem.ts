@@ -204,7 +204,7 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
     }
 
     public async processMessage(userInput: string, sessionId?: string): Promise<IntegratedChatMessage> {
-        if (this.isProcessing) {
+        if (this._isProcessing) {
             throw new Error('이미 메시지를 처리 중입니다.');
         }
 
@@ -213,7 +213,7 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
             throw new Error('활성 세션을 찾을 수 없습니다.');
         }
 
-        this.isProcessing = true;
+        this._isProcessing = true;
         const startTime = Date.now();
 
         try {
@@ -291,7 +291,7 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
             this.emit('processing_error', error);
             throw error;
         } finally {
-            this.isProcessing = false;
+            this._isProcessing = false;
         }
     }
 

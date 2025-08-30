@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Box, Paper, Typography, Grid, Card, CardContent, LinearProgress, Chip, Avatar, IconButton, Button, Divider, List, ListItem, ListItemText, ListItemAvatar, ListItemSecondaryAction, Badge, Tooltip, CircularProgress, Alert, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Slider, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Timeline, TimelineItem, TimelineSeparator, TimelineConnector, TimelineContent, TimelineDot, TimelineOppositeContent, AlertTitle
+    Box, Paper, Typography, Grid, Card, CardContent, LinearProgress, Chip, Avatar, IconButton, Button, Divider, List, ListItem, ListItemText, ListItemAvatar, ListItemSecondaryAction, Badge, Tooltip, CircularProgress, Alert, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Slider, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, AlertTitle
 } from '@mui/material';
 import {
     TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon, Speed as SpeedIcon, Assessment as AssessmentIcon, Warning as WarningIcon, Error as ErrorIcon, CheckCircle as CheckCircleIcon, Info as InfoIcon, Refresh as RefreshIcon, Settings as SettingsIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, Monitor as MonitorIcon, Psychology as PsychologyIcon, Memory as MemoryIcon, School as SchoolIcon, AutoAwesome as AutoAwesomeIcon, Timeline as TimelineIcon, BarChart as BarChartIcon, PieChart as PieChartIcon, Target as TargetIcon, Star as StarIcon, EmojiEvents as TrophyIcon, Lightbulb as LightbulbIcon, Bookmark as BookmarkIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon, CalendarToday as CalendarIcon, AccessTime as TimeIcon, Person as PersonIcon, PriorityHigh as PriorityHighIcon, TrendingFlat as TrendingFlatIcon, Psychology as PsychologyIcon2, School as SchoolIcon2, AutoAwesome as AutoAwesomeIcon2, Memory as MemoryIcon2, Assessment as AssessmentIcon2, Warning as WarningIcon2, Error as ErrorIcon2, CheckCircle as CheckCircleIcon2, Info as InfoIcon2, Monitor as MonitorIcon2, Speed as SpeedIcon2, Target as TargetIcon2, Star as StarIcon2, EmojiEvents as TrophyIcon2, Lightbulb as LightbulbIcon2, Bookmark as BookmarkIcon2, ExpandMore as ExpandMoreIcon2, ExpandLess as ExpandLessIcon2, CalendarToday as CalendarIcon2, AccessTime as TimeIcon2, Person as PersonIcon2, PriorityHigh as PriorityHighIcon2, TrendingFlat as TrendingFlatIcon2
 } from '@mui/icons-material';
+import {
+    Timeline,
+    TimelineItem,
+    TimelineSeparator,
+    TimelineConnector,
+    TimelineContent,
+    TimelineDot,
+    TimelineOppositeContent
+} from '@mui/lab';
 import { styled } from '@mui/material/styles';
 import realTimeAIPerformanceMonitor, { SystemHealth, PerformanceAlert, PerformanceMetric } from '../services/realTimeAIPerformanceMonitor';
 import advancedUserExperienceAnalytics, { UserExperienceInsight, UXOptimizationRecommendation } from '../services/advancedUserExperienceAnalytics';
@@ -33,16 +42,16 @@ const HealthCard = styled(Card)<{ health: string }>(({ theme, health }) => ({
     display: 'flex',
     flexDirection: 'column',
     border: `2px solid ${health === 'excellent' ? theme.palette.success.main :
-            health === 'good' ? theme.palette.success.light :
-                health === 'fair' ? theme.palette.warning.main :
-                    health === 'poor' ? theme.palette.error.light :
-                        theme.palette.error.main
+        health === 'good' ? theme.palette.success.light :
+            health === 'fair' ? theme.palette.warning.main :
+                health === 'poor' ? theme.palette.error.light :
+                    theme.palette.error.main
         }`,
     background: `linear-gradient(135deg, ${health === 'excellent' ? theme.palette.success.main + '15' :
-            health === 'good' ? theme.palette.success.light + '15' :
-                health === 'fair' ? theme.palette.warning.main + '15' :
-                    health === 'poor' ? theme.palette.error.light + '15' :
-                        theme.palette.error.main + '15'
+        health === 'good' ? theme.palette.success.light + '15' :
+            health === 'fair' ? theme.palette.warning.main + '15' :
+                health === 'poor' ? theme.palette.error.light + '15' :
+                    theme.palette.error.main + '15'
         }, ${theme.palette.background.paper})`
 }));
 
@@ -51,14 +60,14 @@ const AlertCard = styled(Card)<{ severity: string }>(({ theme, severity }) => ({
     display: 'flex',
     flexDirection: 'column',
     border: `2px solid ${severity === 'critical' ? theme.palette.error.main :
-            severity === 'high' ? theme.palette.error.light :
-                severity === 'medium' ? theme.palette.warning.main :
-                    theme.palette.info.main
+        severity === 'high' ? theme.palette.error.light :
+            severity === 'medium' ? theme.palette.warning.main :
+                theme.palette.info.main
         }`,
     background: `linear-gradient(135deg, ${severity === 'critical' ? theme.palette.error.main + '20' :
-            severity === 'high' ? theme.palette.error.light + '20' :
-                severity === 'medium' ? theme.palette.warning.main + '20' :
-                    theme.palette.info.main + '20'
+        severity === 'high' ? theme.palette.error.light + '20' :
+            severity === 'medium' ? theme.palette.warning.main + '20' :
+                theme.palette.info.main + '20'
         }, ${theme.palette.background.paper})`
 }));
 

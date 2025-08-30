@@ -97,28 +97,13 @@ import {
     Unarchive,
     DeleteForever,
     RestoreFromTrash,
-    Security,
     Verified,
     GppGood,
     GppBad,
     GppMaybe,
     Policy,
     Assignment,
-    AssignmentTurnedIn,
-    AssignmentLate,
-    AssignmentInd,
-    AssignmentReturn,
-    AssignmentReturned,
-    AssignmentInd,
-    AssignmentLate,
-    AssignmentTurnedIn,
-    AssignmentReturn,
-    AssignmentReturned,
-    AssignmentInd,
-    AssignmentLate,
-    AssignmentTurnedIn,
-    AssignmentReturn,
-    AssignmentReturned
+
 } from '@mui/icons-material';
 
 interface SecurityEvent {
@@ -436,18 +421,18 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>{event.timestamp}</TableCell>
                                         <TableCell>
                                             <Chip
-                                                label={event.type === 'threat' ? '위협' : 
-                                                       event.type === 'warning' ? '경고' : '정보'}
+                                                label={event.type === 'threat' ? '위협' :
+                                                    event.type === 'warning' ? '경고' : '정보'}
                                                 size="small"
-                                                color={event.type === 'threat' ? 'error' : 
-                                                       event.type === 'warning' ? 'warning' : 'info'}
+                                                color={event.type === 'threat' ? 'error' :
+                                                    event.type === 'warning' ? 'warning' : 'info'}
                                             />
                                         </TableCell>
                                         <TableCell>
                                             <Chip
                                                 label={event.severity === 'critical' ? '치명적' :
-                                                       event.severity === 'high' ? '높음' :
-                                                       event.severity === 'medium' ? '보통' : '낮음'}
+                                                    event.severity === 'high' ? '높음' :
+                                                        event.severity === 'medium' ? '보통' : '낮음'}
                                                 size="small"
                                                 color={getSeverityColor(event.severity) as any}
                                             />
@@ -456,7 +441,7 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>
                                             <Chip
                                                 label={event.status === 'active' ? '활성' :
-                                                       event.status === 'resolved' ? '해결됨' : '조사중'}
+                                                    event.status === 'resolved' ? '해결됨' : '조사중'}
                                                 size="small"
                                                 color={getStatusColor(event.status) as any}
                                             />
@@ -512,18 +497,18 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>{event.timestamp}</TableCell>
                                         <TableCell>
                                             <Chip
-                                                label={event.type === 'threat' ? '위협' : 
-                                                       event.type === 'warning' ? '경고' : '정보'}
+                                                label={event.type === 'threat' ? '위협' :
+                                                    event.type === 'warning' ? '경고' : '정보'}
                                                 size="small"
-                                                color={event.type === 'threat' ? 'error' : 
-                                                       event.type === 'warning' ? 'warning' : 'info'}
+                                                color={event.type === 'threat' ? 'error' :
+                                                    event.type === 'warning' ? 'warning' : 'info'}
                                             />
                                         </TableCell>
                                         <TableCell>
                                             <Chip
                                                 label={event.severity === 'critical' ? '치명적' :
-                                                       event.severity === 'high' ? '높음' :
-                                                       event.severity === 'medium' ? '보통' : '낮음'}
+                                                    event.severity === 'high' ? '높음' :
+                                                        event.severity === 'medium' ? '보통' : '낮음'}
                                                 size="small"
                                                 color={getSeverityColor(event.severity) as any}
                                             />
@@ -534,7 +519,7 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>
                                             <Chip
                                                 label={event.status === 'active' ? '활성' :
-                                                       event.status === 'resolved' ? '해결됨' : '조사중'}
+                                                    event.status === 'resolved' ? '해결됨' : '조사중'}
                                                 size="small"
                                                 color={getStatusColor(event.status) as any}
                                             />
@@ -595,9 +580,9 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>
                                             <Chip
                                                 label={policy.category === 'authentication' ? '인증' :
-                                                       policy.category === 'authorization' ? '권한' :
-                                                       policy.category === 'data' ? '데이터' :
-                                                       policy.category === 'network' ? '네트워크' : '애플리케이션'}
+                                                    policy.category === 'authorization' ? '권한' :
+                                                        policy.category === 'data' ? '데이터' :
+                                                            policy.category === 'network' ? '네트워크' : '애플리케이션'}
                                                 size="small"
                                                 color="primary"
                                             />
@@ -605,7 +590,7 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>
                                             <Chip
                                                 label={policy.status === 'active' ? '활성' :
-                                                       policy.status === 'inactive' ? '비활성' : '초안'}
+                                                    policy.status === 'inactive' ? '비활성' : '초안'}
                                                 size="small"
                                                 color={policy.status === 'active' ? 'success' : 'default'}
                                             />
@@ -613,10 +598,10 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>
                                             <Chip
                                                 label={policy.priority === 'high' ? '높음' :
-                                                       policy.priority === 'medium' ? '보통' : '낮음'}
+                                                    policy.priority === 'medium' ? '보통' : '낮음'}
                                                 size="small"
-                                                color={policy.priority === 'high' ? 'error' : 
-                                                       policy.priority === 'medium' ? 'warning' : 'success'}
+                                                color={policy.priority === 'high' ? 'error' :
+                                                    policy.priority === 'medium' ? 'warning' : 'success'}
                                             />
                                         </TableCell>
                                         <TableCell>
@@ -696,10 +681,10 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>
                                             <Chip
                                                 label={user.role === 'admin' ? '관리자' :
-                                                       user.role === 'user' ? '사용자' : '게스트'}
+                                                    user.role === 'user' ? '사용자' : '게스트'}
                                                 size="small"
-                                                color={user.role === 'admin' ? 'error' : 
-                                                       user.role === 'user' ? 'primary' : 'default'}
+                                                color={user.role === 'admin' ? 'error' :
+                                                    user.role === 'user' ? 'primary' : 'default'}
                                             />
                                         </TableCell>
                                         <TableCell>{user.lastLogin}</TableCell>
@@ -707,7 +692,7 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                         <TableCell>
                                             <Chip
                                                 label={user.status === 'active' ? '활성' :
-                                                       user.status === 'locked' ? '잠김' : '정지'}
+                                                    user.status === 'locked' ? '잠김' : '정지'}
                                                 size="small"
                                                 color={user.status === 'active' ? 'success' : 'error'}
                                             />
@@ -844,18 +829,18 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                 <Grid item xs={6}>
                                     <Typography variant="subtitle2" color="textSecondary">유형</Typography>
                                     <Chip
-                                        label={selectedEvent.type === 'threat' ? '위협' : 
-                                               selectedEvent.type === 'warning' ? '경고' : '정보'}
-                                        color={selectedEvent.type === 'threat' ? 'error' : 
-                                               selectedEvent.type === 'warning' ? 'warning' : 'info'}
+                                        label={selectedEvent.type === 'threat' ? '위협' :
+                                            selectedEvent.type === 'warning' ? '경고' : '정보'}
+                                        color={selectedEvent.type === 'threat' ? 'error' :
+                                            selectedEvent.type === 'warning' ? 'warning' : 'info'}
                                     />
                                 </Grid>
                                 <Grid item xs={6}>
                                     <Typography variant="subtitle2" color="textSecondary">심각도</Typography>
                                     <Chip
                                         label={selectedEvent.severity === 'critical' ? '치명적' :
-                                               selectedEvent.severity === 'high' ? '높음' :
-                                               selectedEvent.severity === 'medium' ? '보통' : '낮음'}
+                                            selectedEvent.severity === 'high' ? '높음' :
+                                                selectedEvent.severity === 'medium' ? '보통' : '낮음'}
                                         color={getSeverityColor(selectedEvent.severity) as any}
                                     />
                                 </Grid>
@@ -879,7 +864,7 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                     <Typography variant="subtitle2" color="textSecondary">상태</Typography>
                                     <Chip
                                         label={selectedEvent.status === 'active' ? '활성' :
-                                               selectedEvent.status === 'resolved' ? '해결됨' : '조사중'}
+                                            selectedEvent.status === 'resolved' ? '해결됨' : '조사중'}
                                         color={getStatusColor(selectedEvent.status) as any}
                                     />
                                 </Grid>
@@ -1010,16 +995,16 @@ const AdvancedSecurityDashboard: React.FC = () => {
                                     <Typography variant="subtitle2" color="textSecondary">역할</Typography>
                                     <Chip
                                         label={selectedUser.role === 'admin' ? '관리자' :
-                                               selectedUser.role === 'user' ? '사용자' : '게스트'}
-                                        color={selectedUser.role === 'admin' ? 'error' : 
-                                               selectedUser.role === 'user' ? 'primary' : 'default'}
+                                            selectedUser.role === 'user' ? '사용자' : '게스트'}
+                                        color={selectedUser.role === 'admin' ? 'error' :
+                                            selectedUser.role === 'user' ? 'primary' : 'default'}
                                     />
                                 </Grid>
                                 <Grid item xs={6}>
                                     <Typography variant="subtitle2" color="textSecondary">상태</Typography>
                                     <Chip
                                         label={selectedUser.status === 'active' ? '활성' :
-                                               selectedUser.status === 'locked' ? '잠김' : '정지'}
+                                            selectedUser.status === 'locked' ? '잠김' : '정지'}
                                         color={selectedUser.status === 'active' ? 'success' : 'error'}
                                     />
                                 </Grid>

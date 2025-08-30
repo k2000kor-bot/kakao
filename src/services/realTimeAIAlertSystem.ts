@@ -3,21 +3,30 @@ import { EventEmitter } from 'events';
 // 인터페이스 정의
 export interface AIAlert {
     id: string;
-    type: 'info' | 'warning' | 'error' | 'critical' | 'success';
-    category: 'performance' | 'security' | 'system' | 'user' | 'learning' | 'prediction';
+    type: 'info' | 'warning' | 'error' | 'success' | 'critical';
+    severity: 'low' | 'medium' | 'high' | 'critical';
     title: string;
     message: string;
-    timestamp: Date;
-    severity: 'low' | 'medium' | 'high' | 'critical';
     source: string;
-    user_id?: string;
-    session_id?: string;
-    metadata?: any;
+    category: 'performance' | 'security' | 'system' | 'user' | 'learning' | 'prediction' | 'collaboration' | 'emotion' | 'quality' | 'connectivity';
+    timestamp: Date;
     acknowledged: boolean;
     resolved: boolean;
     auto_resolve: boolean;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    tags: string[];
+    metadata: any;
+    user_id?: string;
+    session_id?: string;
     expires_at?: Date;
     actions?: AlertAction[];
+    ai_analysis?: {
+        sentiment: 'positive' | 'negative' | 'neutral';
+        urgency_score: number;
+        impact_assessment: string;
+        recommended_action: string;
+        confidence: number;
+    };
 }
 
 export interface AlertAction {
@@ -98,6 +107,9 @@ class RealTimeAIAlertSystem extends EventEmitter {
     public createAlert(alertData: Omit<AIAlert, 'id' | 'timestamp' | 'acknowledged' | 'resolved'>): string {
         const alertId = `alert-${Date.now()}-${++this.alertCounter}`;
         const alert: AIAlert = {
+            priority: 'medium',
+            tags: [],
+            metadata: {},
             ...alertData,
             id: alertId,
             timestamp: new Date(),

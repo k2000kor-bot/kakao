@@ -21,7 +21,7 @@ import {
     Paper,
     Alert,
     IconButton,
-    Tooltip,
+    Tooltip as MuiTooltip,
     List,
     ListItem,
     ListItemText,
@@ -221,7 +221,7 @@ import {
     ArcElement,
     RadialLinearScale,
     Title,
-    Tooltip,
+    Tooltip as ChartTooltip,
     Legend,
     Filler
 } from 'chart.js';
@@ -235,7 +235,7 @@ ChartJS.register(
     ArcElement,
     RadialLinearScale,
     Title,
-    Tooltip,
+    ChartTooltip,
     Legend,
     Filler
 );

@@ -253,6 +253,10 @@ class RealTimeAICollaborativeLearningSystem {
             title: '새로운 협업 세션 생성됨',
             message: `협업 세션 "${session.name}"이(가) 생성되었습니다.`,
             source: 'collaborative-learning-system',
+            category: 'collaboration',
+            auto_resolve: false,
+            priority: 'medium',
+            tags: ['collaboration', 'session-created'],
             metadata: {
                 session_id: sessionId,
                 session_type: session.session_type,
@@ -414,7 +418,7 @@ class RealTimeAICollaborativeLearningSystem {
             insights.push('긍정적인 상호작용이 그룹 분위기를 향상시키고 있습니다.');
         }
 
-        if (interaction.ai_analysis?.contribution_quality > 0.8) {
+        if (interaction.ai_analysis?.contribution_quality && interaction.ai_analysis.contribution_quality > 0.8) {
             insights.push('높은 품질의 기여가 세션의 가치를 높이고 있습니다.');
         }
 

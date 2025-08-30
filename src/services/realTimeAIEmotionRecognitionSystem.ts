@@ -181,6 +181,10 @@ class RealTimeAIEmotionRecognitionSystem {
             title: '감정 감지됨',
             message: `${emotionData.emotion_type} 감정이 감지되었습니다. (신뢰도: ${(emotionData.confidence * 100).toFixed(1)}%)`,
             source: 'emotion-recognition-system',
+            category: 'user',
+            auto_resolve: false,
+            priority: 'medium',
+            tags: ['emotion', 'user-feedback'],
             metadata: {
                 user_id: userId,
                 emotion_type: emotionData.emotion_type,
@@ -440,7 +444,18 @@ class RealTimeAIEmotionRecognitionSystem {
             emotional_stability: emotionalStability,
             stress_level: stressLevel,
             mood_trend: moodTrend,
-            recommendations: this.generateTrendRecommendations(trend)
+            recommendations: this.generateTrendRecommendations({
+                user_id: userId,
+                time_period: timePeriod,
+                dominant_emotion: dominantEmotion,
+                emotion_distribution: emotionDistribution,
+                average_valence: averageValence,
+                average_arousal: averageArousal,
+                emotional_stability: emotionalStability,
+                stress_level: stressLevel,
+                mood_trend: moodTrend,
+                recommendations: []
+            })
         };
 
         // 트렌드 저장

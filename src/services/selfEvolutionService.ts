@@ -5,7 +5,7 @@ import { realEstateKnowledgeService } from './realEstateKnowledgeService';
 export interface SelfEvolutionCapability {
     id: string;
     name: string;
-    type: 'learning' | 'optimization' | 'architecture' | 'consciousness' | 'creativity';
+    type: 'learning' | 'optimization' | 'architecture' | 'consciousness' | 'creativity' | 'info';
     currentLevel: number; // 0-100
     targetLevel: number;
     evolutionRate: number; // 발전 속도
@@ -185,7 +185,7 @@ class SelfEvolutionService {
             {
                 id: 'meta_learning',
                 name: '메타 학습',
-                type: 'learning',
+                type: 'info',
                 currentLevel: 25,
                 targetLevel: 100,
                 evolutionRate: 0.15,

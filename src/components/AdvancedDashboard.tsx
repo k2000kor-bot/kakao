@@ -52,7 +52,7 @@ import {
     BarChart as BarChartIcon,
     PieChart as PieChartIcon,
     Speed as SpeedIcon,
-    Target as TargetIcon,
+    MyLocation as TargetIcon,
     Star as StarIcon,
     EmojiEvents as TrophyIcon,
     Lightbulb as LightbulbIcon,

@@ -155,7 +155,7 @@ class UltraAdvancedAIService extends EventEmitter {
     }
 
     public async processMessage(userInput: string, context?: any): Promise<UltraAIMessage> {
-        this.isProcessing = true;
+        this._isProcessing = true;
         this.emit('processing_started');
 
         try {
@@ -182,13 +182,13 @@ class UltraAdvancedAIService extends EventEmitter {
             }
 
             this.messages.push(aiResponse);
-            this.isProcessing = false;
+            this._isProcessing = false;
             this.emit('message_processed', aiResponse);
 
             return aiResponse;
 
         } catch (error) {
-            this.isProcessing = false;
+            this._isProcessing = false;
             this.emit('processing_error', error);
             throw error;
         }

@@ -90,6 +90,7 @@ export interface QualityTrend {
   confidence: number;
   factors: string[];
   recommendations: string[];
+  timestamp: number;
 }
 
 export interface QualityBenchmark {
@@ -236,7 +237,7 @@ class RealTimeAICollaborationQualitySystem {
     this.initializeSystem();
     this.createInitialSessions();
     this.startQualityMonitoring();
-    
+
     console.log('✅ 실시간 AI 협업 품질 보증 시스템이 시작되었습니다.');
     realTimeAIAlertSystem.sendAlert('info', '실시간 AI 협업 품질 보증 시스템이 시작되었습니다.');
   }
@@ -249,14 +250,14 @@ class RealTimeAICollaborationQualitySystem {
 
     this.isRunning = false;
     this.cleanupData();
-    
+
     console.log('🛑 실시간 AI 협업 품질 보증 시스템이 중지되었습니다.');
     realTimeAIAlertSystem.sendAlert('info', '실시간 AI 협업 품질 보증 시스템이 중지되었습니다.');
   }
 
   private initializeSystem(): void {
     console.log('🔧 협업 품질 보증 시스템 초기화 중...');
-    
+
     console.log('📊 실시간 품질 모니터링 엔진 초기화 완료');
     console.log('🎯 자동 품질 평가 시스템 초기화 완료');
     console.log('🚨 품질 알림 시스템 초기화 완료');
@@ -414,7 +415,7 @@ class RealTimeAICollaborationQualitySystem {
 
   public addSession(session: Omit<CollaborationQualitySession, 'sessionId' | 'metrics' | 'assessments' | 'improvements' | 'timestamp'>): CollaborationQualitySession {
     const sessionId = `quality-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const fullSession: CollaborationQualitySession = {
       ...session,
       sessionId,
@@ -493,7 +494,7 @@ class RealTimeAICollaborationQualitySystem {
 
   private calculateQualityMetrics(session: CollaborationQualitySession): void {
     const metrics = session.metrics;
-    
+
     // 전체 품질 계산
     metrics.overallQuality = this.calculateOverallQuality(session);
     metrics.communicationQuality = this.calculateCommunicationQuality(session);
@@ -529,18 +530,18 @@ class RealTimeAICollaborationQualitySystem {
     const communicationInteractions = session.interactions.filter(i => i.type === 'communication');
     if (communicationInteractions.length === 0) return 0;
 
-    const totalQuality = communicationInteractions.reduce((sum, interaction) => 
+    const totalQuality = communicationInteractions.reduce((sum, interaction) =>
       sum + interaction.quality.overallScore, 0);
-    
+
     return totalQuality / communicationInteractions.length;
   }
 
   private calculateCollaborationQuality(session: CollaborationQualitySession): number {
     if (session.participants.length === 0) return 0;
 
-    const totalCollaborationEffectiveness = session.participants.reduce((sum, participant) => 
+    const totalCollaborationEffectiveness = session.participants.reduce((sum, participant) =>
       sum + participant.collaborationEffectiveness, 0);
-    
+
     return totalCollaborationEffectiveness / session.participants.length;
   }
 
@@ -548,9 +549,9 @@ class RealTimeAICollaborationQualitySystem {
     const decisionInteractions = session.interactions.filter(i => i.type === 'decision');
     if (decisionInteractions.length === 0) return 0;
 
-    const totalQuality = decisionInteractions.reduce((sum, interaction) => 
+    const totalQuality = decisionInteractions.reduce((sum, interaction) =>
       sum + interaction.quality.overallScore, 0);
-    
+
     return totalQuality / decisionInteractions.length;
   }
 
@@ -558,42 +559,42 @@ class RealTimeAICollaborationQualitySystem {
     const problemSolvingInteractions = session.interactions.filter(i => i.type === 'problem-solving');
     if (problemSolvingInteractions.length === 0) return 0;
 
-    const totalQuality = problemSolvingInteractions.reduce((sum, interaction) => 
+    const totalQuality = problemSolvingInteractions.reduce((sum, interaction) =>
       sum + interaction.quality.overallScore, 0);
-    
+
     return totalQuality / problemSolvingInteractions.length;
   }
 
   private calculateEngagementQuality(session: CollaborationQualitySession): number {
     if (session.participants.length === 0) return 0;
 
-    const totalEngagement = session.participants.reduce((sum, participant) => 
+    const totalEngagement = session.participants.reduce((sum, participant) =>
       sum + participant.engagementLevel, 0);
-    
+
     return totalEngagement / session.participants.length;
   }
 
   private calculateEfficiencyQuality(session: CollaborationQualitySession): number {
     if (session.interactions.length === 0) return 0;
 
-    const totalEfficiency = session.interactions.reduce((sum, interaction) => 
+    const totalEfficiency = session.interactions.reduce((sum, interaction) =>
       sum + interaction.effectiveness, 0);
-    
+
     return totalEfficiency / session.interactions.length;
   }
 
   private calculateSatisfactionQuality(session: CollaborationQualitySession): number {
     if (session.participants.length === 0) return 0;
 
-    const totalSatisfaction = session.participants.reduce((sum, participant) => 
+    const totalSatisfaction = session.participants.reduce((sum, participant) =>
       sum + participant.qualityScore, 0);
-    
+
     return totalSatisfaction / session.participants.length;
   }
 
   private detectQualityTrends(session: CollaborationQualitySession): void {
     const trends: QualityTrend[] = [];
-    
+
     // 품질 트렌드 감지
     const recentInteractions = session.interactions
       .filter(i => Date.now() - i.timestamp < 3600000) // 최근 1시간
@@ -602,10 +603,10 @@ class RealTimeAICollaborationQualitySystem {
     if (recentInteractions.length >= 2) {
       const recentQuality = recentInteractions.slice(0, 3).reduce((sum, i) => sum + i.quality.overallScore, 0) / Math.min(3, recentInteractions.length);
       const previousQuality = recentInteractions.slice(3, 6).reduce((sum, i) => sum + i.quality.overallScore, 0) / Math.min(3, recentInteractions.length - 3);
-      
+
       const change = recentQuality - previousQuality;
       const direction = change > 0.05 ? 'improving' : change < -0.05 ? 'declining' : 'stable';
-      
+
       trends.push({
         trendId: `trend-${Date.now()}`,
         metric: 'interaction-quality',
@@ -614,23 +615,24 @@ class RealTimeAICollaborationQualitySystem {
         period: '1시간',
         confidence: 0.8,
         factors: ['참가자 참여도', '의사소통 품질', '협업 효과성'],
-        recommendations: direction === 'declining' ? ['더 적극적인 참여 유도', '의사소통 개선'] : ['현재 수준 유지', '모범 사례 공유']
+        recommendations: direction === 'declining' ? ['더 적극적인 참여 유도', '의사소통 개선'] : ['현재 수준 유지', '모범 사례 공유'],
+        timestamp: Date.now()
       });
     }
-    
+
     session.metrics.trends = trends;
   }
 
   private generateQualityBenchmarks(session: CollaborationQualitySession): void {
     const benchmarks: QualityBenchmark[] = [];
-    
+
     // 품질 벤치마크 생성
     const criteria = session.settings.qualityCriteria;
     criteria.forEach(criterion => {
       const currentValue = this.getCurrentMetricValue(session, criterion.name);
       const gap = criterion.target - currentValue;
       const priority = gap > 0.2 ? 'critical' : gap > 0.1 ? 'high' : gap > 0.05 ? 'medium' : 'low';
-      
+
       benchmarks.push({
         benchmarkId: `benchmark-${criterion.criterionId}`,
         metric: criterion.name,
@@ -642,7 +644,7 @@ class RealTimeAICollaborationQualitySystem {
         improvementPlan: this.generateImprovementPlan(criterion.name, gap)
       });
     });
-    
+
     session.metrics.benchmarks = benchmarks;
   }
 
@@ -697,7 +699,7 @@ class RealTimeAICollaborationQualitySystem {
 
   private createQualityImprovements(session: CollaborationQualitySession): void {
     const improvements: QualityImprovement[] = [];
-    
+
     // 품질 개선사항 생성
     session.metrics.benchmarks.forEach(benchmark => {
       if (benchmark.actionRequired) {
@@ -719,12 +721,12 @@ class RealTimeAICollaborationQualitySystem {
         });
       }
     });
-    
+
     session.improvements = improvements;
   }
 
-  private getImprovementCategory(metricName: string): string {
-    const categoryMap: Record<string, string> = {
+  private getImprovementCategory(metricName: string): 'engagement' | 'collaboration' | 'communication' | 'decision-making' | 'problem-solving' {
+    const categoryMap: Record<string, 'engagement' | 'collaboration' | 'communication' | 'decision-making' | 'problem-solving'> = {
       '의사소통 명확성': 'communication',
       '협업 효과성': 'collaboration',
       '의사결정 품질': 'decision-making',
@@ -732,7 +734,7 @@ class RealTimeAICollaborationQualitySystem {
       '참여도': 'engagement'
     };
 
-    return categoryMap[metricName] || 'general';
+    return categoryMap[metricName] || 'collaboration';
   }
 
   private analyzeInteraction(sessionId: string, interactionId: string): void {
@@ -751,22 +753,22 @@ class RealTimeAICollaborationQualitySystem {
   private analyzeInteractionQuality(interaction: QualityInteraction): void {
     // 상호작용 품질 자동 분석
     const quality = interaction.quality;
-    
+
     // 명확성 분석
     quality.clarity = this.analyzeClarity(interaction.content);
-    
+
     // 관련성 분석
     quality.relevance = this.analyzeRelevance(interaction.content, interaction.type);
-    
+
     // 건설성 분석
     quality.constructiveness = this.analyzeConstructiveness(interaction.content);
-    
+
     // 적시성 분석
     quality.timeliness = this.analyzeTimeliness(interaction.timestamp);
-    
+
     // 완전성 분석
     quality.completeness = this.analyzeCompleteness(interaction.content);
-    
+
     // 전체 점수 계산
     quality.overallScore = (
       quality.clarity * 0.2 +
@@ -785,13 +787,13 @@ class RealTimeAICollaborationQualitySystem {
       !content.includes('...') && !content.includes('??'), // 불명확한 표현 없음
       content.split(' ').length > 5 // 충분한 단어 수
     ];
-    
+
     return clarityFactors.filter(factor => factor).length / clarityFactors.length;
   }
 
   private analyzeRelevance(content: string, type: string): number {
     // 관련성 분석 로직
-    const relevanceKeywords = {
+    const relevanceKeywords: Record<string, string[]> = {
       'communication': ['의견', '제안', '논의', '공유'],
       'decision': ['결정', '선택', '옵션', '결론'],
       'problem-solving': ['문제', '해결', '방안', '접근'],
@@ -800,8 +802,8 @@ class RealTimeAICollaborationQualitySystem {
     };
 
     const keywords = relevanceKeywords[type] || [];
-    const matches = keywords.filter(keyword => content.includes(keyword)).length;
-    
+    const matches = keywords.filter((keyword: string) => content.includes(keyword)).length;
+
     return Math.min(matches / keywords.length, 1);
   }
 
@@ -815,7 +817,7 @@ class RealTimeAICollaborationQualitySystem {
       !content.includes('문제만'),
       !content.includes('비판만')
     ];
-    
+
     return constructiveIndicators.filter(indicator => indicator).length / constructiveIndicators.length;
   }
 
@@ -823,7 +825,7 @@ class RealTimeAICollaborationQualitySystem {
     // 적시성 분석 로직
     const timeDiff = Date.now() - timestamp;
     const hoursDiff = timeDiff / (1000 * 60 * 60);
-    
+
     if (hoursDiff <= 1) return 1.0;
     if (hoursDiff <= 24) return 0.8;
     if (hoursDiff <= 72) return 0.6;
@@ -838,7 +840,7 @@ class RealTimeAICollaborationQualitySystem {
       content.split('.').length > 1,
       content.includes('다음') || content.includes('추가')
     ];
-    
+
     return completenessFactors.filter(factor => factor).length / completenessFactors.length;
   }
 
@@ -849,13 +851,13 @@ class RealTimeAICollaborationQualitySystem {
       if (participant) {
         // 참여도 업데이트
         participant.engagementLevel = Math.min(1, participant.engagementLevel + 0.05);
-        
+
         // 기여 품질 업데이트
         participant.contributionQuality = (participant.contributionQuality + interaction.quality.overallScore) / 2;
-        
+
         // 협업 효과성 업데이트
         participant.collaborationEffectiveness = (participant.collaborationEffectiveness + interaction.effectiveness) / 2;
-        
+
         // 전체 품질 점수 업데이트
         participant.qualityScore = (
           participant.engagementLevel * 0.3 +
@@ -878,7 +880,7 @@ class RealTimeAICollaborationQualitySystem {
         priority: 'medium',
         timestamp: Date.now()
       };
-      
+
       // 인사이트를 세션에 저장하거나 알림으로 전송
       console.log('💡 상호작용 인사이트 생성:', insight);
     }
@@ -891,7 +893,7 @@ class RealTimeAICollaborationQualitySystem {
     const feedback = session.participants
       .flatMap(p => p.feedbackReceived)
       .find(f => f.feedbackId === feedbackId);
-    
+
     if (!feedback) return;
 
     // 피드백 분석 및 개선사항 생성
@@ -959,7 +961,7 @@ class RealTimeAICollaborationQualitySystem {
     }
 
     session.metrics.alerts = alerts;
-    
+
     // 알림 전송
     alerts.forEach(alert => {
       realTimeAIAlertSystem.sendAlert(
@@ -979,24 +981,24 @@ class RealTimeAICollaborationQualitySystem {
 
   private updateAnalytics(): void {
     const sessions = Array.from(this.sessions.values());
-    
+
     this.analytics.sessions = sessions.length;
     this.analytics.activeSessions = sessions.filter(s => s.status === 'active').length;
     this.analytics.averageQuality = sessions.reduce((sum, s) => sum + s.metrics.overallQuality, 0) / sessions.length;
     this.analytics.qualityTrend = this.calculateQualityTrend();
     this.analytics.improvementRate = this.calculateImprovementRate();
     this.analytics.alertCount = sessions.reduce((sum, s) => sum + s.metrics.alerts.length, 0);
-    this.analytics.resolvedAlerts = sessions.reduce((sum, s) => 
+    this.analytics.resolvedAlerts = sessions.reduce((sum, s) =>
       sum + s.metrics.alerts.filter(a => a.resolved).length, 0);
-    this.analytics.participantSatisfaction = sessions.reduce((sum, s) => 
+    this.analytics.participantSatisfaction = sessions.reduce((sum, s) =>
       sum + s.metrics.satisfactionQuality, 0) / sessions.length;
-    this.analytics.collaborationEffectiveness = sessions.reduce((sum, s) => 
+    this.analytics.collaborationEffectiveness = sessions.reduce((sum, s) =>
       sum + s.metrics.collaborationQuality, 0) / sessions.length;
-    this.analytics.communicationQuality = sessions.reduce((sum, s) => 
+    this.analytics.communicationQuality = sessions.reduce((sum, s) =>
       sum + s.metrics.communicationQuality, 0) / sessions.length;
-    this.analytics.decisionQuality = sessions.reduce((sum, s) => 
+    this.analytics.decisionQuality = sessions.reduce((sum, s) =>
       sum + s.metrics.decisionQuality, 0) / sessions.length;
-    this.analytics.problemSolvingQuality = sessions.reduce((sum, s) => 
+    this.analytics.problemSolvingQuality = sessions.reduce((sum, s) =>
       sum + s.metrics.problemSolvingQuality, 0) / sessions.length;
   }
 
@@ -1012,7 +1014,7 @@ class RealTimeAICollaborationQualitySystem {
 
     const recentQuality = recentSessions[0].metrics.overallQuality;
     const previousQuality = recentSessions[1].metrics.overallQuality;
-    
+
     return recentQuality - previousQuality;
   }
 
@@ -1021,9 +1023,9 @@ class RealTimeAICollaborationQualitySystem {
     if (sessions.length === 0) return 0;
 
     const totalImprovements = sessions.reduce((sum, s) => sum + s.improvements.length, 0);
-    const completedImprovements = sessions.reduce((sum, s) => 
+    const completedImprovements = sessions.reduce((sum, s) =>
       sum + s.improvements.filter(i => i.status === 'completed').length, 0);
-    
+
     return totalImprovements > 0 ? completedImprovements / totalImprovements : 0;
   }
 
@@ -1044,16 +1046,15 @@ class RealTimeAICollaborationQualitySystem {
     }, 30000); // 30초마다 모니터링
   }
 
-  private cleanupOldData(): void {
+  private cleanupOldData(maxAge: number = 24 * 60 * 60 * 1000): void {
     const now = Date.now();
-    const maxAge = 30 * 24 * 60 * 60 * 1000; // 30일
 
     this.sessions.forEach(session => {
       session.metrics.trends = session.metrics.trends.filter(
-        trend => now - trend.timestamp < maxAge
+        trend => now - (typeof trend.timestamp === 'number' ? trend.timestamp : trend.timestamp.getTime()) < maxAge
       );
       session.metrics.alerts = session.metrics.alerts.filter(
-        alert => now - alert.timestamp < maxAge
+        alert => now - (typeof alert.timestamp === 'number' ? alert.timestamp : alert.timestamp.getTime()) < maxAge
       );
     });
   }

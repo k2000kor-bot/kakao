@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    Box, Paper, Typography, Grid, Card, CardContent, LinearProgress, Chip, Avatar, IconButton, Button, Divider, List, ListItem, ListItemText, ListItemAvatar, ListItemSecondaryAction, Badge, Tooltip, CircularProgress, Alert, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Slider, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Timeline, TimelineItem, TimelineSeparator, TimelineConnector, TimelineContent, TimelineDot, TimelineOppositeContent
+    Box, Paper, Typography, Grid, Card, CardContent, LinearProgress, Chip, Avatar, IconButton, Button, Divider, List, ListItem, ListItemText, ListItemAvatar, ListItemSecondaryAction, Badge, Tooltip, CircularProgress, Alert, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Slider, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails
 } from '@mui/material';
 import {
-    TrendingUp as TrendingUpIcon, School as SchoolIcon, Psychology as PsychologyIcon, Memory as MemoryIcon, Assessment as AssessmentIcon, Timeline as TimelineIcon, BarChart as BarChartIcon, PieChart as PieChartIcon, Speed as SpeedIcon, Target as TargetIcon, Star as StarIcon, EmojiEvents as TrophyIcon, Lightbulb as LightbulbIcon, Bookmark as BookmarkIcon, Refresh as RefreshIcon, Settings as SettingsIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon, CalendarToday as CalendarIcon, AccessTime as TimeIcon, Person as PersonIcon, AutoAwesome as AutoAwesomeIcon, TrendingDown as TrendingDownIcon, CheckCircle as CheckCircleIcon, Warning as WarningIcon, Info as InfoIcon, PlayArrow as PlayIcon, Pause as PauseIcon, Stop as StopIcon, Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, FilterList as FilterIcon, Search as SearchIcon, Download as DownloadIcon, Share as ShareIcon, Print as PrintIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, VideoLibrary as VideoIcon, Article as ArticleIcon, Code as CodeIcon, Quiz as QuizIcon, Assignment as AssignmentIcon, Schedule as ScheduleIcon, Flag as FlagIcon, PriorityHigh as PriorityHighIcon, TrendingFlat as TrendingFlatIcon, Psychology as PsychologyIcon2, School as SchoolIcon2, AutoAwesome as AutoAwesomeIcon2
+    TrendingUp as TrendingUpIcon, School as SchoolIcon, Psychology as PsychologyIcon, Memory as MemoryIcon, Assessment as AssessmentIcon, Timeline as TimelineIcon, BarChart as BarChartIcon, PieChart as PieChartIcon, Speed as SpeedIcon, MyLocation as TargetIcon, Star as StarIcon, EmojiEvents as TrophyIcon, Lightbulb as LightbulbIcon, Bookmark as BookmarkIcon, Refresh as RefreshIcon, Settings as SettingsIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon, CalendarToday as CalendarIcon, AccessTime as TimeIcon, Person as PersonIcon, AutoAwesome as AutoAwesomeIcon, TrendingDown as TrendingDownIcon, CheckCircle as CheckCircleIcon, Warning as WarningIcon, Info as InfoIcon, PlayArrow as PlayIcon, Pause as PauseIcon, Stop as StopIcon, Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, FilterList as FilterIcon, Search as SearchIcon, Download as DownloadIcon, Share as ShareIcon, Print as PrintIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, VideoLibrary as VideoIcon, Article as ArticleIcon, Code as CodeIcon, Quiz as QuizIcon, Assignment as AssignmentIcon, Schedule as ScheduleIcon, Flag as FlagIcon, PriorityHigh as PriorityHighIcon, TrendingFlat as TrendingFlatIcon, Psychology as PsychologyIcon2, School as SchoolIcon2, AutoAwesome as AutoAwesomeIcon2
 } from '@mui/icons-material';
+import {
+    Timeline,
+    TimelineItem,
+    TimelineSeparator,
+    TimelineConnector,
+    TimelineContent,
+    TimelineDot,
+    TimelineOppositeContent
+} from '@mui/lab';
 import { styled } from '@mui/material/styles';
 import advancedConversationMemoryService from '../services/advancedConversationMemoryService';
 import personalizedLearningExperienceService from '../services/personalizedLearningExperienceService';

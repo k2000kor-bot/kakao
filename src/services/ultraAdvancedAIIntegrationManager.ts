@@ -157,7 +157,7 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
                 }
             });
 
-            this.isInitialized = true;
+            this._isInitialized = true;
             this.startMonitoring();
             this.emit('manager_initialized', this.metrics);
 

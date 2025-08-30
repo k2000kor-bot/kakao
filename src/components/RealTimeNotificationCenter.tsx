@@ -1,0 +1,364 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    Chip,
+    IconButton,
+    Badge,
+    Drawer,
+    Button,
+    useTheme,
+    alpha,
+    Fade,
+    Slide,
+    Zoom
+} from '@mui/material';
+import {
+    Notifications,
+    NotificationsActive,
+    NotificationsOff,
+    Warning,
+    Error,
+    Info,
+    CheckCircle,
+    Delete,
+    Clear,
+    Settings,
+    PriorityHigh,
+    LowPriority,
+    Schedule,
+    AutoAwesome,
+    Psychology,
+    Science,
+    Timeline,
+    Analytics,
+    Speed,
+    Memory,
+    Storage,
+    NetworkCheck,
+    Lightbulb,
+    Rocket,
+    Assessment,
+    ShowChart,
+    BarChart,
+    PieChart,
+    Radar,
+    ScatterPlot,
+    BubbleChart,
+    Timeline as TimelineIcon,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon,
+    Speed as SpeedIcon,
+    Memory as MemoryIcon,
+    Storage as StorageIcon,
+    NetworkCheck as NetworkIcon,
+    Notifications as NotificationsIcon,
+    NotificationsActive as NotificationsActiveIcon,
+    NotificationsOff as NotificationsOffIcon
+} from '@mui/icons-material';
+import useRealTimeData from '../hooks/useRealTimeData';
+
+interface RealTimeNotificationCenterProps {
+    open: boolean;
+    onClose: () => void;
+}
+
+const RealTimeNotificationCenter: React.FC<RealTimeNotificationCenterProps> = ({ open, onClose }) => {
+    const theme = useTheme();
+    const { alerts, acknowledgeAlert, resolveAlert, deleteAlert } = useRealTimeData();
+    const [filterType, setFilterType] = useState<'all' | 'critical' | 'warning' | 'info' | 'success'>('all');
+    const [autoScroll, setAutoScroll] = useState(true);
+
+    const filteredAlerts = alerts.filter(alert => {
+        if (filterType === 'all') return true;
+        return alert.type === filterType;
+    });
+
+    const getAlertIcon = (type: string) => {
+        switch (type) {
+            case 'critical':
+            case 'error':
+                return <Error color="error" />;
+            case 'warning':
+                return <Warning color="warning" />;
+            case 'success':
+                return <CheckCircle color="success" />;
+            case 'info':
+            default:
+                return <Info color="info" />;
+        }
+    };
+
+    const getAlertColor = (type: string) => {
+        switch (type) {
+            case 'critical':
+                return theme.palette.error.main;
+            case 'error':
+                return theme.palette.error.main;
+            case 'warning':
+                return theme.palette.warning.main;
+            case 'success':
+                return theme.palette.success.main;
+            case 'info':
+            default:
+                return theme.palette.info.main;
+        }
+    };
+
+    const formatTimeAgo = (timestamp: Date) => {
+        const now = new Date();
+        const diff = now.getTime() - timestamp.getTime();
+        const minutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        if (minutes < 1) return '방금 전';
+        if (minutes < 60) return `${minutes}분 전`;
+        if (hours < 24) return `${hours}시간 전`;
+        return `${days}일 전`;
+    };
+
+    const handleAcknowledge = (alertId: string) => {
+        acknowledgeAlert(alertId);
+    };
+
+    const handleResolve = (alertId: string) => {
+        resolveAlert(alertId);
+    };
+
+    const handleDelete = (alertId: string) => {
+        deleteAlert(alertId);
+    };
+
+    const handleBulkAction = (action: 'acknowledge' | 'resolve' | 'delete') => {
+        filteredAlerts.forEach(alert => {
+            switch (action) {
+                case 'acknowledge':
+                    acknowledgeAlert(alert.id);
+                    break;
+                case 'resolve':
+                    resolveAlert(alert.id);
+                    break;
+                case 'delete':
+                    deleteAlert(alert.id);
+                    break;
+            }
+        });
+    };
+
+    return (
+        <Drawer
+            anchor="right"
+            open={open}
+            onClose={onClose}
+            PaperProps={{
+                sx: {
+                    width: 400,
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.background.default, 0.95)}, ${alpha(theme.palette.background.paper, 0.95)})`,
+                    backdropFilter: 'blur(10px)',
+                    borderLeft: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+                }
+            }}
+        >
+            <Box sx={{ p: 2, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+                        <NotificationsActive sx={{ mr: 1, color: 'primary.main' }} />
+                        실시간 알림 센터
+                    </Typography>
+                    <IconButton onClick={onClose} size="small">
+                        <Clear />
+                    </IconButton>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                    {(['all', 'critical', 'warning', 'info', 'success'] as const).map((type) => (
+                        <Chip
+                            key={type}
+                            label={type === 'all' ? '전체' : type === 'critical' ? '긴급' : type === 'warning' ? '경고' : type === 'info' ? '정보' : '성공'}
+                            size="small"
+                            color={filterType === type ? 'primary' : 'default'}
+                            variant={filterType === type ? 'filled' : 'outlined'}
+                            onClick={() => setFilterType(type)}
+                        />
+                    ))}
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleBulkAction('acknowledge')}
+                        sx={{ flex: 1 }}
+                    >
+                        모두 확인
+                    </Button>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleBulkAction('resolve')}
+                        sx={{ flex: 1 }}
+                    >
+                        모두 해결
+                    </Button>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleBulkAction('delete')}
+                        sx={{ flex: 1 }}
+                    >
+                        모두 삭제
+                    </Button>
+                </Box>
+            </Box>
+
+            <Box sx={{ flex: 1, overflow: 'auto' }}>
+                {filteredAlerts.length === 0 ? (
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <NotificationsOff sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                        <Typography variant="body2" color="text.secondary">
+                            표시할 알림이 없습니다.
+                        </Typography>
+                    </Box>
+                ) : (
+                    <List sx={{ p: 0 }}>
+                        {filteredAlerts.map((alert, index) => (
+                            <Slide direction="left" in={true} timeout={300 + index * 100} key={alert.id}>
+                                <ListItem
+                                    sx={{
+                                        border: alert.type === 'critical' ? 2 : 1,
+                                        borderColor: alert.type === 'critical' ? 'error.main' : 'divider',
+                                        borderRadius: 1,
+                                        m: 1,
+                                        background: alert.acknowledged ? alpha(theme.palette.action.hover, 0.1) : 'inherit',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            background: alpha(getAlertColor(alert.type), 0.05),
+                                            transform: 'translateX(-4px)'
+                                        }
+                                    }}
+                                >
+                                    <ListItemIcon>
+                                        <Badge
+                                            badgeContent={alert.acknowledged ? 0 : 1}
+                                            color="error"
+                                            invisible={alert.acknowledged}
+                                        >
+                                            {getAlertIcon(alert.type)}
+                                        </Badge>
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                <Typography variant="subtitle2" fontWeight="medium">
+                                                    {alert.title}
+                                                </Typography>
+                                                <Chip
+                                                    label={alert.severity}
+                                                    size="small"
+                                                    color={alert.severity === 'critical' ? 'error' :
+                                                        alert.severity === 'high' ? 'warning' :
+                                                            alert.severity === 'medium' ? 'info' : 'success'}
+                                                />
+                                                {!alert.acknowledged && (
+                                                    <Chip
+                                                        label="새로운"
+                                                        size="small"
+                                                        color="error"
+                                                        variant="outlined"
+                                                    />
+                                                )}
+                                            </Box>
+                                        }
+                                        secondary={
+                                            <Box>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                    {alert.message}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {formatTimeAgo(alert.timestamp)}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        • {alert.source}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        • {alert.category}
+                                                    </Typography>
+                                                    {alert.ai_analysis && (
+                                                        <Chip
+                                                            label={`AI 신뢰도: ${(alert.ai_analysis.confidence * 100).toFixed(0)}%`}
+                                                            size="small"
+                                                            variant="outlined"
+                                                            color={alert.ai_analysis.confidence > 0.9 ? 'success' : 'default'}
+                                                            icon={<AutoAwesome />}
+                                                        />
+                                                    )}
+                                                </Box>
+                                                {alert.ai_analysis && (
+                                                    <Box sx={{ mt: 1, p: 1, background: alpha(theme.palette.primary.main, 0.05), borderRadius: 1 }}>
+                                                        <Typography variant="caption" color="text.secondary" display="block">
+                                                            <strong>AI 분석:</strong> {alert.ai_analysis.impact_assessment}
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary" display="block">
+                                                            <strong>권장 조치:</strong> {alert.ai_analysis.recommended_action}
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </Box>
+                                        }
+                                    />
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                        {!alert.acknowledged && (
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleAcknowledge(alert.id)}
+                                                color="success"
+                                            >
+                                                <CheckCircle fontSize="small" />
+                                            </IconButton>
+                                        )}
+                                        {!alert.resolved && (
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleResolve(alert.id)}
+                                                color="primary"
+                                            >
+                                                <CheckCircle fontSize="small" />
+                                            </IconButton>
+                                        )}
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleDelete(alert.id)}
+                                            color="error"
+                                        >
+                                            <Delete fontSize="small" />
+                                        </IconButton>
+                                    </Box>
+                                </ListItem>
+                            </Slide>
+                        ))}
+                    </List>
+                )}
+            </Box>
+
+            <Box sx={{ p: 2, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
+                <Typography variant="caption" color="text.secondary" display="block" textAlign="center">
+                    총 {alerts.length}개의 알림 • {alerts.filter(a => !a.acknowledged).length}개 미확인
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" textAlign="center">
+                    마지막 업데이트: {new Date().toLocaleTimeString('ko-KR')}
+                </Typography>
+            </Box>
+        </Drawer>
+    );
+};
+
+export default RealTimeNotificationCenter;

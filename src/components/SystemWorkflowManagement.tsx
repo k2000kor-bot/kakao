@@ -22,7 +22,7 @@ import {
     Info,
     Zap,
     Brain,
-    Target,
+    Aim,
     TrendingUp,
     Users,
     MessageSquare,

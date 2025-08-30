@@ -130,7 +130,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
     private rules: Map<string, AutomationRule> = new Map();
     private workflows: Map<string, AutomationWorkflow> = new Map();
     private executions: Map<string, AutomationExecution> = new Map();
-    private isInitialized: boolean = false;
+    private _isInitialized: boolean = false;
     private config: AutomationConfig = {
         auto_execution: true,
         parallel_execution: true,
@@ -174,14 +174,13 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
             overall_health: 0
         }
     };
-    private isInitialized: boolean = false;
     private executionQueue: string[] = [];
     private activeExecutions: Set<string> = new Set();
 
     constructor() {
         super();
         this.initializeSystem();
-        this.isInitialized = true;
+        this._isInitialized = true;
         console.log('🤖 고도화된 AI 자동화 시스템이 초기화되었습니다.');
     }
 
@@ -363,7 +362,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
                 }
             });
 
-            this.isInitialized = true;
+            this._isInitialized = true;
             this.startMonitoring();
             this.emit('system_initialized', this.metrics);
 
@@ -736,7 +735,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
     }
 
     public isInitialized(): boolean {
-        return this.isInitialized;
+        return this._isInitialized;
     }
 
     public async updateRule(ruleId: string, updates: Partial<AutomationRule>): Promise<void> {

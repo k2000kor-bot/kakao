@@ -56,7 +56,7 @@ import {
     School,
     Work,
     HealthAndSafety,
-    Eco,
+    Nature as EcoIcon,
     Public,
     Security,
     Speed,
@@ -66,7 +66,7 @@ import {
     School as SchoolIcon,
     Work as WorkIcon,
     HealthAndSafety as HealthIcon,
-    Eco as EcoIcon,
+
     Public as PublicIcon,
     Security as SecurityIcon,
     Speed as SpeedIcon,
@@ -82,7 +82,7 @@ import {
     School as SchoolIcon2,
     Work as WorkIcon2,
     HealthAndSafety as HealthIcon2,
-    Eco as EcoIcon2,
+
     Public as PublicIcon2,
     Security as SecurityIcon2,
     Speed as SpeedIcon2,

@@ -56,7 +56,7 @@ import {
   School,
   Work,
   HealthAndSafety,
-  Eco,
+  Eco as EcoIcon,
   Public,
   Security,
   Speed,
@@ -425,7 +425,7 @@ const CORBUInnovationEcosystem: React.FC<CORBUInnovationEcosystemProps> = ({ chi
     }
   };
 
-  const filteredProjects = innovationProjects.filter(project => 
+  const filteredProjects = innovationProjects.filter(project =>
     filterCategory === 'all' || project.category === filterCategory
   );
 
@@ -555,8 +555,8 @@ const CORBUInnovationEcosystem: React.FC<CORBUInnovationEcosystemProps> = ({ chi
             <Grid container spacing={3}>
               {sortedProjects.map((project) => (
                 <Grid item xs={12} md={6} lg={4} key={project.id}>
-                  <Card 
-                    sx={{ 
+                  <Card
+                    sx={{
                       cursor: 'pointer',
                       '&:hover': { bgcolor: 'action.hover' }
                     }}
@@ -568,14 +568,14 @@ const CORBUInnovationEcosystem: React.FC<CORBUInnovationEcosystemProps> = ({ chi
                           {project.title}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Chip 
-                            label={getStatusLabel(project.status)} 
-                            size="small" 
+                          <Chip
+                            label={getStatusLabel(project.status)}
+                            size="small"
                             color={getStatusColor(project.status) as any}
                           />
-                          <Chip 
-                            label={getPriorityLabel(project.priority)} 
-                            size="small" 
+                          <Chip
+                            label={getPriorityLabel(project.priority)}
+                            size="small"
                             color={getPriorityColor(project.priority) as any}
                           />
                         </Box>
@@ -706,12 +706,12 @@ const CORBUInnovationEcosystem: React.FC<CORBUInnovationEcosystemProps> = ({ chi
               <DialogTitle>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Typography variant="h6">{selectedProject.title}</Typography>
-                  <Chip 
-                    label={getStatusLabel(selectedProject.status)} 
+                  <Chip
+                    label={getStatusLabel(selectedProject.status)}
                     color={getStatusColor(selectedProject.status) as any}
                   />
-                  <Chip 
-                    label={getPriorityLabel(selectedProject.priority)} 
+                  <Chip
+                    label={getPriorityLabel(selectedProject.priority)}
                     color={getPriorityColor(selectedProject.priority) as any}
                   />
                 </Box>
@@ -720,7 +720,7 @@ const CORBUInnovationEcosystem: React.FC<CORBUInnovationEcosystemProps> = ({ chi
                 <Typography variant="body1" paragraph>
                   {selectedProject.description}
                 </Typography>
-                
+
                 <Typography variant="h6" gutterBottom>팀 구성:</Typography>
                 <Box sx={{ mb: 2 }}>
                   {selectedProject.team.map((member, index) => (
