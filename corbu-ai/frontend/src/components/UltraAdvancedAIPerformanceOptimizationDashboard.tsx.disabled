@@ -1,0 +1,766 @@
+import React, { useState, useEffect } from 'react';
+import { Box, Card, CardContent, Typography, Grid, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, ListItemIcon, IconButton, Tooltip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Badge, Alert, TextField, InputAdornment, Tabs, Tab, Divider, CircularProgress, Slider, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Speed, TrendingUp, TrendingDown, Warning, CheckCircle, Error, Settings, PlayArrow, Stop, Refresh, Add, Schedule, Memory, Storage, NetworkCheck, Computer as Cpu, Tune as Optimization, AutoFixHigh, Analytics, Assessment } from '@mui/icons-material';
+import { performanceOptimizationAPI } from '../services/apiService';
+
+interface PerformanceOptimizationDashboardState {
+  systemHealth: any;
+  metrics: any[];
+  optimizationRules: any[];
+  config: any;
+  loading: boolean;
+  error: string | null;
+  selectedTab: number;
+  createRuleDialog: boolean;
+  configDialog: boolean;
+  newRule: any;
+  monitoringActive: boolean;
+}
+
+const UltraAdvancedAIPerformanceOptimizationDashboard: React.FC = () => {
+  const [state, setState] = useState<PerformanceOptimizationDashboardState>({
+    systemHealth: {
+      overall_status: 'healthy',
+      systems: {},
+      recommendations: [],
+      alerts: []
+    },
+    metrics: [],
+    optimizationRules: [],
+    config: {
+      auto_optimization: true,
+      performance_thresholds: {
+        cpu_usage: 80,
+        memory_usage: 85,
+        response_time: 1000,
+        throughput: 100
+      },
+      optimization_rules: [],
+      monitoring_interval: 5000,
+      alert_channels: ['console', 'email']
+    },
+    loading: false,
+    error: null,
+    selectedTab: 0,
+    createRuleDialog: false,
+    configDialog: false,
+    newRule: {
+      name: '',
+      description: '',
+      condition: { metric_type: 'cpu', operator: 'gt', threshold: 80, duration: 60 },
+      action: { type: 'scale', parameters: {} },
+      priority: 'medium'
+    },
+    monitoringActive: true
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    try {
+      const [systemHealthRes, metricsRes, rulesRes] = await Promise.all([
+        performanceOptimizationAPI.getSystemHealth(),
+        performanceOptimizationAPI.getPerformanceMetrics(),
+        performanceOptimizationAPI.getOptimizationRules()
+      ]);
+
+      setState(prev => ({
+        ...prev,
+        systemHealth: systemHealthRes.data || prev.systemHealth,
+        metrics: metricsRes.data || [],
+        optimizationRules: rulesRes.data || [],
+        loading: false
+      }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: '데이터를 불러오는 중 오류가 발생했습니다.',
+        loading: false
+      }));
+    }
+  };
+
+  const handleCreateRule = async () => {
+    try {
+      const response = await performanceOptimizationAPI.createOptimizationRule(state.newRule);
+      if (response.status === 'success') {
+        setState(prev => ({
+          ...prev,
+          createRuleDialog: false,
+          newRule: {
+            name: '',
+            description: '',
+            condition: { metric_type: 'cpu', operator: 'gt', threshold: 80, duration: 60 },
+            action: { type: 'scale', parameters: {} },
+            priority: 'medium'
+          }
+        }));
+        loadData(); // 데이터 새로고침
+      } else {
+        setState(prev => ({ ...prev, error: '최적화 규칙 생성 중 오류가 발생했습니다.' }));
+      }
+    } catch (error) {
+      setState(prev => ({ ...prev, error: '최적화 규칙 생성 중 오류가 발생했습니다.' }));
+    }
+  };
+
+  const handleManualOptimization = async (optimizationType: string) => {
+    try {
+      const response = await performanceOptimizationAPI.performManualOptimization({
+        type: optimizationType,
+        parameters: {}
+      });
+      if (response.status === 'success') {
+        setState(prev => ({ ...prev, error: null }));
+        loadData(); // 데이터 새로고침
+      } else {
+        setState(prev => ({ ...prev, error: '수동 최적화 실행 중 오류가 발생했습니다.' }));
+      }
+    } catch (error) {
+      setState(prev => ({ ...prev, error: '수동 최적화 실행 중 오류가 발생했습니다.' }));
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'healthy':
+        return 'success';
+      case 'degraded':
+        return 'warning';
+      case 'critical':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getMetricIcon = (metricType: string) => {
+    switch (metricType) {
+      case 'cpu':
+        return <Cpu />;
+      case 'memory':
+        return <Memory />;
+      case 'response_time':
+        return <Speed />;
+      case 'throughput':
+        return <TrendingUp />;
+      case 'accuracy':
+        return <Assessment />;
+      case 'latency':
+        return <NetworkCheck />;
+      default:
+        return <Analytics />;
+    }
+  };
+
+  const getActionIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'scale':
+        return <TrendingUp />;
+      case 'throttle':
+        return <TrendingDown />;
+      case 'cache':
+        return <Storage />;
+      case 'optimize':
+        return <Optimization />;
+      case 'alert':
+        return <Warning />;
+      default:
+        return <AutoFixHigh />;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'error';
+      case 'high':
+        return 'warning';
+      case 'medium':
+        return 'info';
+      case 'low':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
+
+  return (
+    <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Optimization color="primary" />
+        고도화된 AI 성능 최적화 대시보드
+      </Typography>
+
+      {state.error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setState(prev => ({ ...prev, error: null }))}>
+          {state.error}
+        </Alert>
+      )}
+
+      {/* 제어 패널 */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">제어 패널</Typography>
+            <Box>
+              <Button
+                variant="outlined"
+                startIcon={<Refresh />}
+                onClick={loadData}
+                disabled={state.loading}
+                sx={{ mr: 1 }}
+              >
+                새로고침
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<Add />}
+                onClick={() => setState(prev => ({ ...prev, createRuleDialog: true }))}
+                sx={{ mr: 1 }}
+              >
+                최적화 규칙 추가
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<Settings />}
+                onClick={() => setState(prev => ({ ...prev, configDialog: true }))}
+              >
+                설정
+              </Button>
+            </Box>
+          </Box>
+
+          {state.loading && <LinearProgress sx={{ mb: 2 }} />}
+
+          {/* 시스템 상태 */}
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ bgcolor: 'primary.light', color: 'white' }}>
+                <CardContent>
+                  <Typography variant="h6">
+                    {state.systemHealth.overall_status?.toUpperCase() || 'UNKNOWN'}
+                  </Typography>
+                  <Typography variant="body2">전체 시스템 상태</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ bgcolor: 'success.light', color: 'white' }}>
+                <CardContent>
+                  <Typography variant="h6">
+                    {Object.keys(state.systemHealth.systems || {}).filter(
+                      key => state.systemHealth.systems[key].status === 'healthy'
+                    ).length}
+                  </Typography>
+                  <Typography variant="body2">정상 시스템</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ bgcolor: 'warning.light', color: 'white' }}>
+                <CardContent>
+                  <Typography variant="h6">
+                    {Object.keys(state.systemHealth.systems || {}).filter(
+                      key => state.systemHealth.systems[key].status === 'degraded'
+                    ).length}
+                  </Typography>
+                  <Typography variant="body2">성능 저하 시스템</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ bgcolor: 'error.light', color: 'white' }}>
+                <CardContent>
+                  <Typography variant="h6">
+                    {Object.keys(state.systemHealth.systems || {}).filter(
+                      key => state.systemHealth.systems[key].status === 'critical'
+                    ).length}
+                  </Typography>
+                  <Typography variant="body2">위험 시스템</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* 탭 네비게이션 */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={state.selectedTab} onChange={(_, newValue) => setState(prev => ({ ...prev, selectedTab: newValue }))}>
+          <Tab label="시스템 상태" />
+          <Tab label="성능 메트릭" />
+          <Tab label="최적화 규칙" />
+          <Tab label="권장사항" />
+        </Tabs>
+      </Box>
+
+      {/* 시스템 상태 탭 */}
+      {state.selectedTab === 0 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>시스템 상태 모니터링</Typography>
+          <Grid container spacing={2}>
+            {Object.entries(state.systemHealth.systems || {}).map(([systemName, systemData]: [string, any]) => (
+              <Grid item xs={12} md={6} key={systemName}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" sx={{ textTransform: 'capitalize' }}>
+                        {systemName.replace('_', ' ')}
+                      </Typography>
+                      <Chip
+                        label={systemData.status}
+                        color={getStatusColor(systemData.status) as any}
+                        size="small"
+                      />
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      메트릭 수: {systemData.metrics?.length || 0}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      마지막 업데이트: {new Date(systemData.last_updated).toLocaleString()}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      {/* 성능 메트릭 탭 */}
+      {state.selectedTab === 1 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>실시간 성능 메트릭</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>시스템</TableCell>
+                  <TableCell>메트릭 유형</TableCell>
+                  <TableCell>값</TableCell>
+                  <TableCell>임계값</TableCell>
+                  <TableCell>상태</TableCell>
+                  <TableCell>시간</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {state.metrics.map((metric) => (
+                  <TableRow key={metric.id}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                          {metric.system.replace('_', ' ')}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getMetricIcon(metric.metric_type)}
+                        <Typography variant="body2" sx={{ ml: 1, textTransform: 'capitalize' }}>
+                          {metric.metric_type.replace('_', ' ')}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {metric.value.toFixed(2)} {metric.unit}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {metric.threshold} {metric.unit}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={metric.status}
+                        color={getStatusColor(metric.status) as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {new Date(metric.timestamp).toLocaleTimeString()}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
+      {/* 최적화 규칙 탭 */}
+      {state.selectedTab === 2 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>최적화 규칙 관리</Typography>
+          <Grid container spacing={2}>
+            {state.optimizationRules.map((rule) => (
+              <Grid item xs={12} md={6} key={rule.id}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6">{rule.name}</Typography>
+                      <Box>
+                        <Chip
+                          label={rule.priority}
+                          color={getPriorityColor(rule.priority) as any}
+                          size="small"
+                          sx={{ mr: 1 }}
+                        />
+                        <Switch
+                          checked={rule.enabled}
+                          onChange={() => {
+                            // 규칙 활성화/비활성화 로직
+                            console.log('Toggle rule:', rule.id, !rule.enabled);
+                          }}
+                          size="small"
+                        />
+                      </Box>
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      {rule.description}
+                    </Typography>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        조건: {rule.condition.metric_type} {rule.condition.operator} {rule.condition.threshold} ({rule.condition.duration}초)
+                      </Typography>
+                      <Typography variant="subtitle2">
+                        액션: {rule.action.type}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <IconButton size="small" onClick={() => handleManualOptimization(rule.action.type)}>
+                        <PlayArrow />
+                      </IconButton>
+                      <IconButton size="small">
+                        <Settings />
+                      </IconButton>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      {/* 권장사항 탭 */}
+      {state.selectedTab === 3 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>AI 권장사항</Typography>
+
+          {state.systemHealth.recommendations && state.systemHealth.recommendations.length > 0 && (
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>권장사항</Typography>
+                <List>
+                  {state.systemHealth.recommendations.map((recommendation: string, index: number) => (
+                    <ListItem key={index}>
+                      <ListItemIcon>
+                        <CheckCircle color="success" />
+                      </ListItemIcon>
+                      <ListItemText primary={recommendation} />
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          )}
+
+          {state.systemHealth.alerts && state.systemHealth.alerts.length > 0 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>알림</Typography>
+                <List>
+                  {state.systemHealth.alerts.map((alert: string, index: number) => (
+                    <ListItem key={index}>
+                      <ListItemIcon>
+                        <Warning color="error" />
+                      </ListItemIcon>
+                      <ListItemText primary={alert} />
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          )}
+
+          {(!state.systemHealth.recommendations || state.systemHealth.recommendations.length === 0) &&
+            (!state.systemHealth.alerts || state.systemHealth.alerts.length === 0) && (
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>시스템 상태</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    현재 모든 시스템이 정상적으로 작동하고 있습니다. 추가 권장사항이 없습니다.
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+        </Box>
+      )}
+
+      {/* 최적화 규칙 생성 다이얼로그 */}
+      <Dialog open={state.createRuleDialog} onClose={() => setState(prev => ({ ...prev, createRuleDialog: false }))} maxWidth="md" fullWidth>
+        <DialogTitle>새 최적화 규칙 생성</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="규칙 이름"
+            value={state.newRule.name}
+            onChange={(e) => setState(prev => ({ ...prev, newRule: { ...prev.newRule, name: e.target.value } }))}
+            sx={{ mb: 2, mt: 1 }}
+          />
+          <TextField
+            fullWidth
+            label="설명"
+            value={state.newRule.description}
+            onChange={(e) => setState(prev => ({ ...prev, newRule: { ...prev.newRule, description: e.target.value } }))}
+            sx={{ mb: 2 }}
+            multiline
+            rows={2}
+          />
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>메트릭 유형</InputLabel>
+                <Select
+                  value={state.newRule.condition.metric_type}
+                  onChange={(e) => setState(prev => ({
+                    ...prev,
+                    newRule: {
+                      ...prev.newRule,
+                      condition: { ...prev.newRule.condition, metric_type: e.target.value }
+                    }
+                  }))}
+                >
+                  <MenuItem value="cpu">CPU 사용률</MenuItem>
+                  <MenuItem value="memory">메모리 사용률</MenuItem>
+                  <MenuItem value="response_time">응답 시간</MenuItem>
+                  <MenuItem value="throughput">처리량</MenuItem>
+                  <MenuItem value="accuracy">정확도</MenuItem>
+                  <MenuItem value="latency">지연시간</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>연산자</InputLabel>
+                <Select
+                  value={state.newRule.condition.operator}
+                  onChange={(e) => setState(prev => ({
+                    ...prev,
+                    newRule: {
+                      ...prev.newRule,
+                      condition: { ...prev.newRule.condition, operator: e.target.value }
+                    }
+                  }))}
+                >
+                  <MenuItem value="gt">초과</MenuItem>
+                  <MenuItem value="lt">미만</MenuItem>
+                  <MenuItem value="eq">동일</MenuItem>
+                  <MenuItem value="gte">이상</MenuItem>
+                  <MenuItem value="lte">이하</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="임계값"
+                type="number"
+                value={state.newRule.condition.threshold}
+                onChange={(e) => setState(prev => ({
+                  ...prev,
+                  newRule: {
+                    ...prev.newRule,
+                    condition: { ...prev.newRule.condition, threshold: Number(e.target.value) }
+                  }
+                }))}
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="지속 시간 (초)"
+                type="number"
+                value={state.newRule.condition.duration}
+                onChange={(e) => setState(prev => ({
+                  ...prev,
+                  newRule: {
+                    ...prev.newRule,
+                    condition: { ...prev.newRule.condition, duration: Number(e.target.value) }
+                  }
+                }))}
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>액션 유형</InputLabel>
+                <Select
+                  value={state.newRule.action.type}
+                  onChange={(e) => setState(prev => ({
+                    ...prev,
+                    newRule: {
+                      ...prev.newRule,
+                      action: { ...prev.newRule.action, type: e.target.value }
+                    }
+                  }))}
+                >
+                  <MenuItem value="scale">스케일링</MenuItem>
+                  <MenuItem value="throttle">스로틀링</MenuItem>
+                  <MenuItem value="cache">캐싱</MenuItem>
+                  <MenuItem value="optimize">최적화</MenuItem>
+                  <MenuItem value="alert">알림</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>우선순위</InputLabel>
+                <Select
+                  value={state.newRule.priority}
+                  onChange={(e) => setState(prev => ({
+                    ...prev,
+                    newRule: { ...prev.newRule, priority: e.target.value }
+                  }))}
+                >
+                  <MenuItem value="low">낮음</MenuItem>
+                  <MenuItem value="medium">보통</MenuItem>
+                  <MenuItem value="high">높음</MenuItem>
+                  <MenuItem value="critical">긴급</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setState(prev => ({ ...prev, createRuleDialog: false }))}>취소</Button>
+          <Button onClick={handleCreateRule} variant="contained">생성</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 설정 다이얼로그 */}
+      <Dialog open={state.configDialog} onClose={() => setState(prev => ({ ...prev, configDialog: false }))} maxWidth="md" fullWidth>
+        <DialogTitle>성능 최적화 설정</DialogTitle>
+        <DialogContent>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={state.config.auto_optimization}
+                onChange={(e) => {
+                  setState(prev => ({
+                    ...prev,
+                    config: { ...prev.config, auto_optimization: e.target.checked }
+                  }));
+                }}
+              />
+            }
+            label="자동 최적화 활성화"
+            sx={{ mb: 2 }}
+          />
+
+          <Typography variant="h6" gutterBottom>성능 임계값</Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="CPU 사용률 임계값 (%)"
+                type="number"
+                value={state.config.performance_thresholds.cpu_usage}
+                onChange={(e) => {
+                  setState(prev => ({
+                    ...prev,
+                    config: {
+                      ...prev.config,
+                      performance_thresholds: {
+                        ...prev.config.performance_thresholds,
+                        cpu_usage: Number(e.target.value)
+                      }
+                    }
+                  }));
+                }}
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="메모리 사용률 임계값 (%)"
+                type="number"
+                value={state.config.performance_thresholds.memory_usage}
+                onChange={(e) => {
+                  setState(prev => ({
+                    ...prev,
+                    config: {
+                      ...prev.config,
+                      performance_thresholds: {
+                        ...prev.config.performance_thresholds,
+                        memory_usage: Number(e.target.value)
+                      }
+                    }
+                  }));
+                }}
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="응답 시간 임계값 (ms)"
+                type="number"
+                value={state.config.performance_thresholds.response_time}
+                onChange={(e) => {
+                  setState(prev => ({
+                    ...prev,
+                    config: {
+                      ...prev.config,
+                      performance_thresholds: {
+                        ...prev.config.performance_thresholds,
+                        response_time: Number(e.target.value)
+                      }
+                    }
+                  }));
+                }}
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="처리량 임계값 (req/s)"
+                type="number"
+                value={state.config.performance_thresholds.throughput}
+                onChange={(e) => {
+                  setState(prev => ({
+                    ...prev,
+                    config: {
+                      ...prev.config,
+                      performance_thresholds: {
+                        ...prev.config.performance_thresholds,
+                        throughput: Number(e.target.value)
+                      }
+                    }
+                  }));
+                }}
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setState(prev => ({ ...prev, configDialog: false }))}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default UltraAdvancedAIPerformanceOptimizationDashboard;

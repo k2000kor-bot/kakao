@@ -1,0 +1,736 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+    Box,
+    Paper,
+    Typography,
+    Avatar,
+    Chip,
+    IconButton,
+    Divider,
+    CircularProgress,
+    Tooltip,
+    Badge,
+    Alert,
+    Collapse,
+    LinearProgress,
+    Card,
+    CardContent,
+    Grid,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Rating,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Container
+} from '@mui/material';
+import {
+    Send as SendIcon,
+    SmartToy as AIIcon,
+    Person as UserIcon,
+    Psychology as PsychologyIcon,
+    Memory as MemoryIcon,
+    TrendingUp as TrendingUpIcon,
+    Lightbulb as LightbulbIcon,
+    School as SchoolIcon,
+    Assessment as AssessmentIcon,
+    Feedback as FeedbackIcon,
+    ExpandMore as ExpandMoreIcon,
+    ExpandLess as ExpandLessIcon,
+    Refresh as RefreshIcon,
+    Bookmark as BookmarkIcon,
+    Share as ShareIcon,
+    Download as DownloadIcon,
+    Settings as SettingsIcon,
+    Help as HelpIcon,
+    Close as CloseIcon,
+    ThumbUp as ThumbUpIcon,
+    ThumbDown as ThumbDownIcon,
+    Star as StarIcon,
+    AutoAwesome as AutoAwesomeIcon,
+    Speed as SpeedIcon,
+    Psychology as PsychologyIcon2,
+    ContentCopy as ContentCopy
+} from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
+import AdvancedInputForm from './AdvancedInputForm';
+import advancedConversationMemoryService from '../services/advancedConversationMemoryService';
+import personalizedLearningExperienceService from '../services/personalizedLearningExperienceService';
+import advancedQuestionUnderstandingEngine from '../services/advancedQuestionUnderstandingEngine';
+import integratedAIService from '../services/integratedAIService';
+
+// 고급 채팅 인터페이스 스타일
+const ChatContainer = styled(Paper)(({ theme }) => ({
+    height: '80vh',
+    display: 'flex',
+    flexDirection: 'column',
+    borderRadius: theme.spacing(2),
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+    background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+    overflow: 'hidden'
+}));
+
+const ChatHeader = styled(Box)(({ theme }) => ({
+    padding: theme.spacing(2, 3),
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+}));
+
+const MessagesContainer = styled(Box)(({ theme }) => ({
+    flex: 1,
+    overflowY: 'auto',
+    padding: theme.spacing(2),
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(2),
+    '&::-webkit-scrollbar': {
+        width: '8px'
+    },
+    '&::-webkit-scrollbar-track': {
+        background: 'rgba(0, 0, 0, 0.1)',
+        borderRadius: '4px'
+    },
+    '&::-webkit-scrollbar-thumb': {
+        background: 'rgba(0, 0, 0, 0.3)',
+        borderRadius: '4px',
+        '&:hover': {
+            background: 'rgba(0, 0, 0, 0.5)'
+        }
+    }
+}));
+
+const MessageBubble = styled(Box)<{ isAI: boolean }>(({ theme, isAI }) => ({
+    display: 'flex',
+    gap: theme.spacing(1),
+    justifyContent: isAI ? 'flex-start' : 'flex-end',
+    alignItems: 'flex-start',
+    maxWidth: '80%',
+    alignSelf: isAI ? 'flex-start' : 'flex-end'
+}));
+
+const MessageContent = styled(Paper)<{ isAI: boolean }>(({ theme, isAI }) => ({
+    padding: theme.spacing(2),
+    borderRadius: theme.spacing(2),
+    background: isAI
+        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        : 'linear-gradient(135deg, #74b9ff 0%, #0984e3 100%)',
+    color: 'white',
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+    position: 'relative',
+    '&::before': isAI ? {
+        content: '""',
+        position: 'absolute',
+        left: '-8px',
+        top: '12px',
+        width: 0,
+        height: 0,
+        borderTop: '8px solid transparent',
+        borderBottom: '8px solid transparent',
+        borderRight: '8px solid #667eea'
+    } : {
+        content: '""',
+        position: 'absolute',
+        right: '-8px',
+        top: '12px',
+        width: 0,
+        height: 0,
+        borderTop: '8px solid transparent',
+        borderBottom: '8px solid transparent',
+        borderLeft: '8px solid #74b9ff'
+    }
+}));
+
+const AnalysisPanel = styled(Card)(({ theme }) => ({
+    marginTop: theme.spacing(2),
+    background: 'rgba(255, 255, 255, 0.9)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.2)'
+}));
+
+const LearningInsight = styled(Box)(({ theme }) => ({
+    padding: theme.spacing(2),
+    background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    borderRadius: theme.spacing(1),
+    marginTop: theme.spacing(1),
+    border: '1px solid rgba(255, 255, 255, 0.3)'
+}));
+
+// 인터페이스 정의
+interface ChatMessage {
+    id: string;
+    content: string;
+    isAI: boolean;
+    timestamp: Date;
+    understanding_result?: any;
+    learning_insights?: any;
+    user_feedback?: UserFeedback;
+    metadata: MessageMetadata;
+}
+
+interface UserFeedback {
+    rating: number;
+    helpful: boolean;
+    clear: boolean;
+    complete: boolean;
+    suggestions: string[];
+    emotional_response: 'positive' | 'neutral' | 'negative';
+}
+
+interface MessageMetadata {
+    processing_time: number;
+    model_used: string;
+    confidence_score: number;
+    flags: string[];
+    personalized_content: boolean;
+    memory_integrated: boolean;
+}
+
+interface AdvancedChatInterfaceProps {
+    userId?: string;
+    sessionId?: string;
+}
+
+const AdvancedChatInterface: React.FC<AdvancedChatInterfaceProps> = ({
+    userId = 'default-user',
+    sessionId = 'default-session'
+}) => {
+    // 상태 관리
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [inputValue, setInputValue] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [showAnalysis, setShowAnalysis] = useState(false);
+    const [currentAnalysis, setCurrentAnalysis] = useState<any>(null);
+    const [showLearningInsights, setShowLearningInsights] = useState(false);
+    const [currentLearningInsights, setCurrentLearningInsights] = useState<any>(null);
+    const [showFeedback, setShowFeedback] = useState(false);
+    const [currentFeedback, setCurrentFeedback] = useState<UserFeedback | null>(null);
+    const [conversationMemory, setConversationMemory] = useState<any>(null);
+    const [personalizedExperience, setPersonalizedExperience] = useState<any>(null);
+    const [questionUnderstanding, setQuestionUnderstanding] = useState<any>(null);
+    const [aiResponse, setAiResponse] = useState<any>(null);
+    const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [conversationMode, setConversationMode] = useState<'general' | 'business' | 'technical' | 'creative'>('general');
+
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // 업무용 템플릿
+    const businessTemplates = [
+        { id: 'project-analysis', name: '프로젝트 분석', prompt: '다음 프로젝트에 대한 분석을 해주세요: ' },
+        { id: 'risk-assessment', name: '리스크 평가', prompt: '다음 상황의 리스크를 평가해주세요: ' },
+        { id: 'decision-support', name: '의사결정 지원', prompt: '다음 상황에서의 의사결정을 도와주세요: ' },
+        { id: 'report-generation', name: '보고서 생성', prompt: '다음 내용으로 보고서를 작성해주세요: ' },
+        { id: 'meeting-summary', name: '회의 요약', prompt: '다음 회의 내용을 요약해주세요: ' }
+    ];
+
+    // 스크롤을 맨 아래로 이동
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    // 초기 메시지 설정
+    useEffect(() => {
+        const initialMessage: ChatMessage = {
+            id: '1',
+            content: '안녕하세요! 저는 CORBU AI입니다. 업무 효율성을 높이기 위해 무엇을 도와드릴까요? 🤖\n\n💡 **빠른 시작 옵션:**\n• 프로젝트 분석\n• 리스크 평가\n• 의사결정 지원\n• 보고서 생성\n• 회의 요약',
+            isAI: true,
+            timestamp: new Date(),
+            metadata: {
+                processing_time: 0,
+                model_used: 'CORBU-AI-v2.0',
+                confidence_score: 0.95,
+                flags: ['greeting', 'business-ready'],
+                personalized_content: true,
+                memory_integrated: false
+            }
+        };
+        setMessages([initialMessage]);
+    }, []);
+
+    // 템플릿 선택 처리
+    const handleTemplateSelect = (template: any) => {
+        setInputValue(template.prompt);
+        setSelectedTemplate(template.id);
+        setShowTemplates(false);
+        inputRef.current?.focus();
+    };
+
+    // 메시지 전송 처리
+    const handleSendMessage = async () => {
+        if (!inputValue.trim() || isLoading) return;
+
+        const userMessage: ChatMessage = {
+            id: Date.now().toString(),
+            content: inputValue,
+            isAI: false,
+            timestamp: new Date(),
+            metadata: {
+                processing_time: 0,
+                model_used: 'user-input',
+                confidence_score: 1.0,
+                flags: ['user-message'],
+                personalized_content: false,
+                memory_integrated: false
+            }
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+        setInputValue('');
+        setIsLoading(true);
+
+        try {
+            // 고급 질문 이해 엔진
+            const understanding = await advancedQuestionUnderstandingEngine.quickUnderstand(inputValue);
+            setQuestionUnderstanding(understanding);
+
+            // 대화 메모리 서비스
+            const memory = await advancedConversationMemoryService.processMessage(inputValue, userId, sessionId);
+            setConversationMemory(memory);
+
+            // 개인화된 학습 경험
+            const experience = await personalizedLearningExperienceService.getPersonalizedExperience(userId);
+            setPersonalizedExperience(experience);
+
+            // AI 응답 생성
+            const response = await integratedAIService.generateResponse(inputValue, {
+                userId,
+                sessionId,
+                understanding,
+                memory,
+                experience,
+                conversationMode
+            });
+            setAiResponse(response);
+
+            // AI 응답 메시지 생성
+            const aiMessage: ChatMessage = {
+                id: (Date.now() + 1).toString(),
+                content: response.content,
+                isAI: true,
+                timestamp: new Date(),
+                understanding_result: understanding,
+                learning_insights: response.learning_insights,
+                metadata: {
+                    processing_time: response.processing_time,
+                    model_used: response.model_used,
+                    confidence_score: response.confidence_score,
+                    flags: response.flags,
+                    personalized_content: response.personalized_content,
+                    memory_integrated: response.memory_integrated
+                }
+            };
+
+            setMessages(prev => [...prev, aiMessage]);
+
+            // 분석 결과 설정
+            if (understanding) {
+                setCurrentAnalysis(understanding);
+                setShowAnalysis(true);
+            }
+
+            // 학습 인사이트 설정
+            if (response.learning_insights) {
+                setCurrentLearningInsights(response.learning_insights);
+                setShowLearningInsights(true);
+            }
+
+        } catch (error) {
+            console.error('메시지 처리 오류:', error);
+
+            const errorMessage: ChatMessage = {
+                id: (Date.now() + 1).toString(),
+                content: '죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.',
+                isAI: true,
+                timestamp: new Date(),
+                metadata: {
+                    processing_time: 0,
+                    model_used: 'error-handler',
+                    confidence_score: 0,
+                    flags: ['error'],
+                    personalized_content: false,
+                    memory_integrated: false
+                }
+            };
+
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 키보드 이벤트 처리
+    const handleKeyPress = (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            handleSendMessage();
+        }
+    };
+
+    // 피드백 제출
+    const handleFeedbackSubmit = (feedback: UserFeedback) => {
+        setCurrentFeedback(feedback);
+        setShowFeedback(false);
+        // 피드백을 서버에 전송하는 로직 추가
+    };
+
+    return (
+        <Container maxWidth="lg" sx={{ height: '100vh', py: 2 }}>
+            <ChatContainer>
+                {/* 채팅 헤더 */}
+                <ChatHeader>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
+                            <AIIcon />
+                        </Avatar>
+                        <Box>
+                            <Typography variant="h6" fontWeight="bold">
+                                CORBU AI 비즈니스 어시스턴트
+                            </Typography>
+                            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                업무 효율성 향상을 위한 AI 도우미
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {/* 대화 모드 선택 */}
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <Select
+                                value={conversationMode}
+                                onChange={(e) => setConversationMode(e.target.value as any)}
+                                sx={{
+                                    color: 'white',
+                                    '& .MuiSelect-icon': { color: 'white' },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }
+                                }}
+                            >
+                                <MenuItem value="general">일반</MenuItem>
+                                <MenuItem value="business">비즈니스</MenuItem>
+                                <MenuItem value="technical">기술</MenuItem>
+                                <MenuItem value="creative">창의적</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        <Tooltip title="업무 템플릿">
+                            <IconButton
+                                color="inherit"
+                                onClick={() => setShowTemplates(!showTemplates)}
+                                sx={{
+                                    backgroundColor: showTemplates ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                                }}
+                            >
+                                <AutoAwesomeIcon />
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="분석 패널">
+                            <IconButton
+                                color="inherit"
+                                onClick={() => setShowAnalysis(!showAnalysis)}
+                                sx={{
+                                    backgroundColor: showAnalysis ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                                }}
+                            >
+                                <AssessmentIcon />
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="학습 인사이트">
+                            <IconButton
+                                color="inherit"
+                                onClick={() => setShowLearningInsights(!showLearningInsights)}
+                                sx={{
+                                    backgroundColor: showLearningInsights ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                                }}
+                            >
+                                <SchoolIcon />
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="대화 새로고침">
+                            <IconButton
+                                color="inherit"
+                                onClick={() => window.location.reload()}
+                                sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+                            >
+                                <RefreshIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                </ChatHeader>
+
+                {/* 업무 템플릿 패널 */}
+                <Collapse in={showTemplates}>
+                    <Box sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                        <Typography variant="subtitle2" sx={{ mb: 2, color: 'white' }}>
+                            💼 업무 템플릿 선택
+                        </Typography>
+                        <Grid container spacing={1}>
+                            {businessTemplates.map((template) => (
+                                <Grid item xs={12} sm={6} md={4} key={template.id}>
+                                    <Card
+                                        sx={{
+                                            cursor: 'pointer',
+                                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
+                                        }}
+                                        onClick={() => handleTemplateSelect(template)}
+                                    >
+                                        <CardContent sx={{ p: 2 }}>
+                                            <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
+                                                {template.name}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+                </Collapse>
+
+                {/* 메시지 컨테이너 */}
+                <MessagesContainer>
+                    {messages.map((message) => (
+                        <MessageBubble key={message.id} isAI={message.isAI}>
+                            <Avatar
+                                sx={{
+                                    bgcolor: message.isAI ? 'rgba(102, 126, 234, 0.2)' : 'rgba(116, 185, 255, 0.2)',
+                                    width: 40,
+                                    height: 40
+                                }}
+                            >
+                                {message.isAI ? <AIIcon /> : <UserIcon />}
+                            </Avatar>
+                            <MessageContent isAI={message.isAI}>
+                                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                                    {message.content}
+                                </Typography>
+
+                                {/* 메시지 메타데이터 */}
+                                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, opacity: 0.7 }}>
+                                    <Typography variant="caption">
+                                        {message.timestamp.toLocaleTimeString()}
+                                    </Typography>
+                                    {message.metadata.confidence_score > 0 && (
+                                        <Chip
+                                            label={`신뢰도: ${(message.metadata.confidence_score * 100).toFixed(1)}%`}
+                                            size="small"
+                                            color={message.metadata.confidence_score > 0.8 ? 'success' : 'warning'}
+                                        />
+                                    )}
+                                    {message.metadata.processing_time > 0 && (
+                                        <Chip
+                                            label={`처리시간: ${message.metadata.processing_time}ms`}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    )}
+                                </Box>
+
+                                {/* AI 메시지 액션 버튼 */}
+                                {message.isAI && (
+                                    <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                                        <Tooltip title="도움이 됐어요">
+                                            <IconButton size="small" color="primary">
+                                                <ThumbUpIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="도움이 안 됐어요">
+                                            <IconButton size="small" color="error">
+                                                <ThumbDownIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="북마크">
+                                            <IconButton size="small" color="secondary">
+                                                <BookmarkIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="공유">
+                                            <IconButton size="small" color="info">
+                                                <ShareIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="복사">
+                                            <IconButton size="small" color="default">
+                                                <ContentCopy fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
+                                )}
+                            </MessageContent>
+                        </MessageBubble>
+                    ))}
+
+                    {/* 로딩 인디케이터 */}
+                    {isLoading && (
+                        <MessageBubble isAI={true}>
+                            <Avatar sx={{ bgcolor: 'rgba(102, 126, 234, 0.2)' }}>
+                                <AIIcon />
+                            </Avatar>
+                            <MessageContent isAI={true}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <CircularProgress size={20} />
+                                    <Typography variant="body2">
+                                        AI가 응답을 생성하고 있습니다...
+                                    </Typography>
+                                </Box>
+                            </MessageContent>
+                        </MessageBubble>
+                    )}
+
+                    <div ref={messagesEndRef} />
+                </MessagesContainer>
+
+                {/* 입력 영역 */}
+                <Box sx={{ p: 2, borderTop: '1px solid rgba(0, 0, 0, 0.1)' }}>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+                        <TextField
+                            ref={inputRef}
+                            fullWidth
+                            multiline
+                            maxRows={4}
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="업무 관련 질문이나 요청사항을 입력하세요... (Enter로 전송, Shift+Enter로 줄바꿈)"
+                            variant="outlined"
+                            disabled={isLoading}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 3,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 1)'
+                                    }
+                                }
+                            }}
+                        />
+                        <IconButton
+                            color="primary"
+                            onClick={handleSendMessage}
+                            disabled={!inputValue.trim() || isLoading}
+                            sx={{
+                                bgcolor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                    bgcolor: 'primary.dark'
+                                },
+                                '&:disabled': {
+                                    bgcolor: 'grey.300',
+                                    color: 'grey.500'
+                                }
+                            }}
+                        >
+                            <SendIcon />
+                        </IconButton>
+                    </Box>
+
+                    {/* 빠른 액션 버튼 */}
+                    <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                            label="프로젝트 분석"
+                            size="small"
+                            onClick={() => setInputValue('프로젝트 분석을 도와주세요: ')}
+                            sx={{ cursor: 'pointer' }}
+                        />
+                        <Chip
+                            label="리스크 평가"
+                            size="small"
+                            onClick={() => setInputValue('리스크 평가를 해주세요: ')}
+                            sx={{ cursor: 'pointer' }}
+                        />
+                        <Chip
+                            label="보고서 작성"
+                            size="small"
+                            onClick={() => setInputValue('보고서를 작성해주세요: ')}
+                            sx={{ cursor: 'pointer' }}
+                        />
+                        <Chip
+                            label="회의 요약"
+                            size="small"
+                            onClick={() => setInputValue('회의 내용을 요약해주세요: ')}
+                            sx={{ cursor: 'pointer' }}
+                        />
+                    </Box>
+                </Box>
+            </ChatContainer>
+
+            {/* 분석 패널 */}
+            <Collapse in={showAnalysis}>
+                <AnalysisPanel>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                            📊 질문 분석 결과
+                        </Typography>
+                        {currentAnalysis && (
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" color="primary">
+                                        의도 분석
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        {currentAnalysis.intent || '분석 중...'}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" color="primary">
+                                        감정 분석
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        {currentAnalysis.sentiment || '분석 중...'}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Typography variant="subtitle2" color="primary">
+                                        키워드 추출
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        {(currentAnalysis.keywords || []).map((keyword: string, index: number) => (
+                                            <Chip key={index} label={keyword} size="small" />
+                                        ))}
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        )}
+                    </CardContent>
+                </AnalysisPanel>
+            </Collapse>
+
+            {/* 학습 인사이트 패널 */}
+            <Collapse in={showLearningInsights}>
+                <AnalysisPanel>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                            🎓 학습 인사이트
+                        </Typography>
+                        {currentLearningInsights && (
+                            <LearningInsight>
+                                <Typography variant="body2">
+                                    {currentLearningInsights.insight || '학습 인사이트를 생성 중입니다...'}
+                                </Typography>
+                            </LearningInsight>
+                        )}
+                    </CardContent>
+                </AnalysisPanel>
+            </Collapse>
+        </Container>
+    );
+};
+
+export default AdvancedChatInterface;

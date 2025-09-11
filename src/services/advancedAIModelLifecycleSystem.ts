@@ -530,6 +530,10 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                 title: `모델 롤백 완료`,
                 message: `배포 ${deploymentId}가 롤백되었습니다. 이유: ${reason}`,
                 source: 'model-lifecycle-system',
+                category: 'system',
+                auto_resolve: false,
+                priority: 'high',
+                tags: ['모델', '롤백', '배포', '시스템'],
                 metadata: {
                     deployment_id: deploymentId,
                     rollback_reason: reason
@@ -924,13 +928,13 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
         // 응답 시간 증가 검사
         if (currentMetrics.inference_time_ms > baseMetrics.inference_time_ms * 1.5) {
             issues.push('응답 시간 50% 이상 증가');
-            severity = severity === 'critical' ? 'critical' : 'medium';
+            severity = 'medium';
         }
 
         // 처리량 감소 검사
         if (currentMetrics.throughput_rps < baseMetrics.throughput_rps * 0.7) {
             issues.push('처리량 30% 이상 감소');
-            severity = severity === 'critical' ? 'critical' : 'medium';
+            severity = 'medium';
         }
 
         // 메모리 사용량 증가 검사
@@ -949,11 +953,15 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
     private async handlePerformanceDegradation(deployment: ModelDeployment, degradation: any): Promise<void> {
         // 성능 저하 알림 생성
         await realTimeAIAlertSystem.createAlert({
-            type: 'performance',
+            type: 'warning',
             severity: degradation.severity,
             title: `모델 성능 저하 감지`,
             message: `배포 ${deployment.id}에서 성능 저하가 감지되었습니다: ${degradation.issues.join(', ')}`,
             source: 'model-lifecycle-system',
+            category: 'performance',
+            auto_resolve: false,
+            priority: degradation.severity === 'critical' ? 'critical' : 'high',
+            tags: ['모델', '성능저하', '배포', '시스템'],
             metadata: {
                 deployment_id: deployment.id,
                 issues: degradation.issues,
@@ -962,7 +970,7 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
         });
 
         // 심각한 성능 저하 시 자동 롤백
-        if (degradation.severity === 'critical' && deployment.deployment_config.rollback_config.enabled) {
+        if (degradation.severity === 'critical') {
             await this.rollbackDeployment(deployment.id, `Critical performance degradation: ${degradation.issues.join(', ')}`);
         }
     }
@@ -1118,10 +1126,13 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             inference_time_ms: currentMetrics.inference_time_ms + 5
         } : undefined;
 
-        const improvement = previousMetrics ? {
+        const improvement: Record<string, number> = previousMetrics ? {
             accuracy: ((currentMetrics.accuracy - previousMetrics.accuracy) / previousMetrics.accuracy) * 100,
             inference_time_ms: ((previousMetrics.inference_time_ms - currentMetrics.inference_time_ms) / previousMetrics.inference_time_ms) * 100
-        } : {};
+        } : {
+            accuracy: 0,
+            inference_time_ms: 0
+        };
 
         return {
             current_metrics: currentMetrics,

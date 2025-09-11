@@ -581,9 +581,9 @@ class AdvancedConversationMemoryService {
 
         const previousComplexities = history.map(entry =>
             entry.understanding_result?.semantic_analysis.complexity_assessment.overall_complexity
-        ).filter(Boolean);
+        ).filter((complexity): complexity is number => typeof complexity === 'number');
 
-        if (previousComplexities.length > 0) {
+        if (previousComplexities && previousComplexities.length > 0) {
             const avgPrevious = previousComplexities.reduce((a, b) => a + b, 0) / previousComplexities.length;
             const diff = currentComplexity - avgPrevious;
 
@@ -656,7 +656,7 @@ class AdvancedConversationMemoryService {
                     graph.edges.push({
                         source: relationship.source,
                         target: relationship.target,
-                        relationship_type: relationship.relationship_type,
+                        relationship_type: relationship.relationship_type as 'prerequisite' | 'related' | 'contradicts' | 'enhances',
                         strength: relationship.strength,
                         last_updated: new Date()
                     });

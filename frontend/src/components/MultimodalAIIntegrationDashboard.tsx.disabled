@@ -1,0 +1,621 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box, Typography, Grid, Card, CardContent, CardHeader, IconButton, Chip, LinearProgress,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Dialog,
+  DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select,
+  MenuItem, Alert, Tooltip, Switch, FormControlLabel, Divider, List, ListItem, ListItemText,
+  ListItemIcon, Accordion, AccordionSummary, AccordionDetails, Slider, ToggleButtonGroup,
+  ToggleButton, CircularProgress, Avatar, Badge, Fab, Drawer, ListItemButton, ImageList,
+  ImageListItem, ImageListItemBar, IconButton as MuiIconButton
+} from '@mui/material';
+import {
+  Videocam, Mic, Image, TextFields, Sensors, Psychology, Memory, Storage, NetworkCheck,
+  Computer as Cpu, Settings, PlayArrow, Pause, Refresh, Warning, CheckCircle, Error, Info,
+  ExpandMore, Analytics, Tune as Optimization, AutoFixHigh, Monitor, Assessment, TrendingUp,
+  TrendingDown, Equalizer, Dashboard, Code, Build, Security, Cloud, Storage as StorageIcon,
+  Memory as MemoryIcon, NetworkCheck as NetworkIcon, Psychology as Brain, Speed, FlashOn,
+  BubbleChart, ScatterPlot, Timeline as TimelineIcon, DataUsage, Hub, DeviceHub, Router,
+  Add, Close, Upload, Download, PlayCircle, Stop, RecordVoiceOver, PhotoCamera,
+  VideoLibrary, Audiotrack, Description, TouchApp, Gesture, Face, Language, Translate,
+  AutoAwesome, Sync, CloudUpload, CloudDownload, SettingsVoice, Hearing, Visibility
+} from '@mui/icons-material';
+import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement,
+  ArcElement, Title, Tooltip as ChartTooltip, Legend, Filler, RadialLinearScale
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement,
+  Title, ChartTooltip, Legend, Filler, RadialLinearScale
+);
+
+interface MultimodalData {
+  id: string;
+  type: 'text' | 'image' | 'audio' | 'video' | 'sensor' | 'gesture' | 'emotion';
+  content: string;
+  confidence: number;
+  timestamp: string;
+  processingTime: number;
+  status: 'processing' | 'completed' | 'error';
+  metadata: any;
+}
+
+interface MultimodalModel {
+  id: string;
+  name: string;
+  modality: string;
+  accuracy: number;
+  latency: number;
+  throughput: number;
+  status: 'active' | 'inactive' | 'training';
+  lastUpdate: string;
+}
+
+interface MultimodalTask {
+  id: string;
+  name: string;
+  description: string;
+  modalities: string[];
+  complexity: 'low' | 'medium' | 'high' | 'extreme';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number;
+  estimatedTime: number;
+}
+
+const MultimodalAIIntegrationDashboard: React.FC = () => {
+  const [multimodalData, setMultimodalData] = useState<MultimodalData[]>([
+    { id: '1', type: 'text', content: '안녕하세요, AI 시스템입니다.', confidence: 98.5, timestamp: '2024-01-15 15:30:00', processingTime: 0.12, status: 'completed', metadata: { language: 'ko', sentiment: 'positive' } },
+    { id: '2', type: 'image', content: '사용자 얼굴 이미지', confidence: 95.2, timestamp: '2024-01-15 15:29:00', processingTime: 0.45, status: 'completed', metadata: { objects: ['face', 'person'], emotions: ['happy', 'confident'] } },
+    { id: '3', type: 'audio', content: '음성 명령: "날씨를 알려줘"', confidence: 92.8, timestamp: '2024-01-15 15:28:00', processingTime: 0.23, status: 'completed', metadata: { language: 'ko', intent: 'weather_query' } },
+    { id: '4', type: 'video', content: '제스처 인식: 손가락 제스처', confidence: 89.1, timestamp: '2024-01-15 15:27:00', processingTime: 0.67, status: 'processing', metadata: { gesture: 'point', direction: 'up' } },
+    { id: '5', type: 'sensor', content: '센서 데이터: 온도 23.5°C', confidence: 99.1, timestamp: '2024-01-15 15:26:00', processingTime: 0.05, status: 'completed', metadata: { sensor_type: 'temperature', unit: 'celsius' } }
+  ]);
+
+  const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([
+    { id: 'mm1', name: '텍스트 처리 모델', modality: 'text', accuracy: 98.5, latency: 0.12, throughput: 1000, status: 'active', lastUpdate: '2024-01-15 15:30:00' },
+    { id: 'mm2', name: '이미지 인식 모델', modality: 'image', accuracy: 95.2, latency: 0.45, throughput: 500, status: 'active', lastUpdate: '2024-01-15 15:29:00' },
+    { id: 'mm3', name: '음성 인식 모델', modality: 'audio', accuracy: 92.8, latency: 0.23, throughput: 800, status: 'active', lastUpdate: '2024-01-15 15:28:00' },
+    { id: 'mm4', name: '비디오 분석 모델', modality: 'video', accuracy: 89.1, latency: 0.67, throughput: 300, status: 'training', lastUpdate: '2024-01-15 15:27:00' },
+    { id: 'mm5', name: '센서 데이터 모델', modality: 'sensor', accuracy: 99.1, latency: 0.05, throughput: 2000, status: 'active', lastUpdate: '2024-01-15 15:26:00' },
+    { id: 'mm6', name: '제스처 인식 모델', modality: 'gesture', accuracy: 87.3, latency: 0.34, throughput: 600, status: 'active', lastUpdate: '2024-01-15 15:25:00' },
+    { id: 'mm7', name: '감정 인식 모델', modality: 'emotion', accuracy: 91.7, latency: 0.28, throughput: 700, status: 'active', lastUpdate: '2024-01-15 15:24:00' }
+  ]);
+
+  const [multimodalTasks, setMultimodalTasks] = useState<MultimodalTask[]>([
+    { id: 'task1', name: '멀티모달 대화 분석', description: '텍스트, 음성, 제스처를 통합한 대화 분석', modalities: ['text', 'audio', 'gesture'], complexity: 'high', priority: 'high', status: 'running', progress: 65, estimatedTime: 120 },
+    { id: 'task2', name: '환경 인식 시스템', description: '이미지, 센서 데이터를 통합한 환경 분석', modalities: ['image', 'sensor'], complexity: 'medium', priority: 'medium', status: 'completed', progress: 100, estimatedTime: 45 },
+    { id: 'task3', name: '감정 상태 분석', description: '얼굴 표정, 음성 톤, 생체 신호 통합 분석', modalities: ['image', 'audio', 'sensor'], complexity: 'extreme', priority: 'critical', status: 'pending', progress: 0, estimatedTime: 180 },
+    { id: 'task4', name: '실시간 번역', description: '음성, 텍스트, 제스처를 통합한 실시간 번역', modalities: ['audio', 'text', 'gesture'], complexity: 'high', priority: 'high', status: 'running', progress: 35, estimatedTime: 90 }
+  ]);
+
+  const [activeModalities, setActiveModalities] = useState<string[]>(['text', 'image', 'audio']);
+  const [processingStatus, setProcessingStatus] = useState({
+    isProcessing: false,
+    currentTask: '',
+    overallProgress: 0
+  });
+
+  const [multimodalMetrics, setMultimodalMetrics] = useState({
+    totalProcessed: 15420,
+    averageAccuracy: 94.2,
+    averageLatency: 0.28,
+    totalThroughput: 4900,
+    activeModels: 6,
+    integrationEfficiency: 87.5
+  });
+
+  const [multimodalHistory, setMultimodalHistory] = useState<any>({
+    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+    datasets: [
+      { label: '텍스트 처리', data: [85, 88, 92, 95, 93, 91], borderColor: 'rgb(75, 192, 192)', backgroundColor: 'rgba(75, 192, 192, 0.1)', fill: true },
+      { label: '이미지 처리', data: [78, 82, 87, 92, 89, 86], borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.1)', fill: true },
+      { label: '음성 처리', data: [72, 76, 81, 88, 85, 82], borderColor: 'rgb(54, 162, 235)', backgroundColor: 'rgba(54, 162, 235, 0.1)', fill: true },
+      { label: '비디오 처리', data: [65, 69, 74, 81, 78, 75], borderColor: 'rgb(255, 205, 86)', backgroundColor: 'rgba(255, 205, 86, 0.1)', fill: true }
+    ]
+  });
+
+  const [modalityRadar, setModalityRadar] = useState<any>({
+    labels: ['텍스트', '이미지', '음성', '비디오', '센서', '제스처', '감정'],
+    datasets: [
+      {
+        label: '정확도',
+        data: [98.5, 95.2, 92.8, 89.1, 99.1, 87.3, 91.7],
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderWidth: 2
+      },
+      {
+        label: '처리 속도',
+        data: [95, 85, 90, 75, 98, 80, 88],
+        borderColor: 'rgb(255, 99, 132)',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        borderWidth: 2
+      }
+    ]
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadDialog, setUploadDialog] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const getModalityIcon = (type: string) => {
+    switch (type) {
+      case 'text': return <TextFields />;
+      case 'image': return <Image />;
+      case 'audio': return <Mic />;
+      case 'video': return <Videocam />;
+      case 'sensor': return <Sensors />;
+      case 'gesture': return <Gesture />;
+      case 'emotion': return <Face />;
+      default: return <DataUsage />;
+    }
+  };
+
+  const getModalityColor = (type: string) => {
+    switch (type) {
+      case 'text': return 'primary';
+      case 'image': return 'secondary';
+      case 'audio': return 'success';
+      case 'video': return 'warning';
+      case 'sensor': return 'info';
+      case 'gesture': return 'error';
+      case 'emotion': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'success';
+      case 'processing': return 'warning';
+      case 'error': return 'error';
+      case 'pending': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getComplexityColor = (complexity: string) => {
+    switch (complexity) {
+      case 'low': return 'success';
+      case 'medium': return 'info';
+      case 'high': return 'warning';
+      case 'extreme': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const handleModalityToggle = (modality: string) => {
+    setActiveModalities(prev =>
+      prev.includes(modality)
+        ? prev.filter(m => m !== modality)
+        : [...prev, modality]
+    );
+  };
+
+  const startMultimodalProcessing = () => {
+    setProcessingStatus(prev => ({ ...prev, isProcessing: true, overallProgress: 0 }));
+
+    const interval = setInterval(() => {
+      setProcessingStatus(prev => {
+        if (prev.overallProgress >= 100) {
+          clearInterval(interval);
+          return { ...prev, isProcessing: false, overallProgress: 100 };
+        }
+        return { ...prev, overallProgress: prev.overallProgress + 5 };
+      });
+    }, 200);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setSelectedFiles(Array.from(event.target.files));
+      setUploadDialog(true);
+    }
+  };
+
+  const processUploadedFiles = () => {
+    // 파일 처리 로직
+    console.log('파일 처리:', selectedFiles);
+    setUploadDialog(false);
+    setSelectedFiles([]);
+  };
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Hub sx={{ mr: 2, color: 'primary.main' }} />
+        멀티모달 AI 통합 시스템
+      </Typography>
+
+      {/* 멀티모달 시스템 개요 */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardHeader
+              title="멀티모달 처리 모니터링"
+              action={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    startIcon={processingStatus.isProcessing ? <Pause /> : <PlayArrow />}
+                    onClick={processingStatus.isProcessing ? () => setProcessingStatus(prev => ({ ...prev, isProcessing: false })) : startMultimodalProcessing}
+                    color={processingStatus.isProcessing ? 'warning' : 'primary'}
+                  >
+                    {processingStatus.isProcessing ? '처리 중지' : '처리 시작'}
+                  </Button>
+                </Box>
+              }
+            />
+            <CardContent>
+              <Line
+                data={multimodalHistory}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { position: 'top' },
+                    title: { display: false }
+                  },
+                  scales: {
+                    y: { beginAtZero: true, max: 100 }
+                  }
+                }}
+                height={300}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardHeader title="멀티모달 메트릭" />
+            <CardContent>
+              <List>
+                <ListItem>
+                  <ListItemIcon>
+                    <DataUsage />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="총 처리량"
+                    secondary={`${multimodalMetrics.totalProcessed.toLocaleString()} 건`}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <CheckCircle />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="평균 정확도"
+                    secondary={`${multimodalMetrics.averageAccuracy}%`}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <Speed />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="평균 지연시간"
+                    secondary={`${multimodalMetrics.averageLatency}s`}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <Hub />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="통합 효율성"
+                    secondary={`${multimodalMetrics.integrationEfficiency}%`}
+                  />
+                </ListItem>
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 모달리티 선택 */}
+      <Card sx={{ mb: 4 }}>
+        <CardHeader title="활성 모달리티 관리" />
+        <CardContent>
+          <ToggleButtonGroup
+            value={activeModalities}
+            onChange={(event, newModalities) => setActiveModalities(newModalities)}
+            aria-label="모달리티 선택"
+            sx={{ flexWrap: 'wrap', gap: 1 }}
+          >
+            {['text', 'image', 'audio', 'video', 'sensor', 'gesture', 'emotion'].map((modality) => (
+              <ToggleButton key={modality} value={modality} aria-label={modality}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {getModalityIcon(modality)}
+                  {modality === 'text' && '텍스트'}
+                  {modality === 'image' && '이미지'}
+                  {modality === 'audio' && '음성'}
+                  {modality === 'video' && '비디오'}
+                  {modality === 'sensor' && '센서'}
+                  {modality === 'gesture' && '제스처'}
+                  {modality === 'emotion' && '감정'}
+                </Box>
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </CardContent>
+      </Card>
+
+      {/* 멀티모달 모델 성능 */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {multimodalModels.map((model) => (
+          <Grid item xs={12} sm={6} md={4} key={model.id}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" component="div">
+                    {model.name}
+                  </Typography>
+                  <Chip
+                    label={model.status}
+                    color={model.status === 'active' ? 'success' : model.status === 'training' ? 'warning' : 'default'}
+                    size="small"
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  {getModalityIcon(model.modality)}
+                  <Chip
+                    label={model.modality}
+                    color={getModalityColor(model.modality) as any}
+                    size="small"
+                  />
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    정확도: {model.accuracy}%
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={model.accuracy}
+                    color="primary"
+                    sx={{ mb: 1 }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    지연시간: {model.latency}s
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={100 - (model.latency * 100)}
+                    color="secondary"
+                    sx={{ mb: 1 }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    처리량: {model.throughput}/s
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={(model.throughput / 2000) * 100}
+                    color="success"
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {model.lastUpdate}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* 멀티모달 작업 관리 */}
+      <Card sx={{ mb: 4 }}>
+        <CardHeader title="멀티모달 작업 관리" />
+        <CardContent>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>작업명</TableCell>
+                  <TableCell>설명</TableCell>
+                  <TableCell>모달리티</TableCell>
+                  <TableCell>복잡도</TableCell>
+                  <TableCell>우선순위</TableCell>
+                  <TableCell>진행률</TableCell>
+                  <TableCell>상태</TableCell>
+                  <TableCell>작업</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {multimodalTasks.map((task) => (
+                  <TableRow key={task.id}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Hub color="primary" />
+                        {task.name}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{task.description}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {task.modalities.map((modality) => (
+                          <Chip
+                            key={modality}
+                            icon={getModalityIcon(modality)}
+                            label={modality}
+                            size="small"
+                            color={getModalityColor(modality) as any}
+                          />
+                        ))}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={task.complexity}
+                        color={getComplexityColor(task.complexity) as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={task.priority}
+                        color={task.priority === 'critical' ? 'error' : task.priority === 'high' ? 'warning' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={task.progress}
+                          sx={{ width: 60 }}
+                        />
+                        <Typography variant="body2">{task.progress}%</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={task.status}
+                        color={getStatusColor(task.status) as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        disabled={task.status === 'running'}
+                      >
+                        실행
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+
+      {/* 모달리티 성능 비교 */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="모달리티 성능 비교" />
+            <CardContent>
+              <Radar
+                data={modalityRadar}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { position: 'top' }
+                  },
+                  scales: {
+                    r: {
+                      beginAtZero: true,
+                      max: 100
+                    }
+                  }
+                }}
+                height={300}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="최근 멀티모달 데이터" />
+            <CardContent>
+              <List>
+                {multimodalData.slice(0, 5).map((data) => (
+                  <ListItem key={data.id}>
+                    <ListItemIcon>
+                      {getModalityIcon(data.type)}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={data.content}
+                      secondary={`${data.timestamp} - 정확도: ${data.confidence}%`}
+                    />
+                    <Chip
+                      label={data.status}
+                      color={getStatusColor(data.status) as any}
+                      size="small"
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 파일 업로드 FAB */}
+      <Fab
+        color="primary"
+        aria-label="파일 업로드"
+        sx={{ position: 'fixed', bottom: 16, right: 16 }}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <Upload />
+      </Fab>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,video/*,audio/*,.txt,.pdf"
+        style={{ display: 'none' }}
+        onChange={handleFileUpload}
+      />
+
+      {/* 파일 업로드 다이얼로그 */}
+      <Dialog open={uploadDialog} onClose={() => setUploadDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>멀티모달 파일 업로드</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            선택된 파일: {selectedFiles.length}개
+          </Typography>
+          <List>
+            {selectedFiles.map((file, index) => (
+              <ListItem key={index}>
+                <ListItemIcon>
+                  {file.type.startsWith('image/') && <Image />}
+                  {file.type.startsWith('video/') && <Videocam />}
+                  {file.type.startsWith('audio/') && <Mic />}
+                  {file.type.includes('text') && <TextFields />}
+                </ListItemIcon>
+                <ListItemText
+                  primary={file.name}
+                  secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUploadDialog(false)}>취소</Button>
+          <Button onClick={processUploadedFiles} variant="contained">
+            처리 시작
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 처리 진행률 */}
+      {processingStatus.isProcessing && (
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <CircularProgress variant="determinate" value={processingStatus.overallProgress} />
+              <Typography variant="h6">
+                멀티모달 처리 진행률: {processingStatus.overallProgress}%
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={processingStatus.overallProgress}
+              sx={{ height: 8, borderRadius: 4 }}
+            />
+          </CardContent>
+        </Card>
+      )}
+    </Box>
+  );
+};
+
+export default MultimodalAIIntegrationDashboard;

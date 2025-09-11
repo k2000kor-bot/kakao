@@ -477,7 +477,11 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
         const recentEmotions: EmotionResult[] = [];
         const userEmotionData = Array.from(this.emotionData.values())
             .filter(data => data.context.user_id === userId)
-            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+            .sort((a, b) => {
+                const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+                const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+                return timestampB.getTime() - timestampA.getTime();
+            })
             .slice(0, 5);
 
         for (const data of userEmotionData) {
@@ -786,7 +790,11 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
     // Public getters
     public getEmotionData(limit?: number): EmotionData[] {
         const data = Array.from(this.emotionData.values())
-            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+            .sort((a, b) => {
+                const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+                const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+                return timestampB.getTime() - timestampA.getTime();
+            });
         return limit ? data.slice(0, limit) : data;
     }
 

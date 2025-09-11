@@ -213,7 +213,7 @@ class AITeamCompositionOptimizationSystem {
     this.initializeSystem();
     this.createInitialTeams();
     this.startOptimizationMonitoring();
-    
+
     console.log('✅ AI 팀 구성 최적화 시스템이 시작되었습니다.');
     realTimeAIAlertSystem.sendAlert('info', 'AI 팀 구성 최적화 시스템이 시작되었습니다.');
   }
@@ -226,14 +226,14 @@ class AITeamCompositionOptimizationSystem {
 
     this.isRunning = false;
     this.cleanupData();
-    
+
     console.log('🛑 AI 팀 구성 최적화 시스템이 중지되었습니다.');
     realTimeAIAlertSystem.sendAlert('info', 'AI 팀 구성 최적화 시스템이 중지되었습니다.');
   }
 
   private initializeSystem(): void {
     console.log('🔧 팀 구성 최적화 시스템 초기화 중...');
-    
+
     console.log('👥 팀 구성 분석 엔진 초기화 완료');
     console.log('🎯 역할 최적화 알고리즘 초기화 완료');
     console.log('🔄 실시간 최적화 엔진 초기화 완료');
@@ -477,7 +477,7 @@ class AITeamCompositionOptimizationSystem {
 
   public createTeam(team: Omit<TeamComposition, 'teamId' | 'optimization' | 'performance' | 'recommendations' | 'timestamp'>): TeamComposition {
     const teamId = `team-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const fullTeam: TeamComposition = {
       ...team,
       teamId,
@@ -556,13 +556,13 @@ class AITeamCompositionOptimizationSystem {
 
     // 팀 구성 최적화
     this.optimizeComposition(team);
-    
+
     // 역할 배정 최적화
     this.optimizeRoleAssignment(team);
-    
+
     // 스킬 균형 최적화
     this.optimizeSkillBalance(team);
-    
+
     // 다양성 최적화
     this.optimizeDiversity(team);
 
@@ -571,7 +571,7 @@ class AITeamCompositionOptimizationSystem {
 
     // 최적화 결과 분석
     this.analyzeOptimizationResults(team);
-    
+
     // 권장사항 생성
     this.generateRecommendations(team);
 
@@ -581,7 +581,7 @@ class AITeamCompositionOptimizationSystem {
   private optimizeComposition(team: TeamComposition): void {
     // 팀 구성 최적화 (간단한 구현)
     const members = team.members;
-    
+
     // 스킬 겹침 분석 및 최적화
     const skillOverlap = this.analyzeSkillOverlap(members);
     if (skillOverlap > 0.7) {
@@ -618,7 +618,7 @@ class AITeamCompositionOptimizationSystem {
   private optimizeSkillBalance(team: TeamComposition): void {
     // 스킬 균형 최적화
     const skillGaps = this.identifySkillGaps(team);
-    
+
     skillGaps.forEach(gap => {
       team.optimization.recommendations.push({
         recommendationId: `rec-${Date.now()}`,
@@ -638,7 +638,7 @@ class AITeamCompositionOptimizationSystem {
   private optimizeDiversity(team: TeamComposition): void {
     // 다양성 최적화
     const diversityScore = this.calculateDiversityScore(team);
-    
+
     if (diversityScore < 0.7) {
       team.optimization.recommendations.push({
         recommendationId: `rec-${Date.now()}`,
@@ -659,7 +659,7 @@ class AITeamCompositionOptimizationSystem {
     // 스킬 겹침 분석 (간단한 구현)
     const allSkills = members.flatMap(m => m.skills.map(s => s.name));
     const uniqueSkills = new Set(allSkills);
-    
+
     return 1 - (uniqueSkills.size / allSkills.length);
   }
 
@@ -680,14 +680,14 @@ class AITeamCompositionOptimizationSystem {
 
   private calculateRoleFitScore(member: TeamMember, role: TeamRole): number {
     let score = 0;
-    
+
     // 필수 스킬 매칭
     role.requiredSkills.forEach(skill => {
       const memberSkill = member.skills.find(s => s.name === skill);
       if (memberSkill) {
-        score += memberSkill.level === 'expert' ? 1 : 
-                memberSkill.level === 'advanced' ? 0.8 :
-                memberSkill.level === 'intermediate' ? 0.6 : 0.4;
+        score += memberSkill.level === 'expert' ? 1 :
+          memberSkill.level === 'advanced' ? 0.8 :
+            memberSkill.level === 'intermediate' ? 0.6 : 0.4;
       }
     });
 
@@ -707,28 +707,28 @@ class AITeamCompositionOptimizationSystem {
     const skillScore = this.calculateRoleFitScore(member, role);
     const qualityScore = member.qualityMetrics.overallQuality;
     const availabilityScore = member.availability;
-    
+
     return (skillScore * 0.4 + qualityScore * 0.4 + availabilityScore * 0.2);
   }
 
-  private identifySkillGaps(team: TeamComposition): Array<{skill: string, importance: number}> {
+  private identifySkillGaps(team: TeamComposition): Array<{ skill: string, importance: number }> {
     // 스킬 격차 식별
     const requiredSkills = team.roles.flatMap(r => r.requiredSkills);
     const teamSkills = team.members.flatMap(m => m.skills.map(s => s.name));
-    
-    const gaps: Array<{skill: string, importance: number}> = [];
+
+    const gaps: Array<{ skill: string, importance: number }> = [];
     const uniqueRequiredSkills = [...new Set(requiredSkills)];
-    
+
     uniqueRequiredSkills.forEach(skill => {
       if (!teamSkills.includes(skill)) {
         const importance = team.roles
           .filter(r => r.requiredSkills.includes(skill))
           .reduce((sum, r) => sum + (r.importance === 'critical' ? 1 : 0.5), 0);
-        
+
         gaps.push({ skill, importance: importance / team.roles.length });
       }
     });
-    
+
     return gaps;
   }
 
@@ -737,18 +737,18 @@ class AITeamCompositionOptimizationSystem {
     const collaborationStyles = new Set(team.members.map(m => m.collaborationStyle));
     const communicationPreferences = new Set(team.members.map(m => m.communicationPreference));
     const skillCategories = new Set(team.members.flatMap(m => m.skills.map(s => s.category)));
-    
+
     const styleDiversity = collaborationStyles.size / 4; // 4가지 스타일
     const communicationDiversity = communicationPreferences.size / 4; // 4가지 선호도
     const skillDiversity = skillCategories.size / 4; // 4가지 카테고리
-    
+
     return (styleDiversity + communicationDiversity + skillDiversity) / 3;
   }
 
   private analyzeOptimizationResults(team: TeamComposition): void {
     // 최적화 결과 분석
     const results = team.optimization.results;
-    
+
     results.forEach(result => {
       if (result.improvement > 0.1) {
         console.log(`📈 상당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
@@ -804,22 +804,22 @@ class AITeamCompositionOptimizationSystem {
     if (!team) return;
 
     const performance = team.performance;
-    
+
     // 기술적 성과 계산
     performance.technicalPerformance = this.calculateTechnicalPerformance(team);
-    
+
     // 협업 성과 계산
     performance.collaborationPerformance = this.calculateCollaborationPerformance(team);
-    
+
     // 의사소통 성과 계산
     performance.communicationPerformance = this.calculateCommunicationPerformance(team);
-    
+
     // 문제해결 성과 계산
     performance.problemSolvingPerformance = this.calculateProblemSolvingPerformance(team);
-    
+
     // 혁신 성과 계산
     performance.innovationPerformance = this.calculateInnovationPerformance(team);
-    
+
     // 전체 성과 계산
     performance.overallPerformance = (
       performance.technicalPerformance * 0.25 +
@@ -828,7 +828,7 @@ class AITeamCompositionOptimizationSystem {
       performance.problemSolvingPerformance * 0.2 +
       performance.innovationPerformance * 0.1
     );
-    
+
     // 효율성, 만족도, 생산성, 품질 계산
     performance.efficiency = this.calculateEfficiency(team);
     performance.satisfaction = this.calculateSatisfaction(team);
@@ -839,54 +839,54 @@ class AITeamCompositionOptimizationSystem {
   private calculateTechnicalPerformance(team: TeamComposition): number {
     if (team.members.length === 0) return 0;
 
-    const totalTechnicalQuality = team.members.reduce((sum, member) => 
+    const totalTechnicalQuality = team.members.reduce((sum, member) =>
       sum + member.qualityMetrics.technicalQuality, 0);
-    
+
     return totalTechnicalQuality / team.members.length;
   }
 
   private calculateCollaborationPerformance(team: TeamComposition): number {
     if (team.members.length === 0) return 0;
 
-    const totalCollaborationQuality = team.members.reduce((sum, member) => 
+    const totalCollaborationQuality = team.members.reduce((sum, member) =>
       sum + member.qualityMetrics.collaborationQuality, 0);
-    
+
     return totalCollaborationQuality / team.members.length;
   }
 
   private calculateCommunicationPerformance(team: TeamComposition): number {
     if (team.members.length === 0) return 0;
 
-    const totalCommunicationQuality = team.members.reduce((sum, member) => 
+    const totalCommunicationQuality = team.members.reduce((sum, member) =>
       sum + member.qualityMetrics.communicationQuality, 0);
-    
+
     return totalCommunicationQuality / team.members.length;
   }
 
   private calculateProblemSolvingPerformance(team: TeamComposition): number {
     if (team.members.length === 0) return 0;
 
-    const totalProblemSolvingQuality = team.members.reduce((sum, member) => 
+    const totalProblemSolvingQuality = team.members.reduce((sum, member) =>
       sum + member.qualityMetrics.problemSolvingQuality, 0);
-    
+
     return totalProblemSolvingQuality / team.members.length;
   }
 
   private calculateInnovationPerformance(team: TeamComposition): number {
     if (team.members.length === 0) return 0;
 
-    const totalInnovationQuality = team.members.reduce((sum, member) => 
+    const totalInnovationQuality = team.members.reduce((sum, member) =>
       sum + member.qualityMetrics.innovationQuality, 0);
-    
+
     return totalInnovationQuality / team.members.length;
   }
 
   private calculateEfficiency(team: TeamComposition): number {
     if (team.members.length === 0) return 0;
 
-    const totalReliability = team.members.reduce((sum, member) => 
+    const totalReliability = team.members.reduce((sum, member) =>
       sum + member.qualityMetrics.reliability, 0);
-    
+
     return totalReliability / team.members.length;
   }
 
@@ -898,18 +898,18 @@ class AITeamCompositionOptimizationSystem {
   private calculateProductivity(team: TeamComposition): number {
     if (team.members.length === 0) return 0;
 
-    const totalAvailability = team.members.reduce((sum, member) => 
+    const totalAvailability = team.members.reduce((sum, member) =>
       sum + member.availability, 0);
-    
+
     return totalAvailability / team.members.length;
   }
 
   private calculateQuality(team: TeamComposition): number {
     if (team.members.length === 0) return 0;
 
-    const totalQuality = team.members.reduce((sum, member) => 
+    const totalQuality = team.members.reduce((sum, member) =>
       sum + member.qualityMetrics.overallQuality, 0);
-    
+
     return totalQuality / team.members.length;
   }
 
@@ -935,7 +935,7 @@ class AITeamCompositionOptimizationSystem {
     if (!team) return;
 
     const settings = team.settings;
-    
+
     // 자동 최적화 조건 확인
     if (settings.autoOptimization && team.performance.overallPerformance < settings.performanceThresholds.minimumPerformance) {
       console.log(`🔄 성과 기준 미달로 자동 최적화 실행: ${teamId}`);
@@ -945,7 +945,7 @@ class AITeamCompositionOptimizationSystem {
 
   private updateAnalytics(): void {
     const teams = Array.from(this.teams.values());
-    
+
     this.analytics.totalTeams = teams.length;
     this.analytics.activeTeams = teams.filter(t => t.status === 'active').length;
     this.analytics.averagePerformance = teams.reduce((sum, t) => sum + t.performance.overallPerformance, 0) / teams.length;
@@ -955,7 +955,7 @@ class AITeamCompositionOptimizationSystem {
     this.analytics.skillBalanceScore = teams.reduce((sum, t) => sum + (1 - this.analyzeSkillOverlap(t.members)), 0) / teams.length;
     this.analytics.collaborationEffectiveness = teams.reduce((sum, t) => sum + t.performance.collaborationPerformance, 0) / teams.length;
     this.analytics.innovationRate = teams.reduce((sum, t) => sum + t.performance.innovationPerformance, 0) / teams.length;
-    this.analytics.developmentProgress = teams.reduce((sum, t) => 
+    this.analytics.developmentProgress = teams.reduce((sum, t) =>
       sum + t.members.reduce((mSum, m) => mSum + m.qualityMetrics.adaptability, 0) / t.members.length, 0) / teams.length;
   }
 
@@ -965,7 +965,7 @@ class AITeamCompositionOptimizationSystem {
 
     this.teams.forEach(team => {
       team.performance.trends = team.performance.trends.filter(
-        trend => now - trend.timestamp < maxAge
+        trend => now - new Date(trend.period).getTime() < maxAge
       );
     });
   }

@@ -18,7 +18,7 @@ import advancedAIDocumentationAPISystem from './advancedAIDocumentationAPISystem
 import advancedAIGovernanceEthicalSystem from './advancedAIGovernanceEthicalSystem';
 import advancedAIQualityAssuranceSystem from './advancedAIQualityAssuranceSystem';
 import advancedAIModelLifecycleSystem from './advancedAIModelLifecycleSystem';
-import realTimeAIPredictiveAnalyticsEnhancementSystem from './realTimeAIPredictiveAnalyticsEnhancementSystem';
+// import realTimeAIPredictiveAnalyticsEnhancementSystem from './realTimeAIPredictiveAnalyticsEnhancementSystem';
 import realTimeAIMultimodalLearningSystem from './realTimeAIMultimodalLearningSystem';
 import advancedAIDecisionSupportSystem from './advancedAIDecisionSupportSystem';
 import realTimeAIEmotionRecognitionSystem from './realTimeAIEmotionRecognitionSystem';
@@ -27,7 +27,7 @@ import realTimeAICollaborativeLearningSystem from './realTimeAICollaborativeLear
 import realTimeAIMultimodalCollaborationSystem from './realTimeAIMultimodalCollaborationSystem';
 import advancedAITeamDynamicsSystem from './advancedAITeamDynamicsSystem';
 import aiCollaborationWorkflowSystem from './aiCollaborationWorkflowSystem';
-import realTimeAICollaborationQualitySystem from './realTimeAICollaborationQualitySystem';
+// import realTimeAICollaborationQualitySystem from './realTimeAICollaborationQualitySystem';
 import aiMultimodalLearningPathOptimizationSystem from './aiMultimodalLearningPathOptimizationSystem';
 import aiTeamCompositionOptimizationSystem from './aiTeamCompositionOptimizationSystem';
 import aiProjectManagementOptimizationSystem from './aiProjectManagementOptimizationSystem';
@@ -516,9 +516,9 @@ class IntegratedAIService {
                     request.input.text || '',
                     reasoningContext,
                     {
-                        nlpAnalysis: analysis.nlp_analysis,
-                        searchResults: result.search_result,
-                        multimodalData: analysis.multimodal_analysis
+                        nlpAnalysis: analysis.nlp_analysis || undefined,
+                        searchResults: result.search_result || undefined,
+                        multimodalData: analysis.multimodal_analysis || undefined
                     }
                 );
                 processingSteps.push({
@@ -952,17 +952,17 @@ class IntegratedAIService {
             advancedNLPEngine.updateConversationMemory(request.user_id, {
                 id: `msg-${Date.now()}`,
                 content: request.input.text,
-                sender: 'user',
+                role: 'user',
                 timestamp: request.timestamp,
-                type: 'text'
+                chatId: request.session_id || 'default'
             });
 
             advancedNLPEngine.updateConversationMemory(request.user_id, {
                 id: `msg-${Date.now() + 1}`,
                 content: response.content.primary_response,
-                sender: 'assistant',
+                role: 'assistant',
                 timestamp: response.timestamp,
-                type: 'text'
+                chatId: request.session_id || 'default'
             });
         }
 
@@ -1076,7 +1076,7 @@ class IntegratedAIService {
             advancedAIModelLifecycleSystem.start();
 
             // 실시간 AI 예측 분석 고도화 시스템 시작
-            realTimeAIPredictiveAnalyticsEnhancementSystem.start();
+            // realTimeAIPredictiveAnalyticsEnhancementSystem.start();
 
             // 실시간 AI 멀티모달 학습 시스템 시작
             realTimeAIMultimodalLearningSystem.start();
@@ -1103,7 +1103,7 @@ class IntegratedAIService {
             aiCollaborationWorkflowSystem.start();
 
             // 실시간 AI 협업 품질 보증 시스템 시작
-            realTimeAICollaborationQualitySystem.start();
+            // realTimeAICollaborationQualitySystem.start();
 
             // AI 멀티모달 학습 경로 최적화 시스템 시작
             aiMultimodalLearningPathOptimizationSystem.start();
@@ -1141,7 +1141,11 @@ class IntegratedAIService {
         const maxCacheSize = 1000;
         if (this.responseCache.size > maxCacheSize) {
             const entries = Array.from(this.responseCache.entries());
-            entries.sort((a, b) => b[1].timestamp.getTime() - a[1].timestamp.getTime());
+            entries.sort((a, b) => {
+                const timestampA = a[1].timestamp instanceof Date ? a[1].timestamp : new Date(a[1].timestamp);
+                const timestampB = b[1].timestamp instanceof Date ? b[1].timestamp : new Date(b[1].timestamp);
+                return timestampB.getTime() - timestampA.getTime();
+            });
 
             // 오래된 항목 삭제
             for (let i = maxCacheSize; i < entries.length; i++) {
@@ -1506,7 +1510,7 @@ class IntegratedAIService {
         else satisfaction -= 0.5;
 
         // 응답 길이에 따른 조정
-        if (response.content && response.content.length > 100) satisfaction += 0.2;
+        if (response.content?.primary_response && response.content.primary_response.length > 100) satisfaction += 0.2;
 
         return Math.min(5.0, Math.max(1.0, satisfaction));
     }
@@ -1514,8 +1518,8 @@ class IntegratedAIService {
     // 응답 품질 평가
     private assessResponseQuality(response: AIResponse): number {
         if (!response.success) return 2.0;
-        if (response.content && response.content.length > 200) return 4.5;
-        if (response.content && response.content.length > 100) return 4.0;
+        if (response.content?.primary_response && response.content.primary_response.length > 200) return 4.5;
+        if (response.content?.primary_response && response.content.primary_response.length > 100) return 4.0;
         return 3.5;
     }
 
@@ -1537,16 +1541,16 @@ class IntegratedAIService {
     // 학습 효과성 평가
     private assessLearningEffectiveness(response: AIResponse): number {
         if (response.learning_insights) return 4.5;
-        if (response.content && response.content.includes('학습')) return 4.0;
+        if (response.content?.primary_response && response.content.primary_response.includes('학습')) return 4.0;
         return 3.5;
     }
 
     // 콘텐츠 관련성 평가
     private assessContentRelevance(request: AIRequest, response: AIResponse): number {
-        if (!request.input.text || !response.content) return 3.0;
+        if (!request.input.text || !response.content?.primary_response) return 3.0;
 
         const requestWords = request.input.text.toLowerCase().split(' ');
-        const responseWords = response.content.toLowerCase().split(' ');
+        const responseWords = response.content.primary_response.toLowerCase().split(' ');
         const commonWords = requestWords.filter(word => responseWords.includes(word));
 
         return Math.min(5.0, 3.0 + (commonWords.length * 0.5));
@@ -1555,14 +1559,14 @@ class IntegratedAIService {
     // 지식 보존률 평가
     private assessKnowledgeRetention(response: AIResponse): number {
         if (response.learning_insights) return 4.0;
-        if (response.content && response.content.length > 300) return 3.5;
+        if (response.content?.primary_response && response.content.primary_response.length > 300) return 3.5;
         return 3.0;
     }
 
     // 기술 향상도 평가
     private assessSkillImprovement(response: AIResponse): number {
-        if (response.content && response.content.includes('실습')) return 4.0;
-        if (response.content && response.content.includes('연습')) return 3.5;
+        if (response.content?.primary_response && response.content.primary_response.includes('실습')) return 4.0;
+        if (response.content?.primary_response && response.content.primary_response.includes('연습')) return 3.5;
         return 3.0;
     }
 
@@ -1575,7 +1579,7 @@ class IntegratedAIService {
 
     // 주제 추출
     private extractTopics(text: string): string[] {
-        const topics = [];
+        const topics: string[] = [];
         const technicalTerms = ['react', 'javascript', 'python', 'ai', 'machine learning', 'database', 'api'];
 
         technicalTerms.forEach(term => {
@@ -1616,11 +1620,11 @@ class IntegratedAIService {
             difficulty_level: this.assessComplexity(request.input.text || ''),
             learning_progress: response.learning_insights ? 1 : 0,
             positive_feedback: response.success ? 1 : 0,
-            interesting_content: response.content?.includes('흥미') ? 1 : 0,
+            interesting_content: response.content?.primary_response?.includes('흥미') ? 1 : 0,
             social_interaction: 0,
             achievement_recognition: response.success ? 1 : 0,
             rapid_typing: false,
-            short_responses: (response.content?.length || 0) < 50,
+            short_responses: (response.content?.primary_response?.length || 0) < 50,
             topic_avoidance: false,
             repeated_questions: false,
             negative_language: this.detectNegativeLanguage(request.input.text || ''),
@@ -1631,12 +1635,12 @@ class IntegratedAIService {
             kinesthetic_preferences: false,
             reading_preferences: true,
             direct_communication: false,
-            detailed_explanations: (response.content?.length || 0) > 100,
-            technical_communication: this.detectTechnicalContent(response.content || ''),
-            analytical_approach: this.detectAnalyticalContent(response.content || ''),
+            detailed_explanations: (response.content?.primary_response?.length || 0) > 100,
+            technical_communication: this.detectTechnicalContent(response.content?.primary_response || ''),
+            analytical_approach: this.detectAnalyticalContent(response.content?.primary_response || ''),
             intuitive_approach: false,
             collaborative_approach: false,
-            systematic_approach: this.detectSystematicContent(response.content || ''),
+            systematic_approach: this.detectSystematicContent(response.content?.primary_response || ''),
             risk_averse_behavior: false,
             risk_seeking_behavior: false,
             adaptability_signals: 1,
@@ -1713,7 +1717,7 @@ class IntegratedAIService {
     // 응답 캐시 저장
     private cacheResponse(cacheKey: string, response: AIResponse, request: AIRequest): void {
         // 캐시할 가치가 있는 응답인지 확인
-        if (response.success && response.content && response.content.length > 50) {
+        if (response.success && response.content?.primary_response && response.content.primary_response.length > 50) {
             const ttl = this.calculateCacheTTL(request, response);
             const tags = this.generateCacheTags(request, response);
             const priority = this.determineCachePriority(request, response);
@@ -1820,21 +1824,6 @@ class IntegratedAIService {
         return aiCacheManager.deleteByTag(`user-${userId}`);
     }
 
-    // 성능 메트릭 업데이트
-    private updatePerformanceMetrics(request: AIRequest, response: AIResponse, processingTime: number): void {
-        this.performanceMetrics.total_requests++;
-
-        // 평균 응답 시간 계산
-        const totalTime = this.performanceMetrics.average_response_time * (this.performanceMetrics.total_requests - 1);
-        this.performanceMetrics.average_response_time = (totalTime + processingTime) / this.performanceMetrics.total_requests;
-
-        // 성공률 업데이트
-        if (response.success) {
-            this.performanceMetrics.success_rate = (this.performanceMetrics.success_rate * (this.performanceMetrics.total_requests - 1) + 100) / this.performanceMetrics.total_requests;
-        } else {
-            this.performanceMetrics.success_rate = (this.performanceMetrics.success_rate * (this.performanceMetrics.total_requests - 1)) / this.performanceMetrics.total_requests;
-        }
-    }
 }
 
 // 인터페이스 정의들

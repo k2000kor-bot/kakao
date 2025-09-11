@@ -11,10 +11,10 @@ interface ApiResponse<T = any> {
 
 export class ApiHelper {
     private static baseUrls = {
-        main: 'http://localhost:8000',
-        advanced: 'http://localhost:8002',
-        message: 'http://localhost:8001',
-        upload: 'http://localhost:8004'
+        main: 'http://localhost:5001',
+        advanced: 'http://localhost:5001',
+        message: 'http://localhost:5001',
+        upload: 'http://localhost:5001'
     };
 
     /**

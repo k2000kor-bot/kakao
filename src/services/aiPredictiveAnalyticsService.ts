@@ -1140,19 +1140,19 @@ class AIPredictiveAnalyticsService {
         );
 
         // Performance optimization insight
-        const cpuMetric = recentMetrics.find(m => m.name === 'cpu');
-        if (cpuMetric && cpuMetric.value > 80) {
+        const cpuMetric = Array.isArray(recentMetrics) ? recentMetrics.find((m: any) => m.name === 'cpu') : null;
+        if (cpuMetric && (cpuMetric as any).value > 80) {
             const insight: PredictiveInsight = {
                 id: `insight-${Date.now()}-${Math.random()}`,
                 type: 'optimization',
                 title: 'CPU 사용률 최적화 필요',
-                description: `현재 CPU 사용률이 ${cpuMetric.value.toFixed(1)}%로 높은 수준입니다. 시스템 성능 최적화가 권장됩니다.`,
+                description: `현재 CPU 사용률이 ${(cpuMetric as any).value.toFixed(1)}%로 높은 수준입니다. 시스템 성능 최적화가 권장됩니다.`,
                 confidence: 0.92,
                 impact: 'high',
                 timestamp: new Date(),
                 category: 'performance',
                 tags: ['cpu', 'optimization', 'performance'],
-                data: { currentCpu: cpuMetric.value, threshold: 80 },
+                data: { currentCpu: (cpuMetric as any).value, threshold: 80 },
                 recommendations: [
                     '불필요한 백그라운드 프로세스 종료',
                     '캐시 최적화',

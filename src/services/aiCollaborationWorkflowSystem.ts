@@ -993,7 +993,7 @@ class AICollaborationWorkflowSystem {
 
         // 성과 점수를 기반으로 최적 참가자 선택
         return availableParticipants.reduce((best, current) =>
-            current.performance.overallScore > best.performance.overallScore ? current : best
+            (current.performance as any).overallScore > (best.performance as any).overallScore ? current : best
         ).participantId;
     }
 
@@ -1107,7 +1107,7 @@ class AICollaborationWorkflowSystem {
                 insight => now - insight.timestamp < maxAge
             );
             workflow.analytics.predictions = workflow.analytics.predictions.filter(
-                prediction => now - prediction.timestamp < maxAge
+                prediction => now - (prediction as any).timestamp < maxAge
             );
         });
     }

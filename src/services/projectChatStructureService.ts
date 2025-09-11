@@ -87,7 +87,11 @@ class ProjectChatStructureService {
             messageCount: 1,
             participants: [],
             tags: [],
-            type: 'general'
+            type: 'general',
+            status: 'active',
+            lastActivity: this.toISOString(now),
+            totalMessages: 1,
+            isPersistent: true
         };
 
         // 로컬 스토리지에 저장
@@ -110,53 +114,14 @@ class ProjectChatStructureService {
             files: [],
             guidelines: '',
             chats: [],
-            tags: []
+            tags: [],
+            instructions: '',
+            isActive: true,
+            type: 'conversation'
         };
 
         // 프로젝트 저장 (임시로 주석 처리)
         // projectService.createProject(newProject);
-        return newProject;
-    }
-}
-
-export const projectChatStructureService = new ProjectChatStructureService();
-
-// 임시로 analytics 부분을 제거하고 나중에 다시 추가
-/*
-            analytics: {
-                totalMessages: 0,
-                totalFiles: 0,
-                totalGuidelines: 0,
-                activeChats: 0,
-                participants: 0,
-                activityTrend: [],
-                topTopics: [],
-                sentimentAnalysis: {
-                    positive: 0,
-                    neutral: 0,
-                    negative: 0
-                },
-                completionRate: 0,
-                lastActivity: this.toISOString(now)
-            },
-            settings: {
-                maxFileSize: 10 * 1024 * 1024, // 10MB
-                allowedFileTypes: ['pdf', 'doc', 'txt', 'jpg', 'png'],
-                autoBackup: true,
-                notifications: true,
-                theme: 'light',
-                language: 'ko',
-                aiModel: 'gpt-4',
-                autoSave: true,
-                collaboration: false,
-                privacy: 'private'
-            },
-            archived: false,
-            tags: []
-        };
-
-        // 로컬 스토리지에 저장
-        this.saveProject(newProject);
         return newProject;
     }
 
@@ -214,7 +179,11 @@ export const projectChatStructureService = new ProjectChatStructureService();
             type: 'file_chat',
             messageCount: 1,
             participants: [],
-            tags: []
+            tags: [],
+            status: 'active',
+            lastActivity: this.toISOString(now),
+            totalMessages: 1,
+            isPersistent: true
         };
 
         // 파일과 채팅 연결
@@ -239,8 +208,9 @@ export const projectChatStructureService = new ProjectChatStructureService();
             title: guideline.title,
             content: guideline.content,
             category: 'general',
-            createdAt: this.toISOString(now),
-            updatedAt: this.toISOString(now),
+            priority: 'medium',
+            createdAt: now,
+            updatedAt: now,
             isActive: true
         };
 
@@ -279,7 +249,11 @@ export const projectChatStructureService = new ProjectChatStructureService();
             type: 'guideline_chat',
             messageCount: 1,
             participants: [],
-            tags: []
+            tags: [],
+            status: 'active',
+            lastActivity: this.toISOString(now),
+            totalMessages: 1,
+            isPersistent: true
         };
 
         // 지침과 채팅 연결
@@ -337,14 +311,6 @@ export const projectChatStructureService = new ProjectChatStructureService();
         }
     }
 
-    // 채팅 제목 생성
-    private generateChatTitle(message: string): string {
-        const maxLength = 30;
-        if (message.length <= maxLength) {
-            return message;
-        }
-        return message.substring(0, maxLength) + '...';
-    }
 
     // 프로젝트 저장
     private saveProject(project: Project): void {
@@ -379,24 +345,6 @@ export const projectChatStructureService = new ProjectChatStructureService();
         }
     }
 
-    // 채팅 세션 저장
-    private saveChatSession(chat: ChatSession): void {
-        try {
-            const stored = localStorage.getItem('corbu_chat_sessions');
-            const chats: ChatSession[] = stored ? JSON.parse(stored) : [];
-
-            const existingIndex = chats.findIndex(c => c.id === chat.id);
-            if (existingIndex >= 0) {
-                chats[existingIndex] = chat;
-            } else {
-                chats.push(chat);
-            }
-
-            localStorage.setItem('corbu_chat_sessions', JSON.stringify(chats));
-        } catch (error) {
-            console.error('채팅 세션 저장 실패:', error);
-        }
-    }
 
     // 모든 프로젝트 구조 가져오기
     public getAllProjectStructures(): ProjectStructure[] {

@@ -971,7 +971,7 @@ class AdvancedReasoningEngine {
             baseRisks.push({
                 description: '기술적 실현 불가능성',
                 probability: 0.4,
-                impact: 'high' as const,
+                impact: 'medium' as const,
                 mitigation_strategy: '사전 기술 검증 및 프로토타이핑',
                 contingency_plan: '대안 기술로 전환'
             });
@@ -979,8 +979,9 @@ class AdvancedReasoningEngine {
             baseRisks.push({
                 description: '혁신성 부족',
                 probability: 0.2,
-                impact: 'low' as const,
-                mitigation_strategy: '선택적 혁신 요소 도입'
+                impact: 'medium' as const,
+                mitigation_strategy: '선택적 혁신 요소 도입',
+                contingency_plan: '점진적 혁신 접근'
             });
         }
 
@@ -1009,7 +1010,7 @@ class AdvancedReasoningEngine {
                 resource_type: '연구 인력',
                 quantity: 1,
                 duration: 6,
-                criticality: 'preferred' as const
+                criticality: 'required' as const
             });
         }
 

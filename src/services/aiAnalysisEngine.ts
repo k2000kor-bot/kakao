@@ -77,24 +77,24 @@ class AIAnalysisEngine {
 
   // 인사이트 생성
   private async generateInsights(
-    project: Project, 
-    chats: Chat[], 
+    project: Project,
+    chats: Chat[],
     messages: Message[]
   ): Promise<ProjectInsight[]> {
     const insights: ProjectInsight[] = [];
 
     // 활동 패턴 분석
     insights.push(...this.analyzeActivityPatterns(chats, messages));
-    
+
     // 참여도 분석
     insights.push(...this.analyzeEngagement(chats, messages));
-    
+
     // 품질 분석
     insights.push(...this.analyzeQuality(messages));
-    
+
     // 진행률 분석
     insights.push(...this.analyzeProgress(project, chats));
-    
+
     // 협업 패턴 분석
     insights.push(...this.analyzeCollaboration(chats, messages));
 
@@ -104,13 +104,13 @@ class AIAnalysisEngine {
   // 활동 패턴 분석
   private analyzeActivityPatterns(chats: Chat[], messages: Message[]): ProjectInsight[] {
     const insights: ProjectInsight[] = [];
-    
+
     if (messages.length === 0) return insights;
 
     // 시간대별 활동 분석
     const hourlyActivity = this.getHourlyActivity(messages);
     const peakHour = this.findPeakActivity(hourlyActivity);
-    
+
     if (peakHour.activity > 0) {
       insights.push({
         id: `activity_peak_${Date.now()}`,
@@ -130,7 +130,7 @@ class AIAnalysisEngine {
     // 일별 활동 분석
     const dailyActivity = this.getDailyActivity(messages);
     const inactiveStreak = this.findInactiveStreak(dailyActivity);
-    
+
     if (inactiveStreak > 3) {
       insights.push({
         id: `inactive_streak_${Date.now()}`,
@@ -154,10 +154,10 @@ class AIAnalysisEngine {
   // 참여도 분석
   private analyzeEngagement(chats: Chat[], messages: Message[]): ProjectInsight[] {
     const insights: ProjectInsight[] = [];
-    
+
     const avgMessagesPerChat = messages.length / Math.max(chats.length, 1);
     const responseRate = this.calculateResponseRate(messages);
-    
+
     if (avgMessagesPerChat < 5) {
       insights.push({
         id: `low_engagement_${Date.now()}`,
@@ -202,10 +202,10 @@ class AIAnalysisEngine {
   // 품질 분석
   private analyzeQuality(messages: Message[]): ProjectInsight[] {
     const insights: ProjectInsight[] = [];
-    
+
     const avgMessageLength = this.calculateAverageMessageLength(messages);
     const questionRatio = this.calculateQuestionRatio(messages);
-    
+
     if (avgMessageLength < 20) {
       insights.push({
         id: `message_quality_${Date.now()}`,
@@ -246,11 +246,11 @@ class AIAnalysisEngine {
   // 진행률 분석
   private analyzeProgress(project: Project, chats: Chat[]): ProjectInsight[] {
     const insights: ProjectInsight[] = [];
-    
+
     const totalChats = chats.length;
-    const activeChats = chats.filter(chat => chat.status === 'active').length;
+    const activeChats = chats.filter(chat => (chat as any).status === 'active').length;
     const completionRate = totalChats > 0 ? (totalChats - activeChats) / totalChats : 0;
-    
+
     if (completionRate < 0.3 && totalChats > 5) {
       insights.push({
         id: `low_completion_${Date.now()}`,
@@ -272,7 +272,7 @@ class AIAnalysisEngine {
     const daysSinceCreation = Math.floor(
       (Date.now() - new Date(project.createdAt).getTime()) / (1000 * 60 * 60 * 24)
     );
-    
+
     if (daysSinceCreation > 30 && totalChats < 5) {
       insights.push({
         id: `slow_progress_${Date.now()}`,
@@ -296,10 +296,10 @@ class AIAnalysisEngine {
   // 협업 패턴 분석
   private analyzeCollaboration(chats: Chat[], messages: Message[]): ProjectInsight[] {
     const insights: ProjectInsight[] = [];
-    
+
     const conversationPatterns = this.findConversationPatterns(messages);
     const collaborationScore = this.calculateCollaborationScore(messages);
-    
+
     if (collaborationScore < 0.5) {
       insights.push({
         id: `collaboration_${Date.now()}`,
@@ -322,16 +322,16 @@ class AIAnalysisEngine {
 
   // 트렌드 분석
   private analyzeTrends(chats: Chat[], messages: Message[]): ProjectAnalysis['trends'] {
-    const recentMessages = messages.filter(msg => 
+    const recentMessages = messages.filter(msg =>
       Date.now() - new Date(msg.timestamp).getTime() < 7 * 24 * 60 * 60 * 1000 // 최근 7일
     );
-    
-    const olderMessages = messages.filter(msg => 
+
+    const olderMessages = messages.filter(msg =>
       Date.now() - new Date(msg.timestamp).getTime() >= 7 * 24 * 60 * 60 * 1000
     );
 
-    const activity = recentMessages.length > olderMessages.length ? 'increasing' : 
-                    recentMessages.length < olderMessages.length ? 'decreasing' : 'stable';
+    const activity = recentMessages.length > olderMessages.length ? 'increasing' :
+      recentMessages.length < olderMessages.length ? 'decreasing' : 'stable';
 
     const engagement = this.calculateEngagementLevel(messages);
     const productivity = this.calculateProductivityScore(chats, messages);
@@ -347,8 +347,8 @@ class AIAnalysisEngine {
 
   // 추천사항 생성
   private generateRecommendations(
-    project: Project, 
-    insights: ProjectInsight[], 
+    project: Project,
+    insights: ProjectInsight[],
     trends: ProjectAnalysis['trends']
   ): ProjectAnalysis['recommendations'] {
     const recommendations: ProjectAnalysis['recommendations'] = [];
@@ -391,10 +391,10 @@ class AIAnalysisEngine {
     const severityWeights = { low: 1, medium: 2, high: 3 };
     const totalSeverity = insights.reduce((sum, insight) => sum + severityWeights[insight.severity], 0);
     const maxSeverity = insights.length * 3;
-    
+
     const insightScore = maxSeverity > 0 ? (1 - totalSeverity / maxSeverity) * 100 : 80;
     const trendScore = (trends.productivity + trends.quality) / 2;
-    
+
     return Math.round((insightScore * 0.6 + trendScore * 0.4));
   }
 
@@ -415,14 +415,14 @@ class AIAnalysisEngine {
   private findPeakActivity(hourlyActivity: { [hour: number]: number }): { hour: number; activity: number } {
     let peakHour = 0;
     let maxActivity = 0;
-    
+
     Object.entries(hourlyActivity).forEach(([hour, activity]) => {
       if (activity > maxActivity) {
         maxActivity = activity;
         peakHour = parseInt(hour);
       }
     });
-    
+
     return { hour: peakHour, activity: maxActivity };
   }
 
@@ -438,7 +438,7 @@ class AIAnalysisEngine {
   private findInactiveStreak(dailyActivity: { [date: string]: number }): number {
     const today = new Date();
     let streak = 0;
-    
+
     for (let i = 0; i < 30; i++) {
       const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000).toDateString();
       if (dailyActivity[date]) {
@@ -446,20 +446,20 @@ class AIAnalysisEngine {
       }
       streak++;
     }
-    
+
     return streak;
   }
 
   private calculateResponseRate(messages: Message[]): number {
     if (messages.length < 2) return 0;
-    
+
     let responses = 0;
     for (let i = 1; i < messages.length; i++) {
-      if (messages[i].role !== messages[i-1].role) {
+      if (messages[i].role !== messages[i - 1].role) {
         responses++;
       }
     }
-    
+
     return responses / (messages.length - 1);
   }
 
@@ -471,9 +471,9 @@ class AIAnalysisEngine {
 
   private calculateQuestionRatio(messages: Message[]): number {
     if (messages.length === 0) return 0;
-    const questions = messages.filter(msg => 
-      msg.content.includes('?') || 
-      msg.content.includes('어떻게') || 
+    const questions = messages.filter(msg =>
+      msg.content.includes('?') ||
+      msg.content.includes('어떻게') ||
       msg.content.includes('무엇') ||
       msg.content.includes('왜') ||
       msg.content.includes('언제')
@@ -484,15 +484,15 @@ class AIAnalysisEngine {
   private findConversationPatterns(messages: Message[]): ConversationPattern[] {
     // 간단한 패턴 분석 구현
     const patterns: ConversationPattern[] = [];
-    
+
     // 질문-답변 패턴
     let qaPatterns = 0;
     for (let i = 0; i < messages.length - 1; i++) {
-      if (messages[i].role === 'user' && messages[i+1].role === 'assistant') {
+      if (messages[i].role === 'user' && messages[i + 1].role === 'assistant') {
         qaPatterns++;
       }
     }
-    
+
     if (qaPatterns > 0) {
       patterns.push({
         pattern: 'question-answer',
@@ -501,7 +501,7 @@ class AIAnalysisEngine {
         sentiment: 'neutral'
       });
     }
-    
+
     return patterns;
   }
 
@@ -509,9 +509,9 @@ class AIAnalysisEngine {
     // 간단한 협업 점수 계산
     const userMessages = messages.filter(msg => msg.role === 'user').length;
     const assistantMessages = messages.filter(msg => msg.role === 'assistant').length;
-    
+
     if (userMessages + assistantMessages === 0) return 0;
-    
+
     const balance = Math.min(userMessages, assistantMessages) / Math.max(userMessages, assistantMessages);
     return balance;
   }
@@ -519,9 +519,9 @@ class AIAnalysisEngine {
   private calculateEngagementLevel(messages: Message[]): 'high' | 'medium' | 'low' {
     const avgLength = this.calculateAverageMessageLength(messages);
     const responseRate = this.calculateResponseRate(messages);
-    
+
     const score = (avgLength / 100) * 0.3 + responseRate * 0.7;
-    
+
     if (score > 0.7) return 'high';
     if (score > 0.4) return 'medium';
     return 'low';
@@ -529,18 +529,18 @@ class AIAnalysisEngine {
 
   private calculateProductivityScore(chats: Chat[], messages: Message[]): number {
     const avgMessagesPerChat = messages.length / Math.max(chats.length, 1);
-    const completionRate = chats.filter(c => c.status !== 'active').length / Math.max(chats.length, 1);
-    
+    const completionRate = chats.filter(c => (c as any).status !== 'active').length / Math.max(chats.length, 1);
+
     return Math.min(100, (avgMessagesPerChat * 5) + (completionRate * 50));
   }
 
   private calculateQualityScore(messages: Message[]): number {
     const avgLength = this.calculateAverageMessageLength(messages);
     const questionRatio = this.calculateQuestionRatio(messages);
-    
+
     const lengthScore = Math.min(100, avgLength * 2);
     const diversityScore = (1 - questionRatio) * 100;
-    
+
     return (lengthScore * 0.6 + diversityScore * 0.4);
   }
 

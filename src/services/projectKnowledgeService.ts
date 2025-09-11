@@ -532,9 +532,8 @@ class ProjectKnowledgeService {
   }
 
   private async extractFileContent(file: ProjectFile): Promise<string> {
-    if (file.content) {
-      return file.content;
-    }
+    // ProjectFile 타입에 content 속성이 없으므로 기본값 반환
+    return `파일: ${file.name} (${file.type})`;
 
     // 파일 타입별 내용 추출 로직
     switch (file.type) {

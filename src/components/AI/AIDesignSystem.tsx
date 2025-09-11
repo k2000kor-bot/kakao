@@ -26,7 +26,7 @@ import {
     Share2,
     History,
     TrendingUp,
-    BarChart3,
+    BarChart,
     Target,
     Palette as PaletteIcon,
     Droplets,
@@ -550,7 +550,7 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                         { id: 'typography', label: '타이포그래피', icon: Type },
                         { id: 'components', label: '컴포넌트', icon: Grid },
                         { id: 'generator', label: '생성기', icon: Sparkles },
-                        { id: 'analytics', label: '분석', icon: BarChart3 },
+                        { id: 'analytics', label: '분석', icon: BarChart },
                         { id: 'settings', label: '설정', icon: Settings }
                     ].map((tab) => {
                         const IconComponent = tab.icon;

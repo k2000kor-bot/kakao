@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { BarChart3, MessageSquare, Clock, TrendingUp, Bookmark } from 'lucide-react';
+import { BarChart as LucideBarChart, MessageSquare, Clock, TrendingUp, Bookmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface MessageAnalyticsProps {
@@ -70,7 +70,7 @@ const MessageAnalytics: React.FC<MessageAnalyticsProps> = ({ sessionId }) => {
   if (!analytics) {
     return (
       <div className="p-6 text-center text-gray-500">
-        <BarChart3 size={48} className="mx-auto mb-4 text-gray-300" />
+        <LucideBarChart size={48} className="mx-auto mb-4 text-gray-300" />
         <p>분석할 메시지가 없습니다</p>
       </div>
     );
@@ -124,7 +124,7 @@ const MessageAnalytics: React.FC<MessageAnalyticsProps> = ({ sessionId }) => {
   return (
     <div className="p-6">
       <div className="flex items-center space-x-2 mb-6">
-        <BarChart3 size={24} className="text-gray-700" />
+        <LucideBarChart size={24} className="text-gray-700" />
         <h3 className="text-lg font-semibold text-gray-900">대화 분석</h3>
       </div>
 

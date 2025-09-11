@@ -3,7 +3,7 @@ import {
     Activity,
     TrendingUp,
     TrendingDown,
-    Cpu,
+    Computer as Cpu,
     HardDrive,
     Clock,
     Zap,
@@ -12,7 +12,7 @@ import {
     XCircle,
     RefreshCw,
     Settings,
-    BarChart3,
+    BarChart,
     LineChart,
     Gauge,
     Thermometer,
@@ -291,7 +291,7 @@ const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
     };
 
     const tabs = [
-        { id: 'overview', name: '개요', icon: BarChart3 },
+        { id: 'overview', name: '개요', icon: BarChart },
         { id: 'models', name: 'AI 모델', icon: Cpu },
         { id: 'alerts', name: '알림', icon: AlertTriangle },
         { id: 'optimization', name: '최적화', icon: Zap }

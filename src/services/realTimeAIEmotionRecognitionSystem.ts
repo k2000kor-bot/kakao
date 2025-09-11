@@ -478,7 +478,10 @@ class RealTimeAIEmotionRecognitionSystem {
         };
 
         const cutoffTime = now.getTime() - timeMap[timePeriod];
-        return emotions.filter(emotion => emotion.timestamp.getTime() > cutoffTime);
+        return emotions.filter(emotion => {
+            const timestamp = emotion.timestamp instanceof Date ? emotion.timestamp : new Date(emotion.timestamp);
+            return timestamp.getTime() > cutoffTime;
+        });
     }
 
     // 감정 분포 계산

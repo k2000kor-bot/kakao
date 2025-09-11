@@ -246,7 +246,7 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 행동 패턴 분류
-    private classifyBehaviorPattern(characteristics: any): string {
+    private classifyBehaviorPattern(characteristics: any): 'casual' | 'problem_solving' | 'learning' | 'efficiency' | 'social' | 'exploration' {
         const { session_duration, interaction_frequency, complexity_preference, topic_diversity } = characteristics;
 
         if (session_duration > 30 && interaction_frequency > 5 && complexity_preference > 7) {

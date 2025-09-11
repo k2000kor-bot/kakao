@@ -105,7 +105,10 @@ export const projectService = {
                     guidelines: '이 프로젝트는 시스템 테스트를 위한 것입니다.',
                     files: [],
                     chats: [],
-                    messageCount: 0
+                    messageCount: 0,
+                    instructions: '',
+                    isActive: true,
+                    type: 'conversation'
                 }
             ];
             localStorage.setItem(PROJECTS_KEY, JSON.stringify(seedProjects));
@@ -132,11 +135,10 @@ export const chatService = {
         const newChat: Chat = {
             id: generateId(),
             projectId,
-            title,
+            name: title,
             createdAt: new Date(),
             updatedAt: new Date(),
-            messages: [],
-            status: 'active'
+            messages: []
         };
 
         const chats = this.getAllChats();
@@ -146,6 +148,7 @@ export const chatService = {
         // 프로젝트의 채팅 목록 업데이트
         const project = projectService.getProject(projectId);
         if (project) {
+            if (!project.chats) project.chats = [];
             project.chats.push(newChat);
             projectService.updateProject(projectId, { chats: project.chats });
         }

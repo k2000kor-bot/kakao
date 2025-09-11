@@ -9,7 +9,6 @@ import {
     ResponsiveContainer,
     LineChart,
     Line,
-    PieChart,
     Pie,
     Cell,
     AreaChart,

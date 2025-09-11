@@ -778,7 +778,7 @@ class DreamApartmentVisionService {
     }
 
     private calculateFeasibilityFactors(dreamApartment: DreamApartment): DreamAnalysis['feasibility']['factors'] {
-        const factors = [];
+        const factors: { factor: string; score: number; impact: 'positive' | 'negative' | 'neutral'; description: string }[] = [];
 
         // 예산 실현 가능성
         const savingsRatio = dreamApartment.budget.currentSavings / dreamApartment.budget.targetPrice;
@@ -786,7 +786,7 @@ class DreamApartmentVisionService {
         factors.push({
             factor: '예산 실현 가능성',
             score: savingsScore,
-            impact: savingsScore > 70 ? 'positive' : savingsScore > 40 ? 'neutral' : 'negative',
+            impact: (savingsScore > 70 ? 'positive' : savingsScore > 40 ? 'neutral' : 'negative') as 'positive' | 'negative' | 'neutral',
             description: `현재 저축액이 목표 가격의 ${(savingsRatio * 100).toFixed(1)}%를 차지합니다.`
         });
 
@@ -797,7 +797,7 @@ class DreamApartmentVisionService {
         factors.push({
             factor: '소득 대비 부담',
             score: incomeScore,
-            impact: incomeScore > 70 ? 'positive' : incomeScore > 40 ? 'neutral' : 'negative',
+            impact: (incomeScore > 70 ? 'positive' : incomeScore > 40 ? 'neutral' : 'negative') as 'positive' | 'negative' | 'neutral',
             description: `월 상환금이 소득의 ${(incomeRatio * 100).toFixed(1)}%를 차지합니다.`
         });
 

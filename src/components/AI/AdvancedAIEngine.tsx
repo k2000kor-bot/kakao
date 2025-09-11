@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Brain,
     Zap,
-    Cpu,
+    Computer as Cpu,
     Database,
     Network,
     Layers,
     Sparkles,
     Target,
-    BarChart3,
+    BarChart,
     Settings,
     Play,
     Pause,
@@ -676,7 +676,7 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                         { id: 'input', label: '입력', icon: MessageSquare },
                         { id: 'processing', label: '처리', icon: Cpu },
                         { id: 'results', label: '결과', icon: FileText },
-                        { id: 'analysis', label: '분석', icon: BarChart3 },
+                        { id: 'analysis', label: '분석', icon: BarChart },
                         { id: 'monitoring', label: '모니터링', icon: Activity }
                     ].map((tab) => {
                         const IconComponent = tab.icon;

@@ -188,9 +188,9 @@ class AdvancedPerformanceAnalyticsService {
         const responseTimes = memory.conversation_history
             .map(entry => entry.metadata.processing_time)
             .filter(time => time > 0);
-        
-        const avgResponseTime = responseTimes.length > 0 
-            ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length 
+
+        const avgResponseTime = responseTimes.length > 0
+            ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
             : 0;
 
         // 만족도 분석
@@ -320,8 +320,8 @@ class AdvancedPerformanceAnalyticsService {
 
     // 추천사항 생성
     private async generateRecommendations(
-        request: PerformanceAnalyticsRequest, 
-        metrics: PerformanceMetrics, 
+        request: PerformanceAnalyticsRequest,
+        metrics: PerformanceMetrics,
         skillGaps: SkillGap[]
     ): Promise<PerformanceRecommendation[]> {
         const recommendations: PerformanceRecommendation[] = [];
@@ -365,7 +365,7 @@ class AdvancedPerformanceAnalyticsService {
                 type: 'skill_development',
                 title: `${gap.skill_name} 기술 향상`,
                 description: `${gap.skill_name} 영역에서 개선이 필요합니다.`,
-                priority: gap.impact_priority,
+                priority: gap.impact_priority === 'critical' ? 'urgent' : gap.impact_priority as 'medium' | 'low' | 'high' | 'urgent',
                 expected_impact: 1 - gap.gap_size,
                 implementation_difficulty: gap.learning_difficulty,
                 time_requirement: gap.estimated_time_to_master,
@@ -382,7 +382,7 @@ class AdvancedPerformanceAnalyticsService {
 
     // 성과 예측
     private async generatePredictions(
-        request: PerformanceAnalyticsRequest, 
+        request: PerformanceAnalyticsRequest,
         metrics: PerformanceMetrics
     ): Promise<PerformancePrediction[]> {
         const predictions: PerformancePrediction[] = [];
@@ -478,17 +478,17 @@ class AdvancedPerformanceAnalyticsService {
     // 헬퍼 메서드들
     private calculateSessionDuration(memory: ConversationMemory): number {
         if (memory.conversation_history.length < 2) return 0;
-        
+
         const firstEntry = memory.conversation_history[0];
         const lastEntry = memory.conversation_history[memory.conversation_history.length - 1];
-        
+
         return (new Date(lastEntry.timestamp).getTime() - new Date(firstEntry.timestamp).getTime()) / (1000 * 60); // minutes
     }
 
     private calculateInteractionFrequency(memory: ConversationMemory): number {
         const totalMessages = memory.interaction_stats.total_messages;
         const sessionDuration = this.calculateSessionDuration(memory);
-        
+
         return sessionDuration > 0 ? totalMessages / sessionDuration : 0;
     }
 
@@ -498,7 +498,7 @@ class AdvancedPerformanceAnalyticsService {
                 .map(entry => entry.context?.current_topic)
                 .filter(Boolean)
         );
-        
+
         return topics.size / Math.max(memory.conversation_history.length, 1);
     }
 
@@ -506,7 +506,7 @@ class AdvancedPerformanceAnalyticsService {
         const questions = memory.conversation_history
             .filter(entry => entry.user_input.includes('?'))
             .map(entry => entry.user_input.length);
-        
+
         return questions.length > 0 ? questions.reduce((a, b) => a + b, 0) / questions.length : 0;
     }
 
@@ -514,73 +514,73 @@ class AdvancedPerformanceAnalyticsService {
         // 간단한 구현 - 실제로는 더 복잡한 알고리즘 필요
         const repeatedConcepts = memory.knowledge_graph?.nodes?.filter(node => node.access_count > 1) || [];
         const totalConcepts = memory.knowledge_graph?.nodes?.length || 1;
-        
+
         return repeatedConcepts.length / totalConcepts;
     }
 
     private calculateApplicationRate(memory: ConversationMemory): number {
         // 실제 구현에서는 코드 예시나 실습 관련 대화를 분석
-        const codeRelatedEntries = memory.conversation_history.filter(entry => 
-            entry.user_input.toLowerCase().includes('code') || 
+        const codeRelatedEntries = memory.conversation_history.filter(entry =>
+            entry.user_input.toLowerCase().includes('code') ||
             entry.user_input.toLowerCase().includes('example') ||
             entry.user_input.toLowerCase().includes('실습')
         );
-        
+
         return codeRelatedEntries.length / Math.max(memory.conversation_history.length, 1);
     }
 
     private calculateMasteryLevel(memory: ConversationMemory, learningExp: LearningExperience): number {
         const completionRate = learningExp?.current_learning_path?.completion_percentage || 0;
-        const satisfactionScore = memory.interaction_stats.average_satisfaction || 3;
-        
+        const satisfactionScore = (memory.interaction_stats as any).average_satisfaction || 3;
+
         return (completionRate * 0.6 + satisfactionScore * 8) / 10;
     }
 
     private calculateComplexityHandling(memory: ConversationMemory): number {
-        const complexQuestions = memory.conversation_history.filter(entry => 
-            entry.understanding_result?.semantic_analysis?.complexity_assessment?.overall_complexity > 7
+        const complexQuestions = memory.conversation_history.filter(entry =>
+            (entry.understanding_result?.semantic_analysis?.complexity_assessment?.overall_complexity || 0) > 7
         );
-        
+
         return complexQuestions.length / Math.max(memory.conversation_history.length, 1);
     }
 
     private calculateProblemSolvingSpeed(memory: ConversationMemory): number {
-        const problemSolvingEntries = memory.conversation_history.filter(entry => 
+        const problemSolvingEntries = memory.conversation_history.filter(entry =>
             entry.understanding_result?.intent_clarification?.primary_intent === 'problem_solving'
         );
-        
+
         if (problemSolvingEntries.length === 0) return 0;
-        
+
         const avgProcessingTime = problemSolvingEntries
             .map(entry => entry.metadata.processing_time)
             .reduce((a, b) => a + b, 0) / problemSolvingEntries.length;
-        
+
         return Math.max(0, 1 - avgProcessingTime / 10000); // 10초를 기준으로 정규화
     }
 
     private calculateConceptIntegration(memory: ConversationMemory): number {
         const knowledgeGraph = memory.knowledge_graph;
         if (!knowledgeGraph || !knowledgeGraph.edges) return 0;
-        
+
         const totalNodes = knowledgeGraph.nodes.length;
         const totalEdges = knowledgeGraph.edges.length;
-        
+
         return totalNodes > 0 ? totalEdges / (totalNodes * (totalNodes - 1) / 2) : 0;
     }
 
     private analyzeTrend(values: number[]): 'improving' | 'stable' | 'declining' {
         if (values.length < 3) return 'stable';
-        
+
         const recent = values.slice(-3);
         const earlier = values.slice(-6, -3);
-        
+
         if (earlier.length < 3) return 'stable';
-        
+
         const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
         const earlierAvg = earlier.reduce((a, b) => a + b, 0) / earlier.length;
-        
+
         const change = (recentAvg - earlierAvg) / earlierAvg;
-        
+
         if (change > 0.1) return 'improving';
         if (change < -0.1) return 'declining';
         return 'stable';
@@ -594,24 +594,24 @@ class AdvancedPerformanceAnalyticsService {
 
     private calculateConsistency(values: number[]): number {
         if (values.length < 2) return 1;
-        
+
         const mean = values.reduce((a, b) => a + b, 0) / values.length;
         const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
         const stdDev = Math.sqrt(variance);
-        
+
         return Math.max(0, 1 - stdDev / mean);
     }
 
     // 학습 패턴 분석 메서드들
     private analyzeVisualLearningPatterns(memory: ConversationMemory): LearningPattern {
-        const visualEntries = memory.conversation_history.filter(entry => 
+        const visualEntries = memory.conversation_history.filter(entry =>
             entry.user_input.toLowerCase().includes('diagram') ||
             entry.user_input.toLowerCase().includes('chart') ||
             entry.user_input.toLowerCase().includes('visual') ||
             entry.user_input.toLowerCase().includes('그림') ||
             entry.user_input.toLowerCase().includes('차트')
         );
-        
+
         return {
             pattern_type: 'visual',
             frequency: visualEntries.length,
@@ -624,13 +624,13 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     private analyzeAuditoryLearningPatterns(memory: ConversationMemory): LearningPattern {
-        const auditoryEntries = memory.conversation_history.filter(entry => 
+        const auditoryEntries = memory.conversation_history.filter(entry =>
             entry.user_input.toLowerCase().includes('explain') ||
             entry.user_input.toLowerCase().includes('tell me') ||
             entry.user_input.toLowerCase().includes('설명') ||
             entry.user_input.toLowerCase().includes('이야기')
         );
-        
+
         return {
             pattern_type: 'auditory',
             frequency: auditoryEntries.length,
@@ -643,13 +643,13 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     private analyzeKinestheticLearningPatterns(memory: ConversationMemory): LearningPattern {
-        const kinestheticEntries = memory.conversation_history.filter(entry => 
+        const kinestheticEntries = memory.conversation_history.filter(entry =>
             entry.user_input.toLowerCase().includes('practice') ||
             entry.user_input.toLowerCase().includes('exercise') ||
             entry.user_input.toLowerCase().includes('실습') ||
             entry.user_input.toLowerCase().includes('연습')
         );
-        
+
         return {
             pattern_type: 'kinesthetic',
             frequency: kinestheticEntries.length,
@@ -662,13 +662,13 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     private analyzeReadingLearningPatterns(memory: ConversationMemory): LearningPattern {
-        const readingEntries = memory.conversation_history.filter(entry => 
+        const readingEntries = memory.conversation_history.filter(entry =>
             entry.user_input.toLowerCase().includes('read') ||
             entry.user_input.toLowerCase().includes('documentation') ||
             entry.user_input.toLowerCase().includes('읽기') ||
             entry.user_input.toLowerCase().includes('문서')
         );
-        
+
         return {
             pattern_type: 'reading',
             frequency: readingEntries.length,
@@ -681,13 +681,13 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     private analyzeSocialLearningPatterns(memory: ConversationMemory): LearningPattern {
-        const socialEntries = memory.conversation_history.filter(entry => 
+        const socialEntries = memory.conversation_history.filter(entry =>
             entry.user_input.toLowerCase().includes('discuss') ||
             entry.user_input.toLowerCase().includes('compare') ||
             entry.user_input.toLowerCase().includes('토론') ||
             entry.user_input.toLowerCase().includes('비교')
         );
-        
+
         return {
             pattern_type: 'social',
             frequency: socialEntries.length,
@@ -702,22 +702,22 @@ class AdvancedPerformanceAnalyticsService {
     // 패턴 분석 헬퍼 메서드들
     private calculatePatternEffectiveness(entries: any[]): number {
         if (entries.length === 0) return 0;
-        
+
         const satisfactionScores = entries
             .map(entry => entry.user_feedback?.rating || 3)
             .filter(score => score > 0);
-        
-        return satisfactionScores.length > 0 
+
+        return satisfactionScores.length > 0
             ? satisfactionScores.reduce((a, b) => a + b, 0) / satisfactionScores.length / 5
             : 0.6;
     }
 
     private calculatePreferredTime(entries: any[]): string {
         if (entries.length === 0) return 'unknown';
-        
+
         const hours = entries.map(entry => new Date(entry.timestamp).getHours());
         const avgHour = hours.reduce((a, b) => a + b, 0) / hours.length;
-        
+
         if (avgHour < 12) return 'morning';
         if (avgHour < 18) return 'afternoon';
         return 'evening';
@@ -725,46 +725,46 @@ class AdvancedPerformanceAnalyticsService {
 
     private calculateAverageSessionLength(entries: any[]): number {
         if (entries.length < 2) return 0;
-        
+
         const firstEntry = entries[0];
         const lastEntry = entries[entries.length - 1];
-        
+
         return (new Date(lastEntry.timestamp).getTime() - new Date(firstEntry.timestamp).getTime()) / (1000 * 60);
     }
 
     private extractTopics(entries: any[]): string[] {
         const topics = new Set<string>();
-        
+
         entries.forEach(entry => {
             if (entry.context?.current_topic) {
                 topics.add(entry.context.current_topic);
             }
         });
-        
+
         return Array.from(topics);
     }
 
     private calculateConfidenceBoost(entries: any[]): number {
         if (entries.length === 0) return 0;
-        
+
         const confidenceScores = entries
             .map(entry => entry.understanding_result?.confidence_score || 0.5)
             .filter(score => score > 0);
-        
-        return confidenceScores.length > 0 
+
+        return confidenceScores.length > 0
             ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length
             : 0.5;
     }
 
     // 기술 격차 분석 메서드들
     private analyzeProgrammingSkillGap(memory: ConversationMemory, metrics: PerformanceMetrics): SkillGap {
-        const programmingEntries = memory.conversation_history.filter(entry => 
+        const programmingEntries = memory.conversation_history.filter(entry =>
             entry.understanding_result?.semantic_analysis?.domain_classification?.primary_domain === 'programming'
         );
-        
+
         const currentLevel = programmingEntries.length > 0 ? 0.6 : 0.3;
         const requiredLevel = 0.8;
-        
+
         return {
             skill_name: '프로그래밍',
             current_level: currentLevel,
@@ -779,13 +779,13 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     private analyzeWebDevelopmentSkillGap(memory: ConversationMemory, metrics: PerformanceMetrics): SkillGap {
-        const webDevEntries = memory.conversation_history.filter(entry => 
+        const webDevEntries = memory.conversation_history.filter(entry =>
             entry.understanding_result?.semantic_analysis?.domain_classification?.primary_domain === 'web_development'
         );
-        
+
         const currentLevel = webDevEntries.length > 0 ? 0.7 : 0.4;
         const requiredLevel = 0.8;
-        
+
         return {
             skill_name: '웹 개발',
             current_level: currentLevel,
@@ -800,13 +800,13 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     private analyzeProblemSolvingSkillGap(memory: ConversationMemory, metrics: PerformanceMetrics): SkillGap {
-        const problemSolvingEntries = memory.conversation_history.filter(entry => 
+        const problemSolvingEntries = memory.conversation_history.filter(entry =>
             entry.understanding_result?.intent_clarification?.primary_intent === 'problem_solving'
         );
-        
+
         const currentLevel = metrics.cognitive_load.problem_solving_speed;
         const requiredLevel = 0.8;
-        
+
         return {
             skill_name: '문제 해결',
             current_level: currentLevel,
@@ -823,7 +823,7 @@ class AdvancedPerformanceAnalyticsService {
     private analyzeConceptUnderstandingGap(memory: ConversationMemory, metrics: PerformanceMetrics): SkillGap {
         const currentLevel = metrics.cognitive_load.concept_integration;
         const requiredLevel = 0.8;
-        
+
         return {
             skill_name: '개념 이해',
             current_level: currentLevel,
@@ -841,7 +841,7 @@ class AdvancedPerformanceAnalyticsService {
     private predictCompletionRate(request: PerformanceAnalyticsRequest, metrics: PerformanceMetrics): PerformancePrediction {
         const currentRate = metrics.learning_progress.completion_rate;
         const predictedRate = Math.min(1.0, currentRate + 0.1); // 10% 증가 예측
-        
+
         return {
             metric: 'completion_rate',
             current_value: currentRate,
@@ -869,7 +869,7 @@ class AdvancedPerformanceAnalyticsService {
     private predictSatisfactionScore(request: PerformanceAnalyticsRequest, metrics: PerformanceMetrics): PerformancePrediction {
         const currentScore = metrics.satisfaction_score.average;
         const predictedScore = Math.min(5.0, currentScore + 0.2);
-        
+
         return {
             metric: 'satisfaction_score',
             current_value: currentScore,
@@ -891,7 +891,7 @@ class AdvancedPerformanceAnalyticsService {
     private predictSkillMastery(request: PerformanceAnalyticsRequest, metrics: PerformanceMetrics): PerformancePrediction {
         const currentMastery = metrics.learning_progress.mastery_level;
         const predictedMastery = Math.min(1.0, currentMastery + 0.15);
-        
+
         return {
             metric: 'skill_mastery',
             current_value: currentMastery,
@@ -913,7 +913,7 @@ class AdvancedPerformanceAnalyticsService {
     private predictLearningEfficiency(request: PerformanceAnalyticsRequest, metrics: PerformanceMetrics): PerformancePrediction {
         const currentEfficiency = this.calculateLearningEfficiency(metrics, []);
         const predictedEfficiency = Math.min(100, currentEfficiency + 5);
-        
+
         return {
             metric: 'learning_efficiency',
             current_value: currentEfficiency,
@@ -939,13 +939,13 @@ class AdvancedPerformanceAnalyticsService {
         const engagementWeight = 0.2;
         const efficiencyWeight = 0.15;
         const masteryWeight = 0.1;
-        
+
         const satisfactionScore = metrics.satisfaction_score.average / 5;
         const completionScore = metrics.learning_progress.completion_rate;
         const engagementScore = (metrics.engagement_metrics.interaction_frequency + metrics.engagement_metrics.topic_diversity) / 2;
         const efficiencyScore = this.calculateLearningEfficiency(metrics, patterns) / 100;
         const masteryScore = metrics.learning_progress.mastery_level;
-        
+
         return (
             satisfactionScore * satisfactionWeight +
             completionScore * completionWeight +
@@ -960,12 +960,12 @@ class AdvancedPerformanceAnalyticsService {
         const applicationWeight = 0.3;
         const complexityWeight = 0.2;
         const speedWeight = 0.2;
-        
+
         const retentionScore = metrics.learning_progress.retention_rate;
         const applicationScore = metrics.learning_progress.application_rate;
         const complexityScore = metrics.cognitive_load.complexity_handling;
         const speedScore = metrics.cognitive_load.problem_solving_speed;
-        
+
         return (
             retentionScore * retentionWeight +
             applicationScore * applicationWeight +
@@ -981,7 +981,7 @@ class AdvancedPerformanceAnalyticsService {
             metrics.engagement_metrics.topic_diversity * 100 + // 다양성 정규화
             metrics.engagement_metrics.depth_of_questions / 100 // 깊이 정규화
         ) / 4;
-        
+
         if (engagementScore > 0.8) return 'excellent';
         if (engagementScore > 0.6) return 'high';
         if (engagementScore > 0.4) return 'medium';
@@ -990,19 +990,19 @@ class AdvancedPerformanceAnalyticsService {
 
     private analyzeProgressTrend(request: PerformanceAnalyticsRequest): 'declining' | 'stable' | 'improving' | 'accelerating' {
         const history = this.performanceHistory.get(request.user_id) || [];
-        
+
         if (history.length < 3) return 'stable';
-        
+
         const recentScores = history.slice(-3).map(result => result.overall_score);
         const earlierScores = history.slice(-6, -3).map(result => result.overall_score);
-        
+
         if (earlierScores.length < 3) return 'stable';
-        
+
         const recentAvg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
         const earlierAvg = earlierScores.reduce((a, b) => a + b, 0) / earlierScores.length;
-        
+
         const change = (recentAvg - earlierAvg) / earlierAvg;
-        
+
         if (change > 0.2) return 'accelerating';
         if (change > 0.05) return 'improving';
         if (change < -0.05) return 'declining';
@@ -1014,10 +1014,10 @@ class AdvancedPerformanceAnalyticsService {
         if (!this.performanceHistory.has(userId)) {
             this.performanceHistory.set(userId, []);
         }
-        
+
         const history = this.performanceHistory.get(userId)!;
         history.push(result);
-        
+
         // 최근 10개 결과만 유지
         if (history.length > 10) {
             history.shift();
@@ -1053,7 +1053,7 @@ class AdvancedPerformanceAnalyticsService {
             average: 3.0,
             poor: 5.0
         });
-        
+
         this.benchmarkData.set('satisfaction_score', {
             excellent: 4.5,
             good: 4.0,
@@ -1068,7 +1068,7 @@ class AdvancedPerformanceAnalyticsService {
             type: 'linear',
             parameters: { slope: 0.1, intercept: 0.5 }
         });
-        
+
         this.predictionModels.set('satisfaction_score', {
             type: 'linear',
             parameters: { slope: 0.05, intercept: 3.0 }

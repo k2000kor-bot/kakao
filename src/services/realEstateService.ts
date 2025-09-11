@@ -533,7 +533,11 @@ ${data.description}
     if (region) {
       filteredAlerts = this.alerts.filter(alert => alert.region === region);
     }
-    return filteredAlerts.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return filteredAlerts.sort((a, b) => {
+      const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+      const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+      return timestampB.getTime() - timestampA.getTime();
+    });
   }
 
   // 알림 읽음 처리

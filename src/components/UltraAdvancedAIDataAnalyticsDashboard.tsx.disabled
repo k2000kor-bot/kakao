@@ -1,0 +1,668 @@
+import React, { useState, useEffect } from 'react';
+import { Box, Card, CardContent, Typography, Grid, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, ListItemIcon, IconButton, Tooltip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Badge, Alert, TextField, InputAdornment, Tabs, Tab, Divider, CircularProgress, Slider, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Analytics, BarChart, ShowChart, TrendingUp, DataObject, Storage, CloudDownload, Speed, Science as ScienceIcon, DataUsage as DataUsageIcon, Task as TaskIcon, CheckCircle, Error, Warning, PlayArrow, Refresh, Insights, Lightbulb, BugReport, Add } from '@mui/icons-material';
+import { dataAnalyticsAPI } from '../services/apiService';
+
+interface DataAnalyticsDashboardState {
+  dataSources: any[];
+  analyses: any[];
+  visualizations: any[];
+  insights: any[];
+  metrics: any;
+  loading: boolean;
+  error: string | null;
+  selectedTab: number;
+  createSourceDialog: boolean;
+  createAnalysisDialog: boolean;
+  createVisualizationDialog: boolean;
+  newSource: any;
+  newAnalysis: any;
+  newVisualization: any;
+}
+
+const UltraAdvancedAIDataAnalyticsDashboard: React.FC = () => {
+  const [state, setState] = useState<DataAnalyticsDashboardState>({
+    dataSources: [],
+    analyses: [],
+    visualizations: [],
+    insights: [],
+    metrics: {},
+    loading: false,
+    error: null,
+    selectedTab: 0,
+    createSourceDialog: false,
+    createAnalysisDialog: false,
+    createVisualizationDialog: false,
+    newSource: { name: '', type: 'database', url: '' },
+    newAnalysis: { name: '', type: 'descriptive', data_source_id: '' },
+    newVisualization: { name: '', type: 'chart', chart_type: 'bar', data_source_id: '' }
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    try {
+      const [sources, analyses, viz, insights, metrics] = await Promise.all([
+        dataAnalyticsAPI.getDataSources(),
+        dataAnalyticsAPI.getDataAnalyses(),
+        dataAnalyticsAPI.getDataVisualizations(),
+        dataAnalyticsAPI.getDataInsights(),
+        dataAnalyticsAPI.getDataAnalyticsMetrics()
+      ]);
+
+      setState(prev => ({
+        ...prev,
+        dataSources: sources,
+        analyses: analyses,
+        visualizations: viz,
+        insights: insights,
+        metrics: metrics,
+        loading: false
+      }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: '데이터를 불러오는 중 오류가 발생했습니다.',
+        loading: false
+      }));
+    }
+  };
+
+  const handleCreateSource = async () => {
+    try {
+      const newSource = await dataAnalyticsAPI.createDataSource(state.newSource);
+      if (newSource) {
+        setState(prev => ({
+          ...prev,
+          dataSources: [...prev.dataSources, newSource],
+          createSourceDialog: false,
+          newSource: { name: '', type: 'database', url: '' }
+        }));
+      }
+    } catch (error) {
+      setState(prev => ({ ...prev, error: '데이터 소스 생성 중 오류가 발생했습니다.' }));
+    }
+  };
+
+  const handleCreateAnalysis = async () => {
+    try {
+      const newAnalysis = await dataAnalyticsAPI.createDataAnalysis(state.newAnalysis);
+      if (newAnalysis) {
+        setState(prev => ({
+          ...prev,
+          analyses: [...prev.analyses, newAnalysis],
+          createAnalysisDialog: false,
+          newAnalysis: { name: '', type: 'descriptive', data_source_id: '' }
+        }));
+      }
+    } catch (error) {
+      setState(prev => ({ ...prev, error: '분석 작업 생성 중 오류가 발생했습니다.' }));
+    }
+  };
+
+  const handleCreateVisualization = async () => {
+    try {
+      const newViz = await dataAnalyticsAPI.createDataVisualization(state.newVisualization);
+      if (newViz) {
+        setState(prev => ({
+          ...prev,
+          visualizations: [...prev.visualizations, newViz],
+          createVisualizationDialog: false,
+          newVisualization: { name: '', type: 'chart', chart_type: 'bar', data_source_id: '' }
+        }));
+      }
+    } catch (error) {
+      setState(prev => ({ ...prev, error: '시각화 생성 중 오류가 발생했습니다.' }));
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'completed':
+        return 'success';
+      case 'running':
+        return 'warning';
+      case 'failed':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'database':
+        return <Storage />;
+      case 'api':
+        return <DataObject />;
+      case 'file':
+        return <CloudDownload />;
+      case 'stream':
+        return <TrendingUp />;
+      default:
+        return <DataUsageIcon />;
+    }
+  };
+
+  const getChartIcon = (chartType: string) => {
+    switch (chartType) {
+      case 'bar':
+        return <BarChart />;
+      case 'line':
+        return <ShowChart />;
+      case 'pie':
+        return <PieChart />;
+      default:
+        return <Analytics />;
+    }
+  };
+
+  return (
+    <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Analytics color="primary" />
+        고도화된 AI 데이터 분석 대시보드
+      </Typography>
+
+      {state.error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setState(prev => ({ ...prev, error: null }))}>
+          {state.error}
+        </Alert>
+      )}
+
+      {/* 제어 패널 */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">제어 패널</Typography>
+            <Box>
+              <Button
+                variant="contained"
+                startIcon={<Refresh />}
+                onClick={loadData}
+                disabled={state.loading}
+                sx={{ mr: 1 }}
+              >
+                새로고침
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<TaskIcon />}
+                onClick={() => setState(prev => ({ ...prev, createAnalysisDialog: true }))}
+              >
+                분석 작업 생성
+              </Button>
+            </Box>
+          </Box>
+
+          {state.loading && <LinearProgress sx={{ mb: 2 }} />}
+
+          {/* 시스템 상태 */}
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ bgcolor: 'primary.light', color: 'white' }}>
+                <CardContent>
+                  <Typography variant="h6">{state.metrics.total_sources || 0}</Typography>
+                  <Typography variant="body2">데이터 소스</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ bgcolor: 'secondary.light', color: 'white' }}>
+                <CardContent>
+                  <Typography variant="h6">{state.metrics.total_analyses || 0}</Typography>
+                  <Typography variant="body2">분석 작업</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ bgcolor: 'success.light', color: 'white' }}>
+                <CardContent>
+                  <Typography variant="h6">{state.metrics.total_visualizations || 0}</Typography>
+                  <Typography variant="body2">시각화</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ bgcolor: 'info.light', color: 'white' }}>
+                <CardContent>
+                  <Typography variant="h6">{state.metrics.total_insights || 0}</Typography>
+                  <Typography variant="body2">AI 인사이트</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* 탭 네비게이션 */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={state.selectedTab} onChange={(_, newValue) => setState(prev => ({ ...prev, selectedTab: newValue }))}>
+          <Tab label="데이터 소스" />
+          <Tab label="분석 작업" />
+          <Tab label="시각화" />
+          <Tab label="AI 인사이트" />
+          <Tab label="성능 모니터링" />
+        </Tabs>
+      </Box>
+
+      {/* 데이터 소스 탭 */}
+      {state.selectedTab === 0 && (
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">데이터 소스 관리</Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setState(prev => ({ ...prev, createSourceDialog: true }))}
+            >
+              새 데이터 소스 추가
+            </Button>
+          </Box>
+
+          <Grid container spacing={2}>
+            {state.dataSources.map((source) => (
+              <Grid item xs={12} md={6} lg={4} key={source.id}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      {getTypeIcon(source.type)}
+                      <Typography variant="h6" sx={{ ml: 1 }}>
+                        {source.name}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      {source.url}
+                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Chip
+                        label={source.status}
+                        color={getStatusColor(source.status) as any}
+                        size="small"
+                      />
+                      <Typography variant="caption">
+                        {source.data_count?.toLocaleString()} 레코드
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      {/* 분석 작업 탭 */}
+      {state.selectedTab === 1 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>분석 작업</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>작업명</TableCell>
+                  <TableCell>유형</TableCell>
+                  <TableCell>상태</TableCell>
+                  <TableCell>진행률</TableCell>
+                  <TableCell>생성일</TableCell>
+                  <TableCell>작업</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {state.analyses.map((analysis) => (
+                  <TableRow key={analysis.id}>
+                    <TableCell>{analysis.name}</TableCell>
+                    <TableCell>
+                      <Chip label={analysis.type} size="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={analysis.status}
+                        color={getStatusColor(analysis.status) as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box sx={{ width: '100%', mr: 1 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={analysis.progress || 0}
+                            sx={{ height: 8, borderRadius: 4 }}
+                          />
+                        </Box>
+                        <Box sx={{ minWidth: 35 }}>
+                          <Typography variant="body2" color="textSecondary">
+                            {analysis.progress || 0}%
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(analysis.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton size="small">
+                        <PlayArrow />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
+      {/* 시각화 탭 */}
+      {state.selectedTab === 2 && (
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">데이터 시각화</Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setState(prev => ({ ...prev, createVisualizationDialog: true }))}
+            >
+              새 시각화 생성
+            </Button>
+          </Box>
+
+          <Grid container spacing={2}>
+            {state.visualizations.map((viz) => (
+              <Grid item xs={12} md={6} lg={4} key={viz.id}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      {getChartIcon(viz.chart_type)}
+                      <Typography variant="h6" sx={{ ml: 1 }}>
+                        {viz.name}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      {viz.config?.title || '차트 제목 없음'}
+                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Chip
+                        label={viz.status}
+                        color={getStatusColor(viz.status) as any}
+                        size="small"
+                      />
+                      <Typography variant="caption">
+                        {viz.chart_type} 차트
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      {/* AI 인사이트 탭 */}
+      {state.selectedTab === 3 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>AI 인사이트</Typography>
+          <Grid container spacing={2}>
+            {state.insights.map((insight) => (
+              <Grid item xs={12} md={6} key={insight.id}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Lightbulb color="primary" />
+                      <Typography variant="h6" sx={{ ml: 1 }}>
+                        {insight.title}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" gutterBottom>
+                      {insight.description}
+                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Chip
+                        label={`신뢰도: ${Math.round((insight.confidence || 0) * 100)}%`}
+                        color="primary"
+                        size="small"
+                      />
+                      <Chip
+                        label={insight.impact}
+                        color={insight.impact === 'high' ? 'error' : 'warning'}
+                        size="small"
+                      />
+                    </Box>
+                    {insight.recommendations && (
+                      <Box>
+                        <Typography variant="subtitle2" gutterBottom>
+                          권장사항:
+                        </Typography>
+                        <List dense>
+                          {insight.recommendations.map((rec: string, index: number) => (
+                            <ListItem key={index} sx={{ py: 0 }}>
+                              <ListItemIcon sx={{ minWidth: 30 }}>
+                                <CheckCircle fontSize="small" color="success" />
+                              </ListItemIcon>
+                              <ListItemText primary={rec} />
+                            </ListItem>
+                          ))}
+                        </List>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      {/* 성능 모니터링 탭 */}
+      {state.selectedTab === 4 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>성능 모니터링</Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>데이터 품질</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ width: '100%', mr: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={(state.metrics.data_quality_score || 0) * 100}
+                        sx={{ height: 10, borderRadius: 5 }}
+                      />
+                    </Box>
+                    <Box sx={{ minWidth: 35 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        {Math.round((state.metrics.data_quality_score || 0) * 100)}%
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>처리 속도</Typography>
+                  <Typography variant="h4" color="primary">
+                    {Math.round(state.metrics.processing_speed || 0)} ms
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    평균 처리 시간
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>정확도</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ width: '100%', mr: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={(state.metrics.accuracy_rate || 0) * 100}
+                        sx={{ height: 10, borderRadius: 5 }}
+                      />
+                    </Box>
+                    <Box sx={{ minWidth: 35 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        {Math.round((state.metrics.accuracy_rate || 0) * 100)}%
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>사용자 참여도</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ width: '100%', mr: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={(state.metrics.user_engagement || 0) * 100}
+                        sx={{ height: 10, borderRadius: 5 }}
+                      />
+                    </Box>
+                    <Box sx={{ minWidth: 35 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        {Math.round((state.metrics.user_engagement || 0) * 100)}%
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* 데이터 소스 생성 다이얼로그 */}
+      <Dialog open={state.createSourceDialog} onClose={() => setState(prev => ({ ...prev, createSourceDialog: false }))} maxWidth="sm" fullWidth>
+        <DialogTitle>새 데이터 소스 추가</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="소스 이름"
+            value={state.newSource.name}
+            onChange={(e) => setState(prev => ({ ...prev, newSource: { ...prev.newSource, name: e.target.value } }))}
+            sx={{ mb: 2, mt: 1 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>소스 유형</InputLabel>
+            <Select
+              value={state.newSource.type}
+              onChange={(e) => setState(prev => ({ ...prev, newSource: { ...prev.newSource, type: e.target.value } }))}
+            >
+              <MenuItem value="database">데이터베이스</MenuItem>
+              <MenuItem value="api">API</MenuItem>
+              <MenuItem value="file">파일</MenuItem>
+              <MenuItem value="stream">스트림</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            fullWidth
+            label="URL 또는 경로"
+            value={state.newSource.url}
+            onChange={(e) => setState(prev => ({ ...prev, newSource: { ...prev.newSource, url: e.target.value } }))}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setState(prev => ({ ...prev, createSourceDialog: false }))}>취소</Button>
+          <Button onClick={handleCreateSource} variant="contained">생성</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 분석 작업 생성 다이얼로그 */}
+      <Dialog open={state.createAnalysisDialog} onClose={() => setState(prev => ({ ...prev, createAnalysisDialog: false }))} maxWidth="sm" fullWidth>
+        <DialogTitle>새 분석 작업 생성</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="작업 이름"
+            value={state.newAnalysis.name}
+            onChange={(e) => setState(prev => ({ ...prev, newAnalysis: { ...prev.newAnalysis, name: e.target.value } }))}
+            sx={{ mb: 2, mt: 1 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>분석 유형</InputLabel>
+            <Select
+              value={state.newAnalysis.type}
+              onChange={(e) => setState(prev => ({ ...prev, newAnalysis: { ...prev.newAnalysis, type: e.target.value } }))}
+            >
+              <MenuItem value="descriptive">기술적 분석</MenuItem>
+              <MenuItem value="diagnostic">진단적 분석</MenuItem>
+              <MenuItem value="predictive">예측적 분석</MenuItem>
+              <MenuItem value="prescriptive">처방적 분석</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel>데이터 소스</InputLabel>
+            <Select
+              value={state.newAnalysis.data_source_id}
+              onChange={(e) => setState(prev => ({ ...prev, newAnalysis: { ...prev.newAnalysis, data_source_id: e.target.value } }))}
+            >
+              {state.dataSources.map((source) => (
+                <MenuItem key={source.id} value={source.id}>{source.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setState(prev => ({ ...prev, createAnalysisDialog: false }))}>취소</Button>
+          <Button onClick={handleCreateAnalysis} variant="contained">생성</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 시각화 생성 다이얼로그 */}
+      <Dialog open={state.createVisualizationDialog} onClose={() => setState(prev => ({ ...prev, createVisualizationDialog: false }))} maxWidth="sm" fullWidth>
+        <DialogTitle>새 시각화 생성</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="시각화 이름"
+            value={state.newVisualization.name}
+            onChange={(e) => setState(prev => ({ ...prev, newVisualization: { ...prev.newVisualization, name: e.target.value } }))}
+            sx={{ mb: 2, mt: 1 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>차트 유형</InputLabel>
+            <Select
+              value={state.newVisualization.chart_type}
+              onChange={(e) => setState(prev => ({ ...prev, newVisualization: { ...prev.newVisualization, chart_type: e.target.value } }))}
+            >
+              <MenuItem value="bar">막대 차트</MenuItem>
+              <MenuItem value="line">선 차트</MenuItem>
+              <MenuItem value="pie">파이 차트</MenuItem>
+              <MenuItem value="scatter">산점도</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel>데이터 소스</InputLabel>
+            <Select
+              value={state.newVisualization.data_source_id}
+              onChange={(e) => setState(prev => ({ ...prev, newVisualization: { ...prev.newVisualization, data_source_id: e.target.value } }))}
+            >
+              {state.dataSources.map((source) => (
+                <MenuItem key={source.id} value={source.id}>{source.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setState(prev => ({ ...prev, createVisualizationDialog: false }))}>취소</Button>
+          <Button onClick={handleCreateVisualization} variant="contained">생성</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default UltraAdvancedAIDataAnalyticsDashboard;

@@ -1,4 +1,6 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
+from fastapi import (
+    FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
+)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -17,7 +19,9 @@ from auto_file_organizer import AutoFileOrganizer, start_file_watcher
 import threading
 from intelligent_project_manager import IntelligentProjectManager
 from redevelopment_ai_specialist import RedevelopmentAISpecialist
-from advanced_context_intelligence import create_advanced_context_intelligence, IntelligenceLevel
+from advanced_context_intelligence import (
+    create_advanced_context_intelligence, IntelligenceLevel
+)
 from quantum_conversation_engine import create_quantum_conversation_engine
 import numpy as np
 
@@ -33,6 +37,8 @@ app.add_middleware(
 )
 
 # WebSocket 연결 관리
+
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -51,18 +57,22 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
-            except:
+            except Exception:
                 pass
+
 
 manager = ConnectionManager()
 
 # Pydantic 모델들
+
+
 class ChatMessage(BaseModel):
     id: str
     sender: str
     content: str
     timestamp: str
     isDeleted: Optional[bool] = False
+
 
 class ChatRoom(BaseModel):
     id: str
@@ -71,10 +81,12 @@ class ChatRoom(BaseModel):
     participantCount: int
     lastMessage: str
 
+
 class SystemMetrics(BaseModel):
     totalMessages: int
     activeUsers: int
     sentimentScore: float
+
 
 class ResponseRequest(BaseModel):
     strategy: str
@@ -83,10 +95,12 @@ class ResponseRequest(BaseModel):
     content: str
     chatRoomId: str
 
+
 class SmartResponseRequest(BaseModel):
     chatRoomId: str
     conversationContext: Dict[str, Any]
     includeReasoning: bool = False
+
 
 class MessageTemplate(BaseModel):
     id: str
@@ -101,6 +115,7 @@ class MessageTemplate(BaseModel):
     createdAt: str
     lastUsed: Optional[str] = None
 
+
 class AdvancedMessageRequest(BaseModel):
     messageContent: str
     selectedStyle: str
@@ -110,9 +125,11 @@ class AdvancedMessageRequest(BaseModel):
     context: str
     keywords: List[str]
 
+
 class MessageSuggestionRequest(BaseModel):
     conversationContext: Dict[str, Any]
     filters: Dict[str, Any]
+
 
 class KnowledgeDocument(BaseModel):
     id: str
@@ -131,6 +148,7 @@ class KnowledgeDocument(BaseModel):
     aiInsights: List[str]
     usage: int
     rating: float
+
 
 # 샘플 데이터
 sample_chatrooms = [
@@ -184,18 +202,22 @@ sample_templates = [
     }
 ]
 
+
 # API 엔드포인트들
 @app.get("/")
 async def root():
     return {"message": "KakaoTalk Conversation Analysis API"}
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+
 @app.get("/chatrooms")
 async def get_chatrooms():
     return {"chatrooms": sample_chatrooms}
+
 
 @app.get("/chatrooms/{chatroom_id}/messages")
 async def get_chat_messages(chatroom_id: str, period: str = "all"):
@@ -204,17 +226,24 @@ async def get_chat_messages(chatroom_id: str, period: str = "all"):
         {
             "id": "1",
             "sender": "김조합장 101-1201",
-            "content": "안녕하세요. 오늘 오후 2시에 조합원 총회가 있습니다. 참석 가능하신 분들은 댓글로 알려주세요.",
+            "content": (
+                "안녕하세요. 오늘 오후 2시에 조합원 총회가 있습니다. "
+                "참석 가능하신 분들은 댓글로 알려주세요."
+            ),
             "timestamp": "4월 24일 오후 01:15"
         },
         {
             "id": "2", 
             "sender": "이부조합장 102-1302",
-            "content": "네, 참석하겠습니다. 회의 안건 미리 공유해주시면 준비하겠습니다.",
+            "content": (
+                "네, 참석하겠습니다. 회의 안건 미리 공유해주시면 "
+                "준비하겠습니다."
+            ),
             "timestamp": "4월 24일 오후 01:18"
         }
     ]
     return sample_messages
+
 
 @app.get("/system/metrics")
 async def get_system_metrics():
@@ -224,11 +253,17 @@ async def get_system_metrics():
         "sentimentScore": round(random.uniform(0, 100), 1)
     }
 
+
 @app.post("/ai/response")
 async def generate_ai_response(request: ResponseRequest):
     try:
         # AI 응답 생성 시뮬레이션
-        response_content = f"선택된 전략: {request.strategy}\n특성: {request.characteristics}\n선호도: {request.preference}\n\n{request.content}에 대한 AI 응답이 생성되었습니다."
+        response_content = (
+            f"선택된 전략: {request.strategy}\n"
+            f"특성: {request.characteristics}\n"
+            f"선호도: {request.preference}\n\n"
+            f"{request.content}에 대한 AI 응답이 생성되었습니다."
+        )
         
         return {
             "message": response_content,
@@ -238,12 +273,17 @@ async def generate_ai_response(request: ResponseRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/ai/smart-response")
 async def generate_smart_response(request: SmartResponseRequest):
     try:
         # 고급 AI 응답 생성 시뮬레이션
         reasoning = "대화 컨텍스트를 분석하여 적절한 응답을 생성했습니다."
-        response_content = f"고급 AI 분석을 통한 응답:\n\n{request.conversationContext.get('desiredContent', '기본 응답')}\n\n추론: {reasoning}"
+        response_content = (
+            f"고급 AI 분석을 통한 응답:\n\n"
+            f"{request.conversationContext.get('desiredContent', '기본 응답')}\n\n"
+            f"추론: {reasoning}"
+        )
         
         return {
             "message": response_content,
@@ -252,6 +292,7 @@ async def generate_smart_response(request: SmartResponseRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/ai/analyze-sentiment")
 async def analyze_sentiment(messages: List[ChatMessage]):
@@ -262,7 +303,11 @@ async def analyze_sentiment(messages: List[ChatMessage]):
             score = random.uniform(-1, 1)
             sentiment_scores.append({
                 "messageId": message.id,
-                "sentiment": "positive" if score > 0.3 else "negative" if score < -0.3 else "neutral",
+                "sentiment": (
+                    "positive" if score > 0.3 
+                    else "negative" if score < -0.3 
+                    else "neutral"
+                ),
                 "score": round(score, 2)
             })
         

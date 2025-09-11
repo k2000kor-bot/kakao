@@ -1,0 +1,1212 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
+  Button,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  LinearProgress,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Alert,
+  Badge,
+  Tooltip,
+  Switch,
+  FormControlLabel,
+  Avatar,
+  AvatarGroup,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
+} from '@mui/material';
+import {
+  PlayArrow,
+  Pause,
+  Stop,
+  Add,
+  Edit,
+  Delete,
+  Visibility,
+  TrendingUp,
+  TrendingDown,
+  Schedule,
+  Assignment,
+  Group,
+  Analytics,
+  Settings,
+  Notifications,
+  Warning,
+  CheckCircle,
+  Error,
+  Info,
+  Person,
+  VideoLibrary,
+  Assessment,
+  Psychology,
+  AutoAwesome,
+  Timeline,
+  Computer,
+  AttachMoney,
+  AccessTime,
+  Business,
+  ExpandMore,
+  // 리소스 관련 아이콘들을 기존 MUI 아이콘으로 매핑
+  Computer as ResourceIcon,
+  AttachMoney as CostIcon,
+  AccessTime as TimeIcon,
+  Business as AllocationIcon,
+  TrendingUp as PerformanceIcon,
+  AutoAwesome as OptimizationIcon,
+  Analytics as AnalyticsIcon,
+  Settings as SettingsIcon,
+  Person as PersonIcon,
+  Assessment as AssessmentIcon
+} from '@mui/icons-material';
+import {
+  BarChart,
+  Pie,
+  Cell,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  AreaChart,
+  Area,
+  ScatterChart,
+  Scatter
+} from 'recharts';
+import aiResourceAllocationOptimizationSystem, {
+  ResourceAllocation,
+  AllocationAnalytics,
+  Resource,
+  AllocationPlan,
+  AllocationPerformance,
+  AllocationTune as Optimization,
+  AllocationRecommendation
+} from '../services/aiResourceAllocationOptimizationSystem';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`resource-allocation-tabpanel-${index}`}
+      aria-labelledby={`resource-allocation-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
+const AIResourceAllocationOptimizationDashboard: React.FC = () => {
+  const [tabValue, setTabValue] = useState(0);
+  const [allocations, setAllocations] = useState<ResourceAllocation[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [analytics, setAnalytics] = useState<AllocationAnalytics>({
+    totalResources: 0,
+    activeAllocations: 0,
+    averageUtilization: 0,
+    totalCost: 0,
+    costPerResource: 0,
+    efficiencyScore: 0,
+    optimizationRate: 0,
+    issueResolutionRate: 0,
+    satisfactionScore: 0,
+    roi: 0
+  });
+  const [selectedAllocation, setSelectedAllocation] = useState<ResourceAllocation | null>(null);
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [resourceDetailDialogOpen, setResourceDetailDialogOpen] = useState(false);
+  const [isSystemRunning, setIsSystemRunning] = useState(false);
+
+  useEffect(() => {
+    const updateData = () => {
+      setAllocations(aiResourceAllocationOptimizationSystem.getAllocations());
+      setResources(aiResourceAllocationOptimizationSystem.getResources());
+      setAnalytics(aiResourceAllocationOptimizationSystem.getAnalytics());
+      setIsSystemRunning(aiResourceAllocationOptimizationSystem.isSystemRunning());
+    };
+
+    updateData();
+    const interval = setInterval(updateData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'success';
+      case 'planning': return 'warning';
+      case 'completed': return 'info';
+      case 'optimizing': return 'secondary';
+      case 'suspended': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'project': return 'primary';
+      case 'department': return 'secondary';
+      case 'team': return 'success';
+      case 'individual': return 'warning';
+      case 'organization': return 'info';
+      default: return 'default';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical': return 'error';
+      case 'high': return 'warning';
+      case 'medium': return 'info';
+      case 'low': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getResourceTypeColor = (type: string) => {
+    switch (type) {
+      case 'human': return 'primary';
+      case 'financial': return 'success';
+      case 'equipment': return 'secondary';
+      case 'software': return 'info';
+      case 'facility': return 'warning';
+      case 'time': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ko-KR', {
+      style: 'currency',
+      currency: 'KRW'
+    }).format(amount);
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString('ko-KR');
+  };
+
+  const getResourceTypeData = () => {
+    const typeCounts = resources.reduce((acc, resource) => {
+      acc[resource.type] = (acc[resource.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(typeCounts).map(([type, count]) => ({
+      name: type,
+      value: count
+    }));
+  };
+
+  const getUtilizationData = () => {
+    return resources.map(resource => ({
+      name: resource.name,
+      current: resource.utilization.current * 100,
+      target: resource.utilization.target * 100,
+      efficiency: resource.utilization.efficiency * 100
+    }));
+  };
+
+  const getCostData = () => {
+    return resources.map(resource => ({
+      name: resource.name,
+      monthly: resource.cost.monthlyRate,
+      daily: resource.cost.dailyRate,
+      hourly: resource.cost.hourlyRate
+    }));
+  };
+
+  const getAllocationStatusData = () => {
+    const statusCounts = allocations.reduce((acc, allocation) => {
+      acc[allocation.status] = (acc[allocation.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      name: status,
+      value: count
+    }));
+  };
+
+  const getPerformanceData = () => {
+    return allocations.map(allocation => ({
+      name: allocation.name,
+      efficiency: allocation.performance.overallEfficiency * 100,
+      utilization: allocation.performance.resourceUtilization * 100,
+      cost: allocation.performance.costEfficiency * 100,
+      quality: allocation.performance.qualityScore * 100,
+      roi: allocation.performance.roi
+    }));
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
+
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* 헤더 */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            🎯 AI 리소스 할당 최적화
+          </Typography>
+          <Typography variant="body1" color="textSecondary">
+            인력, 시간, 예산의 최적 할당 및 효율성 극대화 시스템
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Chip
+            icon={isSystemRunning ? <CheckCircle /> : <Error />}
+            label={isSystemRunning ? '시스템 실행 중' : '시스템 중지됨'}
+            color={isSystemRunning ? 'success' : 'error'}
+          />
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            새 할당 계획
+          </Button>
+        </Box>
+      </Box>
+
+      {/* 전체 지표 */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    전체 리소스
+                  </Typography>
+                  <Typography variant="h4">
+                    {analytics.totalResources}
+                  </Typography>
+                </Box>
+                <ResourceIcon color="primary" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    평균 활용도
+                  </Typography>
+                  <Typography variant="h4">
+                    {(analytics.averageUtilization * 100).toFixed(1)}%
+                  </Typography>
+                </Box>
+                <PerformanceIcon color="success" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    총 비용
+                  </Typography>
+                  <Typography variant="h4">
+                    {formatCurrency(analytics.totalCost)}
+                  </Typography>
+                </Box>
+                <CostIcon color="info" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    ROI
+                  </Typography>
+                  <Typography variant="h4">
+                    {analytics.roi.toFixed(1)}x
+                  </Typography>
+                </Box>
+                <OptimizationIcon color="warning" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 탭 네비게이션 */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="resource allocation tabs">
+          <Tab icon={<AllocationIcon />} label="할당 계획" />
+          <Tab icon={<ResourceIcon />} label="리소스" />
+          <Tab icon={<CostIcon />} label="비용 분석" />
+          <Tab icon={<PerformanceIcon />} label="성과 분석" />
+          <Tab icon={<OptimizationIcon />} label="최적화" />
+          <Tab icon={<AssessmentIcon />} label="권장사항" />
+          <Tab icon={<SettingsIcon />} label="설정" />
+        </Tabs>
+      </Box>
+
+      {/* 탭 콘텐츠 */}
+      <TabPanel value={tabValue} index={0}>
+        {/* 할당 계획 */}
+        <Grid container spacing={3}>
+          {/* 할당 목록 */}
+          <Grid item xs={12} lg={8}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  리소스 할당 계획
+                </Typography>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>할당 계획</TableCell>
+                        <TableCell>타입</TableCell>
+                        <TableCell>상태</TableCell>
+                        <TableCell>우선순위</TableCell>
+                        <TableCell>효율성</TableCell>
+                        <TableCell>작업</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {allocations.map((allocation) => (
+                        <TableRow key={allocation.allocationId}>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="subtitle2">{allocation.name}</Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                {allocation.description}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={allocation.type}
+                              color={getTypeColor(allocation.type) as any}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={allocation.status}
+                              color={getStatusColor(allocation.status) as any}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={allocation.priority}
+                              color={getPriorityColor(allocation.priority) as any}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ width: '100%', mr: 1 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={allocation.performance.overallEfficiency * 100}
+                                  sx={{ height: 8, borderRadius: 5 }}
+                                />
+                              </Box>
+                              <Box sx={{ minWidth: 35 }}>
+                                <Typography variant="body2" color="textSecondary">
+                                  {(allocation.performance.overallEfficiency * 100).toFixed(0)}%
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setSelectedAllocation(allocation);
+                                setDetailDialogOpen(true);
+                              }}
+                            >
+                              <Visibility />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* 차트 */}
+          <Grid item xs={12} lg={4}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      할당 상태 분포
+                    </Typography>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={getAllocationStatusData()}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {getAllocationStatusData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={1}>
+        {/* 리소스 */}
+        <Grid container spacing={3}>
+          {/* 리소스 목록 */}
+          <Grid item xs={12} lg={8}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  리소스 관리
+                </Typography>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>리소스</TableCell>
+                        <TableCell>타입</TableCell>
+                        <TableCell>용량</TableCell>
+                        <TableCell>활용도</TableCell>
+                        <TableCell>비용</TableCell>
+                        <TableCell>작업</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {resources.map((resource) => (
+                        <TableRow key={resource.resourceId}>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="subtitle2">{resource.name}</Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                {resource.department} - {resource.location}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={resource.type}
+                              color={getResourceTypeColor(resource.type) as any}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {resource.capacity.allocated}/{resource.capacity.total} {resource.capacity.unit}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ width: '100%', mr: 1 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={resource.utilization.current * 100}
+                                  sx={{ height: 8, borderRadius: 5 }}
+                                />
+                              </Box>
+                              <Box sx={{ minWidth: 35 }}>
+                                <Typography variant="body2" color="textSecondary">
+                                  {(resource.utilization.current * 100).toFixed(0)}%
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {formatCurrency(resource.cost.monthlyRate)}/월
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setSelectedResource(resource);
+                                setResourceDetailDialogOpen(true);
+                              }}
+                            >
+                              <Visibility />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* 리소스 차트 */}
+          <Grid item xs={12} lg={4}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      리소스 타입 분포
+                    </Typography>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={getResourceTypeData()}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {getResourceTypeData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={2}>
+        {/* 비용 분석 */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} lg={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  리소스별 비용 분석
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <Assessment data={getCostData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip formatter={(value) => formatCurrency(value as number)} />
+                    <Legend />
+                    <Bar dataKey="monthly" fill="#8884d8" name="월간 비용" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} lg={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  활용도 vs 목표
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <Assessment data={getUtilizationData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Legend />
+                    <Bar dataKey="current" fill="#82ca9d" name="현재 활용도" />
+                    <Bar dataKey="target" fill="#ffc658" name="목표 활용도" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={3}>
+        {/* 성과 분석 */}
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  할당 계획별 성과 비교
+                </Typography>
+                <ResponsiveContainer width="100%" height={400}>
+                  <RadarChart data={getPerformanceData()}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="name" />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                    <Radar
+                      name="효율성"
+                      dataKey="efficiency"
+                      stroke="#8884d8"
+                      fill="#8884d8"
+                      fillOpacity={0.6}
+                    />
+                    <Radar
+                      name="활용도"
+                      dataKey="utilization"
+                      stroke="#82ca9d"
+                      fill="#82ca9d"
+                      fillOpacity={0.6}
+                    />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={4}>
+        {/* 최적화 */}
+        <Grid container spacing={3}>
+          {allocations.map((allocation) => (
+            <Grid item xs={12} key={allocation.allocationId}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {allocation.name} - 최적화 결과
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="subtitle1" gutterBottom>
+                        최적화 상태
+                      </Typography>
+                      <Chip
+                        label={allocation.optimization.status}
+                        color={allocation.optimization.status === 'completed' ? 'success' : 'warning'}
+                        sx={{ mb: 2 }}
+                      />
+                      <Typography variant="body2" color="textSecondary">
+                        알고리즘: {allocation.optimization.algorithm}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        최적화 타입: {allocation.optimization.type}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        주요 목표: {allocation.optimization.objective.primary}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="subtitle1" gutterBottom>
+                        최적화 결과
+                      </Typography>
+                      {allocation.optimization.results.map((result) => (
+                        <Alert key={result.resultId} severity="info" sx={{ mb: 1 }}>
+                          <Typography variant="body2">
+                            <strong>{result.metric}:</strong> {(result.improvement * 100).toFixed(1)}% 향상
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            {result.explanation}
+                          </Typography>
+                        </Alert>
+                      ))}
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={5}>
+        {/* 권장사항 */}
+        <Grid container spacing={3}>
+          {allocations.map((allocation) => (
+            <Grid item xs={12} key={allocation.allocationId}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {allocation.name} - 개선 권장사항
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {allocation.recommendations.map((recommendation) => (
+                      <Grid item xs={12} md={6} key={recommendation.recommendationId}>
+                        <Accordion>
+                          <AccordionSummary expandIcon={<ExpandMore />}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                              <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+                                {recommendation.title}
+                              </Typography>
+                              <Chip
+                                label={recommendation.priority}
+                                color={getPriorityColor(recommendation.priority) as any}
+                                size="small"
+                                sx={{ mr: 1 }}
+                              />
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails>
+                            <Typography variant="body2" gutterBottom>
+                              {recommendation.description}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                              <strong>근거:</strong> {recommendation.rationale}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                              <strong>영향도:</strong> {(recommendation.impact * 100).toFixed(1)}% |
+                              <strong> 노력:</strong> {(recommendation.effort * 100).toFixed(1)}% |
+                              <strong> 비용:</strong> {formatCurrency(recommendation.cost)}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                              <strong>구현 방법:</strong> {recommendation.implementation}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                              <strong>기대 효과:</strong> {recommendation.expectedOutcome}
+                            </Typography>
+                            <Box sx={{ mt: 2 }}>
+                              <Chip
+                                label={recommendation.status}
+                                color={recommendation.status === 'approved' ? 'success' : 'default'}
+                                size="small"
+                              />
+                            </Box>
+                          </AccordionDetails>
+                        </Accordion>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={6}>
+        {/* 설정 */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  최적화 설정
+                </Typography>
+                <List>
+                  <ListItem>
+                    <ListItemIcon>
+                      <AutoAwesome />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="자동 최적화"
+                      secondary="리소스 할당 자동 최적화"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <CostIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="비용 최적화"
+                      secondary="비용 효율성 최적화"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <PersonIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="스킬 매칭"
+                      secondary="스킬 기반 리소스 매칭"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <TimeIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="용량 계획"
+                      secondary="미래 용량 요구사항 계획"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  알림 설정
+                </Typography>
+                <List>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Warning />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="과할당 알림"
+                      secondary="리소스 과할당 시 알림"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <TrendingDown />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="저활용 알림"
+                      secondary="리소스 저활용 시 알림"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <AttachMoney />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="비용 초과 알림"
+                      secondary="예산 초과 시 알림"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Schedule />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="일정 지연 알림"
+                      secondary="일정 지연 시 알림"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* 할당 상세 다이얼로그 */}
+      <Dialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          리소스 할당 상세 정보
+        </DialogTitle>
+        <DialogContent>
+          {selectedAllocation && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {selectedAllocation.name}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                {selectedAllocation.description}
+              </Typography>
+
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    기본 정보
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText
+                        primary="타입"
+                        secondary={selectedAllocation.type}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="상태"
+                        secondary={selectedAllocation.status}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="우선순위"
+                        secondary={selectedAllocation.priority}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="생성일"
+                        secondary={formatDate(selectedAllocation.timestamp)}
+                      />
+                    </ListItem>
+                  </List>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    성과 지표
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText
+                        primary="전체 효율성"
+                        secondary={`${(selectedAllocation.performance.overallEfficiency * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="리소스 활용도"
+                        secondary={`${(selectedAllocation.performance.resourceUtilization * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="비용 효율성"
+                        secondary={`${(selectedAllocation.performance.costEfficiency * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="ROI"
+                        secondary={`${selectedAllocation.performance.roi.toFixed(2)}x`}
+                      />
+                    </ListItem>
+                  </List>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailDialogOpen(false)}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 리소스 상세 다이얼로그 */}
+      <Dialog
+        open={resourceDetailDialogOpen}
+        onClose={() => setResourceDetailDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          리소스 상세 정보
+        </DialogTitle>
+        <DialogContent>
+          {selectedResource && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {selectedResource.name}
+              </Typography>
+
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    기본 정보
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText
+                        primary="타입"
+                        secondary={selectedResource.type}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="카테고리"
+                        secondary={selectedResource.category}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="부서"
+                        secondary={selectedResource.department}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="위치"
+                        secondary={selectedResource.location}
+                      />
+                    </ListItem>
+                  </List>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    용량 및 활용도
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText
+                        primary="총 용량"
+                        secondary={`${selectedResource.capacity.total} ${selectedResource.capacity.unit}`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="할당된 용량"
+                        secondary={`${selectedResource.capacity.allocated} ${selectedResource.capacity.unit}`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="현재 활용도"
+                        secondary={`${(selectedResource.utilization.current * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="효율성"
+                        secondary={`${(selectedResource.utilization.efficiency * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                  </List>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResourceDetailDialogOpen(false)}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 새 할당 계획 생성 다이얼로그 */}
+      <Dialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          새 리소스 할당 계획
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="할당 계획 이름"
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="설명"
+                variant="outlined"
+                multiline
+                rows={3}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>타입</InputLabel>
+                <Select label="타입">
+                  <MenuItem value="project">프로젝트</MenuItem>
+                  <MenuItem value="department">부서</MenuItem>
+                  <MenuItem value="team">팀</MenuItem>
+                  <MenuItem value="individual">개인</MenuItem>
+                  <MenuItem value="organization">조직</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>우선순위</InputLabel>
+                <Select label="우선순위">
+                  <MenuItem value="low">낮음</MenuItem>
+                  <MenuItem value="medium">보통</MenuItem>
+                  <MenuItem value="high">높음</MenuItem>
+                  <MenuItem value="critical">긴급</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateDialogOpen(false)}>취소</Button>
+          <Button variant="contained" onClick={() => setCreateDialogOpen(false)}>
+            생성
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default AIResourceAllocationOptimizationDashboard;

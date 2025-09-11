@@ -24,7 +24,7 @@ import {
     CheckCircle,
     X,
     Settings,
-    BarChart3,
+    BarChart,
     MessageSquare,
     Lightbulb,
     Target
@@ -92,7 +92,7 @@ const AIEngineMonitor: React.FC<AIEngineMonitorProps> = ({ isOpen, onClose }) =>
     };
 
     const tabs = [
-        { id: 'overview', label: '개요', icon: BarChart3 },
+        { id: 'overview', label: '개요', icon: BarChart },
         { id: 'models', label: 'AI 모델', icon: Brain },
         { id: 'analytics', label: '분석', icon: TrendingUp },
         { id: 'settings', label: '설정', icon: Settings },

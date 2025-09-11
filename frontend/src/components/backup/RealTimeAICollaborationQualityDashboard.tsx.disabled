@@ -1,0 +1,1106 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
+  Button,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  LinearProgress,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Alert,
+  Badge,
+  Tooltip,
+  Switch,
+  FormControlLabel
+} from '@mui/material';
+import {
+  PlayArrow,
+  Pause,
+  Stop,
+  Add,
+  Edit,
+  Delete,
+  Visibility,
+  TrendingUp,
+  TrendingDown,
+  Schedule,
+  Assignment,
+  // Quality,
+  Analytics,
+  Settings,
+  Notifications,
+  Warning,
+  CheckCircle,
+  Error,
+  Info,
+  Group,
+  Chat,
+  Assessment,
+  Feedback,
+  Improvement,
+  Benchmark,
+  Alert as AlertIcon,
+  Trend,
+  Session,
+  Participant,
+  Interaction,
+  Metric,
+  Quality as QualityIcon,
+  Analytics as AnalyticsIcon,
+  Settings as SettingsIcon,
+  Group as GroupIcon,
+  Chat as ChatIcon,
+  Assessment as AssessmentIcon,
+  Feedback as FeedbackIcon,
+  Improvement as ImprovementIcon,
+  Benchmark as BenchmarkIcon,
+  Alert as AlertIcon2,
+  Trend as TrendIcon,
+  Session as SessionIcon,
+  Participant as ParticipantIcon,
+  Interaction as InteractionIcon,
+  Metric as MetricIcon
+} from '@mui/icons-material';
+import {
+  BarChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  AreaChart,
+  Area
+} from 'recharts';
+import realTimeAICollaborationQualitySystem, {
+  CollaborationQualitySession,
+  QualityAnalytics,
+  QualityParticipant,
+  QualityInteraction,
+  QualityFeedback,
+  QualityImprovement,
+  QualityAlert,
+  QualityBenchmark,
+  QualityTrend
+} from '../services/realTimeAICollaborationQualitySystem';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`quality-tabpanel-${index}`}
+      aria-labelledby={`quality-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
+const RealTimeAICollaborationQualityDashboard: React.FC = () => {
+  const [tabValue, setTabValue] = useState(0);
+  const [sessions, setSessions] = useState<CollaborationQualitySession[]>([]);
+  const [analytics, setAnalytics] = useState<QualityAnalytics>({
+    sessions: 0,
+    activeSessions: 0,
+    averageQuality: 0,
+    qualityTrend: 0,
+    improvementRate: 0,
+    alertCount: 0,
+    resolvedAlerts: 0,
+    participantSatisfaction: 0,
+    collaborationEffectiveness: 0,
+    communicationQuality: 0,
+    decisionQuality: 0,
+    problemSolvingQuality: 0
+  });
+  const [selectedSession, setSelectedSession] = useState<CollaborationQualitySession | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [isSystemRunning, setIsSystemRunning] = useState(false);
+
+  useEffect(() => {
+    const updateData = () => {
+      setSessions(realTimeAICollaborationQualitySystem.getSessions());
+      setAnalytics(realTimeAICollaborationQualitySystem.getAnalytics());
+      setIsSystemRunning(realTimeAICollaborationQualitySystem.isSystemRunning());
+    };
+
+    updateData();
+    const interval = setInterval(updateData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'success';
+      case 'completed': return 'info';
+      case 'paused': return 'warning';
+      case 'cancelled': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'workflow': return 'primary';
+      case 'meeting': return 'secondary';
+      case 'project': return 'success';
+      case 'review': return 'warning';
+      case 'training': return 'info';
+      default: return 'default';
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'error';
+      case 'high': return 'warning';
+      case 'medium': return 'info';
+      case 'low': return 'success';
+      default: return 'default';
+    }
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString('ko-KR');
+  };
+
+  const getQualityData = () => {
+    return sessions.map(session => ({
+      name: session.name,
+      overallQuality: session.metrics.overallQuality * 100,
+      communicationQuality: session.metrics.communicationQuality * 100,
+      collaborationQuality: session.metrics.collaborationQuality * 100,
+      decisionQuality: session.metrics.decisionQuality * 100,
+      problemSolvingQuality: session.metrics.problemSolvingQuality * 100
+    }));
+  };
+
+  const getParticipantData = () => {
+    const allParticipants = sessions.flatMap(session => session.participants);
+    return allParticipants.map(participant => ({
+      name: participant.name,
+      qualityScore: participant.qualityScore * 100,
+      engagementLevel: participant.engagementLevel * 100,
+      contributionQuality: participant.contributionQuality * 100,
+      collaborationEffectiveness: participant.collaborationEffectiveness * 100
+    }));
+  };
+
+  const getInteractionData = () => {
+    const allInteractions = sessions.flatMap(session => session.interactions);
+    return allInteractions.map(interaction => ({
+      name: interaction.type,
+      quality: interaction.quality.overallScore * 100,
+      effectiveness: interaction.effectiveness * 100,
+      impact: interaction.impact * 100
+    }));
+  };
+
+  const getSessionTypeData = () => {
+    const typeCounts = sessions.reduce((acc, session) => {
+      acc[session.type] = (acc[session.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(typeCounts).map(([type, count]) => ({
+      name: type,
+      value: count
+    }));
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* 헤더 */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            🔍 실시간 AI 협업 품질 보증
+          </Typography>
+          <Typography variant="body1" color="textSecondary">
+            워크플로우 기반 협업 품질 모니터링 및 개선 시스템
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Chip
+            icon={isSystemRunning ? <CheckCircle /> : <Error />}
+            label={isSystemRunning ? '시스템 실행 중' : '시스템 중지됨'}
+            color={isSystemRunning ? 'success' : 'error'}
+          />
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            새 품질 세션
+          </Button>
+        </Box>
+      </Box>
+
+      {/* 전체 지표 */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    전체 세션
+                  </Typography>
+                  <Typography variant="h4">
+                    {analytics.sessions}
+                  </Typography>
+                </Box>
+                <SessionIcon color="primary" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    평균 품질
+                  </Typography>
+                  <Typography variant="h4">
+                    {(analytics.averageQuality * 100).toFixed(1)}%
+                  </Typography>
+                </Box>
+                <QualityIcon color="success" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    개선율
+                  </Typography>
+                  <Typography variant="h4">
+                    {(analytics.improvementRate * 100).toFixed(1)}%
+                  </Typography>
+                </Box>
+                <TrendingUp color="info" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    활성 알림
+                  </Typography>
+                  <Typography variant="h4">
+                    {analytics.alertCount}
+                  </Typography>
+                </Box>
+                <AlertIcon color="warning" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 탭 네비게이션 */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="quality tabs">
+          <Tab icon={<SessionIcon />} label="품질 세션" />
+          <Tab icon={<ParticipantIcon />} label="참가자 분석" />
+          <Tab icon={<InteractionIcon />} label="상호작용 분석" />
+          <Tab icon={<AnalyticsIcon />} label="품질 분석" />
+          <Tab icon={<ImprovementIcon />} label="개선 관리" />
+          <Tab icon={<AlertIcon />} label="알림 관리" />
+          <Tab icon={<SettingsIcon />} label="설정" />
+        </Tabs>
+      </Box>
+
+      {/* 탭 콘텐츠 */}
+      <TabPanel value={tabValue} index={0}>
+        {/* 품질 세션 */}
+        <Grid container spacing={3}>
+          {/* 세션 목록 */}
+          <Grid item xs={12} lg={8}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  품질 세션 목록
+                </Typography>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>세션</TableCell>
+                        <TableCell>타입</TableCell>
+                        <TableCell>상태</TableCell>
+                        <TableCell>전체 품질</TableCell>
+                        <TableCell>참가자</TableCell>
+                        <TableCell>작업</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {sessions.map((session) => (
+                        <TableRow key={session.sessionId}>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="subtitle2">{session.name}</Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                {session.description}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={session.type}
+                              color={getTypeColor(session.type) as any}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={session.status}
+                              color={getStatusColor(session.status) as any}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ width: '100%', mr: 1 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={session.metrics.overallQuality * 100}
+                                  sx={{ height: 8, borderRadius: 5 }}
+                                />
+                              </Box>
+                              <Box sx={{ minWidth: 35 }}>
+                                <Typography variant="body2" color="textSecondary">
+                                  {(session.metrics.overallQuality * 100).toFixed(0)}%
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {session.participants.length}명
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setSelectedSession(session);
+                                setDetailDialogOpen(true);
+                              }}
+                            >
+                              <Visibility />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* 차트 */}
+          <Grid item xs={12} lg={4}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      세션 타입 분포
+                    </Typography>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={getSessionTypeData()}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {getSessionTypeData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={1}>
+        {/* 참가자 분석 */}
+        <Grid container spacing={3}>
+          {sessions.map((session) => (
+            <Grid item xs={12} key={session.sessionId}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {session.name} - 참가자 분석
+                  </Typography>
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>참가자</TableCell>
+                          <TableCell>역할</TableCell>
+                          <TableCell>품질 점수</TableCell>
+                          <TableCell>참여도</TableCell>
+                          <TableCell>기여 품질</TableCell>
+                          <TableCell>협업 효과성</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {session.participants.map((participant) => (
+                          <TableRow key={participant.participantId}>
+                            <TableCell>
+                              <Typography variant="subtitle2">{participant.name}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={participant.role} size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Box sx={{ width: '100%', mr: 1 }}>
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={participant.qualityScore * 100}
+                                    sx={{ height: 8, borderRadius: 5 }}
+                                  />
+                                </Box>
+                                <Box sx={{ minWidth: 35 }}>
+                                  <Typography variant="body2" color="textSecondary">
+                                    {(participant.qualityScore * 100).toFixed(0)}%
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {(participant.engagementLevel * 100).toFixed(1)}%
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {(participant.contributionQuality * 100).toFixed(1)}%
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {(participant.collaborationEffectiveness * 100).toFixed(1)}%
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={2}>
+        {/* 상호작용 분석 */}
+        <Grid container spacing={3}>
+          {sessions.map((session) => (
+            <Grid item xs={12} key={session.sessionId}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {session.name} - 상호작용 분석
+                  </Typography>
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>상호작용</TableCell>
+                          <TableCell>타입</TableCell>
+                          <TableCell>참가자</TableCell>
+                          <TableCell>품질 점수</TableCell>
+                          <TableCell>효과성</TableCell>
+                          <TableCell>영향도</TableCell>
+                          <TableCell>감정</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {session.interactions.map((interaction) => (
+                          <TableRow key={interaction.interactionId}>
+                            <TableCell>
+                              <Box>
+                                <Typography variant="subtitle2">
+                                  {interaction.content.substring(0, 50)}...
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">
+                                  {formatDate(interaction.timestamp)}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={interaction.type} size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {interaction.participants.length}명
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {(interaction.quality.overallScore * 100).toFixed(1)}%
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {(interaction.effectiveness * 100).toFixed(1)}%
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {(interaction.impact * 100).toFixed(1)}%
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={interaction.sentiment}
+                                color={interaction.sentiment === 'positive' ? 'success' :
+                                  interaction.sentiment === 'negative' ? 'error' : 'default'}
+                                size="small"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={3}>
+        {/* 품질 분석 */}
+        <Grid container spacing={3}>
+          {/* 품질 차트 */}
+          <Grid item xs={12} lg={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  세션별 품질 비교
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <Assessment data={getQualityData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Legend />
+                    <Bar dataKey="overallQuality" fill="#8884d8" name="전체 품질" />
+                    <Bar dataKey="communicationQuality" fill="#82ca9d" name="의사소통 품질" />
+                    <Bar dataKey="collaborationQuality" fill="#ffc658" name="협업 품질" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} lg={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  참가자별 품질 분석
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <Assessment data={getParticipantData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Legend />
+                    <Bar dataKey="qualityScore" fill="#8884d8" name="품질 점수" />
+                    <Bar dataKey="engagementLevel" fill="#82ca9d" name="참여도" />
+                    <Bar dataKey="contributionQuality" fill="#ffc658" name="기여 품질" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} lg={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  상호작용 품질 분석
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <Assessment data={getInteractionData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Legend />
+                    <Bar dataKey="quality" fill="#8884d8" name="품질" />
+                    <Bar dataKey="effectiveness" fill="#82ca9d" name="효과성" />
+                    <Bar dataKey="impact" fill="#ffc658" name="영향도" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} lg={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  품질 트렌드
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={[
+                    { name: '1시간 전', quality: 85 },
+                    { name: '30분 전', quality: 87 },
+                    { name: '현재', quality: 89 }
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Line type="monotone" dataKey="quality" stroke="#8884d8" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={4}>
+        {/* 개선 관리 */}
+        <Grid container spacing={3}>
+          {sessions.map((session) => (
+            <Grid item xs={12} key={session.sessionId}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {session.name} - 개선 관리
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {session.improvements.map((improvement) => (
+                      <Grid item xs={12} md={6} key={improvement.improvementId}>
+                        <Alert severity={improvement.priority === 'critical' ? 'error' :
+                          improvement.priority === 'high' ? 'warning' : 'info'}>
+                          <Typography variant="body2" gutterBottom>
+                            <strong>{improvement.title}</strong>
+                          </Typography>
+                          <Typography variant="body2">
+                            {improvement.description}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            우선순위: {improvement.priority} |
+                            영향도: {(improvement.impact * 100).toFixed(1)}% |
+                            상태: {improvement.status}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            <strong>구현 방법:</strong> {improvement.implementation}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            <strong>기대 효과:</strong> {improvement.expectedOutcome}
+                          </Typography>
+                        </Alert>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={5}>
+        {/* 알림 관리 */}
+        <Grid container spacing={3}>
+          {sessions.map((session) => (
+            <Grid item xs={12} key={session.sessionId}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {session.name} - 알림 관리
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {session.metrics.alerts.map((alert) => (
+                      <Grid item xs={12} md={6} key={alert.alertId}>
+                        <Alert severity={getSeverityColor(alert.severity) as any}>
+                          <Typography variant="body2" gutterBottom>
+                            <strong>{alert.type}</strong>
+                          </Typography>
+                          <Typography variant="body2">
+                            {alert.description}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            심각도: {alert.severity} |
+                            영향도: {(alert.impact * 100).toFixed(1)}% |
+                            해결됨: {alert.resolved ? '예' : '아니오'}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            <strong>권장사항:</strong>
+                          </Typography>
+                          <List dense>
+                            {alert.recommendations.map((rec, index) => (
+                              <ListItem key={index}>
+                                <ListItemText primary={rec} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Alert>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={6}>
+        {/* 설정 */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  품질 모니터링 설정
+                </Typography>
+                <List>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Quality />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="실시간 모니터링"
+                      secondary="실시간 품질 모니터링 기능"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Assessment />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="자동 평가"
+                      secondary="자동 품질 평가 시스템"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <AlertIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="품질 알림"
+                      secondary="품질 하락 시 알림"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Improvement />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="개선 추적"
+                      secondary="개선사항 추적 및 관리"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  협업 품질 설정
+                </Typography>
+                <List>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Group />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="피어 리뷰"
+                      secondary="참가자 간 상호 평가"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Feedback />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="피드백 수집"
+                      secondary="자동 피드백 수집 및 분석"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Benchmark />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="품질 벤치마크"
+                      secondary="품질 기준 및 벤치마크 설정"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Trend />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="트렌드 분석"
+                      secondary="품질 트렌드 분석 및 예측"
+                    />
+                    <Switch defaultChecked />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* 세션 상세 다이얼로그 */}
+      <Dialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          품질 세션 상세 정보
+        </DialogTitle>
+        <DialogContent>
+          {selectedSession && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {selectedSession.name}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                {selectedSession.description}
+              </Typography>
+
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    기본 정보
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText
+                        primary="타입"
+                        secondary={selectedSession.type}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="상태"
+                        secondary={selectedSession.status}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="참가자 수"
+                        secondary={`${selectedSession.participants.length}명`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="상호작용 수"
+                        secondary={`${selectedSession.interactions.length}개`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="생성일"
+                        secondary={formatDate(selectedSession.timestamp)}
+                      />
+                    </ListItem>
+                  </List>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    품질 지표
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText
+                        primary="전체 품질"
+                        secondary={`${(selectedSession.metrics.overallQuality * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="의사소통 품질"
+                        secondary={`${(selectedSession.metrics.communicationQuality * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="협업 품질"
+                        secondary={`${(selectedSession.metrics.collaborationQuality * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="의사결정 품질"
+                        secondary={`${(selectedSession.metrics.decisionQuality * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText
+                        primary="문제해결 품질"
+                        secondary={`${(selectedSession.metrics.problemSolvingQuality * 100).toFixed(1)}%`}
+                      />
+                    </ListItem>
+                  </List>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailDialogOpen(false)}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 새 세션 생성 다이얼로그 */}
+      <Dialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          새 품질 세션 생성
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="세션 이름"
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="설명"
+                variant="outlined"
+                multiline
+                rows={3}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>타입</InputLabel>
+                <Select label="타입">
+                  <MenuItem value="workflow">워크플로우</MenuItem>
+                  <MenuItem value="meeting">회의</MenuItem>
+                  <MenuItem value="project">프로젝트</MenuItem>
+                  <MenuItem value="review">검토</MenuItem>
+                  <MenuItem value="training">교육</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateDialogOpen(false)}>취소</Button>
+          <Button variant="contained" onClick={() => setCreateDialogOpen(false)}>
+            생성
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default RealTimeAICollaborationQualityDashboard;

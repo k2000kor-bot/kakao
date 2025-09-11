@@ -1,4 +1,5 @@
-import { ProjectFile, WritingMaterial } from '../types/project';
+import { ProjectFile } from '../types/project';
+import { WritingMaterial } from './clientFileProcessor';
 
 export type { ProjectFile, WritingMaterial };
 
@@ -264,18 +265,20 @@ class ProjectDetailService {
       id: Date.now().toString(),
       title: `Generated: ${prompt}`,
       content: `프로젝트 ${projectId}에 대한 ${prompt} 내용이 생성되었습니다.`,
-      type: 'summary',
-      createdAt: new Date(),
-      sourceFiles: sourceFileIds
+      category: 'generated',
+      keywords: [prompt],
+      sourceFiles: sourceFileIds,
+      confidenceScore: 0.8,
+      usageSuggestions: ['문서 작성', '프레젠테이션', '보고서'],
+      createdAt: new Date()
     };
   }
 
-  private getFileType(filename: string): 'image' | 'document' | 'audio' | 'video' | 'other' {
+  private getFileType(filename: string): 'image' | 'document' | 'code' | 'other' {
     const ext = filename.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return 'image';
     if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(ext || '')) return 'document';
-    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext || '')) return 'audio';
-    if (['mp4', 'avi', 'mov', 'wmv'].includes(ext || '')) return 'video';
+    if (['js', 'ts', 'py', 'java', 'cpp', 'c', 'html', 'css', 'json'].includes(ext || '')) return 'code';
     return 'other';
   }
 }

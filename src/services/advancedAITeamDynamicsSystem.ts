@@ -486,7 +486,7 @@ class AdvancedAITeamDynamicsSystem {
         return Math.random() * 0.3; // 0-0.3
     }
 
-    private assessCollaboration(interaction: any): number {
+    private assessCollaborationInteraction(interaction: any): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 

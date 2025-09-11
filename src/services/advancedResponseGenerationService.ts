@@ -140,22 +140,22 @@ class AdvancedResponseGenerationService {
         // 의도 기반 전략
         switch (intent) {
             case 'learning':
-                strategy.type = 'educational';
+                strategy.type = 'informative';
                 strategy.include_examples = true;
                 strategy.detail_level = 'detailed';
                 break;
             case 'problem_solving':
-                strategy.type = 'problem_solving';
+                strategy.type = 'informative';
                 strategy.include_code = true;
                 strategy.approach = 'step_by_step';
                 break;
             case 'analysis':
-                strategy.type = 'analytical';
+                strategy.type = 'informative';
                 strategy.include_visual_aids = true;
                 strategy.detail_level = 'detailed';
                 break;
             case 'conversation':
-                strategy.type = 'conversational';
+                strategy.type = 'informative';
                 strategy.tone = 'casual';
                 strategy.detail_level = 'concise';
                 break;

@@ -1,0 +1,20 @@
+2025-09-11 13:55:50,361 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:55:50,361 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:55:50,361 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:55:50,586 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.0.70:5002
+2025-09-11 13:55:50,587 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-11 13:55:50,589 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:55:51,023 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:55:51,023 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:55:51,023 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:55:51,062 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:55:51,080 - werkzeug - INFO -  * Debugger PIN: 144-270-938
+2025-09-11 13:56:03,755 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:56:03] "[33mGET /api/health HTTP/1.1[0m" 404 -
+2025-09-11 13:56:03,783 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:56:03] "[33mGET /api/metrics HTTP/1.1[0m" 404 -
+2025-09-11 13:56:03,806 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:56:03] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:56:52,945 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:56:52] "[33mGET / HTTP/1.1[0m" 404 -
+2025-09-11 13:56:52,968 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:56:52] "[33mGET /health HTTP/1.1[0m" 404 -
+2025-09-11 13:56:52,993 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:56:52] "[33mPOST /analyze HTTP/1.1[0m" 404 -

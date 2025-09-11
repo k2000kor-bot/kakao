@@ -1,92 +1,157 @@
 version: '3.8'
 
 services:
-  # CORBU AI 메인 애플리케이션
+  # CORBU AI 메인 서비스
   corbu-ai:
-    build: .
-    container_name: corbu-ai-production
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: corbu-ai-system
+    restart: unless-stopped
     ports:
-      - "80:80"         # 웹 인터페이스
-      - "8001:8001"     # 메인 API
-      - "8005:8005"     # 분석 API
-      - "8006:8006"     # 통합 분석 API
-      - "8080:8080"     # API 게이트웨이
+      - "80:80"
+      - "8004:8004"
     environment:
       - NODE_ENV=production
+      - FLASK_ENV=production
       - PYTHONPATH=/app/backend
+      - CORBU_AI_VERSION=2.0.0
     volumes:
-      - ./logs:/var/log/nginx
-      - ./data:/app/data
-    restart: unless-stopped
+      - corbu_data:/app/backend/data
+      - corbu_logs:/app/backend/logs
+      - nginx_logs:/var/log/nginx
+    networks:
+      - corbu-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '1.0'
 
-  # Redis (캐싱 및 세션 관리)
+  # Redis 캐시 서비스
   redis:
     image: redis:7-alpine
-    container_name: corbu-ai-redis
+    container_name: corbu-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    restart: unless-stopped
-    command: redis-server --appendonly yes
+    networks:
+      - corbu-network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  # PostgreSQL (프로덕션 데이터베이스)
+  # PostgreSQL 데이터베이스 (선택사항)
   postgres:
     image: postgres:15-alpine
-    container_name: corbu-ai-postgres
+    container_name: corbu-postgres
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: corbu_ai
-      POSTGRES_USER: corbu_admin
-      POSTGRES_PASSWORD: corbu_secure_2025
+      - POSTGRES_DB=corbu_ai
+      - POSTGRES_USER=corbu_user
+      - POSTGRES_PASSWORD=corbu_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: unless-stopped
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - corbu-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U corbu_user -d corbu_ai"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  # Prometheus (모니터링)
-  prometheus:
+  # Nginx 리버스 프록시 (로드 밸런싱용)
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: corbu-nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./docker/nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+      - nginx_proxy_logs:/var/log/nginx
+    networks:
+      - corbu-network
+    depends_on:
+      - corbu-ai
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # 모니터링 서비스
+  monitoring:
     image: prom/prometheus:latest
-    container_name: corbu-ai-prometheus
+    container_name: corbu-monitoring
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    networks:
+      - corbu-network
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-    restart: unless-stopped
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
 
-  # Grafana (대시보드)
-  grafana:
-    image: grafana/grafana:latest
-    container_name: corbu-ai-grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=corbu_admin_2025
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+  # 로그 수집 서비스
+  log-aggregator:
+    image: fluent/fluentd:v1.16-1
+    container_name: corbu-log-aggregator
     restart: unless-stopped
+    volumes:
+      - ./docker/fluentd.conf:/fluentd/etc/fluent.conf:ro
+      - corbu_logs:/app/logs
+      - fluentd_data:/fluentd/log
+    networks:
+      - corbu-network
+    depends_on:
+      - corbu-ai
 
 volumes:
+  corbu_data:
+    driver: local
+  corbu_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  nginx_proxy_logs:
+    driver: local
   redis_data:
+    driver: local
   postgres_data:
+    driver: local
   prometheus_data:
-  grafana_data:
+    driver: local
+  fluentd_data:
+    driver: local
 
 networks:
-  default:
-    name: corbu-ai-network
+  corbu-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

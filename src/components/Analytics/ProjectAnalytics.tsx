@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    BarChart3,
+    BarChart,
     TrendingUp,
     TrendingDown,
     Activity,
@@ -12,9 +12,7 @@ import {
     Clock,
     CheckCircle,
     AlertCircle,
-    PieChart,
     LineChart,
-    BarChart,
     Download,
     Filter,
     RefreshCw

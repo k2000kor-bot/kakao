@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Workflow,
+    GitBranch,
     Play,
     Pause,
     Square,
@@ -13,7 +13,7 @@ import {
     XCircle,
     AlertTriangle,
     Activity,
-    BarChart3,
+    BarChart,
     Calendar,
     Filter,
     Search,
@@ -24,13 +24,13 @@ import {
     ChevronDown,
     ChevronRight,
     Zap,
-    Aim,
+    Target,
     Repeat,
     Timer,
     CalendarDays,
     FileText,
     Database,
-    Cpu,
+    Computer as Cpu,
     Network,
     Mail,
     MessageSquare,
@@ -414,10 +414,10 @@ const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
     };
 
     const tabs = [
-        { id: 'workflows', name: '워크플로우', icon: Workflow },
+        { id: 'workflows', name: '워크플로우', icon: GitBranch },
         { id: 'executions', name: '실행 기록', icon: Activity },
         { id: 'templates', name: '템플릿', icon: FileText },
-        { id: 'monitoring', name: '모니터링', icon: BarChart3 },
+        { id: 'monitoring', name: '모니터링', icon: BarChart },
         { id: 'settings', name: '설정', icon: Settings }
     ];
 
@@ -523,7 +523,7 @@ const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-4">
                                                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                    <Workflow className="h-6 w-6 text-purple-600" />
+                                                    <GitBranch className="h-6 w-6 text-purple-600" />
                                                 </div>
                                                 <div>
                                                     <h4 className="font-medium text-gray-900">{workflow.name}</h4>
@@ -681,7 +681,7 @@ const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
                                         <p className="text-sm font-medium text-gray-600">총 워크플로우</p>
                                         <p className="text-2xl font-bold text-gray-900">{workflows.length}</p>
                                     </div>
-                                    <Workflow className="h-8 w-8 text-purple-600" />
+                                                                            <GitBranch className="h-8 w-8 text-purple-600" />
                                 </div>
                             </div>
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -717,7 +717,7 @@ const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
                                                 ) : 0}%
                                         </p>
                                     </div>
-                                    <BarChart3 className="h-8 w-8 text-orange-600" />
+                                    <BarChart className="h-8 w-8 text-orange-600" />
                                 </div>
                             </div>
                         </div>

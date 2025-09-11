@@ -1,0 +1,783 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Chip,
+  LinearProgress,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Alert,
+  Divider,
+  Tooltip,
+  IconButton
+} from '@mui/material';
+import {
+  Speed,
+  Memory,
+  Storage,
+  NetworkCheck,
+  Security,
+  Cloud,
+  DataUsage,
+  Insights,
+  Psychology,
+  AutoAwesome,
+  RocketLaunch,
+  Lightbulb,
+  School,
+  Work,
+  Group,
+  Person,
+  LocationOn,
+  Schedule,
+  PriorityHigh,
+  LowPriority,
+  TrendingFlat,
+  TrendingUp,
+  TrendingDown,
+  CheckCircle,
+  Error,
+  Warning,
+  Info,
+  Refresh,
+  Settings,
+  Analytics,
+  Timeline,
+  AccountTree,
+  Business,
+  Assessment,
+  PlayArrow,
+  Pause,
+  Stop,
+  Download,
+  Upload,
+  Share,
+  Notifications,
+  NotificationsOff,
+  PlaylistAdd,
+  PlaylistAddCheck,
+  Queue,
+  QueuePlayNext,
+  History,
+  Timeline as TimelineIcon,
+  GanttChart,
+  FlowChart,
+  MindMap,
+  NetworkPing,
+  Hub,
+  Router,
+  Storage as StorageIcon,
+  Memory as MemoryIcon,
+  Speed as SpeedIcon,
+  NetworkCheck as NetworkCheckIcon,
+  Security as SecurityIcon,
+  Cloud as CloudIcon,
+  DataUsage as DataUsageIcon,
+  Insights as InsightsIcon,
+  Psychology as PsychologyIcon,
+  AutoAwesome as AutoAwesomeIcon,
+  RocketLaunch as RocketLaunchIcon,
+  Lightbulb as LightbulbIcon,
+  School as SchoolIcon,
+  Work as WorkIcon,
+  Group as GroupIcon,
+  Person as PersonIcon,
+  LocationOn as LocationOnIcon,
+  Schedule as ScheduleIcon,
+  PriorityHigh as PriorityHighIcon,
+  LowPriority as LowPriorityIcon,
+  TrendingFlat as TrendingFlatIcon,
+  ExpandMore,
+  ExpandLess,
+  FilterList,
+  Sort,
+  Search,
+  Download as DownloadIcon,
+  Upload as UploadIcon,
+  Share as ShareIcon,
+  Notifications as NotificationsIcon,
+  NotificationsOff as NotificationsOffIcon,
+  PlaylistAdd as PlaylistAddIcon,
+  PlaylistAddCheck as PlaylistAddCheckIcon,
+  Queue as QueueIcon,
+  QueuePlayNext as QueuePlayNextIcon,
+  History as HistoryIcon,
+  Timeline as TimelineIconIcon,
+  // GanttChart as GanttChartIcon,
+  FlowChart as FlowChartIcon,
+  MindMap as MindMapIcon,
+  NetworkPing as NetworkPingIcon,
+  Hub as HubIcon,
+  Router as RouterIcon
+} from '@mui/icons-material';
+
+// 성능 메트릭 인터페이스
+interface PerformanceMetric {
+  id: string;
+  name: string;
+  value: number;
+  unit: string;
+  target: number;
+  status: 'excellent' | 'good' | 'warning' | 'critical';
+  trend: 'up' | 'down' | 'stable';
+  change: number;
+  lastUpdated: Date;
+}
+
+interface OptimizationAction {
+  id: string;
+  name: string;
+  description: string;
+  type: 'memory' | 'cpu' | 'network' | 'storage' | 'security';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  impact: number; // 0-100%
+  estimatedTime: number; // minutes
+  applied: boolean;
+  appliedAt?: Date;
+}
+
+interface SystemHealth {
+  overall: number;
+  memory: number;
+  cpu: number;
+  network: number;
+  storage: number;
+  security: number;
+  lastCheck: Date;
+}
+
+// 샘플 데이터
+const sampleMetrics: PerformanceMetric[] = [
+  {
+    id: 'memory-001',
+    name: '메모리 사용률',
+    value: 68.7,
+    unit: '%',
+    target: 80,
+    status: 'good',
+    trend: 'down',
+    change: -12.3,
+    lastUpdated: new Date()
+  },
+  {
+    id: 'cpu-001',
+    name: 'CPU 사용률',
+    value: 15.2,
+    unit: '%',
+    target: 70,
+    status: 'excellent',
+    trend: 'stable',
+    change: 0.5,
+    lastUpdated: new Date()
+  },
+  {
+    id: 'response-001',
+    name: 'API 응답시간',
+    value: 0.20,
+    unit: '초',
+    target: 1.0,
+    status: 'excellent',
+    trend: 'up',
+    change: -0.15,
+    lastUpdated: new Date()
+  },
+  {
+    id: 'throughput-001',
+    name: '처리량',
+    value: 1250,
+    unit: 'req/s',
+    target: 1000,
+    status: 'excellent',
+    trend: 'up',
+    change: 25.0,
+    lastUpdated: new Date()
+  },
+  {
+    id: 'error-001',
+    name: '오류율',
+    value: 0.0,
+    unit: '%',
+    target: 1.0,
+    status: 'excellent',
+    trend: 'stable',
+    change: 0.0,
+    lastUpdated: new Date()
+  },
+  {
+    id: 'uptime-001',
+    name: '가동률',
+    value: 99.9,
+    unit: '%',
+    target: 99.5,
+    status: 'excellent',
+    trend: 'up',
+    change: 0.1,
+    lastUpdated: new Date()
+  }
+];
+
+const sampleOptimizations: OptimizationAction[] = [
+  {
+    id: 'opt-001',
+    name: '메모리 캐시 최적화',
+    description: '자주 사용되는 데이터를 메모리에 캐싱하여 응답시간을 단축합니다.',
+    type: 'memory',
+    priority: 'high',
+    status: 'completed',
+    impact: 25,
+    estimatedTime: 5,
+    applied: true,
+    appliedAt: new Date(Date.now() - 3600000)
+  },
+  {
+    id: 'opt-002',
+    name: 'API 응답 압축',
+    description: 'Gzip 압축을 적용하여 네트워크 트래픽을 60% 줄입니다.',
+    type: 'network',
+    priority: 'medium',
+    status: 'pending',
+    impact: 60,
+    estimatedTime: 10,
+    applied: false
+  },
+  {
+    id: 'opt-003',
+    name: '데이터베이스 인덱싱',
+    description: '자주 조회되는 쿼리에 인덱스를 추가하여 성능을 향상시킵니다.',
+    type: 'storage',
+    priority: 'high',
+    status: 'running',
+    impact: 40,
+    estimatedTime: 15,
+    applied: false
+  },
+  {
+    id: 'opt-004',
+    name: '코드 스플리팅',
+    description: 'React 컴포넌트를 지연 로딩하여 초기 로딩 시간을 단축합니다.',
+    type: 'cpu',
+    priority: 'medium',
+    status: 'pending',
+    impact: 30,
+    estimatedTime: 20,
+    applied: false
+  },
+  {
+    id: 'opt-005',
+    name: '보안 헤더 강화',
+    description: 'HTTPS 강제 적용 및 보안 헤더를 설정합니다.',
+    type: 'security',
+    priority: 'critical',
+    status: 'pending',
+    impact: 100,
+    estimatedTime: 8,
+    applied: false
+  }
+];
+
+const PerformanceOptimizer: React.FC = () => {
+  const [metrics, setMetrics] = useState<PerformanceMetric[]>(sampleMetrics);
+  const [optimizations, setOptimizations] = useState<OptimizationAction[]>(sampleOptimizations);
+  const [systemHealth, setSystemHealth] = useState<SystemHealth>({
+    overall: 95,
+    memory: 85,
+    cpu: 95,
+    network: 90,
+    storage: 88,
+    security: 92,
+    lastCheck: new Date()
+  });
+  const [autoTune as Optimization, setAutoOptimization] = useState(true);
+  const [showOptimizationDialog, setShowOptimizationDialog] = useState(false);
+  const [selectedOptimization, setSelectedOptimization] = useState<OptimizationAction | null>(null);
+
+  // 상태별 색상
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'excellent': return 'success';
+      case 'good': return 'primary';
+      case 'warning': return 'warning';
+      case 'critical': return 'error';
+      default: return 'default';
+    }
+  };
+
+  // 우선순위별 색상
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical': return 'error';
+      case 'high': return 'warning';
+      case 'medium': return 'primary';
+      case 'low': return 'success';
+      default: return 'default';
+    }
+  };
+
+  // 트렌드 아이콘
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'up': return <TrendingUp color="success" />;
+      case 'down': return <TrendingDown color="error" />;
+      case 'stable': return <TrendingFlat color="action" />;
+      default: return <TrendingFlat color="action" />;
+    }
+  };
+
+  // 실시간 업데이트
+  useEffect(() => {
+    if (!autoOptimization) return;
+
+    const interval = setInterval(() => {
+      setMetrics(prevMetrics =>
+        prevMetrics.map(metric => ({
+          ...metric,
+          value: metric.value + (Math.random() - 0.5) * metric.value * 0.02,
+          lastUpdated: new Date()
+        }))
+      );
+
+      setSystemHealth(prevHealth => ({
+        ...prevHealth,
+        overall: Math.max(90, Math.min(100, prevHealth.overall + (Math.random() - 0.5) * 2)),
+        lastCheck: new Date()
+      }));
+    }, 30000); // 30초마다 업데이트
+
+    return () => clearInterval(interval);
+  }, [autoOptimization]);
+
+  // 최적화 적용
+  const applyOptimization = (optimization: OptimizationAction) => {
+    setOptimizations(prevOptimizations =>
+      prevOptimizations.map(opt =>
+        opt.id === optimization.id
+          ? { ...opt, status: 'running' as const }
+          : opt
+      )
+    );
+
+    // 시뮬레이션: 최적화 진행
+    setTimeout(() => {
+      setOptimizations(prevOptimizations =>
+        prevOptimizations.map(opt =>
+          opt.id === optimization.id
+            ? {
+              ...opt,
+              status: 'completed' as const,
+              applied: true,
+              appliedAt: new Date()
+            }
+            : opt
+        )
+      );
+
+      // 성능 메트릭 업데이트
+      setMetrics(prevMetrics =>
+        prevMetrics.map(metric => ({
+          ...metric,
+          value: metric.value * (1 - optimization.impact / 100),
+          lastUpdated: new Date()
+        }))
+      );
+    }, optimization.estimatedTime * 1000);
+  };
+
+  // 전체 성능 점수 계산
+  const calculateOverallScore = () => {
+    const completedOptimizations = optimizations.filter(opt => opt.applied);
+    const totalImpact = completedOptimizations.reduce((sum, opt) => sum + opt.impact, 0);
+    return Math.min(100, systemHealth.overall + totalImpact * 0.1);
+  };
+
+  const overallScore = calculateOverallScore();
+
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* 헤더 */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Speed sx={{ fontSize: 32, color: 'primary.main' }} />
+            성능 최적화 관리자
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            실시간 성능 모니터링 및 자동 최적화 시스템
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={() => window.location.reload()}
+          >
+            새로고침
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AutoAwesome />}
+            onClick={() => setAutoOptimization(!autoOptimization)}
+          >
+            {autoOptimization ? '자동 최적화 중지' : '자동 최적화 시작'}
+          </Button>
+        </Box>
+      </Box>
+
+      {/* 전체 성능 점수 */}
+      <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+        <CardContent>
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} md={3}>
+              <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                {overallScore.toFixed(1)}%
+              </Typography>
+              <Typography variant="body1">전체 성능 점수</Typography>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Typography variant="h4" component="div">
+                {optimizations.filter(opt => opt.applied).length}
+              </Typography>
+              <Typography variant="body1">적용된 최적화</Typography>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Typography variant="h4" component="div">
+                {optimizations.filter(opt => opt.status === 'pending').length}
+              </Typography>
+              <Typography variant="body1">대기 중인 최적화</Typography>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Typography variant="h4" component="div">
+                {systemHealth.lastCheck.toLocaleTimeString()}
+              </Typography>
+              <Typography variant="body1">마지막 체크</Typography>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* 성능 메트릭 */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12}>
+          <Typography variant="h6" component="h2" gutterBottom>
+            실시간 성능 메트릭
+          </Typography>
+        </Grid>
+
+        {metrics.map((metric) => (
+          <Grid item xs={12} sm={6} md={4} key={metric.id}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Typography variant="h6" component="h3" noWrap>
+                    {metric.name}
+                  </Typography>
+                  {getTrendIcon(metric.trend)}
+                </Box>
+
+                <Typography variant="h4" component="div" sx={{ mb: 1, fontWeight: 'bold' }}>
+                  {metric.value.toFixed(1)}{metric.unit}
+                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Chip
+                    label={`${metric.change > 0 ? '+' : ''}${metric.change.toFixed(1)}%`}
+                    color={metric.change >= 0 ? 'success' : 'error'}
+                    size="small"
+                  />
+                  <Chip
+                    label={metric.status}
+                    color={getStatusColor(metric.status) as any}
+                    size="small"
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    목표: {metric.target}{metric.unit}
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.min(100, (metric.value / metric.target) * 100)}
+                    sx={{ flexGrow: 1 }}
+                    color={getStatusColor(metric.status) as any}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* 시스템 건강도 */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="h3" gutterBottom>
+                시스템 건강도
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">전체</Typography>
+                    <Typography variant="body2">{systemHealth.overall.toFixed(1)}%</Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={systemHealth.overall}
+                    color="success"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">메모리</Typography>
+                    <Typography variant="body2">{systemHealth.memory.toFixed(1)}%</Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={systemHealth.memory}
+                    color="primary"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">CPU</Typography>
+                    <Typography variant="body2">{systemHealth.cpu.toFixed(1)}%</Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={systemHealth.cpu}
+                    color="info"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">네트워크</Typography>
+                    <Typography variant="body2">{systemHealth.network.toFixed(1)}%</Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={systemHealth.network}
+                    color="warning"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">저장소</Typography>
+                    <Typography variant="body2">{systemHealth.storage.toFixed(1)}%</Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={systemHealth.storage}
+                    color="secondary"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">보안</Typography>
+                    <Typography variant="body2">{systemHealth.security.toFixed(1)}%</Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={systemHealth.security}
+                    color="success"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="h3" gutterBottom>
+                최적화 권장사항
+              </Typography>
+              <List dense>
+                {optimizations
+                  .filter(opt => opt.status === 'pending')
+                  .sort((a, b) => {
+                    const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+                    return priorityOrder[b.priority] - priorityOrder[a.priority];
+                  })
+                  .slice(0, 5)
+                  .map((optimization) => (
+                    <ListItem key={optimization.id} sx={{ px: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 40 }}>
+                        <Lightbulb color="primary" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={optimization.name}
+                        secondary={`${optimization.impact}% 성능 향상 예상`}
+                      />
+                      <Chip
+                        label={optimization.priority}
+                        color={getPriorityColor(optimization.priority) as any}
+                        size="small"
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        sx={{ ml: 1 }}
+                        onClick={() => {
+                          setSelectedOptimization(optimization);
+                          setShowOptimizationDialog(true);
+                        }}
+                      >
+                        적용
+                      </Button>
+                    </ListItem>
+                  ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 최적화 히스토리 */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            최적화 히스토리
+          </Typography>
+          <Grid container spacing={2}>
+            {optimizations.map((optimization) => (
+              <Grid item xs={12} md={6} key={optimization.id}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Typography variant="h6" component="h4">
+                        {optimization.name}
+                      </Typography>
+                      <Chip
+                        label={optimization.status}
+                        color={optimization.status === 'completed' ? 'success' : optimization.status === 'running' ? 'warning' : 'default'}
+                        size="small"
+                      />
+                    </Box>
+
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {optimization.description}
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                      <Chip
+                        label={`${optimization.impact}% 개선`}
+                        color="primary"
+                        size="small"
+                      />
+                      <Chip
+                        label={`${optimization.estimatedTime}분`}
+                        variant="outlined"
+                        size="small"
+                      />
+                      <Chip
+                        label={optimization.priority}
+                        color={getPriorityColor(optimization.priority) as any}
+                        size="small"
+                      />
+                    </Box>
+
+                    {optimization.applied && optimization.appliedAt && (
+                      <Typography variant="caption" color="text.secondary">
+                        적용일: {optimization.appliedAt.toLocaleString()}
+                      </Typography>
+                    )}
+
+                    {optimization.status === 'pending' && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        sx={{ mt: 1 }}
+                        onClick={() => applyOptimization(optimization)}
+                      >
+                        최적화 적용
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* 최적화 상세 다이얼로그 */}
+      <Dialog
+        open={showOptimizationDialog}
+        onClose={() => setShowOptimizationDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        {selectedOptimization && (
+          <>
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AutoAwesome color="primary" />
+                {selectedOptimization.name}
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                {selectedOptimization.description}
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <Chip
+                  label={`${selectedOptimization.impact}% 성능 향상`}
+                  color="success"
+                />
+                <Chip
+                  label={`${selectedOptimization.estimatedTime}분 소요`}
+                  color="primary"
+                />
+                <Chip
+                  label={selectedOptimization.priority}
+                  color={getPriorityColor(selectedOptimization.priority) as any}
+                />
+              </Box>
+
+              <Alert severity="info" sx={{ mb: 2 }}>
+                이 최적화를 적용하면 시스템 성능이 향상되고 사용자 경험이 개선됩니다.
+              </Alert>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setShowOptimizationDialog(false)}>
+                취소
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  applyOptimization(selectedOptimization);
+                  setShowOptimizationDialog(false);
+                }}
+              >
+                최적화 적용
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+    </Box>
+  );
+};
+
+export default PerformanceOptimizer;

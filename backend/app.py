@@ -118,5 +118,183 @@ async def api_chat(request: ChatRequest):
     """API 채팅 엔드포인트 (프론트엔드 호환성)"""
     return await chat_endpoint(request)
 
+@app.get("/api/performance/metrics")
+async def get_performance_metrics():
+    """실시간 성능 메트릭 조회"""
+    import psutil
+    import time
+    
+    # 시스템 메트릭 수집
+    cpu_percent = psutil.cpu_percent(interval=1)
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage('/')
+    
+    # 네트워크 메트릭
+    network = psutil.net_io_counters()
+    
+    # 프로세스 정보
+    processes = len(psutil.pids())
+    
+    return {
+        "timestamp": time.time(),
+        "cpu": {
+            "usage_percent": cpu_percent,
+            "count": psutil.cpu_count(),
+            "frequency": psutil.cpu_freq()._asdict() if psutil.cpu_freq() else None
+        },
+        "memory": {
+            "total": memory.total,
+            "available": memory.available,
+            "used": memory.used,
+            "percent": memory.percent
+        },
+        "disk": {
+            "total": disk.total,
+            "used": disk.used,
+            "free": disk.free,
+            "percent": (disk.used / disk.total) * 100
+        },
+        "network": {
+            "bytes_sent": network.bytes_sent,
+            "bytes_recv": network.bytes_recv,
+            "packets_sent": network.packets_sent,
+            "packets_recv": network.packets_recv
+        },
+        "system": {
+            "processes": processes,
+            "boot_time": psutil.boot_time()
+        }
+    }
+
+@app.post("/api/performance/optimize")
+async def apply_optimization(optimization: dict):
+    """성능 최적화 적용"""
+    optimization_type = optimization.get("type")
+    optimization_id = optimization.get("id")
+    
+    # 최적화 로직 시뮬레이션
+    optimization_results = {
+        "id": optimization_id,
+        "type": optimization_type,
+        "status": "completed",
+        "applied_at": time.time(),
+        "impact": {
+            "cpu_improvement": 15.0,
+            "memory_improvement": 25.0,
+            "response_time_improvement": 30.0
+        },
+        "message": f"{optimization_type} 최적화가 성공적으로 적용되었습니다."
+    }
+    
+    return optimization_results
+
+@app.get("/api/performance/health")
+async def get_system_health():
+    """시스템 건강도 조회"""
+    import psutil
+    
+    # 각 컴포넌트별 건강도 계산
+    cpu_health = max(0, 100 - psutil.cpu_percent(interval=1))
+    memory_health = max(0, 100 - psutil.virtual_memory().percent)
+    
+    # 디스크 건강도
+    disk = psutil.disk_usage('/')
+    disk_health = max(0, 100 - (disk.used / disk.total) * 100)
+    
+    # 네트워크 건강도 (간단한 계산)
+    network_health = 95  # 기본값
+    
+    # 보안 건강도
+    security_health = 92  # 기본값
+    
+    # 전체 건강도
+    overall_health = (cpu_health + memory_health + disk_health + network_health + security_health) / 5
+    
+    return {
+        "overall": round(overall_health, 1),
+        "cpu": round(cpu_health, 1),
+        "memory": round(memory_health, 1),
+        "disk": round(disk_health, 1),
+        "network": round(network_health, 1),
+        "security": round(security_health, 1),
+        "last_check": time.time()
+    }
+
+@app.get("/api/performance/recommendations")
+async def get_optimization_recommendations():
+    """최적화 권장사항 조회"""
+    import psutil
+    
+    recommendations = []
+    
+    # CPU 사용률 기반 권장사항
+    cpu_percent = psutil.cpu_percent(interval=1)
+    if cpu_percent > 80:
+        recommendations.append({
+            "id": "cpu-001",
+            "type": "cpu",
+            "priority": "high",
+            "title": "CPU 사용률 최적화",
+            "description": f"현재 CPU 사용률이 {cpu_percent:.1f}%로 높습니다. 불필요한 프로세스를 종료하거나 작업을 분산하세요.",
+            "impact": 20,
+            "estimated_time": 10
+        })
+    
+    # 메모리 사용률 기반 권장사항
+    memory = psutil.virtual_memory()
+    if memory.percent > 85:
+        recommendations.append({
+            "id": "memory-001",
+            "type": "memory",
+            "priority": "critical",
+            "title": "메모리 사용률 최적화",
+            "description": f"현재 메모리 사용률이 {memory.percent:.1f}%로 매우 높습니다. 메모리 누수를 확인하고 캐시를 정리하세요.",
+            "impact": 35,
+            "estimated_time": 15
+        })
+    
+    # 디스크 사용률 기반 권장사항
+    disk = psutil.disk_usage('/')
+    disk_percent = (disk.used / disk.total) * 100
+    if disk_percent > 90:
+        recommendations.append({
+            "id": "disk-001",
+            "type": "storage",
+            "priority": "critical",
+            "title": "디스크 공간 정리",
+            "description": f"현재 디스크 사용률이 {disk_percent:.1f}%로 매우 높습니다. 불필요한 파일을 정리하세요.",
+            "impact": 25,
+            "estimated_time": 20
+        })
+    
+    # 기본 권장사항들
+    recommendations.extend([
+        {
+            "id": "cache-001",
+            "type": "memory",
+            "priority": "medium",
+            "title": "캐시 최적화",
+            "description": "자주 사용되는 데이터를 메모리에 캐싱하여 응답시간을 단축합니다.",
+            "impact": 15,
+            "estimated_time": 5
+        },
+        {
+            "id": "compression-001",
+            "type": "network",
+            "priority": "medium",
+            "title": "응답 압축",
+            "description": "API 응답을 압축하여 네트워크 트래픽을 줄입니다.",
+            "impact": 30,
+            "estimated_time": 8
+        }
+    ])
+    
+    return {
+        "recommendations": recommendations,
+        "total_count": len(recommendations),
+        "critical_count": len([r for r in recommendations if r["priority"] == "critical"]),
+        "high_count": len([r for r in recommendations if r["priority"] == "high"])
+    }
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8004, reload=True)

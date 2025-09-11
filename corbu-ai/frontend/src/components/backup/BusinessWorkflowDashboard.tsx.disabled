@@ -1,0 +1,552 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    Button,
+    IconButton,
+    Tooltip,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    LinearProgress,
+    Avatar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Stepper,
+    Step,
+    StepLabel,
+    StepContent,
+    Paper,
+    useTheme,
+    alpha
+} from '@mui/material';
+import {
+    Assignment,
+    CheckCircle,
+    Schedule,
+    Warning,
+    Add,
+    Edit,
+    Delete,
+    Visibility,
+    PlayArrow,
+    Pause,
+    Stop,
+    Refresh,
+    TrendingUp,
+    TrendingDown,
+    Group,
+    Business,
+    Work,
+    Timeline,
+    Assessment,
+    Analytics,
+    Notifications,
+    Settings
+} from '@mui/icons-material';
+
+interface WorkflowStep {
+    id: string;
+    name: string;
+    description: string;
+    status: 'pending' | 'in-progress' | 'completed' | 'blocked';
+    assignee: string;
+    dueDate: Date;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    progress: number;
+}
+
+interface BusinessProcess {
+    id: string;
+    name: string;
+    description: string;
+    steps: WorkflowStep[];
+    status: 'active' | 'paused' | 'completed' | 'cancelled';
+    startDate: Date;
+    endDate?: Date;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    progress: number;
+}
+
+const BusinessWorkflowDashboard: React.FC = () => {
+    const theme = useTheme();
+    const [selectedProcess, setSelectedProcess] = useState<BusinessProcess | null>(null);
+    const [showProcessDialog, setShowProcessDialog] = useState(false);
+    const [activeStep, setActiveStep] = useState(0);
+
+    // 샘플 비즈니스 프로세스 데이터
+    const [businessProcesses, setBusinessProcesses] = useState<BusinessProcess[]>([
+        {
+            id: '1',
+            name: '신규 제품 개발',
+            description: 'AI 기반 신규 제품 개발 프로세스',
+            status: 'active',
+            startDate: new Date('2024-01-01'),
+            priority: 'high',
+            progress: 65,
+            steps: [
+                {
+                    id: '1-1',
+                    name: '요구사항 분석',
+                    description: '고객 요구사항 수집 및 분석',
+                    status: 'completed',
+                    assignee: '김분석',
+                    dueDate: new Date('2024-01-15'),
+                    priority: 'high',
+                    progress: 100
+                },
+                {
+                    id: '1-2',
+                    name: '설계 및 기획',
+                    description: '제품 설계 및 개발 계획 수립',
+                    status: 'completed',
+                    assignee: '이설계',
+                    dueDate: new Date('2024-01-30'),
+                    priority: 'high',
+                    progress: 100
+                },
+                {
+                    id: '1-3',
+                    name: '개발 및 구현',
+                    description: '핵심 기능 개발 및 구현',
+                    status: 'in-progress',
+                    assignee: '박개발',
+                    dueDate: new Date('2024-02-15'),
+                    priority: 'high',
+                    progress: 75
+                },
+                {
+                    id: '1-4',
+                    name: '테스트 및 검증',
+                    description: '품질 테스트 및 검증',
+                    status: 'pending',
+                    assignee: '최테스트',
+                    dueDate: new Date('2024-02-28'),
+                    priority: 'medium',
+                    progress: 0
+                },
+                {
+                    id: '1-5',
+                    name: '출시 준비',
+                    description: '제품 출시 준비 및 마케팅',
+                    status: 'pending',
+                    assignee: '정마케팅',
+                    dueDate: new Date('2024-03-15'),
+                    priority: 'medium',
+                    progress: 0
+                }
+            ]
+        },
+        {
+            id: '2',
+            name: '고객 지원 시스템 구축',
+            description: 'AI 기반 고객 지원 시스템 구축',
+            status: 'active',
+            startDate: new Date('2024-01-10'),
+            priority: 'medium',
+            progress: 45,
+            steps: [
+                {
+                    id: '2-1',
+                    name: '시스템 분석',
+                    description: '기존 시스템 분석 및 개선점 도출',
+                    status: 'completed',
+                    assignee: '김분석',
+                    dueDate: new Date('2024-01-25'),
+                    priority: 'medium',
+                    progress: 100
+                },
+                {
+                    id: '2-2',
+                    name: 'AI 모델 개발',
+                    description: '고객 응답 AI 모델 개발',
+                    status: 'in-progress',
+                    assignee: '이AI',
+                    dueDate: new Date('2024-02-10'),
+                    priority: 'high',
+                    progress: 60
+                },
+                {
+                    id: '2-3',
+                    name: '시스템 통합',
+                    description: 'AI 모델과 기존 시스템 통합',
+                    status: 'pending',
+                    assignee: '박통합',
+                    dueDate: new Date('2024-02-25'),
+                    priority: 'high',
+                    progress: 0
+                }
+            ]
+        }
+    ]);
+
+    // 상태 색상 함수
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'completed':
+            case 'active':
+                return 'success';
+            case 'in-progress':
+                return 'primary';
+            case 'pending':
+                return 'default';
+            case 'blocked':
+            case 'cancelled':
+                return 'error';
+            default:
+                return 'default';
+        }
+    };
+
+    // 우선순위 색상 함수
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'critical':
+                return 'error';
+            case 'high':
+                return 'warning';
+            case 'medium':
+                return 'info';
+            case 'low':
+                return 'default';
+            default:
+                return 'default';
+        }
+    };
+
+    // 프로세스 진행률 계산
+    const calculateProgress = (steps: WorkflowStep[]) => {
+        if (steps.length === 0) return 0;
+        const totalProgress = steps.reduce((sum, step) => sum + step.progress, 0);
+        return Math.round(totalProgress / steps.length);
+    };
+
+    // 프로세스 선택 처리
+    const handleProcessSelect = (process: BusinessProcess) => {
+        setSelectedProcess(process);
+        setActiveStep(0);
+    };
+
+    // 새 프로세스 생성
+    const handleCreateProcess = () => {
+        setShowProcessDialog(true);
+    };
+
+    return (
+        <Box sx={{ p: 3 }}>
+            {/* 헤더 */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                <Box>
+                    <Typography variant="h4" component="h1" gutterBottom>
+                        🏢 비즈니스 워크플로우 대시보드
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        비즈니스 프로세스 관리 및 모니터링
+                    </Typography>
+                </Box>
+                <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={handleCreateProcess}
+                    sx={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        '&:hover': { background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)' }
+                    }}
+                >
+                    새 프로세스 생성
+                </Button>
+            </Box>
+
+            <Grid container spacing={3}>
+                {/* 프로세스 목록 */}
+                <Grid item xs={12} md={4}>
+                    <Card sx={{ height: 'fit-content' }}>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                📋 비즈니스 프로세스
+                            </Typography>
+                            <List>
+                                {businessProcesses.map((process) => (
+                                    <ListItem
+                                        key={process.id}
+                                        button
+                                        selected={selectedProcess?.id === process.id}
+                                        onClick={() => handleProcessSelect(process)}
+                                        sx={{
+                                            mb: 1,
+                                            borderRadius: 1,
+                                            '&.Mui-selected': {
+                                                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})`
+                                            }
+                                        }}
+                                    >
+                                        <ListItemIcon>
+                                            <Avatar sx={{
+                                                width: 40,
+                                                height: 40,
+                                                bgcolor: getStatusColor(process.status) === 'success' ? 'success.main' :
+                                                    getStatusColor(process.status) === 'primary' ? 'primary.main' : 'error.main'
+                                            }}>
+                                                <Business />
+                                            </Avatar>
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={process.name}
+                                            secondary={
+                                                <Box>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {process.description}
+                                                    </Typography>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={process.progress}
+                                                            sx={{ flex: 1, mr: 1, height: 6, borderRadius: 3 }}
+                                                        />
+                                                        <Typography variant="caption">
+                                                            {process.progress}%
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                            }
+                                        />
+                                        <Chip
+                                            label={process.priority}
+                                            color={getPriorityColor(process.priority) as any}
+                                            size="small"
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* 프로세스 상세 정보 */}
+                <Grid item xs={12} md={8}>
+                    {selectedProcess ? (
+                        <Card>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                                    <Box>
+                                        <Typography variant="h5" component="h2" gutterBottom>
+                                            {selectedProcess.name}
+                                        </Typography>
+                                        <Typography variant="body1" color="text.secondary" gutterBottom>
+                                            {selectedProcess.description}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                                            <Chip
+                                                label={selectedProcess.status}
+                                                color={getStatusColor(selectedProcess.status) as any}
+                                                size="small"
+                                            />
+                                            <Chip
+                                                label={selectedProcess.priority}
+                                                color={getPriorityColor(selectedProcess.priority) as any}
+                                                size="small"
+                                            />
+                                        </Box>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        <IconButton color="primary">
+                                            <Edit />
+                                        </IconButton>
+                                        <IconButton color="secondary">
+                                            <Visibility />
+                                        </IconButton>
+                                        <IconButton color="error">
+                                            <Delete />
+                                        </IconButton>
+                                    </Box>
+                                </Box>
+
+                                {/* 전체 진행률 */}
+                                <Box sx={{ mb: 3 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                        <Typography variant="subtitle1">전체 진행률</Typography>
+                                        <Typography variant="subtitle1" color="primary">
+                                            {selectedProcess.progress}%
+                                        </Typography>
+                                    </Box>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={selectedProcess.progress}
+                                        sx={{ height: 10, borderRadius: 5 }}
+                                    />
+                                </Box>
+
+                                {/* 워크플로우 스텝 */}
+                                <Typography variant="h6" gutterBottom>
+                                    🔄 워크플로우 단계
+                                </Typography>
+                                <Stepper activeStep={activeStep} orientation="vertical">
+                                    {selectedProcess.steps.map((step, index) => (
+                                        <Step key={step.id} active={step.status === 'in-progress'} completed={step.status === 'completed'}>
+                                            <StepLabel
+                                                icon={
+                                                    <Avatar sx={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        bgcolor: getStatusColor(step.status) === 'success' ? 'success.main' :
+                                                            getStatusColor(step.status) === 'primary' ? 'primary.main' : 'default'
+                                                    }}>
+                                                        {step.status === 'completed' ? <CheckCircle /> : <Assignment />}
+                                                    </Avatar>
+                                                }
+                                            >
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography variant="subtitle1">
+                                                        {step.name}
+                                                    </Typography>
+                                                    <Chip
+                                                        label={step.priority}
+                                                        color={getPriorityColor(step.priority) as any}
+                                                        size="small"
+                                                    />
+                                                </Box>
+                                            </StepLabel>
+                                            <StepContent>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                        {step.description}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        담당: {step.assignee} | 마감: {step.dueDate.toLocaleDateString('ko-KR')}
+                                                    </Typography>
+
+                                                    <Box sx={{ mt: 2 }}>
+                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                            <Typography variant="caption">진행률</Typography>
+                                                            <Typography variant="caption">{step.progress}%</Typography>
+                                                        </Box>
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={step.progress}
+                                                            sx={{ height: 6, borderRadius: 3 }}
+                                                        />
+                                                    </Box>
+
+                                                    <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                                                        <Button
+                                                            size="small"
+                                                            startIcon={<PlayArrow />}
+                                                            disabled={step.status === 'completed'}
+                                                        >
+                                                            시작
+                                                        </Button>
+                                                        <Button
+                                                            size="small"
+                                                            startIcon={<Pause />}
+                                                            disabled={step.status !== 'in-progress'}
+                                                        >
+                                                            일시정지
+                                                        </Button>
+                                                        <Button
+                                                            size="small"
+                                                            startIcon={<CheckCircle />}
+                                                            disabled={step.status === 'completed'}
+                                                        >
+                                                            완료
+                                                        </Button>
+                                                    </Box>
+                                                </Box>
+                                            </StepContent>
+                                        </Step>
+                                    ))}
+                                </Stepper>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <Card sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CardContent>
+                                <Typography variant="h6" color="text.secondary" align="center">
+                                    프로세스를 선택하여 상세 정보를 확인하세요
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    )}
+                </Grid>
+            </Grid>
+
+            {/* 새 프로세스 생성 다이얼로그 */}
+            <Dialog
+                open={showProcessDialog}
+                onClose={() => setShowProcessDialog(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Add sx={{ mr: 1, color: 'primary.main' }} />
+                        새 비즈니스 프로세스 생성
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="프로세스 이름"
+                                placeholder="예: 신규 제품 개발"
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={3}
+                                label="프로세스 설명"
+                                placeholder="프로세스에 대한 상세한 설명을 입력하세요"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>우선순위</InputLabel>
+                                <Select label="우선순위">
+                                    <MenuItem value="low">낮음</MenuItem>
+                                    <MenuItem value="medium">보통</MenuItem>
+                                    <MenuItem value="high">높음</MenuItem>
+                                    <MenuItem value="critical">긴급</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                fullWidth
+                                type="date"
+                                label="시작일"
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowProcessDialog(false)}>
+                        취소
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={() => setShowProcessDialog(false)}
+                    >
+                        프로세스 생성
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default BusinessWorkflowDashboard;

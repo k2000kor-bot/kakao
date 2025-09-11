@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import realTimeAIAlertSystem, { AIAlert } from './realTimeAIAlertSystem';
+import realTimeAIAlertSystem from './realTimeAIAlertSystem';
 
 // 인터페이스 정의
 export interface ServiceHealth {

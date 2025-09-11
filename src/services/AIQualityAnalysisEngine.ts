@@ -1,4 +1,4 @@
-import { realTimeAIAlertSystem } from './realTimeAIAlertSystem';
+import realTimeAIAlertSystem from './realTimeAIAlertSystem';
 
 export interface QualityAnalysisResult {
     id: string;
@@ -213,7 +213,7 @@ class AIQualityAnalysisEngine {
                 type: 'warning',
                 severity: 'medium',
                 message: '복잡한 함수가 감지되었습니다. 함수를 더 작은 단위로 분리하는 것을 권장합니다.',
-                location: 'src/components/AdvancedAIQualityAssuranceDashboard.tsx:150-200',
+                location: 'src/services/AIQualityAnalysisEngine.ts:150-200',
                 suggestion: '함수를 20줄 이하로 분리하고 단일 책임 원칙을 적용하세요.',
                 impact: '코드 가독성 및 유지보수성 향상'
             });
@@ -480,7 +480,7 @@ class AIQualityAnalysisEngine {
         };
     }
 
-    public isRunning(): boolean {
+    public getIsRunning(): boolean {
         return this.isRunning;
     }
 }

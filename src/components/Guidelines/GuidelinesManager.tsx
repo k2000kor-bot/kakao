@@ -284,8 +284,8 @@ const GuidelinesManager: React.FC<GuidelinesManagerProps> = ({
                                         <button
                                             onClick={() => onGuidelineToggle(guideline.id, !guideline.isActive)}
                                             className={`p-2 rounded-lg transition-colors ${guideline.isActive
-                                                    ? 'text-green-600 hover:bg-green-50'
-                                                    : 'text-gray-400 hover:bg-gray-50'
+                                                ? 'text-green-600 hover:bg-green-50'
+                                                : 'text-gray-400 hover:bg-gray-50'
                                                 }`}
                                             title={guideline.isActive ? '비활성화' : '활성화'}
                                         >
@@ -366,14 +366,116 @@ const GuidelinesManager: React.FC<GuidelinesManagerProps> = ({
                             className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <GuidelineForm
-                                guideline={editingGuideline}
-                                onSave={editingGuideline ? handleEditGuideline : handleAddGuideline}
-                                onCancel={() => {
-                                    setShowAddModal(false);
-                                    setEditingGuideline(null);
-                                }}
-                            />
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-gray-900">
+                                        {editingGuideline ? '지침 편집' : '새 지침 추가'}
+                                    </h2>
+                                    <button
+                                        onClick={() => {
+                                            setShowAddModal(false);
+                                            setEditingGuideline(null);
+                                        }}
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        <X className="h-5 w-5 text-gray-500" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            제목 *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editingGuideline?.title || ''}
+                                            onChange={(e) => setEditingGuideline(prev => prev ? { ...prev, title: e.target.value } : null)}
+                                            placeholder="지침 제목을 입력하세요"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            내용 *
+                                        </label>
+                                        <textarea
+                                            value={editingGuideline?.content || ''}
+                                            onChange={(e) => setEditingGuideline(prev => prev ? { ...prev, content: e.target.value } : null)}
+                                            placeholder="지침 내용을 입력하세요"
+                                            rows={6}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                카테고리
+                                            </label>
+                                            <select
+                                                value={editingGuideline?.category || 'general'}
+                                                onChange={(e) => setEditingGuideline(prev => prev ? { ...prev, category: e.target.value as any } : null)}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            >
+                                                {categories.map(cat => (
+                                                    <option key={cat.value} value={cat.value}>
+                                                        {cat.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                우선순위
+                                            </label>
+                                            <select
+                                                value={editingGuideline?.priority || 'medium'}
+                                                onChange={(e) => setEditingGuideline(prev => prev ? { ...prev, priority: e.target.value as any } : null)}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            >
+                                                {priorities.map(pri => (
+                                                    <option key={pri.value} value={pri.value}>
+                                                        {pri.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
+                                        <button
+                                            onClick={() => {
+                                                setShowAddModal(false);
+                                                setEditingGuideline(null);
+                                            }}
+                                            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                        >
+                                            취소
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (editingGuideline?.title?.trim() && editingGuideline?.content?.trim()) {
+                                                    if (editingGuideline.id) {
+                                                        handleEditGuideline(editingGuideline);
+                                                    } else {
+                                                        handleAddGuideline(editingGuideline);
+                                                    }
+                                                    setShowAddModal(false);
+                                                    setEditingGuideline(null);
+                                                }
+                                            }}
+                                            disabled={!editingGuideline?.title?.trim() || !editingGuideline?.content?.trim()}
+                                            className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <Save className="h-4 w-4" />
+                                            <span>{editingGuideline?.id ? '저장' : '추가'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -382,182 +484,6 @@ const GuidelinesManager: React.FC<GuidelinesManagerProps> = ({
     );
 };
 
-// Guideline Form Component
-interface GuidelineFormProps {
-    guideline?: Guideline | null;
-    onSave: (data: any) => void;
-    onCancel: () => void;
-}
 
-const GuidelineForm: React.FC<GuidelineFormProps> = ({
-    guideline,
-    onSave,
-    onCancel
-}) => {
-    const [title, setTitle] = useState(guideline?.title || '');
-    const [content, setContent] = useState(guideline?.content || '');
-    const [category, setCategory] = useState(guideline?.category || 'general');
-    const [priority, setPriority] = useState(guideline?.priority || 'medium');
-    const [tags, setTags] = useState<string[]>(guideline?.tags || []);
-    const [newTag, setNewTag] = useState('');
-
-    const handleAddTag = () => {
-        if (newTag.trim() && !tags.includes(newTag.trim())) {
-            setTags([...tags, newTag.trim()]);
-            setNewTag('');
-        }
-    };
-
-    const handleRemoveTag = (tagToRemove: string) => {
-        setTags(tags.filter(tag => tag !== tagToRemove));
-    };
-
-    const handleSave = () => {
-        if (!title.trim() || !content.trim()) return;
-
-        onSave({
-            title: title.trim(),
-            content: content.trim(),
-            category,
-            priority,
-            tags
-        });
-    };
-
-    return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                    {guideline ? '지침 편집' : '새 지침 추가'}
-                </h2>
-                <button
-                    onClick={onCancel}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                    <X className="h-5 w-5 text-gray-500" />
-                </button>
-            </div>
-
-            <div className="space-y-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        제목 *
-                    </label>
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="지침 제목을 입력하세요"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        내용 *
-                    </label>
-                    <textarea
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        placeholder="지침 내용을 입력하세요"
-                        rows={6}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            카테고리
-                        </label>
-                        <select
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value as any)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        >
-                            {categories.map(cat => (
-                                <option key={cat.value} value={cat.value}>
-                                    {cat.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            우선순위
-                        </label>
-                        <select
-                            value={priority}
-                            onChange={(e) => setPriority(e.target.value as any)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        >
-                            {priorities.map(pri => (
-                                <option key={pri.value} value={pri.value}>
-                                    {pri.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        태그
-                    </label>
-                    <div className="flex space-x-2 mb-3">
-                        <input
-                            type="text"
-                            value={newTag}
-                            onChange={(e) => setNewTag(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                            placeholder="태그를 입력하고 Enter를 누르세요"
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                        <button
-                            onClick={handleAddTag}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                        >
-                            <Plus className="h-4 w-4" />
-                        </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {tags.map((tag, index) => (
-                            <span
-                                key={index}
-                                className="flex items-center space-x-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-                            >
-                                <span>{tag}</span>
-                                <button
-                                    onClick={() => handleRemoveTag(tag)}
-                                    className="ml-1 hover:text-purple-600"
-                                >
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
-                <button
-                    onClick={onCancel}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                    취소
-                </button>
-                <button
-                    onClick={handleSave}
-                    disabled={!title.trim() || !content.trim()}
-                    className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    <Save className="h-4 w-4" />
-                    <span>{guideline ? '저장' : '추가'}</span>
-                </button>
-            </div>
-        </div>
-    );
-};
 
 export default GuidelinesManager;

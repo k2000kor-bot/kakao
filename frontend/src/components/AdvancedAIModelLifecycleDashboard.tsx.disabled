@@ -1,0 +1,1605 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    IconButton,
+    Tooltip,
+    LinearProgress,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Switch,
+    FormControlLabel,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Badge,
+    Alert,
+    TextField,
+    InputAdornment,
+    Tabs,
+    Tab,
+    Divider,
+    CircularProgress,
+    Stepper,
+    Step,
+    StepLabel,
+    StepContent
+} from '@mui/material';
+import {
+    ModelTraining,
+    CloudUpload,
+    Speed,
+    Memory,
+    Timeline,
+    TrendingUp,
+    TrendingDown,
+    CheckCircle,
+    Warning,
+    Error,
+    Refresh,
+    Fullscreen,
+    FullscreenExit,
+    Settings,
+    Assessment,
+    Build,
+    Visibility,
+    ExpandMore,
+    PlayArrow,
+    Stop,
+    Pause,
+    Undo,
+    SmartToy,
+    Analytics,
+    Code,
+    Storage,
+    Computer,
+    Psychology,
+    Layers,
+    Transform,
+    Tune,
+    Rocket,
+    Science
+} from '@mui/icons-material';
+
+interface AIModel {
+    id: string;
+    name: string;
+    version: string;
+    description: string;
+    type: 'nlp' | 'computer_vision' | 'recommendation' | 'prediction' | 'classification' | 'generation';
+    framework: 'tensorflow' | 'pytorch' | 'huggingface' | 'onnx' | 'custom';
+    size_mb: number;
+    parameters: number;
+    training_data: TrainingDataset;
+    performance_metrics: ModelPerformanceMetrics;
+    deployment_config: DeploymentConfig;
+    lifecycle_stage: 'development' | 'training' | 'validation' | 'testing' | 'staging' | 'production' | 'deprecated';
+    created_date: Date;
+    last_updated: Date;
+    created_by: string;
+    tags: string[];
+    metadata: Record<string, any>;
+}
+
+interface TrainingDataset {
+    id: string;
+    name: string;
+    size: number;
+    format: 'json' | 'csv' | 'parquet' | 'tfrecord' | 'custom';
+    source: string;
+    preprocessing_steps: string[];
+    validation_split: number;
+    test_split: number;
+    quality_score: number;
+    last_updated: Date;
+}
+
+interface ModelPerformanceMetrics {
+    accuracy: number;
+    precision: number;
+    recall: number;
+    f1_score: number;
+    auc_roc: number;
+    loss: number;
+    inference_time_ms: number;
+    throughput_rps: number;
+    memory_usage_mb: number;
+    cpu_usage_percent: number;
+    gpu_usage_percent?: number;
+    custom_metrics: Record<string, number>;
+}
+
+interface DeploymentConfig {
+    environment: 'development' | 'staging' | 'production';
+    infrastructure: 'cloud' | 'on_premise' | 'edge' | 'hybrid';
+    scaling_config: ScalingConfig;
+    resource_requirements: ResourceRequirements;
+    health_check_config: HealthCheckConfig;
+    rollback_config: RollbackConfig;
+    monitoring_config: MonitoringConfig;
+}
+
+interface ScalingConfig {
+    min_instances: number;
+    max_instances: number;
+    target_cpu_utilization: number;
+    target_memory_utilization: number;
+    scale_up_threshold: number;
+    scale_down_threshold: number;
+    cooldown_period_seconds: number;
+}
+
+interface ResourceRequirements {
+    cpu_cores: number;
+    memory_gb: number;
+    gpu_count?: number;
+    gpu_memory_gb?: number;
+    storage_gb: number;
+    network_bandwidth_mbps: number;
+}
+
+interface HealthCheckConfig {
+    endpoint: string;
+    interval_seconds: number;
+    timeout_seconds: number;
+    healthy_threshold: number;
+    unhealthy_threshold: number;
+    grace_period_seconds: number;
+}
+
+interface RollbackConfig {
+    enabled: boolean;
+    trigger_conditions: string[];
+    rollback_strategy: 'immediate' | 'gradual' | 'canary';
+    rollback_timeout_seconds: number;
+    preserve_traffic_percentage: number;
+}
+
+interface MonitoringConfig {
+    metrics_enabled: boolean;
+    logging_level: 'debug' | 'info' | 'warn' | 'error';
+    custom_metrics: string[];
+    alert_thresholds: Record<string, number>;
+    dashboard_enabled: boolean;
+}
+
+interface ModelTrainingJob {
+    id: string;
+    model_id: string;
+    dataset_id: string;
+    status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+    progress_percentage: number;
+    start_time?: Date;
+    end_time?: Date;
+    estimated_completion?: Date;
+    current_epoch?: number;
+    total_epochs: number;
+    current_metrics: Partial<ModelPerformanceMetrics>;
+    resource_usage: ResourceUsage;
+    error_message?: string;
+}
+
+interface ResourceUsage {
+    cpu_usage_percent: number;
+    memory_usage_gb: number;
+    gpu_usage_percent?: number;
+    gpu_memory_usage_gb?: number;
+    disk_io_mbps: number;
+    network_io_mbps: number;
+    cost_per_hour?: number;
+}
+
+interface ModelDeployment {
+    id: string;
+    model_id: string;
+    version_id: string;
+    environment: string;
+    status: 'deploying' | 'deployed' | 'failed' | 'rolling_back' | 'rolled_back';
+    deployment_strategy: 'blue_green' | 'canary' | 'rolling' | 'recreate';
+    traffic_percentage: number;
+    health_status: 'healthy' | 'unhealthy' | 'degraded';
+    deployment_time: Date;
+    last_health_check: Date;
+    endpoint_url: string;
+    performance_metrics: ModelPerformanceMetrics;
+    error_rate: number;
+    request_count: number;
+    average_response_time: number;
+}
+
+interface ModelLifecycleMetrics {
+    total_models: number;
+    models_by_stage: Record<string, number>;
+    active_training_jobs: number;
+    active_deployments: number;
+    average_training_time_hours: number;
+    average_deployment_time_minutes: number;
+    success_rate_training: number;
+    success_rate_deployment: number;
+    model_performance_trends: PerformanceTrend[];
+    resource_utilization: ResourceUtilization;
+    cost_metrics: CostMetrics;
+}
+
+interface PerformanceTrend {
+    date: Date;
+    metric_name: string;
+    average_value: number;
+    min_value: number;
+    max_value: number;
+    model_count: number;
+}
+
+interface ResourceUtilization {
+    cpu_utilization: number;
+    memory_utilization: number;
+    gpu_utilization: number;
+    storage_utilization: number;
+    cost_efficiency: number;
+}
+
+interface CostMetrics {
+    total_cost_monthly: number;
+    cost_per_model: number;
+    cost_per_inference: number;
+    training_cost_percentage: number;
+    deployment_cost_percentage: number;
+    optimization_savings: number;
+}
+
+const AdvancedAIModelLifecycleDashboard: React.FC = () => {
+    const [models, setModels] = useState<AIModel[]>([]);
+    const [trainingJobs, setTrainingJobs] = useState<ModelTrainingJob[]>([]);
+    const [deployments, setDeployments] = useState<ModelDeployment[]>([]);
+    const [lifecycleMetrics, setLifecycleMetrics] = useState<ModelLifecycleMetrics | null>(null);
+    const [selectedTab, setSelectedTab] = useState(0);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
+    const [modelDialogOpen, setModelDialogOpen] = useState(false);
+    const [lastUpdate, setLastUpdate] = useState(new Date());
+
+    // 탭 정의
+    const tabs = [
+        { label: '모델 개요', icon: <ModelTraining /> },
+        { label: '모델 관리', icon: <Layers /> },
+        { label: '훈련 작업', icon: <Build /> },
+        { label: '배포 관리', icon: <CloudUpload /> },
+        { label: '성능 분석', icon: <Analytics /> },
+        { label: '설정', icon: <Settings /> }
+    ];
+
+    // 데이터 새로고침
+    const refreshData = async () => {
+        try {
+            // 실제로는 API 호출
+            const mockModels: AIModel[] = [
+                {
+                    id: 'model-nlp-1',
+                    name: 'Advanced NLP Model',
+                    version: '2.1.0',
+                    description: '고급 자연어 처리 모델',
+                    type: 'nlp',
+                    framework: 'huggingface',
+                    size_mb: 1250,
+                    parameters: 175000000,
+                    training_data: {
+                        id: 'dataset-nlp-1',
+                        name: 'Korean Language Dataset',
+                        size: 50000000,
+                        format: 'json',
+                        source: 'internal',
+                        preprocessing_steps: ['tokenization', 'normalization', 'augmentation'],
+                        validation_split: 0.1,
+                        test_split: 0.1,
+                        quality_score: 0.95,
+                        last_updated: new Date()
+                    },
+                    performance_metrics: {
+                        accuracy: 0.94,
+                        precision: 0.92,
+                        recall: 0.91,
+                        f1_score: 0.915,
+                        auc_roc: 0.96,
+                        loss: 0.08,
+                        inference_time_ms: 45,
+                        throughput_rps: 150,
+                        memory_usage_mb: 2048,
+                        cpu_usage_percent: 35,
+                        gpu_usage_percent: 60,
+                        custom_metrics: {
+                            bleu_score: 0.88,
+                            perplexity: 12.5
+                        }
+                    },
+                    deployment_config: {
+                        environment: 'production',
+                        infrastructure: 'cloud',
+                        scaling_config: {
+                            min_instances: 2,
+                            max_instances: 10,
+                            target_cpu_utilization: 70,
+                            target_memory_utilization: 80,
+                            scale_up_threshold: 75,
+                            scale_down_threshold: 30,
+                            cooldown_period_seconds: 300
+                        },
+                        resource_requirements: {
+                            cpu_cores: 4,
+                            memory_gb: 8,
+                            gpu_count: 1,
+                            gpu_memory_gb: 8,
+                            storage_gb: 100,
+                            network_bandwidth_mbps: 1000
+                        },
+                        health_check_config: {
+                            endpoint: '/health',
+                            interval_seconds: 30,
+                            timeout_seconds: 5,
+                            healthy_threshold: 2,
+                            unhealthy_threshold: 3,
+                            grace_period_seconds: 60
+                        },
+                        rollback_config: {
+                            enabled: true,
+                            trigger_conditions: ['error_rate > 5%', 'response_time > 1000ms'],
+                            rollback_strategy: 'immediate',
+                            rollback_timeout_seconds: 300,
+                            preserve_traffic_percentage: 0
+                        },
+                        monitoring_config: {
+                            metrics_enabled: true,
+                            logging_level: 'info',
+                            custom_metrics: ['bleu_score', 'perplexity'],
+                            alert_thresholds: {
+                                error_rate: 0.05,
+                                response_time: 1000,
+                                cpu_usage: 0.8
+                            },
+                            dashboard_enabled: true
+                        }
+                    },
+                    lifecycle_stage: 'production',
+                    created_date: new Date('2024-01-01'),
+                    last_updated: new Date(),
+                    created_by: 'ai-team',
+                    tags: ['nlp', 'korean', 'production'],
+                    metadata: {
+                        model_architecture: 'transformer',
+                        training_framework: 'huggingface',
+                        optimization_level: 'high'
+                    }
+                },
+                {
+                    id: 'model-cv-1',
+                    name: 'Computer Vision Model',
+                    version: '1.5.2',
+                    description: '이미지 분류 및 객체 탐지 모델',
+                    type: 'computer_vision',
+                    framework: 'pytorch',
+                    size_mb: 890,
+                    parameters: 25000000,
+                    training_data: {
+                        id: 'dataset-cv-1',
+                        name: 'Image Classification Dataset',
+                        size: 1000000,
+                        format: 'tfrecord',
+                        source: 'external',
+                        preprocessing_steps: ['resize', 'normalize', 'augmentation'],
+                        validation_split: 0.15,
+                        test_split: 0.15,
+                        quality_score: 0.92,
+                        last_updated: new Date()
+                    },
+                    performance_metrics: {
+                        accuracy: 0.96,
+                        precision: 0.95,
+                        recall: 0.94,
+                        f1_score: 0.945,
+                        auc_roc: 0.98,
+                        loss: 0.06,
+                        inference_time_ms: 25,
+                        throughput_rps: 200,
+                        memory_usage_mb: 1536,
+                        cpu_usage_percent: 40,
+                        gpu_usage_percent: 75,
+                        custom_metrics: {
+                            map_score: 0.89,
+                            iou_score: 0.85
+                        }
+                    },
+                    deployment_config: {
+                        environment: 'production',
+                        infrastructure: 'cloud',
+                        scaling_config: {
+                            min_instances: 3,
+                            max_instances: 15,
+                            target_cpu_utilization: 65,
+                            target_memory_utilization: 75,
+                            scale_up_threshold: 70,
+                            scale_down_threshold: 25,
+                            cooldown_period_seconds: 240
+                        },
+                        resource_requirements: {
+                            cpu_cores: 6,
+                            memory_gb: 12,
+                            gpu_count: 1,
+                            gpu_memory_gb: 12,
+                            storage_gb: 150,
+                            network_bandwidth_mbps: 1500
+                        },
+                        health_check_config: {
+                            endpoint: '/health',
+                            interval_seconds: 20,
+                            timeout_seconds: 3,
+                            healthy_threshold: 2,
+                            unhealthy_threshold: 3,
+                            grace_period_seconds: 45
+                        },
+                        rollback_config: {
+                            enabled: true,
+                            trigger_conditions: ['accuracy < 90%', 'error_rate > 3%'],
+                            rollback_strategy: 'gradual',
+                            rollback_timeout_seconds: 600,
+                            preserve_traffic_percentage: 10
+                        },
+                        monitoring_config: {
+                            metrics_enabled: true,
+                            logging_level: 'info',
+                            custom_metrics: ['map_score', 'iou_score'],
+                            alert_thresholds: {
+                                error_rate: 0.03,
+                                response_time: 500,
+                                gpu_usage: 0.9
+                            },
+                            dashboard_enabled: true
+                        }
+                    },
+                    lifecycle_stage: 'production',
+                    created_date: new Date('2024-01-15'),
+                    last_updated: new Date(),
+                    created_by: 'cv-team',
+                    tags: ['computer_vision', 'classification', 'detection'],
+                    metadata: {
+                        model_architecture: 'resnet',
+                        input_resolution: '224x224',
+                        color_channels: 3
+                    }
+                }
+            ];
+
+            const mockTrainingJobs: ModelTrainingJob[] = [
+                {
+                    id: 'training-1',
+                    model_id: 'model-nlp-1',
+                    dataset_id: 'dataset-nlp-1',
+                    status: 'running',
+                    progress_percentage: 65,
+                    start_time: new Date(Date.now() - 7200000),
+                    current_epoch: 65,
+                    total_epochs: 100,
+                    current_metrics: {
+                        accuracy: 0.89,
+                        loss: 0.12,
+                        f1_score: 0.87
+                    },
+                    resource_usage: {
+                        cpu_usage_percent: 75,
+                        memory_usage_gb: 6.2,
+                        gpu_usage_percent: 85,
+                        gpu_memory_usage_gb: 7.1,
+                        disk_io_mbps: 65,
+                        network_io_mbps: 25,
+                        cost_per_hour: 3.2
+                    }
+                },
+                {
+                    id: 'training-2',
+                    model_id: 'model-cv-1',
+                    dataset_id: 'dataset-cv-1',
+                    status: 'completed',
+                    progress_percentage: 100,
+                    start_time: new Date(Date.now() - 14400000),
+                    end_time: new Date(Date.now() - 3600000),
+                    current_epoch: 50,
+                    total_epochs: 50,
+                    current_metrics: {
+                        accuracy: 0.96,
+                        loss: 0.06,
+                        f1_score: 0.945
+                    },
+                    resource_usage: {
+                        cpu_usage_percent: 0,
+                        memory_usage_gb: 0,
+                        gpu_usage_percent: 0,
+                        gpu_memory_usage_gb: 0,
+                        disk_io_mbps: 0,
+                        network_io_mbps: 0,
+                        cost_per_hour: 0
+                    }
+                }
+            ];
+
+            const mockDeployments: ModelDeployment[] = [
+                {
+                    id: 'deployment-1',
+                    model_id: 'model-nlp-1',
+                    version_id: 'version-nlp-1',
+                    environment: 'production',
+                    status: 'deployed',
+                    deployment_strategy: 'rolling',
+                    traffic_percentage: 100,
+                    health_status: 'healthy',
+                    deployment_time: new Date(Date.now() - 86400000),
+                    last_health_check: new Date(),
+                    endpoint_url: 'https://api-production.corbu.ai/models/model-nlp-1/predict',
+                    performance_metrics: {
+                        accuracy: 0.94,
+                        precision: 0.92,
+                        recall: 0.91,
+                        f1_score: 0.915,
+                        auc_roc: 0.96,
+                        loss: 0.08,
+                        inference_time_ms: 45,
+                        throughput_rps: 150,
+                        memory_usage_mb: 2048,
+                        cpu_usage_percent: 35,
+                        gpu_usage_percent: 60,
+                        custom_metrics: {}
+                    },
+                    error_rate: 0.02,
+                    request_count: 15420,
+                    average_response_time: 47
+                },
+                {
+                    id: 'deployment-2',
+                    model_id: 'model-cv-1',
+                    version_id: 'version-cv-1',
+                    environment: 'staging',
+                    status: 'deploying',
+                    deployment_strategy: 'canary',
+                    traffic_percentage: 10,
+                    health_status: 'healthy',
+                    deployment_time: new Date(),
+                    last_health_check: new Date(),
+                    endpoint_url: 'https://api-staging.corbu.ai/models/model-cv-1/predict',
+                    performance_metrics: {
+                        accuracy: 0.96,
+                        precision: 0.95,
+                        recall: 0.94,
+                        f1_score: 0.945,
+                        auc_roc: 0.98,
+                        loss: 0.06,
+                        inference_time_ms: 25,
+                        throughput_rps: 200,
+                        memory_usage_mb: 1536,
+                        cpu_usage_percent: 40,
+                        gpu_usage_percent: 75,
+                        custom_metrics: {}
+                    },
+                    error_rate: 0.01,
+                    request_count: 850,
+                    average_response_time: 28
+                }
+            ];
+
+            const mockLifecycleMetrics: ModelLifecycleMetrics = {
+                total_models: 2,
+                models_by_stage: {
+                    'development': 0,
+                    'training': 0,
+                    'validation': 0,
+                    'testing': 0,
+                    'staging': 0,
+                    'production': 2,
+                    'deprecated': 0
+                },
+                active_training_jobs: 1,
+                active_deployments: 2,
+                average_training_time_hours: 3.5,
+                average_deployment_time_minutes: 12.5,
+                success_rate_training: 0.92,
+                success_rate_deployment: 0.96,
+                model_performance_trends: [
+                    {
+                        date: new Date(Date.now() - 6 * 86400000),
+                        metric_name: 'accuracy',
+                        average_value: 0.91,
+                        min_value: 0.88,
+                        max_value: 0.94,
+                        model_count: 2
+                    },
+                    {
+                        date: new Date(Date.now() - 5 * 86400000),
+                        metric_name: 'accuracy',
+                        average_value: 0.92,
+                        min_value: 0.89,
+                        max_value: 0.95,
+                        model_count: 2
+                    },
+                    {
+                        date: new Date(Date.now() - 4 * 86400000),
+                        metric_name: 'accuracy',
+                        average_value: 0.93,
+                        min_value: 0.90,
+                        max_value: 0.96,
+                        model_count: 2
+                    }
+                ],
+                resource_utilization: {
+                    cpu_utilization: 0.68,
+                    memory_utilization: 0.72,
+                    gpu_utilization: 0.78,
+                    storage_utilization: 0.65,
+                    cost_efficiency: 0.85
+                },
+                cost_metrics: {
+                    total_cost_monthly: 18500,
+                    cost_per_model: 9250,
+                    cost_per_inference: 0.0012,
+                    training_cost_percentage: 0.35,
+                    deployment_cost_percentage: 0.65,
+                    optimization_savings: 4200
+                }
+            };
+
+            setModels(mockModels);
+            setTrainingJobs(mockTrainingJobs);
+            setDeployments(mockDeployments);
+            setLifecycleMetrics(mockLifecycleMetrics);
+            setLastUpdate(new Date());
+        } catch (error) {
+            console.error('모델 생명주기 데이터 새로고침 오류:', error);
+        }
+    };
+
+    // 자동 새로고침
+    useEffect(() => {
+        refreshData();
+
+        if (autoRefresh) {
+            const interval = setInterval(refreshData, 20000); // 20초마다
+            return () => clearInterval(interval);
+        }
+    }, [autoRefresh]);
+
+    // 모델 타입 색상
+    const getModelTypeColor = (type: string) => {
+        switch (type) {
+            case 'nlp': return 'primary';
+            case 'computer_vision': return 'secondary';
+            case 'recommendation': return 'info';
+            case 'prediction': return 'warning';
+            case 'classification': return 'success';
+            case 'generation': return 'error';
+            default: return 'default';
+        }
+    };
+
+    // 생명주기 단계 색상
+    const getLifecycleStageColor = (stage: string) => {
+        switch (stage) {
+            case 'development': return 'info';
+            case 'training': return 'warning';
+            case 'validation': return 'secondary';
+            case 'testing': return 'primary';
+            case 'staging': return 'warning';
+            case 'production': return 'success';
+            case 'deprecated': return 'error';
+            default: return 'default';
+        }
+    };
+
+    // 상태 색상
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'queued': return 'info';
+            case 'running': return 'warning';
+            case 'completed': return 'success';
+            case 'failed': return 'error';
+            case 'cancelled': return 'default';
+            case 'deploying': return 'warning';
+            case 'deployed': return 'success';
+            case 'rolling_back': return 'warning';
+            case 'rolled_back': return 'error';
+            default: return 'default';
+        }
+    };
+
+    // 건강 상태 색상
+    const getHealthStatusColor = (status: string) => {
+        switch (status) {
+            case 'healthy': return 'success';
+            case 'degraded': return 'warning';
+            case 'unhealthy': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const renderModelOverview = () => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 3 }}>
+            {/* 모델 생명주기 메트릭 카드들 */}
+            <Box>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <ModelTraining color="primary" sx={{ mr: 1 }} />
+                            <Typography variant="h6">총 모델</Typography>
+                        </Box>
+                        <Typography variant="h4" color="primary">
+                            {lifecycleMetrics?.total_models || 0}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            활성 모델 수
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Box>
+
+            <Box>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <Build color="warning" sx={{ mr: 1 }} />
+                            <Typography variant="h6">훈련 작업</Typography>
+                        </Box>
+                        <Typography variant="h4" color="warning.main">
+                            {lifecycleMetrics?.active_training_jobs || 0}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            진행 중인 훈련
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <CloudUpload color="success" sx={{ mr: 1 }} />
+                            <Typography variant="h6">활성 배포</Typography>
+                        </Box>
+                        <Typography variant="h4" color="success.main">
+                            {lifecycleMetrics?.active_deployments || 0}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            배포된 모델 수
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <CheckCircle color="info" sx={{ mr: 1 }} />
+                            <Typography variant="h6">성공률</Typography>
+                        </Box>
+                        <Typography variant="h4" color="info.main">
+                            {((lifecycleMetrics?.success_rate_deployment || 0) * 100).toFixed(0)}%
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            배포 성공률
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* 생명주기 단계별 모델 분포 */}
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>생명주기 단계별 모델 분포</Typography>
+                        {lifecycleMetrics?.models_by_stage && (
+                            <Box>
+                                {Object.entries(lifecycleMetrics.models_by_stage).map(([stage, count]) => (
+                                    <Box key={stage} mb={2}>
+                                        <Box display="flex" justifyContent="space-between" mb={1}>
+                                            <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                                                {stage}
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                                {count}개
+                                            </Typography>
+                                        </Box>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={(count / (lifecycleMetrics.total_models || 1)) * 100}
+                                            sx={{ height: 8, borderRadius: 4 }}
+                                            color={getLifecycleStageColor(stage) as any}
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* 리소스 사용률 */}
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>리소스 사용률</Typography>
+                        {lifecycleMetrics?.resource_utilization && (
+                            <Box>
+                                <Box mb={2}>
+                                    <Box display="flex" justifyContent="space-between" mb={1}>
+                                        <Typography variant="body2">CPU 사용률</Typography>
+                                        <Typography variant="body2" fontWeight="medium">
+                                            {(lifecycleMetrics.resource_utilization.cpu_utilization * 100).toFixed(1)}%
+                                        </Typography>
+                                    </Box>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={lifecycleMetrics.resource_utilization.cpu_utilization * 100}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                        color="primary"
+                                    />
+                                </Box>
+                                <Box mb={2}>
+                                    <Box display="flex" justifyContent="space-between" mb={1}>
+                                        <Typography variant="body2">메모리 사용률</Typography>
+                                        <Typography variant="body2" fontWeight="medium">
+                                            {(lifecycleMetrics.resource_utilization.memory_utilization * 100).toFixed(1)}%
+                                        </Typography>
+                                    </Box>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={lifecycleMetrics.resource_utilization.memory_utilization * 100}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                        color="warning"
+                                    />
+                                </Box>
+                                <Box mb={2}>
+                                    <Box display="flex" justifyContent="space-between" mb={1}>
+                                        <Typography variant="body2">GPU 사용률</Typography>
+                                        <Typography variant="body2" fontWeight="medium">
+                                            {(lifecycleMetrics.resource_utilization.gpu_utilization * 100).toFixed(1)}%
+                                        </Typography>
+                                    </Box>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={lifecycleMetrics.resource_utilization.gpu_utilization * 100}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                        color="success"
+                                    />
+                                </Box>
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* 비용 메트릭 */}
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>비용 분석</Typography>
+                        {lifecycleMetrics?.cost_metrics && (
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} md={3}>
+                                    <Box textAlign="center">
+                                        <Typography variant="h5" color="primary">
+                                            ${lifecycleMetrics.cost_metrics.total_cost_monthly.toLocaleString()}
+                                        </Typography>
+                                        <Typography variant="body2" color="textSecondary">
+                                            월간 총 비용
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} md={3}>
+                                    <Box textAlign="center">
+                                        <Typography variant="h5" color="success.main">
+                                            ${lifecycleMetrics.cost_metrics.cost_per_model.toLocaleString()}
+                                        </Typography>
+                                        <Typography variant="body2" color="textSecondary">
+                                            모델당 비용
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} md={3}>
+                                    <Box textAlign="center">
+                                        <Typography variant="h5" color="info.main">
+                                            ${lifecycleMetrics.cost_metrics.cost_per_inference.toFixed(4)}
+                                        </Typography>
+                                        <Typography variant="body2" color="textSecondary">
+                                            추론당 비용
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} md={3}>
+                                    <Box textAlign="center">
+                                        <Typography variant="h5" color="warning.main">
+                                            ${lifecycleMetrics.cost_metrics.optimization_savings.toLocaleString()}
+                                        </Typography>
+                                        <Typography variant="body2" color="textSecondary">
+                                            최적화 절약액
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderModelManagement = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>모델 관리</Typography>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>모델명</TableCell>
+                                        <TableCell>타입</TableCell>
+                                        <TableCell>버전</TableCell>
+                                        <TableCell>생명주기 단계</TableCell>
+                                        <TableCell>성능</TableCell>
+                                        <TableCell>크기</TableCell>
+                                        <TableCell>마지막 업데이트</TableCell>
+                                        <TableCell>작업</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {models.map((model) => (
+                                        <TableRow key={model.id}>
+                                            <TableCell>
+                                                <Typography variant="body1" fontWeight="medium">
+                                                    {model.name}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    {model.description}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={model.type}
+                                                    size="small"
+                                                    color={getModelTypeColor(model.type) as any}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" fontFamily="monospace">
+                                                    v{model.version}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={model.lifecycle_stage}
+                                                    size="small"
+                                                    color={getLifecycleStageColor(model.lifecycle_stage) as any}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {(model.performance_metrics.accuracy * 100).toFixed(1)}%
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={model.performance_metrics.accuracy * 100}
+                                                        sx={{ width: 60, height: 6 }}
+                                                        color={model.performance_metrics.accuracy > 0.9 ? 'success' : 'warning'}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {(model.size_mb / 1024).toFixed(1)} GB
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {model.last_updated.toLocaleDateString()}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" gap={1}>
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        onClick={() => {
+                                                            setSelectedModel(model);
+                                                            setModelDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        상세 보기
+                                                    </Button>
+                                                    <Button variant="outlined" size="small" startIcon={<Build />}>
+                                                        훈련
+                                                    </Button>
+                                                    <Button variant="outlined" size="small" startIcon={<CloudUpload />}>
+                                                        배포
+                                                    </Button>
+                                                </Box>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderTrainingJobs = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>훈련 작업 현황</Typography>
+                        {trainingJobs.map((job) => (
+                            <Accordion key={job.id} sx={{ mb: 2 }}>
+                                <AccordionSummary expandIcon={<ExpandMore />}>
+                                    <Box display="flex" alignItems="center" width="100%">
+                                        <Chip
+                                            label={job.status}
+                                            size="small"
+                                            color={getStatusColor(job.status) as any}
+                                            sx={{ mr: 2 }}
+                                        />
+                                        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                                            {models.find(m => m.id === job.model_id)?.name || '알 수 없는 모델'}
+                                        </Typography>
+                                        <Typography variant="body2" color="textSecondary">
+                                            {job.progress_percentage.toFixed(0)}% 완료
+                                        </Typography>
+                                    </Box>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <Typography variant="subtitle2" mb={1}>훈련 진행 상황</Typography>
+                                            <Box mb={2}>
+                                                <Box display="flex" justifyContent="space-between" mb={1}>
+                                                    <Typography variant="body2">
+                                                        에포크: {job.current_epoch}/{job.total_epochs}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        {job.progress_percentage.toFixed(1)}%
+                                                    </Typography>
+                                                </Box>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={job.progress_percentage}
+                                                    sx={{ height: 8, borderRadius: 4 }}
+                                                />
+                                            </Box>
+
+                                            {job.current_metrics && (
+                                                <Box>
+                                                    <Typography variant="subtitle2" mb={1}>현재 메트릭</Typography>
+                                                    <Box display="flex" gap={2}>
+                                                        {job.current_metrics.accuracy && (
+                                                            <Chip
+                                                                label={`정확도: ${(job.current_metrics.accuracy * 100).toFixed(1)}%`}
+                                                                size="small"
+                                                                color="primary"
+                                                            />
+                                                        )}
+                                                        {job.current_metrics.loss && (
+                                                            <Chip
+                                                                label={`손실: ${job.current_metrics.loss.toFixed(3)}`}
+                                                                size="small"
+                                                                color="secondary"
+                                                            />
+                                                        )}
+                                                        {job.current_metrics.f1_score && (
+                                                            <Chip
+                                                                label={`F1: ${job.current_metrics.f1_score.toFixed(3)}`}
+                                                                size="small"
+                                                                color="info"
+                                                            />
+                                                        )}
+                                                    </Box>
+                                                </Box>
+                                            )}
+                                        </Grid>
+
+                                        <Grid item xs={12} md={6}>
+                                            <Typography variant="subtitle2" mb={1}>리소스 사용량</Typography>
+                                            <Box>
+                                                <Box display="flex" justifyContent="space-between" mb={1}>
+                                                    <Typography variant="body2">CPU</Typography>
+                                                    <Typography variant="body2">
+                                                        {job.resource_usage.cpu_usage_percent.toFixed(0)}%
+                                                    </Typography>
+                                                </Box>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={job.resource_usage.cpu_usage_percent}
+                                                    sx={{ height: 6, mb: 1 }}
+                                                    color="primary"
+                                                />
+
+                                                <Box display="flex" justifyContent="space-between" mb={1}>
+                                                    <Typography variant="body2">메모리</Typography>
+                                                    <Typography variant="body2">
+                                                        {job.resource_usage.memory_usage_gb.toFixed(1)} GB
+                                                    </Typography>
+                                                </Box>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={(job.resource_usage.memory_usage_gb / 16) * 100}
+                                                    sx={{ height: 6, mb: 1 }}
+                                                    color="warning"
+                                                />
+
+                                                {job.resource_usage.gpu_usage_percent && (
+                                                    <>
+                                                        <Box display="flex" justifyContent="space-between" mb={1}>
+                                                            <Typography variant="body2">GPU</Typography>
+                                                            <Typography variant="body2">
+                                                                {job.resource_usage.gpu_usage_percent.toFixed(0)}%
+                                                            </Typography>
+                                                        </Box>
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={job.resource_usage.gpu_usage_percent}
+                                                            sx={{ height: 6 }}
+                                                            color="success"
+                                                        />
+                                                    </>
+                                                )}
+                                            </Box>
+                                        </Grid>
+
+                                        <Grid item xs={12}>
+                                            <Box display="flex" gap={1}>
+                                                {job.status === 'running' && (
+                                                    <Button variant="outlined" size="small" startIcon={<Stop />} color="error">
+                                                        중지
+                                                    </Button>
+                                                )}
+                                                {job.status === 'completed' && (
+                                                    <Button variant="outlined" size="small" startIcon={<CloudUpload />}>
+                                                        배포
+                                                    </Button>
+                                                )}
+                                                <Button variant="outlined" size="small" startIcon={<Visibility />}>
+                                                    로그 보기
+                                                </Button>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>
+                                </AccordionDetails>
+                            </Accordion>
+                        ))}
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderDeploymentManagement = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>배포 관리</Typography>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>모델</TableCell>
+                                        <TableCell>환경</TableCell>
+                                        <TableCell>상태</TableCell>
+                                        <TableCell>건강 상태</TableCell>
+                                        <TableCell>트래픽</TableCell>
+                                        <TableCell>성능</TableCell>
+                                        <TableCell>배포 시간</TableCell>
+                                        <TableCell>작업</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {deployments.map((deployment) => (
+                                        <TableRow key={deployment.id}>
+                                            <TableCell>
+                                                <Typography variant="body1" fontWeight="medium">
+                                                    {models.find(m => m.id === deployment.model_id)?.name || '알 수 없는 모델'}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    {deployment.deployment_strategy}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={deployment.environment}
+                                                    size="small"
+                                                    color={deployment.environment === 'production' ? 'success' : 'warning'}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={deployment.status}
+                                                    size="small"
+                                                    color={getStatusColor(deployment.status) as any}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={deployment.health_status}
+                                                    size="small"
+                                                    color={getHealthStatusColor(deployment.health_status) as any}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {deployment.traffic_percentage}%
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={deployment.traffic_percentage}
+                                                        sx={{ width: 60, height: 6 }}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {deployment.average_response_time}ms
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    오류율: {(deployment.error_rate * 100).toFixed(2)}%
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {deployment.deployment_time.toLocaleDateString()}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" gap={1}>
+                                                    <Button variant="outlined" size="small">
+                                                        모니터링
+                                                    </Button>
+                                                    <Button variant="outlined" size="small" startIcon={<Undo />} color="warning">
+                                                        롤백
+                                                    </Button>
+                                                </Box>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderPerformanceAnalysis = () => (
+        <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>성능 트렌드</Typography>
+                        {lifecycleMetrics?.model_performance_trends && (
+                            <Box>
+                                {lifecycleMetrics.model_performance_trends.slice(0, 5).map((trend, index) => (
+                                    <Box key={index} mb={2}>
+                                        <Box display="flex" justifyContent="space-between" mb={1}>
+                                            <Typography variant="body2">
+                                                {trend.date.toLocaleDateString()} - {trend.metric_name}
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                                {(trend.average_value * 100).toFixed(1)}%
+                                            </Typography>
+                                        </Box>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={trend.average_value * 100}
+                                            sx={{ height: 8, borderRadius: 4 }}
+                                            color={trend.average_value > 0.9 ? 'success' : trend.average_value > 0.8 ? 'warning' : 'error'}
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>모델 성능 비교</Typography>
+                        <TableContainer>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>모델</TableCell>
+                                        <TableCell>정확도</TableCell>
+                                        <TableCell>응답시간</TableCell>
+                                        <TableCell>처리량</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {models.map((model) => (
+                                        <TableRow key={model.id}>
+                                            <TableCell>
+                                                <Typography variant="body2" fontWeight="medium">
+                                                    {model.name}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color={model.performance_metrics.accuracy > 0.9 ? 'success.main' : 'warning.main'}>
+                                                    {(model.performance_metrics.accuracy * 100).toFixed(1)}%
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {model.performance_metrics.inference_time_ms}ms
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {model.performance_metrics.throughput_rps} RPS
+                                                </Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            <Grid item xs={12}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" mb={2}>성능 최적화 권장사항</Typography>
+                        <List>
+                            <ListItem>
+                                <ListItemIcon><TrendingUp color="success" /></ListItemIcon>
+                                <ListItemText
+                                    primary="모델 양자화 적용"
+                                    secondary="모델 크기를 75% 줄이고 추론 속도를 50% 향상시킬 수 있습니다."
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemIcon><Memory color="warning" /></ListItemIcon>
+                                <ListItemText
+                                    primary="메모리 사용량 최적화"
+                                    secondary="배치 크기 조정을 통해 메모리 사용량을 30% 줄일 수 있습니다."
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemIcon><Speed color="info" /></ListItemIcon>
+                                <ListItemText
+                                    primary="캐싱 전략 개선"
+                                    secondary="자주 사용되는 추론 결과를 캐싱하여 응답 시간을 40% 단축할 수 있습니다."
+                                />
+                            </ListItem>
+                        </List>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    );
+
+    const renderSettings = () => (
+        <Card>
+            <CardContent>
+                <Typography variant="h6" mb={2}>모델 생명주기 관리 설정</Typography>
+                <List>
+                    <ListItem>
+                        <ListItemIcon><Refresh /></ListItemIcon>
+                        <ListItemText
+                            primary="자동 새로고침"
+                            secondary="20초마다 데이터 자동 업데이트"
+                        />
+                        <Switch
+                            checked={autoRefresh}
+                            onChange={(e) => setAutoRefresh(e.target.checked)}
+                        />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemIcon><Build /></ListItemIcon>
+                        <ListItemText
+                            primary="자동 훈련"
+                            secondary="새로운 데이터 감지 시 자동 재훈련"
+                        />
+                        <Switch defaultChecked />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemIcon><CloudUpload /></ListItemIcon>
+                        <ListItemText
+                            primary="자동 배포"
+                            secondary="성능 기준 충족 시 자동 배포"
+                        />
+                        <Switch defaultChecked />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemIcon><Warning /></ListItemIcon>
+                        <ListItemText
+                            primary="성능 알림"
+                            secondary="성능 저하 감지 시 즉시 알림"
+                        />
+                        <Switch defaultChecked />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemIcon><Undo /></ListItemIcon>
+                        <ListItemText
+                            primary="자동 롤백"
+                            secondary="심각한 오류 발생 시 자동 롤백"
+                        />
+                        <Switch defaultChecked />
+                    </ListItem>
+                </List>
+            </CardContent>
+        </Card>
+    );
+
+    const renderContent = () => {
+        switch (selectedTab) {
+            case 0: return renderModelOverview();
+            case 1: return renderModelManagement();
+            case 2: return renderTrainingJobs();
+            case 3: return renderDeploymentManagement();
+            case 4: return renderPerformanceAnalysis();
+            case 5: return renderSettings();
+            default: return renderModelOverview();
+        }
+    };
+
+    return (
+        <Box sx={{ p: 3, height: '100vh', overflow: 'auto' }}>
+            {/* 헤더 */}
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Box display="flex" alignItems="center">
+                    <ModelTraining sx={{ mr: 1, fontSize: 32 }} color="primary" />
+                    <Typography variant="h4">고급 AI 모델 생명주기 관리 대시보드</Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="body2" color="textSecondary">
+                        마지막 업데이트: {lastUpdate.toLocaleTimeString()}
+                    </Typography>
+                    <Tooltip title="전체화면">
+                        <IconButton onClick={() => setFullscreen(!fullscreen)}>
+                            {fullscreen ? <FullscreenExit /> : <Fullscreen />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            </Box>
+
+            {/* 탭 네비게이션 */}
+            <Paper sx={{ mb: 3 }}>
+                <Box display="flex" overflow="auto">
+                    {tabs.map((tab, index) => (
+                        <Button
+                            key={index}
+                            variant={selectedTab === index ? "contained" : "text"}
+                            startIcon={tab.icon}
+                            onClick={() => setSelectedTab(index)}
+                            sx={{
+                                minWidth: 'auto',
+                                px: 2,
+                                py: 1.5,
+                                borderRadius: 0,
+                                borderBottom: selectedTab === index ? 2 : 0,
+                                borderColor: 'primary.main'
+                            }}
+                        >
+                            {tab.label}
+                        </Button>
+                    ))}
+                </Box>
+            </Paper>
+
+            {/* 메인 콘텐츠 */}
+            {renderContent()}
+
+            {/* 모델 상세 다이얼로그 */}
+            <Dialog
+                open={modelDialogOpen}
+                onClose={() => setModelDialogOpen(false)}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box display="flex" alignItems="center">
+                        <ModelTraining />
+                        <Typography variant="h6" sx={{ ml: 1 }}>
+                            모델 상세 정보
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    {selectedModel && (
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="h6" mb={2}>기본 정보</Typography>
+                                <Box>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>이름:</strong> {selectedModel.name}
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>버전:</strong> {selectedModel.version}
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>타입:</strong> {selectedModel.type}
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>프레임워크:</strong> {selectedModel.framework}
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>크기:</strong> {(selectedModel.size_mb / 1024).toFixed(1)} GB
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>파라미터:</strong> {selectedModel.parameters.toLocaleString()}
+                                    </Typography>
+                                </Box>
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="h6" mb={2}>성능 메트릭</Typography>
+                                <Box>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>정확도:</strong> {(selectedModel.performance_metrics.accuracy * 100).toFixed(1)}%
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>정밀도:</strong> {(selectedModel.performance_metrics.precision * 100).toFixed(1)}%
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>재현율:</strong> {(selectedModel.performance_metrics.recall * 100).toFixed(1)}%
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>F1 점수:</strong> {selectedModel.performance_metrics.f1_score.toFixed(3)}
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>추론 시간:</strong> {selectedModel.performance_metrics.inference_time_ms}ms
+                                    </Typography>
+                                    <Typography variant="body1" mb={1}>
+                                        <strong>처리량:</strong> {selectedModel.performance_metrics.throughput_rps} RPS
+                                    </Typography>
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setModelDialogOpen(false)}>닫기</Button>
+                    <Button variant="contained" color="primary" startIcon={<Build />}>
+                        훈련 시작
+                    </Button>
+                    <Button variant="contained" color="success" startIcon={<CloudUpload />}>
+                        배포
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default AdvancedAIModelLifecycleDashboard;

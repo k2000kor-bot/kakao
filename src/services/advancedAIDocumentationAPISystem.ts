@@ -536,11 +536,15 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
 
         if (qualityScore < 0.8) {
             await realTimeAIAlertSystem.createAlert({
-                type: 'documentation',
+                type: 'info',
                 severity: 'medium',
                 title: 'API 문서화 품질 경고',
                 message: `${serviceName} API 문서화 품질이 ${(qualityScore * 100).toFixed(1)}%로 낮습니다. 개선이 필요합니다.`,
                 source: 'documentation-system',
+                category: 'system',
+                auto_resolve: true,
+                priority: 'medium',
+                tags: ['API', '문서화', '품질', '경고'],
                 metadata: { service_name: serviceName, quality_score: qualityScore }
             });
         }

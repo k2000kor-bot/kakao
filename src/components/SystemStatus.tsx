@@ -1,351 +1,212 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Activity,
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Chip,
+    Button,
+    Paper
+} from '@mui/material';
+import {
     CheckCircle,
-    AlertTriangle,
-    Clock,
-    Zap,
-    Brain,
-    Database,
-    Network,
-    Cpu,
-    HardDrive,
-    Wifi,
-    Shield,
-    TrendingUp,
-    Users,
-    FileText,
-    MessageSquare,
-    Settings,
-    BarChart3,
-    Lightbulb,
-    Target,
-    Star,
-    Award,
-    Rocket
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+    Error,
+    Refresh,
+    Speed,
+    Analytics
+} from '@mui/icons-material';
+import { integratedAPIService } from '../services/integratedAPIService';
 
-interface SystemMetric {
-    id: string;
-    name: string;
-    value: number;
-    unit: string;
-    status: 'excellent' | 'good' | 'warning' | 'critical';
-    trend: 'up' | 'down' | 'stable';
-    icon: React.ComponentType<any>;
-    description: string;
+interface SystemStatusProps {
+    onStatusChange?: (status: 'connected' | 'disconnected') => void;
 }
 
-interface SystemStatus {
-    overall: 'excellent' | 'good' | 'warning' | 'critical';
-    uptime: number;
-    lastUpdate: Date;
-    activeUsers: number;
-    totalRequests: number;
-    successRate: number;
-    averageResponseTime: number;
-    aiProcessingPower: number;
-    systemEfficiency: number;
-}
+const SystemStatus: React.FC<SystemStatusProps> = ({ onStatusChange }) => {
+    const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+    const [integratedStatus, setIntegratedStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+    const [metrics, setMetrics] = useState<{
+        total_requests: number;
+        successful_requests: number;
+        failed_requests: number;
+        average_response_time: number;
+        last_updated: string;
+    } | null>(null);
+    const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-const SystemStatus: React.FC = () => {
-    const [systemStatus, setSystemStatus] = useState<SystemStatus>({
-        overall: 'excellent',
-        uptime: 99.98,
-        lastUpdate: new Date(),
-        activeUsers: 1247,
-        totalRequests: 15420,
-        successRate: 99.7,
-        averageResponseTime: 1.2,
-        aiProcessingPower: 95.8,
-        systemEfficiency: 98.2
-    });
-
-    const [metrics, setMetrics] = useState<SystemMetric[]>([
-        {
-            id: 'ai-processing',
-            name: 'AI 처리 성능',
-            value: 95.8,
-            unit: '%',
-            status: 'excellent',
-            trend: 'up',
-            icon: Brain,
-            description: '고도화된 AI 엔진의 처리 성능'
-        },
-        {
-            id: 'response-time',
-            name: '응답 시간',
-            value: 1.2,
-            unit: 'ms',
-            status: 'excellent',
-            trend: 'down',
-            icon: Zap,
-            description: '평균 응답 시간'
-        },
-        {
-            id: 'success-rate',
-            name: '성공률',
-            value: 99.7,
-            unit: '%',
-            status: 'excellent',
-            trend: 'stable',
-            icon: CheckCircle,
-            description: '요청 처리 성공률'
-        },
-        {
-            id: 'active-users',
-            name: '활성 사용자',
-            value: 1247,
-            unit: '',
-            status: 'good',
-            trend: 'up',
-            icon: Users,
-            description: '현재 활성 사용자 수'
-        },
-        {
-            id: 'cpu-usage',
-            name: 'CPU 사용률',
-            value: 68.5,
-            unit: '%',
-            status: 'good',
-            trend: 'stable',
-            icon: Cpu,
-            description: '시스템 CPU 사용률'
-        },
-        {
-            id: 'memory-usage',
-            name: '메모리 사용률',
-            value: 72.3,
-            unit: '%',
-            status: 'good',
-            trend: 'stable',
-            icon: HardDrive,
-            description: '시스템 메모리 사용률'
-        },
-        {
-            id: 'storage-usage',
-            name: '저장소 사용률',
-            value: 45.8,
-            unit: '%',
-            status: 'excellent',
-            trend: 'stable',
-            icon: HardDrive,
-            description: '저장소 사용률'
-        },
-        {
-            id: 'network-latency',
-            name: '네트워크 지연',
-            value: 12.5,
-            unit: 'ms',
-            status: 'excellent',
-            trend: 'down',
-            icon: Network,
-            description: '네트워크 지연 시간'
-        }
-    ]);
-
-    const [isUpdating, setIsUpdating] = useState(false);
-
-    // 실시간 업데이트 시뮬레이션
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setIsUpdating(true);
-            setTimeout(() => {
-                setSystemStatus(prev => ({
-                    ...prev,
-                    lastUpdate: new Date(),
-                    activeUsers: prev.activeUsers + Math.floor(Math.random() * 10) - 5,
-                    totalRequests: prev.totalRequests + Math.floor(Math.random() * 100),
-                    successRate: Math.min(100, Math.max(95, prev.successRate + (Math.random() - 0.5) * 2)),
-                    averageResponseTime: Math.max(0.5, prev.averageResponseTime + (Math.random() - 0.5) * 0.5),
-                    aiProcessingPower: Math.min(100, Math.max(90, prev.aiProcessingPower + (Math.random() - 0.5) * 3)),
-                    systemEfficiency: Math.min(100, Math.max(95, prev.systemEfficiency + (Math.random() - 0.5) * 2))
-                }));
-
-                setMetrics(prev => prev.map(metric => ({
-                    ...metric,
-                    value: metric.id === 'ai-processing' ? systemStatus.aiProcessingPower :
-                        metric.id === 'response-time' ? systemStatus.averageResponseTime :
-                            metric.id === 'success-rate' ? systemStatus.successRate :
-                                metric.id === 'active-users' ? systemStatus.activeUsers :
-                                    metric.value + (Math.random() - 0.5) * 5
-                })));
-
-                setIsUpdating(false);
-            }, 500);
-        }, 5000);
-
-        return () => clearInterval(interval);
-    }, [systemStatus]);
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'excellent': return 'text-green-600 bg-green-50';
-            case 'good': return 'text-blue-600 bg-blue-50';
-            case 'warning': return 'text-yellow-600 bg-yellow-50';
-            case 'critical': return 'text-red-600 bg-red-50';
-            default: return 'text-gray-600 bg-gray-50';
+    const checkBackendStatus = async () => {
+        try {
+            const response = await fetch('http://localhost:5001/api/health');
+            if (response.ok) {
+                setBackendStatus('connected');
+            } else {
+                setBackendStatus('disconnected');
+            }
+        } catch (error) {
+            setBackendStatus('disconnected');
         }
     };
+
+    const checkIntegratedStatus = async () => {
+        try {
+            const isConnected = await integratedAPIService.testConnection();
+            setIntegratedStatus(isConnected ? 'connected' : 'disconnected');
+
+            if (isConnected) {
+                const status = await integratedAPIService.getSystemStatus();
+                setMetrics(status.metrics);
+            }
+        } catch (error) {
+            setIntegratedStatus('disconnected');
+        }
+    };
+
+    const refreshAll = async () => {
+        setBackendStatus('checking');
+        setIntegratedStatus('checking');
+
+        await Promise.all([
+            checkBackendStatus(),
+            checkIntegratedStatus()
+        ]);
+
+        setLastUpdate(new Date());
+    };
+
+    useEffect(() => {
+        refreshAll();
+        const interval = setInterval(refreshAll, 30000); // 30초마다 업데이트
+        return () => clearInterval(interval);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (onStatusChange) {
+            const overallStatus = backendStatus === 'connected' && integratedStatus === 'connected'
+                ? 'connected'
+                : 'disconnected';
+            onStatusChange(overallStatus);
+        }
+    }, [backendStatus, integratedStatus, onStatusChange]);
 
     const getStatusIcon = (status: string) => {
         switch (status) {
-            case 'excellent': return <CheckCircle className="h-5 w-5 text-green-600" />;
-            case 'good': return <CheckCircle className="h-5 w-5 text-blue-600" />;
-            case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
-            case 'critical': return <AlertTriangle className="h-5 w-5 text-red-600" />;
-            default: return <Clock className="h-5 w-5 text-gray-600" />;
+            case 'connected':
+                return <CheckCircle color="success" />;
+            case 'disconnected':
+                return <Error color="error" />;
+            default:
+                return <Refresh color="action" />;
         }
     };
 
-    const getTrendIcon = (trend: string) => {
-        switch (trend) {
-            case 'up': return <TrendingUp className="h-4 w-4 text-green-600" />;
-            case 'down': return <TrendingUp className="h-4 w-4 text-red-600 transform rotate-180" />;
-            case 'stable': return <Activity className="h-4 w-4 text-blue-600" />;
-            default: return <Activity className="h-4 w-4 text-gray-600" />;
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'connected':
+                return 'success';
+            case 'disconnected':
+                return 'error';
+            default:
+                return 'default';
         }
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            {/* 헤더 */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
-                        <Rocket className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">CORBU.AI 시스템 상태</h2>
-                        <p className="text-sm text-gray-500">실시간 시스템 모니터링 및 성능 지표</p>
-                    </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(systemStatus.overall)}`}>
-                        {getStatusIcon(systemStatus.overall)}
-                        <span className="ml-1">
-                            {systemStatus.overall === 'excellent' ? '우수' :
-                                systemStatus.overall === 'good' ? '양호' :
-                                    systemStatus.overall === 'warning' ? '주의' : '위험'}
-                        </span>
-                    </div>
-                    {isUpdating && (
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        >
-                            <Activity className="h-5 w-5 text-blue-600" />
-                        </motion.div>
-                    )}
-                </div>
-            </div>
+        <Paper sx={{ p: 2, mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Analytics />
+                    시스템 상태
+                </Typography>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={refreshAll}
+                    startIcon={<Refresh />}
+                >
+                    새로고침
+                </Button>
+            </Box>
 
-            {/* 전체 상태 카드 */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-green-600 font-medium">시스템 가동률</p>
-                            <p className="text-2xl font-bold text-green-700">{systemStatus.uptime}%</p>
-                        </div>
-                        <CheckCircle className="h-8 w-8 text-green-600" />
-                    </div>
-                </div>
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-blue-600 font-medium">활성 사용자</p>
-                            <p className="text-2xl font-bold text-blue-700">{systemStatus.activeUsers.toLocaleString()}</p>
-                        </div>
-                        <Users className="h-8 w-8 text-blue-600" />
-                    </div>
-                </div>
-                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-purple-600 font-medium">AI 처리 성능</p>
-                            <p className="text-2xl font-bold text-purple-700">{systemStatus.aiProcessingPower}%</p>
-                        </div>
-                        <Brain className="h-8 w-8 text-purple-600" />
-                    </div>
-                </div>
-                <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-orange-600 font-medium">시스템 효율성</p>
-                            <p className="text-2xl font-bold text-orange-700">{systemStatus.systemEfficiency}%</p>
-                        </div>
-                        <Target className="h-8 w-8 text-orange-600" />
-                    </div>
-                </div>
-            </div>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ flex: 1, minWidth: '300px' }}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                {getStatusIcon(backendStatus)}
+                                <Typography variant="subtitle1">기본 백엔드</Typography>
+                                <Chip
+                                    label={backendStatus === 'connected' ? '연결됨' : backendStatus === 'disconnected' ? '연결 끊김' : '확인 중'}
+                                    color={getStatusColor(backendStatus) as 'success' | 'error' | 'default'}
+                                    size="small"
+                                />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                                포트 5001 - Flask 서버
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Box>
 
-            {/* 상세 메트릭 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {metrics.map((metric) => {
-                    const IconComponent = metric.icon;
-                    return (
-                        <motion.div
-                            key={metric.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                        >
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="p-2 bg-gray-100 rounded-lg">
-                                    <IconComponent className="h-5 w-5 text-gray-600" />
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                    {getTrendIcon(metric.trend)}
-                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(metric.status)}`}>
-                                        {metric.status === 'excellent' ? '우수' :
-                                            metric.status === 'good' ? '양호' :
-                                                metric.status === 'warning' ? '주의' : '위험'}
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">{metric.name}</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {metric.value.toFixed(metric.unit === '%' ? 1 : 1)}{metric.unit}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">{metric.description}</p>
-                            </div>
-                        </motion.div>
-                    );
-                })}
-            </div>
+                <Box sx={{ flex: 1, minWidth: '300px' }}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                {getStatusIcon(integratedStatus)}
+                                <Typography variant="subtitle1">통합 API 서버</Typography>
+                                <Chip
+                                    label={integratedStatus === 'connected' ? '연결됨' : integratedStatus === 'disconnected' ? '연결 끊김' : '확인 중'}
+                                    color={getStatusColor(integratedStatus) as 'success' | 'error' | 'default'}
+                                    size="small"
+                                />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                                포트 5002 - 통합 AI 서버
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Box>
+            </Box>
 
-            {/* 시스템 성과 */}
-            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                <div className="flex items-center space-x-3 mb-3">
-                    <Award className="h-6 w-6 text-purple-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">시스템 성과</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">{systemStatus.totalRequests.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">총 요청 수</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">{systemStatus.successRate.toFixed(1)}%</div>
-                        <div className="text-sm text-gray-600">성공률</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{systemStatus.averageResponseTime.toFixed(1)}ms</div>
-                        <div className="text-sm text-gray-600">평균 응답 시간</div>
-                    </div>
-                </div>
-            </div>
+            {metrics && (
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Speed />
+                        성능 메트릭
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                            icon={<Analytics />}
+                            label={`총 요청: ${metrics.total_requests}`}
+                            size="small"
+                            variant="outlined"
+                        />
+                        <Chip
+                            icon={<CheckCircle />}
+                            label={`성공: ${metrics.successful_requests}`}
+                            size="small"
+                            variant="outlined"
+                            color="success"
+                        />
+                        <Chip
+                            icon={<Error />}
+                            label={`실패: ${metrics.failed_requests}`}
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                        />
+                        <Chip
+                            icon={<Speed />}
+                            label={`응답시간: ${(metrics.average_response_time * 1000).toFixed(2)}ms`}
+                            size="small"
+                            variant="outlined"
+                        />
+                    </Box>
+                </Box>
+            )}
 
-            {/* 마지막 업데이트 */}
-            <div className="mt-4 text-center">
-                <p className="text-sm text-gray-500">
-                    마지막 업데이트: {systemStatus.lastUpdate.toLocaleTimeString()}
-                </p>
-            </div>
-        </div>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                마지막 업데이트: {lastUpdate.toLocaleTimeString()}
+            </Typography>
+        </Paper>
     );
 };
 

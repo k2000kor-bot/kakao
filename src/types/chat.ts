@@ -3,6 +3,9 @@ export interface Message {
   content: string;
   sender: string;
   timestamp: string;
+  role?: 'user' | 'assistant' | 'system';
+  chatId?: string;
+  isBookmarked?: boolean;
   isMe?: boolean;
   isUser?: boolean; // 사용자 메시지 여부 추가
   type?: 'text' | 'image' | 'file' | 'system' | 'voice' | 'media' | 'ai_response' | 'analysis' | 'chart' | 'data' | 'error';
@@ -116,12 +119,20 @@ export interface ChatSession {
   lastMessage?: string;
   participants: string[];
   tags: string[];
-  type?: 'general' | 'file_chat' | 'guideline_chat'; // 채팅 타입 추가
+  type?: 'general' | 'file_chat' | 'guideline_chat' | 'persistent_chat'; // 채팅 타입 추가
   parentChatId?: string; // 부모 채팅 ID
+  childChatIds?: string[]; // 하위 채팅 ID들
+  status: 'active' | 'archived' | 'deleted'; // 세션 상태
+  lastActivity: string; // 마지막 활동 시간
+  totalMessages: number; // 전체 메시지 수
+  isPersistent: boolean; // 지속적 채팅 여부
   metadata?: {
     totalTokens?: number;
     averageResponseTime?: number;
     userSatisfaction?: number;
+    conversationDepth?: number; // 대화 깊이
+    topicCount?: number; // 다룬 주제 수
+    sessionDuration?: number; // 세션 지속 시간 (분)
   };
 }
 

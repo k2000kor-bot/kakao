@@ -16,7 +16,7 @@ import {
     RotateCcw,
     Settings,
     Filter,
-    BarChart3,
+    BarChart,
     Lightbulb,
     CheckCircle,
     AlertTriangle,
@@ -402,7 +402,7 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                     {[
                         { id: 'chat', label: '대화', icon: MessageSquare },
                         { id: 'files', label: '파일', icon: FileText },
-                        { id: 'analysis', label: '분석', icon: BarChart3 },
+                        { id: 'analysis', label: '분석', icon: BarChart },
                         { id: 'insights', label: '인사이트', icon: Lightbulb },
                         { id: 'settings', label: '설정', icon: Settings }
                     ].map((tab) => {
@@ -678,7 +678,7 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                                                     {Math.round(selectedFile.analysis.complexity * 100)}%
                                                 </p>
                                             </div>
-                                            <BarChart3 className="h-8 w-8 text-blue-600" />
+                                            <BarChart className="h-8 w-8 text-blue-600" />
                                         </div>
                                     </div>
                                     <div className="bg-white border border-gray-200 rounded-lg p-4">

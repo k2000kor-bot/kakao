@@ -1,0 +1,387 @@
+2025-09-11 12:48:13,250 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 12:48:13,250 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 12:48:13,250 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 12:48:13,496 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.0.70:5002
+2025-09-11 12:48:13,496 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-11 12:48:13,499 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 12:48:13,782 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 12:48:13,782 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 12:48:13,782 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 12:48:13,821 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:48:13,830 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:48:19,064 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:48:19] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 12:48:22,800 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:48:22] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:48:26,087 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:48:26] "GET /api/integrated/status HTTP/1.1" 200 -
+2025-09-11 12:50:43,992 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:50:43] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 12:55:12,899 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 12:55:12,900 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 12:55:12,900 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 12:55:13,215 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.0.70:5002
+2025-09-11 12:55:13,215 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-11 12:55:13,217 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 12:55:13,553 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 12:55:13,553 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 12:55:13,553 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 12:55:13,594 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:55:13,606 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:55:17,915 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:55:17] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 12:55:21,790 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:55:21] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:55:24,547 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:55:24] "GET /api/integrated/metrics HTTP/1.1" 200 -
+2025-09-11 12:55:32,335 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:55:32] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 12:56:08,953 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:56:08] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:56:56,685 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:56:56] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:57:02,357 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:57:02] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:57:05,776 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:57:05] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:57:10,423 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:57:10] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 12:58:21,797 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:21] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:58:26,854 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:26] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:58:26,871 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:26] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:58:26,874 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:26] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:58:26,879 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:26] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:58:26,885 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:26] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 12:58:26,907 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:26] "GET /api/integrated/metrics HTTP/1.1" 200 -
+2025-09-11 12:58:52,925 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:52] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 12:59:26,760 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 12:59:27,009 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 12:59:27,744 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 12:59:27,745 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 12:59:27,745 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 12:59:27,820 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:59:27,960 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:59:46,089 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 12:59:46,219 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 12:59:46,762 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 12:59:46,763 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 12:59:46,764 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 12:59:46,842 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:59:46,888 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:59:54,041 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:59:54] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:00:01,846 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:00:01,846 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:00:01,846 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:00:02,059 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.0.70:5002
+2025-09-11 13:00:02,060 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-11 13:00:02,062 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:00:02,645 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:00:02,645 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:00:02,645 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:00:02,711 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:00:02,731 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:00:11,729 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:11] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:00:20,162 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:20] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:00:24,273 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:24] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:00:27,953 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:27] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:00:34,974 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:34] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:00:38,332 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:38] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:00:47,838 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:47] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:00:47,866 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:47] "GET /api/integrated/metrics HTTP/1.1" 200 -
+2025-09-11 13:01:02,768 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:01:02,883 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:01:03,421 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:01:03,422 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:01:03,422 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:01:03,499 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:01:03,533 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:02:58,492 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:02:58,578 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:02:58,965 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:02:58,965 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:02:58,965 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:02:59,012 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:02:59,023 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:03:03,062 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:03:03,153 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:03:03,546 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:03:03,547 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:03:03,547 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:03:03,602 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:03:03,615 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:03:06,031 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:03:06] "GET /api/integrated/analytics HTTP/1.1" 200 -
+2025-09-11 13:03:16,085 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:03:16] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:03:16,105 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:03:16] "GET /api/integrated/analytics HTTP/1.1" 200 -
+2025-09-11 13:03:16,123 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:03:16] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:03:41,177 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:03:41,321 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:03:42,237 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:03:42,237 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:03:42,238 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:03:42,329 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:03:42,353 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:05:44,995 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:05:45,131 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:05:45,675 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:05:45,676 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:05:45,676 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:05:45,734 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:05:45,750 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:05:49,618 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:05:49] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:05:53,186 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:05:53] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:06:04,399 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:06:04] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:06:04,556 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:06:04] "GET /api/integrated/analytics HTTP/1.1" 200 -
+2025-09-11 13:06:04,611 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:06:04] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:06:26,901 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:06:27,108 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:06:27,849 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:06:27,850 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:06:27,850 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:06:27,926 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:06:27,960 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:07:43,181 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:07:43,295 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:07:43,682 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:07:43,683 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:07:43,683 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:07:43,733 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:07:43,744 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:07:46,470 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:07:46] "GET /api/integrated/logs HTTP/1.1" 200 -
+2025-09-11 13:07:57,736 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:07:57] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:07:57,764 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:07:57] "GET /api/integrated/analytics HTTP/1.1" 200 -
+2025-09-11 13:07:57,787 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:07:57] "GET /api/integrated/logs HTTP/1.1" 200 -
+2025-09-11 13:07:57,834 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:07:57] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:08:22,215 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:08:22,371 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:08:23,177 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:08:23,177 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:08:23,177 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:08:23,246 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:08:23,277 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:19:59,034 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:19:59,178 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:19:59,576 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:19:59,576 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:19:59,576 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:19:59,634 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:19:59,670 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:20:27,780 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:20:27,867 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:20:28,398 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:20:28,399 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:20:28,399 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:20:28,459 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:20:28,471 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:20:30,017 - __main__ - INFO - 📖 romance 장르의 스토리가 생성되었습니다.
+2025-09-11 13:20:30,018 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:20:30] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:20:32,792 - __main__ - INFO - 🎭 lyric 형태의 시가 생성되었습니다.
+2025-09-11 13:20:32,793 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:20:32] "POST /api/integrated/creative/poem HTTP/1.1" 200 -
+2025-09-11 13:20:35,907 - __main__ - INFO - 📊 글쓰기 분석이 완료되었습니다.
+2025-09-11 13:20:35,907 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:20:35] "POST /api/integrated/creative/analyze HTTP/1.1" 200 -
+2025-09-11 13:21:35,057 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:35] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:21:35,087 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:35] "GET /api/integrated/analytics HTTP/1.1" 200 -
+2025-09-11 13:21:35,123 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:35] "GET /api/integrated/logs HTTP/1.1" 200 -
+2025-09-11 13:21:35,141 - __main__ - INFO - 📖 romance 장르의 스토리가 생성되었습니다.
+2025-09-11 13:21:35,142 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:35] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:21:35,163 - __main__ - INFO - 🎭 lyric 형태의 시가 생성되었습니다.
+2025-09-11 13:21:35,164 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:35] "POST /api/integrated/creative/poem HTTP/1.1" 200 -
+2025-09-11 13:21:35,207 - __main__ - INFO - 📊 글쓰기 분석이 완료되었습니다.
+2025-09-11 13:21:35,208 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:35] "POST /api/integrated/creative/analyze HTTP/1.1" 200 -
+2025-09-11 13:21:42,207 - __main__ - INFO - 📖 fantasy 장르의 스토리가 생성되었습니다.
+2025-09-11 13:21:42,207 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:42] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:21:42,226 - __main__ - INFO - 🎭 free_verse 형태의 시가 생성되었습니다.
+2025-09-11 13:21:42,226 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:42] "POST /api/integrated/creative/poem HTTP/1.1" 200 -
+2025-09-11 13:21:42,249 - __main__ - INFO - 📝 philosophical 형태의 에세이가 생성되었습니다.
+2025-09-11 13:21:42,250 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:42] "POST /api/integrated/creative/essay HTTP/1.1" 200 -
+2025-09-11 13:21:42,265 - __main__ - INFO - 📊 글쓰기 분석이 완료되었습니다.
+2025-09-11 13:21:42,265 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:42] "POST /api/integrated/creative/analyze HTTP/1.1" 200 -
+2025-09-11 13:22:07,644 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:22:07,758 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:22:08,829 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:22:08,829 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:22:08,830 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:22:08,904 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:22:08,931 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:22:13,762 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:22:13,961 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:22:14,473 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:22:14,473 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:22:14,473 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:22:14,533 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:22:14,547 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:23:54,143 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:23:54,252 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:23:54,717 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:23:54,717 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:23:54,718 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:23:54,770 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:23:54,784 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:24:00,490 - __main__ - INFO - 🏗️ 대한건설 건설사 설득 콘텐츠가 생성되었습니다.
+2025-09-11 13:24:00,491 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:24:00] "POST /api/integrated/persuasion/construction HTTP/1.1" 200 -
+2025-09-11 13:24:00,512 - __main__ - INFO - 🔨 프리미엄시공 시공사 긍정 콘텐츠가 생성되었습니다.
+2025-09-11 13:24:00,513 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:24:00] "POST /api/integrated/persuasion/contractor HTTP/1.1" 200 -
+2025-09-11 13:24:00,540 - __main__ - INFO - 📊 설득 콘텐츠 분석이 완료되었습니다.
+2025-09-11 13:24:00,541 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:24:00] "POST /api/integrated/persuasion/analyze HTTP/1.1" 200 -
+2025-09-11 13:25:10,888 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:10] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:25:10,906 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:10] "GET /api/integrated/analytics HTTP/1.1" 200 -
+2025-09-11 13:25:10,974 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:10] "GET /api/integrated/logs HTTP/1.1" 200 -
+2025-09-11 13:25:11,025 - __main__ - INFO - 📖 romance 장르의 스토리가 생성되었습니다.
+2025-09-11 13:25:11,026 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:11] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:25:11,044 - __main__ - INFO - 🎭 lyric 형태의 시가 생성되었습니다.
+2025-09-11 13:25:11,044 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:11] "POST /api/integrated/creative/poem HTTP/1.1" 200 -
+2025-09-11 13:25:11,065 - __main__ - INFO - 📊 글쓰기 분석이 완료되었습니다.
+2025-09-11 13:25:11,066 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:11] "POST /api/integrated/creative/analyze HTTP/1.1" 200 -
+2025-09-11 13:25:11,082 - __main__ - INFO - 🏗️ 우리 건설사 건설사 설득 콘텐츠가 생성되었습니다.
+2025-09-11 13:25:11,083 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:11] "POST /api/integrated/persuasion/construction HTTP/1.1" 200 -
+2025-09-11 13:25:11,101 - __main__ - INFO - 🔨 우리 시공사 시공사 긍정 콘텐츠가 생성되었습니다.
+2025-09-11 13:25:11,102 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:11] "POST /api/integrated/persuasion/contractor HTTP/1.1" 200 -
+2025-09-11 13:25:11,119 - __main__ - INFO - 📊 설득 콘텐츠 분석이 완료되었습니다.
+2025-09-11 13:25:11,120 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:11] "POST /api/integrated/persuasion/analyze HTTP/1.1" 200 -
+2025-09-11 13:25:15,729 - __main__ - INFO - 🏗️ 대한건설 건설사 설득 콘텐츠가 생성되었습니다.
+2025-09-11 13:25:15,729 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:15] "POST /api/integrated/persuasion/construction HTTP/1.1" 200 -
+2025-09-11 13:25:23,861 - __main__ - INFO - 🏗️ 대한건설 건설사 설득 콘텐츠가 생성되었습니다.
+2025-09-11 13:25:23,862 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:23] "POST /api/integrated/persuasion/construction HTTP/1.1" 200 -
+2025-09-11 13:25:23,884 - __main__ - INFO - 🔨 프리미엄시공 시공사 긍정 콘텐츠가 생성되었습니다.
+2025-09-11 13:25:23,885 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:23] "POST /api/integrated/persuasion/contractor HTTP/1.1" 200 -
+2025-09-11 13:25:23,904 - __main__ - INFO - 📊 설득 콘텐츠 분석이 완료되었습니다.
+2025-09-11 13:25:23,905 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:23] "POST /api/integrated/persuasion/analyze HTTP/1.1" 200 -
+2025-09-11 13:26:00,463 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:26:00,706 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:26:01,494 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:26:01,495 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:26:01,495 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:26:01,592 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:26:01,608 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:29:39,207 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:29:39,419 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:29:40,008 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:29:40,008 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:29:40,009 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:29:40,067 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:29:40,080 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:29:48,078 - __main__ - INFO - 📱 instagram post 콘텐츠가 생성되었습니다.
+2025-09-11 13:29:48,080 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:29:48] "POST /api/integrated/marketing/social HTTP/1.1" 200 -
+2025-09-11 13:29:48,097 - __main__ - INFO - 📧 promotional 이메일 콘텐츠가 생성되었습니다.
+2025-09-11 13:29:48,098 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:29:48] "POST /api/integrated/marketing/email HTTP/1.1" 200 -
+2025-09-11 13:29:48,115 - __main__ - INFO - 📊 마케팅 콘텐츠 분석이 완료되었습니다.
+2025-09-11 13:29:48,115 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:29:48] "POST /api/integrated/marketing/analyze HTTP/1.1" 200 -
+2025-09-11 13:31:15,119 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:31:15,133 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "GET /api/integrated/analytics HTTP/1.1" 200 -
+2025-09-11 13:31:15,148 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "GET /api/integrated/logs HTTP/1.1" 200 -
+2025-09-11 13:31:15,166 - __main__ - INFO - 📖 romance 장르의 스토리가 생성되었습니다.
+2025-09-11 13:31:15,167 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:31:15,188 - __main__ - INFO - 🎭 lyric 형태의 시가 생성되었습니다.
+2025-09-11 13:31:15,188 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/creative/poem HTTP/1.1" 200 -
+2025-09-11 13:31:15,209 - __main__ - INFO - 📊 글쓰기 분석이 완료되었습니다.
+2025-09-11 13:31:15,209 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/creative/analyze HTTP/1.1" 200 -
+2025-09-11 13:31:15,227 - __main__ - INFO - 🏗️ 우리 건설사 건설사 설득 콘텐츠가 생성되었습니다.
+2025-09-11 13:31:15,227 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/persuasion/construction HTTP/1.1" 200 -
+2025-09-11 13:31:15,247 - __main__ - INFO - 🔨 우리 시공사 시공사 긍정 콘텐츠가 생성되었습니다.
+2025-09-11 13:31:15,247 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/persuasion/contractor HTTP/1.1" 200 -
+2025-09-11 13:31:15,267 - __main__ - INFO - 📊 설득 콘텐츠 분석이 완료되었습니다.
+2025-09-11 13:31:15,267 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/persuasion/analyze HTTP/1.1" 200 -
+2025-09-11 13:31:15,285 - __main__ - INFO - 📱 instagram post 콘텐츠가 생성되었습니다.
+2025-09-11 13:31:15,286 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/marketing/social HTTP/1.1" 200 -
+2025-09-11 13:31:15,308 - __main__ - INFO - 📧 promotional 이메일 콘텐츠가 생성되었습니다.
+2025-09-11 13:31:15,309 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/marketing/email HTTP/1.1" 200 -
+2025-09-11 13:31:15,332 - __main__ - INFO - 📊 마케팅 콘텐츠 분석이 완료되었습니다.
+2025-09-11 13:31:15,332 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "POST /api/integrated/marketing/analyze HTTP/1.1" 200 -
+2025-09-11 13:31:22,204 - __main__ - INFO - 📱 instagram post 콘텐츠가 생성되었습니다.
+2025-09-11 13:31:22,205 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:22] "POST /api/integrated/marketing/social HTTP/1.1" 200 -
+2025-09-11 13:31:22,221 - __main__ - INFO - 📧 promotional 이메일 콘텐츠가 생성되었습니다.
+2025-09-11 13:31:22,221 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:22] "POST /api/integrated/marketing/email HTTP/1.1" 200 -
+2025-09-11 13:31:22,247 - __main__ - INFO - 📊 마케팅 콘텐츠 분석이 완료되었습니다.
+2025-09-11 13:31:22,248 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:22] "POST /api/integrated/marketing/analyze HTTP/1.1" 200 -
+2025-09-11 13:32:07,155 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:32:07,306 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:32:07,731 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:32:07,731 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:32:07,732 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:32:07,814 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:32:07,861 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:35:34,024 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:35:34,153 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:35:34,607 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:35:34,607 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:35:34,607 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:35:34,662 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:35:34,697 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:35:42,400 - __main__ - INFO - 📊 sentiment_trend 고급 분석이 완료되었습니다.
+2025-09-11 13:35:42,401 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:35:42] "POST /api/integrated/analytics/advanced HTTP/1.1" 200 -
+2025-09-11 13:35:42,419 - __main__ - INFO - 🔮 user_satisfaction 예측 분석이 완료되었습니다.
+2025-09-11 13:35:42,420 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:35:42] "POST /api/integrated/analytics/predictions HTTP/1.1" 200 -
+2025-09-11 13:35:42,492 - __main__ - INFO - 💡 business 인사이트가 생성되었습니다.
+2025-09-11 13:35:42,493 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:35:42] "POST /api/integrated/analytics/insights HTTP/1.1" 200 -
+2025-09-11 13:38:49,223 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:38:49,386 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:38:49,849 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:38:49,849 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:38:49,849 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:38:49,911 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:38:49,934 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:38:55,213 - __main__ - INFO - ⚡ performance AI 모델 최적화가 완료되었습니다.
+2025-09-11 13:38:55,214 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:38:55] "POST /api/integrated/ai/optimize HTTP/1.1" 200 -
+2025-09-11 13:38:55,231 - __main__ - INFO - 🏆 comprehensive AI 모델 벤치마크가 완료되었습니다.
+2025-09-11 13:38:55,232 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:38:55] "POST /api/integrated/ai/benchmark HTTP/1.1" 200 -
+2025-09-11 13:38:55,250 - __main__ - INFO - 📝 user_rating 피드백이 처리되었습니다.
+2025-09-11 13:38:55,250 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:38:55] "POST /api/integrated/ai/feedback HTTP/1.1" 200 -
+2025-09-11 13:40:21,836 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:40:21] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:40:21,858 - __main__ - INFO - 📊 sentiment_trend 고급 분석이 완료되었습니다.
+2025-09-11 13:40:21,858 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:40:21] "POST /api/integrated/analytics/advanced HTTP/1.1" 200 -
+2025-09-11 13:40:21,881 - __main__ - INFO - ⚡ performance AI 모델 최적화가 완료되었습니다.
+2025-09-11 13:40:21,882 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:40:21] "POST /api/integrated/ai/optimize HTTP/1.1" 200 -
+2025-09-11 13:40:21,904 - __main__ - INFO - 🏆 comprehensive AI 모델 벤치마크가 완료되었습니다.
+2025-09-11 13:40:21,904 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:40:21] "POST /api/integrated/ai/benchmark HTTP/1.1" 200 -
+2025-09-11 13:40:21,926 - __main__ - INFO - 📝 user_rating 피드백이 처리되었습니다.
+2025-09-11 13:40:21,926 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:40:21] "POST /api/integrated/ai/feedback HTTP/1.1" 200 -
+2025-09-11 13:40:44,069 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:40:44,174 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:40:44,851 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:40:44,851 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:40:44,851 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:40:44,925 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:40:44,947 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:40:49,346 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:40:49,442 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:40:49,892 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:40:49,892 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:40:49,893 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:40:49,951 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:40:49,971 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:42:11,927 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:11] "GET /api/integrated/health HTTP/1.1" 200 -
+2025-09-11 13:42:24,900 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:24] "POST /api/integrated/analyze HTTP/1.1" 200 -
+2025-09-11 13:42:24,918 - __main__ - INFO - 📖 romance 장르의 스토리가 생성되었습니다.
+2025-09-11 13:42:24,918 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:24] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:42:24,941 - __main__ - INFO - 🏗️ 대한건설 건설사 설득 콘텐츠가 생성되었습니다.
+2025-09-11 13:42:24,941 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:24] "POST /api/integrated/persuasion/construction HTTP/1.1" 200 -
+2025-09-11 13:42:24,960 - __main__ - INFO - 📱 instagram post 콘텐츠가 생성되었습니다.
+2025-09-11 13:42:24,961 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:24] "POST /api/integrated/marketing/social HTTP/1.1" 200 -
+2025-09-11 13:42:24,978 - __main__ - INFO - 📊 sentiment_trend 고급 분석이 완료되었습니다.
+2025-09-11 13:42:24,978 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:24] "POST /api/integrated/analytics/advanced HTTP/1.1" 200 -
+2025-09-11 13:42:24,998 - __main__ - INFO - 🔮 user_satisfaction 예측 분석이 완료되었습니다.
+2025-09-11 13:42:24,999 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:24] "POST /api/integrated/analytics/predictions HTTP/1.1" 200 -
+2025-09-11 13:42:25,020 - __main__ - INFO - ⚡ performance AI 모델 최적화가 완료되었습니다.
+2025-09-11 13:42:25,021 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:25] "POST /api/integrated/ai/optimize HTTP/1.1" 200 -
+2025-09-11 13:42:25,050 - __main__ - INFO - 🏆 comprehensive AI 모델 벤치마크가 완료되었습니다.
+2025-09-11 13:42:25,051 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:25] "POST /api/integrated/ai/benchmark HTTP/1.1" 200 -
+2025-09-11 13:42:25,067 - __main__ - INFO - 📝 user_rating 피드백이 처리되었습니다.
+2025-09-11 13:42:25,068 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:25] "POST /api/integrated/ai/feedback HTTP/1.1" 200 -
+2025-09-11 13:42:32,605 - __main__ - INFO - 📖 romance 장르의 스토리가 생성되었습니다.
+2025-09-11 13:42:32,605 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:32] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:42:32,626 - __main__ - INFO - 🏗️ 대한건설 건설사 설득 콘텐츠가 생성되었습니다.
+2025-09-11 13:42:32,627 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:32] "POST /api/integrated/persuasion/construction HTTP/1.1" 200 -
+2025-09-11 13:42:32,658 - __main__ - INFO - 📱 instagram post 콘텐츠가 생성되었습니다.
+2025-09-11 13:42:32,661 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:32] "POST /api/integrated/marketing/social HTTP/1.1" 200 -
+2025-09-11 13:42:39,116 - __main__ - INFO - 📖 romance 장르의 스토리가 생성되었습니다.
+2025-09-11 13:42:39,117 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:39] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:42:39,130 - __main__ - INFO - 🏗️ 대한건설 건설사 설득 콘텐츠가 생성되었습니다.
+2025-09-11 13:42:39,130 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:39] "POST /api/integrated/persuasion/construction HTTP/1.1" 200 -
+2025-09-11 13:42:39,143 - __main__ - INFO - 📱 instagram post 콘텐츠가 생성되었습니다.
+2025-09-11 13:42:39,143 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:39] "POST /api/integrated/marketing/social HTTP/1.1" 200 -
+2025-09-11 13:42:43,256 - __main__ - INFO - 📖 romance 장르의 스토리가 생성되었습니다.
+2025-09-11 13:42:43,256 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:42:43] "POST /api/integrated/creative/story HTTP/1.1" 200 -
+2025-09-11 13:44:19,705 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/backend/api/main.py', reloading
+2025-09-11 13:44:19,848 - werkzeug - INFO -  * Restarting with stat
+2025-09-11 13:44:20,625 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-09-11 13:44:20,626 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-09-11 13:44:20,626 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-09-11 13:44:20,690 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:44:20,703 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:45:18,507 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:45:18] "[33mGET /api/health HTTP/1.1[0m" 404 -
+2025-09-11 13:45:30,225 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:45:30] "[33mGET /api/health HTTP/1.1[0m" 404 -

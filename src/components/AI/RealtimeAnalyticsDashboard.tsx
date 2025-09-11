@@ -9,10 +9,9 @@ import {
     MessageSquare,
     Target,
     Zap,
-    BarChart3,
-    PieChart,
     LineChart,
-    Gauge
+    Gauge,
+    BarChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -176,7 +175,7 @@ const RealtimeAnalyticsDashboard: React.FC = () => {
             <div className="flex items-center justify-between p-6 border-b">
                 <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="w-6 h-6 text-white" />
+                        <BarChart className="w-6 h-6 text-white" />
                     </div>
                     <div>
                         <h2 className="text-xl font-semibold text-gray-900">실시간 분석 대시보드</h2>

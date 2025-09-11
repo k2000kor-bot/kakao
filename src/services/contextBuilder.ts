@@ -13,11 +13,7 @@ export function buildProjectContext(project?: Project | null, history?: BuiltCon
     return {
         project_id: project.id,
         project_name: project.name,
-        guidelines: Array.isArray(project.guidelines)
-            ? (project.guidelines as Guideline[])
-                .filter((g: Guideline) => g.isActive)
-                .map((g: Guideline) => ({ id: g.id, title: g.title, content: g.content }))
-            : project.guidelines ? [{ id: '1', title: '프로젝트 지침', content: project.guidelines }] : [],
+        guidelines: project.instructions ? [{ id: '1', title: '프로젝트 지침', content: project.instructions }] : [],
         files: (project.files || []).map((f: ProjectFile) => ({ id: f.id, name: f.name, type: f.type, size: f.size, url: f.url })),
         history
     };

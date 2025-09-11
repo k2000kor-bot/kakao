@@ -7,7 +7,7 @@ import {
     CheckCircle,
     Clock,
     Users,
-    BarChart3,
+    BarChart,
     Activity,
     Zap,
     Eye,
@@ -351,7 +351,7 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                 <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mt-4">
                     {[
                         { id: 'live', label: '실시간', icon: Activity },
-                        { id: 'analysis', label: '분석', icon: BarChart3 },
+                        { id: 'analysis', label: '분석', icon: BarChart },
                         { id: 'insights', label: '인사이트', icon: Lightbulb },
                         { id: 'recommendations', label: '추천', icon: Target },
                         { id: 'settings', label: '설정', icon: Settings }

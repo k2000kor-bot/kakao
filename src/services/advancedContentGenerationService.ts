@@ -158,8 +158,11 @@ class AdvancedContentGenerationService {
       readabilityScore: this.calculateReadabilityScore(researchData),
       seoScore: this.calculateSEOScore(query, researchData),
       engagementPrediction: this.predictEngagement(researchData),
-      recommendations: this.generateRecommendations(analysis)
+      recommendations: []
     };
+
+    // 추천사항 생성
+    analysis.recommendations = this.generateRecommendations(analysis);
 
     return analysis;
   }
@@ -350,7 +353,7 @@ class AdvancedContentGenerationService {
     return chats.slice(0, 5).map(chat => ({
       id: this.generateId(),
       type: 'chat_history',
-      title: `채팅 기록 - ${chat.author}`,
+      title: `채팅 기록 - ${chat.authorId || 'Unknown'}`,
       content: chat.content,
       credibility: 0.7,
       freshness: 0.6,
@@ -362,7 +365,7 @@ class AdvancedContentGenerationService {
     // 키워드 추출 로직 (TF-IDF 기반)
     const words = query.toLowerCase().split(/\s+/);
     const sourceWords = sources.flatMap(s => s.content.toLowerCase().split(/\s+/));
-    
+
     // 간단한 키워드 추출 (실제로는 NLP 라이브러리 사용)
     return [...new Set([...words, ...sourceWords.slice(0, 10)])];
   }
@@ -371,11 +374,11 @@ class AdvancedContentGenerationService {
     // 감정 분석 로직
     const positiveWords = ['좋은', '훌륭한', '성공', '개선', '향상'];
     const negativeWords = ['문제', '실패', '어려움', '위험', '실패'];
-    
+
     const allContent = sources.map(s => s.content).join(' ');
     const positiveCount = positiveWords.filter(word => allContent.includes(word)).length;
     const negativeCount = negativeWords.filter(word => allContent.includes(word)).length;
-    
+
     if (positiveCount > negativeCount) return 'positive';
     if (negativeCount > positiveCount) return 'negative';
     return 'neutral';
@@ -394,7 +397,7 @@ class AdvancedContentGenerationService {
   private determineComplexity(query: string, researchData: ContentResearchData): 'basic' | 'intermediate' | 'advanced' | 'expert' {
     const wordCount = query.split(' ').length;
     const keywordComplexity = researchData.keywords.length;
-    
+
     if (wordCount > 10 || keywordComplexity > 15) return 'expert';
     if (wordCount > 7 || keywordComplexity > 10) return 'advanced';
     if (wordCount > 4 || keywordComplexity > 5) return 'intermediate';
@@ -404,7 +407,7 @@ class AdvancedContentGenerationService {
   private identifyTargetAudience(query: string, researchData: ContentResearchData): string[] {
     const audiences = ['일반 사용자', '전문가', '학생', '관리자'];
     const complexity = this.determineComplexity(query, researchData);
-    
+
     switch (complexity) {
       case 'expert': return ['전문가'];
       case 'advanced': return ['전문가', '관리자'];
@@ -476,9 +479,9 @@ class AdvancedContentGenerationService {
   }
 
   private calculateStructuralComplexity(analysis: ContentAnalysis): number {
-    return analysis.complexity === 'expert' ? 0.9 : 
-           analysis.complexity === 'advanced' ? 0.7 :
-           analysis.complexity === 'intermediate' ? 0.5 : 0.3;
+    return analysis.complexity === 'expert' ? 0.9 :
+      analysis.complexity === 'advanced' ? 0.7 :
+        analysis.complexity === 'intermediate' ? 0.5 : 0.3;
   }
 
   private createOptimalOutline(analysis: ContentAnalysis, config: ContentGenerationConfig, totalLength: number): ContentSection[] {
@@ -516,7 +519,7 @@ class AdvancedContentGenerationService {
     // 정보 계층 구조 최적화
     return outline.map(section => ({
       ...section,
-      keyPoints: section.keyPoints.sort((a, b) => 
+      keyPoints: section.keyPoints.sort((a, b) =>
         this.calculatePointPriority(a, analysis) - this.calculatePointPriority(b, analysis)
       )
     }));
@@ -540,7 +543,7 @@ class AdvancedContentGenerationService {
     const baseTitle = query;
     const complexity = analysis.complexity;
     const audience = analysis.targetAudience[0];
-    
+
     return `${baseTitle}: ${audience}를 위한 ${complexity} 가이드`;
   }
 
@@ -554,15 +557,15 @@ class AdvancedContentGenerationService {
   private generateSectionContent(section: ContentSection, researchData: ContentResearchData, config: ContentGenerationConfig): string {
     const style = this.getStyleGuide(config);
     const tone = this.getToneGuide(config);
-    
+
     let content = `## ${section.title}\n\n`;
-    
+
     section.keyPoints.forEach((point, index) => {
       content += `${index + 1}. **${point}**\n`;
       content += this.generatePointContent(point, researchData, style, tone);
       content += '\n\n';
     });
-    
+
     return content;
   }
 
@@ -589,27 +592,27 @@ class AdvancedContentGenerationService {
   }
 
   private generatePointContent(point: string, researchData: ContentResearchData, style: string, tone: string): string {
-    const relevantSources = researchData.sources.filter(s => 
+    const relevantSources = researchData.sources.filter(s =>
       s.content.includes(point) || s.title.includes(point)
     );
-    
+
     if (relevantSources.length > 0) {
       const source = relevantSources[0];
       return `${source.content.substring(0, 200)}... (출처: ${source.title})`;
     }
-    
+
     return `${point}에 대한 상세한 설명과 분석을 제공합니다. 관련 연구 결과와 실무 경험을 바탕으로 한 구체적인 가이드를 제시합니다.`;
   }
 
   private combineAndOptimizeContent(sectionContents: string[], structure: ContentStructure, config: ContentGenerationConfig): string {
     let combinedContent = sectionContents.join('\n\n');
-    
+
     // 구조적 최적화
     combinedContent = this.applyStructuralOptimization(combinedContent, structure);
-    
+
     // 스타일 최적화
     combinedContent = this.applyStyleOptimization(combinedContent, config);
-    
+
     return combinedContent;
   }
 

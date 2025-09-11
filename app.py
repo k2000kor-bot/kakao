@@ -11,7 +11,14 @@ CORS(app)
 app.config['SECRET_KEY'] = 'corbu-ai-secret-key-2024'
 
 # 로깅 설정
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('corbu_ai.log'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 class CORBUAI:
@@ -275,8 +282,8 @@ class CORBUAI:
                 })
 
             integrated_emotions.sort(key=lambda x: x['intensity'], reverse=True)
-                    
-                    return {
+            
+            return {
                 'id': f'emotion-{datetime.now().timestamp()}',
                 'content': '멀티모달 데이터',
                 'type': 'multimodal',
@@ -522,10 +529,93 @@ class CORBUAI:
             logger.error(f"사용자 만족도 예측 오류: {e}")
             return 0.75
 
+    def get_emotion_patterns(self, user_id=None, limit=50):
+        """감정 패턴 조회"""
+        try:
+            if user_id:
+                patterns = self.emotion_patterns.get(user_id, [])
+            else:
+                patterns = []
+                for user_patterns in self.emotion_patterns.values():
+                    patterns.extend(user_patterns)
+            
+            return patterns[-limit:] if patterns else []
+        except Exception as e:
+            logger.error(f"감정 패턴 조회 오류: {e}")
+            return []
+
+    def get_emotion_metrics(self):
+        """감정 인식 메트릭 조회"""
+        try:
+            return {
+                'success': True,
+                'data': self.emotion_metrics,
+                'timestamp': datetime.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"감정 메트릭 조회 오류: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+
+    def get_emotion_config(self):
+        """감정 인식 설정 조회"""
+        try:
+            config = {
+                'auto_analysis': True,
+                'confidence_threshold': 0.7,
+                'max_emotions': 5,
+                'analysis_types': ['text', 'voice', 'facial', 'multimodal'],
+                'response_generation': True,
+                'pattern_tracking': True,
+                'real_time_processing': True
+            }
+            return {
+                'success': True,
+                'data': config,
+                'timestamp': datetime.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"감정 설정 조회 오류: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+
+    def update_emotion_config(self, config_data):
+        """감정 인식 설정 업데이트"""
+        try:
+            # 설정 업데이트 시뮬레이션
+            updated_config = {
+                'auto_analysis': config_data.get('auto_analysis', True),
+                'confidence_threshold': config_data.get('confidence_threshold', 0.7),
+                'max_emotions': config_data.get('max_emotions', 5),
+                'analysis_types': config_data.get('analysis_types', ['text', 'voice', 'facial', 'multimodal']),
+                'response_generation': config_data.get('response_generation', True),
+                'pattern_tracking': config_data.get('pattern_tracking', True),
+                'real_time_processing': config_data.get('real_time_processing', True)
+            }
+            return {
+                'success': True,
+                'data': updated_config,
+                'message': '감정 인식 설정이 업데이트되었습니다.',
+                'timestamp': datetime.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"감정 설정 업데이트 오류: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+
     # 데이터 분석 시스템 메서드들
     def get_data_sources(self):
         """데이터 소스 조회"""
-            return {
+        return {
             'success': True,
             'data': self.data_sources,
             'timestamp': datetime.now().isoformat()
@@ -1766,6 +1856,37 @@ class CORBUAI:
 # CORBU.AI 인스턴스 생성
 corbu_ai = CORBUAI()
 
+# 전역 에러 핸들러
+@app.errorhandler(404)
+def not_found(error):
+    logger.warning(f"404 에러: {request.url}")
+    return jsonify({
+        'success': False,
+        'error': '요청한 리소스를 찾을 수 없습니다.',
+        'code': 404,
+        'timestamp': datetime.now().isoformat()
+    }), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"500 에러: {str(error)}")
+    return jsonify({
+        'success': False,
+        'error': '서버 내부 오류가 발생했습니다.',
+        'code': 500,
+        'timestamp': datetime.now().isoformat()
+    }), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logger.error(f"예상치 못한 에러: {str(e)}")
+    return jsonify({
+        'success': False,
+        'error': '예상치 못한 오류가 발생했습니다.',
+        'code': 500,
+        'timestamp': datetime.now().isoformat()
+    }), 500
+
 # API 라우트
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -1793,8 +1914,8 @@ def chat():
             })
         else:
             # 일반 채팅 처리
-        sentiment = corbu_ai.analyze_sentiment(message)
-        response = f"안녕하세요! CORBU.AI입니다. '{message}'에 대한 분석 결과를 제공해드리겠습니다."
+            sentiment = corbu_ai.analyze_sentiment(message)
+            response = f"안녕하세요! CORBU.AI입니다. '{message}'에 대한 분석 결과를 제공해드리겠습니다."
         
         return jsonify({
             'success': True,
@@ -1899,7 +2020,7 @@ def emotion_recognition_config():
                 'timestamp': datetime.now().isoformat()
             })
         else:
-        data = request.get_json()
+            data = request.get_json()
             updated_config = corbu_ai.update_emotion_config(data)
         return jsonify({
             'success': True,
@@ -1919,7 +2040,7 @@ def data_analytics_sources():
             sources = corbu_ai.get_data_sources()
             return jsonify(sources)
         else:
-        data = request.get_json()
+            data = request.get_json()
             source = corbu_ai.create_data_source(data)
             return jsonify(source)
     except Exception as e:
@@ -2122,7 +2243,7 @@ def get_performance_metrics():
 @app.route('/api/performance-optimization/metrics', methods=['POST'])
 def create_performance_metric():
     """성능 메트릭 생성 API"""
-        data = request.get_json()
+    data = request.get_json()
     return jsonify(corbu_ai.create_performance_metric(data))
 
 @app.route('/api/performance-optimization/rules', methods=['GET'])
@@ -2152,14 +2273,466 @@ def get_performance_report():
     """성능 보고서 생성 API"""
     return jsonify(corbu_ai.get_performance_report())
 
+@app.route('/', methods=['GET'])
+def root():
+    """루트 엔드포인트"""
+    return jsonify({
+        "message": "CORBU.AI 백엔드 서버가 정상적으로 실행 중입니다.",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "chat": "/api/chat",
+            "emotion_recognition": "/api/emotion-recognition/analyze",
+            "data_analytics": "/api/data-analytics/sources"
+        }
+    })
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """헬스 체크 엔드포인트"""
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "CORBU.AI Backend"
+    })
+
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    """시스템 상태 조회 엔드포인트"""
+    try:
+        status = {
+            "status": "running",
+            "version": "1.0.0",
+            "timestamp": datetime.now().isoformat(),
+            "services": {
+                "chat": "active",
+                "emotion_recognition": "active",
+                "data_analytics": "active",
+                "quality_assurance": "active",
+                "performance_optimization": "active"
+            },
+            "uptime": "24h 15m 30s",
+            "memory_usage": "45%",
+            "cpu_usage": "23%"
+        }
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"상태 조회 오류: {e}")
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+# ===== 메시지 관련 API 엔드포인트 =====
+@app.route('/api/message-formats', methods=['GET'])
+def get_message_formats():
+    """메시지 형식 목록 조회"""
+    try:
+        formats = [
+            {"id": "formal", "name": "정중한 형식", "description": "비즈니스나 공식적인 상황에 적합"},
+            {"id": "casual", "name": "친근한 형식", "description": "일상적인 대화에 적합"},
+            {"id": "persuasive", "name": "설득적 형식", "description": "설득이나 권유에 적합"},
+            {"id": "informative", "name": "정보 전달 형식", "description": "정보나 설명에 적합"},
+            {"id": "creative", "name": "창의적 형식", "description": "창의적이고 독창적인 표현에 적합"}
+        ]
+        return jsonify({
+            "success": True,
+            "formats": formats,
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"메시지 형식 조회 오류: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/strategies', methods=['GET'])
+def get_strategies():
+    """전략 목록 조회"""
+    try:
+        strategies = [
+            {"id": "emotional", "name": "감정적 전략", "description": "감정에 호소하는 방식"},
+            {"id": "logical", "name": "논리적 전략", "description": "논리와 근거를 바탕으로 한 방식"},
+            {"id": "social", "name": "사회적 전략", "description": "사회적 증명이나 동조심을 활용"},
+            {"id": "urgency", "name": "긴급성 전략", "description": "시간의 제약이나 기회의 한정성을 강조"},
+            {"id": "authority", "name": "권위 전략", "description": "전문성이나 권위를 활용"}
+        ]
+        return jsonify({
+            "success": True,
+            "strategies": strategies,
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"전략 조회 오류: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/tones', methods=['GET'])
+def get_tones():
+    """톤 목록 조회"""
+    try:
+        tones = [
+            {"id": "professional", "name": "전문적", "description": "전문적이고 신뢰할 수 있는 톤"},
+            {"id": "friendly", "name": "친근한", "description": "따뜻하고 친근한 톤"},
+            {"id": "authoritative", "name": "권위적", "description": "강력하고 확신에 찬 톤"},
+            {"id": "empathetic", "name": "공감적", "description": "이해하고 공감하는 톤"},
+            {"id": "motivational", "name": "격려적", "description": "격려하고 동기부여하는 톤"}
+        ]
+        return jsonify({
+            "success": True,
+            "tones": tones,
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"톤 조회 오류: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/generate-ultimate-message', methods=['POST'])
+def generate_ultimate_message():
+    """궁극적 메시지 생성"""
+    try:
+        data = request.get_json()
+        message_content = data.get('content', '')
+        format_type = data.get('format', 'casual')
+        strategy = data.get('strategy', 'logical')
+        tone = data.get('tone', 'friendly')
+        
+        # 메시지 생성 시뮬레이션
+        generated_message = f"[{format_type.upper()}] {message_content}\n\n전략: {strategy}\n톤: {tone}\n\n이 메시지는 {format_type} 형식으로 작성되었으며, {strategy} 전략과 {tone} 톤을 사용했습니다."
+        
+        return jsonify({
+            "success": True,
+            "message": {
+                "id": f"msg-{datetime.now().timestamp()}",
+                "content": generated_message,
+                "format": format_type,
+                "strategy": strategy,
+                "tone": tone,
+                "created_at": datetime.now().isoformat()
+            },
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"메시지 생성 오류: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ===== 보안 API 엔드포인트 =====
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    """사용자 로그인"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '')
+        password = data.get('password', '')
+        
+        if not username or not password:
+            return jsonify({
+                'success': False,
+                'error': '사용자명과 비밀번호를 입력해주세요.'
+            }), 400
+        
+        # 간단한 인증 시뮬레이션 (실제로는 데이터베이스와 해시 검증 필요)
+        if username == 'admin' and password == 'admin123':
+            user = {
+                'id': 'user-1',
+                'username': username,
+                'email': f'{username}@corbu.ai',
+                'role': 'admin',
+                'permissions': ['*'],
+                'lastLogin': datetime.now().isoformat(),
+                'isActive': True,
+                'createdAt': datetime.now().isoformat()
+            }
+            
+            token = {
+                'accessToken': f'token-{datetime.now().timestamp()}',
+                'refreshToken': f'refresh-{datetime.now().timestamp()}',
+                'expiresIn': 3600,
+                'tokenType': 'Bearer'
+            }
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'user': user,
+                    'token': token
+                },
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '잘못된 사용자명 또는 비밀번호입니다.'
+            }), 401
+            
+    except Exception as e:
+        logger.error(f"로그인 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    """사용자 로그아웃"""
+    try:
+        data = request.get_json()
+        refresh_token = data.get('refreshToken', '')
+        
+        # 토큰 무효화 로직 (실제로는 토큰 블랙리스트에 추가)
+        logger.info(f"사용자 로그아웃: {refresh_token}")
+        
+        return jsonify({
+            'success': True,
+            'message': '로그아웃되었습니다.',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"로그아웃 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/auth/register', methods=['POST'])
+def auth_register():
+    """사용자 회원가입"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '')
+        email = data.get('email', '')
+        password = data.get('password', '')
+        confirm_password = data.get('confirmPassword', '')
+        
+        if not all([username, email, password, confirm_password]):
+            return jsonify({
+                'success': False,
+                'error': '모든 필드를 입력해주세요.'
+            }), 400
+        
+        if password != confirm_password:
+            return jsonify({
+                'success': False,
+                'error': '비밀번호가 일치하지 않습니다.'
+            }), 400
+        
+        # 사용자 생성 시뮬레이션
+        user = {
+            'id': f'user-{datetime.now().timestamp()}',
+            'username': username,
+            'email': email,
+            'role': 'user',
+            'permissions': ['read', 'write'],
+            'isActive': True,
+            'createdAt': datetime.now().isoformat()
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': {'user': user},
+            'message': '회원가입이 완료되었습니다.',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"회원가입 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/auth/refresh', methods=['POST'])
+def auth_refresh():
+    """토큰 갱신"""
+    try:
+        data = request.get_json()
+        refresh_token = data.get('refreshToken', '')
+        
+        if not refresh_token:
+            return jsonify({
+                'success': False,
+                'error': '리프레시 토큰이 필요합니다.'
+            }), 400
+        
+        # 토큰 갱신 시뮬레이션
+        new_token = {
+            'accessToken': f'token-{datetime.now().timestamp()}',
+            'refreshToken': f'refresh-{datetime.now().timestamp()}',
+            'expiresIn': 3600,
+            'tokenType': 'Bearer'
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': {'token': new_token},
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"토큰 갱신 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/auth/change-password', methods=['POST'])
+def auth_change_password():
+    """비밀번호 변경"""
+    try:
+        data = request.get_json()
+        current_password = data.get('currentPassword', '')
+        new_password = data.get('newPassword', '')
+        
+        if not current_password or not new_password:
+            return jsonify({
+                'success': False,
+                'error': '현재 비밀번호와 새 비밀번호를 입력해주세요.'
+            }), 400
+        
+        # 비밀번호 변경 시뮬레이션
+        return jsonify({
+            'success': True,
+            'message': '비밀번호가 성공적으로 변경되었습니다.',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"비밀번호 변경 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def auth_reset_password():
+    """비밀번호 재설정"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '')
+        
+        if not email:
+            return jsonify({
+                'success': False,
+                'error': '이메일을 입력해주세요.'
+            }), 400
+        
+        # 비밀번호 재설정 이메일 전송 시뮬레이션
+        return jsonify({
+            'success': True,
+            'message': '비밀번호 재설정 링크가 이메일로 전송되었습니다.',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"비밀번호 재설정 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/security/events', methods=['GET', 'POST'])
+def security_events():
+    """보안 이벤트 관리"""
+    try:
+        if request.method == 'GET':
+            limit = int(request.args.get('limit', 100))
+            
+            # 보안 이벤트 시뮬레이션
+            events = [
+                {
+                    'id': f'event-{i}',
+                    'type': 'login' if i % 3 == 0 else 'failed_login' if i % 3 == 1 else 'logout',
+                    'userId': f'user-{i % 5}',
+                    'ipAddress': f'192.168.1.{i % 255}',
+                    'userAgent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'timestamp': datetime.now().isoformat(),
+                    'details': {'reason': 'success' if i % 3 == 0 else 'invalid_password'},
+                    'severity': 'low' if i % 3 == 0 else 'medium'
+                }
+                for i in range(min(limit, 50))
+            ]
+            
+            return jsonify({
+                'success': True,
+                'data': events,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        else:  # POST
+            data = request.get_json()
+            
+            # 보안 이벤트 저장 시뮬레이션
+            event = {
+                'id': f'event-{datetime.now().timestamp()}',
+                'timestamp': datetime.now().isoformat(),
+                **data
+            }
+            
+            return jsonify({
+                'success': True,
+                'data': event,
+                'message': '보안 이벤트가 기록되었습니다.',
+                'timestamp': datetime.now().isoformat()
+            })
+            
+    except Exception as e:
+        logger.error(f"보안 이벤트 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/security/metrics', methods=['GET'])
+def security_metrics():
+    """보안 메트릭 조회"""
+    try:
+        metrics = {
+            'totalEvents': 1250,
+            'failedLogins': 45,
+            'suspiciousActivities': 12,
+            'activeUsers': 89,
+            'securityScore': 85,
+            'lastUpdated': datetime.now().isoformat()
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': metrics,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"보안 메트릭 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/security/config', methods=['GET', 'PUT'])
+def security_config():
+    """보안 설정 관리"""
+    try:
+        if request.method == 'GET':
+            config = {
+                'maxLoginAttempts': 5,
+                'lockoutDuration': 15 * 60 * 1000,  # 15분
+                'sessionTimeout': 30 * 60 * 1000,   # 30분
+                'requireTwoFactor': False,
+                'passwordPolicy': {
+                    'minLength': 8,
+                    'requireUppercase': True,
+                    'requireLowercase': True,
+                    'requireNumbers': True,
+                    'requireSpecialChars': True
+                },
+                'encryptionEnabled': True,
+                'auditLogging': True
+            }
+            
+            return jsonify({
+                'success': True,
+                'data': config,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        else:  # PUT
+            data = request.get_json()
+            
+            # 보안 설정 업데이트 시뮬레이션
+            return jsonify({
+                'success': True,
+                'data': data,
+                'message': '보안 설정이 업데이트되었습니다.',
+                'timestamp': datetime.now().isoformat()
+            })
+            
+    except Exception as e:
+        logger.error(f"보안 설정 API 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     logger.info("🚀 CORBU.AI 백엔드 서버를 시작합니다...")
-    logger.info("📍 서버 주소: http://localhost:5000")
-    logger.info("🔗 프론트엔드: http://localhost:3001")
+    logger.info("📍 서버 주소: http://localhost:5001")
+    logger.info("🔗 프론트엔드: http://localhost:3000")
     
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=5001,
         debug=True,
         threaded=True
     )

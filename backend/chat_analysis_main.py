@@ -1,12 +1,9 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Dict, List, Optional, Any
+from typing import List, Optional
 from datetime import datetime, date, time, timedelta
-import json
 import logging
-import asyncio
 import os
 from pathlib import Path
 
@@ -16,10 +13,9 @@ from public_opinion_orchestrator import PublicOpinionOrchestrator
 from conversation_summarizer import ConversationSummarizer
 from advanced_conversation_summarizer import AdvancedConversationSummarizer
 from enhanced_conversation_analyzer import EnhancedConversationAnalyzer
-from korean_enhanced_analyzer import KoreanEnhancedAnalyzer  # 한국어 특성 완전 반영
 from korean_summary_analyzer import KoreanSummaryAnalyzer  # 요약본 최적화 한국어 시스템
 from advanced_korean_ai_analyzer import AdvancedKoreanAIAnalyzer  # AI 고도화 시스템
-from ai_message_generator import AIMessageGenerator, GeneratedMessage
+from ai_message_generator import AIMessageGenerator
 from enhanced_conversation_summarizer import EnhancedConversationSummarizer
 
 # 로깅 설정

@@ -773,7 +773,7 @@ class AIMultimodalLearningPathOptimizationSystem {
       // 높은 점수: 심화 콘텐츠 제공
       const advancedContent: AdaptiveContent = {
         contentId: `advanced-${Date.now()}`,
-        type: 'project',
+        type: 'exercise',
         title: '심화 프로젝트',
         content: '학습한 내용을 활용한 심화 프로젝트',
         difficulty: 0.8,
@@ -1016,7 +1016,7 @@ class AIMultimodalLearningPathOptimizationSystem {
 
     this.learningPaths.forEach(path => {
       path.qualityMetrics.trends = path.qualityMetrics.trends.filter(
-        trend => now - trend.timestamp < maxAge
+        trend => now - new Date(trend.period).getTime() < maxAge
       );
     });
   }

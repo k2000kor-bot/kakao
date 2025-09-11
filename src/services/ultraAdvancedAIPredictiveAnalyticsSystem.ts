@@ -359,6 +359,10 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
             throw new Error(`모델 ${modelId}를 찾을 수 없습니다.`);
         }
 
+        if (!model.type) {
+            throw new Error(`모델 ${modelId}의 타입이 정의되지 않았습니다.`);
+        }
+
         if (model.status !== 'deployed' && model.status !== 'ready') {
             throw new Error(`모델 ${modelId}가 예측 준비 상태가 아닙니다.`);
         }
@@ -386,21 +390,25 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
 
             // 모델 타입에 따른 결과 생성
             let result: any;
-            switch (model.type) {
-                case 'classification':
-                    result = this.generateClassificationResult(model, inputData, confidence);
-                    break;
-                case 'regression':
-                    result = this.generateRegressionResult(model, inputData, confidence);
-                    break;
-                case 'clustering':
-                    result = this.generateClusteringResult(model, inputData, confidence);
-                    break;
-                case 'time_series':
-                    result = this.generateTimeSeriesResult(model, inputData, confidence);
-                    break;
-                default:
-                    result = { prediction: 'unknown', confidence };
+            if (!model.type) {
+                result = { prediction: 'unknown', confidence, error: '모델 타입이 정의되지 않음' };
+            } else {
+                switch (model.type) {
+                    case 'classification':
+                        result = this.generateClassificationResult(model, inputData, confidence);
+                        break;
+                    case 'regression':
+                        result = this.generateRegressionResult(model, inputData, confidence);
+                        break;
+                    case 'clustering':
+                        result = this.generateClusteringResult(model, inputData, confidence);
+                        break;
+                    case 'time_series':
+                        result = this.generateTimeSeriesResult(model, inputData, confidence);
+                        break;
+                    default:
+                        result = { prediction: 'unknown', confidence };
+                }
             }
 
             const completedPrediction: PredictionRequest = {

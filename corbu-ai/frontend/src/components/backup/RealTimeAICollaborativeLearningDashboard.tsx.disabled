@@ -1,0 +1,1000 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Chip,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Alert,
+  LinearProgress,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Slider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Tooltip,
+  IconButton,
+  Divider,
+  Tabs,
+  Tab
+} from '@mui/material';
+import {
+  Group,
+  Chat,
+  Psychology,
+  Analytics,
+  Settings,
+  Refresh,
+  Visibility,
+  Fullscreen,
+  FullscreenExit,
+  Add,
+  Edit,
+  Delete,
+  Star,
+  StarBorder,
+  TrendingUp,
+  TrendingDown,
+  CheckCircle,
+  Warning,
+  Error,
+  Info,
+  Lightbulb,
+  AutoAwesome,
+  Speed,
+  Security,
+  Business,
+  Person,
+  Schedule,
+  LocationOn,
+  ExpandMore,
+  Save,
+  Share,
+  Download,
+  Upload,
+  FilterList,
+  Sort,
+  Search,
+  Minimize,
+  Maximize,
+  ZoomIn,
+  ZoomOut,
+  FitScreen,
+  AspectRatio,
+  Crop,
+  RotateLeft,
+  RotateRight,
+  Flip,
+  Brightness4,
+  Brightness7,
+  Contrast,
+  Palette,
+  ColorLens,
+  Brush,
+  FormatPaint,
+  FormatSize,
+  FormatBold,
+  FormatItalic,
+  FormatUnderline,
+  FormatStrikethrough,
+  FormatAlignLeft,
+  FormatAlignCenter,
+  FormatAlignRight,
+  FormatAlignJustify,
+  FormatListBulleted,
+  FormatListNumbered,
+  FormatIndentIncrease,
+  FormatIndentDecrease,
+  FormatLineSpacing,
+  FormatColorFill,
+  FormatColorText,
+  FormatClear,
+  Undo,
+  Redo,
+  ContentCut,
+  ContentCopy,
+  ContentPaste,
+  Link,
+  LinkOff,
+  InsertLink,
+  InsertPhoto,
+  InsertVideo,
+  InsertChart,
+  InsertTable,
+  InsertDriveFile,
+  InsertEmoticon,
+  InsertComment,
+  InsertInvitation,
+  InsertPageBreak,
+  InsertText,
+  Functions,
+  FunctionsOutlined,
+  Calculate,
+  CalculateOutlined,
+  DataObject,
+  DataObjectOutlined,
+  Schema,
+  SchemaOutlined,
+  AccountTree,
+  AccountTreeOutlined,
+  Hub,
+  HubOutlined,
+  DeviceHub,
+  DeviceHubOutlined,
+  Share as ShareIcon,
+  ShareOutlined,
+  Cloud,
+  CloudOutlined,
+  CloudUpload,
+  CloudDownload,
+  CloudSync,
+  CloudDone,
+  CloudOff,
+  CloudQueue,
+  CloudCircle,
+  CloudDoneOutlined,
+  CloudOffOutlined,
+  CloudQueueOutlined,
+  CloudCircleOutlined,
+  Storage,
+  StorageOutlined,
+  SdStorage,
+  SdStorageOutlined,
+  Memory,
+  MemoryOutlined,
+  StorageAlt,
+  StorageAltOutlined,
+  HardDrive,
+  HardDriveOutlined,
+  SimCard,
+  SimCardOutlined,
+  SdCard,
+  SdCardOutlined,
+  Usb,
+  UsbOutlined,
+  Bluetooth,
+  BluetoothOutlined,
+  Wifi,
+  WifiOutlined,
+  WifiOff,
+  WifiOffOutlined,
+  SignalWifi4Bar,
+  SignalWifi4BarOutlined,
+  SignalWifi0Bar,
+  SignalWifi0BarOutlined,
+  SignalCellular4Bar,
+  SignalCellular4BarOutlined,
+  SignalCellular0Bar,
+  SignalCellular0BarOutlined,
+  SignalCellularAlt,
+  SignalCellularAltOutlined,
+  SignalCellularConnectedNoInternet4Bar,
+  SignalCellularConnectedNoInternet4BarOutlined,
+  SignalCellularNoSim,
+  SignalCellularNoSimOutlined,
+  SignalCellularNull,
+  SignalCellularNullOutlined,
+  SignalCellularOff,
+  SignalCellularOffOutlined,
+  SignalWifiStatusbar4Bar,
+  SignalWifiStatusbar4BarOutlined,
+  SignalWifiStatusbarConnectedNoInternet4,
+  SignalWifiStatusbarConnectedNoInternet4Outlined,
+  SignalWifiStatusbarNull,
+  SignalWifiStatusbarNullOutlined,
+  RssFeed,
+  RssFeedOutlined,
+  RssFeedRounded,
+  RssFeedSharp,
+  RssFeedTwoTone,
+  NetworkCheck,
+  NetworkCheckOutlined,
+  NetworkWifi,
+  NetworkWifiOutlined,
+  NetworkCell,
+  NetworkCellOutlined,
+  NetworkLocked,
+  NetworkLockedOutlined,
+  NetworkPing,
+  NetworkPingOutlined,
+  NetworkWifi1Bar,
+  NetworkWifi1BarOutlined,
+  NetworkWifi2Bar,
+  NetworkWifi2BarOutlined,
+  NetworkWifi3Bar,
+  NetworkWifi3BarOutlined,
+  NetworkWifi4Bar,
+  NetworkWifi4BarOutlined,
+  NetworkWifiOff,
+  NetworkWifiOffOutlined,
+  NetworkWifi1BarLocked,
+  NetworkWifi1BarLockedOutlined,
+  NetworkWifi2BarLocked,
+  NetworkWifi2BarLockedOutlined,
+  NetworkWifi3BarLocked,
+  NetworkWifi3BarLockedOutlined,
+  NetworkWifi4BarLocked,
+  NetworkWifi4BarLockedOutlined,
+  NetworkWifi1BarRounded,
+  NetworkWifi1BarSharp,
+  NetworkWifi1BarTwoTone,
+  NetworkWifi2BarRounded,
+  NetworkWifi2BarSharp,
+  NetworkWifi2BarTwoTone,
+  NetworkWifi3BarRounded,
+  NetworkWifi3BarSharp,
+  NetworkWifi3BarTwoTone,
+  NetworkWifi4BarRounded,
+  NetworkWifi4BarSharp,
+  NetworkWifi4BarTwoTone,
+  NetworkWifiOffRounded,
+  NetworkWifiOffSharp,
+  NetworkWifiOffTwoTone,
+  NetworkWifi1BarLockedRounded,
+  NetworkWifi1BarLockedSharp,
+  NetworkWifi1BarLockedTwoTone,
+  NetworkWifi2BarLockedRounded,
+  NetworkWifi2BarLockedSharp,
+  NetworkWifi2BarLockedTwoTone,
+  NetworkWifi3BarLockedRounded,
+  NetworkWifi3BarLockedSharp,
+  NetworkWifi3BarLockedTwoTone,
+  NetworkWifi4BarLockedRounded,
+  NetworkWifi4BarLockedSharp,
+  NetworkWifi4BarLockedTwoTone
+} from '@mui/icons-material';
+
+// 협업 세션 인터페이스
+interface CollaborationSession {
+  id: string;
+  name: string;
+  description: string;
+  session_type: string;
+  status: 'active' | 'inactive' | 'completed';
+  participants: Array<{
+    id: string;
+    name: string;
+    role: string;
+    contribution_score: number;
+  }>;
+  settings: {
+    ai_assistance_level: string;
+    max_participants: number;
+    collaboration_mode: string;
+  };
+  metrics: {
+    total_interactions: number;
+    average_engagement: number;
+    knowledge_shared: number;
+    collaboration_score: number;
+  };
+  created_at: Date;
+  updated_at: Date;
+}
+
+// 그룹 인텔리전스 인터페이스
+interface GroupIntelligence {
+  id: string;
+  session_id: string;
+  collective_knowledge: number;
+  problem_solving_ability: number;
+  creativity_score: number;
+  communication_efficiency: number;
+  decision_making_quality: number;
+  learning_rate: number;
+  insights: string[];
+  recommendations: string[];
+  updated_at: Date;
+}
+
+// 협업 패턴 인터페이스
+interface CollaborationPattern {
+  id: string;
+  pattern_type: string;
+  description: string;
+  effectiveness: number;
+  frequency: number;
+  participants: string[];
+  characteristics: string[];
+  recommendations: string[];
+  created_at: Date;
+}
+
+// 샘플 데이터
+const sampleSessions: CollaborationSession[] = [
+  {
+    id: 'session-001',
+    name: 'AI 프로젝트 브레인스토밍',
+    description: '새로운 AI 기능 개발을 위한 팀 브레인스토밍 세션',
+    session_type: 'brainstorming',
+    status: 'active',
+    participants: [
+      {
+        id: 'user-001',
+        name: '김철수',
+        role: 'AI 엔지니어',
+        contribution_score: 85
+      },
+      {
+        id: 'user-002',
+        name: '이영희',
+        role: 'UX 디자이너',
+        contribution_score: 78
+      },
+      {
+        id: 'user-003',
+        name: '박민수',
+        role: '프로덕트 매니저',
+        contribution_score: 92
+      }
+    ],
+    settings: {
+      ai_assistance_level: 'high',
+      max_participants: 10,
+      collaboration_mode: 'real-time'
+    },
+    metrics: {
+      total_interactions: 156,
+      average_engagement: 87,
+      knowledge_shared: 23,
+      collaboration_score: 91
+    },
+    created_at: new Date(),
+    updated_at: new Date()
+  }
+];
+
+const sampleGroupIntelligence: GroupIntelligence = {
+  id: 'gi-001',
+  session_id: 'session-001',
+  collective_knowledge: 85,
+  problem_solving_ability: 78,
+  creativity_score: 92,
+  communication_efficiency: 88,
+  decision_making_quality: 82,
+  learning_rate: 15,
+  insights: [
+    '팀의 창의성이 평균보다 15% 높습니다',
+    '문제 해결 능력이 지속적으로 향상되고 있습니다',
+    '의사소통 효율성이 최적 수준을 유지하고 있습니다'
+  ],
+  recommendations: [
+    '창의적 사고를 더욱 장려하는 활동을 추가하세요',
+    '문제 해결 과정에서 AI 지원을 활용하세요',
+    '정기적인 팀 리뷰 세션을 진행하세요'
+  ],
+  updated_at: new Date()
+};
+
+const samplePatterns: CollaborationPattern[] = [
+  {
+    id: 'pattern-001',
+    pattern_type: '브레인스토밍',
+    description: '자유로운 아이디어 공유 및 발전',
+    effectiveness: 0.85,
+    frequency: 12,
+    participants: ['user-001', 'user-002', 'user-003'],
+    characteristics: [
+      '높은 참여도',
+      '다양한 관점',
+      '빠른 아이디어 생성'
+    ],
+    recommendations: [
+      '시간 제한을 설정하여 집중도 향상',
+      'AI 아이디어 확장 도구 활용',
+      '정기적인 세션 진행'
+    ],
+    created_at: new Date()
+  }
+];
+
+const RealTimeAICollaborativeLearningDashboard: React.FC = () => {
+  const [sessions, setSessions] = useState<CollaborationSession[]>(sampleSessions);
+  const [groupIntelligence, setGroupIntelligence] = useState<GroupIntelligence>(sampleGroupIntelligence);
+  const [patterns, setPatterns] = useState<CollaborationPattern[]>(samplePatterns);
+  const [currentTab, setCurrentTab] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<CollaborationSession | null>(null);
+  const [newSessionDialogOpen, setNewSessionDialogOpen] = useState(false);
+  const [newSession, setNewSession] = useState({
+    name: '',
+    description: '',
+    session_type: 'brainstorming',
+    settings: {
+      ai_assistance_level: 'moderate',
+      max_participants: 5,
+      collaboration_mode: 'real-time'
+    }
+  });
+
+  // 탭 변경 핸들러
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
+
+  // 세션 생성 핸들러
+  const handleCreateSession = () => {
+    const session: CollaborationSession = {
+      id: `session-${Date.now()}`,
+      name: newSession.name,
+      description: newSession.description,
+      session_type: newSession.session_type,
+      status: 'active',
+      participants: [],
+      settings: newSession.settings,
+      metrics: {
+        total_interactions: 0,
+        average_engagement: 0,
+        knowledge_shared: 0,
+        collaboration_score: 0
+      },
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+
+    setSessions(prev => [...prev, session]);
+    setNewSessionDialogOpen(false);
+    setNewSession({
+      name: '',
+      description: '',
+      session_type: 'brainstorming',
+      settings: {
+        ai_assistance_level: 'moderate',
+        max_participants: 5,
+        collaboration_mode: 'real-time'
+      }
+    });
+  };
+
+  // 개요 탭 렌더링
+  const renderOverviewTab = () => (
+    <Box>
+      <Grid container spacing={3}>
+        {/* 활성 세션 */}
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                활성 협업 세션
+              </Typography>
+              <List>
+                {sessions.filter(session => session.status === 'active').map((session) => (
+                  <ListItem key={session.id} sx={{ px: 0 }}>
+                    <ListItemIcon>
+                      <Group color="primary" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={session.name}
+                      secondary={`${session.participants.length}명 참여 • ${session.metrics.total_interactions}회 상호작용`}
+                    />
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Chip
+                        label={session.session_type}
+                        color="primary"
+                        size="small"
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => {
+                          setSelectedSession(session);
+                          setSessionDialogOpen(true);
+                        }}
+                      >
+                        참여
+                      </Button>
+                    </Box>
+                  </ListItem>
+                ))}
+              </List>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setNewSessionDialogOpen(true)}
+                sx={{ mt: 2 }}
+              >
+                새 세션 생성
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 그룹 인텔리전스 요약 */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                그룹 인텔리전스
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    집단 지식: {groupIntelligence.collective_knowledge}%
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={groupIntelligence.collective_knowledge}
+                    color="primary"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    문제 해결 능력: {groupIntelligence.problem_solving_ability}%
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={groupIntelligence.problem_solving_ability}
+                    color="success"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    창의성: {groupIntelligence.creativity_score}%
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={groupIntelligence.creativity_score}
+                    color="warning"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 실시간 메트릭 */}
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                실시간 협업 메트릭
+              </Typography>
+              <Grid container spacing={2}>
+                {sessions.map((session) => (
+                  <Grid item xs={12} md={4} key={session.id}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle1" gutterBottom>
+                          {session.name}
+                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                          <Typography variant="body2">참여도</Typography>
+                          <Typography variant="body2">{session.metrics.average_engagement}%</Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={session.metrics.average_engagement}
+                          color="primary"
+                          sx={{ height: 6, borderRadius: 3 }}
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                          <Typography variant="body2">협업 점수</Typography>
+                          <Typography variant="body2">{session.metrics.collaboration_score}%</Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={session.metrics.collaboration_score}
+                          color="success"
+                          sx={{ height: 6, borderRadius: 3 }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+
+  // 상호작용 탭 렌더링
+  const renderInteractionsTab = () => (
+    <Box>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                실시간 상호작용 분석
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                AI가 실시간으로 팀 상호작용을 분석하여 협업 효율성을 향상시킵니다.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+
+  // 그룹 인텔리전스 탭 렌더링
+  const renderGroupIntelligenceTab = () => (
+    <Box>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                그룹 인텔리전스 분석
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    집단 지식
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={groupIntelligence.collective_knowledge}
+                    color="primary"
+                    sx={{ height: 10, borderRadius: 5 }}
+                  />
+                  <Typography variant="h4" sx={{ mt: 1 }}>
+                    {groupIntelligence.collective_knowledge}%
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    문제 해결 능력
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={groupIntelligence.problem_solving_ability}
+                    color="success"
+                    sx={{ height: 10, borderRadius: 5 }}
+                  />
+                  <Typography variant="h4" sx={{ mt: 1 }}>
+                    {groupIntelligence.problem_solving_ability}%
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    창의성
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={groupIntelligence.creativity_score}
+                    color="warning"
+                    sx={{ height: 10, borderRadius: 5 }}
+                  />
+                  <Typography variant="h4" sx={{ mt: 1 }}>
+                    {groupIntelligence.creativity_score}%
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                AI 인사이트
+              </Typography>
+              <List dense>
+                {groupIntelligence.insights.map((insight, index) => (
+                  <ListItem key={index} sx={{ px: 0 }}>
+                    <ListItemIcon>
+                      <Lightbulb color="primary" />
+                    </ListItemIcon>
+                    <ListItemText primary={insight} />
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                AI 권장사항
+              </Typography>
+              <List>
+                {groupIntelligence.recommendations.map((recommendation, index) => (
+                  <ListItem key={index} sx={{ px: 0 }}>
+                    <ListItemIcon>
+                      <AutoAwesome color="success" />
+                    </ListItemIcon>
+                    <ListItemText primary={recommendation} />
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+
+  // 패턴 분석 탭 렌더링
+  const renderPatternAnalysisTab = () => (
+    <Box>
+      <Grid container spacing={3}>
+        {patterns.map((pattern) => (
+          <Grid item xs={12} md={6} key={pattern.id}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Typography variant="h6">
+                    {pattern.pattern_type}
+                  </Typography>
+                  <Chip
+                    label={`${(pattern.effectiveness * 100).toFixed(0)}% 효과성`}
+                    color="success"
+                    size="small"
+                  />
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {pattern.description}
+                </Typography>
+                
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMore />}>
+                    <Typography variant="subtitle2">특징 및 권장사항</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Box>
+                      <Typography variant="subtitle2" gutterBottom>
+                        특징:
+                      </Typography>
+                      <Box display="flex" flexDirection="column" gap={1}>
+                        {pattern.characteristics.map((characteristic, index) => (
+                          <Typography key={index} variant="body2" sx={{ ml: 2 }}>
+                            • {characteristic}
+                          </Typography>
+                        ))}
+                      </Box>
+                      <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                        추천사항:
+                      </Typography>
+                      <Box display="flex" flexDirection="column" gap={1}>
+                        {pattern.recommendations.map((recommendation, index) => (
+                          <Typography key={index} variant="body2" sx={{ ml: 2 }}>
+                            • {recommendation}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Box>
+                  </AccordionDetails>
+                </Accordion>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+
+  // 설정 탭 렌더링
+  const renderSettingsTab = () => (
+    <Box>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                시스템 설정
+              </Typography>
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Button variant="contained" color="primary" startIcon={<Refresh />}>
+                  협업 학습 엔진 재시작
+                </Button>
+                <Button variant="outlined" color="secondary" startIcon={<Analytics />}>
+                  그룹 인텔리전스 분석 실행
+                </Button>
+                <Button variant="outlined" color="info" startIcon={<Psychology />}>
+                  패턴 분석 엔진 재훈련
+                </Button>
+                <Button variant="outlined" color="warning" startIcon={<Settings />}>
+                  고급 설정
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                시스템 상태
+              </Typography>
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Alert severity="success">
+                  협업 학습 시스템이 정상적으로 작동 중입니다.
+                </Alert>
+                <Alert severity="info">
+                  실시간 상호작용 분석이 활성화되어 있습니다.
+                </Alert>
+                <Alert severity="warning">
+                  일부 세션의 그룹 인텔리전스가 업데이트되었습니다.
+                </Alert>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+
+  return (
+    <Box sx={{ p: 3, height: '100vh', overflow: 'auto' }}>
+      {/* 헤더 */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            🤝 실시간 AI 협업 학습 대시보드
+          </Typography>
+          <Typography variant="body1" color="textSecondary">
+            다중 사용자 협업 학습, 그룹 인텔리전스 및 협업 패턴 분석
+          </Typography>
+        </Box>
+        <Box display="flex" gap={1}>
+          <Tooltip title="새로고침">
+            <IconButton>
+              <Refresh />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={isFullscreen ? "전체화면 해제" : "전체화면"}>
+            <IconButton onClick={() => setIsFullscreen(!isFullscreen)}>
+              {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      {/* 탭 네비게이션 */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs value={currentTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+          <Tab icon={<Group />} label="개요" />
+          <Tab icon={<Chat />} label="상호작용" />
+          <Tab icon={<Psychology />} label="그룹 인텔리전스" />
+          <Tab icon={<Analytics />} label="패턴 분석" />
+          <Tab icon={<Settings />} label="설정" />
+        </Tabs>
+      </Paper>
+
+      {/* 탭 콘텐츠 */}
+      <Box>
+        {currentTab === 0 && renderOverviewTab()}
+        {currentTab === 1 && renderInteractionsTab()}
+        {currentTab === 2 && renderGroupIntelligenceTab()}
+        {currentTab === 3 && renderPatternAnalysisTab()}
+        {currentTab === 4 && renderSettingsTab()}
+      </Box>
+
+      {/* 세션 상세 다이얼로그 */}
+      <Dialog open={sessionDialogOpen} onClose={() => setSessionDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          세션 상세 정보
+        </DialogTitle>
+        <DialogContent>
+          {selectedSession && (
+            <Box>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2">세션 타입</Typography>
+                  <Chip label={selectedSession.session_type} color="primary" />
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2">상태</Typography>
+                  <Chip label={selectedSession.status} color={selectedSession.status === 'active' ? 'success' : 'default'} />
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2">참가자 수</Typography>
+                  <Typography variant="body2">{selectedSession.participants.length}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2">AI 지원 수준</Typography>
+                  <Typography variant="body2">{selectedSession.settings.ai_assistance_level}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2">설명</Typography>
+                  <Typography variant="body2">{selectedSession.description}</Typography>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSessionDialogOpen(false)}>닫기</Button>
+          <Button variant="contained" color="primary">세션 참여</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 새 세션 생성 다이얼로그 */}
+      <Dialog open={newSessionDialogOpen} onClose={() => setNewSessionDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          새 협업 세션 생성
+        </DialogTitle>
+        <DialogContent>
+          <Box display="flex" flexDirection="column" gap={2} mt={1}>
+            <TextField
+              fullWidth
+              label="세션 이름"
+              value={newSession.name}
+              onChange={(e) => setNewSession(prev => ({ ...prev, name: e.target.value }))}
+            />
+            <TextField
+              fullWidth
+              label="설명"
+              value={newSession.description}
+              onChange={(e) => setNewSession(prev => ({ ...prev, description: e.target.value }))}
+              multiline
+              rows={3}
+            />
+            <FormControl fullWidth>
+              <InputLabel>세션 타입</InputLabel>
+              <Select
+                value={newSession.session_type}
+                onChange={(e) => setNewSession(prev => ({ ...prev, session_type: e.target.value }))}
+                label="세션 타입"
+              >
+                <MenuItem value="brainstorming">브레인스토밍</MenuItem>
+                <MenuItem value="problem_solving">문제 해결</MenuItem>
+                <MenuItem value="knowledge_sharing">지식 공유</MenuItem>
+                <MenuItem value="project_collaboration">프로젝트 협업</MenuItem>
+                <MenuItem value="peer_review">동료 검토</MenuItem>
+                <MenuItem value="group_discussion">그룹 토론</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>AI 지원 수준</InputLabel>
+              <Select
+                value={newSession.settings.ai_assistance_level}
+                onChange={(e) => setNewSession(prev => ({
+                  ...prev,
+                  settings: { ...prev.settings, ai_assistance_level: e.target.value }
+                }))}
+                label="AI 지원 수준"
+              >
+                <MenuItem value="minimal">최소</MenuItem>
+                <MenuItem value="moderate">보통</MenuItem>
+                <MenuItem value="high">높음</MenuItem>
+                <MenuItem value="full">전체</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNewSessionDialogOpen(false)}>취소</Button>
+          <Button variant="contained" color="primary" onClick={handleCreateSession}>
+            세션 생성
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default RealTimeAICollaborativeLearningDashboard;

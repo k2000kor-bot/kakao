@@ -153,7 +153,7 @@ class AdaptiveLearningEngine {
     // 사용자 행동 패턴 학습
     learnUserBehavior(projects: Project[], chats: Chat[], messages: Message[]): LearningPattern[] {
         const patterns: LearningPattern[] = [];
-        
+
         // 프로젝트 생성 패턴 분석
         const projectCreationPattern = this.analyzeProjectCreationPattern(projects);
         if (projectCreationPattern) {
@@ -230,8 +230,15 @@ class AdaptiveLearningEngine {
         if (messages.length < 10) return null;
 
         const recentMessages = messages
-            .filter(m => new Date().getTime() - m.timestamp.getTime() < 24 * 60 * 60 * 1000) // 24시간 이내
-            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+            .filter(m => {
+                const timestamp = m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp);
+                return new Date().getTime() - timestamp.getTime() < 24 * 60 * 60 * 1000; // 24시간 이내
+            })
+            .sort((a, b) => {
+                const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+                const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+                return timestampB.getTime() - timestampA.getTime();
+            });
 
         if (recentMessages.length === 0) return null;
 
@@ -258,7 +265,9 @@ class AdaptiveLearningEngine {
             const previousMessage = messages[i - 1];
 
             if (currentMessage.role === 'assistant' && previousMessage.role === 'user') {
-                const responseTime = (currentMessage.timestamp.getTime() - previousMessage.timestamp.getTime()) / (1000 * 60); // 분 단위
+                const currentTimestamp = currentMessage.timestamp instanceof Date ? currentMessage.timestamp : new Date(currentMessage.timestamp);
+                const previousTimestamp = previousMessage.timestamp instanceof Date ? previousMessage.timestamp : new Date(previousMessage.timestamp);
+                const responseTime = (currentTimestamp.getTime() - previousTimestamp.getTime()) / (1000 * 60); // 분 단위
                 totalResponseTime += responseTime;
                 responseCount++;
             }
@@ -270,7 +279,7 @@ class AdaptiveLearningEngine {
     private updateLearningPatterns(newPatterns: LearningPattern[]) {
         newPatterns.forEach(newPattern => {
             const existingIndex = this.learningPatterns.findIndex(p => p.id === newPattern.id);
-            
+
             if (existingIndex >= 0) {
                 // 기존 패턴 업데이트
                 const existing = this.learningPatterns[existingIndex];
@@ -290,13 +299,13 @@ class AdaptiveLearningEngine {
     // 최적화 결과 학습
     learnFromOptimizationResult(result: OptimizationResult): void {
         this.optimizationResults.push(result);
-        
+
         // 모델 성능 업데이트
         this.updateModelPerformance(result);
-        
+
         // 새로운 인사이트 생성
         this.generatePredictiveInsights();
-        
+
         this.saveData();
     }
 
@@ -417,7 +426,7 @@ class AdaptiveLearningEngine {
     private updatePredictiveInsights(newInsights: PredictiveInsight[]) {
         newInsights.forEach(newInsight => {
             const existingIndex = this.predictiveInsights.findIndex(i => i.id === newInsight.id);
-            
+
             if (existingIndex >= 0) {
                 // 기존 인사이트 업데이트
                 this.predictiveInsights[existingIndex] = {
@@ -434,7 +443,7 @@ class AdaptiveLearningEngine {
         // 오래된 인사이트 제거 (30일 이상)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
+
         this.predictiveInsights = this.predictiveInsights.filter(
             insight => insight.lastUpdated > thirtyDaysAgo
         );
@@ -446,7 +455,7 @@ class AdaptiveLearningEngine {
             // 모델 버전 업데이트
             model.version = (parseFloat(model.version) + 0.1).toFixed(1);
             model.lastUpdated = new Date();
-            
+
             // 성능 메트릭 개선 (시뮬레이션)
             const improvement = Math.random() * 0.05; // 0-5% 개선
             model.accuracy = Math.min(0.98, model.accuracy + improvement);
@@ -457,7 +466,7 @@ class AdaptiveLearningEngine {
 
         this.modelVersion += 0.1;
         this.saveData();
-        
+
         return this.adaptiveModels;
     }
 
@@ -477,7 +486,7 @@ class AdaptiveLearningEngine {
             .filter(r => new Date().getTime() - r.appliedAt.getTime() < 7 * 24 * 60 * 60 * 1000)
             .length;
 
-        const avgImprovement = this.optimizationResults.length > 0 
+        const avgImprovement = this.optimizationResults.length > 0
             ? this.optimizationResults.reduce((sum, r) => sum + r.improvement, 0) / this.optimizationResults.length
             : 0;
 
@@ -516,7 +525,7 @@ class AdaptiveLearningEngine {
             recommendations.push('신뢰도가 낮은 패턴들을 재분석하여 정확도를 향상시키세요.');
         }
 
-        const oldModels = this.adaptiveModels.filter(m => 
+        const oldModels = this.adaptiveModels.filter(m =>
             new Date().getTime() - m.lastUpdated.getTime() > 7 * 24 * 60 * 60 * 1000
         );
         if (oldModels.length > 0) {

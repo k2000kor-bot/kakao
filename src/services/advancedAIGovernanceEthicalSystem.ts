@@ -630,11 +630,15 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     // 개별 위반 알림 생성
     private async createViolationAlert(violation: GovernanceViolation, policy?: AIGovernancePolicy): Promise<void> {
         await realTimeAIAlertSystem.createAlert({
-            type: 'governance',
+            type: 'warning',
             severity: violation.severity,
             title: `거버넌스 정책 위반: ${violation.rule_name}`,
             message: violation.description,
             source: 'governance-system',
+            category: 'security',
+            auto_resolve: false,
+            priority: violation.severity === 'critical' ? 'critical' : violation.severity === 'high' ? 'high' : 'medium',
+            tags: ['거버넌스', '정책위반', '보안'],
             metadata: {
                 rule_id: violation.rule_id,
                 policy_name: policy?.name || 'unknown',

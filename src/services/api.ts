@@ -80,7 +80,7 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 30000,

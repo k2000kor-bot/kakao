@@ -871,7 +871,7 @@ class AIProjectManagementOptimizationSystem {
 
         this.projects.forEach(project => {
             project.performance.trends = project.performance.trends.filter(
-                trend => now - trend.timestamp < maxAge
+                trend => now - new Date(trend.period).getTime() < maxAge
             );
         });
     }

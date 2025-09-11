@@ -1,0 +1,221 @@
+2025-09-11 12:40:26,217 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:40:26,218 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:40:26,218 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:40:26,293 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:40:26,321 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:40:32,732 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+2025-09-11 12:40:33,474 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:40:33,474 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:40:33,474 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:40:33,539 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:40:33,562 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:40:52,452 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+2025-09-11 12:40:53,201 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:40:53,201 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:40:53,202 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:40:53,249 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:40:53,261 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:41:13,320 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+2025-09-11 12:41:13,977 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:41:13,977 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:41:13,977 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:41:14,023 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:41:14,033 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:41:16,281 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:41:16] "GET /api/status HTTP/1.1" 200 -
+2025-09-11 12:41:21,901 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:41:21] "GET /api/message-formats HTTP/1.1" 200 -
+2025-09-11 12:41:25,575 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:41:25] "POST /api/generate-ultimate-message HTTP/1.1" 200 -
+2025-09-11 12:41:44,160 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+2025-09-11 12:41:44,683 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:41:44,683 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:41:44,683 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:41:44,725 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:41:44,733 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:41:47,650 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+2025-09-11 12:41:48,455 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:41:48,455 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:41:48,455 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:41:48,499 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:41:48,509 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:44:00,979 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/integrated_master_api.py', reloading
+2025-09-11 12:44:01,539 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:44:01,539 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:44:01,539 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:44:01,586 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:44:01,600 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:44:13,589 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/integrated_master_api.py', reloading
+2025-09-11 12:44:14,418 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:44:14,418 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:44:14,419 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:44:14,469 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:44:14,480 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:44:34,133 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/integrated_master_api.py', reloading
+2025-09-11 12:44:34,884 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:44:34,884 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:44:34,884 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:44:34,944 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:44:35,046 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:45:27,716 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/integrated_master_api.py', reloading
+2025-09-11 12:45:28,615 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:45:28,615 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:45:28,615 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:45:28,719 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:45:28,744 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:45:43,645 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/integrated_master_api.py', reloading
+2025-09-11 12:45:44,623 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:45:44,623 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:45:44,624 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:45:44,736 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:45:44,751 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:46:23,493 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/integrated_master_api.py', reloading
+2025-09-11 12:46:24,124 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:46:24,124 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:46:24,125 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:46:24,189 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:46:24,211 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:46:59,454 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:46:59] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 12:47:23,366 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:47:23] "POST /api/chat HTTP/1.1" 200 -
+2025-09-11 12:47:26,564 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:47:26] "GET /api/status HTTP/1.1" 200 -
+2025-09-11 12:50:38,723 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:50:38] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 12:55:32,319 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:55:32] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 12:57:10,404 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:57:10] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 12:58:21,778 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:21] "POST /api/chat HTTP/1.1" 200 -
+2025-09-11 12:58:52,898 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 12:58:52] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 12:59:26,722 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 12:59:27,784 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:59:27,785 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:59:27,785 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:59:27,886 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:59:27,990 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 12:59:46,059 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 12:59:46,817 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 12:59:46,818 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 12:59:46,818 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 12:59:46,895 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 12:59:46,988 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:00:47,802 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:00:47] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 13:01:02,746 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:01:03,471 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:01:03,472 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:01:03,472 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:01:03,522 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:01:03,583 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:02:58,479 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:02:58,983 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:02:58,983 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:02:58,983 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:02:59,016 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:02:59,027 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:03:03,056 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:03:03,587 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:03:03,588 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:03:03,588 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:03:03,642 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:03:03,656 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:03:16,067 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:03:16] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 13:03:41,142 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:03:42,346 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:03:42,346 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:03:42,350 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:03:42,426 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:03:42,443 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:05:45,014 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:05:45,723 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:05:45,724 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:05:45,724 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:05:45,783 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:05:45,804 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:06:04,224 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:06:04] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 13:06:26,835 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:06:27,851 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:06:27,854 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:06:27,854 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:06:27,930 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:06:27,962 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:07:43,161 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:07:43,704 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:07:43,704 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:07:43,704 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:07:43,741 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:07:43,767 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:07:57,718 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:07:57] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 13:08:22,240 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:08:23,251 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:08:23,252 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:08:23,252 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:08:23,351 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:08:23,378 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:19:59,033 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:19:59,595 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:19:59,595 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:19:59,596 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:19:59,645 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:19:59,683 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:20:27,774 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:20:28,417 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:20:28,417 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:20:28,418 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:20:28,466 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:20:28,478 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:21:35,032 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:21:35] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 13:22:07,626 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:22:09,016 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:22:09,016 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:22:09,016 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:22:09,079 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:22:09,101 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:22:13,917 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:22:14,626 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:22:14,627 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:22:14,627 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:22:14,680 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:22:14,701 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:23:54,141 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:23:54,735 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:23:54,735 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:23:54,735 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:23:54,782 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:23:54,794 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:25:10,865 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:25:10] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 13:26:00,485 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:26:01,673 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:26:01,674 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:26:01,674 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:26:01,730 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:26:01,752 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:29:39,226 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:29:40,028 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:29:40,028 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:29:40,028 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:29:40,073 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:29:40,084 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:31:15,101 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:31:15] "GET /api/health HTTP/1.1" 200 -
+2025-09-11 13:32:07,149 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:32:07,763 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:32:07,763 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:32:07,763 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:32:07,838 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:32:07,857 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:35:33,999 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:35:34,622 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:35:34,622 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:35:34,622 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:35:34,668 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:35:34,700 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:38:49,203 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:38:49,867 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:38:49,867 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:38:49,868 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:38:49,932 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:38:49,954 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:40:44,080 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:40:44,871 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:40:44,871 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:40:44,872 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:40:44,952 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:40:44,972 - werkzeug - INFO -  * Debugger PIN: 479-034-758
+2025-09-11 13:40:49,358 - werkzeug - INFO -  * Detected change in '/Users/aD/kakao-frontend/simple_integrated_api.py', reloading
+2025-09-11 13:40:49,914 - __main__ - INFO - 🚀 CORBU.AI 백엔드 서버를 시작합니다...
+2025-09-11 13:40:49,915 - __main__ - INFO - 📍 서버 주소: http://localhost:5001
+2025-09-11 13:40:49,915 - __main__ - INFO - 🔗 프론트엔드: http://localhost:3000
+2025-09-11 13:40:49,970 - werkzeug - WARNING -  * Debugger is active!
+2025-09-11 13:40:49,992 - werkzeug - INFO -  * Debugger PIN: 479-034-758

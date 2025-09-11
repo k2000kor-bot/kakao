@@ -1,0 +1,862 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    LinearProgress,
+    IconButton,
+    Tooltip,
+    Badge,
+    Divider,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Switch,
+    FormControlLabel,
+    Slider,
+    TextField,
+    Select,
+    MenuItem,
+    InputLabel,
+    FormControl
+} from '@mui/material';
+import {
+    Hub,
+    Settings,
+    PlayArrow,
+    Stop,
+    Refresh,
+    TrendingUp,
+    TrendingDown,
+    CheckCircle,
+    Error,
+    Warning,
+    Info,
+    ExpandMore,
+    AutoAwesome,
+    Psychology,
+    Analytics,
+    Science,
+    Gavel,
+    Timeline,
+    Lightbulb,
+    Security,
+    Speed,
+    CloudSync,
+    Group,
+    Assessment,
+    Build,
+    Code,
+    DataUsage,
+    Memory,
+    Storage,
+    NetworkCheck,
+    Balance,
+    Sync
+} from '@mui/icons-material';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    RadialLinearScale,
+    Title,
+    Tooltip as ChartTooltip,
+    Legend,
+    Filler
+} from 'chart.js';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    RadialLinearScale,
+    Title,
+    ChartTooltip,
+    Legend,
+    Filler
+);
+
+interface AISystem {
+    id: string;
+    name: string;
+    status: 'active' | 'inactive' | 'error' | 'maintenance';
+    performance: number;
+    load: number;
+    priority: 'high' | 'medium' | 'low';
+    lastUpdated: string;
+    description: string;
+    dependencies: string[];
+    resources: {
+        cpu: number;
+        memory: number;
+        storage: number;
+        network: number;
+    };
+    metrics: {
+        accuracy: number;
+        latency: number;
+        throughput: number;
+        reliability: number;
+    };
+}
+
+interface SystemIntegration {
+    id: string;
+    sourceSystem: string;
+    targetSystem: string;
+    type: 'data' | 'control' | 'feedback' | 'sync';
+    status: 'active' | 'inactive' | 'error';
+    performance: number;
+    lastSync: string;
+}
+
+interface OrchestrationRule {
+    id: string;
+    name: string;
+    description: string;
+    trigger: string;
+    action: string;
+    priority: number;
+    status: 'active' | 'inactive';
+    conditions: string[];
+}
+
+interface GlobalMetrics {
+    totalSystems: number;
+    activeSystems: number;
+    overallPerformance: number;
+    systemHealth: number;
+    resourceUtilization: number;
+    integrationSuccess: number;
+}
+
+const AISystemIntegrationPlatform: React.FC = () => {
+    const [systems, setSystems] = useState<AISystem[]>([
+        {
+            id: 'ai-psychology',
+            name: 'AI 심리학 시스템',
+            status: 'active',
+            performance: 95,
+            load: 78,
+            priority: 'high',
+            lastUpdated: '2024-01-15 14:30:00',
+            description: '사용자 심리 분석 및 행동 예측',
+            dependencies: ['ai-predictive-analytics'],
+            resources: { cpu: 85, memory: 72, storage: 45, network: 68 },
+            metrics: { accuracy: 94, latency: 120, throughput: 1500, reliability: 98 }
+        },
+        {
+            id: 'ai-predictive-analytics',
+            name: 'AI 예측 분석 시스템',
+            status: 'active',
+            performance: 92,
+            load: 82,
+            priority: 'high',
+            lastUpdated: '2024-01-15 14:29:00',
+            description: '데이터 기반 예측 모델링 및 분석',
+            dependencies: ['ai-integrated-dashboard'],
+            resources: { cpu: 78, memory: 85, storage: 62, network: 75 },
+            metrics: { accuracy: 91, latency: 95, throughput: 2200, reliability: 96 }
+        },
+        {
+            id: 'ai-integrated-dashboard',
+            name: 'AI 통합 대시보드',
+            status: 'active',
+            performance: 88,
+            load: 65,
+            priority: 'medium',
+            lastUpdated: '2024-01-15 14:28:00',
+            description: '통합 데이터 시각화 및 분석',
+            dependencies: [],
+            resources: { cpu: 65, memory: 58, storage: 35, network: 45 },
+            metrics: { accuracy: 89, latency: 85, throughput: 1800, reliability: 94 }
+        },
+        {
+            id: 'ai-quality-assurance',
+            name: 'AI 품질 보증 시스템',
+            status: 'active',
+            performance: 96,
+            load: 45,
+            priority: 'high',
+            lastUpdated: '2024-01-15 14:27:00',
+            description: 'AI 시스템 품질 평가 및 모니터링',
+            dependencies: ['ai-ethics-governance'],
+            resources: { cpu: 45, memory: 52, storage: 28, network: 38 },
+            metrics: { accuracy: 97, latency: 75, throughput: 1200, reliability: 99 }
+        },
+        {
+            id: 'ai-ethics-governance',
+            name: 'AI 윤리 및 거버넌스',
+            status: 'active',
+            performance: 94,
+            load: 38,
+            priority: 'high',
+            lastUpdated: '2024-01-15 14:26:00',
+            description: 'AI 윤리적 사용 및 거버넌스 관리',
+            dependencies: [],
+            resources: { cpu: 38, memory: 42, storage: 25, network: 32 },
+            metrics: { accuracy: 95, latency: 90, throughput: 800, reliability: 97 }
+        },
+        {
+            id: 'ai-future-prediction',
+            name: 'AI 미래 예측 시스템',
+            status: 'active',
+            performance: 89,
+            load: 52,
+            priority: 'medium',
+            lastUpdated: '2024-01-15 14:25:00',
+            description: 'AI 기술 미래 트렌드 및 시나리오 예측',
+            dependencies: ['ai-creative-innovation'],
+            resources: { cpu: 52, memory: 48, storage: 42, network: 55 },
+            metrics: { accuracy: 87, latency: 110, throughput: 950, reliability: 92 }
+        },
+        {
+            id: 'ai-creative-innovation',
+            name: 'AI 창조적 혁신 시스템',
+            status: 'active',
+            performance: 91,
+            load: 58,
+            priority: 'medium',
+            lastUpdated: '2024-01-15 14:24:00',
+            description: 'AI 기반 창의적 아이디어 생성 및 혁신',
+            dependencies: [],
+            resources: { cpu: 58, memory: 62, storage: 38, network: 48 },
+            metrics: { accuracy: 90, latency: 100, throughput: 1100, reliability: 93 }
+        }
+    ]);
+
+    const [integrations, setIntegrations] = useState<SystemIntegration[]>([
+        {
+            id: 'int-1',
+            sourceSystem: 'ai-psychology',
+            targetSystem: 'ai-predictive-analytics',
+            type: 'data',
+            status: 'active',
+            performance: 96,
+            lastSync: '2024-01-15 14:30:00'
+        },
+        {
+            id: 'int-2',
+            sourceSystem: 'ai-predictive-analytics',
+            targetSystem: 'ai-integrated-dashboard',
+            type: 'data',
+            status: 'active',
+            performance: 94,
+            lastSync: '2024-01-15 14:29:00'
+        },
+        {
+            id: 'int-3',
+            sourceSystem: 'ai-quality-assurance',
+            targetSystem: 'ai-ethics-governance',
+            type: 'feedback',
+            status: 'active',
+            performance: 98,
+            lastSync: '2024-01-15 14:28:00'
+        },
+        {
+            id: 'int-4',
+            sourceSystem: 'ai-future-prediction',
+            targetSystem: 'ai-creative-innovation',
+            type: 'control',
+            status: 'active',
+            performance: 92,
+            lastSync: '2024-01-15 14:27:00'
+        }
+    ]);
+
+    const [orchestrationRules, setOrchestrationRules] = useState<OrchestrationRule[]>([
+        {
+            id: 'rule-1',
+            name: '고부하 자동 조정',
+            description: '시스템 부하가 80% 이상일 때 자동으로 리소스 조정',
+            trigger: 'load > 80%',
+            action: 'scale_resources',
+            priority: 1,
+            status: 'active',
+            conditions: ['cpu_usage > 80', 'memory_usage > 80']
+        },
+        {
+            id: 'rule-2',
+            name: '성능 최적화',
+            description: '성능이 90% 미만일 때 자동 최적화 실행',
+            trigger: 'performance < 90%',
+            action: 'optimize_performance',
+            priority: 2,
+            status: 'active',
+            conditions: ['accuracy < 90', 'latency > 100']
+        },
+        {
+            id: 'rule-3',
+            name: '에러 복구',
+            description: '시스템 에러 발생 시 자동 복구 프로세스 실행',
+            trigger: 'system_error',
+            action: 'auto_recovery',
+            priority: 1,
+            status: 'active',
+            conditions: ['error_count > 0', 'status == error']
+        },
+        {
+            id: 'rule-4',
+            name: '데이터 동기화',
+            description: '주기적 데이터 동기화 및 무결성 검사',
+            trigger: 'sync_interval',
+            action: 'data_sync',
+            priority: 3,
+            status: 'active',
+            conditions: ['last_sync > 5min', 'data_integrity_check']
+        }
+    ]);
+
+    const [globalMetrics, setGlobalMetrics] = useState<GlobalMetrics>({
+        totalSystems: 7,
+        activeSystems: 7,
+        overallPerformance: 92,
+        systemHealth: 96,
+        resourceUtilization: 68,
+        integrationSuccess: 95
+    });
+
+    const [selectedSystem, setSelectedSystem] = useState<AISystem | null>(null);
+    const [systemDetailOpen, setSystemDetailOpen] = useState(false);
+    const [orchestrationDialogOpen, setOrchestrationDialogOpen] = useState(false);
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'active': return 'success';
+            case 'inactive': return 'default';
+            case 'error': return 'error';
+            case 'maintenance': return 'warning';
+            default: return 'default';
+        }
+    };
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'active': return <CheckCircle />;
+            case 'inactive': return <Stop />;
+            case 'error': return <Error />;
+            case 'maintenance': return <Warning />;
+            default: return <Info />;
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'high': return 'error';
+            case 'medium': return 'warning';
+            case 'low': return 'success';
+            default: return 'default';
+        }
+    };
+
+    const performanceData = {
+        labels: systems.map(s => s.name),
+        datasets: [
+            {
+                label: '성능 (%)',
+                data: systems.map(s => s.performance),
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            },
+            {
+                label: '부하 (%)',
+                data: systems.map(s => s.load),
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.1
+            }
+        ]
+    };
+
+    const resourceData = {
+        labels: ['CPU', '메모리', '스토리지', '네트워크'],
+        datasets: [
+            {
+                data: [
+                    systems.reduce((sum, s) => sum + s.resources.cpu, 0) / systems.length,
+                    systems.reduce((sum, s) => sum + s.resources.memory, 0) / systems.length,
+                    systems.reduce((sum, s) => sum + s.resources.storage, 0) / systems.length,
+                    systems.reduce((sum, s) => sum + s.resources.network, 0) / systems.length
+                ],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)'
+                ],
+                borderWidth: 2
+            }
+        ]
+    };
+
+    const integrationData = {
+        labels: integrations.map(i => `${i.sourceSystem} → ${i.targetSystem}`),
+        datasets: [
+            {
+                label: '통합 성능 (%)',
+                data: integrations.map(i => i.performance),
+                backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }
+        ]
+    };
+
+    const handleSystemClick = (system: AISystem) => {
+        setSelectedSystem(system);
+        setSystemDetailOpen(true);
+    };
+
+    const handleOrchestrationAction = (action: string) => {
+        console.log(`Orchestration action: ${action}`);
+        // 실제 구현에서는 백엔드 API 호출
+    };
+
+    return (
+        <Box sx={{ p: 3 }}>
+            <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Hub sx={{ fontSize: 40, color: 'primary.main' }} />
+                AI 시스템 통합 플랫폼
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                모든 AI 시스템의 통합 관리 및 조율
+            </Typography>
+
+            {/* 글로벌 메트릭스 */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(6, 1fr)' }, gap: 3, mb: 4 }}>
+                <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" color="primary">
+                            {globalMetrics.totalSystems}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            총 시스템
+                        </Typography>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" color="success.main">
+                            {globalMetrics.activeSystems}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            활성 시스템
+                        </Typography>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" color="info.main">
+                            {globalMetrics.overallPerformance}%
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            전체 성능
+                        </Typography>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" color="success.main">
+                            {globalMetrics.systemHealth}%
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            시스템 건강도
+                        </Typography>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" color="warning.main">
+                            {globalMetrics.resourceUtilization}%
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            리소스 사용률
+                        </Typography>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" color="primary.main">
+                            {globalMetrics.integrationSuccess}%
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            통합 성공률
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Box>
+
+            {/* 시스템 목록 */}
+            <Card sx={{ mb: 3 }}>
+                <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AutoAwesome />
+                        AI 시스템 목록
+                    </Typography>
+                    <TableContainer>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>시스템</TableCell>
+                                    <TableCell>상태</TableCell>
+                                    <TableCell>성능</TableCell>
+                                    <TableCell>부하</TableCell>
+                                    <TableCell>우선순위</TableCell>
+                                    <TableCell>마지막 업데이트</TableCell>
+                                    <TableCell>작업</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {systems.map((system) => (
+                                    <TableRow key={system.id} hover>
+                                        <TableCell>
+                                            <Box>
+                                                <Typography variant="subtitle2">{system.name}</Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {system.description}
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                icon={getStatusIcon(system.status)}
+                                                label={system.status}
+                                                color={getStatusColor(system.status) as any}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={system.performance}
+                                                    sx={{ width: 60, height: 8, borderRadius: 4 }}
+                                                />
+                                                <Typography variant="body2">{system.performance}%</Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={system.load}
+                                                    sx={{ width: 60, height: 8, borderRadius: 4 }}
+                                                />
+                                                <Typography variant="body2">{system.load}%</Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={system.priority}
+                                                color={getPriorityColor(system.priority) as any}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Typography variant="body2">{system.lastUpdated}</Typography>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Button
+                                                size="small"
+                                                onClick={() => handleSystemClick(system)}
+                                                startIcon={<Info />}
+                                            >
+                                                상세보기
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </CardContent>
+            </Card>
+
+            {/* 차트 섹션 */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3, mb: 3 }}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>시스템 성능 및 부하</Typography>
+                        <Line data={performanceData} options={{ responsive: true }} />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>리소스 사용률</Typography>
+                        <Doughnut data={resourceData} options={{ responsive: true }} />
+                    </CardContent>
+                </Card>
+            </Box>
+
+            {/* 시스템 통합 */}
+            <Card sx={{ mb: 3 }}>
+                <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CloudSync />
+                        시스템 통합 상태
+                    </Typography>
+                    <TableContainer>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>소스 시스템</TableCell>
+                                    <TableCell>대상 시스템</TableCell>
+                                    <TableCell>통합 유형</TableCell>
+                                    <TableCell>상태</TableCell>
+                                    <TableCell>성능</TableCell>
+                                    <TableCell>마지막 동기화</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {integrations.map((integration) => (
+                                    <TableRow key={integration.id}>
+                                        <TableCell>{integration.sourceSystem}</TableCell>
+                                        <TableCell>{integration.targetSystem}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={integration.type}
+                                                color={integration.type === 'data' ? 'primary' : 'secondary'}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                icon={getStatusIcon(integration.status)}
+                                                label={integration.status}
+                                                color={getStatusColor(integration.status) as any}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={integration.performance}
+                                                    sx={{ width: 60, height: 8, borderRadius: 4 }}
+                                                />
+                                                <Typography variant="body2">{integration.performance}%</Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>{integration.lastSync}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </CardContent>
+            </Card>
+
+            {/* 조율 규칙 */}
+            <Card sx={{ mb: 3 }}>
+                <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Settings />
+                            조율 규칙
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            onClick={() => setOrchestrationDialogOpen(true)}
+                            startIcon={<AutoAwesome />}
+                        >
+                            조율 실행
+                        </Button>
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
+                        {orchestrationRules.map((rule) => (
+                            <Card variant="outlined" key={rule.id}>
+                                <CardContent>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                        <Typography variant="subtitle2">{rule.name}</Typography>
+                                            <Chip
+                                                label={rule.status}
+                                                color={rule.status === 'active' ? 'success' : 'default'}
+                                                size="small"
+                                            />
+                                        </Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                            {rule.description}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                            <Chip label={`트리거: ${rule.trigger}`} size="small" variant="outlined" />
+                                            <Chip label={`액션: ${rule.action}`} size="small" variant="outlined" />
+                                            <Chip label={`우선순위: ${rule.priority}`} size="small" variant="outlined" />
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                        ))}
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 시스템 상세 정보 다이얼로그 */}
+            <Dialog
+                open={systemDetailOpen}
+                onClose={() => setSystemDetailOpen(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    {selectedSystem?.name} 상세 정보
+                </DialogTitle>
+                <DialogContent>
+                    {selectedSystem && (
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+                            <Box>
+                                <Typography variant="h6" gutterBottom>기본 정보</Typography>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    <strong>설명:</strong> {selectedSystem.description}
+                                </Typography>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    <strong>상태:</strong> {selectedSystem.status}
+                                </Typography>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    <strong>우선순위:</strong> {selectedSystem.priority}
+                                </Typography>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    <strong>마지막 업데이트:</strong> {selectedSystem.lastUpdated}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="h6" gutterBottom>의존성</Typography>
+                                {selectedSystem.dependencies.length > 0 ? (
+                                    selectedSystem.dependencies.map((dep) => (
+                                        <Chip key={dep} label={dep} sx={{ mr: 1, mb: 1 }} />
+                                    ))
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                        의존성이 없습니다.
+                                    </Typography>
+                                )}
+                            </Box>
+                            <Box>
+                                <Typography variant="h6" gutterBottom>리소스 사용률</Typography>
+                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+                                    <Box>
+                                        <Typography variant="body2">CPU: {selectedSystem.resources.cpu}%</Typography>
+                                        <LinearProgress variant="determinate" value={selectedSystem.resources.cpu} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="body2">메모리: {selectedSystem.resources.memory}%</Typography>
+                                        <LinearProgress variant="determinate" value={selectedSystem.resources.memory} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="body2">스토리지: {selectedSystem.resources.storage}%</Typography>
+                                        <LinearProgress variant="determinate" value={selectedSystem.resources.storage} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="body2">네트워크: {selectedSystem.resources.network}%</Typography>
+                                        <LinearProgress variant="determinate" value={selectedSystem.resources.network} />
+                                    </Box>
+                                </Box>
+                            </Box>
+                            <Box>
+                                <Typography variant="h6" gutterBottom>성능 메트릭스</Typography>
+                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+                                    <Box>
+                                        <Typography variant="body2">정확도: {selectedSystem.metrics.accuracy}%</Typography>
+                                        <LinearProgress variant="determinate" value={selectedSystem.metrics.accuracy} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="body2">지연시간: {selectedSystem.metrics.latency}ms</Typography>
+                                        <LinearProgress variant="determinate" value={100 - selectedSystem.metrics.latency / 2} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="body2">처리량: {selectedSystem.metrics.throughput}/s</Typography>
+                                        <LinearProgress variant="determinate" value={selectedSystem.metrics.throughput / 25} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="body2">신뢰성: {selectedSystem.metrics.reliability}%</Typography>
+                                        <LinearProgress variant="determinate" value={selectedSystem.metrics.reliability} />
+                                    </Box>
+                                </Box>
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setSystemDetailOpen(false)}>닫기</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 조율 실행 다이얼로그 */}
+            <Dialog
+                open={orchestrationDialogOpen}
+                onClose={() => setOrchestrationDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>AI 시스템 조율 실행</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" sx={{ mb: 3 }}>
+                        모든 AI 시스템의 통합 조율을 실행하시겠습니까?
+                    </Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleOrchestrationAction('full_orchestration')}
+                            startIcon={<AutoAwesome />}
+                        >
+                            전체 시스템 조율
+                        </Button>
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            onClick={() => handleOrchestrationAction('performance_optimization')}
+                            startIcon={<TrendingUp />}
+                        >
+                            성능 최적화
+                        </Button>
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            onClick={() => handleOrchestrationAction('resource_balancing')}
+                            startIcon={<Balance />}
+                        >
+                            리소스 밸런싱
+                        </Button>
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            onClick={() => handleOrchestrationAction('integration_sync')}
+                            startIcon={<Sync />}
+                        >
+                            통합 동기화
+                        </Button>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOrchestrationDialogOpen(false)}>취소</Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default AISystemIntegrationPlatform;

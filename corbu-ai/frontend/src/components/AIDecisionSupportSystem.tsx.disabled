@@ -1,0 +1,1046 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Chip,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Alert,
+  LinearProgress,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Slider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Tooltip,
+  IconButton,
+  Divider
+} from '@mui/material';
+import {
+  Psychology,
+  TrendingUp,
+  TrendingDown,
+  CheckCircle,
+  Warning,
+  Error,
+  Info,
+  Lightbulb,
+  Analytics,
+  Assessment,
+  Timeline,
+  Compare,
+  AutoAwesome,
+  Speed,
+  Security,
+  Business,
+  Group,
+  Person,
+  Schedule,
+  LocationOn,
+  ExpandMore,
+  Refresh,
+  Save,
+  Share,
+  Download,
+  Upload,
+  FilterList,
+  Sort,
+  Search,
+  Add,
+  Edit,
+  Delete,
+  Visibility,
+  VisibilityOff,
+  Star,
+  StarBorder,
+  Favorite,
+  FavoriteBorder,
+  ThumbUp,
+  ThumbDown,
+  Comment,
+  Reply,
+  Forward,
+  Archive,
+  Unarchive,
+  Flag,
+  Report,
+  Block,
+  Unblock,
+  Settings,
+  Help,
+  Close,
+  Minimize,
+  Maximize,
+  Fullscreen,
+  FullscreenExit,
+  ZoomIn,
+  ZoomOut,
+  FitScreen,
+  AspectRatio,
+  Crop,
+  RotateLeft,
+  RotateRight,
+  Flip,
+  Brightness4,
+  Brightness7,
+  Contrast,
+  Palette,
+  ColorLens,
+  Brush,
+  FormatPaint,
+  FormatSize,
+  FormatBold,
+  FormatItalic,
+  FormatUnderline,
+  FormatStrikethrough,
+  FormatAlignLeft,
+  FormatAlignCenter,
+  FormatAlignRight,
+  FormatAlignJustify,
+  FormatListBulleted,
+  FormatListNumbered,
+  FormatIndentIncrease,
+  FormatIndentDecrease,
+  FormatLineSpacing,
+  FormatColorFill,
+  FormatColorText,
+  FormatClear,
+  Undo,
+  Redo,
+  ContentCut,
+  ContentCopy,
+  ContentPaste,
+  Link,
+  LinkOff,
+  InsertLink,
+  InsertPhoto,
+  InsertVideo,
+  InsertChart,
+  InsertTable,
+  InsertDriveFile,
+  InsertEmoticon,
+  InsertComment,
+  InsertInvitation,
+  InsertPageBreak,
+  InsertText,
+  Functions,
+  FunctionsOutlined,
+  Calculate,
+  CalculateOutlined,
+  DataObject,
+  DataObjectOutlined,
+  Schema,
+  SchemaOutlined,
+  AccountTree,
+  AccountTreeOutlined,
+  Hub,
+  HubOutlined,
+  DeviceHub,
+  DeviceHubOutlined,
+  Share,
+  ShareOutlined,
+  Cloud,
+  CloudOutlined,
+  CloudUpload,
+  CloudDownload,
+  CloudSync,
+  CloudDone,
+  CloudOff,
+  CloudQueue,
+  CloudCircle,
+  CloudDoneOutlined,
+  CloudOffOutlined,
+  CloudQueueOutlined,
+  CloudCircleOutlined,
+  Storage,
+  StorageOutlined,
+  SdStorage,
+  SdStorageOutlined,
+  Memory,
+  MemoryOutlined,
+  StorageAlt,
+  StorageAltOutlined,
+  HardDrive,
+  HardDriveOutlined,
+  SimCard,
+  SimCardOutlined,
+  SdCard,
+  SdCardOutlined,
+  Usb,
+  UsbOutlined,
+  Bluetooth,
+  BluetoothOutlined,
+  Wifi,
+  WifiOutlined,
+  WifiOff,
+  WifiOffOutlined,
+  SignalWifi4Bar,
+  SignalWifi4BarOutlined,
+  SignalWifi0Bar,
+  SignalWifi0BarOutlined,
+  SignalCellular4Bar,
+  SignalCellular4BarOutlined,
+  SignalCellular0Bar,
+  SignalCellular0BarOutlined,
+  SignalCellularAlt,
+  SignalCellularAltOutlined,
+  SignalCellularConnectedNoInternet4Bar,
+  SignalCellularConnectedNoInternet4BarOutlined,
+  SignalCellularNoSim,
+  SignalCellularNoSimOutlined,
+  SignalCellularNull,
+  SignalCellularNullOutlined,
+  SignalCellularOff,
+  SignalCellularOffOutlined,
+  SignalWifiStatusbar4Bar,
+  SignalWifiStatusbar4BarOutlined,
+  SignalWifiStatusbarConnectedNoInternet4,
+  SignalWifiStatusbarConnectedNoInternet4Outlined,
+  SignalWifiStatusbarNull,
+  SignalWifiStatusbarNullOutlined,
+  RssFeed,
+  RssFeedOutlined,
+  RssFeedRounded,
+  RssFeedSharp,
+  RssFeedTwoTone,
+  NetworkCheck,
+  NetworkCheckOutlined,
+  NetworkWifi,
+  NetworkWifiOutlined,
+  NetworkCell,
+  NetworkCellOutlined,
+  NetworkLocked,
+  NetworkLockedOutlined,
+  NetworkPing,
+  NetworkPingOutlined,
+  NetworkWifi1Bar,
+  NetworkWifi1BarOutlined,
+  NetworkWifi2Bar,
+  NetworkWifi2BarOutlined,
+  NetworkWifi3Bar,
+  NetworkWifi3BarOutlined,
+  NetworkWifi4Bar,
+  NetworkWifi4BarOutlined,
+  NetworkWifiOff,
+  NetworkWifiOffOutlined,
+  NetworkWifi1BarLocked,
+  NetworkWifi1BarLockedOutlined,
+  NetworkWifi2BarLocked,
+  NetworkWifi2BarLockedOutlined,
+  NetworkWifi3BarLocked,
+  NetworkWifi3BarLockedOutlined,
+  NetworkWifi4BarLocked,
+  NetworkWifi4BarLockedOutlined,
+  NetworkWifi1BarRounded,
+  NetworkWifi1BarSharp,
+  NetworkWifi1BarTwoTone,
+  NetworkWifi2BarRounded,
+  NetworkWifi2BarSharp,
+  NetworkWifi2BarTwoTone,
+  NetworkWifi3BarRounded,
+  NetworkWifi3BarSharp,
+  NetworkWifi3BarTwoTone,
+  NetworkWifi4BarRounded,
+  NetworkWifi4BarSharp,
+  NetworkWifi4BarTwoTone,
+  NetworkWifiOffRounded,
+  NetworkWifiOffSharp,
+  NetworkWifiOffTwoTone,
+  NetworkWifi1BarLockedRounded,
+  NetworkWifi1BarLockedSharp,
+  NetworkWifi1BarLockedTwoTone,
+  NetworkWifi2BarLockedRounded,
+  NetworkWifi2BarLockedSharp,
+  NetworkWifi2BarLockedTwoTone,
+  NetworkWifi3BarLockedRounded,
+  NetworkWifi3BarLockedSharp,
+  NetworkWifi3BarLockedTwoTone,
+  NetworkWifi4BarLockedRounded,
+  NetworkWifi4BarLockedSharp,
+  NetworkWifi4BarLockedTwoTone
+} from '@mui/icons-material';
+
+// 의사결정 데이터 인터페이스
+interface DecisionOption {
+  id: string;
+  title: string;
+  description: string;
+  pros: string[];
+  cons: string[];
+  riskLevel: 'low' | 'medium' | 'high';
+  impact: 'low' | 'medium' | 'high';
+  cost: number;
+  timeToImplement: number; // days
+  successProbability: number; // 0-100
+  aiRecommendation: 'strongly_recommend' | 'recommend' | 'neutral' | 'not_recommend' | 'strongly_not_recommend';
+  aiConfidence: number; // 0-100
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface DecisionCriteria {
+  id: string;
+  name: string;
+  weight: number; // 0-100
+  type: 'cost' | 'benefit' | 'risk' | 'time' | 'quality';
+  description: string;
+}
+
+interface DecisionAnalysis {
+  id: string;
+  title: string;
+  description: string;
+  options: DecisionOption[];
+  criteria: DecisionCriteria[];
+  aiInsights: string[];
+  recommendations: string[];
+  riskAssessment: {
+    overallRisk: 'low' | 'medium' | 'high';
+    riskFactors: string[];
+    mitigationStrategies: string[];
+  };
+  costBenefitAnalysis: {
+    totalCost: number;
+    totalBenefit: number;
+    roi: number;
+    paybackPeriod: number;
+  };
+  timeline: {
+    startDate: Date;
+    endDate: Date;
+    milestones: Array<{
+      id: string;
+      title: string;
+      date: Date;
+      status: 'pending' | 'in_progress' | 'completed' | 'delayed';
+    }>;
+  };
+  stakeholders: Array<{
+    id: string;
+    name: string;
+    role: string;
+    influence: 'high' | 'medium' | 'low';
+    support: 'support' | 'neutral' | 'oppose';
+  }>;
+  status: 'draft' | 'analysis' | 'review' | 'approved' | 'implemented' | 'cancelled';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 샘플 데이터
+const sampleDecisionAnalysis: DecisionAnalysis = {
+  id: 'decision-001',
+  title: 'AI 시스템 도입 의사결정',
+  description: '기업의 AI 시스템 도입에 대한 종합적 분석 및 의사결정 지원',
+  options: [
+    {
+      id: 'option-1',
+      title: '클라우드 기반 AI 플랫폼 도입',
+      description: 'AWS, Azure, GCP 등의 클라우드 AI 서비스 활용',
+      pros: [
+        '빠른 구현 및 배포',
+        '확장성 우수',
+        '유지보수 부담 적음',
+        '최신 기술 접근 가능'
+      ],
+      cons: [
+        '장기적 비용 증가 가능',
+        '데이터 보안 우려',
+        '벤더 종속성',
+        '네트워크 의존성'
+      ],
+      riskLevel: 'medium',
+      impact: 'high',
+      cost: 50000,
+      timeToImplement: 30,
+      successProbability: 85,
+      aiRecommendation: 'recommend',
+      aiConfidence: 78,
+      tags: ['cloud', 'ai', 'platform'],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'option-2',
+      title: '온프레미스 AI 시스템 구축',
+      description: '자체 서버에 AI 시스템을 구축하여 운영',
+      pros: [
+        '완전한 데이터 제어',
+        '장기적 비용 절약',
+        '보안성 우수',
+        '커스터마이징 자유도 높음'
+      ],
+      cons: [
+        '높은 초기 투자',
+        '구현 시간 오래 걸림',
+        '전문 인력 필요',
+        '확장성 제한'
+      ],
+      riskLevel: 'high',
+      impact: 'high',
+      cost: 150000,
+      timeToImplement: 90,
+      successProbability: 70,
+      aiRecommendation: 'neutral',
+      aiConfidence: 65,
+      tags: ['on-premise', 'ai', 'custom'],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'option-3',
+      title: '하이브리드 AI 솔루션',
+      description: '클라우드와 온프레미스를 조합한 하이브리드 접근',
+      pros: [
+        '유연한 아키텍처',
+        '비용 최적화',
+        '보안과 확장성 균형',
+        '점진적 마이그레이션 가능'
+      ],
+      cons: [
+        '복잡한 관리',
+        '통합 작업 필요',
+        '중간 정도의 리스크',
+        '전문 지식 요구'
+      ],
+      riskLevel: 'medium',
+      impact: 'high',
+      cost: 80000,
+      timeToImplement: 60,
+      successProbability: 80,
+      aiRecommendation: 'strongly_recommend',
+      aiConfidence: 85,
+      tags: ['hybrid', 'ai', 'flexible'],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  ],
+  criteria: [
+    {
+      id: 'criteria-1',
+      name: '비용 효율성',
+      weight: 25,
+      type: 'cost',
+      description: '총 소유 비용(TCO) 대비 효과'
+    },
+    {
+      id: 'criteria-2',
+      name: '구현 속도',
+      weight: 20,
+      type: 'time',
+      description: '시스템 구축 및 운영까지의 시간'
+    },
+    {
+      id: 'criteria-3',
+      name: '보안성',
+      weight: 20,
+      type: 'risk',
+      description: '데이터 보안 및 개인정보 보호'
+    },
+    {
+      id: 'criteria-4',
+      name: '확장성',
+      weight: 15,
+      type: 'benefit',
+      description: '미래 성장에 따른 확장 가능성'
+    },
+    {
+      id: 'criteria-5',
+      name: '유지보수성',
+      weight: 20,
+      type: 'quality',
+      description: '시스템 유지보수 및 업데이트 용이성'
+    }
+  ],
+  aiInsights: [
+    '하이브리드 솔루션이 현재 시장 트렌드와 가장 부합합니다',
+    '클라우드 기반 솔루션의 초기 비용은 낮지만 장기적으로는 증가할 수 있습니다',
+    '온프레미스 솔루션은 보안성이 우수하지만 기술적 부담이 큽니다',
+    '점진적 도입을 통한 리스크 최소화가 권장됩니다'
+  ],
+  recommendations: [
+    '하이브리드 AI 솔루션을 단계적으로 도입하세요',
+    '초기에는 클라우드 기반으로 시작하여 점진적으로 온프레미스 요소를 추가하세요',
+    '데이터 보안 정책을 사전에 수립하세요',
+    '전문 인력 확보 및 교육 계획을 수립하세요'
+  ],
+  riskAssessment: {
+    overallRisk: 'medium',
+    riskFactors: [
+      '기술적 복잡성',
+      '데이터 마이그레이션 위험',
+      '사용자 수용성',
+      '규제 준수 요구사항'
+    ],
+    mitigationStrategies: [
+      '단계적 구현으로 리스크 분산',
+      '포괄적인 테스트 계획 수립',
+      '사용자 교육 및 변화 관리',
+      '규제 전문가와의 협력'
+    ]
+  },
+  costBenefitAnalysis: {
+    totalCost: 80000,
+    totalBenefit: 200000,
+    roi: 150,
+    paybackPeriod: 18
+  },
+  timeline: {
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    milestones: [
+      {
+        id: 'milestone-1',
+        title: '요구사항 분석 완료',
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        status: 'pending'
+      },
+      {
+        id: 'milestone-2',
+        title: '기술 검증 완료',
+        date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+        status: 'pending'
+      },
+      {
+        id: 'milestone-3',
+        title: '프로토타입 개발',
+        date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+        status: 'pending'
+      },
+      {
+        id: 'milestone-4',
+        title: '시스템 구축 완료',
+        date: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000),
+        status: 'pending'
+      },
+      {
+        id: 'milestone-5',
+        title: '운영 시작',
+        date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        status: 'pending'
+      }
+    ]
+  },
+  stakeholders: [
+    {
+      id: 'stakeholder-1',
+      name: '김철수',
+      role: 'CTO',
+      influence: 'high',
+      support: 'support'
+    },
+    {
+      id: 'stakeholder-2',
+      name: '이영희',
+      role: 'CFO',
+      influence: 'high',
+      support: 'neutral'
+    },
+    {
+      id: 'stakeholder-3',
+      name: '박민수',
+      role: 'IT 매니저',
+      influence: 'medium',
+      support: 'support'
+    },
+    {
+      id: 'stakeholder-4',
+      name: '정수진',
+      role: '보안 담당자',
+      influence: 'medium',
+      support: 'oppose'
+    }
+  ],
+  status: 'analysis',
+  createdAt: new Date(),
+  updatedAt: new Date()
+};
+
+const AIDecisionSupportSystem: React.FC = () => {
+  const [decisionAnalysis, setDecisionAnalysis] = useState<DecisionAnalysis>(sampleDecisionAnalysis);
+  const [selectedOption, setSelectedOption] = useState<DecisionOption | null>(null);
+  const [showOptionDialog, setShowOptionDialog] = useState(false);
+  const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+
+  // AI 추천 색상
+  const getRecommendationColor = (recommendation: string) => {
+    switch (recommendation) {
+      case 'strongly_recommend': return 'success';
+      case 'recommend': return 'primary';
+      case 'neutral': return 'warning';
+      case 'not_recommend': return 'error';
+      case 'strongly_not_recommend': return 'error';
+      default: return 'default';
+    }
+  };
+
+  // 리스크 레벨 색상
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case 'low': return 'success';
+      case 'medium': return 'warning';
+      case 'high': return 'error';
+      default: return 'default';
+    }
+  };
+
+  // 영향도 색상
+  const getImpactColor = (impact: string) => {
+    switch (impact) {
+      case 'low': return 'info';
+      case 'medium': return 'warning';
+      case 'high': return 'error';
+      default: return 'default';
+    }
+  };
+
+  // AI 추천 텍스트
+  const getRecommendationText = (recommendation: string) => {
+    switch (recommendation) {
+      case 'strongly_recommend': return '강력 추천';
+      case 'recommend': return '추천';
+      case 'neutral': return '중립';
+      case 'not_recommend': return '비추천';
+      case 'strongly_not_recommend': return '강력 비추천';
+      default: return '알 수 없음';
+    }
+  };
+
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* 헤더 */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Psychology sx={{ fontSize: 32, color: 'primary.main' }} />
+            AI 의사결정 지원 시스템
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            AI 기반 데이터 분석을 통한 최적의 의사결정 지원
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={() => window.location.reload()}
+          >
+            새로고침
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AutoAwesome />}
+            onClick={() => setShowAnalysisDialog(true)}
+          >
+            AI 분석 실행
+          </Button>
+        </Box>
+      </Box>
+
+      {/* 의사결정 개요 */}
+      <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+        <CardContent>
+          <Typography variant="h5" component="h2" gutterBottom>
+            {decisionAnalysis.title}
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            {decisionAnalysis.description}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Chip
+              label={`상태: ${decisionAnalysis.status}`}
+              color="primary"
+              variant="outlined"
+            />
+            <Chip
+              label={`전체 리스크: ${decisionAnalysis.riskAssessment.overallRisk}`}
+              color={getRiskColor(decisionAnalysis.riskAssessment.overallRisk) as any}
+              variant="outlined"
+            />
+            <Chip
+              label={`ROI: ${decisionAnalysis.costBenefitAnalysis.roi}%`}
+              color="success"
+              variant="outlined"
+            />
+            <Chip
+              label={`회수 기간: ${decisionAnalysis.costBenefitAnalysis.paybackPeriod}개월`}
+              color="info"
+              variant="outlined"
+            />
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* 의사결정 옵션 */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12}>
+          <Typography variant="h6" component="h2" gutterBottom>
+            의사결정 옵션 분석
+          </Typography>
+        </Grid>
+        
+        {decisionAnalysis.options.map((option) => (
+          <Grid item xs={12} md={4} key={option.id}>
+            <Card sx={{ height: '100%', position: 'relative' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Typography variant="h6" component="h3">
+                    {option.title}
+                  </Typography>
+                  <Chip
+                    label={getRecommendationText(option.aiRecommendation)}
+                    color={getRecommendationColor(option.aiRecommendation) as any}
+                    size="small"
+                  />
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {option.description}
+                </Typography>
+                
+                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                  <Chip
+                    label={`리스크: ${option.riskLevel}`}
+                    color={getRiskColor(option.riskLevel) as any}
+                    size="small"
+                  />
+                  <Chip
+                    label={`영향도: ${option.impact}`}
+                    color={getImpactColor(option.impact) as any}
+                    size="small"
+                  />
+                  <Chip
+                    label={`비용: $${option.cost.toLocaleString()}`}
+                    color="primary"
+                    size="small"
+                  />
+                  <Chip
+                    label={`기간: ${option.timeToImplement}일`}
+                    color="info"
+                    size="small"
+                  />
+                </Box>
+                
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    성공 확률: {option.successProbability}%
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={option.successProbability}
+                    color={option.successProbability >= 80 ? 'success' : option.successProbability >= 60 ? 'warning' : 'error'}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    AI 신뢰도: {option.aiConfidence}%
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={option.aiConfidence}
+                    color="primary"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => {
+                    setSelectedOption(option);
+                    setShowOptionDialog(true);
+                  }}
+                >
+                  상세 분석
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* AI 인사이트 및 권장사항 */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="h3" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Lightbulb color="primary" />
+                AI 인사이트
+              </Typography>
+              <List dense>
+                {decisionAnalysis.aiInsights.map((insight, index) => (
+                  <ListItem key={index} sx={{ px: 0 }}>
+                    <ListItemIcon>
+                      <Info color="info" />
+                    </ListItemIcon>
+                    <ListItemText primary={insight} />
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="h3" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AutoAwesome color="primary" />
+                AI 권장사항
+              </Typography>
+              <List dense>
+                {decisionAnalysis.recommendations.map((recommendation, index) => (
+                  <ListItem key={index} sx={{ px: 0 }}>
+                    <ListItemIcon>
+                      <CheckCircle color="success" />
+                    </ListItemIcon>
+                    <ListItemText primary={recommendation} />
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 리스크 평가 및 비용편익 분석 */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="h3" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Warning color="warning" />
+                리스크 평가
+              </Typography>
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  전체 리스크 레벨: {decisionAnalysis.riskAssessment.overallRisk}
+                </Typography>
+                <Chip
+                  label={decisionAnalysis.riskAssessment.overallRisk}
+                  color={getRiskColor(decisionAnalysis.riskAssessment.overallRisk) as any}
+                  sx={{ mb: 2 }}
+                />
+              </Box>
+              
+              <Typography variant="subtitle2" gutterBottom>
+                주요 리스크 요인:
+              </Typography>
+              <List dense>
+                {decisionAnalysis.riskAssessment.riskFactors.map((factor, index) => (
+                  <ListItem key={index} sx={{ px: 0 }}>
+                    <ListItemIcon>
+                      <Error color="error" />
+                    </ListItemIcon>
+                    <ListItemText primary={factor} />
+                  </ListItem>
+                ))}
+              </List>
+              
+              <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                완화 전략:
+              </Typography>
+              <List dense>
+                {decisionAnalysis.riskAssessment.mitigationStrategies.map((strategy, index) => (
+                  <ListItem key={index} sx={{ px: 0 }}>
+                    <ListItemIcon>
+                      <Security color="success" />
+                    </ListItemIcon>
+                    <ListItemText primary={strategy} />
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="h3" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Analytics color="primary" />
+                비용편익 분석
+              </Typography>
+              
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableBody>
+                    <TableRow>
+                      <TableCell><strong>총 비용</strong></TableCell>
+                      <TableCell>${decisionAnalysis.costBenefitAnalysis.totalCost.toLocaleString()}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>총 편익</strong></TableCell>
+                      <TableCell>${decisionAnalysis.costBenefitAnalysis.totalBenefit.toLocaleString()}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>ROI</strong></TableCell>
+                      <TableCell>
+                        <Chip
+                          label={`${decisionAnalysis.costBenefitAnalysis.roi}%`}
+                          color="success"
+                          size="small"
+                        />
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><strong>회수 기간</strong></TableCell>
+                      <TableCell>{decisionAnalysis.costBenefitAnalysis.paybackPeriod}개월</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 옵션 상세 분석 다이얼로그 */}
+      <Dialog
+        open={showOptionDialog}
+        onClose={() => setShowOptionDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        {selectedOption && (
+          <>
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Analytics color="primary" />
+                {selectedOption.title} - 상세 분석
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                {selectedOption.description}
+              </Typography>
+              
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" gutterBottom>
+                    장점
+                  </Typography>
+                  <List dense>
+                    {selectedOption.pros.map((pro, index) => (
+                      <ListItem key={index} sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <CheckCircle color="success" />
+                        </ListItemIcon>
+                        <ListItemText primary={pro} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" gutterBottom>
+                    단점
+                  </Typography>
+                  <List dense>
+                    {selectedOption.cons.map((con, index) => (
+                      <ListItem key={index} sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <Error color="error" />
+                        </ListItemIcon>
+                        <ListItemText primary={con} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Grid>
+              </Grid>
+              
+              <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+                <Chip
+                  label={`AI 추천: ${getRecommendationText(selectedOption.aiRecommendation)}`}
+                  color={getRecommendationColor(selectedOption.aiRecommendation) as any}
+                />
+                <Chip
+                  label={`AI 신뢰도: ${selectedOption.aiConfidence}%`}
+                  color="primary"
+                />
+                <Chip
+                  label={`성공 확률: ${selectedOption.successProbability}%`}
+                  color={selectedOption.successProbability >= 80 ? 'success' : 'warning'}
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setShowOptionDialog(false)}>
+                닫기
+              </Button>
+              <Button variant="contained" color="primary">
+                이 옵션 선택
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* AI 분석 실행 다이얼로그 */}
+      <Dialog
+        open={showAnalysisDialog}
+        onClose={() => setShowAnalysisDialog(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AutoAwesome color="primary" />
+            AI 의사결정 분석 실행
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            AI가 최신 데이터와 시장 트렌드를 분석하여 의사결정을 지원합니다.
+          </Alert>
+          
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            분석이 완료되면 더 정확한 추천과 인사이트를 제공받을 수 있습니다.
+          </Typography>
+          
+          <LinearProgress sx={{ mb: 2 }} />
+          
+          <Typography variant="body2" color="text.secondary">
+            분석 진행 중... 잠시만 기다려주세요.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAnalysisDialog(false)}>
+            취소
+          </Button>
+          <Button variant="contained" color="primary">
+            분석 시작
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default AIDecisionSupportSystem;

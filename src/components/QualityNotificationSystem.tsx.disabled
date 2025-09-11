@@ -1,0 +1,805 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    Button,
+    Alert,
+    IconButton,
+    Tooltip,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    ListItemSecondaryAction,
+    Switch,
+    FormControl,
+    FormControlLabel,
+    InputLabel,
+    Select,
+    MenuItem,
+    TextField,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Badge,
+    Avatar,
+    useTheme,
+    alpha,
+    Divider
+} from '@mui/material';
+import {
+    Notifications,
+    NotificationsActive,
+    NotificationsOff,
+    Warning,
+    Error,
+    Info,
+    CheckCircle,
+    Delete,
+    Settings,
+    FilterList,
+    Search,
+    Clear,
+    ExpandMore,
+    PriorityHigh,
+    LowPriority,
+    Schedule,
+    Email,
+    Phone,
+    Chat,
+    AutoAwesome,
+    Psychology,
+    Science,
+    AccessTime,
+    Analytics,
+    Speed,
+    Memory,
+    Storage,
+    NetworkCheck,
+    Lightbulb,
+    Rocket,
+    Assessment,
+    BarChart,
+    Radar,
+    ScatterPlot,
+    BubbleChart,
+    AccessTime as TimelineIcon,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon,
+    Speed as SpeedIcon,
+    Memory as MemoryIcon,
+    Storage as StorageIcon,
+    NetworkCheck as NetworkIcon,
+    Notifications as NotificationsIcon,
+    NotificationsActive as NotificationsActiveIcon,
+    NotificationsOff as NotificationsOffIcon
+} from '@mui/icons-material';
+
+interface QualityNotification {
+    id: string;
+    type: 'info' | 'warning' | 'error' | 'success' | 'critical';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    title: string;
+    message: string;
+    source: string;
+    category: string;
+    timestamp: Date;
+    acknowledged: boolean;
+    resolved: boolean;
+    auto_resolve: boolean;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    tags: string[];
+    metadata: any;
+    ai_analysis?: {
+        sentiment: 'positive' | 'negative' | 'neutral';
+        urgency_score: number;
+        impact_assessment: string;
+        recommended_action: string;
+        confidence: number;
+    };
+}
+
+interface NotificationSettings {
+    email_enabled: boolean;
+    push_enabled: boolean;
+    quiet_hours_enabled: boolean;
+    quiet_hours_start: string;
+    quiet_hours_end: string;
+    auto_resolve_enabled: boolean;
+    auto_resolve_delay: number;
+    priority_filter: string[];
+    category_filter: string[];
+    ai_analysis_enabled: boolean;
+}
+
+const QualityNotificationSystem: React.FC = () => {
+    const theme = useTheme();
+    const [notifications, setNotifications] = useState<QualityNotification[]>([
+        {
+            id: '1',
+            type: 'critical',
+            severity: 'critical',
+            title: '시스템 성능 급락 감지',
+            message: 'CPU 사용률이 95%를 초과하여 시스템 응답성이 저하되고 있습니다.',
+            source: 'performance-monitor',
+            category: 'performance',
+            timestamp: new Date(Date.now() - 5 * 60 * 1000),
+            acknowledged: false,
+            resolved: false,
+            auto_resolve: false,
+            priority: 'critical',
+            tags: ['performance', 'cpu', 'urgent'],
+            metadata: { cpu_usage: 95.2, response_time: 5000 },
+            ai_analysis: {
+                sentiment: 'negative',
+                urgency_score: 0.95,
+                impact_assessment: '사용자 경험에 심각한 영향을 미칠 수 있습니다.',
+                recommended_action: '즉시 리소스 확장 또는 프로세스 최적화를 수행하세요.',
+                confidence: 0.92
+            }
+        },
+        {
+            id: '2',
+            type: 'warning',
+            severity: 'high',
+            title: '테스트 실패율 증가',
+            message: '기능 테스트 실패율이 15%로 증가했습니다. 코드 품질 검토가 필요합니다.',
+            source: 'test-automation',
+            category: 'quality',
+            timestamp: new Date(Date.now() - 15 * 60 * 1000),
+            acknowledged: true,
+            resolved: false,
+            auto_resolve: false,
+            priority: 'high',
+            tags: ['testing', 'quality', 'regression'],
+            metadata: { failure_rate: 0.15, total_tests: 156 },
+            ai_analysis: {
+                sentiment: 'negative',
+                urgency_score: 0.78,
+                impact_assessment: '제품 품질에 영향을 미칠 수 있습니다.',
+                recommended_action: '실패한 테스트 케이스를 분석하고 관련 코드를 검토하세요.',
+                confidence: 0.85
+            }
+        },
+        {
+            id: '3',
+            type: 'info',
+            severity: 'medium',
+            title: '새로운 보안 패치 적용',
+            message: '중요한 보안 패치가 성공적으로 적용되었습니다.',
+            source: 'security-system',
+            category: 'security',
+            timestamp: new Date(Date.now() - 30 * 60 * 1000),
+            acknowledged: false,
+            resolved: true,
+            auto_resolve: true,
+            priority: 'medium',
+            tags: ['security', 'patch', 'update'],
+            metadata: { patch_version: 'v2.1.3', vulnerabilities_fixed: 3 },
+            ai_analysis: {
+                sentiment: 'positive',
+                urgency_score: 0.45,
+                impact_assessment: '시스템 보안이 향상되었습니다.',
+                recommended_action: '추가 보안 검사를 수행하여 패치 효과를 확인하세요.',
+                confidence: 0.88
+            }
+        },
+        {
+            id: '4',
+            type: 'success',
+            severity: 'low',
+            title: '성능 최적화 완료',
+            message: '데이터베이스 쿼리 최적화가 완료되어 응답 시간이 30% 개선되었습니다.',
+            source: 'optimization-engine',
+            category: 'performance',
+            timestamp: new Date(Date.now() - 60 * 60 * 1000),
+            acknowledged: false,
+            resolved: true,
+            auto_resolve: true,
+            priority: 'low',
+            tags: ['optimization', 'database', 'performance'],
+            metadata: { improvement: 0.30, response_time_before: 500, response_time_after: 350 },
+            ai_analysis: {
+                sentiment: 'positive',
+                urgency_score: 0.25,
+                impact_assessment: '사용자 경험이 크게 개선되었습니다.',
+                recommended_action: '다른 성능 병목 지점도 확인해보세요.',
+                confidence: 0.90
+            }
+        },
+        {
+            id: '5',
+            type: 'error',
+            severity: 'high',
+            title: 'API 연결 오류',
+            message: '외부 API 서비스와의 연결이 불안정합니다. 재시도 중입니다.',
+            source: 'api-gateway',
+            category: 'connectivity',
+            timestamp: new Date(Date.now() - 10 * 60 * 1000),
+            acknowledged: false,
+            resolved: false,
+            auto_resolve: false,
+            priority: 'high',
+            tags: ['api', 'connectivity', 'external'],
+            metadata: { retry_count: 3, last_error: 'Connection timeout' },
+            ai_analysis: {
+                sentiment: 'negative',
+                urgency_score: 0.82,
+                impact_assessment: '외부 서비스 의존성으로 인한 기능 제한이 발생할 수 있습니다.',
+                recommended_action: 'API 서비스 상태를 확인하고 대체 엔드포인트를 준비하세요.',
+                confidence: 0.87
+            }
+        }
+    ]);
+
+    const [settings, setSettings] = useState<NotificationSettings>({
+        email_enabled: true,
+        push_enabled: true,
+        quiet_hours_enabled: false,
+        quiet_hours_start: '22:00',
+        quiet_hours_end: '08:00',
+        auto_resolve_enabled: true,
+        auto_resolve_delay: 24,
+        priority_filter: ['critical', 'high', 'medium', 'low'],
+        category_filter: ['performance', 'quality', 'security', 'connectivity'],
+        ai_analysis_enabled: true
+    });
+
+    const [filterType, setFilterType] = useState('all');
+    const [filterPriority, setFilterPriority] = useState('all');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [settingsDialog, setSettingsDialog] = useState(false);
+    const [selectedNotification, setSelectedNotification] = useState<QualityNotification | null>(null);
+
+    // 실시간 알림 생성 시뮬레이션
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (Math.random() > 0.95) { // 5% 확률로 새 알림 생성
+                const newNotification: QualityNotification = {
+                    id: `notification-${Date.now()}`,
+                    type: ['info', 'warning', 'error', 'success'][Math.floor(Math.random() * 4)] as any,
+                    severity: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as any,
+                    title: `자동 생성 알림 ${Math.floor(Math.random() * 1000)}`,
+                    message: '시스템 모니터링에 의해 자동 생성된 알림입니다.',
+                    source: 'auto-monitor',
+                    category: ['performance', 'quality', 'security', 'connectivity'][Math.floor(Math.random() * 4)],
+                    timestamp: new Date(),
+                    acknowledged: false,
+                    resolved: false,
+                    auto_resolve: Math.random() > 0.5,
+                    priority: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as any,
+                    tags: ['auto-generated', 'monitoring'],
+                    metadata: { auto_generated: true },
+                    ai_analysis: {
+                        sentiment: Math.random() > 0.5 ? 'positive' : 'negative',
+                        urgency_score: Math.random(),
+                        impact_assessment: '자동 분석된 영향도 평가',
+                        recommended_action: '시스템 상태를 확인하세요.',
+                        confidence: 0.7 + Math.random() * 0.2
+                    }
+                };
+                setNotifications(prev => [newNotification, ...prev]);
+            }
+        }, 30000); // 30초마다 체크
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // 알림 필터링
+    const filteredNotifications = notifications.filter(notification => {
+        if (filterType !== 'all' && notification.type !== filterType) return false;
+        if (filterPriority !== 'all' && notification.priority !== filterPriority) return false;
+        if (filterCategory !== 'all' && notification.category !== filterCategory) return false;
+        if (searchTerm && !notification.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+            !notification.message.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+        return true;
+    });
+
+    // 알림 액션 핸들러
+    const handleAcknowledge = (id: string) => {
+        setNotifications(prev => prev.map(n =>
+            n.id === id ? { ...n, acknowledged: true } : n
+        ));
+    };
+
+    const handleResolve = (id: string) => {
+        setNotifications(prev => prev.map(n =>
+            n.id === id ? { ...n, resolved: true, acknowledged: true } : n
+        ));
+    };
+
+    const handleDelete = (id: string) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    };
+
+    const handleBulkAction = (action: 'acknowledge' | 'resolve' | 'delete') => {
+        setNotifications(prev => {
+            switch (action) {
+                case 'acknowledge':
+                    return prev.map(n => ({ ...n, acknowledged: true }));
+                case 'resolve':
+                    return prev.map(n => ({ ...n, resolved: true, acknowledged: true }));
+                case 'delete':
+                    return prev.filter(n => n.resolved);
+                default:
+                    return prev;
+            }
+        });
+    };
+
+    // 통계 계산
+    const stats = {
+        total: notifications.length,
+        unacknowledged: notifications.filter(n => !n.acknowledged).length,
+        unresolved: notifications.filter(n => !n.resolved).length,
+        critical: notifications.filter(n => n.severity === 'critical').length,
+        high: notifications.filter(n => n.severity === 'high').length,
+        medium: notifications.filter(n => n.severity === 'medium').length,
+        low: notifications.filter(n => n.severity === 'low').length
+    };
+
+    const getSeverityColor = (severity: string) => {
+        switch (severity) {
+            case 'critical':
+                return 'error';
+            case 'high':
+                return 'warning';
+            case 'medium':
+                return 'info';
+            case 'low':
+                return 'success';
+            default:
+                return 'default';
+        }
+    };
+
+    const getTypeIcon = (type: string) => {
+        switch (type) {
+            case 'critical':
+            case 'error':
+                return <Error color="error" />;
+            case 'warning':
+                return <Warning color="warning" />;
+            case 'success':
+                return <CheckCircle color="success" />;
+            case 'info':
+            default:
+                return <Info color="info" />;
+        }
+    };
+
+    const formatTimeAgo = (timestamp: Date) => {
+        const now = new Date();
+        const diff = now.getTime() - timestamp.getTime();
+        const minutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        if (minutes < 1) return '방금 전';
+        if (minutes < 60) return `${minutes}분 전`;
+        if (hours < 24) return `${hours}시간 전`;
+        return `${days}일 전`;
+    };
+
+    return (
+        <Box sx={{ p: 3 }}>
+            {/* 헤더 */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <Notifications sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="h5" component="h2">
+                    실시간 알림 시스템
+                </Typography>
+                <Box sx={{ ml: 'auto' }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<Settings />}
+                        onClick={() => setSettingsDialog(true)}
+                        sx={{ mr: 1 }}
+                    >
+                        설정
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<Clear />}
+                        onClick={() => handleBulkAction('delete')}
+                    >
+                        해결된 알림 정리
+                    </Button>
+                </Box>
+            </Box>
+
+            {/* 통계 카드 */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})` }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <NotificationsIcon sx={{ mr: 1, color: 'primary.main' }} />
+                                <Typography variant="h6">전체</Typography>
+                            </Box>
+                            <Typography variant="h4" sx={{ mt: 1 }}>
+                                {stats.total}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.1)}, ${alpha(theme.palette.warning.main, 0.1)})` }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Error sx={{ mr: 1, color: 'error.main' }} />
+                                <Typography variant="h6">미확인</Typography>
+                            </Box>
+                            <Typography variant="h4" sx={{ mt: 1 }}>
+                                {stats.unacknowledged}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.1)}, ${alpha(theme.palette.info.main, 0.1)})` }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Warning sx={{ mr: 1, color: 'warning.main' }} />
+                                <Typography variant="h6">미해결</Typography>
+                            </Box>
+                            <Typography variant="h4" sx={{ mt: 1 }}>
+                                {stats.unresolved}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.1)}, ${alpha(theme.palette.primary.main, 0.1)})` }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <CheckCircle sx={{ mr: 1, color: 'success.main' }} />
+                                <Typography variant="h6">해결됨</Typography>
+                            </Box>
+                            <Typography variant="h4" sx={{ mt: 1 }}>
+                                {stats.total - stats.unresolved}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* 필터 및 검색 */}
+            <Card sx={{ mb: 3 }}>
+                <CardContent>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} sm={6} md={3}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>유형</InputLabel>
+                                <Select
+                                    value={filterType}
+                                    onChange={(e) => setFilterType(e.target.value)}
+                                    label="유형"
+                                >
+                                    <MenuItem value="all">모든 유형</MenuItem>
+                                    <MenuItem value="info">정보</MenuItem>
+                                    <MenuItem value="warning">경고</MenuItem>
+                                    <MenuItem value="error">오류</MenuItem>
+                                    <MenuItem value="success">성공</MenuItem>
+                                    <MenuItem value="critical">긴급</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>우선순위</InputLabel>
+                                <Select
+                                    value={filterPriority}
+                                    onChange={(e) => setFilterPriority(e.target.value)}
+                                    label="우선순위"
+                                >
+                                    <MenuItem value="all">모든 우선순위</MenuItem>
+                                    <MenuItem value="critical">긴급</MenuItem>
+                                    <MenuItem value="high">높음</MenuItem>
+                                    <MenuItem value="medium">보통</MenuItem>
+                                    <MenuItem value="low">낮음</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>카테고리</InputLabel>
+                                <Select
+                                    value={filterCategory}
+                                    onChange={(e) => setFilterCategory(e.target.value)}
+                                    label="카테고리"
+                                >
+                                    <MenuItem value="all">모든 카테고리</MenuItem>
+                                    <MenuItem value="performance">성능</MenuItem>
+                                    <MenuItem value="quality">품질</MenuItem>
+                                    <MenuItem value="security">보안</MenuItem>
+                                    <MenuItem value="connectivity">연결성</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                placeholder="알림 검색..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                InputProps={{
+                                    startAdornment: <Search sx={{ mr: 1, color: 'action.active' }} />
+                                }}
+                            />
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
+
+            {/* 알림 목록 */}
+            <Card>
+                <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" sx={{ flex: 1 }}>
+                            알림 목록 ({filteredNotifications.length})
+                        </Typography>
+                        <Button
+                            size="small"
+                            onClick={() => handleBulkAction('acknowledge')}
+                            sx={{ mr: 1 }}
+                        >
+                            모두 확인
+                        </Button>
+                        <Button
+                            size="small"
+                            onClick={() => handleBulkAction('resolve')}
+                        >
+                            모두 해결
+                        </Button>
+                    </Box>
+
+                    <List>
+                        {filteredNotifications.map((notification) => (
+                            <React.Fragment key={notification.id}>
+                                <ListItem
+                                    sx={{
+                                        border: notification.severity === 'critical' ? 2 : 1,
+                                        borderColor: notification.severity === 'critical' ? 'error.main' : 'divider',
+                                        borderRadius: 1,
+                                        mb: 1,
+                                        background: notification.acknowledged ? alpha(theme.palette.action.hover, 0.1) : 'inherit'
+                                    }}
+                                >
+                                    <ListItemIcon>
+                                        <Avatar sx={{
+                                            bgcolor: getSeverityColor(notification.severity) + '.main',
+                                            width: 40,
+                                            height: 40
+                                        }}>
+                                            {getTypeIcon(notification.type)}
+                                        </Avatar>
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Typography variant="subtitle1" fontWeight="medium">
+                                                    {notification.title}
+                                                </Typography>
+                                                <Chip
+                                                    label={notification.severity}
+                                                    color={getSeverityColor(notification.severity) as any}
+                                                    size="small"
+                                                />
+                                                {!notification.acknowledged && (
+                                                    <Chip
+                                                        label="새로운"
+                                                        color="error"
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                )}
+                                            </Box>
+                                        }
+                                        secondary={
+                                            <Box>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                    {notification.message}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {formatTimeAgo(notification.timestamp)}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        • {notification.source}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        • {notification.category}
+                                                    </Typography>
+                                                    {notification.ai_analysis && (
+                                                        <Chip
+                                                            label={`AI 신뢰도: ${(notification.ai_analysis.confidence * 100).toFixed(0)}%`}
+                                                            size="small"
+                                                            variant="outlined"
+                                                            color={notification.ai_analysis.confidence > 0.9 ? 'success' : 'default'}
+                                                        />
+                                                    )}
+                                                </Box>
+                                            </Box>
+                                        }
+                                    />
+                                    <ListItemSecondaryAction>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            {!notification.acknowledged && (
+                                                <Tooltip title="확인">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleAcknowledge(notification.id)}
+                                                    >
+                                                        <CheckCircle color="success" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            {!notification.resolved && (
+                                                <Tooltip title="해결">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleResolve(notification.id)}
+                                                    >
+                                                        <CheckCircle color="primary" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            <Tooltip title="삭제">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => handleDelete(notification.id)}
+                                                >
+                                                    <Delete color="error" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
+                                    </ListItemSecondaryAction>
+                                </ListItem>
+                                {notification.ai_analysis && (
+                                    <Accordion sx={{ mb: 1 }}>
+                                        <AccordionSummary expandIcon={<ExpandMore />}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <AutoAwesome color="primary" />
+                                                <Typography variant="body2">AI 분석 결과</Typography>
+                                            </Box>
+                                        </AccordionSummary>
+                                        <AccordionDetails>
+                                            <Grid container spacing={2}>
+                                                <Grid item xs={12} md={6}>
+                                                    <Typography variant="subtitle2" gutterBottom>
+                                                        영향도 평가
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {notification.ai_analysis.impact_assessment}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={12} md={6}>
+                                                    <Typography variant="subtitle2" gutterBottom>
+                                                        권장 조치
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {notification.ai_analysis.recommended_action}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={12}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                        <Chip
+                                                            label={`긴급도: ${(notification.ai_analysis.urgency_score * 100).toFixed(0)}%`}
+                                                            color={notification.ai_analysis.urgency_score > 0.8 ? 'error' :
+                                                                notification.ai_analysis.urgency_score > 0.5 ? 'warning' : 'success'}
+                                                            size="small"
+                                                        />
+                                                        <Chip
+                                                            label={`감정: ${notification.ai_analysis.sentiment}`}
+                                                            color={notification.ai_analysis.sentiment === 'positive' ? 'success' :
+                                                                notification.ai_analysis.sentiment === 'negative' ? 'error' : 'default'}
+                                                            size="small"
+                                                        />
+                                                    </Box>
+                                                </Grid>
+                                            </Grid>
+                                        </AccordionDetails>
+                                    </Accordion>
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </List>
+                </CardContent>
+            </Card>
+
+            {/* 설정 다이얼로그 */}
+            <Dialog
+                open={settingsDialog}
+                onClose={() => setSettingsDialog(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Settings sx={{ mr: 1 }} />
+                        알림 설정
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={3} sx={{ mt: 1 }}>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="h6" gutterBottom>
+                                알림 방법
+                            </Typography>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={settings.email_enabled}
+                                        onChange={(e) => setSettings(prev => ({ ...prev, email_enabled: e.target.checked }))}
+                                    />
+                                }
+                                label="이메일 알림"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={settings.push_enabled}
+                                        onChange={(e) => setSettings(prev => ({ ...prev, push_enabled: e.target.checked }))}
+                                    />
+                                }
+                                label="브라우저 알림"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={settings.ai_analysis_enabled}
+                                        onChange={(e) => setSettings(prev => ({ ...prev, ai_analysis_enabled: e.target.checked }))}
+                                    />
+                                }
+                                label="AI 분석 활성화"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="h6" gutterBottom>
+                                자동 해결
+                            </Typography>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={settings.auto_resolve_enabled}
+                                        onChange={(e) => setSettings(prev => ({ ...prev, auto_resolve_enabled: e.target.checked }))}
+                                    />
+                                }
+                                label="자동 해결 활성화"
+                            />
+                            <TextField
+                                fullWidth
+                                type="number"
+                                label="자동 해결 지연 시간 (시간)"
+                                value={settings.auto_resolve_delay}
+                                onChange={(e) => setSettings(prev => ({ ...prev, auto_resolve_delay: parseInt(e.target.value) }))}
+                                sx={{ mt: 2 }}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setSettingsDialog(false)}>
+                        취소
+                    </Button>
+                    <Button variant="contained" onClick={() => setSettingsDialog(false)}>
+                        저장
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default QualityNotificationSystem;

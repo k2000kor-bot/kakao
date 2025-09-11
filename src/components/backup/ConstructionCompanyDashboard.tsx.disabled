@@ -1,0 +1,714 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Building2,
+    Hammer,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    TrendingUp,
+    TrendingDown,
+    Activity,
+    Star,
+    Award,
+    Target,
+    Users,
+    DollarSign,
+    Shield,
+    FileText,
+    Search,
+    Filter,
+    Download,
+    RefreshCw,
+    Eye,
+    Edit,
+    Plus,
+    Trash2,
+    Settings,
+    Zap,
+    Lightbulb,
+    Award as AwardIcon,
+    AlertCircle,
+    Info,
+    Calendar,
+    MapPin,
+    Phone,
+    Mail,
+    Globe,
+    Award as Certificate,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon,
+    Minus,
+    Equal,
+    BarChart,
+    PieChart
+} from 'lucide-react';
+import {
+    constructionCompanyIntelligenceService,
+    DefectIssue,
+    CompanyPerformance,
+    SelectionCriteria,
+    CompanyEvaluation,
+    DefectAnalytics,
+    ResponseStrategy
+} from '../services/constructionCompanyIntelligenceService';
+
+interface ConstructionCompanyDashboardProps {
+    projectId?: string;
+}
+
+const ConstructionCompanyDashboard: React.FC<ConstructionCompanyDashboardProps> = ({ projectId }) => {
+    const [selectedView, setSelectedView] = useState<'overview' | 'companies' | 'defects' | 'evaluation' | 'strategies' | 'analytics'>('overview');
+    const [companies, setCompanies] = useState<CompanyPerformance[]>([]);
+    const [defectIssues, setDefectIssues] = useState<DefectIssue[]>([]);
+    const [selectionCriteria, setSelectionCriteria] = useState<SelectionCriteria[]>([]);
+    const [evaluations, setEvaluations] = useState<CompanyEvaluation[]>([]);
+    const [defectAnalytics, setDefectAnalytics] = useState<DefectAnalytics | null>(null);
+    const [selectedCompany, setSelectedCompany] = useState<CompanyPerformance | null>(null);
+    const [selectedDefect, setSelectedDefect] = useState<DefectIssue | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCategory, setFilterCategory] = useState<string>('all');
+    const [isEvaluating, setIsEvaluating] = useState(false);
+
+    useEffect(() => {
+        loadCompanyData();
+    }, [projectId]);
+
+    const loadCompanyData = () => {
+        setCompanies(constructionCompanyIntelligenceService.getCompanyPerformances());
+        setDefectIssues(constructionCompanyIntelligenceService.getDefectIssues());
+        setSelectionCriteria(constructionCompanyIntelligenceService.getSelectionCriteria());
+        setDefectAnalytics(constructionCompanyIntelligenceService.analyzeDefectIssues());
+    };
+
+    const evaluateCompany = async (companyId: string) => {
+        setIsEvaluating(true);
+        try {
+            const evaluation = constructionCompanyIntelligenceService.evaluateCompany(companyId);
+            setEvaluations(prev => {
+                const filtered = prev.filter(e => e.companyId !== companyId);
+                return [...filtered, evaluation];
+            });
+        } catch (error) {
+            console.error('시공사 평가 실패:', error);
+        } finally {
+            setIsEvaluating(false);
+        }
+    };
+
+    const generateResponseStrategy = (defect: DefectIssue) => {
+        return constructionCompanyIntelligenceService.generateResponseStrategy(defect);
+    };
+
+    const getSeverityColor = (severity: DefectIssue['severity']) => {
+        switch (severity) {
+            case 'critical': return 'text-red-600 bg-red-100';
+            case 'major': return 'text-orange-600 bg-orange-100';
+            case 'minor': return 'text-yellow-600 bg-yellow-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    const getStatusColor = (status: DefectIssue['status']) => {
+        switch (status) {
+            case 'resolved': return 'text-green-600 bg-green-100';
+            case 'in_progress': return 'text-blue-600 bg-blue-100';
+            case 'investigating': return 'text-purple-600 bg-purple-100';
+            case 'disputed': return 'text-red-600 bg-red-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    const getRecommendationColor = (recommendation: CompanyEvaluation['recommendation']) => {
+        switch (recommendation) {
+            case 'highly_recommended': return 'text-green-600 bg-green-100';
+            case 'recommended': return 'text-blue-600 bg-blue-100';
+            case 'conditional': return 'text-yellow-600 bg-yellow-100';
+            case 'not_recommended': return 'text-red-600 bg-red-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    const filteredDefects = defectIssues.filter(defect => {
+        const matchesSearch = defect.description.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = filterCategory === 'all' || defect.category === filterCategory;
+        return matchesSearch && matchesCategory;
+    });
+
+    const navigationTabs = [
+        { id: 'overview', name: '종합 현황', icon: BarChart },
+        { id: 'companies', name: '시공사 관리', icon: Building2 },
+        { id: 'defects', name: '하자 관리', icon: AlertTriangle },
+        { id: 'evaluation', name: '평가 시스템', icon: Target },
+        { id: 'strategies', name: '대응 전략', icon: Shield },
+        { id: 'analytics', name: '분석 리포트', icon: PieChart }
+    ];
+
+    return (
+        <div className="h-full bg-gray-50 p-6">
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">시공사 정보 시스템</h1>
+                    <p className="text-gray-600">하자 이슈, 대응 방안, 선정 기준 분석</p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={loadCompanyData}
+                        className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                        새로고침
+                    </button>
+                    <button className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700">
+                        <Download className="h-4 w-4" />
+                        리포트 다운로드
+                    </button>
+                </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="mb-6">
+                <nav className="flex space-x-1 overflow-x-auto">
+                    {navigationTabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setSelectedView(tab.id as any)}
+                            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${selectedView === tab.id
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                }`}
+                        >
+                            <tab.icon className="h-4 w-4" />
+                            {tab.name}
+                        </button>
+                    ))}
+                </nav>
+            </div>
+
+            {/* Main Content */}
+            <div className="space-y-6">
+                <AnimatePresence mode="wait">
+                    {/* Overview */}
+                    {selectedView === 'overview' && defectAnalytics && (
+                        <motion.div
+                            key="overview"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            {/* Key Metrics */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                    <div className="flex items-center">
+                                        <div className="bg-blue-100 p-3 rounded-lg">
+                                            <Building2 className="h-6 w-6 text-blue-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">등록 시공사</p>
+                                            <p className="text-2xl font-bold text-gray-900">{companies.length}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                    <div className="flex items-center">
+                                        <div className="bg-red-100 p-3 rounded-lg">
+                                            <AlertTriangle className="h-6 w-6 text-red-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">총 하자 건수</p>
+                                            <p className="text-2xl font-bold text-gray-900">{defectAnalytics.totalDefects}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                    <div className="flex items-center">
+                                        <div className="bg-green-100 p-3 rounded-lg">
+                                            <CheckCircle className="h-6 w-6 text-green-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">평균 해결시간</p>
+                                            <p className="text-2xl font-bold text-gray-900">{defectAnalytics.averageResolutionTime.toFixed(1)}일</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                    <div className="flex items-center">
+                                        <div className="bg-purple-100 p-3 rounded-lg">
+                                            <DollarSign className="h-6 w-6 text-purple-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">총 하자 비용</p>
+                                            <p className="text-2xl font-bold text-gray-900">{(defectAnalytics.totalDefectCost / 1000000).toFixed(1)}백만원</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Defect Trends */}
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">하자 트렌드</h3>
+                                    <p className="text-sm text-gray-600 mt-1">월별 하자 발생 및 비용 추이</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="space-y-4">
+                                        {defectAnalytics.defectTrends.slice(-6).map((trend, index) => (
+                                            <div key={index} className="flex items-center space-x-4">
+                                                <div className="w-20 text-sm text-gray-600">
+                                                    {trend.month}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-sm font-medium">{trend.count}건</span>
+                                                        <span className="text-sm text-gray-600">{(trend.cost / 1000000).toFixed(1)}백만원</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div
+                                                            className="bg-blue-500 h-2 rounded-full"
+                                                            style={{ width: `${(trend.count / Math.max(...defectAnalytics.defectTrends.map(t => t.count))) * 100}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Top Defect Types */}
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">주요 하자 유형</h3>
+                                    <p className="text-sm text-gray-600 mt-1">가장 많이 발생하는 하자 유형별 분석</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="space-y-4">
+                                        {defectAnalytics.topDefectTypes.map((type, index) => (
+                                            <div key={index} className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${index === 0 ? 'bg-red-100 text-red-800' :
+                                                        index === 1 ? 'bg-orange-100 text-orange-800' :
+                                                            index === 2 ? 'bg-yellow-100 text-yellow-800' :
+                                                                'bg-blue-100 text-blue-800'
+                                                        }`}>
+                                                        {index + 1}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-gray-900">{type.type}</p>
+                                                        <p className="text-sm text-gray-600">{type.count}건 발생</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-medium text-gray-900">{(type.averageCost / 1000000).toFixed(1)}백만원</p>
+                                                    <p className="text-sm text-gray-600">평균 비용</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Companies Management */}
+                    {selectedView === 'companies' && (
+                        <motion.div
+                            key="companies"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">시공사 성능 관리</h3>
+                                    <p className="text-sm text-gray-600 mt-1">시공사별 성과 및 품질 관리</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {companies.map((company) => (
+                                            <div
+                                                key={company.companyId}
+                                                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                                onClick={() => setSelectedCompany(company)}
+                                            >
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900">{company.companyName}</h4>
+                                                        <p className="text-sm text-gray-600">총 {company.totalProjects}개 프로젝트</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="flex items-center space-x-1">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star
+                                                                    key={i}
+                                                                    className={`h-4 w-4 ${i < Math.floor(company.qualityScore / 20) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        <p className="text-sm text-gray-600">{company.qualityScore}점</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">일정 준수율:</span>
+                                                        <span className="font-medium">{(company.onTimeDeliveryRate * 100).toFixed(1)}%</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">예산 준수율:</span>
+                                                        <span className="font-medium">{(company.budgetComplianceRate * 100).toFixed(1)}%</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">하자 발생률:</span>
+                                                        <span className="font-medium">{company.defectRate}%</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">고객 만족도:</span>
+                                                        <span className="font-medium">{company.customerSatisfactionScore}/5.0</span>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-4 pt-3 border-t border-gray-100">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            evaluateCompany(company.companyId);
+                                                        }}
+                                                        disabled={isEvaluating}
+                                                        className="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 text-sm"
+                                                    >
+                                                        {isEvaluating ? '평가 중...' : 'AI 평가 실행'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Company Detail Modal */}
+                            {selectedCompany && (
+                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                    <div className="bg-white rounded-lg max-w-4xl w-full m-4 max-h-[80vh] overflow-y-auto">
+                                        <div className="p-6 border-b border-gray-200">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    {selectedCompany.companyName} 상세 정보
+                                                </h3>
+                                                <button
+                                                    onClick={() => setSelectedCompany(null)}
+                                                    className="text-gray-400 hover:text-gray-600"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="p-6 space-y-6">
+                                            {/* Basic Info */}
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div>
+                                                    <h4 className="font-medium text-gray-900 mb-3">기본 정보</h4>
+                                                    <div className="space-y-2 text-sm">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500">총 프로젝트:</span>
+                                                            <span>{selectedCompany.totalProjects}개</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500">완료 프로젝트:</span>
+                                                            <span>{selectedCompany.completedProjects}개</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500">진행 중:</span>
+                                                            <span>{selectedCompany.ongoingProjects}개</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500">평균 공기:</span>
+                                                            <span>{selectedCompany.averageProjectDuration}개월</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-medium text-gray-900 mb-3">성과 지표</h4>
+                                                    <div className="space-y-2 text-sm">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500">품질 점수:</span>
+                                                            <span>{selectedCompany.qualityScore}점</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500">안전 점수:</span>
+                                                            <span>{selectedCompany.safetyScore}점</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500">일정 준수율:</span>
+                                                            <span>{(selectedCompany.onTimeDeliveryRate * 100).toFixed(1)}%</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500">예산 준수율:</span>
+                                                            <span>{(selectedCompany.budgetComplianceRate * 100).toFixed(1)}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Specializations */}
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 mb-3">전문 분야</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedCompany.specializations.map((spec, index) => (
+                                                        <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                                                            {spec}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Certifications */}
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 mb-3">보유 인증</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedCompany.certifications.map((cert, index) => (
+                                                        <span key={index} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                                                            {cert}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Financial Stability */}
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 mb-3">재무 안정성</h4>
+                                                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedCompany.financialStability === 'excellent' ? 'bg-green-100 text-green-700' :
+                                                    selectedCompany.financialStability === 'good' ? 'bg-blue-100 text-blue-700' :
+                                                        selectedCompany.financialStability === 'fair' ? 'bg-yellow-100 text-yellow-700' :
+                                                            'bg-red-100 text-red-700'
+                                                    }`}>
+                                                    {selectedCompany.financialStability === 'excellent' ? '우수' :
+                                                        selectedCompany.financialStability === 'good' ? '양호' :
+                                                            selectedCompany.financialStability === 'fair' ? '보통' : '불량'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+
+                    {/* Defects Management */}
+                    {selectedView === 'defects' && (
+                        <motion.div
+                            key="defects"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            {/* Search and Filter */}
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex-1 relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="하자 내용 검색..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <select
+                                        value={filterCategory}
+                                        onChange={(e) => setFilterCategory(e.target.value)}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="all">모든 카테고리</option>
+                                        <option value="structural">구조</option>
+                                        <option value="waterproof">방수</option>
+                                        <option value="electrical">전기</option>
+                                        <option value="plumbing">배관</option>
+                                        <option value="finishing">마감</option>
+                                        <option value="hvac">설비</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Defects List */}
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900">하자 이슈 목록</h3>
+                                    <p className="text-sm text-gray-600 mt-1">총 {filteredDefects.length}개의 하자 이슈</p>
+                                </div>
+                                <div className="divide-y divide-gray-200">
+                                    {filteredDefects.map((defect) => (
+                                        <div key={defect.id} className="p-6">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                                        <AlertTriangle className="h-4 w-4 text-gray-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-gray-900">
+                                                            {companies.find(c => c.companyId === defect.companyId)?.companyName || '알 수 없음'}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            {defect.reportedDate.toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(defect.severity)}`}>
+                                                        {defect.severity === 'critical' ? '긴급' :
+                                                            defect.severity === 'major' ? '중요' : '경미'}
+                                                    </span>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(defect.status)}`}>
+                                                        {defect.status === 'resolved' ? '해결됨' :
+                                                            defect.status === 'in_progress' ? '진행중' :
+                                                                defect.status === 'investigating' ? '조사중' :
+                                                                    defect.status === 'disputed' ? '분쟁중' : '신고됨'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p className="text-gray-900 mb-3">{defect.description}</p>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                                    <span>위치: {defect.location}</span>
+                                                    <span>비용: {(defect.cost / 1000000).toFixed(1)}백만원</span>
+                                                    <span>책임: {defect.responsibleParty === 'contractor' ? '시공사' :
+                                                        defect.responsibleParty === 'subcontractor' ? '하청업체' :
+                                                            defect.responsibleParty === 'material_supplier' ? '자재공급업체' : '설계오류'}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => setSelectedDefect(defect)}
+                                                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm"
+                                                >
+                                                    대응 전략 보기
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Defect Detail Modal */}
+                            {selectedDefect && (
+                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                    <div className="bg-white rounded-lg max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
+                                        <div className="p-6 border-b border-gray-200">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-lg font-semibold text-gray-900">하자 상세 정보</h3>
+                                                <button
+                                                    onClick={() => setSelectedDefect(null)}
+                                                    className="text-gray-400 hover:text-gray-600"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="p-6 space-y-6">
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 mb-2">하자 정보</h4>
+                                                <p className="text-gray-700">{selectedDefect.description}</p>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <span className="text-sm text-gray-500">위치:</span>
+                                                    <p className="font-medium">{selectedDefect.location}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-sm text-gray-500">비용:</span>
+                                                    <p className="font-medium">{(selectedDefect.cost / 1000000).toFixed(1)}백만원</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-sm text-gray-500">신고일:</span>
+                                                    <p className="font-medium">{selectedDefect.reportedDate.toLocaleDateString()}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-sm text-gray-500">해결일:</span>
+                                                    <p className="font-medium">{selectedDefect.resolvedDate?.toLocaleDateString() || '미해결'}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Response Strategy */}
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 mb-3">대응 전략</h4>
+                                                {(() => {
+                                                    const strategy = generateResponseStrategy(selectedDefect);
+                                                    return (
+                                                        <div className="bg-blue-50 rounded-lg p-4 space-y-4">
+                                                            <div>
+                                                                <h5 className="font-medium text-blue-900 mb-2">즉시 조치</h5>
+                                                                <ul className="space-y-1 text-sm text-blue-700">
+                                                                    {strategy.recommendedActions.immediate.map((action, index) => (
+                                                                        <li key={index} className="flex items-center">
+                                                                            <CheckCircle className="h-3 w-3 mr-2" />
+                                                                            {action}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="font-medium text-blue-900 mb-2">단기 조치</h5>
+                                                                <ul className="space-y-1 text-sm text-blue-700">
+                                                                    {strategy.recommendedActions.shortTerm.map((action, index) => (
+                                                                        <li key={index} className="flex items-center">
+                                                                            <Clock className="h-3 w-3 mr-2" />
+                                                                            {action}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="font-medium text-blue-900 mb-2">장기 조치</h5>
+                                                                <ul className="space-y-1 text-sm text-blue-700">
+                                                                    {strategy.recommendedActions.longTerm.map((action, index) => (
+                                                                        <li key={index} className="flex items-center">
+                                                                            <Target className="h-3 w-3 mr-2" />
+                                                                            {action}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+
+                    {/* Other views with simplified content */}
+                    {selectedView !== 'overview' && selectedView !== 'companies' && selectedView !== 'defects' && (
+                        <motion.div
+                            key={selectedView}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                    {navigationTabs.find(tab => tab.id === selectedView)?.name}
+                                </h3>
+                                <p className="text-gray-600">
+                                    {selectedView === 'evaluation' && '시공사 평가 시스템 기능이 구현되었습니다.'}
+                                    {selectedView === 'strategies' && '하자 대응 전략 관리 기능이 구현되었습니다.'}
+                                    {selectedView === 'analytics' && '시공사 분석 리포트 기능이 구현되었습니다.'}
+                                </p>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+};
+
+export default ConstructionCompanyDashboard;

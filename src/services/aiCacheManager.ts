@@ -232,7 +232,7 @@ class AICacheManager extends EventEmitter {
         const timestamps = entries.map(e => e.timestamp);
         const accessCounts = entries.map(e => e.access_count);
         const mostAccessedEntry = entries.reduce((max, entry) =>
-            entry.access_count > (max?.access_count || 0) ? entry : max, null);
+            entry.access_count > (max?.access_count || 0) ? entry : max, entries[0] || null);
 
         return {
             total_entries: this.cache.size,

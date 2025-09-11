@@ -241,7 +241,7 @@ class AdvancedAnalysisEngine {
             project.name,
             project.description,
             ...(project.files?.map(f => f.name) || []),
-            ...(project.guidelines?.map(g => g.title) || [])
+            project.guidelines || ''
         ].join(' ').toLowerCase();
 
         const messageWords = message.toLowerCase().match(/[가-힣]+/g) || [];

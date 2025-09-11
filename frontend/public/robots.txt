@@ -1,0 +1,11 @@
+# CORBU AI - 통합 AI 채팅 시스템
+# https://corbu-ai.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://corbu-ai.com/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1

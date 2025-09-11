@@ -1012,7 +1012,7 @@ class AdvancedQuestionUnderstandingEngine {
             knowledge_gaps: [],
             suggested_approaches: [],
             confidence_score: 0.3,
-            processing_time,
+            processing_time: processingTime,
             timestamp: new Date()
         };
     }

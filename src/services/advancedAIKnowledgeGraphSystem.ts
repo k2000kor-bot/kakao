@@ -293,6 +293,10 @@ class AdvancedAIKnowledgeGraphSystem {
             title: '새로운 지식 노드 추가됨',
             message: `지식 그래프 "${graph.name}"에 새로운 노드 "${node.label}"이(가) 추가되었습니다.`,
             source: 'knowledge-graph-system',
+            category: 'system',
+            auto_resolve: true,
+            priority: 'medium',
+            tags: ['지식그래프', '노드추가', '시스템'],
             metadata: {
                 graph_id: graphId,
                 node_id: nodeId,

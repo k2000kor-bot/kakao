@@ -20,7 +20,7 @@ export interface QualityTestCase {
     id: string;
     name: string;
     description: string;
-    test_type: 'unit' | 'integration' | 'system' | 'acceptance' | 'regression' | 'stress';
+    test_type: 'unit' | 'integration' | 'system' | 'acceptance' | 'regression' | 'stress' | 'functional' | 'performance' | 'security' | 'usability' | 'reliability' | 'compatibility';
     input_data: any;
     expected_output: any;
     validation_rules: ValidationRule[];
@@ -739,11 +739,15 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     // 품질 알림 생성
     private async createQualityAlert(execution: AutomatedTestExecution, testSuite: QualityTestSuite): Promise<void> {
         await realTimeAIAlertSystem.createAlert({
-            type: 'quality',
+            type: 'warning',
             severity: execution.summary.quality_score < 0.6 ? 'critical' : 'high',
             title: `품질 테스트 실패: ${testSuite.name}`,
             message: `품질 점수가 ${(execution.summary.quality_score * 100).toFixed(1)}%로 기준치를 하회했습니다.`,
             source: 'quality-assurance-system',
+            category: 'quality',
+            auto_resolve: false,
+            priority: execution.summary.quality_score < 0.6 ? 'critical' : 'high',
+            tags: ['품질', '테스트실패', '시스템'],
             metadata: {
                 test_suite_id: testSuite.id,
                 execution_id: execution.id,
@@ -852,7 +856,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
                             {
                                 id: 'throughput-rule',
                                 name: '처리량 기준',
-                                rule_type: 'performance',
+                                rule_type: 'content',
                                 condition: 'throughput >= 30',
                                 threshold: 30,
                                 operator: 'greater_than',

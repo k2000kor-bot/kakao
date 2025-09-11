@@ -1,0 +1,10 @@
+
+> corbu-ai@0.1.0 build
+> react-scripts build
+
+Creating an optimized production build...
+Failed to compile.
+
+Attempted import error: 'Cpu' is not exported from '@mui/icons-material' (imported as 'Cpu').
+
+

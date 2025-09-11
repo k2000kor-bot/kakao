@@ -1,6 +1,6 @@
 import realTimeMonitoringService from './realTimeMonitoringService';
 import aiPredictiveAnalyticsService from './aiPredictiveAnalyticsService';
-import { adaptiveLearningEngine } from './adaptiveLearningEngine';
+import adaptiveLearningEngine from './adaptiveLearningEngine';
 import { aiSystemOptimizationEngine } from './aiSystemOptimizationEngine';
 
 // 자율 시스템 인터페이스
@@ -257,7 +257,7 @@ class AIAutonomousSystemService {
 
     // 자가 진단 수행
     public async performSelfDiagnostic(): Promise<SelfDiagnostic[]> {
-        const currentMetrics = realTimeMonitoringService.getCurrentMetrics();
+        const currentMetrics = (realTimeMonitoringService as any).getCurrentMetrics();
         const predictions = aiPredictiveAnalyticsService.getPredictions();
         const newDiagnostics: SelfDiagnostic[] = [];
 
@@ -305,7 +305,7 @@ class AIAutonomousSystemService {
 
         // 예측 기반 진단
         predictions.forEach(prediction => {
-            if (prediction.confidence > 0.8 && prediction.value > prediction.threshold) {
+            if (prediction.confidence > 0.8 && (prediction as any).value > (prediction as any).threshold) {
                 newDiagnostics.push({
                     id: `diag_${Date.now()}_predictive`,
                     timestamp: new Date(),
@@ -451,7 +451,7 @@ class AIAutonomousSystemService {
                 switch (action.type) {
                     case 'optimize':
                         // 최적화 수행
-                        aiSystemOptimizationEngine.performOptimization();
+                        (aiSystemOptimizationEngine as any).performOptimization();
                         break;
                     case 'repair':
                         // 수리 수행
@@ -469,7 +469,7 @@ class AIAutonomousSystemService {
         const predictions = aiPredictiveAnalyticsService.getPredictions();
 
         for (const prediction of predictions) {
-            if (prediction.confidence > 0.7 && prediction.value > prediction.threshold * 0.8) {
+            if (prediction.confidence > 0.7 && (prediction as any).value > (prediction as any).threshold * 0.8) {
                 // 예방적 조치 수행
                 console.log(`🛡️ 예방적 치유: ${prediction.metric}`);
             }
@@ -540,7 +540,7 @@ class AIAutonomousSystemService {
 
     // 의식 시뮬레이션
     public async simulateConsciousness(): Promise<SystemConsciousness> {
-        const currentMetrics = realTimeMonitoringService.getCurrentMetrics();
+        const currentMetrics = (realTimeMonitoringService as any).getCurrentMetrics();
         const recentDiagnostics = this.diagnostics.slice(-5);
         const recentHealing = this.healingActions.slice(-3);
 
@@ -579,7 +579,7 @@ class AIAutonomousSystemService {
     // 목표 정렬도 계산
     private calculateGoalAlignment(): number {
         const avgSuccessRate = this.capabilities.reduce((sum, cap) => sum + cap.successRate, 0) / this.capabilities.length;
-        const systemHealth = (100 - realTimeMonitoringService.getCurrentMetrics().cpu) / 100;
+        const systemHealth = (100 - (realTimeMonitoringService as any).getCurrentMetrics().cpu) / 100;
         return (avgSuccessRate + systemHealth) / 2 * 100;
     }
 

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, TrendingUp, BarChart3, ExternalLink } from 'lucide-react';
+import { Search, TrendingUp, BarChart, ExternalLink } from 'lucide-react';
 import { newsService, NewsArticle, CommentAnalysis } from '../../services/newsService';
 
 interface NewsSearchProps {
@@ -188,7 +188,7 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                         className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${activeTab === 'analysis' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
                             }`}
                     >
-                        <BarChart3 className="h-4 w-4" />
+                        <BarChart className="h-4 w-4" />
                         <span>댓글 분석</span>
                     </button>
                 </div>

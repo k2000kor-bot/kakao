@@ -1,0 +1,788 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Typography,
+    Paper,
+    Grid,
+    Card,
+    CardContent,
+    Chip,
+    LinearProgress,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Tabs,
+    Tab,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    IconButton,
+    Alert,
+    CircularProgress,
+    Tooltip,
+    Badge
+} from '@mui/material';
+import {
+    TrendingUp,
+    TrendingDown,
+    Warning,
+    CheckCircle,
+    Error,
+    Refresh,
+    Fullscreen,
+    FullscreenExit,
+    Psychology,
+    Analytics,
+    Timeline,
+    ModelTraining,
+    Insights,
+    Settings
+} from '@mui/icons-material';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Pie, Cell } from 'recharts';
+
+// Mock data for demonstration
+const mockMetrics = {
+    totalModels: 3,
+    activeModels: 3,
+    averageAccuracy: 0.937,
+    totalPredictions: 1247,
+    predictionsPerSecond: 8.3,
+    modelDriftAlerts: 1,
+    insightsGenerated: 23,
+    systemHealth: 'excellent' as const
+};
+
+const mockModels = [
+    {
+        id: 'model-001',
+        name: '고급 회귀 분석 모델',
+        type: 'regression',
+        accuracy: 0.94,
+        precision: 0.92,
+        recall: 0.89,
+        f1Score: 0.90,
+        lastUpdated: new Date(),
+        status: 'active',
+        version: '2.1.0',
+        features: ['feature1', 'feature2', 'feature3', 'feature4'],
+        hyperparameters: {
+            learningRate: 0.001,
+            epochs: 1000,
+            batchSize: 32,
+            regularization: 0.01
+        }
+    },
+    {
+        id: 'model-002',
+        name: '시계열 예측 모델',
+        type: 'timeSeries',
+        accuracy: 0.91,
+        precision: 0.88,
+        recall: 0.93,
+        f1Score: 0.90,
+        lastUpdated: new Date(),
+        status: 'active',
+        version: '1.8.0',
+        features: ['time', 'seasonality', 'trend', 'noise'],
+        hyperparameters: {
+            windowSize: 24,
+            forecastHorizon: 12,
+            seasonalityPeriod: 7
+        }
+    },
+    {
+        id: 'model-003',
+        name: '딥러닝 분류 모델',
+        type: 'deepLearning',
+        accuracy: 0.96,
+        precision: 0.94,
+        recall: 0.95,
+        f1Score: 0.94,
+        lastUpdated: new Date(),
+        status: 'active',
+        version: '3.0.0',
+        features: ['feature1', 'feature2', 'feature3', 'feature4', 'feature5'],
+        hyperparameters: {
+            layers: [64, 32, 16],
+            activation: 'relu',
+            dropout: 0.2,
+            optimizer: 'adam'
+        }
+    }
+];
+
+const mockPerformanceData = [
+    { modelId: 'model-001', accuracy: 0.94, precision: 0.92, recall: 0.89, f1Score: 0.90, latency: 75, throughput: 850, driftScore: 0.12 },
+    { modelId: 'model-002', accuracy: 0.91, precision: 0.88, recall: 0.93, f1Score: 0.90, latency: 120, throughput: 650, driftScore: 0.08 },
+    { modelId: 'model-003', accuracy: 0.96, precision: 0.94, recall: 0.95, f1Score: 0.94, latency: 95, throughput: 720, driftScore: 0.05 }
+];
+
+const mockInsights = [
+    {
+        id: 'insight-001',
+        type: 'trend',
+        title: '데이터 트렌드 감지',
+        description: '최근 데이터에서 상승 트렌드가 감지되었습니다. (트렌드 계수: 0.234)',
+        confidence: 0.75,
+        impact: 'medium',
+        timestamp: new Date(),
+        recommendations: ['트렌드 변화를 모니터링하세요', '모델 파라미터를 조정하세요']
+    },
+    {
+        id: 'insight-002',
+        type: 'anomaly',
+        title: '예측 모델 이상 감지',
+        description: '모델 model-002에서 높은 예측 오차(23.45)가 감지되었습니다.',
+        confidence: 0.85,
+        impact: 'high',
+        timestamp: new Date(),
+        recommendations: ['모델 재훈련을 고려하세요', '특성 엔지니어링을 검토하세요']
+    }
+];
+
+const mockPredictionData = Array.from({ length: 20 }, (_, i) => ({
+    time: i,
+    prediction: Math.random() * 100,
+    actual: Math.random() * 100,
+    confidence: Math.random() * 0.3 + 0.7
+}));
+
+const RealTimeAIPredictiveAnalyticsEnhancementDashboard: React.FC = () => {
+    const [currentTab, setCurrentTab] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [selectedModel, setSelectedModel] = useState<any>(null);
+    const [modelDialogOpen, setModelDialogOpen] = useState(false);
+    const [metrics, setMetrics] = useState(mockMetrics);
+    const [models, setModels] = useState(mockModels);
+    const [performanceData, setPerformanceData] = useState(mockPerformanceData);
+    const [insights, setInsights] = useState(mockInsights);
+    const [predictionData, setPredictionData] = useState(mockPredictionData);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // 실시간 데이터 업데이트
+            setPredictionData(prev => {
+                const newData = [...prev.slice(1), {
+                    time: prev[prev.length - 1].time + 1,
+                    prediction: Math.random() * 100,
+                    actual: Math.random() * 100,
+                    confidence: Math.random() * 0.3 + 0.7
+                }];
+                return newData;
+            });
+
+            // 메트릭 업데이트
+            setMetrics(prev => ({
+                ...prev,
+                totalPredictions: prev.totalPredictions + 1,
+                predictionsPerSecond: (prev.totalPredictions + 1) / 60
+            }));
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setCurrentTab(newValue);
+    };
+
+    const handleModelClick = (model: any) => {
+        setSelectedModel(model);
+        setModelDialogOpen(true);
+    };
+
+    const getHealthColor = (health: string) => {
+        switch (health) {
+            case 'excellent': return 'success';
+            case 'good': return 'info';
+            case 'warning': return 'warning';
+            case 'critical': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const getModelTypeColor = (type: string) => {
+        switch (type) {
+            case 'regression': return 'primary';
+            case 'timeSeries': return 'secondary';
+            case 'deepLearning': return 'success';
+            default: return 'default';
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'active': return 'success';
+            case 'training': return 'warning';
+            case 'evaluating': return 'info';
+            case 'archived': return 'default';
+            default: return 'default';
+        }
+    };
+
+    const renderOverviewTab = () => (
+        <Box>
+            <Grid container spacing={3}>
+                {/* 시스템 상태 카드 */}
+                <Grid item xs={12} md={6}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                시스템 상태
+                            </Typography>
+                            <Box display="flex" alignItems="center" gap={2} mb={2}>
+                                <Chip
+                                    label={metrics.systemHealth.toUpperCase()}
+                                    color={getHealthColor(metrics.systemHealth)}
+                                    icon={<CheckCircle />}
+                                />
+                                <Typography variant="body2" color="textSecondary">
+                                    마지막 업데이트: {new Date().toLocaleTimeString()}
+                                </Typography>
+                            </Box>
+                            <Grid container spacing={2}>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="textSecondary">총 모델 수</Typography>
+                                    <Typography variant="h4">{metrics.totalModels}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="textSecondary">활성 모델</Typography>
+                                    <Typography variant="h4">{metrics.activeModels}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="textSecondary">평균 정확도</Typography>
+                                    <Typography variant="h4">{(metrics.averageAccuracy * 100).toFixed(1)}%</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="textSecondary">초당 예측</Typography>
+                                    <Typography variant="h4">{metrics.predictionsPerSecond.toFixed(1)}</Typography>
+                                </Grid>
+                            </Grid>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* 실시간 예측 차트 */}
+                <Grid item xs={12} md={6}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                실시간 예측 vs 실제값
+                            </Typography>
+                            <ResponsiveContainer width="100%" height={200}>
+                                <LineChart data={predictionData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="time" />
+                                    <YAxis />
+                                    <RechartsTooltip />
+                                    <Line type="monotone" dataKey="prediction" stroke="#8884d8" strokeWidth={2} />
+                                    <Line type="monotone" dataKey="actual" stroke="#82ca9d" strokeWidth={2} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* 모델 성능 요약 */}
+                <Grid item xs={12}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                모델 성능 요약
+                            </Typography>
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>모델명</TableCell>
+                                            <TableCell>정확도</TableCell>
+                                            <TableCell>정밀도</TableCell>
+                                            <TableCell>재현율</TableCell>
+                                            <TableCell>F1 점수</TableCell>
+                                            <TableCell>지연시간 (ms)</TableCell>
+                                            <TableCell>처리량</TableCell>
+                                            <TableCell>드리프트 점수</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {performanceData.map((row) => (
+                                            <TableRow key={row.modelId} hover onClick={() => handleModelClick(models.find(m => m.id === row.modelId))}>
+                                                <TableCell>{models.find(m => m.id === row.modelId)?.name}</TableCell>
+                                                <TableCell>{(row.accuracy * 100).toFixed(1)}%</TableCell>
+                                                <TableCell>{(row.precision * 100).toFixed(1)}%</TableCell>
+                                                <TableCell>{(row.recall * 100).toFixed(1)}%</TableCell>
+                                                <TableCell>{(row.f1Score * 100).toFixed(1)}%</TableCell>
+                                                <TableCell>{row.latency}</TableCell>
+                                                <TableCell>{row.throughput}</TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={row.driftScore.toFixed(3)}
+                                                        color={row.driftScore > 0.8 ? 'error' : row.driftScore > 0.5 ? 'warning' : 'success'}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+
+    const renderModelsTab = () => (
+        <Box>
+            <Grid container spacing={3}>
+                {models.map((model) => (
+                    <Grid item xs={12} md={6} lg={4} key={model.id}>
+                        <Card hoverable onClick={() => handleModelClick(model)}>
+                            <CardContent>
+                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                    <Typography variant="h6" noWrap>
+                                        {model.name}
+                                    </Typography>
+                                    <Chip
+                                        label={model.status}
+                                        color={getStatusColor(model.status)}
+                                        size="small"
+                                    />
+                                </Box>
+
+                                <Box display="flex" gap={1} mb={2}>
+                                    <Chip
+                                        label={model.type}
+                                        color={getModelTypeColor(model.type)}
+                                        size="small"
+                                    />
+                                    <Chip
+                                        label={`v${model.version}`}
+                                        variant="outlined"
+                                        size="small"
+                                    />
+                                </Box>
+
+                                <Box mb={2}>
+                                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                                        정확도
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={model.accuracy * 100}
+                                        color="primary"
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                        {(model.accuracy * 100).toFixed(1)}%
+                                    </Typography>
+                                </Box>
+
+                                <Box display="flex" justifyContent="space-between" mb={1}>
+                                    <Typography variant="body2" color="textSecondary">정밀도</Typography>
+                                    <Typography variant="body2">{(model.precision * 100).toFixed(1)}%</Typography>
+                                </Box>
+                                <Box display="flex" justifyContent="space-between" mb={1}>
+                                    <Typography variant="body2" color="textSecondary">재현율</Typography>
+                                    <Typography variant="body2">{(model.recall * 100).toFixed(1)}%</Typography>
+                                </Box>
+                                <Box display="flex" justifyContent="space-between">
+                                    <Typography variant="body2" color="textSecondary">F1 점수</Typography>
+                                    <Typography variant="body2">{(model.f1Score * 100).toFixed(1)}%</Typography>
+                                </Box>
+
+                                <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 2 }}>
+                                    마지막 업데이트: {model.lastUpdated.toLocaleString()}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
+        </Box>
+    );
+
+    const renderPredictionsTab = () => (
+        <Box>
+            <Grid container spacing={3}>
+                {/* 예측 정확도 분포 */}
+                <Grid item xs={12} md={6}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                예측 정확도 분포
+                            </Typography>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <Assessment data={performanceData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="modelId" />
+                                    <YAxis />
+                                    <RechartsTooltip />
+                                    <Bar dataKey="accuracy" fill="#8884d8" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* 모델 타입별 성능 */}
+                <Grid item xs={12} md={6}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                모델 타입별 성능
+                            </Typography>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={[
+                                            { name: '회귀', value: 1, fill: '#8884d8' },
+                                            { name: '시계열', value: 1, fill: '#82ca9d' },
+                                            { name: '딥러닝', value: 1, fill: '#ffc658' }
+                                        ]}
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={80}
+                                        dataKey="value"
+                                    />
+                                    <RechartsTooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* 실시간 예측 데이터 */}
+                <Grid item xs={12}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                실시간 예측 데이터
+                            </Typography>
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>시간</TableCell>
+                                            <TableCell>예측값</TableCell>
+                                            <TableCell>실제값</TableCell>
+                                            <TableCell>오차</TableCell>
+                                            <TableCell>신뢰도</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {predictionData.slice(-10).map((row, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>{row.time}</TableCell>
+                                                <TableCell>{row.prediction.toFixed(2)}</TableCell>
+                                                <TableCell>{row.actual.toFixed(2)}</TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={Math.abs(row.prediction - row.actual).toFixed(2)}
+                                                        color={Math.abs(row.prediction - row.actual) > 20 ? 'error' : 'success'}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>{(row.confidence * 100).toFixed(1)}%</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+
+    const renderInsightsTab = () => (
+        <Box>
+            <Grid container spacing={3}>
+                {insights.map((insight) => (
+                    <Grid item xs={12} md={6} key={insight.id}>
+                        <Card>
+                            <CardContent>
+                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                    <Typography variant="h6">
+                                        {insight.title}
+                                    </Typography>
+                                    <Chip
+                                        label={insight.impact}
+                                        color={insight.impact === 'high' ? 'error' : insight.impact === 'medium' ? 'warning' : 'success'}
+                                        size="small"
+                                    />
+                                </Box>
+
+                                <Typography variant="body2" color="textSecondary" paragraph>
+                                    {insight.description}
+                                </Typography>
+
+                                <Box display="flex" alignItems="center" gap={2} mb={2}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        신뢰도: {(insight.confidence * 100).toFixed(1)}%
+                                    </Typography>
+                                    <Typography variant="body2" color="textSecondary">
+                                        {insight.timestamp.toLocaleString()}
+                                    </Typography>
+                                </Box>
+
+                                <Typography variant="subtitle2" gutterBottom>
+                                    권장사항:
+                                </Typography>
+                                <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                    {insight.recommendations.map((rec, index) => (
+                                        <Typography key={index} variant="body2" component="li">
+                                            {rec}
+                                        </Typography>
+                                    ))}
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
+        </Box>
+    );
+
+    const renderPerformanceTab = () => (
+        <Box>
+            <Grid container spacing={3}>
+                {/* 성능 지표 카드들 */}
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                총 예측 수
+                            </Typography>
+                            <Typography variant="h3" color="primary">
+                                {metrics.totalPredictions.toLocaleString()}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                초당 예측
+                            </Typography>
+                            <Typography variant="h3" color="secondary">
+                                {metrics.predictionsPerSecond.toFixed(1)}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                드리프트 알림
+                            </Typography>
+                            <Typography variant="h3" color="warning">
+                                {metrics.modelDriftAlerts}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                생성된 인사이트
+                            </Typography>
+                            <Typography variant="h3" color="info">
+                                {metrics.insightsGenerated}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* 성능 트렌드 차트 */}
+                <Grid item xs={12}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                성능 트렌드
+                            </Typography>
+                            <ResponsiveContainer width="100%" height={400}>
+                                <LineChart data={Array.from({ length: 20 }, (_, i) => ({
+                                    time: i,
+                                    accuracy: 0.9 + Math.random() * 0.1,
+                                    latency: 50 + Math.random() * 100,
+                                    throughput: 500 + Math.random() * 500
+                                }))}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="time" />
+                                    <YAxis />
+                                    <RechartsTooltip />
+                                    <Line type="monotone" dataKey="accuracy" stroke="#8884d8" name="정확도" />
+                                    <Line type="monotone" dataKey="latency" stroke="#82ca9d" name="지연시간" />
+                                    <Line type="monotone" dataKey="throughput" stroke="#ffc658" name="처리량" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+
+    const renderSettingsTab = () => (
+        <Box>
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                시스템 설정
+                            </Typography>
+                            <Box display="flex" flexDirection="column" gap={2}>
+                                <Button variant="contained" color="primary" startIcon={<Refresh />}>
+                                    모델 재훈련 시작
+                                </Button>
+                                <Button variant="outlined" color="secondary" startIcon={<Analytics />}>
+                                    성능 분석 실행
+                                </Button>
+                                <Button variant="outlined" color="warning" startIcon={<Warning />}>
+                                    드리프트 감지 설정
+                                </Button>
+                                <Button variant="outlined" color="info" startIcon={<Insights />}>
+                                    인사이트 생성 설정
+                                </Button>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                알림 설정
+                            </Typography>
+                            <Box display="flex" flexDirection="column" gap={2}>
+                                <Alert severity="info">
+                                    실시간 예측 분석 시스템이 정상적으로 작동 중입니다.
+                                </Alert>
+                                <Alert severity="success">
+                                    모든 모델이 활성 상태입니다.
+                                </Alert>
+                                <Alert severity="warning">
+                                    모델 드리프트 감지가 활성화되어 있습니다.
+                                </Alert>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+
+    return (
+        <Box sx={{ p: 3, height: '100vh', overflow: 'auto' }}>
+            {/* 헤더 */}
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Box>
+                    <Typography variant="h4" gutterBottom>
+                        🔮 실시간 AI 예측 분석 고도화 대시보드
+                    </Typography>
+                    <Typography variant="body1" color="textSecondary">
+                        고급 예측 모델, 실시간 데이터 처리, 다차원 분석, 예측 정확도 최적화
+                    </Typography>
+                </Box>
+                <Box display="flex" gap={1}>
+                    <Tooltip title="새로고침">
+                        <IconButton>
+                            <Refresh />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={isFullscreen ? "전체화면 해제" : "전체화면"}>
+                        <IconButton onClick={() => setIsFullscreen(!isFullscreen)}>
+                            {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            </Box>
+
+            {/* 탭 네비게이션 */}
+            <Paper sx={{ mb: 3 }}>
+                <Tabs value={currentTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+                    <Tab icon={<Analytics />} label="개요" />
+                    <Tab icon={<ModelTraining />} label="모델 관리" />
+                    <Tab icon={<Timeline />} label="예측 분석" />
+                    <Tab icon={<Insights />} label="인사이트" />
+                    <Tab icon={<TrendingUp />} label="성능 모니터링" />
+                    <Tab icon={<Settings />} label="설정" />
+                </Tabs>
+            </Paper>
+
+            {/* 탭 콘텐츠 */}
+            <Box>
+                {currentTab === 0 && renderOverviewTab()}
+                {currentTab === 1 && renderModelsTab()}
+                {currentTab === 2 && renderPredictionsTab()}
+                {currentTab === 3 && renderInsightsTab()}
+                {currentTab === 4 && renderPerformanceTab()}
+                {currentTab === 5 && renderSettingsTab()}
+            </Box>
+
+            {/* 모델 상세 다이얼로그 */}
+            <Dialog open={modelDialogOpen} onClose={() => setModelDialogOpen(false)} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    모델 상세 정보: {selectedModel?.name}
+                </DialogTitle>
+                <DialogContent>
+                    {selectedModel && (
+                        <Box>
+                            <Grid container spacing={2}>
+                                <Grid item xs={6}>
+                                    <Typography variant="subtitle2">모델 ID</Typography>
+                                    <Typography variant="body2">{selectedModel.id}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="subtitle2">버전</Typography>
+                                    <Typography variant="body2">{selectedModel.version}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="subtitle2">타입</Typography>
+                                    <Typography variant="body2">{selectedModel.type}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="subtitle2">상태</Typography>
+                                    <Typography variant="body2">{selectedModel.status}</Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Typography variant="subtitle2">특성</Typography>
+                                    <Box display="flex" gap={1} flexWrap="wrap">
+                                        {selectedModel.features.map((feature: string) => (
+                                            <Chip key={feature} label={feature} size="small" />
+                                        ))}
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Typography variant="subtitle2">하이퍼파라미터</Typography>
+                                    <Typography variant="body2" component="pre" sx={{ fontSize: '0.8rem' }}>
+                                        {JSON.stringify(selectedModel.hyperparameters, null, 2)}
+                                    </Typography>
+                                </Grid>
+                            </Grid>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setModelDialogOpen(false)}>닫기</Button>
+                    <Button variant="contained" color="primary">모델 재훈련</Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default RealTimeAIPredictiveAnalyticsEnhancementDashboard;

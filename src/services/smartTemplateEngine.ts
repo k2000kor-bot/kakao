@@ -479,7 +479,11 @@ class SmartTemplateEngine {
             description: customizations?.description || template.description,
             guidelines: this.customizeGuidelines(template.structure.guidelines, customizations),
             tags: [...template.tags, ...(customizations?.additionalTags || [])],
-            status: 'active' as const
+            status: 'active' as const,
+            files: [],
+            instructions: this.customizeGuidelines(template.structure.guidelines, customizations),
+            isActive: true,
+            type: 'conversation' as const
         };
 
         // 프로젝트 생성

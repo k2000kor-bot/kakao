@@ -1,0 +1,1581 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Button,
+    Paper,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    List,
+    ListItem,
+    ListItemIcon,
+    ListItemText,
+    Switch,
+    IconButton,
+    Tooltip,
+    Alert,
+    Chip,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    LinearProgress,
+    Badge
+} from '@mui/material';
+import {
+    Analytics,
+    Build,
+    TrendingUp,
+    Timeline,
+    Assessment,
+    Settings,
+    Refresh,
+    PlayArrow,
+    Stop,
+    Visibility,
+    Add,
+    Speed,
+    CheckCircle,
+    Error,
+    TrendingDown,
+    TrendingFlat,
+    Fullscreen,
+    FullscreenExit,
+    ExpandMore,
+    Download as DownloadIcon,
+    Delete as DeleteIcon
+} from '@mui/icons-material';
+
+interface PerformanceMetrics {
+    response_time_avg: number;
+    accuracy_avg: number;
+    throughput_avg: number;
+    error_rate_avg: number;
+    user_satisfaction_avg: number;
+}
+
+interface OptimizationRecommendation {
+    id: string;
+    type: string;
+    priority: string;
+    title: string;
+    description: string;
+    impact_score: number;
+    effort_score: number;
+    roi_score: number;
+    implementation_steps: string[];
+    expected_improvement: any;
+    status: string;
+    created_at: Date;
+    implemented_at?: Date;
+}
+
+interface PerformanceTrend {
+    metric: string;
+    values: Array<{ timestamp: Date; value: number }>;
+    trend: string;
+    change_rate: number;
+    prediction: {
+        next_value: number;
+        confidence: number;
+        timeframe: number;
+    };
+}
+
+interface AIServiceOptimization {
+    service_name: string;
+    current_performance: PerformanceMetrics;
+    optimization_history: OptimizationRecommendation[];
+    active_optimizations: OptimizationRecommendation[];
+    performance_trends: PerformanceTrend[];
+    optimization_score: number;
+    last_optimized: Date;
+}
+
+const AdvancedAIAnalyticsOptimizationDashboard: React.FC = () => {
+    const [services, setServices] = useState<AIServiceOptimization[]>([]);
+    const [selectedTab, setSelectedTab] = useState(0);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [selectedOptimization, setSelectedOptimization] = useState<OptimizationRecommendation | null>(null);
+    const [optimizationDialogOpen, setOptimizationDialogOpen] = useState(false);
+    const [lastUpdate, setLastUpdate] = useState(new Date());
+    const [notifications, setNotifications] = useState<Array<{
+        id: string;
+        type: 'info' | 'success' | 'warning' | 'error';
+        title: string;
+        message: string;
+        timestamp: Date;
+        read: boolean;
+    }>>([]);
+
+    // 탭 정의
+    const tabs = [
+        { label: 'AI 서비스 개요', icon: <Analytics /> },
+        { label: '성능 트렌드', icon: <TrendingUp /> },
+        { label: '최적화 권장사항', icon: <Build /> },
+        { label: '최적화 이력', icon: <Timeline /> },
+        { label: '성능 분석', icon: <Assessment /> },
+        { label: '설정', icon: <Settings /> }
+    ];
+
+    // 데이터 새로고침
+    const refreshData = async () => {
+        try {
+            // 실제로는 API 호출
+            const mockServices: AIServiceOptimization[] = [
+                {
+                    service_name: 'integrated-ai-service',
+                    current_performance: {
+                        response_time_avg: 245 + Math.random() * 50 - 25,
+                        accuracy_avg: 0.92 + Math.random() * 0.06 - 0.03,
+                        throughput_avg: 150 + Math.random() * 30 - 15,
+                        error_rate_avg: 0.03 + Math.random() * 0.02 - 0.01,
+                        user_satisfaction_avg: 0.88 + Math.random() * 0.08 - 0.04
+                    },
+                    optimization_history: [
+                        {
+                            id: 'opt-1',
+                            type: 'performance',
+                            priority: 'high',
+                            title: '응답 시간 최적화',
+                            description: '캐싱 전략 개선으로 응답 시간 단축',
+                            impact_score: 85,
+                            effort_score: 60,
+                            roi_score: 75,
+                            implementation_steps: ['캐시 히트율 분석', '알고리즘 최적화', '데이터베이스 쿼리 최적화'],
+                            expected_improvement: { response_time: 30 },
+                            status: 'implemented',
+                            created_at: new Date(Date.now() - 86400000),
+                            implemented_at: new Date(Date.now() - 43200000)
+                        },
+                        {
+                            id: 'opt-2',
+                            type: 'accuracy',
+                            priority: 'medium',
+                            title: 'AI 모델 정확도 개선',
+                            description: '모델 재훈련을 통한 정확도 향상',
+                            impact_score: 90,
+                            effort_score: 80,
+                            roi_score: 85,
+                            implementation_steps: ['모델 성능 분석', '데이터 품질 검증', '하이퍼파라미터 튜닝'],
+                            expected_improvement: { accuracy: 20 },
+                            status: 'approved',
+                            created_at: new Date(Date.now() - 3600000)
+                        },
+                        {
+                            id: 'opt-3',
+                            type: 'resource',
+                            priority: 'low',
+                            title: '리소스 사용량 최적화',
+                            description: '메모리 및 CPU 사용량 최적화',
+                            impact_score: 70,
+                            effort_score: 40,
+                            roi_score: 80,
+                            implementation_steps: ['리소스 모니터링', '메모리 누수 검사', '코드 최적화'],
+                            expected_improvement: { throughput: 15 },
+                            status: 'pending',
+                            created_at: new Date(Date.now() - 7200000)
+                        }
+                    ],
+                    active_optimizations: [
+                        {
+                            id: 'opt-2',
+                            type: 'accuracy',
+                            priority: 'medium',
+                            title: 'AI 모델 정확도 개선',
+                            description: '모델 재훈련을 통한 정확도 향상',
+                            impact_score: 90,
+                            effort_score: 80,
+                            roi_score: 85,
+                            implementation_steps: ['모델 성능 분석', '데이터 품질 검증', '하이퍼파라미터 튜닝'],
+                            expected_improvement: { accuracy: 20 },
+                            status: 'approved',
+                            created_at: new Date(Date.now() - 3600000)
+                        },
+                        {
+                            id: 'opt-4',
+                            type: 'user_experience',
+                            priority: 'high',
+                            title: '사용자 인터페이스 개선',
+                            description: '사용자 경험 향상을 위한 UI/UX 개선',
+                            impact_score: 95,
+                            effort_score: 70,
+                            roi_score: 90,
+                            implementation_steps: ['사용자 피드백 수집', 'UI 디자인 개선', 'A/B 테스트'],
+                            expected_improvement: { user_satisfaction: 25 },
+                            status: 'pending',
+                            created_at: new Date(Date.now() - 1800000)
+                        }
+                    ],
+                    performance_trends: [
+                        {
+                            metric: 'response_time',
+                            values: Array.from({ length: 20 }, (_, i) => ({
+                                timestamp: new Date(Date.now() - (20 - i) * 3600000),
+                                value: 200 + Math.random() * 100 + Math.sin(i * 0.3) * 20
+                            })),
+                            trend: 'improving',
+                            change_rate: 15.5 + Math.random() * 10 - 5,
+                            prediction: {
+                                next_value: 180 + Math.random() * 40 - 20,
+                                confidence: 0.85 + Math.random() * 0.1 - 0.05,
+                                timeframe: 24
+                            }
+                        },
+                        {
+                            metric: 'accuracy',
+                            values: Array.from({ length: 20 }, (_, i) => ({
+                                timestamp: new Date(Date.now() - (20 - i) * 3600000),
+                                value: 0.85 + Math.random() * 0.1 + Math.sin(i * 0.2) * 0.02
+                            })),
+                            trend: 'stable',
+                            change_rate: 2.3 + Math.random() * 4 - 2,
+                            prediction: {
+                                next_value: 0.88 + Math.random() * 0.04 - 0.02,
+                                confidence: 0.78 + Math.random() * 0.15 - 0.075,
+                                timeframe: 24
+                            }
+                        },
+                        {
+                            metric: 'throughput',
+                            values: Array.from({ length: 20 }, (_, i) => ({
+                                timestamp: new Date(Date.now() - (20 - i) * 3600000),
+                                value: 140 + Math.random() * 20 + Math.sin(i * 0.4) * 10
+                            })),
+                            trend: 'improving',
+                            change_rate: 8.7 + Math.random() * 6 - 3,
+                            prediction: {
+                                next_value: 155 + Math.random() * 15 - 7.5,
+                                confidence: 0.82 + Math.random() * 0.12 - 0.06,
+                                timeframe: 24
+                            }
+                        }
+                    ],
+                    optimization_score: 87 + Math.random() * 10 - 5,
+                    last_optimized: new Date(Date.now() - 86400000)
+                },
+                {
+                    service_name: 'nlp-processing-engine',
+                    current_performance: {
+                        response_time_avg: 180 + Math.random() * 40 - 20,
+                        accuracy_avg: 0.95 + Math.random() * 0.04 - 0.02,
+                        throughput_avg: 200 + Math.random() * 50 - 25,
+                        error_rate_avg: 0.02 + Math.random() * 0.015 - 0.0075,
+                        user_satisfaction_avg: 0.92 + Math.random() * 0.06 - 0.03
+                    },
+                    optimization_history: [
+                        {
+                            id: 'opt-5',
+                            type: 'performance',
+                            priority: 'critical',
+                            title: 'NLP 엔진 성능 최적화',
+                            description: '자연어 처리 성능 대폭 향상',
+                            impact_score: 95,
+                            effort_score: 90,
+                            roi_score: 88,
+                            implementation_steps: ['알고리즘 개선', '병렬 처리 구현', '메모리 최적화'],
+                            expected_improvement: { response_time: 40, throughput: 30 },
+                            status: 'implemented',
+                            created_at: new Date(Date.now() - 172800000),
+                            implemented_at: new Date(Date.now() - 86400000)
+                        }
+                    ],
+                    active_optimizations: [
+                        {
+                            id: 'opt-6',
+                            type: 'accuracy',
+                            priority: 'high',
+                            title: '언어 모델 정확도 향상',
+                            description: '다국어 지원 및 정확도 개선',
+                            impact_score: 88,
+                            effort_score: 75,
+                            roi_score: 82,
+                            implementation_steps: ['다국어 데이터 수집', '모델 재훈련', '정확도 검증'],
+                            expected_improvement: { accuracy: 15 },
+                            status: 'approved',
+                            created_at: new Date(Date.now() - 5400000)
+                        }
+                    ],
+                    performance_trends: [
+                        {
+                            metric: 'response_time',
+                            values: Array.from({ length: 20 }, (_, i) => ({
+                                timestamp: new Date(Date.now() - (20 - i) * 3600000),
+                                value: 160 + Math.random() * 60 + Math.sin(i * 0.25) * 15
+                            })),
+                            trend: 'improving',
+                            change_rate: 22.1 + Math.random() * 8 - 4,
+                            prediction: {
+                                next_value: 150 + Math.random() * 30 - 15,
+                                confidence: 0.91 + Math.random() * 0.08 - 0.04,
+                                timeframe: 24
+                            }
+                        }
+                    ],
+                    optimization_score: 92 + Math.random() * 6 - 3,
+                    last_optimized: new Date(Date.now() - 86400000)
+                }
+            ];
+
+            setServices(mockServices);
+            setLastUpdate(new Date());
+        } catch (error) {
+            console.error('데이터 새로고침 오류:', error);
+        }
+    };
+
+    useEffect(() => {
+        refreshData();
+        const interval = setInterval(refreshData, 20000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // 데이터 내보내기 함수들
+    const exportToCSV = () => {
+        const csvContent = services.map(service => {
+            return `${service.service_name},${service.optimization_score},${service.current_performance.response_time_avg.toFixed(0)},${(service.current_performance.accuracy_avg * 100).toFixed(1)},${(service.current_performance.user_satisfaction_avg * 100).toFixed(1)},${service.active_optimizations.length},${service.last_optimized.toLocaleDateString()}`;
+        }).join('\n');
+
+        const csvHeader = '서비스명,최적화점수,평균응답시간,평균정확도,평균사용자만족도,활성최적화횟수,마지막최적화일\n';
+        const csvData = csvHeader + csvContent;
+
+        const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'ai_analytics_data.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const exportToJSON = () => {
+        const jsonData = {
+            services: services,
+            notifications: notifications,
+            exportDate: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'ai_analytics_data.json');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const getTrendIcon = (trend: string) => {
+        switch (trend) {
+            case 'improving': return <TrendingUp color="success" />;
+            case 'declining': return <TrendingDown color="error" />;
+            case 'stable': return <TrendingFlat color="info" />;
+            default: return <TrendingFlat />;
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'critical': return 'error';
+            case 'high': return 'warning';
+            case 'medium': return 'info';
+            case 'low': return 'success';
+            default: return 'default';
+        }
+    };
+
+    const getOptimizationTypeColor = (type: string) => {
+        switch (type) {
+            case 'performance': return 'primary';
+            case 'accuracy': return 'success';
+            case 'resource': return 'warning';
+            case 'user_experience': return 'info';
+            case 'security': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'implemented': return 'success';
+            case 'approved': return 'info';
+            case 'pending': return 'warning';
+            case 'rejected': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const renderServicesOverview = () => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+            {/* 전체 최적화 점수 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Analytics color="primary" sx={{ mr: 1 }} />
+                        <Typography variant="h6">전체 최적화 점수</Typography>
+                    </Box>
+                    <Box textAlign="center">
+                        <Typography variant="h3" color="primary">
+                            {services.length > 0 ?
+                                Math.round(services.reduce((sum, s) => sum + s.optimization_score, 0) / services.length) : 0
+                            }
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            / 100
+                        </Typography>
+                    </Box>
+                    <LinearProgress
+                        variant="determinate"
+                        value={services.length > 0 ?
+                            services.reduce((sum, s) => sum + s.optimization_score, 0) / services.length : 0
+                        }
+                        sx={{ mt: 2 }}
+                    />
+                </CardContent>
+            </Card>
+
+            {/* 활성 최적화 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Build color="info" sx={{ mr: 1 }} />
+                        <Typography variant="h6">활성 최적화</Typography>
+                    </Box>
+                    <Typography variant="h4" color="info.main">
+                        {services.reduce((sum, s) => sum + s.active_optimizations.length, 0)}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                        진행 중인 최적화 작업
+                    </Typography>
+                </CardContent>
+            </Card>
+
+            {/* AI 서비스 목록 */}
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="h6">AI 서비스 최적화 상태</Typography>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<Add />}
+                            >
+                                새 분석 시작
+                            </Button>
+                        </Box>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>서비스명</TableCell>
+                                        <TableCell>최적화 점수</TableCell>
+                                        <TableCell>응답 시간</TableCell>
+                                        <TableCell>정확도</TableCell>
+                                        <TableCell>사용자 만족도</TableCell>
+                                        <TableCell>활성 최적화</TableCell>
+                                        <TableCell>마지막 최적화</TableCell>
+                                        <TableCell>작업</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {services.map((service) => (
+                                        <TableRow key={service.service_name}>
+                                            <TableCell>
+                                                <Typography variant="body1" fontWeight="medium">
+                                                    {service.service_name}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {service.optimization_score}
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={service.optimization_score}
+                                                        sx={{ width: 60, height: 6 }}
+                                                        color={service.optimization_score > 80 ? 'success' : service.optimization_score > 60 ? 'warning' : 'error'}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {service.current_performance.response_time_avg.toFixed(0)}ms
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {(service.current_performance.accuracy_avg * 100).toFixed(1)}%
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {(service.current_performance.user_satisfaction_avg * 100).toFixed(1)}%
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge badgeContent={service.active_optimizations.length} color="primary">
+                                                    <Chip
+                                                        label={service.active_optimizations.length > 0 ? '진행 중' : '없음'}
+                                                        size="small"
+                                                        color={service.active_optimizations.length > 0 ? 'primary' : 'default'}
+                                                    />
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {service.last_optimized.getTime() > 0 ?
+                                                        service.last_optimized.toLocaleDateString() : '없음'
+                                                    }
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Tooltip title="상세 보기">
+                                                    <IconButton size="small">
+                                                        <Visibility />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Box>
+        </Box>
+    );
+
+    const renderOptimizationRecommendations = () => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+            {/* 권장사항 요약 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Build color="primary" sx={{ mr: 1 }} />
+                        <Typography variant="h6">권장사항 요약</Typography>
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'error.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="error">
+                                {services.reduce((sum, s) =>
+                                    sum + s.active_optimizations.filter(o => o.priority === 'critical').length, 0
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">긴급</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'warning.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="warning.main">
+                                {services.reduce((sum, s) =>
+                                    sum + s.active_optimizations.filter(o => o.priority === 'high').length, 0
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">높음</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'info.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="info.main">
+                                {services.reduce((sum, s) =>
+                                    sum + s.active_optimizations.filter(o => o.priority === 'medium').length, 0
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">보통</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'success.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="success.main">
+                                {services.reduce((sum, s) =>
+                                    sum + s.active_optimizations.filter(o => o.priority === 'low').length, 0
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">낮음</Typography>
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* ROI 분석 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <TrendingUp color="success" sx={{ mr: 1 }} />
+                        <Typography variant="h6">ROI 분석</Typography>
+                    </Box>
+                    <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" color="success.main">
+                                {services.length > 0 ?
+                                    Math.round(services.reduce((sum, s) =>
+                                        sum + s.active_optimizations.reduce((optSum, opt) => optSum + opt.roi_score, 0), 0
+                                    ) / services.reduce((sum, s) => sum + s.active_optimizations.length, 0)) : 0
+                                }
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                                평균 ROI 점수
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                                높을수록 투자 대비 효과가 큽니다
+                            </Typography>
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 권장사항 목록 */}
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="h6">최적화 권장사항</Typography>
+                            <Button variant="outlined" size="small" startIcon={<Add />}>
+                                새 권장사항 생성
+                            </Button>
+                        </Box>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
+                            {services.map(service =>
+                                service.active_optimizations.map(optimization => (
+                                    <Card key={optimization.id} variant="outlined" sx={{
+                                        borderColor: getPriorityColor(optimization.priority) === 'error' ? 'error.main' :
+                                            getPriorityColor(optimization.priority) === 'warning' ? 'warning.main' :
+                                                getPriorityColor(optimization.priority) === 'info' ? 'info.main' : 'success.main'
+                                    }}>
+                                        <CardContent>
+                                            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                                                <Box>
+                                                    <Chip
+                                                        label={optimization.priority === 'critical' ? '긴급' :
+                                                            optimization.priority === 'high' ? '높음' :
+                                                                optimization.priority === 'medium' ? '보통' : '낮음'}
+                                                        size="small"
+                                                        color={getPriorityColor(optimization.priority)}
+                                                        sx={{ mb: 1 }}
+                                                    />
+                                                    <Chip
+                                                        label={optimization.type === 'performance' ? '성능' :
+                                                            optimization.type === 'accuracy' ? '정확도' :
+                                                                optimization.type === 'resource' ? '리소스' :
+                                                                    optimization.type === 'user_experience' ? '사용자 경험' : '보안'}
+                                                        size="small"
+                                                        color={getOptimizationTypeColor(optimization.type)}
+                                                        sx={{ ml: 1 }}
+                                                    />
+                                                </Box>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => {
+                                                        setSelectedOptimization(optimization);
+                                                        setOptimizationDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <Visibility />
+                                                </IconButton>
+                                            </Box>
+                                            <Typography variant="h6" gutterBottom>
+                                                {optimization.title}
+                                            </Typography>
+                                            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                                                {optimization.description}
+                                            </Typography>
+                                            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, mb: 2 }}>
+                                                <Box sx={{ textAlign: 'center' }}>
+                                                    <Typography variant="caption" color="textSecondary">영향도</Typography>
+                                                    <Typography variant="body2" color="primary">
+                                                        {optimization.impact_score}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ textAlign: 'center' }}>
+                                                    <Typography variant="caption" color="textSecondary">구현 난이도</Typography>
+                                                    <Typography variant="body2" color="warning.main">
+                                                        {optimization.effort_score}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ textAlign: 'center' }}>
+                                                    <Typography variant="caption" color="textSecondary">ROI</Typography>
+                                                    <Typography variant="body2" color="success.main">
+                                                        {optimization.roi_score}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                            <Box display="flex" gap={1}>
+                                                <Button variant="contained" size="small" startIcon={<PlayArrow />}>
+                                                    구현 시작
+                                                </Button>
+                                                <Button variant="outlined" size="small">
+                                                    나중에
+                                                </Button>
+                                            </Box>
+                                        </CardContent>
+                                    </Card>
+                                ))
+                            )}
+                        </Box>
+                    </CardContent>
+                </Card>
+            </Box>
+        </Box>
+    );
+
+    const renderPerformanceAnalysis = () => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+            {/* 성능 점수 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Assessment color="primary" sx={{ mr: 1 }} />
+                        <Typography variant="h6">성능 점수</Typography>
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'primary.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="primary">
+                                {services.length > 0 ?
+                                    Math.round(services.reduce((sum, s) => sum + s.optimization_score, 0) / services.length) : 0
+                                }
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">전체 점수</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'success.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="success.main">
+                                {services.length > 0 ?
+                                    Math.round(services.reduce((sum, s) =>
+                                        sum + s.current_performance.response_time_avg, 0
+                                    ) / services.length) : 0
+                                }ms
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">평균 응답시간</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'info.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="info.main">
+                                {services.length > 0 ?
+                                    (services.reduce((sum, s) =>
+                                        sum + s.current_performance.accuracy_avg, 0
+                                    ) / services.length * 100).toFixed(1) : 0
+                                }%
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">평균 정확도</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'warning.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="warning.main">
+                                {services.length > 0 ?
+                                    (services.reduce((sum, s) =>
+                                        sum + s.current_performance.error_rate_avg, 0
+                                    ) / services.length * 100).toFixed(2) : 0
+                                }%
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">평균 오류율</Typography>
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 벤치마크 비교 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Speed color="success" sx={{ mr: 1 }} />
+                        <Typography variant="h6">벤치마크 비교</Typography>
+                    </Box>
+                    <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" color="success.main">
+                                {services.length > 0 ?
+                                    services[0].current_performance.response_time_avg < 200 ? '우수' :
+                                        services[0].current_performance.response_time_avg < 300 ? '양호' :
+                                            services[0].current_performance.response_time_avg < 500 ? '보통' : '개선 필요'
+                                    : '데이터 없음'}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                                응답시간 등급
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                                업계 표준 대비 성능
+                            </Typography>
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 상세 성능 분석 */}
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="h6">상세 성능 분석</Typography>
+                            <Button variant="outlined" size="small" startIcon={<PlayArrow />}>
+                                분석 실행
+                            </Button>
+                        </Box>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>서비스명</TableCell>
+                                        <TableCell>응답시간</TableCell>
+                                        <TableCell>정확도</TableCell>
+                                        <TableCell>처리량</TableCell>
+                                        <TableCell>오류율</TableCell>
+                                        <TableCell>사용자 만족도</TableCell>
+                                        <TableCell>종합 등급</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {services.map((service) => (
+                                        <TableRow key={service.service_name}>
+                                            <TableCell>
+                                                <Typography variant="body1" fontWeight="medium">
+                                                    {service.service_name}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {service.current_performance.response_time_avg.toFixed(0)}ms
+                                                    </Typography>
+                                                    <Chip
+                                                        label={service.current_performance.response_time_avg < 200 ? '우수' :
+                                                            service.current_performance.response_time_avg < 300 ? '양호' :
+                                                                service.current_performance.response_time_avg < 500 ? '보통' : '개선 필요'}
+                                                        size="small"
+                                                        color={service.current_performance.response_time_avg < 200 ? 'success' :
+                                                            service.current_performance.response_time_avg < 300 ? 'info' :
+                                                                service.current_performance.response_time_avg < 500 ? 'warning' : 'error'}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {(service.current_performance.accuracy_avg * 100).toFixed(1)}%
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={service.current_performance.accuracy_avg * 100}
+                                                        sx={{ width: 60, height: 6 }}
+                                                        color={service.current_performance.accuracy_avg > 0.9 ? 'success' :
+                                                            service.current_performance.accuracy_avg > 0.8 ? 'info' :
+                                                                service.current_performance.accuracy_avg > 0.7 ? 'warning' : 'error'}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {service.current_performance.throughput_avg.toFixed(0)} req/s
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {(service.current_performance.error_rate_avg * 100).toFixed(2)}%
+                                                    </Typography>
+                                                    <Chip
+                                                        label={service.current_performance.error_rate_avg < 0.01 ? '우수' :
+                                                            service.current_performance.error_rate_avg < 0.05 ? '양호' :
+                                                                service.current_performance.error_rate_avg < 0.1 ? '보통' : '주의'}
+                                                        size="small"
+                                                        color={service.current_performance.error_rate_avg < 0.01 ? 'success' :
+                                                            service.current_performance.error_rate_avg < 0.05 ? 'info' :
+                                                                service.current_performance.error_rate_avg < 0.1 ? 'warning' : 'error'}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center">
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        {(service.current_performance.user_satisfaction_avg * 100).toFixed(1)}%
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={service.current_performance.user_satisfaction_avg * 100}
+                                                        sx={{ width: 60, height: 6 }}
+                                                        color={service.current_performance.user_satisfaction_avg > 0.8 ? 'success' :
+                                                            service.current_performance.user_satisfaction_avg > 0.6 ? 'info' :
+                                                                service.current_performance.user_satisfaction_avg > 0.4 ? 'warning' : 'error'}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={service.optimization_score > 80 ? 'A' :
+                                                        service.optimization_score > 60 ? 'B' :
+                                                            service.optimization_score > 40 ? 'C' : 'D'}
+                                                    size="small"
+                                                    color={service.optimization_score > 80 ? 'success' :
+                                                        service.optimization_score > 60 ? 'info' :
+                                                            service.optimization_score > 40 ? 'warning' : 'error'}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Box>
+        </Box>
+    );
+
+    const renderPerformanceTrends = () => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+            {/* 성능 지표 요약 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <TrendingUp color="primary" sx={{ mr: 1 }} />
+                        <Typography variant="h6">성능 지표 요약</Typography>
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                        {services.map(service =>
+                            service.performance_trends.map(trend => (
+                                <Box key={trend.metric} sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                    <Typography variant="h6" color="primary">
+                                        {trend.metric === 'response_time' ? '응답 시간' :
+                                            trend.metric === 'accuracy' ? '정확도' :
+                                                trend.metric === 'throughput' ? '처리량' :
+                                                    trend.metric === 'error_rate' ? '오류율' : '사용자 만족도'}
+                                    </Typography>
+                                    <Box display="flex" alignItems="center" justifyContent="center" my={1}>
+                                        {getTrendIcon(trend.trend)}
+                                        <Typography variant="body2" sx={{ ml: 1 }}>
+                                            {trend.change_rate > 0 ? '+' : ''}{trend.change_rate.toFixed(1)}%
+                                        </Typography>
+                                    </Box>
+                                    <Typography variant="caption" color="textSecondary">
+                                        예측: {trend.prediction.next_value.toFixed(1)}
+                                        (신뢰도: {(trend.prediction.confidence * 100).toFixed(0)}%)
+                                    </Typography>
+                                </Box>
+                            ))
+                        )}
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 트렌드 차트 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Timeline color="info" sx={{ mr: 1 }} />
+                        <Typography variant="h6">응답 시간 트렌드</Typography>
+                    </Box>
+                    <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" color="primary">
+                                {services.length > 0 && services[0].performance_trends.length > 0 ?
+                                    services[0].performance_trends[0].values[services[0].performance_trends[0].values.length - 1].value.toFixed(0) : 0
+                                }ms
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                                현재 평균 응답 시간
+                            </Typography>
+                            <Box display="flex" alignItems="center" justifyContent="center" mt={1}>
+                                {services.length > 0 && services[0].performance_trends.length > 0 ?
+                                    getTrendIcon(services[0].performance_trends[0].trend) : <TrendingFlat />
+                                }
+                                <Typography variant="body2" sx={{ ml: 1 }}>
+                                    {services.length > 0 && services[0].performance_trends.length > 0 ?
+                                        services[0].performance_trends[0].trend === 'improving' ? '개선 중' :
+                                            services[0].performance_trends[0].trend === 'declining' ? '악화 중' : '안정적'
+                                        : '데이터 없음'}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 예측 분석 */}
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="h6">예측 분석</Typography>
+                            <Button variant="outlined" size="small" startIcon={<PlayArrow />}>
+                                예측 실행
+                            </Button>
+                        </Box>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>지표</TableCell>
+                                        <TableCell>현재 값</TableCell>
+                                        <TableCell>24시간 후 예측</TableCell>
+                                        <TableCell>신뢰도</TableCell>
+                                        <TableCell>트렌드</TableCell>
+                                        <TableCell>권장사항</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {services.map(service =>
+                                        service.performance_trends.map(trend => (
+                                            <TableRow key={trend.metric}>
+                                                <TableCell>
+                                                    <Typography variant="body1" fontWeight="medium">
+                                                        {trend.metric === 'response_time' ? '응답 시간' :
+                                                            trend.metric === 'accuracy' ? '정확도' :
+                                                                trend.metric === 'throughput' ? '처리량' :
+                                                                    trend.metric === 'error_rate' ? '오류율' : '사용자 만족도'}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2">
+                                                        {trend.values[trend.values.length - 1].value.toFixed(1)}
+                                                        {trend.metric === 'response_time' ? 'ms' :
+                                                            trend.metric === 'accuracy' || trend.metric === 'user_satisfaction' ? '%' : ''}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" color="primary">
+                                                        {trend.prediction.next_value.toFixed(1)}
+                                                        {trend.metric === 'response_time' ? 'ms' :
+                                                            trend.metric === 'accuracy' || trend.metric === 'user_satisfaction' ? '%' : ''}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box display="flex" alignItems="center">
+                                                        <Typography variant="body2" sx={{ mr: 1 }}>
+                                                            {(trend.prediction.confidence * 100).toFixed(0)}%
+                                                        </Typography>
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={trend.prediction.confidence * 100}
+                                                            sx={{ width: 60, height: 6 }}
+                                                            color={trend.prediction.confidence > 0.8 ? 'success' :
+                                                                trend.prediction.confidence > 0.6 ? 'warning' : 'error'}
+                                                        />
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box display="flex" alignItems="center">
+                                                        {getTrendIcon(trend.trend)}
+                                                        <Typography variant="body2" sx={{ ml: 1 }}>
+                                                            {trend.change_rate > 0 ? '+' : ''}{trend.change_rate.toFixed(1)}%
+                                                        </Typography>
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={trend.trend === 'improving' ? '양호' :
+                                                            trend.trend === 'declining' ? '주의 필요' : '안정적'}
+                                                        size="small"
+                                                        color={trend.trend === 'improving' ? 'success' :
+                                                            trend.trend === 'declining' ? 'warning' : 'info'}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Box>
+        </Box>
+    );
+
+    const renderOptimizationHistory = () => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+            {/* 이력 요약 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Timeline color="primary" sx={{ mr: 1 }} />
+                        <Typography variant="h6">최적화 이력 요약</Typography>
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'success.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="success.main">
+                                {services.reduce((sum, s) =>
+                                    sum + s.optimization_history.filter(o => o.status === 'implemented').length, 0
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">구현 완료</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'info.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="info.main">
+                                {services.reduce((sum, s) =>
+                                    sum + s.optimization_history.filter(o => o.status === 'approved').length, 0
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">승인됨</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'warning.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="warning.main">
+                                {services.reduce((sum, s) =>
+                                    sum + s.optimization_history.filter(o => o.status === 'pending').length, 0
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">대기 중</Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'error.main', borderRadius: 1 }}>
+                            <Typography variant="h6" color="error">
+                                {services.reduce((sum, s) =>
+                                    sum + s.optimization_history.filter(o => o.status === 'rejected').length, 0
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">거부됨</Typography>
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 성과 분석 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Assessment color="success" sx={{ mr: 1 }} />
+                        <Typography variant="h6">성과 분석</Typography>
+                    </Box>
+                    <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" color="success.main">
+                                {services.length > 0 ?
+                                    Math.round(services.reduce((sum, s) =>
+                                        sum + s.optimization_history.filter(o => o.status === 'implemented').length, 0
+                                    ) / services.length) : 0
+                                }
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                                서비스당 평균 구현 완료
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                                높을수록 최적화가 활발합니다
+                            </Typography>
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 이력 목록 */}
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="h6">최적화 이력</Typography>
+                            <Button variant="outlined" size="small" startIcon={<Refresh />}>
+                                새로고침
+                            </Button>
+                        </Box>
+                        <TableContainer>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>제목</TableCell>
+                                        <TableCell>유형</TableCell>
+                                        <TableCell>상태</TableCell>
+                                        <TableCell>영향도</TableCell>
+                                        <TableCell>구현일</TableCell>
+                                        <TableCell>결과</TableCell>
+                                        <TableCell>작업</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {services.map(service =>
+                                        service.optimization_history.map(optimization => (
+                                            <TableRow key={optimization.id}>
+                                                <TableCell>
+                                                    <Typography variant="body1" fontWeight="medium">
+                                                        {optimization.title}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="textSecondary">
+                                                        {optimization.description}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={optimization.type === 'performance' ? '성능' :
+                                                            optimization.type === 'accuracy' ? '정확도' :
+                                                                optimization.type === 'resource' ? '리소스' :
+                                                                    optimization.type === 'user_experience' ? '사용자 경험' : '보안'}
+                                                        size="small"
+                                                        color={getOptimizationTypeColor(optimization.type)}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={optimization.status === 'implemented' ? '구현 완료' :
+                                                            optimization.status === 'approved' ? '승인됨' :
+                                                                optimization.status === 'pending' ? '대기 중' : '거부됨'}
+                                                        size="small"
+                                                        color={getStatusColor(optimization.status)}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box display="flex" alignItems="center">
+                                                        <Typography variant="body2" sx={{ mr: 1 }}>
+                                                            {optimization.impact_score}
+                                                        </Typography>
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={optimization.impact_score}
+                                                            sx={{ width: 60, height: 6 }}
+                                                            color={optimization.impact_score > 80 ? 'success' :
+                                                                optimization.impact_score > 60 ? 'warning' : 'error'}
+                                                        />
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2">
+                                                        {optimization.implemented_at ?
+                                                            optimization.implemented_at.toLocaleDateString() :
+                                                            optimization.created_at.toLocaleDateString()
+                                                        }
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {optimization.status === 'implemented' && optimization.expected_improvement ? (
+                                                        <Box>
+                                                            {Object.entries(optimization.expected_improvement).map(([key, value]) => (
+                                                                <Typography key={key} variant="caption" display="block">
+                                                                    {key === 'response_time' ? '응답시간' :
+                                                                        key === 'accuracy' ? '정확도' :
+                                                                            key === 'throughput' ? '처리량' : key}: {String(value)}
+                                                                </Typography>
+                                                            ))}
+                                                        </Box>
+                                                    ) : (
+                                                        <Typography variant="caption" color="textSecondary">
+                                                            -
+                                                        </Typography>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Tooltip title="상세 보기">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => {
+                                                                setSelectedOptimization(optimization);
+                                                                setOptimizationDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <Visibility />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </CardContent>
+                </Card>
+            </Box>
+        </Box>
+    );
+
+    const renderSettings = () => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+            {/* 일반 설정 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Settings color="primary" sx={{ mr: 1 }} />
+                        <Typography variant="h6">일반 설정</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                                <Typography variant="body1">자동 새로고침</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                    데이터를 자동으로 업데이트합니다
+                                </Typography>
+                            </Box>
+                            <Switch
+                                checked={autoRefresh}
+                                onChange={(e) => setAutoRefresh(e.target.checked)}
+                            />
+                        </Box>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                                <Typography variant="body1">전체화면 모드</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                    대시보드를 전체화면으로 표시합니다
+                                </Typography>
+                            </Box>
+                            <Switch
+                                checked={fullscreen}
+                                onChange={(e) => setFullscreen(e.target.checked)}
+                            />
+                        </Box>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                                <Typography variant="body1">실시간 모니터링</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                    실시간 성능 모니터링을 활성화합니다
+                                </Typography>
+                            </Box>
+                            <Switch defaultChecked />
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 알림 설정 */}
+            <Card>
+                <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <Alert color="warning" sx={{ mr: 1 }} />
+                        <Typography variant="h6">알림 설정</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                                <Typography variant="body1">성능 저하 알림</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                    성능이 임계값을 초과할 때 알림
+                                </Typography>
+                            </Box>
+                            <Switch defaultChecked />
+                        </Box>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                                <Typography variant="body1">최적화 완료 알림</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                    최적화 작업이 완료될 때 알림
+                                </Typography>
+                            </Box>
+                            <Switch defaultChecked />
+                        </Box>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                                <Typography variant="body1">오류 발생 알림</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                    오류가 발생할 때 즉시 알림
+                                </Typography>
+                            </Box>
+                            <Switch defaultChecked />
+                        </Box>
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* 데이터 관리 */}
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                <Card>
+                    <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="h6">데이터 관리</Typography>
+                            <Button variant="outlined" size="small" startIcon={<Refresh />}>
+                                데이터 새로고침
+                            </Button>
+                        </Box>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+                            <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                <Typography variant="h6" color="primary">
+                                    {services.length}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">모니터링 중인 서비스</Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                <Typography variant="h6" color="info.main">
+                                    {services.reduce((sum, s) => sum + s.performance_trends.length, 0)}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">성능 지표</Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                <Typography variant="h6" color="success.main">
+                                    {services.reduce((sum, s) => sum + s.optimization_history.length, 0)}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">최적화 이력</Typography>
+                            </Box>
+                        </Box>
+                        <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                            <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={exportToCSV}>
+                                CSV 내보내기
+                            </Button>
+                            <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={exportToJSON}>
+                                JSON 내보내기
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<DeleteIcon />}
+                                color="error"
+                                onClick={() => {
+                                    if (window.confirm('모든 데이터를 초기화하시겠습니까?')) {
+                                        setServices([]);
+                                        setNotifications([]);
+                                    }
+                                }}
+                            >
+                                데이터 초기화
+                            </Button>
+                        </Box>
+                    </CardContent>
+                </Card>
+            </Box>
+        </Box>
+    );
+
+    const renderContent = () => {
+        switch (selectedTab) {
+            case 0: return renderServicesOverview();
+            case 1: return renderPerformanceTrends();
+            case 2: return renderOptimizationRecommendations();
+            case 3: return renderOptimizationHistory();
+            case 4: return renderPerformanceAnalysis();
+            case 5: return renderSettings();
+            default: return renderServicesOverview();
+        }
+    };
+
+    return (
+        <Box sx={{ p: 3, height: '100vh', overflow: 'auto' }}>
+            {/* 헤더 */}
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Box display="flex" alignItems="center">
+                    <Analytics sx={{ mr: 1, fontSize: 32 }} color="primary" />
+                    <Typography variant="h4">고급 AI 분석 및 최적화 대시보드</Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="body2" color="textSecondary">
+                        마지막 업데이트: {lastUpdate.toLocaleTimeString()}
+                    </Typography>
+                    <Tooltip title="전체화면">
+                        <IconButton onClick={() => setFullscreen(!fullscreen)}>
+                            {fullscreen ? <FullscreenExit /> : <Fullscreen />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            </Box>
+
+            {/* 탭 네비게이션 */}
+            <Paper sx={{ mb: 3 }}>
+                <Box display="flex" overflow="auto">
+                    {tabs.map((tab, index) => (
+                        <Button
+                            key={index}
+                            variant={selectedTab === index ? "contained" : "text"}
+                            startIcon={tab.icon}
+                            onClick={() => setSelectedTab(index)}
+                            sx={{
+                                minWidth: 'auto',
+                                px: 2,
+                                py: 1.5,
+                                borderRadius: 0,
+                                borderBottom: selectedTab === index ? 2 : 0,
+                                borderColor: 'primary.main'
+                            }}
+                        >
+                            {tab.label}
+                        </Button>
+                    ))}
+                </Box>
+            </Paper>
+
+            {/* 메인 콘텐츠 */}
+            {renderContent()}
+
+            {/* 최적화 상세 정보 다이얼로그 */}
+            <Dialog
+                open={optimizationDialogOpen}
+                onClose={() => setOptimizationDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box display="flex" alignItems="center">
+                        <Build color="primary" sx={{ mr: 1 }} />
+                        최적화 상세 정보
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    {selectedOptimization && (
+                        <Box sx={{ mt: 2 }}>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
+                                <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                    <Typography variant="h6" color="primary">
+                                        {selectedOptimization.impact_score}
+                                    </Typography>
+                                    <Typography variant="body2" color="textSecondary">영향도</Typography>
+                                </Box>
+                                <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                    <Typography variant="h6" color="warning.main">
+                                        {selectedOptimization.effort_score}
+                                    </Typography>
+                                    <Typography variant="body2" color="textSecondary">구현 난이도</Typography>
+                                </Box>
+                                <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                    <Typography variant="h6" color="success.main">
+                                        {selectedOptimization.roi_score}
+                                    </Typography>
+                                    <Typography variant="body2" color="textSecondary">ROI 점수</Typography>
+                                </Box>
+                            </Box>
+
+                            <Typography variant="h6" gutterBottom>구현 단계</Typography>
+                            <List>
+                                {selectedOptimization.implementation_steps.map((step, index) => (
+                                    <ListItem key={index}>
+                                        <ListItemIcon>
+                                            <CheckCircle color="primary" />
+                                        </ListItemIcon>
+                                        <ListItemText primary={step} />
+                                    </ListItem>
+                                ))}
+                            </List>
+
+                            {selectedOptimization.expected_improvement && (
+                                <>
+                                    <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                                        예상 개선 효과
+                                    </Typography>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
+                                        {Object.entries(selectedOptimization.expected_improvement).map(([key, value]) => (
+                                            <Box key={key} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                                <Typography variant="body1" fontWeight="medium">
+                                                    {key === 'response_time' ? '응답시간' :
+                                                        key === 'accuracy' ? '정확도' :
+                                                            key === 'throughput' ? '처리량' : key}
+                                                </Typography>
+                                                <Typography variant="h6" color="success.main">
+                                                    {String(value)}
+                                                    {key === 'response_time' ? 'ms' :
+                                                        key === 'accuracy' || key === 'throughput' ? '%' : ''}
+                                                </Typography>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                </>
+                            )}
+
+                            <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                                <Typography variant="body2" color="textSecondary">
+                                    <strong>생성일:</strong> {selectedOptimization.created_at.toLocaleDateString()}
+                                    {selectedOptimization.implemented_at && (
+                                        <> | <strong>구현일:</strong> {selectedOptimization.implemented_at.toLocaleDateString()}</>
+                                    )}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOptimizationDialogOpen(false)}>닫기</Button>
+                    {selectedOptimization && selectedOptimization.status === 'approved' && (
+                        <Button variant="contained" startIcon={<PlayArrow />}>
+                            구현 시작
+                        </Button>
+                    )}
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default AdvancedAIAnalyticsOptimizationDashboard;

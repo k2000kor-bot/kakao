@@ -310,9 +310,10 @@ class RealTimeAIMultimodalLearningSystem {
 
     private calculatePatternEffectiveness(inputs: MultimodalInput[]): number {
         const avgConfidence = inputs.reduce((sum, input) => sum + input.confidence, 0) / inputs.length;
-        const recentInputs = inputs.filter(input =>
-            Date.now() - input.timestamp.getTime() < 24 * 60 * 60 * 1000 // 24시간 내
-        );
+        const recentInputs = inputs.filter(input => {
+            const timestamp = input.timestamp instanceof Date ? input.timestamp : new Date(input.timestamp);
+            return Date.now() - timestamp.getTime() < 24 * 60 * 60 * 1000; // 24시간 내
+        });
         const recencyFactor = recentInputs.length / inputs.length;
 
         return (avgConfidence * 0.6 + recencyFactor * 0.4);
@@ -464,9 +465,10 @@ class RealTimeAIMultimodalLearningSystem {
 
     private updateExistingLearningPath(path: AdaptiveLearningPath, inputs: MultimodalInput[]): void {
         // 진행률 업데이트
-        const recentInputs = inputs.filter(input =>
-            Date.now() - input.timestamp.getTime() < 24 * 60 * 60 * 1000
-        );
+        const recentInputs = inputs.filter(input => {
+            const timestamp = input.timestamp instanceof Date ? input.timestamp : new Date(input.timestamp);
+            return Date.now() - timestamp.getTime() < 24 * 60 * 60 * 1000;
+        });
 
         if (recentInputs.length > 0) {
             path.progress = Math.min(100, path.progress + (recentInputs.length * 2));
@@ -520,9 +522,10 @@ class RealTimeAIMultimodalLearningSystem {
     }
 
     private analyzeMultimodalInputs(): void {
-        const recentInputs = this.inputs.filter(input =>
-            Date.now() - input.timestamp.getTime() < 5 * 60 * 1000 // 5분 내
-        );
+        const recentInputs = this.inputs.filter(input => {
+            const timestamp = input.timestamp instanceof Date ? input.timestamp : new Date(input.timestamp);
+            return Date.now() - timestamp.getTime() < 5 * 60 * 1000; // 5분 내
+        });
 
         recentInputs.forEach(input => {
             const analysis: MultimodalAnalysis = {
@@ -748,7 +751,8 @@ class RealTimeAIMultimodalLearningSystem {
 
     private updateRecommendationPriorities(): void {
         this.recommendations.forEach(rec => {
-            const timeSinceCreation = Date.now() - rec.timestamp.getTime();
+            const timestamp = rec.timestamp instanceof Date ? rec.timestamp : new Date(rec.timestamp);
+            const timeSinceCreation = Date.now() - timestamp.getTime();
             if (timeSinceCreation > 24 * 60 * 60 * 1000) { // 24시간 경과
                 rec.priority = 'urgent';
             }
@@ -796,7 +800,10 @@ class RealTimeAIMultimodalLearningSystem {
     public getMetrics(): MultimodalLearningMetrics {
         const uniqueUsers = new Set(this.inputs.map(input => input.userId)).size;
         const activeSessions = new Set(this.inputs
-            .filter(input => Date.now() - input.timestamp.getTime() < 60 * 60 * 1000)
+            .filter(input => {
+                const timestamp = input.timestamp instanceof Date ? input.timestamp : new Date(input.timestamp);
+                return Date.now() - timestamp.getTime() < 60 * 60 * 1000;
+            })
             .map(input => input.sessionId)
         ).size;
 

@@ -1,0 +1,851 @@
+import React, { useState, useEffect } from 'react';
+import { Box, Card, CardContent, Typography, Grid, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, ListItemIcon, IconButton, Tooltip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Badge, Alert, TextField, InputAdornment, Tabs, Tab, Divider, CircularProgress, Slider, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { AutoFixHigh, TrendingUp, TrendingDown, TrendingFlat, CheckCircle, Warning, Error, Refresh, Add, Delete, Edit, Visibility, Settings, Timeline, Assessment, Build, ExpandMore, PlayArrow, Pause, Stop, Science, Psychology, Code, DataUsage, AccountTree, Task, Queue, PriorityHigh, Priority, LowPriority, PriorityHigh, ModelTraining, Tune, Tune as Optimization, SmartToy, Psychology as PsychologyIcon, Science as ScienceIcon, Code as CodeIcon, DataUsage as DataUsageIcon, AccountTree as WorkflowIcon, Task as TaskIcon, Queue as QueueIcon, PriorityHigh as PriorityHighIcon, PriorityHigh as PriorityIcon, LowPriority as LowPriorityIcon, CriticalPriority as PriorityHighIcon, ModelTraining as ModelTrainingIcon, Tune as TuneIcon, Optimization as OptimizationIcon, SmartToy as SmartToyIcon, AutoFixHigh as AutoFixHighIcon } from '@mui/icons-material';
+import ultraAdvancedAIAutomationSystem, { AutomationRule, AutomationWorkflow, AutomationExecution, AutomationConfig, AutomationMetrics } from '../services/ultraAdvancedAIAutomationSystem';
+
+interface AutomationDashboardState {
+    rules: AutomationRule[];
+    workflows: AutomationWorkflow[];
+    executions: AutomationExecution[];
+    config: AutomationConfig;
+    metrics: AutomationMetrics;
+    isLoading: boolean;
+    error: string | null;
+}
+
+const UltraAdvancedAIAutomationDashboard: React.FC = () => {
+    const [state, setState] = useState<AutomationDashboardState>({
+        rules: [],
+        workflows: [],
+        executions: [],
+        config: {
+            auto_execution: true,
+            parallel_execution: true,
+            max_concurrent_workflows: 10,
+            execution_timeout: 300000,
+            retry_policy: {
+                max_retries: 3,
+                retry_delay: 5000,
+                exponential_backoff: true
+            },
+            monitoring: {
+                real_time_monitoring: true,
+                performance_tracking: true,
+                error_alerting: true
+            },
+            optimization: {
+                auto_optimization: true,
+                resource_management: true,
+                load_balancing: true
+            }
+        },
+        metrics: {
+            total_rules: 0,
+            active_rules: 0,
+            total_workflows: 0,
+            active_workflows: 0,
+            total_executions: 0,
+            successful_executions: 0,
+            failed_executions: 0,
+            average_execution_time: 0,
+            system_performance: {
+                cpu_usage: 0,
+                memory_usage: 0,
+                queue_length: 0,
+                throughput: 0
+            },
+            automation_health: {
+                rule_health: 0,
+                workflow_health: 0,
+                system_health: 0,
+                overall_health: 0
+            }
+        },
+        isLoading: true,
+        error: null
+    });
+
+    const [activeTab, setActiveTab] = useState(0);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [refreshInterval, setRefreshInterval] = useState(5000);
+    const [selectedRule, setSelectedRule] = useState<AutomationRule | null>(null);
+    const [selectedWorkflow, setSelectedWorkflow] = useState<AutomationWorkflow | null>(null);
+    const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
+    const [createRuleDialog, setCreateRuleDialog] = useState(false);
+    const [createWorkflowDialog, setCreateWorkflowDialog] = useState(false);
+    const [configDialog, setConfigDialog] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+                const rules = ultraAdvancedAIAutomationSystem.getRules();
+                const workflows = ultraAdvancedAIAutomationSystem.getWorkflows();
+                const executions = ultraAdvancedAIAutomationSystem.getExecutions(50);
+                const config = ultraAdvancedAIAutomationSystem.getConfig();
+                const metrics = ultraAdvancedAIAutomationSystem.getMetrics();
+
+                setState(prev => ({
+                    ...prev,
+                    rules,
+                    workflows,
+                    executions,
+                    config,
+                    metrics,
+                    isLoading: false
+                }));
+            } catch (error) {
+                setState(prev => ({
+                    ...prev,
+                    error: error.message,
+                    isLoading: false
+                }));
+            }
+        };
+
+        fetchData();
+
+        if (autoRefresh) {
+            const interval = setInterval(fetchData, refreshInterval);
+            return () => clearInterval(interval);
+        }
+    }, [autoRefresh, refreshInterval]);
+
+    useEffect(() => {
+        const handleMetricsUpdate = (metrics: AutomationMetrics) => {
+            setState(prev => ({ ...prev, metrics }));
+        };
+
+        const handleRuleCreated = (rule: AutomationRule) => {
+            setState(prev => ({
+                ...prev,
+                rules: [...prev.rules, rule]
+            }));
+        };
+
+        const handleWorkflowCreated = (workflow: AutomationWorkflow) => {
+            setState(prev => ({
+                ...prev,
+                workflows: [...prev.workflows, workflow]
+            }));
+        };
+
+        const handleExecutionStarted = (execution: AutomationExecution) => {
+            setState(prev => ({
+                ...prev,
+                executions: [execution, ...prev.executions.slice(0, 49)]
+            }));
+        };
+
+        ultraAdvancedAIAutomationSystem.on('metrics_updated', handleMetricsUpdate);
+        ultraAdvancedAIAutomationSystem.on('rule_created', handleRuleCreated);
+        ultraAdvancedAIAutomationSystem.on('workflow_created', handleWorkflowCreated);
+        ultraAdvancedAIAutomationSystem.on('execution_started', handleExecutionStarted);
+
+        return () => {
+            ultraAdvancedAIAutomationSystem.off('metrics_updated', handleMetricsUpdate);
+            ultraAdvancedAIAutomationSystem.off('rule_created', handleRuleCreated);
+            ultraAdvancedAIAutomationSystem.off('workflow_created', handleWorkflowCreated);
+            ultraAdvancedAIAutomationSystem.off('execution_started', handleExecutionStarted);
+        };
+    }, []);
+
+    const handleExecuteWorkflow = async (workflowId: string) => {
+        try {
+            await ultraAdvancedAIAutomationSystem.executeWorkflow(workflowId);
+        } catch (error) {
+            setState(prev => ({ ...prev, error: error.message }));
+        }
+    };
+
+    const handleTriggerRule = async (ruleId: string) => {
+        try {
+            await ultraAdvancedAIAutomationSystem.triggerRule(ruleId);
+        } catch (error) {
+            setState(prev => ({ ...prev, error: error.message }));
+        }
+    };
+
+    const handlePauseWorkflow = async (workflowId: string) => {
+        try {
+            await ultraAdvancedAIAutomationSystem.pauseWorkflow(workflowId);
+            setState(prev => ({
+                ...prev,
+                workflows: prev.workflows.map(w =>
+                    w.id === workflowId ? { ...w, status: 'paused' } : w
+                )
+            }));
+        } catch (error) {
+            setState(prev => ({ ...prev, error: error.message }));
+        }
+    };
+
+    const handleResumeWorkflow = async (workflowId: string) => {
+        try {
+            await ultraAdvancedAIAutomationSystem.resumeWorkflow(workflowId);
+            setState(prev => ({
+                ...prev,
+                workflows: prev.workflows.map(w =>
+                    w.id === workflowId ? { ...w, status: 'active' } : w
+                )
+            }));
+        } catch (error) {
+            setState(prev => ({ ...prev, error: error.message }));
+        }
+    };
+
+    const handleCancelExecution = async (executionId: string) => {
+        try {
+            await ultraAdvancedAIAutomationSystem.cancelExecution(executionId);
+            setState(prev => ({
+                ...prev,
+                executions: prev.executions.map(e =>
+                    e.id === executionId ? { ...e, status: 'cancelled' } : e
+                )
+            }));
+        } catch (error) {
+            setState(prev => ({ ...prev, error: error.message }));
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'active': return 'success';
+            case 'running': return 'primary';
+            case 'completed': return 'success';
+            case 'paused': return 'warning';
+            case 'failed': return 'error';
+            case 'cancelled': return 'default';
+            default: return 'default';
+        }
+    };
+
+    const getPriorityIcon = (priority: string) => {
+        switch (priority) {
+            case 'critical': return <PriorityHighIcon />;
+            case 'high': return <PriorityHighIcon />;
+            case 'medium': return <PriorityIcon />;
+            case 'low': return <LowPriorityIcon />;
+            default: return <PriorityIcon />;
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'critical': return 'error';
+            case 'high': return 'warning';
+            case 'medium': return 'info';
+            case 'low': return 'default';
+            default: return 'default';
+        }
+    };
+
+    const getHealthColor = (health: number) => {
+        if (health >= 0.8) return 'success';
+        if (health >= 0.6) return 'warning';
+        return 'error';
+    };
+
+    const formatDuration = (milliseconds: number) => {
+        const seconds = Math.floor(milliseconds / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+
+        if (hours > 0) return `${hours}h ${minutes % 60}m`;
+        if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+        return `${seconds}s`;
+    };
+
+    if (state.isLoading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ flexGrow: 1, p: 3 }}>
+            <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <AutoFixHighIcon color="primary" />
+                고도화된 AI 자동화 시스템 대시보드
+            </Typography>
+
+            {state.error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {state.error}
+                </Alert>
+            )}
+
+            {/* 제어 패널 */}
+            <Card sx={{ mb: 3 }}>
+                <CardContent>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="h6" gutterBottom>
+                                시스템 제어
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={autoRefresh}
+                                            onChange={(e) => setAutoRefresh(e.target.checked)}
+                                        />
+                                    }
+                                    label="자동 새로고침"
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={state.config.auto_execution}
+                                            onChange={(e) => {
+                                                ultraAdvancedAIAutomationSystem.updateConfig({
+                                                    auto_execution: e.target.checked
+                                                });
+                                            }}
+                                        />
+                                    }
+                                    label="자동 실행"
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={state.config.optimization.auto_optimization}
+                                            onChange={(e) => {
+                                                ultraAdvancedAIAutomationSystem.updateConfig({
+                                                    optimization: {
+                                                        ...state.config.optimization,
+                                                        auto_optimization: e.target.checked
+                                                    }
+                                                });
+                                            }}
+                                        />
+                                    }
+                                    label="자동 최적화"
+                                />
+                            </Box>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Settings />}
+                                    onClick={() => setConfigDialog(true)}
+                                >
+                                    설정
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Add />}
+                                    onClick={() => setCreateRuleDialog(true)}
+                                >
+                                    규칙 생성
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Add />}
+                                    onClick={() => setCreateWorkflowDialog(true)}
+                                >
+                                    워크플로우 생성
+                                </Button>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
+
+            {/* 시스템 상태 */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography color="textSecondary" gutterBottom>
+                                전체 규칙
+                            </Typography>
+                            <Typography variant="h4">
+                                {state.metrics.total_rules}
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={(state.metrics.active_rules / state.metrics.total_rules) * 100}
+                                sx={{ mt: 1 }}
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                                활성: {state.metrics.active_rules}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography color="textSecondary" gutterBottom>
+                                전체 워크플로우
+                            </Typography>
+                            <Typography variant="h4">
+                                {state.metrics.total_workflows}
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={(state.metrics.active_workflows / state.metrics.total_workflows) * 100}
+                                sx={{ mt: 1 }}
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                                활성: {state.metrics.active_workflows}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography color="textSecondary" gutterBottom>
+                                성공률
+                            </Typography>
+                            <Typography variant="h4">
+                                {state.metrics.total_executions > 0
+                                    ? Math.round((state.metrics.successful_executions / state.metrics.total_executions) * 100)
+                                    : 0}%
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={state.metrics.total_executions > 0
+                                    ? (state.metrics.successful_executions / state.metrics.total_executions) * 100
+                                    : 0}
+                                sx={{ mt: 1 }}
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                                총 실행: {state.metrics.total_executions}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Typography color="textSecondary" gutterBottom>
+                                시스템 건강도
+                            </Typography>
+                            <Typography variant="h4">
+                                {Math.round(state.metrics.automation_health.overall_health * 100)}%
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={state.metrics.automation_health.overall_health * 100}
+                                color={getHealthColor(state.metrics.automation_health.overall_health) as any}
+                                sx={{ mt: 1 }}
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                                CPU: {Math.round(state.metrics.system_performance.cpu_usage * 100)}%
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* 탭 네비게이션 */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+                    <Tab label="규칙 관리" />
+                    <Tab label="워크플로우 관리" />
+                    <Tab label="실행 모니터링" />
+                    <Tab label="시스템 성능" />
+                </Tabs>
+            </Box>
+
+            {/* 규칙 관리 탭 */}
+            {activeTab === 0 && (
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        자동화 규칙 ({state.rules.length})
+                    </Typography>
+                    <Grid container spacing={2}>
+                        {state.rules.map((rule) => (
+                            <Grid item xs={12} md={6} key={rule.id}>
+                                <Card>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                            <Typography variant="h6">
+                                                {rule.name}
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                <Chip
+                                                    label={rule.status}
+                                                    color={getStatusColor(rule.status) as any}
+                                                    size="small"
+                                                />
+                                                <Chip
+                                                    icon={getPriorityIcon(rule.priority)}
+                                                    label={rule.priority}
+                                                    color={getPriorityColor(rule.priority) as any}
+                                                    size="small"
+                                                />
+                                            </Box>
+                                        </Box>
+                                        <Typography color="textSecondary" sx={{ mb: 2 }}>
+                                            {rule.description}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="textSecondary">
+                                                실행: {rule.execution_count} | 성공: {rule.success_count}
+                                            </Typography>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                onClick={() => handleTriggerRule(rule.id)}
+                                            >
+                                                실행
+                                            </Button>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
+            )}
+
+            {/* 워크플로우 관리 탭 */}
+            {activeTab === 1 && (
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        자동화 워크플로우 ({state.workflows.length})
+                    </Typography>
+                    <Grid container spacing={2}>
+                        {state.workflows.map((workflow) => (
+                            <Grid item xs={12} md={6} key={workflow.id}>
+                                <Card>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                            <Typography variant="h6">
+                                                {workflow.name}
+                                            </Typography>
+                                            <Chip
+                                                label={workflow.status}
+                                                color={getStatusColor(workflow.status) as any}
+                                                size="small"
+                                            />
+                                        </Box>
+                                        <Typography color="textSecondary" sx={{ mb: 2 }}>
+                                            {workflow.description}
+                                        </Typography>
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="textSecondary">
+                                                단계: {workflow.steps.length} | 복잡도: {Math.round(workflow.metadata.complexity_score * 100)}%
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={(workflow.current_step / workflow.steps.length) * 100}
+                                                sx={{ mt: 1 }}
+                                            />
+                                        </Box>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                size="small"
+                                                variant="contained"
+                                                startIcon={<PlayArrow />}
+                                                onClick={() => handleExecuteWorkflow(workflow.id)}
+                                                disabled={workflow.status !== 'active'}
+                                            >
+                                                실행
+                                            </Button>
+                                            {workflow.status === 'active' ? (
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    startIcon={<Pause />}
+                                                    onClick={() => handlePauseWorkflow(workflow.id)}
+                                                >
+                                                    일시정지
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    startIcon={<PlayArrow />}
+                                                    onClick={() => handleResumeWorkflow(workflow.id)}
+                                                >
+                                                    재개
+                                                </Button>
+                                            )}
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
+            )}
+
+            {/* 실행 모니터링 탭 */}
+            {activeTab === 2 && (
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        실행 모니터링 ({state.executions.length})
+                    </Typography>
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>실행 ID</TableCell>
+                                    <TableCell>워크플로우</TableCell>
+                                    <TableCell>상태</TableCell>
+                                    <TableCell>진행률</TableCell>
+                                    <TableCell>시작 시간</TableCell>
+                                    <TableCell>실행 시간</TableCell>
+                                    <TableCell>작업</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {state.executions.map((execution) => (
+                                    <TableRow key={execution.id}>
+                                        <TableCell>{execution.id}</TableCell>
+                                        <TableCell>{execution.workflow_id}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={execution.status}
+                                                color={getStatusColor(execution.status) as any}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box sx={{ width: '100%', mr: 1 }}>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={(execution.steps_completed / execution.total_steps) * 100}
+                                                    />
+                                                </Box>
+                                                <Box sx={{ minWidth: 35 }}>
+                                                    <Typography variant="body2" color="textSecondary">
+                                                        {Math.round((execution.steps_completed / execution.total_steps) * 100)}%
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            {execution.started_at.toLocaleString()}
+                                        </TableCell>
+                                        <TableCell>
+                                            {execution.execution_time > 0 ? formatDuration(execution.execution_time) : '-'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {execution.status === 'running' && (
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    color="error"
+                                                    onClick={() => handleCancelExecution(execution.id)}
+                                                >
+                                                    취소
+                                                </Button>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Box>
+            )}
+
+            {/* 시스템 성능 탭 */}
+            {activeTab === 3 && (
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    시스템 성능
+                                </Typography>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        CPU 사용률
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.system_performance.cpu_usage * 100}
+                                        color={state.metrics.system_performance.cpu_usage > 0.8 ? 'error' : 'primary'}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.system_performance.cpu_usage * 100)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        메모리 사용률
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.system_performance.memory_usage * 100}
+                                        color={state.metrics.system_performance.memory_usage > 0.8 ? 'error' : 'primary'}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.system_performance.memory_usage * 100)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        처리량
+                                    </Typography>
+                                    <Typography variant="h6">
+                                        {state.metrics.system_performance.throughput.toFixed(2)} 실행/분
+                                    </Typography>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    자동화 건강도
+                                </Typography>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        규칙 건강도
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.automation_health.rule_health * 100}
+                                        color={getHealthColor(state.metrics.automation_health.rule_health) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.automation_health.rule_health * 100)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        워크플로우 건강도
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.automation_health.workflow_health * 100}
+                                        color={getHealthColor(state.metrics.automation_health.workflow_health) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.automation_health.workflow_health * 100)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        시스템 건강도
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={state.metrics.automation_health.system_health * 100}
+                                        color={getHealthColor(state.metrics.automation_health.system_health) as any}
+                                        sx={{ height: 8, borderRadius: 4 }}
+                                    />
+                                    <Typography variant="body2">
+                                        {Math.round(state.metrics.automation_health.system_health * 100)}%
+                                    </Typography>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            )}
+
+            {/* 설정 다이얼로그 */}
+            <Dialog open={configDialog} onClose={() => setConfigDialog(false)} maxWidth="md" fullWidth>
+                <DialogTitle>자동화 시스템 설정</DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="h6" gutterBottom>
+                                실행 설정
+                            </Typography>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.auto_execution}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIAutomationSystem.updateConfig({
+                                                auto_execution: e.target.checked
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="자동 실행"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.parallel_execution}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIAutomationSystem.updateConfig({
+                                                parallel_execution: e.target.checked
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="병렬 실행"
+                            />
+                            <TextField
+                                label="최대 동시 워크플로우"
+                                type="number"
+                                value={state.config.max_concurrent_workflows}
+                                onChange={(e) => {
+                                    ultraAdvancedAIAutomationSystem.updateConfig({
+                                        max_concurrent_workflows: parseInt(e.target.value)
+                                    });
+                                }}
+                                fullWidth
+                                sx={{ mt: 2 }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="h6" gutterBottom>
+                                모니터링 설정
+                            </Typography>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.monitoring.real_time_monitoring}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIAutomationSystem.updateConfig({
+                                                monitoring: {
+                                                    ...state.config.monitoring,
+                                                    real_time_monitoring: e.target.checked
+                                                }
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="실시간 모니터링"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.config.monitoring.error_alerting}
+                                        onChange={(e) => {
+                                            ultraAdvancedAIAutomationSystem.updateConfig({
+                                                monitoring: {
+                                                    ...state.config.monitoring,
+                                                    error_alerting: e.target.checked
+                                                }
+                                            });
+                                        }}
+                                    />
+                                }
+                                label="오류 알림"
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfigDialog(false)}>닫기</Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default UltraAdvancedAIAutomationDashboard;

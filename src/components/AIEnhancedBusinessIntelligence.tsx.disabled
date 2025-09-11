@@ -1,0 +1,918 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    LinearProgress,
+    IconButton,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Alert,
+    Divider,
+    Tooltip,
+    Badge
+} from '@mui/material';
+import {
+    TrendingUp,
+    TrendingDown,
+    Analytics,
+    Business,
+    Assessment,
+    Timeline,
+    BarChart,
+    Refresh,
+    Download,
+    Share,
+    Settings,
+    Warning,
+    CheckCircle,
+    Error,
+    Info,
+    Visibility,
+    VisibilityOff,
+    FilterList,
+    Sort,
+    Search,
+    Add,
+    Edit,
+    Delete,
+    Save,
+    Cancel,
+    PlayArrow,
+    Pause,
+    Stop,
+    Speed,
+    Memory,
+    Storage,
+    NetworkCheck,
+    Security,
+    Cloud,
+    DataUsage,
+    Insights,
+    Psychology,
+    AutoAwesome,
+    RocketLaunch,
+    Lightbulb,
+    School,
+    Work,
+    Group,
+    Person,
+    LocationOn,
+    Schedule,
+    PriorityHigh,
+    LowPriority,
+    TrendingFlat
+} from '@mui/icons-material';
+import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    RadialLinearScale,
+    Title,
+    Tooltip as ChartTooltip,
+    Legend,
+    Filler
+} from 'chart.js';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    RadialLinearScale,
+    Title,
+    ChartTooltip,
+    Legend,
+    Filler
+);
+
+// 비즈니스 인텔리전스 인터페이스
+interface BusinessMetric {
+    id: string;
+    name: string;
+    value: number;
+    target: number;
+    unit: string;
+    trend: 'up' | 'down' | 'stable';
+    change: number;
+    status: 'excellent' | 'good' | 'warning' | 'critical';
+    category: 'revenue' | 'cost' | 'efficiency' | 'quality' | 'customer' | 'employee';
+    lastUpdated: Date;
+}
+
+interface BusinessInsight {
+    id: string;
+    title: string;
+    description: string;
+    type: 'opportunity' | 'risk' | 'trend' | 'anomaly' | 'recommendation';
+    impact: 'high' | 'medium' | 'low';
+    confidence: number;
+    category: string;
+    timestamp: Date;
+    actionable: boolean;
+    actions: string[];
+}
+
+interface PredictiveModel {
+    id: string;
+    name: string;
+    accuracy: number;
+    status: 'active' | 'training' | 'evaluating';
+    lastPrediction: Date;
+    predictions: number[];
+    confidence: number;
+}
+
+interface BusinessProcess {
+    id: string;
+    name: string;
+    efficiency: number;
+    bottlenecks: string[];
+    optimization: string[];
+    status: 'optimal' | 'good' | 'needs_improvement' | 'critical';
+}
+
+// 샘플 데이터
+const sampleMetrics: BusinessMetric[] = [
+    {
+        id: 'revenue-001',
+        name: '월 매출',
+        value: 1250000,
+        target: 1200000,
+        unit: '원',
+        trend: 'up',
+        change: 4.2,
+        status: 'excellent',
+        category: 'revenue',
+        lastUpdated: new Date()
+    },
+    {
+        id: 'cost-001',
+        name: '운영 비용',
+        value: 850000,
+        target: 800000,
+        unit: '원',
+        trend: 'down',
+        change: -2.1,
+        status: 'good',
+        category: 'cost',
+        lastUpdated: new Date()
+    },
+    {
+        id: 'efficiency-001',
+        name: '업무 효율성',
+        value: 87,
+        target: 85,
+        unit: '%',
+        trend: 'up',
+        change: 2.4,
+        status: 'excellent',
+        category: 'efficiency',
+        lastUpdated: new Date()
+    },
+    {
+        id: 'quality-001',
+        name: '제품 품질',
+        value: 94,
+        target: 90,
+        unit: '%',
+        trend: 'up',
+        change: 4.4,
+        status: 'excellent',
+        category: 'quality',
+        lastUpdated: new Date()
+    },
+    {
+        id: 'customer-001',
+        name: '고객 만족도',
+        value: 91,
+        target: 88,
+        unit: '%',
+        trend: 'up',
+        change: 3.4,
+        status: 'excellent',
+        category: 'customer',
+        lastUpdated: new Date()
+    },
+    {
+        id: 'employee-001',
+        name: '직원 만족도',
+        value: 82,
+        target: 85,
+        unit: '%',
+        trend: 'down',
+        change: -1.2,
+        status: 'warning',
+        category: 'employee',
+        lastUpdated: new Date()
+    }
+];
+
+const sampleInsights: BusinessInsight[] = [
+    {
+        id: 'insight-001',
+        title: '매출 증가 기회 발견',
+        description: '온라인 채널에서 15% 매출 증가 가능성이 감지되었습니다.',
+        type: 'opportunity',
+        impact: 'high',
+        confidence: 0.89,
+        category: 'revenue',
+        timestamp: new Date(),
+        actionable: true,
+        actions: ['온라인 마케팅 강화', '디지털 채널 확장', '고객 세분화 분석']
+    },
+    {
+        id: 'insight-002',
+        title: '비용 최적화 필요',
+        description: '운영 비용이 목표 대비 6.3% 초과하고 있습니다.',
+        type: 'risk',
+        impact: 'medium',
+        confidence: 0.92,
+        category: 'cost',
+        timestamp: new Date(),
+        actionable: true,
+        actions: ['비용 구조 분석', '효율성 개선', '예산 재조정']
+    },
+    {
+        id: 'insight-003',
+        title: '직원 만족도 하락',
+        description: '직원 만족도가 지난 달 대비 1.2% 감소했습니다.',
+        type: 'trend',
+        impact: 'medium',
+        confidence: 0.78,
+        category: 'employee',
+        timestamp: new Date(),
+        actionable: true,
+        actions: ['직원 설문조사', '근무환경 개선', '복리후생 강화']
+    }
+];
+
+const samplePredictiveModels: PredictiveModel[] = [
+    {
+        id: 'model-001',
+        name: '매출 예측 모델',
+        accuracy: 94.2,
+        status: 'active',
+        lastPrediction: new Date(),
+        predictions: [1200000, 1250000, 1300000, 1350000, 1400000],
+        confidence: 0.89
+    },
+    {
+        id: 'model-002',
+        name: '고객 이탈 예측',
+        accuracy: 87.5,
+        status: 'active',
+        lastPrediction: new Date(),
+        predictions: [0.12, 0.15, 0.18, 0.14, 0.11],
+        confidence: 0.82
+    },
+    {
+        id: 'model-003',
+        name: '비용 예측 모델',
+        accuracy: 91.8,
+        status: 'training',
+        lastPrediction: new Date(),
+        predictions: [800000, 820000, 850000, 880000, 900000],
+        confidence: 0.85
+    }
+];
+
+const sampleProcesses: BusinessProcess[] = [
+    {
+        id: 'process-001',
+        name: '주문 처리 프로세스',
+        efficiency: 92,
+        bottlenecks: ['결제 검증 단계', '배송 준비 시간'],
+        optimization: ['자동화 도입', '검증 프로세스 간소화'],
+        status: 'optimal'
+    },
+    {
+        id: 'process-002',
+        name: '고객 서비스 프로세스',
+        efficiency: 78,
+        bottlenecks: ['응답 시간', '해결률'],
+        optimization: ['AI 챗봇 도입', '지식베이스 구축'],
+        status: 'needs_improvement'
+    },
+    {
+        id: 'process-003',
+        name: '재고 관리 프로세스',
+        efficiency: 85,
+        bottlenecks: ['재고 예측 정확도'],
+        optimization: ['예측 모델 개선', '실시간 모니터링'],
+        status: 'good'
+    }
+];
+
+// 차트 데이터
+const chartData = {
+    revenue: {
+        labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+        datasets: [
+            {
+                label: '실제 매출',
+                data: [1100000, 1150000, 1200000, 1180000, 1250000, 1300000],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.4,
+                fill: true
+            },
+            {
+                label: '목표 매출',
+                data: [1200000, 1200000, 1200000, 1200000, 1200000, 1200000],
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderDash: [5, 5],
+                tension: 0.4
+            }
+        ]
+    },
+    efficiency: {
+        labels: ['업무 효율성', '제품 품질', '고객 만족도', '직원 만족도', '비용 효율성'],
+        datasets: [
+            {
+                label: '현재 성과',
+                data: [87, 94, 91, 82, 88],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(153, 102, 255, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 2
+            }
+        ]
+    },
+    predictions: {
+        labels: ['다음 1개월', '다음 2개월', '다음 3개월', '다음 4개월', '다음 5개월'],
+        datasets: [
+            {
+                label: '매출 예측',
+                data: [1250000, 1300000, 1350000, 1400000, 1450000],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.4
+            },
+            {
+                label: '비용 예측',
+                data: [850000, 870000, 890000, 910000, 930000],
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.4
+            }
+        ]
+    }
+};
+
+const AIEnhancedBusinessIntelligence: React.FC = () => {
+    const [metrics, setMetrics] = useState<BusinessMetric[]>(sampleMetrics);
+    const [insights, setInsights] = useState<BusinessInsight[]>(sampleInsights);
+    const [predictiveModels, setPredictiveModels] = useState<PredictiveModel[]>(samplePredictiveModels);
+    const [processes, setProcesses] = useState<BusinessProcess[]>(sampleProcesses);
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [selectedInsightType, setSelectedInsightType] = useState<string>('all');
+    const [showInsightDialog, setShowInsightDialog] = useState(false);
+    const [selectedInsight, setSelectedInsight] = useState<BusinessInsight | null>(null);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+
+    // 상태별 색상
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'excellent': return 'success';
+            case 'good': return 'primary';
+            case 'warning': return 'warning';
+            case 'critical': return 'error';
+            default: return 'default';
+        }
+    };
+
+    // 트렌드 아이콘
+    const getTrendIcon = (trend: string) => {
+        switch (trend) {
+            case 'up': return <TrendingUp color="success" />;
+            case 'down': return <TrendingDown color="error" />;
+            case 'stable': return <TrendingFlat color="action" />;
+            default: return <TrendingFlat color="action" />;
+        }
+    };
+
+    // 인사이트 타입별 색상
+    const getInsightTypeColor = (type: string) => {
+        switch (type) {
+            case 'opportunity': return 'success';
+            case 'risk': return 'error';
+            case 'trend': return 'info';
+            case 'anomaly': return 'warning';
+            case 'recommendation': return 'primary';
+            default: return 'default';
+        }
+    };
+
+    // 영향도별 색상
+    const getImpactColor = (impact: string) => {
+        switch (impact) {
+            case 'high': return 'error';
+            case 'medium': return 'warning';
+            case 'low': return 'info';
+            default: return 'default';
+        }
+    };
+
+    // 실시간 데이터 업데이트
+    useEffect(() => {
+        if (!autoRefresh) return;
+
+        const interval = setInterval(() => {
+            setMetrics(prevMetrics =>
+                prevMetrics.map(metric => ({
+                    ...metric,
+                    value: metric.value + (Math.random() - 0.5) * metric.value * 0.02,
+                    lastUpdated: new Date()
+                }))
+            );
+
+            setPredictiveModels(prevModels =>
+                prevModels.map(model => ({
+                    ...model,
+                    accuracy: Math.max(80, Math.min(98, model.accuracy + (Math.random() - 0.5) * 2)),
+                    confidence: Math.max(0.7, Math.min(0.95, model.confidence + (Math.random() - 0.5) * 0.1))
+                }))
+            );
+        }, 30000); // 30초마다 업데이트
+
+        return () => clearInterval(interval);
+    }, [autoRefresh]);
+
+    // 필터링된 데이터
+    const filteredMetrics = selectedCategory === 'all'
+        ? metrics
+        : metrics.filter(metric => metric.category === selectedCategory);
+
+    const filteredInsights = selectedInsightType === 'all'
+        ? insights
+        : insights.filter(insight => insight.type === selectedInsightType);
+
+    // 성과 점수 계산
+    const calculatePerformanceScore = () => {
+        const totalMetrics = metrics.length;
+        const excellentCount = metrics.filter(m => m.status === 'excellent').length;
+        const goodCount = metrics.filter(m => m.status === 'good').length;
+
+        return Math.round((excellentCount * 100 + goodCount * 75) / totalMetrics);
+    };
+
+    const performanceScore = calculatePerformanceScore();
+
+    return (
+        <Box sx={{ p: 3 }}>
+            {/* 헤더 */}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                    <Typography variant="h4" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Business sx={{ fontSize: 32, color: 'primary.main' }} />
+                        AI 강화 비즈니스 인텔리전스
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        실시간 비즈니스 성과 분석 및 예측 인사이트
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<Refresh />}
+                        onClick={() => window.location.reload()}
+                    >
+                        새로고침
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<Download />}
+                    >
+                        보고서 다운로드
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AutoAwesome />}
+                    >
+                        AI 분석 실행
+                    </Button>
+                </Box>
+            </Box>
+
+            {/* 전체 성과 요약 */}
+            <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+                <CardContent>
+                    <Grid container spacing={3} alignItems="center">
+                        <Grid item xs={12} md={3}>
+                            <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                                {performanceScore}%
+                            </Typography>
+                            <Typography variant="body1">전체 성과 점수</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                            <Typography variant="h4" component="div">
+                                {metrics.filter(m => m.status === 'excellent').length}
+                            </Typography>
+                            <Typography variant="body1">우수 지표</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                            <Typography variant="h4" component="div">
+                                {insights.filter(i => i.impact === 'high').length}
+                            </Typography>
+                            <Typography variant="body1">고위험 인사이트</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                            <Typography variant="h4" component="div">
+                                {predictiveModels.filter(m => m.status === 'active').length}
+                            </Typography>
+                            <Typography variant="body1">활성 예측 모델</Typography>
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
+
+            {/* 메트릭 카드 */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h2">
+                            핵심 비즈니스 메트릭
+                        </Typography>
+                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                            <InputLabel>카테고리 필터</InputLabel>
+                            <Select
+                                value={selectedCategory}
+                                label="카테고리 필터"
+                                onChange={(e) => setSelectedCategory(e.target.value)}
+                            >
+                                <MenuItem value="all">전체</MenuItem>
+                                <MenuItem value="revenue">매출</MenuItem>
+                                <MenuItem value="cost">비용</MenuItem>
+                                <MenuItem value="efficiency">효율성</MenuItem>
+                                <MenuItem value="quality">품질</MenuItem>
+                                <MenuItem value="customer">고객</MenuItem>
+                                <MenuItem value="employee">직원</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
+                </Grid>
+
+                {filteredMetrics.map((metric) => (
+                    <Grid item xs={12} sm={6} md={4} key={metric.id}>
+                        <Card sx={{ height: '100%', position: 'relative' }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Typography variant="h6" component="h3" noWrap>
+                                        {metric.name}
+                                    </Typography>
+                                    {getTrendIcon(metric.trend)}
+                                </Box>
+
+                                <Typography variant="h4" component="div" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                    {metric.value.toLocaleString()}{metric.unit}
+                                </Typography>
+
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                    <Chip
+                                        label={`${metric.change > 0 ? '+' : ''}${metric.change.toFixed(1)}%`}
+                                        color={metric.change >= 0 ? 'success' : 'error'}
+                                        size="small"
+                                    />
+                                    <Chip
+                                        label={metric.status}
+                                        color={getStatusColor(metric.status) as any}
+                                        size="small"
+                                    />
+                                </Box>
+
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        목표: {metric.target.toLocaleString()}{metric.unit}
+                                    </Typography>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={Math.min(100, (metric.value / metric.target) * 100)}
+                                        sx={{ flexGrow: 1 }}
+                                        color={getStatusColor(metric.status) as any}
+                                    />
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
+
+            {/* 차트 섹션 */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} lg={8}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" component="h3" gutterBottom>
+                                매출 트렌드 및 예측
+                            </Typography>
+                            <Line
+                                data={chartData.revenue}
+                                options={{
+                                    responsive: true,
+                                    plugins: {
+                                        legend: { position: 'top' },
+                                        title: { display: false }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            ticks: {
+                                                callback: function (value) {
+                                                    return (Number(value) / 1000000).toFixed(1) + 'M';
+                                                }
+                                            }
+                                        }
+                                    }
+                                }}
+                            />
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} lg={4}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" component="h3" gutterBottom>
+                                성과 레이더 차트
+                            </Typography>
+                            <Radar
+                                data={chartData.efficiency}
+                                options={{
+                                    responsive: true,
+                                    plugins: {
+                                        legend: { display: false }
+                                    },
+                                    scales: {
+                                        r: {
+                                            beginAtZero: true,
+                                            max: 100
+                                        }
+                                    }
+                                }}
+                            />
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* AI 인사이트 */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h2">
+                            AI 생성 인사이트
+                        </Typography>
+                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                            <InputLabel>인사이트 타입</InputLabel>
+                            <Select
+                                value={selectedInsightType}
+                                label="인사이트 타입"
+                                onChange={(e) => setSelectedInsightType(e.target.value)}
+                            >
+                                <MenuItem value="all">전체</MenuItem>
+                                <MenuItem value="opportunity">기회</MenuItem>
+                                <MenuItem value="risk">위험</MenuItem>
+                                <MenuItem value="trend">트렌드</MenuItem>
+                                <MenuItem value="anomaly">이상</MenuItem>
+                                <MenuItem value="recommendation">권장사항</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
+                </Grid>
+
+                {filteredInsights.map((insight) => (
+                    <Grid item xs={12} md={6} lg={4} key={insight.id}>
+                        <Card sx={{ height: '100%' }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Chip
+                                        label={insight.type}
+                                        color={getInsightTypeColor(insight.type) as any}
+                                        size="small"
+                                    />
+                                    <Chip
+                                        label={`${(insight.confidence * 100).toFixed(0)}%`}
+                                        color={getImpactColor(insight.impact) as any}
+                                        size="small"
+                                    />
+                                </Box>
+
+                                <Typography variant="h6" component="h3" gutterBottom>
+                                    {insight.title}
+                                </Typography>
+
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                    {insight.description}
+                                </Typography>
+
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                                    {insight.actions.slice(0, 2).map((action, index) => (
+                                        <Chip
+                                            key={index}
+                                            label={action}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    ))}
+                                    {insight.actions.length > 2 && (
+                                        <Chip
+                                            label={`+${insight.actions.length - 2}개 더`}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    )}
+                                </Box>
+
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    fullWidth
+                                    onClick={() => {
+                                        setSelectedInsight(insight);
+                                        setShowInsightDialog(true);
+                                    }}
+                                >
+                                    상세 보기
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
+
+            {/* 예측 모델 및 프로세스 */}
+            <Grid container spacing={3}>
+                <Grid item xs={12} lg={6}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" component="h3" gutterBottom>
+                                예측 모델 상태
+                            </Typography>
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>모델명</TableCell>
+                                            <TableCell align="right">정확도</TableCell>
+                                            <TableCell align="right">신뢰도</TableCell>
+                                            <TableCell align="center">상태</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {predictiveModels.map((model) => (
+                                            <TableRow key={model.id}>
+                                                <TableCell>{model.name}</TableCell>
+                                                <TableCell align="right">{model.accuracy.toFixed(1)}%</TableCell>
+                                                <TableCell align="right">{(model.confidence * 100).toFixed(0)}%</TableCell>
+                                                <TableCell align="center">
+                                                    <Chip
+                                                        label={model.status}
+                                                        color={model.status === 'active' ? 'success' : 'warning'}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} lg={6}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" component="h3" gutterBottom>
+                                비즈니스 프로세스 효율성
+                            </Typography>
+                            {processes.map((process) => (
+                                <Box key={process.id} sx={{ mb: 2 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                        <Typography variant="body2" fontWeight="medium">
+                                            {process.name}
+                                        </Typography>
+                                        <Chip
+                                            label={`${process.efficiency}%`}
+                                            color={process.status === 'optimal' ? 'success' : process.status === 'good' ? 'primary' : 'warning'}
+                                            size="small"
+                                        />
+                                    </Box>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={process.efficiency}
+                                        color={process.status === 'optimal' ? 'success' : process.status === 'good' ? 'primary' : 'warning'}
+                                        sx={{ mb: 1 }}
+                                    />
+                                    {process.bottlenecks.length > 0 && (
+                                        <Typography variant="caption" color="text.secondary">
+                                            병목: {process.bottlenecks.join(', ')}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* 인사이트 상세 다이얼로그 */}
+            <Dialog
+                open={showInsightDialog}
+                onClose={() => setShowInsightDialog(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                {selectedInsight && (
+                    <>
+                        <DialogTitle>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Insights color="primary" />
+                                {selectedInsight.title}
+                            </Box>
+                        </DialogTitle>
+                        <DialogContent>
+                            <Typography variant="body1" sx={{ mb: 2 }}>
+                                {selectedInsight.description}
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                                <Chip
+                                    label={`신뢰도: ${(selectedInsight.confidence * 100).toFixed(0)}%`}
+                                    color="primary"
+                                />
+                                <Chip
+                                    label={`영향도: ${selectedInsight.impact}`}
+                                    color={getImpactColor(selectedInsight.impact) as any}
+                                />
+                                <Chip
+                                    label={selectedInsight.actionable ? '실행 가능' : '참고용'}
+                                    color={selectedInsight.actionable ? 'success' : 'default'}
+                                />
+                            </Box>
+
+                            <Typography variant="h6" gutterBottom>
+                                권장 액션
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                {selectedInsight.actions.map((action, index) => (
+                                    <Alert key={index} severity="info" sx={{ mb: 1 }}>
+                                        {action}
+                                    </Alert>
+                                ))}
+                            </Box>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setShowInsightDialog(false)}>
+                                닫기
+                            </Button>
+                            <Button variant="contained" color="primary">
+                                액션 실행
+                            </Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+        </Box>
+    );
+};
+
+export default AIEnhancedBusinessIntelligence;

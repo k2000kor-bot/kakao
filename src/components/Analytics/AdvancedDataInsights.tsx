@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-    BarChart3,
+    BarChart,
     LineChart,
-    PieChart,
     TrendingUp,
     TrendingDown,
     Activity,
@@ -35,7 +34,7 @@ import {
     TrendingUp as TrendingUpIcon,
     TrendingDown as TrendingDownIcon,
     Activity as ActivityIcon,
-    MyLocation as TargetIcon,
+    Locate as TargetIcon,
     Users as UsersIcon,
     FileText as FileTextIcon,
     MessageSquare as MessageSquareIcon,
@@ -361,7 +360,7 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
     };
 
     const tabs = [
-        { id: 'overview', name: '개요', icon: BarChart3 },
+        { id: 'overview', name: '개요', icon: BarChart },
         { id: 'metrics', name: '메트릭', icon: Target },
         { id: 'insights', name: '인사이트', icon: Lightbulb },
         { id: 'charts', name: '차트', icon: LineChart },
@@ -718,7 +717,7 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
                                     <div className="p-6">
                                         <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
                                             <div className="text-center">
-                                                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                                                <BarChart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                                                 <p className="text-gray-500">차트 시각화</p>
                                                 <p className="text-sm text-gray-400">
                                                     {chart.data.length}개 데이터 포인트

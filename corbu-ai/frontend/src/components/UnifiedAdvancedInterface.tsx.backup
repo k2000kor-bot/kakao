@@ -1,0 +1,2955 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Send,
+    Plus,
+    Search,
+    Share2,
+    X,
+    RefreshCw,
+    Bot,
+    BarChart3,
+    Settings,
+    Folder,
+    ChevronDown,
+    Lightbulb,
+    Clock,
+    MessageSquare
+} from 'lucide-react';
+import { AppDispatch, RootState } from '../store';
+import { aiService, NLPAnalysis } from '../services/aiService';
+import { advancedAIService, AdvancedAIResponse } from '../services/advancedAIService';
+import websocketService from '../services/websocketService';
+import NewsSearch from './News/NewsSearch';
+
+interface Message {
+    id: string;
+    type: 'user' | 'ai';
+    content: string;
+    timestamp: Date;
+    projectId?: string;
+    analysis?: {
+        score?: number;
+        issues?: string[];
+        improvements?: string[];
+        recommendations?: string[];
+    };
+    metadata?: {
+        model?: string;
+        tokens?: number;
+        responseTime?: number;
+        confidence?: number;
+        quality?: {
+            relevance: number;
+            depth: number;
+            clarity: number;
+            helpfulness: number;
+        };
+        error?: boolean;
+    };
+}
+
+interface Project {
+    id: string;
+    name: string;
+    type: 'project' | 'chat';
+    isSelected?: boolean;
+    subItems?: string[];
+}
+
+const UnifiedAdvancedInterface: React.FC = () => {
+    const dispatch = useDispatch<AppDispatch>();
+    const { selectedAIModel } = useSelector((state: RootState) => state.ui);
+
+    // 기본 상태 관리
+    const [currentMode, setCurrentMode] = useState('chat');
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [inputMessage, setInputMessage] = useState('');
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+    const [newProjectName, setNewProjectName] = useState('');
+    const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
+    const [monitoringStatus, setMonitoringStatus] = useState<{
+        isConnected: boolean;
+        lastUpdate: string;
+        alerts: string[];
+        active_topics?: number;
+        total_alerts?: number;
+        system_health?: number;
+        response_time?: number;
+        topics?: Array<{
+            topic: string;
+            alert_threshold: number;
+            alert_count: number;
+            status?: 'normal' | 'warning' | 'critical';
+            trend?: 'stable' | 'improving' | 'declining';
+            lastUpdate?: string;
+        }>;
+        detailed_alerts?: Array<{
+            id: string;
+            type: 'info' | 'warning' | 'critical';
+            message: string;
+            timestamp: string;
+            resolved: boolean;
+        }>;
+    } | null>(null);
+    // const [showMonitoringModal, setShowMonitoringModal] = useState(false);
+
+    // 고도화된 입력 시스템 상태
+    const [isSending, setIsSending] = useState(false);
+    // const [showSuggestions, setShowSuggestions] = useState(false);
+    // const [searchQuery, setSearchQuery] = useState('');
+
+    // 뉴스 검색 상태
+    const [showNewsSearch, setShowNewsSearch] = useState(false);
+    const [newsAPIKey, setNewsAPIKey] = useState('');
+
+    // 고급 NLP 분석 상태
+    const [nlpAnalysis, setNlpAnalysis] = useState<NLPAnalysis | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [showNLPAnalysis, setShowNLPAnalysis] = useState(false);
+    const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(true);
+
+    // 고급 AI 시스템 상태
+    const [advancedAIResponse, setAdvancedAIResponse] = useState<AdvancedAIResponse | null>(null);
+    const [showAdvancedAI, setShowAdvancedAI] = useState(false);
+    const [userProfile, setUserProfile] = useState<any>(null);
+    const [learningProgress, setLearningProgress] = useState({
+        totalInteractions: 0,
+        learningScore: 0,
+        adaptationLevel: 0,
+        confidence: 0
+    });
+    // const [showSearch, setShowSearch] = useState(false);
+    // const [activeTab, setActiveTab] = useState<'chat' | 'analytics' | 'summary' | 'sentiment'>('chat');
+    // const [isStreaming, setIsStreaming] = useState(false);
+    const [, setUploadedFiles] = useState<File[]>([]);
+    // const [showFileUpload, setShowFileUpload] = useState(false);
+    // const [showRecommendations, setShowRecommendations] = useState(false);
+    // const [voiceTranscript, setVoiceTranscript] = useState('');
+    // const [inputFocused, setInputFocused] = useState(false);
+    const [inputError, setInputError] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [showAutoComplete, setShowAutoComplete] = useState(false);
+    const [autoCompleteOptions, setAutoCompleteOptions] = useState<string[]>([]);
+    const [inputStats, setInputStats] = useState({
+        wordCount: 0,
+        charCount: 0,
+        readingTime: 0
+    });
+    const [inputQuality, setInputQuality] = useState({
+        score: 0,
+        suggestions: [] as string[]
+    });
+    const [inputHistory, setInputHistory] = useState<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+    const [inputMode, setInputMode] = useState<'normal' | 'command' | 'search'>('normal');
+    // const [commandHistory, setCommandHistory] = useState<string[]>([]);
+
+    // 실시간 협업 상태 (고도화된 버전)
+    const [collaborators] = useState([
+        {
+            id: '1',
+            name: '김호범',
+            avatar: '👤',
+            status: 'online',
+            lastSeen: '방금 전',
+            role: 'developer',
+            typing: false,
+            currentTask: 'UI 개선 작업',
+            productivity: 95,
+            focusTime: '2시간 30분',
+            completedTasks: 12
+        },
+        {
+            id: '2',
+            name: '개발팀',
+            avatar: '👥',
+            status: 'typing',
+            lastSeen: '1분 전',
+            role: 'team',
+            typing: true,
+            currentTask: '코드 리뷰',
+            productivity: 88,
+            focusTime: '1시간 45분',
+            completedTasks: 8
+        },
+        {
+            id: '3',
+            name: '디자인팀',
+            avatar: '🎨',
+            status: 'online',
+            lastSeen: '5분 전',
+            role: 'designer',
+            typing: false,
+            currentTask: 'UI/UX 개선',
+            productivity: 92,
+            focusTime: '3시간 15분',
+            completedTasks: 15
+        }
+    ]);
+    const [showCollaborationPanel, setShowCollaborationPanel] = useState(false);
+    const [sharedNotes] = useState([
+        { id: '1', title: '프로젝트 요구사항', content: '사용자 인터페이스 개선 필요', author: '김호범', timestamp: '10분 전' },
+        { id: '2', title: '기술 스택 결정', content: 'React + TypeScript + Tailwind CSS', author: '개발팀', timestamp: '30분 전' }
+    ]);
+
+    // 고급 분석 상태 (AI 인사이트 시스템 강화)
+    const [analysisMode, setAnalysisMode] = useState<'basic' | 'advanced' | 'ai-powered'>('ai-powered');
+    const [analysisResults] = useState({
+        sentiment: { positive: 75, neutral: 20, negative: 5 },
+        topics: [
+            { name: '기술 관련', percentage: 40, trend: 'up', confidence: 0.92 },
+            { name: '프로젝트 관리', percentage: 30, trend: 'stable', confidence: 0.88 },
+            { name: '코드 리뷰', percentage: 20, trend: 'down', confidence: 0.85 },
+            { name: '기타', percentage: 10, trend: 'stable', confidence: 0.78 }
+        ],
+        quality: { accuracy: 92, usefulness: 88, clarity: 85, consistency: 90 },
+        engagement: { responseTime: 2.3, satisfaction: 4.8, totalRatings: 127, retention: 0.85 },
+        insights: [
+            '사용자가 기술 관련 질문을 자주 하는 것으로 보아 학습 의지가 높습니다',
+            '프로젝트 관리 관련 대화가 안정적으로 유지되고 있습니다',
+            '코드 리뷰 관련 대화가 감소하는 추세입니다',
+            'AI 모델 응답 품질이 지속적으로 향상되고 있습니다',
+            '사용자 만족도가 평균 4.8/5.0으로 매우 높은 수준입니다',
+            '실시간 모니터링 시스템이 안정적으로 작동하고 있습니다'
+        ],
+        predictions: [
+            { type: 'engagement', value: '향상', confidence: 0.89, reason: '사용자 참여도 증가 추세' },
+            { type: 'satisfaction', value: '유지', confidence: 0.92, reason: '높은 만족도 지속' },
+            { type: 'performance', value: '개선', confidence: 0.87, reason: '시스템 최적화 효과' }
+        ],
+        recommendations: [
+            'AI 모델 응답 속도를 더욱 개선하여 사용자 경험을 향상시킬 수 있습니다',
+            '뉴스 분석 기능을 더욱 활성화하여 사용자 관심도를 높일 수 있습니다',
+            '협업 기능을 확장하여 팀워크 효율성을 증대시킬 수 있습니다'
+        ]
+    });
+
+    // 실시간 대화 분석
+    const [conversationAnalytics, setConversationAnalytics] = useState({
+        totalMessages: 0,
+        averageResponseTime: 0,
+        userEngagement: 0,
+        topicDistribution: {} as Record<string, number>,
+        emotionTrends: [] as Array<{ timestamp: Date; emotion: string; messageId: string }>,
+        qualityMetrics: {
+            clarity: 0,
+            relevance: 0,
+            helpfulness: 0
+        }
+    });
+
+    // 실시간 알림 시스템
+    const [notifications, setNotifications] = useState([
+        { id: '1', type: 'info', message: '새로운 프로젝트가 생성되었습니다', timestamp: '방금 전', read: false },
+        { id: '2', type: 'success', message: '파일 업로드가 완료되었습니다', timestamp: '1분 전', read: true },
+        { id: '3', type: 'warning', message: '모니터링 토픽 임계값에 도달했습니다', timestamp: '5분 전', read: false }
+    ]);
+    const [showNotifications, setShowNotifications] = useState(false);
+
+    // 고급 설정
+    const [showSettings, setShowSettings] = useState(false);
+    const [settings, setSettings] = useState({
+        autoSave: true,
+        realTimeCollaboration: true,
+        advancedAnalytics: true,
+        voiceRecognition: false,
+        darkMode: false,
+        notifications: {
+            sound: true,
+            desktop: true,
+            email: false,
+            autoHide: 5000,
+            priority: 'medium'
+        }
+    });
+
+    // API 키 설정
+    const [apiKeys, setApiKeys] = useState({
+        gemini: localStorage.getItem('gemini_api_key') || '',
+        openai: localStorage.getItem('openai_api_key') || '',
+        anthropic: localStorage.getItem('anthropic_api_key') || '',
+        news: localStorage.getItem('news_api_key') || ''
+    });
+
+    // 사용자 선호도 설정
+    const [userPreferences, setUserPreferences] = useState({
+        responseStyle: 'detailed' as const,
+        detailLevel: 'advanced' as const,
+        includeExamples: true,
+        includeCode: true,
+        includeSources: true
+    });
+
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // 프로젝트 데이터
+    const projects: Project[] = [
+        {
+            id: '1',
+            name: '개포',
+            type: 'project',
+            isSelected: true,
+            subItems: ['바이럴', '재미있는 삼성물산 댓글', '시공사 선택 고민', '법적 반박글 작성', '설계 변경 필요 사항', '홍보관 방문 비교 분석']
+        },
+        {
+            id: '2',
+            name: '개포우성',
+            type: 'project',
+            subItems: ['대화요약', '개포우성7차']
+        }
+    ];
+
+    // WebSocket 연결 및 실시간 성능 모니터링
+    useEffect(() => {
+        const connectWebSocket = async () => {
+            try {
+                await websocketService.connect();
+                setIsWebSocketConnected(true);
+                console.log('WebSocket 연결 성공');
+
+                // 실시간 성능 모니터링 시작
+                startPerformanceMonitoring();
+            } catch (error) {
+                console.error('WebSocket 연결 실패:', error);
+                setIsWebSocketConnected(false);
+            }
+        };
+
+        // 실시간 성능 모니터링 함수
+        const startPerformanceMonitoring = () => {
+            const performanceInterval = setInterval(() => {
+                // 메모리 사용량 모니터링
+                if ('memory' in performance) {
+                    const memoryInfo = (performance as any).memory;
+                    const memoryUsage = Math.round((memoryInfo.usedJSHeapSize / memoryInfo.totalJSHeapSize) * 100);
+
+                    // 성능 지표 업데이트 (실제로는 WebSocket을 통해 서버에서 받아올 수 있음)
+                    console.log(`메모리 사용률: ${memoryUsage}%`);
+                }
+
+                // 응답 시간 모니터링
+                const responseTime = Math.random() * 2 + 1; // 시뮬레이션
+                console.log(`평균 응답 시간: ${responseTime.toFixed(1)}초`);
+
+            }, 5000); // 5초마다 업데이트
+
+            return () => clearInterval(performanceInterval);
+        };
+
+        connectWebSocket();
+        return () => {
+            websocketService.disconnect();
+        };
+    }, []);
+
+    // WebSocket 이벤트 리스너
+    useEffect(() => {
+        const handleAIResponse = (event: CustomEvent) => {
+            const aiMessage: Message = {
+                id: Date.now().toString(),
+                type: 'ai',
+                content: event.detail.content,
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, aiMessage]);
+        };
+
+        const handleMonitoringUpdate = (event: CustomEvent) => {
+            setMonitoringStatus(event.detail);
+        };
+
+        document.addEventListener('aiResponse', handleAIResponse as EventListener);
+        document.addEventListener('monitoringUpdate', handleMonitoringUpdate as EventListener);
+
+        return () => {
+            document.removeEventListener('aiResponse', handleAIResponse as EventListener);
+            document.removeEventListener('monitoringUpdate', handleMonitoringUpdate as EventListener);
+        };
+    }, []);
+
+    // 사용자 선호도 설정을 AI 서비스에 적용
+    useEffect(() => {
+        const userId = 'current-user';
+        aiService.setUserPreferences(userId, userPreferences);
+        console.log('사용자 선호도 설정 완료:', userPreferences);
+    }, [userPreferences]);
+
+    // 실시간 대화 분석 업데이트 (고도화된 버전)
+    const updateConversationAnalytics = useCallback((newMessage: Message) => {
+        setConversationAnalytics((prev: any) => {
+            const newTotal = prev.totalMessages + 1;
+            const newEngagement = Math.min(100, prev.userEngagement + 5);
+
+            // 고급 주제 분포 업데이트 (AI 기반 키워드 분석)
+            const advancedKeywords = {
+                'AI': 'AI 관련',
+                '머신러닝': 'AI 관련',
+                '딥러닝': 'AI 관련',
+                '기술': '기술 관련',
+                '개발': '개발 관련',
+                '프로그래밍': '개발 관련',
+                '코딩': '개발 관련',
+                '프로젝트': '프로젝트 관리',
+                '관리': '프로젝트 관리',
+                '코드': '코드 리뷰',
+                '리뷰': '코드 리뷰',
+                '설계': '설계 관련',
+                '아키텍처': '설계 관련',
+                '뉴스': '뉴스 분석',
+                '기사': '뉴스 분석',
+                '댓글': '뉴스 분석',
+                '분석': '데이터 분석',
+                '통계': '데이터 분석',
+                '시각화': '데이터 분석'
+            };
+
+            let detectedTopic = '기타';
+            let maxScore = 0;
+
+            for (const [keyword, topic] of Object.entries(advancedKeywords)) {
+                const score = (newMessage.content.match(new RegExp(keyword, 'gi')) || []).length;
+                if (score > maxScore) {
+                    maxScore = score;
+                    detectedTopic = topic;
+                }
+            }
+
+            const newTopicDistribution = {
+                ...prev.topicDistribution,
+                [detectedTopic]: (prev.topicDistribution[detectedTopic] || 0) + 1
+            };
+
+            // 고급 감정 분석 (더 정교한 키워드 기반)
+            const emotionKeywords = {
+                positive: ['좋다', '감사', '훌륭', '완벽', '최고', '성공', '만족', '행복', '즐거', '신기'],
+                negative: ['문제', '어려움', '실패', '오류', '불만', '실망', '화나', '짜증', '힘들', '복잡'],
+                neutral: ['확인', '알겠', '네', '예', '그렇', '맞', '정확', '일반']
+            };
+
+            let emotion = 'neutral';
+            let emotionScore = 0;
+
+            for (const [emotionType, words] of Object.entries(emotionKeywords)) {
+                const score = words.reduce((total, word) => {
+                    return total + (newMessage.content.match(new RegExp(word, 'gi')) || []).length;
+                }, 0);
+
+                if (score > emotionScore) {
+                    emotionScore = score;
+                    emotion = emotionType;
+                }
+            }
+
+            const newEmotionTrends = [...prev.emotionTrends, {
+                timestamp: new Date(),
+                emotion,
+                messageId: newMessage.id,
+                confidence: Math.min(1, emotionScore / 3) // 감정 신뢰도 계산
+            }].slice(-10); // 최근 10개만 유지
+
+            // 품질 메트릭 업데이트
+            const qualityMetrics = {
+                clarity: Math.min(100, prev.qualityMetrics.clarity + (newMessage.content.length > 50 ? 2 : -1)),
+                relevance: Math.min(100, prev.qualityMetrics.relevance + (maxScore > 0 ? 3 : 0)),
+                helpfulness: Math.min(100, prev.qualityMetrics.helpfulness + (newMessage.content.includes('?') ? 2 : 1))
+            };
+
+            return {
+                ...prev,
+                totalMessages: newTotal,
+                userEngagement: newEngagement,
+                topicDistribution: newTopicDistribution,
+                emotionTrends: newEmotionTrends,
+                qualityMetrics
+            };
+        });
+    }, []);
+
+    // 고급 NLP 분석 실행
+    const performNLPAnalysis = useCallback(async (message: string) => {
+        if (!autoAnalysisEnabled || !message.trim()) return null;
+
+        setIsAnalyzing(true);
+        try {
+            const analysis = await aiService.analyzeWithNLP(message, selectedAIModel);
+            setNlpAnalysis(analysis);
+            setShowNLPAnalysis(true);
+            return analysis;
+        } catch (error) {
+            console.error('NLP 분석 실패:', error);
+            return null;
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }, [autoAnalysisEnabled, selectedAIModel]);
+
+    // 고급 AI 응답 생성
+    const generateAdvancedAIResponse = useCallback(async (message: string, baseResponse: string, nlpAnalysis: NLPAnalysis) => {
+        try {
+            const userId = 'current-user'; // 실제로는 사용자 인증 시스템에서 가져옴
+            const advancedResponse = await advancedAIService.generateAdvancedResponse(
+                message,
+                userId,
+                baseResponse,
+                nlpAnalysis
+            );
+
+            setAdvancedAIResponse(advancedResponse);
+            setShowAdvancedAI(true);
+
+            // 사용자 프로필 업데이트
+            const profile = advancedAIService.getUserProfile(userId);
+            setUserProfile(profile);
+
+            // 학습 진행률 업데이트
+            setLearningProgress({
+                totalInteractions: profile?.totalInteractions || 0,
+                learningScore: advancedResponse.learningScore,
+                adaptationLevel: advancedResponse.adaptationLevel,
+                confidence: advancedResponse.confidence
+            });
+
+            return advancedResponse;
+        } catch (error) {
+            console.error('고급 AI 응답 생성 실패:', error);
+            return null;
+        }
+    }, []);
+
+    // 키워드 기반 자동 분석 및 응답 생성
+    const generateKeywordBasedResponse = useCallback(async (message: string, analysis: NLPAnalysis) => {
+        const lowerMessage = message.toLowerCase();
+        
+        // 원베일리 관련 자동 분석
+        if (lowerMessage.includes('원베일리')) {
+            const response = `🏢 **원베일리 아파트 하자 문제 종합 분석**
+
+📊 **분석 결과 요약**
+${analysis.summary}
+
+🔍 **주요 키워드**
+${analysis.keywords.slice(0, 5).map(keyword => `• ${keyword}`).join('\n')}
+
+📈 **감정 분석**
+• 전반적 감정: ${analysis.sentiment === 'positive' ? '긍정적' : analysis.sentiment === 'negative' ? '부정적' : '중립적'}
+
+🏗️ **관련 주제**
+${analysis.topics.map(topic => `• ${topic}`).join('\n')}
+
+💡 **추천사항**
+${analysis.recommendations.slice(0, 3).map(rec => `• ${rec}`).join('\n')}
+
+🔗 **관련 정보**
+• 뉴스 검색을 통해 최신 기사 확인 가능
+• 댓글 분석으로 여론 동향 파악 가능
+• 전문가 의견 및 해결책 제시
+
+📰 **최신 뉴스 확인**
+뉴스 검색 기능을 사용하여 "원베일리 하자" 관련 최신 기사를 확인하실 수 있습니다.`;
+
+            return response;
+        }
+
+        // AI/기술 관련 자동 분석
+        if (lowerMessage.includes('ai') || lowerMessage.includes('인공지능')) {
+            const response = `🤖 **AI/기술 관련 종합 분석**
+
+📊 **분석 결과 요약**
+${analysis.summary}
+
+🔍 **주요 키워드**
+${analysis.keywords.slice(0, 5).map(keyword => `• ${keyword}`).join('\n')}
+
+📈 **감정 분석**
+• 전반적 감정: ${analysis.sentiment === 'positive' ? '긍정적' : analysis.sentiment === 'negative' ? '부정적' : '중립적'}
+
+💻 **관련 주제**
+${analysis.topics.map(topic => `• ${topic}`).join('\n')}
+
+💡 **추천사항**
+${analysis.recommendations.slice(0, 3).map(rec => `• ${rec}`).join('\n')}
+
+🔗 **관련 정보**
+• 최신 AI 기술 트렌드
+• 개발 도구 및 프레임워크
+• 실무 적용 사례`;
+
+            return response;
+        }
+
+        // 부동산 관련 자동 분석
+        if (lowerMessage.includes('부동산') || lowerMessage.includes('아파트') || lowerMessage.includes('하자')) {
+            const response = `🏠 **부동산/건설 관련 종합 분석**
+
+📊 **분석 결과 요약**
+${analysis.summary}
+
+🔍 **주요 키워드**
+${analysis.keywords.slice(0, 5).map(keyword => `• ${keyword}`).join('\n')}
+
+📈 **감정 분석**
+• 전반적 감정: ${analysis.sentiment === 'positive' ? '긍정적' : analysis.sentiment === 'negative' ? '부정적' : '중립적'}
+
+🏗️ **관련 주제**
+${analysis.topics.map(topic => `• ${topic}`).join('\n')}
+
+💡 **추천사항**
+${analysis.recommendations.slice(0, 3).map(rec => `• ${rec}`).join('\n')}
+
+🔗 **관련 정보**
+• 부동산 시장 동향
+• 건설 품질 관리
+• 입주민 권리 보호`;
+
+            return response;
+        }
+
+        return null;
+    }, []);
+
+    // 고도화된 메시지 전송 및 NLP 연계 처리
+    const handleSendMessage = useCallback(async () => {
+        if (!inputMessage.trim() || isSending) return;
+
+        if (inputMode === 'command') {
+            const command = inputMessage.trim().substring(1);
+            handleCommand(command);
+            return;
+        }
+
+        const userMessage: Message = {
+            id: Date.now().toString(),
+            type: 'user',
+            content: inputMessage,
+            timestamp: new Date(),
+            projectId: selectedProject?.id
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+        setInputHistory(prev => [...prev, inputMessage]);
+
+        // 실시간 대화 분석 업데이트
+        updateConversationAnalytics(userMessage);
+        setInputMessage('');
+        setIsSending(true);
+
+        try {
+            // API 키 설정
+            if (apiKeys.gemini) {
+                aiService.setAPIKey('gemini-pro', apiKeys.gemini);
+            }
+            if (apiKeys.openai) {
+                aiService.setAPIKey('gpt-4', apiKeys.openai);
+            }
+            if (apiKeys.anthropic) {
+                aiService.setAPIKey('claude-3', apiKeys.anthropic);
+            }
+
+            // 🚀 고급 NLP 분석 및 연계 처리 시작
+            const nlpAnalysis = await performNLPAnalysis(inputMessage);
+            
+            // 키워드 기반 자동 기능 활성화
+            const lowerMessage = inputMessage.toLowerCase();
+            let autoActivatedFeatures: string[] = [];
+            let enhancedResponse: string | null = null;
+
+            // 원베일리 관련 자동 처리
+            if (lowerMessage.includes('원베일리')) {
+                autoActivatedFeatures.push('뉴스 검색', '댓글 분석', '시장 분석');
+                
+                // 자동으로 뉴스 검색 활성화
+                setShowNewsSearch(true);
+                
+                // 키워드 기반 응답 생성
+                if (nlpAnalysis) {
+                    enhancedResponse = await generateKeywordBasedResponse(inputMessage, nlpAnalysis);
+                }
+                
+                // 자동 알림
+                setNotifications(prev => [...prev, {
+                    id: Date.now().toString(),
+                    type: 'info',
+                    message: '원베일리 관련 뉴스 검색이 자동으로 활성화되었습니다.',
+                    timestamp: new Date().toLocaleTimeString(),
+                    read: false
+                }]);
+            }
+
+            // AI/기술 관련 자동 처리
+            if (lowerMessage.includes('ai') || lowerMessage.includes('인공지능') || lowerMessage.includes('기술')) {
+                autoActivatedFeatures.push('기술 분석', '트렌드 분석', '개발 도구 추천');
+                
+                if (nlpAnalysis) {
+                    enhancedResponse = await generateKeywordBasedResponse(inputMessage, nlpAnalysis);
+                }
+            }
+
+            // 부동산 관련 자동 처리
+            if (lowerMessage.includes('부동산') || lowerMessage.includes('아파트') || lowerMessage.includes('하자')) {
+                autoActivatedFeatures.push('시장 분석', '정책 분석', '투자 정보');
+                
+                if (nlpAnalysis) {
+                    enhancedResponse = await generateKeywordBasedResponse(inputMessage, nlpAnalysis);
+                }
+            }
+
+            // 뉴스/미디어 관련 자동 처리
+            if (lowerMessage.includes('뉴스') || lowerMessage.includes('기사') || lowerMessage.includes('보도')) {
+                autoActivatedFeatures.push('뉴스 검색', '여론 분석', '미디어 모니터링');
+                setShowNewsSearch(true);
+            }
+
+            // 개발/프로그래밍 관련 자동 처리
+            if (lowerMessage.includes('개발') || lowerMessage.includes('코딩') || lowerMessage.includes('프로그래밍')) {
+                autoActivatedFeatures.push('코드 분석', '개발 도구', '기술 스택 추천');
+            }
+
+            // 고급 AI 응답 생성 (NLP 분석 결과 포함)
+            const userId = 'current-user';
+            const enhancedContext = `
+현재 모드: ${currentMode}
+분석 모드: ${analysisMode}
+NLP 분석: ${nlpAnalysis ? '완료' : '미완료'}
+자동 활성화 기능: ${autoActivatedFeatures.join(', ')}
+키워드: ${nlpAnalysis?.keywords.slice(0, 5).join(', ') || '없음'}
+감정: ${nlpAnalysis?.sentiment || '분석 중'}
+주제: ${nlpAnalysis?.topics.join(', ') || '분석 중'}
+            `.trim();
+
+            const response = await aiService.generateResponse(
+                inputMessage,
+                selectedAIModel,
+                userId,
+                enhancedContext
+            );
+
+            // 🎯 고도화된 AI 응답 생성 (NLP 분석 결과 통합)
+            let finalContent = response.content;
+            
+            // 키워드 기반 응답이 있으면 통합
+            if (enhancedResponse) {
+                finalContent = `${enhancedResponse}\n\n---\n\n${response.content}`;
+            }
+
+            // 고급 AI 응답 생성
+            let advancedResponse = null;
+            if (nlpAnalysis) {
+                advancedResponse = await generateAdvancedAIResponse(inputMessage, finalContent, nlpAnalysis);
+            }
+
+            // NLP 분석 결과가 있으면 추가 정보 포함
+            if (nlpAnalysis) {
+                const nlpInfo = `
+📊 **NLP 분석 결과**
+• 감정: ${nlpAnalysis.sentiment === 'positive' ? '😊 긍정적' : nlpAnalysis.sentiment === 'negative' ? '😔 부정적' : '😐 중립적'}
+• 주요 키워드: ${nlpAnalysis.keywords.slice(0, 3).join(', ')}
+• 관련 주제: ${nlpAnalysis.topics.join(', ')}
+• 자동 활성화 기능: ${autoActivatedFeatures.join(', ')}
+
+💡 **추천사항**
+${nlpAnalysis.recommendations.slice(0, 2).map(rec => `• ${rec}`).join('\n')}
+                `.trim();
+                
+                finalContent = `${finalContent}\n\n${nlpInfo}`;
+            }
+
+            // 고급 AI 분석 결과가 있으면 추가
+            if (advancedResponse) {
+                const advancedInfo = `
+🤖 **고급 AI 분석**
+• 신뢰도: ${Math.round(advancedResponse.confidence * 100)}%
+• 학습 점수: ${Math.round(advancedResponse.learningScore * 100)}%
+• 적응 수준: ${Math.round(advancedResponse.adaptationLevel * 100)}%
+
+🎯 **다음 액션**
+${advancedResponse.nextActions.slice(0, 2).map(action => `• ${action}`).join('\n')}
+                `.trim();
+                
+                finalContent = `${finalContent}\n\n${advancedInfo}`;
+            }
+
+            const aiMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                type: 'ai',
+                content: finalContent,
+                timestamp: new Date(),
+                projectId: selectedProject?.id,
+                metadata: {
+                    model: response.model,
+                    tokens: response.tokens,
+                    responseTime: response.responseTime,
+                    confidence: response.confidence,
+                    quality: response.quality
+                }
+            };
+
+            setMessages(prev => [...prev, aiMessage]);
+
+            // 🎉 고도화된 성공 알림 (NLP 분석 정보 포함)
+            const qualityScore = Math.round(response.quality.helpfulness * 100);
+            const nlpInfo = nlpAnalysis ? ` | NLP 분석 완료 (${nlpAnalysis.keywords.length}개 키워드, ${nlpAnalysis.sentiment} 감정)` : '';
+            const featureInfo = autoActivatedFeatures.length > 0 ? ` | 자동 활성화: ${autoActivatedFeatures.join(', ')}` : '';
+            
+            setNotifications(prev => [...prev, {
+                id: Date.now().toString(),
+                type: 'success',
+                message: `${selectedAIModel} 모델로 고품질 응답을 생성했습니다. (품질 점수: ${qualityScore}%)${nlpInfo}${featureInfo}`,
+                timestamp: new Date().toLocaleTimeString(),
+                read: false
+            }]);
+
+            // 응답 품질 로깅
+            console.log('AI 응답 품질:', {
+                relevance: Math.round(response.quality.relevance * 100),
+                depth: Math.round(response.quality.depth * 100),
+                clarity: Math.round(response.quality.clarity * 100),
+                helpfulness: Math.round(response.quality.helpfulness * 100)
+            });
+
+        } catch (error) {
+            console.error('메시지 전송 실패:', error);
+
+            // 오류 알림
+            setNotifications(prev => [...prev, {
+                id: Date.now().toString(),
+                type: 'error',
+                message: `AI 응답 생성 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`,
+                timestamp: new Date().toLocaleTimeString(),
+                read: false
+            }]);
+
+            // 오류 메시지도 표시
+            const errorMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                type: 'ai',
+                content: `죄송합니다. AI 응답을 생성하는 중에 오류가 발생했습니다. API 키가 올바르게 설정되어 있는지 확인해주세요.`,
+                timestamp: new Date(),
+                projectId: selectedProject?.id
+            };
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsSending(false);
+        }
+    }, [inputMessage, isSending, selectedAIModel, selectedProject, inputMode, dispatch, analysisMode, apiKeys.anthropic, apiKeys.gemini, apiKeys.openai, currentMode]);
+
+    // 명령어 처리
+    const handleCommand = useCallback((command: string) => {
+        const cmd = command.toLowerCase();
+        if (cmd.startsWith('search ')) {
+            const query = command.substring(7);
+            // setSearchQuery(query);
+            // setShowSearch(true);
+            console.log('검색 쿼리:', query);
+        } else if (cmd === 'clear') {
+            setMessages([]);
+        } else if (cmd === 'help') {
+            const helpMessage: Message = {
+                id: Date.now().toString(),
+                type: 'ai',
+                content: '사용 가능한 명령어:\n/search [검색어] - 메시지 검색\n/clear - 대화 초기화\n/help - 도움말',
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, helpMessage]);
+        }
+        setInputMode('normal');
+    }, []);
+
+    // 입력 품질 분석
+    const analyzeInputQuality = useCallback((text: string) => {
+        const words = text.trim().split(/\s+/).length;
+        const chars = text.length;
+        const sentences = text.split(/[.!?]+/).length - 1;
+        const paragraphs = text.split(/\n\s*\n/).length;
+
+        let score = 0;
+        const suggestions: string[] = [];
+
+        if (chars < 10) {
+            suggestions.push('더 자세한 내용을 입력해주세요');
+        } else if (chars > 100) {
+            score += 20;
+        }
+
+        if (words > 5) score += 20;
+        if (sentences > 1) score += 20;
+        if (paragraphs > 1) score += 20;
+
+        if (text.includes('?')) score += 10;
+        if (text.includes('!')) score += 5;
+
+        setInputQuality({ score: Math.min(score, 100), suggestions });
+    }, []);
+
+    // 입력 변경 처리
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        setInputMessage(value);
+
+        // 자동 높이 조정
+        const textarea = e.target;
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+
+        // 입력 품질 분석
+        analyzeInputQuality(value);
+
+        // 입력 통계 업데이트
+        const words = value.trim().split(/\s+/).length;
+        const chars = value.length;
+        const readingTime = Math.ceil(words / 200); // 분당 200단어 기준
+
+        setInputStats({ wordCount: words, charCount: chars, readingTime });
+
+        // 자동완성
+        if (value.startsWith('/')) {
+            setInputMode('command');
+            const suggestions = ['search', 'clear', 'help'].filter(cmd =>
+                cmd.startsWith(value.substring(1).toLowerCase())
+            );
+            setAutoCompleteOptions(suggestions);
+            setShowAutoComplete(suggestions.length > 0);
+        } else {
+            setInputMode('normal');
+            setShowAutoComplete(false);
+        }
+
+        // 타이핑 상태
+        if (!isTyping) {
+            setIsTyping(true);
+            setTimeout(() => setIsTyping(false), 1000);
+        }
+    }, [isTyping, analyzeInputQuality]);
+
+    // 키보드 이벤트 처리
+    const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        } else if (e.key === 'Escape') {
+            setInputMessage('');
+            setInputError('');
+        } else if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            inputRef.current?.focus();
+        } else if (e.ctrlKey && e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (historyIndex < inputHistory.length - 1) {
+                const newIndex = historyIndex + 1;
+                setHistoryIndex(newIndex);
+                setInputMessage(inputHistory[inputHistory.length - 1 - newIndex]);
+            }
+        } else if (e.ctrlKey && e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIndex > 0) {
+                const newIndex = historyIndex - 1;
+                setHistoryIndex(newIndex);
+                setInputMessage(inputHistory[inputHistory.length - 1 - newIndex]);
+            } else if (historyIndex === 0) {
+                setHistoryIndex(-1);
+                setInputMessage('');
+            }
+        } else if (e.key === 'Tab' && showAutoComplete && autoCompleteOptions.length > 0) {
+            e.preventDefault();
+            const selectedOption = autoCompleteOptions[0];
+            setInputMessage('/' + selectedOption + ' ');
+            setShowAutoComplete(false);
+            inputRef.current?.focus();
+        }
+    }, [handleSendMessage, historyIndex, inputHistory, showAutoComplete, autoCompleteOptions]);
+
+    // 드래그 앤 드롭 처리
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const files = Array.from(e.dataTransfer.files);
+        handleFilesUploaded(files);
+    }, []);
+
+    // 파일 업로드 처리
+    const handleFilesUploaded = useCallback((files: File[]) => {
+        const filePromises = files.map(file => {
+            return new Promise<{
+                id: number;
+                name: string;
+                size: number;
+                type: string;
+                content: string | ArrayBuffer | null;
+            }>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    resolve({
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        content: e.target?.result || null
+                    });
+                };
+                reader.readAsText(file);
+            });
+        });
+
+        Promise.all(filePromises).then((fileContents) => {
+            setUploadedFiles(prev => [...prev, ...files]);
+            // 파일 업로드 성공 알림
+            console.log(`${files.length}개 파일이 업로드되었습니다.`);
+        });
+    }, [dispatch]);
+
+    // 제안사항 클릭 처리
+    const handleRecommendationClick = useCallback((suggestion: string) => {
+        setInputMessage(suggestion);
+        inputRef.current?.focus();
+    }, []);
+
+    // 자동완성 클릭 처리
+    const handleAutoCompleteClick = useCallback((option: string) => {
+        setInputMessage('/' + option + ' ');
+        setShowAutoComplete(false);
+        inputRef.current?.focus();
+    }, []);
+
+    // 제안사항 (메모이제이션)
+    const suggestions = useMemo(() => [
+        '코드 리뷰를 도와주세요',
+        '알고리즘을 설명해주세요',
+        '최신 기술 트렌드를 알려주세요',
+        '프로젝트 계획을 세워주세요',
+        '성능 최적화 방법을 알려주세요',
+        '보안 취약점을 분석해주세요',
+        '아키텍처 설계를 도와주세요',
+        '테스트 케이스를 작성해주세요'
+    ], []);
+
+    // 명령어 목록 (메모이제이션)
+    // const commands = useMemo(() => [
+    //     { command: '/search', description: '메시지 검색' },
+    //     { command: '/clear', description: '대화 초기화' },
+    //     { command: '/help', description: '도움말 보기' },
+    //     { command: '/analyze', description: '대화 분석' },
+    //     { command: '/export', description: '대화 내보내기' }
+    // ], []);
+
+    return (
+        <div className="flex h-screen bg-gray-50">
+            {/* 사이드바 */}
+            <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+                {/* 헤더 */}
+                <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center space-x-3">
+                        <Bot className="h-8 w-8 text-purple-600" />
+                        <div>
+                            <h1 className="text-lg font-bold text-gray-900">CORBU AI</h1>
+                            <p className="text-sm text-gray-500">통합 고도화 시스템</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 네비게이션 */}
+                <div className="flex-1 overflow-y-auto p-4">
+                    {/* 모드 선택 */}
+                    <div className="mb-6">
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">모드</h3>
+                        <div className="space-y-2">
+                            {[
+                                { id: 'chat', name: '대화', icon: MessageSquare, color: 'text-blue-600' },
+                                { id: 'analytics', name: '분석', icon: BarChart3, color: 'text-green-600' },
+                                { id: 'monitoring', name: '모니터링', icon: Clock, color: 'text-purple-600' },
+                                { id: 'news', name: '뉴스 검색', icon: Search, color: 'text-orange-600' }
+                            ].map((mode) => {
+                                const IconComponent = mode.icon;
+                                return (
+                                    <button
+                                        key={mode.id}
+                                        onClick={() => setCurrentMode(mode.id)}
+                                        className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${currentMode === mode.id
+                                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                            : 'hover:bg-gray-50 text-gray-700'
+                                            }`}
+                                    >
+                                        <IconComponent className={`h-5 w-5 ${mode.color}`} />
+                                        <span className="font-medium">{mode.name}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* 프로젝트 */}
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-medium text-gray-700">프로젝트</h3>
+                            <button
+                                onClick={() => setShowNewProjectModal(true)}
+                                className="p-1 hover:bg-gray-100 rounded"
+                            >
+                                <Plus className="h-4 w-4 text-gray-500" />
+                            </button>
+                        </div>
+                        <div className="space-y-1">
+                            {projects.map((project) => (
+                                <div key={project.id}>
+                                    <button
+                                        onClick={() => setSelectedProject(project)}
+                                        className={`w-full flex items-center space-x-3 p-2 rounded-lg transition-colors ${selectedProject?.id === project.id
+                                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                            : 'hover:bg-gray-50 text-gray-700'
+                                            }`}
+                                    >
+                                        <Folder className="h-4 w-4" />
+                                        <span className="font-medium">{project.name}</span>
+                                        {project.subItems && (
+                                            <ChevronDown className="h-4 w-4 ml-auto" />
+                                        )}
+                                    </button>
+                                    {project.subItems && selectedProject?.id === project.id && (
+                                        <div className="ml-6 mt-1 space-y-1">
+                                            {project.subItems.map((item, index) => (
+                                                <button
+                                                    key={index}
+                                                    className="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
+                                                >
+                                                    {item}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 협업 패널 */}
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-medium text-gray-700">협업</h3>
+                            <button
+                                onClick={() => setShowCollaborationPanel(!showCollaborationPanel)}
+                                className="p-1 hover:bg-gray-100 rounded"
+                            >
+                                <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${showCollaborationPanel ? 'rotate-180' : ''
+                                    }`} />
+                            </button>
+                        </div>
+                        {showCollaborationPanel && (
+                            <div className="space-y-3">
+                                {/* 협업자 목록 (고도화된 버전) */}
+                                <div className="space-y-3">
+                                    {collaborators.map((collaborator) => (
+                                        <div key={collaborator.id} className="bg-white rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow">
+                                            <div className="flex items-start space-x-3">
+                                                <div className="text-xl">{collaborator.avatar}</div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center space-x-2 mb-1">
+                                                        <p className="text-sm font-medium text-gray-900">{collaborator.name}</p>
+                                                        <span className={`px-2 py-0.5 text-xs rounded-full ${collaborator.role === 'developer' ? 'bg-blue-100 text-blue-700' :
+                                                            collaborator.role === 'designer' ? 'bg-purple-100 text-purple-700' :
+                                                                'bg-green-100 text-green-700'
+                                                            }`}>
+                                                            {collaborator.role}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mb-1">{collaborator.lastSeen}</p>
+                                                    {collaborator.currentTask && (
+                                                        <p className="text-xs text-blue-600 mb-2">{collaborator.currentTask}</p>
+                                                    )}
+
+                                                    {/* 생산성 지표 */}
+                                                    <div className="grid grid-cols-3 gap-2 text-xs">
+                                                        <div className="text-center">
+                                                            <div className="font-medium text-green-600">{collaborator.productivity}%</div>
+                                                            <div className="text-gray-500">생산성</div>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <div className="font-medium text-blue-600">{collaborator.focusTime}</div>
+                                                            <div className="text-gray-500">집중시간</div>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <div className="font-medium text-purple-600">{collaborator.completedTasks}</div>
+                                                            <div className="text-gray-500">완료작업</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end space-y-2">
+                                                    <div className={`w-3 h-3 rounded-full ${collaborator.status === 'online' ? 'bg-green-500' :
+                                                        collaborator.status === 'typing' ? 'bg-yellow-500' : 'bg-gray-400'
+                                                        } animate-pulse`} />
+                                                    {collaborator.typing && (
+                                                        <div className="text-xs text-yellow-600 animate-pulse">입력 중...</div>
+                                                    )}
+                                                    <div className="text-xs text-gray-400">
+                                                        {collaborator.status === 'online' ? '온라인' :
+                                                            collaborator.status === 'typing' ? '작업중' : '오프라인'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* 공유 노트 */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-medium text-gray-600">공유 노트</h4>
+                                    {sharedNotes.slice(0, 2).map((note) => (
+                                        <div key={note.id} className="p-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                            <p className="text-xs font-medium text-blue-900">{note.title}</p>
+                                            <p className="text-xs text-blue-700 mt-1">{note.content}</p>
+                                            <div className="flex items-center justify-between mt-1">
+                                                <p className="text-xs text-blue-600">{note.author} • {note.timestamp}</p>
+                                                <div className="flex space-x-1">
+                                                    <button className="text-xs text-blue-600 hover:text-blue-800">편집</button>
+                                                    <button className="text-xs text-red-600 hover:text-red-800">삭제</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button className="w-full p-2 text-xs text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
+                                        + 새 노트 추가
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 최근 대화 */}
+                    <div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">최근 대화</h3>
+                        <div className="space-y-1">
+                            {messages.slice(-5).reverse().map((message) => (
+                                <div
+                                    key={message.id}
+                                    className="p-2 text-sm text-gray-600 hover:bg-gray-50 rounded cursor-pointer"
+                                >
+                                    {message.content.substring(0, 50)}...
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 메인 콘텐츠 */}
+            <div className="flex-1 flex flex-col">
+                {/* 상단 바 */}
+                <div className="bg-white border-b border-gray-200 p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                            <h2 className="text-xl font-bold text-gray-900">
+                                {currentMode === 'chat' && (selectedProject?.name || '새 대화')}
+                                {currentMode === 'analytics' && '대화 분석'}
+                                {currentMode === 'monitoring' && '실시간 모니터링'}
+                                {currentMode === 'news' && '뉴스 검색 및 댓글 분석'}
+                            </h2>
+                            {selectedProject && currentMode === 'chat' && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                    {selectedProject.type}
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            {/* 알림 버튼 */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowNotifications(!showNotifications)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg relative"
+                                >
+                                    <div className="h-5 w-5 text-gray-500">🔔</div>
+                                    {notifications.filter(n => !n.read).length > 0 && (
+                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                                            {notifications.filter(n => !n.read).length}
+                                        </div>
+                                    )}
+                                </button>
+
+                                {/* 알림 드롭다운 */}
+                                {showNotifications && (
+                                    <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                                        <div className="p-4 border-b border-gray-200">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-semibold text-gray-900">알림 센터</h3>
+                                                <span className="text-sm text-gray-500">{notifications.length}개</span>
+                                            </div>
+                                            <p className="text-xs text-gray-600 mt-1">최근 알림</p>
+                                        </div>
+                                        <div className="max-h-64 overflow-y-auto">
+                                            {notifications.length === 0 ? (
+                                                <div className="text-center py-8 text-gray-500">
+                                                    <div className="text-2xl mb-2">🔔</div>
+                                                    <p className="text-sm">새로운 알림이 없습니다</p>
+                                                </div>
+                                            ) : (
+                                                notifications.map((notification) => (
+                                                    <div
+                                                        key={notification.id}
+                                                        className={`p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.read ? 'bg-blue-50' : ''
+                                                            }`}
+                                                        onClick={() => {
+                                                            setNotifications(prev =>
+                                                                prev.map(n =>
+                                                                    n.id === notification.id ? { ...n, read: true } : n
+                                                                )
+                                                            );
+                                                        }}
+                                                    >
+                                                        <div className="flex items-start space-x-3">
+                                                            <div className={`w-2 h-2 rounded-full mt-2 ${notification.type === 'info' ? 'bg-blue-500' :
+                                                                notification.type === 'success' ? 'bg-green-500' :
+                                                                    notification.type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                                                                }`} />
+                                                            <div className="flex-1">
+                                                                <p className={`text-sm ${notification.read ? 'text-gray-600' : 'text-gray-900'}`}>
+                                                                    {notification.message}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500 mt-1">{notification.timestamp}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                        {notifications.length > 0 && (
+                                            <div className="p-3 border-t border-gray-200">
+                                                <button
+                                                    onClick={() => setNotifications([])}
+                                                    className="w-full text-sm text-gray-600 hover:text-gray-900 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                                >
+                                                    모든 알림 지우기
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => setShowNewsSearch(!showNewsSearch)}
+                                className={`p-2 rounded-lg transition-colors ${showNewsSearch ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-500'}`}
+                                title="뉴스 검색 및 댓글 분석"
+                            >
+                                <Search className="h-5 w-5" />
+                            </button>
+                            <button
+                                onClick={() => setShowNLPAnalysis(!showNLPAnalysis)}
+                                className={`p-2 rounded-lg transition-colors ${showNLPAnalysis ? 'bg-purple-100 text-purple-600' : 'hover:bg-gray-100 text-gray-500'}`}
+                                title="NLP 분석 결과"
+                                disabled={!nlpAnalysis}
+                            >
+                                <BarChart3 className="h-5 w-5" />
+                            </button>
+                            <button
+                                onClick={() => setShowAdvancedAI(!showAdvancedAI)}
+                                className={`p-2 rounded-lg transition-colors ${showAdvancedAI ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-500'}`}
+                                title="고급 AI 분석"
+                                disabled={!advancedAIResponse}
+                            >
+                                <Bot className="h-5 w-5" />
+                            </button>
+                            <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                <Share2 className="h-5 w-5 text-gray-500" />
+                            </button>
+                            <button
+                                onClick={() => setShowSettings(!showSettings)}
+                                className="p-2 hover:bg-gray-100 rounded-lg"
+                            >
+                                <Settings className="h-5 w-5 text-gray-500" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 콘텐츠 영역 */}
+                <div className="flex-1 overflow-y-auto">
+                    {currentMode === 'chat' && (
+                        <>
+                            {/* 메시지 영역 */}
+                            <div className="p-4">
+                                <div className="max-w-4xl mx-auto space-y-4">
+                                    {messages.map((message) => (
+                                        <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`flex items-start space-x-3 max-w-3xl ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                                                {/* 아바타 */}
+                                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.type === 'user' ? 'bg-blue-500' : 'bg-gray-200'
+                                                    }`}>
+                                                    {message.type === 'user' ? (
+                                                        <div className="text-white text-sm">👤</div>
+                                                    ) : (
+                                                        <div className="text-gray-600 text-sm">🤖</div>
+                                                    )}
+                                                </div>
+
+                                                {/* 메시지 내용 */}
+                                                <div className={`flex-1 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
+                                                    <div className={`inline-block px-4 py-3 rounded-2xl max-w-full ${message.type === 'user'
+                                                        ? 'bg-blue-500 text-white'
+                                                        : 'bg-gray-100 text-gray-900'
+                                                        }`}>
+                                                        <div className="whitespace-pre-wrap break-words">
+                                                            {message.content}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 메시지 메타데이터 */}
+                                                    <div className={`flex items-center space-x-2 mt-2 text-xs text-gray-500 ${message.type === 'user' ? 'justify-end' : 'justify-start'
+                                                        }`}>
+                                                        <span>{message.timestamp.toLocaleTimeString()}</span>
+                                                        {message.projectId && (
+                                                            <span className="px-2 py-1 bg-gray-200 rounded-full">
+                                                                프로젝트
+                                                            </span>
+                                                        )}
+                                                        {message.type === 'ai' && message.metadata?.quality && (
+                                                            <div className="flex items-center space-x-1">
+                                                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                                                                    품질: {Math.round(message.metadata.quality.helpfulness * 100)}%
+                                                                </span>
+                                                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                                                    {message.metadata.model}
+                                                                </span>
+                                                                {message.metadata.responseTime && (
+                                                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                                                                        {message.metadata.responseTime}ms
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isSending && (
+                                        <div className="flex items-center space-x-2 p-4 text-gray-500">
+                                            <div className="flex space-x-1">
+                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                            </div>
+                                            <span className="text-sm">AI가 응답을 생성하고 있습니다...</span>
+                                        </div>
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {currentMode === 'analytics' && (
+                        <div className="p-6">
+                            <div className="max-w-6xl mx-auto">
+                                {/* 분석 모드 선택 */}
+                                <div className="mb-6">
+                                    <div className="flex items-center space-x-4">
+                                        <h2 className="text-lg font-semibold text-gray-900">분석 모드</h2>
+                                        <div className="flex space-x-2">
+                                            {[
+                                                { id: 'basic', name: '기본', color: 'bg-blue-100 text-blue-800' },
+                                                { id: 'advanced', name: '고급', color: 'bg-green-100 text-green-800' },
+                                                { id: 'ai-powered', name: 'AI 분석', color: 'bg-purple-100 text-purple-800' }
+                                            ].map((mode) => (
+                                                <button
+                                                    key={mode.id}
+                                                    onClick={() => setAnalysisMode(mode.id as 'basic' | 'advanced' | 'ai-powered')}
+                                                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${analysisMode === mode.id
+                                                        ? mode.color
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                        }`}
+                                                >
+                                                    {mode.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* 대화 통계 */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">대화 통계</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-600">총 메시지</span>
+                                                <span className="font-semibold text-gray-900">{messages.length}</span>
+                                                <span className="text-xs text-green-600">+{Math.floor(Math.random() * 5) + 1} 오늘</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-600">사용자 메시지</span>
+                                                <span className="font-semibold text-blue-600">
+                                                    {messages.filter(m => m.type === 'user').length}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-600">AI 응답</span>
+                                                <span className="font-semibold text-green-600">
+                                                    {messages.filter(m => m.type === 'ai').length}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-600">평균 응답 시간</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-semibold text-gray-900">2.3초</span>
+                                                    <span className="text-xs text-green-600">↘</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-600">시스템 상태</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-semibold text-green-600">정상</span>
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-600">AI 모델</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-semibold text-purple-600">{selectedAIModel}</span>
+                                                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 감정 분석 */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">감정 분석</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">긍정적</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-green-500 transition-all duration-500" style={{ width: '75%' }} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">75%</span>
+                                                    <span className="text-xs text-green-600">↗</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">중립적</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-yellow-500 transition-all duration-500" style={{ width: '20%' }} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">20%</span>
+                                                    <span className="text-xs text-gray-600">→</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">부정적</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-red-500 transition-all duration-500" style={{ width: '5%' }} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">5%</span>
+                                                    <span className="text-xs text-red-600">↘</span>
+                                                </div>
+                                            </div>
+                                            <div className="pt-2 border-t border-gray-100">
+                                                <p className="text-xs text-gray-600">전체적으로 긍정적인 분위기로 대화가 진행되고 있습니다</p>
+                                                <div className="mt-2 flex items-center space-x-2">
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                    <span className="text-xs text-green-600">실시간 분석 중</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 주제 분석 */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">주제 분석</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm text-gray-600">기술 관련</span>
+                                                    <span className="text-xs text-green-600">↗</span>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm font-medium text-gray-900">40%</span>
+                                                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: '40%' }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm text-gray-600">프로젝트 관리</span>
+                                                    <span className="text-xs text-gray-600">→</span>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm font-medium text-gray-900">30%</span>
+                                                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-green-500 transition-all duration-500" style={{ width: '30%' }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm text-gray-600">코드 리뷰</span>
+                                                    <span className="text-xs text-red-600">↘</span>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm font-medium text-gray-900">20%</span>
+                                                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-yellow-500 transition-all duration-500" style={{ width: '20%' }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm text-gray-600">기타</span>
+                                                    <span className="text-xs text-gray-600">→</span>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm font-medium text-gray-900">10%</span>
+                                                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-gray-500 transition-all duration-500" style={{ width: '10%' }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="pt-3 border-t border-gray-100 mt-3">
+                                            <p className="text-xs text-gray-600">기술 관련 주제가 가장 활발하게 논의되고 있습니다</p>
+                                            <div className="mt-2 flex items-center space-x-2">
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                <span className="text-xs text-blue-600">AI 분석 완료</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* AI 인사이트 패널 (고도화된 버전) */}
+                                <div className="mt-8 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl shadow-sm border border-purple-200 p-6">
+                                    <div className="flex items-center space-x-3 mb-4">
+                                        <div className="h-8 w-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                            <div className="h-4 w-4 bg-white rounded-full animate-pulse"></div>
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">🤖 AI 인사이트</h3>
+                                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">실시간</span>
+                                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">AI 모드</span>
+                                    </div>
+
+                                    {/* AI 인사이트 카드들 */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                                        {analysisResults.insights.map((insight, index) => (
+                                            <div key={index} className="bg-white rounded-lg p-4 border border-purple-100 hover:shadow-md transition-shadow">
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 animate-pulse"></div>
+                                                    <p className="text-sm text-gray-700">{insight}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* AI 예측 분석 */}
+                                    <div className="mb-6">
+                                        <h4 className="text-md font-semibold text-gray-900 mb-3">🔮 AI 예측 분석</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {analysisResults.predictions.map((prediction, index) => (
+                                                <div key={index} className="bg-white rounded-lg p-3 border border-blue-100">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs font-medium text-blue-700">{prediction.type}</span>
+                                                        <span className={`text-xs px-2 py-1 rounded-full ${prediction.value === '향상' ? 'bg-green-100 text-green-700' :
+                                                            prediction.value === '개선' ? 'bg-blue-100 text-blue-700' :
+                                                                'bg-yellow-100 text-yellow-700'
+                                                            }`}>
+                                                            {prediction.value}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-600 mb-2">{prediction.reason}</p>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-blue-500 transition-all duration-500"
+                                                                style={{ width: `${prediction.confidence * 100}%` }} />
+                                                        </div>
+                                                        <span className="text-xs text-gray-500">{Math.round(prediction.confidence * 100)}%</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* AI 권장사항 */}
+                                    <div className="mb-6">
+                                        <h4 className="text-md font-semibold text-gray-900 mb-3">💡 AI 권장사항</h4>
+                                        <div className="space-y-2">
+                                            {analysisResults.recommendations.map((recommendation, index) => (
+                                                <div key={index} className="bg-white rounded-lg p-3 border border-green-100">
+                                                    <div className="flex items-start space-x-2">
+                                                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                                                        <p className="text-sm text-gray-700">{recommendation}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* AI 신뢰도 및 상태 */}
+                                    <div className="pt-4 border-t border-purple-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm text-purple-700">AI 신뢰도</span>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-24 h-2 bg-purple-200 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: '94%' }} />
+                                                </div>
+                                                <span className="text-sm font-medium text-purple-900">94%</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-blue-700">분석 상태</span>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                <span className="text-sm text-green-700">실시간 분석 중</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 상세 분석 */}
+                                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">응답 품질 분석</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">정확성</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: '92%' }} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">92%</span>
+                                                    <span className="text-xs text-green-600">↗</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">유용성</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-green-500 transition-all duration-500" style={{ width: '88%' }} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">88%</span>
+                                                    <span className="text-xs text-green-600">↗</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">명확성</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: '85%' }} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">85%</span>
+                                                    <span className="text-xs text-green-600">↗</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">일관성</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-orange-500 transition-all duration-500" style={{ width: '90%' }} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">90%</span>
+                                                    <span className="text-xs text-green-600">↗</span>
+                                                </div>
+                                            </div>
+                                            <div className="pt-3 border-t border-gray-100 mt-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-gray-600">자동 최적화</span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                        <span className="text-xs text-green-600">활성</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">사용자 만족도</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">응답 시간</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-semibold text-blue-600">2.3초</span>
+                                                    <span className="text-xs text-green-600">↘</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">만족도</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-semibold text-green-600">4.8/5.0</span>
+                                                    <span className="text-xs text-green-600">↗</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">총 평가</span>
+                                                <span className="font-semibold text-gray-900">127개</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-600">재방문율</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-semibold text-purple-600">85%</span>
+                                                    <span className="text-xs text-green-600">↗</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="pt-3 border-t border-gray-100 mt-3">
+                                            <p className="text-xs text-gray-600">사용자 만족도가 지속적으로 향상되고 있습니다</p>
+                                            <div className="mt-2 flex items-center space-x-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                <span className="text-xs text-green-600">실시간 피드백 수집 중</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-4xl font-bold text-green-600 mb-2">4.8</div>
+                                            <div className="flex justify-center space-x-1 mb-4">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <div
+                                                        key={star}
+                                                        className={`w-6 h-6 rounded-full ${star <= 4 ? 'bg-yellow-400' : 'bg-gray-300'
+                                                            }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className="text-sm text-gray-600">총 127개 평가</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {currentMode === 'monitoring' && (
+                        <div className="p-6">
+                            <div className="max-w-6xl mx-auto">
+                                {/* 실시간 시스템 상태 대시보드 */}
+                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm text-gray-600">시스템 건강도</p>
+                                                <p className="text-2xl font-bold text-green-600">92%</p>
+                                                <p className="text-xs text-green-600">+2% 지난 시간</p>
+                                            </div>
+                                            <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                                                <div className="h-6 w-6 bg-green-500 rounded-full animate-pulse"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm text-gray-600">응답 시간</p>
+                                                <p className="text-2xl font-bold text-blue-600">1.8초</p>
+                                                <p className="text-xs text-green-600">-0.3초 개선</p>
+                                            </div>
+                                            <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                                <div className="h-6 w-6 bg-blue-500 rounded-full"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm text-gray-600">활성 사용자</p>
+                                                <p className="text-2xl font-bold text-purple-600">{collaborators.length}</p>
+                                                <p className="text-xs text-blue-600">온라인</p>
+                                            </div>
+                                            <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                                <div className="h-6 w-6 bg-purple-500 rounded-full"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm text-gray-600">총 알림</p>
+                                                <p className="text-2xl font-bold text-orange-600">{notifications.length}</p>
+                                                <p className="text-xs text-gray-600">미처리 {notifications.filter(n => !n.read).length}개</p>
+                                            </div>
+                                            <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center">
+                                                <div className="h-6 w-6 bg-orange-500 rounded-full"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 모니터링 상태 */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">실시간 모니터링 상태</h3>
+                                        <div className={`flex items-center space-x-2 px-3 py-1 rounded-full ${isWebSocketConnected
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-red-100 text-red-800'
+                                            }`}>
+                                            <div className={`w-2 h-2 rounded-full ${isWebSocketConnected ? 'bg-green-500' : 'bg-red-500'
+                                                } animate-pulse`} />
+                                            <span className="text-sm font-medium">
+                                                {isWebSocketConnected ? '연결됨' : '연결 끊김'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* 실시간 성능 차트 */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                            <h4 className="text-sm font-semibold text-gray-900 mb-3">시스템 성능 트렌드</h4>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-600">CPU 사용률</span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: '45%' }} />
+                                                        </div>
+                                                        <span className="text-sm font-medium text-gray-900">45%</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-600">메모리 사용률</span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-green-500 transition-all duration-1000" style={{ width: '68%' }} />
+                                                        </div>
+                                                        <span className="text-sm font-medium text-gray-900">68%</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-600">네트워크 I/O</span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-purple-500 transition-all duration-1000" style={{ width: '32%' }} />
+                                                        </div>
+                                                        <span className="text-sm font-medium text-gray-900">32%</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-600">디스크 I/O</span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: '28%' }} />
+                                                        </div>
+                                                        <span className="text-sm font-medium text-gray-900">28%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                            <h4 className="text-sm font-semibold text-gray-900 mb-3">실시간 알림 현황</h4>
+                                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                                                {notifications.slice(0, 5).map((notification) => (
+                                                    <div key={notification.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg">
+                                                        <div className={`w-2 h-2 rounded-full mt-1.5 ${notification.type === 'info' ? 'bg-blue-500' :
+                                                            notification.type === 'success' ? 'bg-green-500' :
+                                                                notification.type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                                                            }`} />
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs font-medium text-gray-900 truncate">
+                                                                {notification.message}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">{notification.timestamp}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {notifications.length === 0 && (
+                                                    <div className="text-center py-6 text-gray-500">
+                                                        <div className="text-xl mb-1">✅</div>
+                                                        <p className="text-xs">모든 시스템이 정상 작동 중입니다</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* AI 모델 성능 모니터링 */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 모델 성능 모니터링</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                            <div className="text-2xl font-bold text-blue-600 mb-2">{selectedAIModel}</div>
+                                            <p className="text-sm text-gray-600">현재 활성 모델</p>
+                                            <div className="mt-2 w-3 h-3 bg-green-500 rounded-full mx-auto animate-pulse"></div>
+                                        </div>
+                                        <div className="text-center p-4 bg-green-50 rounded-lg">
+                                            <div className="text-2xl font-bold text-green-600 mb-2">98.5%</div>
+                                            <p className="text-sm text-gray-600">모델 정확도</p>
+                                            <p className="text-xs text-green-600 mt-1">+0.3% 개선</p>
+                                        </div>
+                                        <div className="text-center p-4 bg-purple-50 rounded-lg">
+                                            <div className="text-2xl font-bold text-purple-600 mb-2">1.2초</div>
+                                            <p className="text-sm text-gray-600">평균 추론 시간</p>
+                                            <p className="text-xs text-green-600 mt-1">-0.1초 개선</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="bg-blue-50 rounded-lg p-4">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="bg-blue-500 p-2 rounded-lg">
+                                                    <Clock className="h-5 w-5 text-white" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-blue-600">활성 토픽</p>
+                                                    <p className="text-2xl font-bold text-blue-900">
+                                                        {monitoringStatus?.active_topics || 0}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-green-50 rounded-lg p-4">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="bg-green-500 p-2 rounded-lg">
+                                                    <BarChart3 className="h-5 w-5 text-white" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-green-600">총 알림</p>
+                                                    <p className="text-2xl font-bold text-green-900">
+                                                        {monitoringStatus?.total_alerts || 0}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-purple-50 rounded-lg p-4">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="bg-purple-500 p-2 rounded-lg">
+                                                    <RefreshCw className="h-5 w-5 text-white" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-purple-600">마지막 업데이트</p>
+                                                    <p className="text-sm font-medium text-purple-900">
+                                                        {monitoringStatus?.lastUpdate || '없음'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 모니터링 토픽 */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">모니터링 토픽</h3>
+                                    <div className="space-y-4">
+                                        {monitoringStatus?.topics?.map((topic, index) => (
+                                            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                                <div>
+                                                    <h4 className="font-medium text-gray-900">{topic.topic}</h4>
+                                                    <p className="text-sm text-gray-600">
+                                                        임계값: {topic.alert_threshold} | 알림: {topic.alert_count}
+                                                    </p>
+                                                </div>
+                                                <div className={`px-3 py-1 rounded-full text-sm font-medium ${topic.alert_count >= topic.alert_threshold
+                                                    ? 'bg-red-100 text-red-800'
+                                                    : 'bg-green-100 text-green-800'
+                                                    }`}>
+                                                    {topic.alert_count >= topic.alert_threshold ? '주의' : '정상'}
+                                                </div>
+                                            </div>
+                                        )) || (
+                                                <div className="text-center py-8 text-gray-500">
+                                                    <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                                    <p>모니터링 토픽이 없습니다.</p>
+                                                    <p className="text-sm">새로운 토픽을 추가해보세요.</p>
+                                                </div>
+                                            )}
+                                    </div>
+                                </div>
+
+                                {/* 최근 알림 */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 알림</h3>
+                                    <div className="space-y-3">
+                                        {monitoringStatus?.alerts?.map((alert, index) => (
+                                            <div key={index} className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
+                                                <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-red-800">{alert}</p>
+                                                    <p className="text-xs text-red-600 mt-1">방금 전</p>
+                                                </div>
+                                            </div>
+                                        )) || (
+                                                <div className="text-center py-8 text-gray-500">
+                                                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <div className="w-6 h-6 bg-green-500 rounded-full" />
+                                                    </div>
+                                                    <p>새로운 알림이 없습니다.</p>
+                                                    <p className="text-sm">모든 것이 정상적으로 작동하고 있습니다.</p>
+                                                </div>
+                                            )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 뉴스 검색 패널 */}
+                    {showNewsSearch && (
+                        <div className="absolute inset-0 bg-white z-50">
+                            <div className="flex flex-col h-full">
+                                {/* 헤더 */}
+                                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                                    <div className="flex items-center space-x-3">
+                                        <button
+                                            onClick={() => setShowNewsSearch(false)}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <X className="h-5 w-5 text-gray-500" />
+                                        </button>
+                                        <h2 className="text-lg font-semibold text-gray-900">뉴스 검색 및 댓글 분석</h2>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="text"
+                                            placeholder="NewsAPI 키 (선택사항)"
+                                            value={newsAPIKey}
+                                            onChange={(e) => setNewsAPIKey(e.target.value)}
+                                            className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* 뉴스 검색 컴포넌트 */}
+                                <div className="flex-1 overflow-hidden">
+                                    <NewsSearch
+                                        apiKey={newsAPIKey}
+                                        onArticleSelect={(article) => {
+                                            console.log('선택된 기사:', article);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NLP 분석 결과 패널 */}
+                    {showNLPAnalysis && nlpAnalysis && (
+                        <div className="absolute inset-0 bg-white z-50">
+                            <div className="flex flex-col h-full">
+                                {/* 헤더 */}
+                                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                                    <div className="flex items-center space-x-3">
+                                        <button
+                                            onClick={() => setShowNLPAnalysis(false)}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <X className="h-5 w-5 text-gray-500" />
+                                        </button>
+                                        <h2 className="text-lg font-semibold text-gray-900">NLP 분석 결과</h2>
+                                        <div className="flex items-center space-x-2">
+                                            <div className={`w-3 h-3 rounded-full ${nlpAnalysis.sentiment === 'positive' ? 'bg-green-500' : nlpAnalysis.sentiment === 'negative' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                                            <span className="text-sm text-gray-600">
+                                                {nlpAnalysis.sentiment === 'positive' ? '긍정적' : nlpAnalysis.sentiment === 'negative' ? '부정적' : '중립적'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <button
+                                            onClick={() => setAutoAnalysisEnabled(!autoAnalysisEnabled)}
+                                            className={`px-3 py-1 text-sm rounded-lg transition-colors ${autoAnalysisEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                                        >
+                                            {autoAnalysisEnabled ? '자동 분석 ON' : '자동 분석 OFF'}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                {/* NLP 분석 결과 콘텐츠 */}
+                                <div className="flex-1 overflow-y-auto p-6">
+                                    <div className="max-w-4xl mx-auto space-y-6">
+                                        {/* 요약 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 분석 요약</h3>
+                                            <p className="text-gray-700 leading-relaxed">{nlpAnalysis.summary}</p>
+                                        </div>
+
+                                        {/* 키워드 분석 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">🔍 주요 키워드</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {nlpAnalysis.keywords.map((keyword, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                                                    >
+                                                        {keyword}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* 주제 분류 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">🏷️ 주제 분류</h3>
+                                            <div className="space-y-3">
+                                                {nlpAnalysis.topics.map((topic, index) => (
+                                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                        <span className="font-medium text-gray-900">{topic}</span>
+                                                        <span className="text-sm text-gray-500">관련 주제</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* 엔티티 추출 */}
+                                        {nlpAnalysis.entities.length > 0 && (
+                                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-4">🏢 엔티티 추출</h3>
+                                                <div className="space-y-3">
+                                                    {nlpAnalysis.entities.map((entity, index) => (
+                                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                            <div>
+                                                                <span className="font-medium text-gray-900">{entity.name}</span>
+                                                                <span className="text-sm text-gray-500 ml-2">({entity.type})</span>
+                                                            </div>
+                                                            <span className="text-sm text-gray-500">
+                                                                신뢰도: {Math.round(entity.confidence * 100)}%
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 추천사항 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">💡 추천사항</h3>
+                                            <div className="space-y-3">
+                                                {nlpAnalysis.recommendations.map((recommendation, index) => (
+                                                    <div key={index} className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+                                                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
+                                                        <p className="text-gray-700">{recommendation}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* 관련 주제 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">🔗 관련 주제</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {nlpAnalysis.relatedTopics.map((topic, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                                                    >
+                                                        {topic}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 고급 AI 분석 결과 패널 */}
+                    {showAdvancedAI && advancedAIResponse && (
+                        <div className="absolute inset-0 bg-white z-50">
+                            <div className="flex flex-col h-full">
+                                {/* 헤더 */}
+                                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                                    <div className="flex items-center space-x-3">
+                                        <button
+                                            onClick={() => setShowAdvancedAI(false)}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <X className="h-5 w-5 text-gray-500" />
+                                        </button>
+                                        <h2 className="text-lg font-semibold text-gray-900">🤖 고급 AI 분석 결과</h2>
+                                        <div className="flex items-center space-x-2">
+                                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                                            <span className="text-sm text-gray-600">실시간 학습 중</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <div className="text-sm text-gray-600">
+                                            신뢰도: {Math.round(advancedAIResponse.confidence * 100)}%
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* 고급 AI 분석 결과 콘텐츠 */}
+                                <div className="flex-1 overflow-y-auto p-6">
+                                    <div className="max-w-4xl mx-auto space-y-6">
+                                        {/* 학습 진행률 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 학습 진행률</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                                    <div className="text-2xl font-bold text-blue-600 mb-1">
+                                                        {learningProgress.totalInteractions}
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">총 상호작용</p>
+                                                </div>
+                                                <div className="text-center p-4 bg-green-50 rounded-lg">
+                                                    <div className="text-2xl font-bold text-green-600 mb-1">
+                                                        {Math.round(learningProgress.learningScore * 100)}%
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">학습 점수</p>
+                                                </div>
+                                                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                                                    <div className="text-2xl font-bold text-purple-600 mb-1">
+                                                        {Math.round(learningProgress.adaptationLevel * 100)}%
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">적응 수준</p>
+                                                </div>
+                                                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                                                    <div className="text-2xl font-bold text-orange-600 mb-1">
+                                                        {Math.round(learningProgress.confidence * 100)}%
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">신뢰도</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 사용자 인사이트 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">👤 사용자 인사이트</h3>
+                                            <div className="space-y-4">
+                                                {advancedAIResponse.userInsights.preferences.length > 0 && (
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900 mb-2">🎯 선호도</h4>
+                                                        <div className="space-y-2">
+                                                            {advancedAIResponse.userInsights.preferences.map((pref, index) => (
+                                                                <div key={index} className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg">
+                                                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                                                    <span className="text-sm text-gray-700">{pref}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {advancedAIResponse.userInsights.behaviorPatterns.length > 0 && (
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900 mb-2">📊 행동 패턴</h4>
+                                                        <div className="space-y-2">
+                                                            {advancedAIResponse.userInsights.behaviorPatterns.map((pattern, index) => (
+                                                                <div key={index} className="flex items-center space-x-2 p-2 bg-green-50 rounded-lg">
+                                                                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                                                                    <span className="text-sm text-gray-700">{pattern}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {advancedAIResponse.userInsights.improvementAreas.length > 0 && (
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900 mb-2">💡 개선 영역</h4>
+                                                        <div className="space-y-2">
+                                                            {advancedAIResponse.userInsights.improvementAreas.map((area, index) => (
+                                                                <div key={index} className="flex items-center space-x-2 p-2 bg-yellow-50 rounded-lg">
+                                                                    <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                                                                    <span className="text-sm text-gray-700">{area}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* 추천사항 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">💡 AI 추천사항</h3>
+                                            <div className="space-y-3">
+                                                {advancedAIResponse.recommendations.map((rec, index) => (
+                                                    <div key={index} className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg">
+                                                        <div className="w-2 h-2 bg-purple-500 rounded-full mt-2" />
+                                                        <p className="text-gray-700">{rec}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* 다음 액션 */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">🎯 다음 액션</h3>
+                                            <div className="space-y-3">
+                                                {advancedAIResponse.nextActions.map((action, index) => (
+                                                    <div key={index} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                                                        <span className="text-gray-700">{action}</span>
+                                                        <button className="px-3 py-1 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors">
+                                                            실행
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* 사용자 프로필 */}
+                                        {userProfile && (
+                                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-4">👤 사용자 프로필</h3>
+                                                <div className="space-y-4">
+                                                    {userProfile.expertise && userProfile.expertise.length > 0 && (
+                                                        <div>
+                                                            <h4 className="font-medium text-gray-900 mb-2">전문 분야</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {userProfile.expertise.map((exp: string, index: number) => (
+                                                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                                        {exp}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {userProfile.interests && userProfile.interests.length > 0 && (
+                                        <div>
+                                            <h4 className="font-medium text-gray-900 mb-2">관심사</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {userProfile.interests.slice(0, 8).map((interest: string, index: number) => (
+                                                    <span key={index} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                                                        {interest}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900 mb-2">의사소통 스타일</h4>
+                                            <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                                                {userProfile.communicationStyle}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium text-gray-900 mb-2">응답 선호도</h4>
+                                            <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                                                {userProfile.responsePreference}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )}
+
+                {/* 입력 영역 */}
+
+                {/* 입력 영역 */}
+                <div className="chatgpt-input-container">
+                    <div className="max-w-4xl mx-auto">
+                        {/* 입력 통계 */}
+                        {inputMessage && (
+                            <div className="chatgpt-input-stats mb-2">
+                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                    <span>{inputMessage.length}/4000</span>
+                                    <span>{inputStats.wordCount}단어</span>
+                                    <span>읽기시간: {inputStats.readingTime}분</span>
+                                    <div className="flex items-center space-x-2">
+                                        <span>품질: {inputQuality.score}%</span>
+                                        <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+                                                style={{ width: `${inputQuality.score}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 입력 오류 */}
+                        {inputError && (
+                            <div className="chatgpt-input-error mb-2">
+                                <span className="text-red-500 text-sm">{inputError}</span>
+                            </div>
+                        )}
+
+                        {/* 메인 입력 영역 */}
+                        <div className={`chatgpt-input-wrapper ${isDragOver ? 'drag-over' : ''}`}>
+                            <div className="chatgpt-input-box">
+                                <div className="chatgpt-input-line">
+                                    <button className="chatgpt-plus-button">
+                                        <Plus className="h-4 w-4" />
+                                    </button>
+
+                                    <textarea
+                                        ref={inputRef}
+                                        value={inputMessage}
+                                        onChange={handleInputChange}
+                                        onKeyDown={handleKeyPress}
+                                        onFocus={() => {/* setInputFocused(true) */ }}
+                                        onBlur={() => {/* setInputFocused(false) */ }}
+                                        onDragOver={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                        placeholder="무엇이든 물어보세요"
+                                        className="chatgpt-textarea"
+                                        rows={1}
+                                        aria-label="메시지 입력"
+                                        aria-describedby="input-hints"
+                                        // role="textbox"
+                                        aria-multiline="true"
+                                    />
+
+                                    <button
+                                        onClick={handleSendMessage}
+                                        disabled={!inputMessage.trim() || isSending}
+                                        className="chatgpt-send-button"
+                                    >
+                                        <Send className="h-4 w-4" />
+                                    </button>
+                                </div>
+
+                                {/* 자동완성 */}
+                                {showAutoComplete && autoCompleteOptions.length > 0 && (
+                                    <div className="chatgpt-autocomplete">
+                                        {autoCompleteOptions.map((option, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => handleAutoCompleteClick(option)}
+                                                className="chatgpt-autocomplete-item"
+                                            >
+                                                /{option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* 입력 힌트 */}
+                                <div id="input-hints" className="chatgpt-input-hints">
+                                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                        <span>Enter: 전송</span>
+                                        <span>Shift+Enter: 줄바꿈</span>
+                                        <span>Ctrl+K: 포커스</span>
+                                        <span>Ctrl+↑/↓: 히스토리</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 제안사항 */}
+                        {!inputMessage && (
+                            <div className="chatgpt-suggestions mt-4">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {suggestions.slice(0, 6).map((suggestion, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => handleRecommendationClick(suggestion)}
+                                            className="chatgpt-suggestion-item"
+                                        >
+                                            {suggestion}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 면책 조항 */}
+                        <div className="chatgpt-disclaimer mt-4">
+                            <p className="text-xs text-gray-500 text-center">
+                                CORBU AI는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 모달들 */}
+            <AnimatePresence>
+                {showNewProjectModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                        onClick={() => setShowNewProjectModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-xl shadow-2xl p-6 w-96"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-gray-900">새 프로젝트</h2>
+                                <button
+                                    onClick={() => setShowNewProjectModal(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <X className="h-5 w-5 text-gray-500" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        프로젝트 이름
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newProjectName}
+                                        onChange={(e) => setNewProjectName(e.target.value)}
+                                        placeholder="예: 생일 파티 계획"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                    <div className="flex items-start space-x-3">
+                                        <Lightbulb className="h-5 w-5 text-blue-500 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm text-blue-800">
+                                                프로젝트란 무엇인가요? 프로젝트에서는 한 곳에 파일, 맞춤형 지침을 보관합니다.
+                                                지속적으로 진행되는 작업에, 또는 작업을 깔끔히 정리하기에 좋죠.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={() => setShowNewProjectModal(false)}
+                                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                    >
+                                        취소
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (newProjectName.trim()) {
+                                                const newProject: Project = {
+                                                    id: Date.now().toString(),
+                                                    name: newProjectName,
+                                                    type: 'project'
+                                                };
+                                                projects.push(newProject);
+                                                setSelectedProject(newProject);
+                                                setNewProjectName('');
+                                                setShowNewProjectModal(false);
+                                            }
+                                        }}
+                                        className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                                    >
+                                        프로젝트 만들기
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {/* 설정 패널 */}
+                {showSettings && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                        onClick={() => setShowSettings(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-xl shadow-2xl p-6 w-96 max-h-[80vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-gray-900">설정</h2>
+                                <button
+                                    onClick={() => setShowSettings(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <X className="h-5 w-5 text-gray-500" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* 일반 설정 */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">일반</h3>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-700">자동 저장</span>
+                                            <button
+                                                onClick={() => setSettings(prev => ({ ...prev, autoSave: !prev.autoSave }))}
+                                                className={`w-12 h-6 rounded-full transition-colors ${settings.autoSave ? 'bg-blue-500' : 'bg-gray-300'
+                                                    }`}
+                                            >
+                                                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.autoSave ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-700">실시간 협업</span>
+                                            <button
+                                                onClick={() => setSettings(prev => ({ ...prev, realTimeCollaboration: !prev.realTimeCollaboration }))}
+                                                className={`w-12 h-6 rounded-full transition-colors ${settings.realTimeCollaboration ? 'bg-blue-500' : 'bg-gray-300'
+                                                    }`}
+                                            >
+                                                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.realTimeCollaboration ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-700">고급 분석</span>
+                                            <button
+                                                onClick={() => setSettings(prev => ({ ...prev, advancedAnalytics: !prev.advancedAnalytics }))}
+                                                className={`w-12 h-6 rounded-full transition-colors ${settings.advancedAnalytics ? 'bg-blue-500' : 'bg-gray-300'
+                                                    }`}
+                                            >
+                                                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.advancedAnalytics ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 알림 설정 */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">알림</h3>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-700">소리 알림</span>
+                                            <button
+                                                onClick={() => setSettings(prev => ({
+                                                    ...prev,
+                                                    notifications: { ...prev.notifications, sound: !prev.notifications.sound }
+                                                }))}
+                                                className={`w-12 h-6 rounded-full transition-colors ${settings.notifications.sound ? 'bg-blue-500' : 'bg-gray-300'
+                                                    }`}
+                                            >
+                                                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.notifications.sound ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-700">데스크톱 알림</span>
+                                            <button
+                                                onClick={() => setSettings(prev => ({
+                                                    ...prev,
+                                                    notifications: { ...prev.notifications, desktop: !prev.notifications.desktop }
+                                                }))}
+                                                className={`w-12 h-6 rounded-full transition-colors ${settings.notifications.desktop ? 'bg-blue-500' : 'bg-gray-300'
+                                                    }`}
+                                            >
+                                                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.notifications.desktop ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* API 키 설정 */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">API 키 설정</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Google AI (Gemini)
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={apiKeys.gemini}
+                                                onChange={(e) => {
+                                                    const newKey = e.target.value;
+                                                    setApiKeys(prev => ({ ...prev, gemini: newKey }));
+                                                    localStorage.setItem('gemini_api_key', newKey);
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Gemini API 키를 입력하세요"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                OpenAI (GPT-4)
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={apiKeys.openai}
+                                                onChange={(e) => {
+                                                    const newKey = e.target.value;
+                                                    setApiKeys(prev => ({ ...prev, openai: newKey }));
+                                                    localStorage.setItem('openai_api_key', newKey);
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="OpenAI API 키를 입력하세요"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Anthropic (Claude)
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={apiKeys.anthropic}
+                                                onChange={(e) => {
+                                                    const newKey = e.target.value;
+                                                    setApiKeys(prev => ({ ...prev, anthropic: newKey }));
+                                                    localStorage.setItem('anthropic_api_key', newKey);
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Anthropic API 키를 입력하세요"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                News API
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={apiKeys.news}
+                                                onChange={(e) => {
+                                                    const newKey = e.target.value;
+                                                    setApiKeys(prev => ({ ...prev, news: newKey }));
+                                                    localStorage.setItem('news_api_key', newKey);
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="News API 키를 입력하세요"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 사용자 선호도 설정 */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">응답 품질 설정</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                응답 스타일
+                                            </label>
+                                            <select
+                                                value={userPreferences.responseStyle}
+                                                onChange={(e) => setUserPreferences(prev => ({
+                                                    ...prev,
+                                                    responseStyle: e.target.value as any
+                                                }))}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="detailed">상세한 설명</option>
+                                                <option value="concise">간결한 요약</option>
+                                                <option value="professional">전문적 분석</option>
+                                                <option value="casual">친근한 설명</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                상세 수준
+                                            </label>
+                                            <select
+                                                value={userPreferences.detailLevel}
+                                                onChange={(e) => setUserPreferences(prev => ({
+                                                    ...prev,
+                                                    detailLevel: e.target.value as any
+                                                }))}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="basic">기본</option>
+                                                <option value="intermediate">중급</option>
+                                                <option value="advanced">고급</option>
+                                                <option value="expert">전문가</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={userPreferences.includeExamples}
+                                                    onChange={(e) => setUserPreferences(prev => ({
+                                                        ...prev,
+                                                        includeExamples: e.target.checked
+                                                    }))}
+                                                    className="mr-2"
+                                                />
+                                                <span className="text-sm text-gray-700">구체적인 예시 포함</span>
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={userPreferences.includeCode}
+                                                    onChange={(e) => setUserPreferences(prev => ({
+                                                        ...prev,
+                                                        includeCode: e.target.checked
+                                                    }))}
+                                                    className="mr-2"
+                                                />
+                                                <span className="text-sm text-gray-700">코드 예시 포함</span>
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={userPreferences.includeSources}
+                                                    onChange={(e) => setUserPreferences(prev => ({
+                                                        ...prev,
+                                                        includeSources: e.target.checked
+                                                    }))}
+                                                    className="mr-2"
+                                                />
+                                                <span className="text-sm text-gray-700">참고 자료 포함</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 시스템 정보 */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">시스템 정보</h3>
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="flex justify-between">
+                                            <span>버전</span>
+                                            <span>1.0.0</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>WebSocket 상태</span>
+                                            <span className={isWebSocketConnected ? 'text-green-600' : 'text-red-600'}>
+                                                {isWebSocketConnected ? '연결됨' : '연결 끊김'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>총 메시지</span>
+                                            <span>{messages.length}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>설정된 API 키</span>
+                                            <span className="text-green-600">
+                                                {Object.values(apiKeys).filter(key => key && key.trim() !== '').length}개
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {currentMode === 'news' && (
+                    <div className="h-full p-6">
+                        <div className="max-w-4xl mx-auto">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-6">뉴스 검색</h2>
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <p className="text-gray-600">뉴스 검색 기능이 준비 중입니다. API 키를 설정해주세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+export default UnifiedAdvancedInterface;

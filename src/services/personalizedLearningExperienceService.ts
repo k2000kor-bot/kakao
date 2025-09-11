@@ -710,8 +710,6 @@ class PersonalizedLearningExperienceService {
             });
 
             adjustment.current_level = newLevel;
-            adjustment.last_adjustment = new Date();
-            adjustment.adjustment_reason = `성과 기반 자동 조정 (${totalAdjustment > 0 ? '증가' : '감소'})`;
 
             // 적응형 콘텐츠 업데이트
             experience.adaptive_content.difficulty_scaling.current_difficulty = newLevel;
@@ -745,7 +743,7 @@ class PersonalizedLearningExperienceService {
             personalizedResources.push({
                 resource_id: resource.resource_id,
                 title: resource.title,
-                content: this.adaptContentToUser(resource.content, userProfile),
+                content: this.adaptContentToUser(resource.content || '', userProfile),
                 adaptation_reason: this.generateAdaptationReason(userProfile, resource),
                 user_preference_match: userPreferenceMatch,
                 difficulty_match: difficultyMatch,

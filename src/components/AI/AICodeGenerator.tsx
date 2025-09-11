@@ -18,7 +18,7 @@ import {
     GitBranch,
     Bug,
     Shield,
-    Cpu,
+    Computer as Cpu,
     Database,
     Globe,
     Smartphone,
@@ -34,7 +34,7 @@ import {
     Share2,
     History,
     TrendingUp,
-    BarChart3,
+    BarChart,
     Target,
     Sparkles
 } from 'lucide-react';
@@ -471,7 +471,7 @@ export default GeneratedComponent;`,
                         { id: 'generator', label: '코드 생성', icon: Sparkles },
                         { id: 'optimizer', label: '최적화', icon: Zap },
                         { id: 'tester', label: '테스트', icon: Bug },
-                        { id: 'analytics', label: '분석', icon: BarChart3 },
+                        { id: 'analytics', label: '분석', icon: BarChart },
                         { id: 'settings', label: '설정', icon: Settings }
                     ].map((tab) => {
                         const IconComponent = tab.icon;

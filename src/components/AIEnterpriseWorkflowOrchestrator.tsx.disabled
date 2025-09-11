@@ -1,0 +1,1199 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    LinearProgress,
+    IconButton,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Alert,
+    Divider,
+    Tooltip,
+    Badge,
+    Stepper,
+    Step,
+    StepLabel,
+    StepContent,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    Switch,
+    FormControlLabel,
+    Slider,
+    Tabs,
+    Tab
+} from '@mui/material';
+import {
+    PlayArrow,
+    Pause,
+    Stop,
+    Refresh,
+    Add,
+    Edit,
+    Delete,
+    Save,
+    Cancel,
+    Visibility,
+    VisibilityOff,
+    Settings,
+    Analytics,
+    Timeline,
+    AccountTree,
+    Business,
+    Assessment,
+    TrendingUp,
+    TrendingDown,
+    CheckCircle,
+    Error,
+    Warning,
+    Info,
+    Schedule,
+    Speed,
+    Memory,
+    Storage,
+    NetworkCheck,
+    Security,
+    Cloud,
+    DataUsage,
+    Insights,
+    Psychology,
+    AutoAwesome,
+    RocketLaunch,
+    Lightbulb,
+    School,
+    Work,
+    Group,
+    Person,
+    LocationOn,
+    PriorityHigh,
+    LowPriority,
+    TrendingFlat,
+    ExpandMore,
+    ExpandLess,
+    FilterList,
+    Sort,
+    Search,
+    Download,
+    Upload,
+    Share,
+    Notifications,
+    NotificationsOff,
+    PlaylistAdd,
+    PlaylistAddCheck,
+    Queue,
+    QueuePlayNext,
+    History,
+    Timeline as TimelineIcon,
+    // GanttChart,
+    // FlowChart,
+    // MindMap,
+    NetworkPing,
+    Hub,
+    Router,
+    Storage as StorageIcon,
+    Memory as MemoryIcon,
+    Speed as SpeedIcon,
+    NetworkCheck as NetworkCheckIcon,
+    Security as SecurityIcon,
+    Cloud as CloudIcon,
+    DataUsage as DataUsageIcon,
+    Insights as InsightsIcon,
+    Psychology as PsychologyIcon,
+    AutoAwesome as AutoAwesomeIcon,
+    RocketLaunch as RocketLaunchIcon,
+    Lightbulb as LightbulbIcon,
+    School as SchoolIcon,
+    Work as WorkIcon,
+    Group as GroupIcon,
+    Person as PersonIcon,
+    LocationOn as LocationOnIcon,
+    Schedule as ScheduleIcon,
+    PriorityHigh as PriorityHighIcon,
+    LowPriority as LowPriorityIcon,
+    TrendingFlat as TrendingFlatIcon,
+    ExpandMore as ExpandMoreIcon,
+    ExpandLess as ExpandLessIcon,
+    FilterList as FilterListIcon,
+    Sort as SortIcon,
+    Search as SearchIcon,
+    Download as DownloadIcon,
+    Upload as UploadIcon,
+    Share as ShareIcon,
+    Notifications as NotificationsIcon,
+    NotificationsOff as NotificationsOffIcon,
+    PlaylistAdd as PlaylistAddIcon,
+    PlaylistAddCheck as PlaylistAddCheckIcon,
+    Queue as QueueIcon,
+    QueuePlayNext as QueuePlayNextIcon,
+    History as HistoryIcon,
+    Timeline as TimelineIconIcon,
+    // GanttChart as GanttChartIcon,
+    // FlowChart as FlowChartIcon,
+    // MindMap as MindMapIcon,
+    NetworkPing as NetworkPingIcon,
+    Hub as HubIcon,
+    Router as RouterIcon
+} from '@mui/icons-material';
+
+// 워크플로우 인터페이스
+interface WorkflowStep {
+    id: string;
+    name: string;
+    description: string;
+    type: 'task' | 'decision' | 'approval' | 'integration' | 'notification';
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    assignedTo?: string;
+    estimatedDuration: number; // minutes
+    actualDuration?: number;
+    dependencies: string[];
+    conditions?: string[];
+    actions: string[];
+    startTime?: Date;
+    endTime?: Date;
+    progress: number;
+    errorMessage?: string;
+}
+
+interface Workflow {
+    id: string;
+    name: string;
+    description: string;
+    version: string;
+    status: 'draft' | 'active' | 'paused' | 'archived';
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    category: 'sales' | 'marketing' | 'hr' | 'finance' | 'operations' | 'customer_service';
+    steps: WorkflowStep[];
+    triggers: string[];
+    conditions: string[];
+    estimatedTotalDuration: number;
+    actualTotalDuration?: number;
+    createdBy: string;
+    createdAt: Date;
+    updatedAt: Date;
+    lastExecuted?: Date;
+    executionCount: number;
+    successRate: number;
+    autoRetry: boolean;
+    maxRetries: number;
+    currentRetryCount: number;
+    notifications: boolean;
+    aiOptimization: boolean;
+}
+
+interface WorkflowExecution {
+    id: string;
+    workflowId: string;
+    workflowName: string;
+    status: 'running' | 'completed' | 'failed' | 'paused';
+    startTime: Date;
+    endTime?: Date;
+    duration?: number;
+    currentStep?: string;
+    progress: number;
+    errorMessage?: string;
+    triggeredBy: string;
+    triggeredByType: 'manual' | 'scheduled' | 'event' | 'ai';
+    context: Record<string, any>;
+    metrics: {
+        stepsCompleted: number;
+        stepsFailed: number;
+        stepsSkipped: number;
+        averageStepDuration: number;
+        totalWaitTime: number;
+        efficiency: number;
+    };
+}
+
+interface AIOptimization {
+    id: string;
+    workflowId: string;
+    type: 'performance' | 'efficiency' | 'resource' | 'cost';
+    status: 'analyzing' | 'optimizing' | 'completed' | 'failed';
+    recommendations: string[];
+    improvements: {
+        before: number;
+        after: number;
+        unit: string;
+        percentage: number;
+    };
+    applied: boolean;
+    appliedAt?: Date;
+    confidence: number;
+}
+
+// 샘플 데이터
+const sampleWorkflows: Workflow[] = [
+    {
+        id: 'wf-001',
+        name: '고객 온보딩 프로세스',
+        description: '신규 고객 등록부터 첫 구매까지의 전체 프로세스',
+        version: '2.1.0',
+        status: 'active',
+        priority: 'high',
+        category: 'customer_service',
+        steps: [
+            {
+                id: 'step-001',
+                name: '고객 정보 수집',
+                description: '기본 고객 정보 및 선호도 조사',
+                type: 'task',
+                status: 'completed',
+                priority: 'medium',
+                estimatedDuration: 30,
+                actualDuration: 25,
+                dependencies: [],
+                actions: ['정보 입력', '유효성 검증', '중복 확인'],
+                startTime: new Date(Date.now() - 3600000),
+                endTime: new Date(Date.now() - 3300000),
+                progress: 100
+            },
+            {
+                id: 'step-002',
+                name: '계정 생성 및 검증',
+                description: '고객 계정 생성 및 이메일 인증',
+                type: 'task',
+                status: 'running',
+                priority: 'high',
+                estimatedDuration: 15,
+                actualDuration: 8,
+                dependencies: ['step-001'],
+                actions: ['계정 생성', '이메일 발송', '인증 대기'],
+                startTime: new Date(Date.now() - 1800000),
+                progress: 60
+            },
+            {
+                id: 'step-003',
+                name: '서비스 권한 부여',
+                description: '고객 등급에 따른 서비스 권한 설정',
+                type: 'task',
+                status: 'pending',
+                priority: 'medium',
+                estimatedDuration: 10,
+                dependencies: ['step-002'],
+                actions: ['권한 설정', '리소스 할당', '접근 테스트'],
+                progress: 0
+            }
+        ],
+        triggers: ['신규 고객 등록', '웹사이트 가입'],
+        conditions: ['유효한 이메일', '필수 정보 완료'],
+        estimatedTotalDuration: 55,
+        actualTotalDuration: 33,
+        createdBy: 'admin',
+        createdAt: new Date(Date.now() - 86400000),
+        updatedAt: new Date(Date.now() - 3600000),
+        lastExecuted: new Date(Date.now() - 3600000),
+        executionCount: 45,
+        successRate: 92.3,
+        autoRetry: true,
+        maxRetries: 3,
+        currentRetryCount: 0,
+        notifications: true,
+        aiOptimization: true
+    },
+    {
+        id: 'wf-002',
+        name: '매출 예측 분석',
+        description: 'AI 기반 매출 예측 및 분석 워크플로우',
+        version: '1.5.2',
+        status: 'active',
+        priority: 'critical',
+        category: 'finance',
+        steps: [
+            {
+                id: 'step-004',
+                name: '데이터 수집',
+                description: '매출 관련 데이터 수집 및 전처리',
+                type: 'task',
+                status: 'completed',
+                priority: 'high',
+                estimatedDuration: 45,
+                actualDuration: 42,
+                dependencies: [],
+                actions: ['DB 연결', '데이터 추출', '정제'],
+                startTime: new Date(Date.now() - 7200000),
+                endTime: new Date(Date.now() - 6780000),
+                progress: 100
+            },
+            {
+                id: 'step-005',
+                name: 'AI 모델 실행',
+                description: '예측 모델 실행 및 결과 생성',
+                type: 'task',
+                status: 'running',
+                priority: 'critical',
+                estimatedDuration: 120,
+                actualDuration: 85,
+                dependencies: ['step-004'],
+                actions: ['모델 로드', '예측 실행', '결과 검증'],
+                startTime: new Date(Date.now() - 5400000),
+                progress: 75
+            }
+        ],
+        triggers: ['매월 1일', '수동 실행'],
+        conditions: ['데이터 준비 완료', '모델 업데이트'],
+        estimatedTotalDuration: 165,
+        actualTotalDuration: 127,
+        createdBy: 'ai-engineer',
+        createdAt: new Date(Date.now() - 172800000),
+        updatedAt: new Date(Date.now() - 5400000),
+        lastExecuted: new Date(Date.now() - 5400000),
+        executionCount: 12,
+        successRate: 95.8,
+        autoRetry: true,
+        maxRetries: 2,
+        currentRetryCount: 0,
+        notifications: true,
+        aiOptimization: true
+    }
+];
+
+const sampleExecutions: WorkflowExecution[] = [
+    {
+        id: 'exec-001',
+        workflowId: 'wf-001',
+        workflowName: '고객 온보딩 프로세스',
+        status: 'running',
+        startTime: new Date(Date.now() - 3600000),
+        progress: 60,
+        triggeredBy: 'system',
+        triggeredByType: 'event',
+        context: { customerId: 'cust-123', source: 'website' },
+        metrics: {
+            stepsCompleted: 1,
+            stepsFailed: 0,
+            stepsSkipped: 0,
+            averageStepDuration: 25,
+            totalWaitTime: 5,
+            efficiency: 85
+        }
+    },
+    {
+        id: 'exec-002',
+        workflowId: 'wf-002',
+        workflowName: '매출 예측 분석',
+        status: 'running',
+        startTime: new Date(Date.now() - 5400000),
+        progress: 75,
+        triggeredBy: 'scheduler',
+        triggeredByType: 'scheduled',
+        context: { month: '2024-01', model: 'v2.1' },
+        metrics: {
+            stepsCompleted: 1,
+            stepsFailed: 0,
+            stepsSkipped: 0,
+            averageStepDuration: 42,
+            totalWaitTime: 0,
+            efficiency: 92
+        }
+    }
+];
+
+const sampleOptimizations: AIOptimization[] = [
+    {
+        id: 'opt-001',
+        workflowId: 'wf-001',
+        type: 'performance',
+        status: 'completed',
+        recommendations: [
+            '병렬 처리 도입으로 40% 성능 향상',
+            '캐싱 전략 개선으로 응답시간 단축',
+            '불필요한 단계 제거'
+        ],
+        improvements: {
+            before: 55,
+            after: 33,
+            unit: 'minutes',
+            percentage: 40
+        },
+        applied: true,
+        appliedAt: new Date(Date.now() - 86400000),
+        confidence: 0.89
+    },
+    {
+        id: 'opt-002',
+        workflowId: 'wf-002',
+        type: 'efficiency',
+        status: 'analyzing',
+        recommendations: [
+            '데이터 전처리 최적화',
+            '모델 파라미터 튜닝',
+            '병렬 계산 도입'
+        ],
+        improvements: {
+            before: 165,
+            after: 120,
+            unit: 'minutes',
+            percentage: 27
+        },
+        applied: false,
+        confidence: 0.76
+    }
+];
+
+const AIEnterpriseWorkflowOrchestrator: React.FC = () => {
+    const [workflows, setWorkflows] = useState<Workflow[]>(sampleWorkflows);
+    const [executions, setExecutions] = useState<WorkflowExecution[]>(sampleExecutions);
+    const [optimizations, setOptimizations] = useState<AIOptimization[]>(sampleOptimizations);
+    const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+    const [selectedExecution, setSelectedExecution] = useState<WorkflowExecution | null>(null);
+    const [showWorkflowDialog, setShowWorkflowDialog] = useState(false);
+    const [showExecutionDialog, setShowExecutionDialog] = useState(false);
+    const [activeTab, setActiveTab] = useState(0);
+    const [filterCategory, setFilterCategory] = useState<string>('all');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [autoRefresh, setAutoRefresh] = useState(true);
+
+    // 상태별 색상
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'completed': return 'success';
+            case 'running': return 'primary';
+            case 'pending': return 'warning';
+            case 'failed': return 'error';
+            case 'paused': return 'info';
+            default: return 'default';
+        }
+    };
+
+    // 우선순위별 색상
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'critical': return 'error';
+            case 'high': return 'warning';
+            case 'medium': return 'primary';
+            case 'low': return 'success';
+            default: return 'default';
+        }
+    };
+
+    // 카테고리별 아이콘
+    const getCategoryIcon = (category: string) => {
+        switch (category) {
+            case 'sales': return <TrendingUp />;
+            case 'marketing': return <Analytics />;
+            case 'hr': return <Group />;
+            case 'finance': return <Business />;
+            case 'operations': return <Work />;
+            case 'customer_service': return <Person />;
+            default: return <Work />;
+        }
+    };
+
+    // 실시간 업데이트
+    useEffect(() => {
+        if (!autoRefresh) return;
+
+        const interval = setInterval(() => {
+            setExecutions(prevExecutions =>
+                prevExecutions.map(execution => {
+                    if (execution.status === 'running') {
+                        const newProgress = Math.min(100, execution.progress + Math.random() * 5);
+                        const isCompleted = newProgress >= 100;
+
+                        return {
+                            ...execution,
+                            progress: newProgress,
+                            status: isCompleted ? 'completed' : 'running',
+                            endTime: isCompleted ? new Date() : execution.endTime,
+                            duration: isCompleted ? Date.now() - execution.startTime.getTime() : execution.duration,
+                            metrics: {
+                                ...execution.metrics,
+                                stepsCompleted: isCompleted ? execution.metrics.stepsCompleted + 1 : execution.metrics.stepsCompleted
+                            }
+                        };
+                    }
+                    return execution;
+                })
+            );
+        }, 10000); // 10초마다 업데이트
+
+        return () => clearInterval(interval);
+    }, [autoRefresh]);
+
+    // 필터링된 워크플로우
+    const filteredWorkflows = workflows.filter(workflow => {
+        const categoryMatch = filterCategory === 'all' || workflow.category === filterCategory;
+        const statusMatch = filterStatus === 'all' || workflow.status === filterStatus;
+        return categoryMatch && statusMatch;
+    });
+
+    // 전체 통계
+    const totalWorkflows = workflows.length;
+    const activeWorkflows = workflows.filter(w => w.status === 'active').length;
+    const runningExecutions = executions.filter(e => e.status === 'running').length;
+    const averageSuccessRate = workflows.reduce((sum, w) => sum + w.successRate, 0) / workflows.length;
+
+    return (
+        <Box sx={{ p: 3 }}>
+            {/* 헤더 */}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                    <Typography variant="h4" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Work sx={{ fontSize: 32, color: 'primary.main' }} />
+                        AI 엔터프라이즈 워크플로우 오케스트레이터
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        AI 기반 비즈니스 프로세스 자동화 및 최적화 관리
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<Add />}
+                        onClick={() => setShowWorkflowDialog(true)}
+                    >
+                        새 워크플로우
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AutoAwesome />}
+                    >
+                        AI 최적화 실행
+                    </Button>
+                </Box>
+            </Box>
+
+            {/* 전체 통계 */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+                        <CardContent>
+                            <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                                {totalWorkflows}
+                            </Typography>
+                            <Typography variant="body1">총 워크플로우</Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
+                        <CardContent>
+                            <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                                {activeWorkflows}
+                            </Typography>
+                            <Typography variant="body1">활성 워크플로우</Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
+                        <CardContent>
+                            <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                                {runningExecutions}
+                            </Typography>
+                            <Typography variant="body1">실행 중</Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white' }}>
+                        <CardContent>
+                            <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                                {averageSuccessRate.toFixed(1)}%
+                            </Typography>
+                            <Typography variant="body1">평균 성공률</Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* 탭 네비게이션 */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+                    <Tab label="워크플로우 관리" />
+                    <Tab label="실행 모니터링" />
+                    <Tab label="AI 최적화" />
+                    <Tab label="성능 분석" />
+                </Tabs>
+            </Box>
+
+            {/* 워크플로우 관리 탭 */}
+            {activeTab === 0 && (
+                <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h2">
+                            워크플로우 목록
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <FormControl size="small" sx={{ minWidth: 150 }}>
+                                <InputLabel>카테고리</InputLabel>
+                                <Select
+                                    value={filterCategory}
+                                    label="카테고리"
+                                    onChange={(e) => setFilterCategory(e.target.value)}
+                                >
+                                    <MenuItem value="all">전체</MenuItem>
+                                    <MenuItem value="sales">영업</MenuItem>
+                                    <MenuItem value="marketing">마케팅</MenuItem>
+                                    <MenuItem value="hr">인사</MenuItem>
+                                    <MenuItem value="finance">재무</MenuItem>
+                                    <MenuItem value="operations">운영</MenuItem>
+                                    <MenuItem value="customer_service">고객 서비스</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <FormControl size="small" sx={{ minWidth: 150 }}>
+                                <InputLabel>상태</InputLabel>
+                                <Select
+                                    value={filterStatus}
+                                    label="상태"
+                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                >
+                                    <MenuItem value="all">전체</MenuItem>
+                                    <MenuItem value="active">활성</MenuItem>
+                                    <MenuItem value="draft">초안</MenuItem>
+                                    <MenuItem value="paused">일시정지</MenuItem>
+                                    <MenuItem value="archived">보관</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    </Box>
+
+                    <Grid container spacing={3}>
+                        {filteredWorkflows.map((workflow) => (
+                            <Grid item xs={12} md={6} key={workflow.id}>
+                                <Card sx={{ height: '100%' }}>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                {getCategoryIcon(workflow.category)}
+                                                <Typography variant="h6" component="h3">
+                                                    {workflow.name}
+                                                </Typography>
+                                            </Box>
+                                            <Chip
+                                                label={workflow.status}
+                                                color={getStatusColor(workflow.status) as any}
+                                                size="small"
+                                            />
+                                        </Box>
+
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                            {workflow.description}
+                                        </Typography>
+
+                                        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                                            <Chip
+                                                label={workflow.priority}
+                                                color={getPriorityColor(workflow.priority) as any}
+                                                size="small"
+                                            />
+                                            <Chip
+                                                label={`v${workflow.version}`}
+                                                variant="outlined"
+                                                size="small"
+                                            />
+                                            <Chip
+                                                label={`${workflow.executionCount}회 실행`}
+                                                variant="outlined"
+                                                size="small"
+                                            />
+                                            <Chip
+                                                label={`${workflow.successRate.toFixed(1)}% 성공률`}
+                                                color={workflow.successRate > 90 ? 'success' : workflow.successRate > 70 ? 'warning' : 'error'}
+                                                size="small"
+                                            />
+                                        </Box>
+
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                진행률: {workflow.steps.filter(s => s.status === 'completed').length} / {workflow.steps.length} 단계
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={(workflow.steps.filter(s => s.status === 'completed').length / workflow.steps.length) * 100}
+                                                sx={{ mb: 1 }}
+                                            />
+                                        </Box>
+
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={<PlayArrow />}
+                                                onClick={() => {
+                                                    setSelectedWorkflow(workflow);
+                                                    setShowWorkflowDialog(true);
+                                                }}
+                                            >
+                                                실행
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={<Visibility />}
+                                                onClick={() => {
+                                                    setSelectedWorkflow(workflow);
+                                                    setShowWorkflowDialog(true);
+                                                }}
+                                            >
+                                                상세보기
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={<Edit />}
+                                            >
+                                                편집
+                                            </Button>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
+            )}
+
+            {/* 실행 모니터링 탭 */}
+            {activeTab === 1 && (
+                <Box>
+                    <Typography variant="h6" component="h2" gutterBottom>
+                        실시간 실행 모니터링
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                        {executions.map((execution) => (
+                            <Grid item xs={12} md={6} key={execution.id}>
+                                <Card>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                            <Typography variant="h6" component="h3">
+                                                {execution.workflowName}
+                                            </Typography>
+                                            <Chip
+                                                label={execution.status}
+                                                color={getStatusColor(execution.status) as any}
+                                                size="small"
+                                            />
+                                        </Box>
+
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                진행률: {execution.progress.toFixed(1)}%
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={execution.progress}
+                                                sx={{ mb: 1 }}
+                                            />
+                                        </Box>
+
+                                        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+                                            <Chip
+                                                label={`${execution.metrics.stepsCompleted} 완료`}
+                                                color="success"
+                                                size="small"
+                                            />
+                                            <Chip
+                                                label={`${execution.metrics.stepsFailed} 실패`}
+                                                color="error"
+                                                size="small"
+                                            />
+                                            <Chip
+                                                label={`${execution.metrics.efficiency}% 효율성`}
+                                                color="primary"
+                                                size="small"
+                                            />
+                                        </Box>
+
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                            시작: {execution.startTime.toLocaleString()}
+                                            {execution.duration && ` | 소요시간: ${Math.round(execution.duration / 1000 / 60)}분`}
+                                        </Typography>
+
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={<Visibility />}
+                                                onClick={() => {
+                                                    setSelectedExecution(execution);
+                                                    setShowExecutionDialog(true);
+                                                }}
+                                            >
+                                                상세보기
+                                            </Button>
+                                            {execution.status === 'running' && (
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    startIcon={<Pause />}
+                                                >
+                                                    일시정지
+                                                </Button>
+                                            )}
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
+            )}
+
+            {/* AI 최적화 탭 */}
+            {activeTab === 2 && (
+                <Box>
+                    <Typography variant="h6" component="h2" gutterBottom>
+                        AI 최적화 추천
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                        {optimizations.map((optimization) => (
+                            <Grid item xs={12} md={6} key={optimization.id}>
+                                <Card>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                            <Typography variant="h6" component="h3">
+                                                {optimization.type} 최적화
+                                            </Typography>
+                                            <Chip
+                                                label={optimization.status}
+                                                color={getStatusColor(optimization.status) as any}
+                                                size="small"
+                                            />
+                                        </Box>
+
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                개선 효과: {optimization.improvements.before} → {optimization.improvements.after} {optimization.improvements.unit}
+                                            </Typography>
+                                            <Typography variant="h6" color="success.main" gutterBottom>
+                                                +{optimization.improvements.percentage}% 개선
+                                            </Typography>
+                                        </Box>
+
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                신뢰도: {(optimization.confidence * 100).toFixed(0)}%
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={optimization.confidence * 100}
+                                                color="success"
+                                                sx={{ mb: 1 }}
+                                            />
+                                        </Box>
+
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" fontWeight="medium" gutterBottom>
+                                                권장사항:
+                                            </Typography>
+                                            <List dense>
+                                                {optimization.recommendations.map((rec, index) => (
+                                                    <ListItem key={index} sx={{ py: 0 }}>
+                                                        <ListItemIcon sx={{ minWidth: 30 }}>
+                                                            <Lightbulb color="primary" fontSize="small" />
+                                                        </ListItemIcon>
+                                                        <ListItemText primary={rec} />
+                                                    </ListItem>
+                                                ))}
+                                            </List>
+                                        </Box>
+
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            {!optimization.applied && (
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    startIcon={<AutoAwesome />}
+                                                >
+                                                    최적화 적용
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={<Analytics />}
+                                            >
+                                                상세 분석
+                                            </Button>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
+            )}
+
+            {/* 성능 분석 탭 */}
+            {activeTab === 3 && (
+                <Box>
+                    <Typography variant="h6" component="h2" gutterBottom>
+                        성능 분석 대시보드
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" component="h3" gutterBottom>
+                                        워크플로우 성능 지표
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                평균 실행 시간
+                                            </Typography>
+                                            <Typography variant="h4" color="primary">
+                                                {Math.round(workflows.reduce((sum, w) => sum + (w.actualTotalDuration || w.estimatedTotalDuration), 0) / workflows.length)}분
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                전체 성공률
+                                            </Typography>
+                                            <Typography variant="h4" color="success.main">
+                                                {averageSuccessRate.toFixed(1)}%
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                AI 최적화 적용률
+                                            </Typography>
+                                            <Typography variant="h4" color="info.main">
+                                                {(workflows.filter(w => w.aiOptimization).length / workflows.length * 100).toFixed(1)}%
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" component="h3" gutterBottom>
+                                        실시간 메트릭
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                현재 실행 중인 워크플로우
+                                            </Typography>
+                                            <Typography variant="h4" color="warning.main">
+                                                {runningExecutions}개
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                대기 중인 작업
+                                            </Typography>
+                                            <Typography variant="h4" color="info.main">
+                                                {executions.filter(e => e.status === 'pending').length}개
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                시스템 효율성
+                                            </Typography>
+                                            <Typography variant="h4" color="success.main">
+                                                {Math.round(executions.reduce((sum, e) => sum + e.metrics.efficiency, 0) / executions.length)}%
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
+                </Box>
+            )}
+
+            {/* 워크플로우 상세 다이얼로그 */}
+            <Dialog
+                open={showWorkflowDialog}
+                onClose={() => setShowWorkflowDialog(false)}
+                maxWidth="lg"
+                fullWidth
+            >
+                {selectedWorkflow && (
+                    <>
+                        <DialogTitle>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Workflow color="primary" />
+                                {selectedWorkflow.name}
+                            </Box>
+                        </DialogTitle>
+                        <DialogContent>
+                            <Typography variant="body1" sx={{ mb: 2 }}>
+                                {selectedWorkflow.description}
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                                <Chip label={`버전: ${selectedWorkflow.version}`} />
+                                <Chip label={selectedWorkflow.status} color={getStatusColor(selectedWorkflow.status) as any} />
+                                <Chip label={selectedWorkflow.priority} color={getPriorityColor(selectedWorkflow.priority) as any} />
+                                <Chip label={`성공률: ${selectedWorkflow.successRate.toFixed(1)}%`} />
+                            </Box>
+
+                            <Typography variant="h6" gutterBottom>
+                                워크플로우 단계
+                            </Typography>
+                            <Stepper orientation="vertical">
+                                {selectedWorkflow.steps.map((step, index) => (
+                                    <Step key={step.id} active={step.status === 'running'} completed={step.status === 'completed'}>
+                                        <StepLabel>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Typography variant="body1" fontWeight="medium">
+                                                    {step.name}
+                                                </Typography>
+                                                <Chip
+                                                    label={step.status}
+                                                    color={getStatusColor(step.status) as any}
+                                                    size="small"
+                                                />
+                                            </Box>
+                                        </StepLabel>
+                                        <StepContent>
+                                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                {step.description}
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                                                <Chip label={step.type} size="small" variant="outlined" />
+                                                <Chip label={`${step.estimatedDuration}분`} size="small" variant="outlined" />
+                                                {step.actualDuration && (
+                                                    <Chip label={`실제: ${step.actualDuration}분`} size="small" color="primary" />
+                                                )}
+                                            </Box>
+                                            {step.progress > 0 && (
+                                                <Box sx={{ mb: 1 }}>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={step.progress}
+                                                        sx={{ height: 6, borderRadius: 3 }}
+                                                    />
+                                                </Box>
+                                            )}
+                                        </StepContent>
+                                    </Step>
+                                ))}
+                            </Stepper>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setShowWorkflowDialog(false)}>
+                                닫기
+                            </Button>
+                            <Button variant="contained" color="primary">
+                                워크플로우 실행
+                            </Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+
+            {/* 실행 상세 다이얼로그 */}
+            <Dialog
+                open={showExecutionDialog}
+                onClose={() => setShowExecutionDialog(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                {selectedExecution && (
+                    <>
+                        <DialogTitle>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Timeline color="primary" />
+                                {selectedExecution.workflowName} - 실행 상세
+                            </Box>
+                        </DialogTitle>
+                        <DialogContent>
+                            <Typography variant="body1" sx={{ mb: 2 }}>
+                                실행 ID: {selectedExecution.id}
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                                <Chip label={selectedExecution.status} color={getStatusColor(selectedExecution.status) as any} />
+                                <Chip label={selectedExecution.triggeredByType} variant="outlined" />
+                                <Chip label={`${selectedExecution.progress.toFixed(1)}%`} color="primary" />
+                            </Box>
+
+                            <Typography variant="h6" gutterBottom>
+                                실행 메트릭
+                            </Typography>
+                            <Grid container spacing={2} sx={{ mb: 3 }}>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        완료된 단계
+                                    </Typography>
+                                    <Typography variant="h6" color="success.main">
+                                        {selectedExecution.metrics.stepsCompleted}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        실패한 단계
+                                    </Typography>
+                                    <Typography variant="h6" color="error.main">
+                                        {selectedExecution.metrics.stepsFailed}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        평균 단계 시간
+                                    </Typography>
+                                    <Typography variant="h6" color="primary.main">
+                                        {selectedExecution.metrics.averageStepDuration}분
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        효율성
+                                    </Typography>
+                                    <Typography variant="h6" color="success.main">
+                                        {selectedExecution.metrics.efficiency}%
+                                    </Typography>
+                                </Grid>
+                            </Grid>
+
+                            <Typography variant="h6" gutterBottom>
+                                실행 컨텍스트
+                            </Typography>
+                            <Box sx={{ bgcolor: 'grey.50', p: 2, borderRadius: 1 }}>
+                                <pre style={{ margin: 0, fontSize: '0.875rem' }}>
+                                    {JSON.stringify(selectedExecution.context, null, 2)}
+                                </pre>
+                            </Box>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setShowExecutionDialog(false)}>
+                                닫기
+                            </Button>
+                            {selectedExecution.status === 'running' && (
+                                <Button variant="contained" color="warning">
+                                    일시정지
+                                </Button>
+                            )}
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+        </Box>
+    );
+};
+
+export default AIEnterpriseWorkflowOrchestrator;

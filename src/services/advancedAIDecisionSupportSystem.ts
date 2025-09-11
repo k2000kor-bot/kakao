@@ -286,6 +286,10 @@ class AdvancedAIDecisionSupportSystem {
             title: '새로운 의사결정 컨텍스트',
             message: `${context.decision_type} 의사결정 컨텍스트가 생성되었습니다.`,
             source: 'decision-support-system',
+            category: 'system',
+            auto_resolve: true,
+            priority: 'medium',
+            tags: ['의사결정', '컨텍스트', '시스템'],
             metadata: { context_id: id, domain: context.domain === 'business' || context.domain === 'operational' ? context.domain : 'operational' }
         });
 
@@ -818,6 +822,10 @@ class AdvancedAIDecisionSupportSystem {
             title: '의사결정 추천 생성 완료',
             message: `${recommendedOption.title}이(가) 최적 옵션으로 추천되었습니다.`,
             source: 'decision-support-system',
+            category: 'system',
+            auto_resolve: true,
+            priority: 'medium',
+            tags: ['의사결정', '추천', '완료'],
             metadata: {
                 context_id: contextId,
                 recommendation_id: recommendation.id,
