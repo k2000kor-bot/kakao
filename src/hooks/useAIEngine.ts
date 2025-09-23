@@ -18,7 +18,7 @@ import {
     updateResponseQuality,
     updateAdvancedAnalytics,
 } from '../store/slices/aiEngineSlice';
-import websocketService from '../services/websocketService';
+import { websocketService } from '../services/websocketService';
 
 export const useAIEngine = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -33,7 +33,7 @@ export const useAIEngine = () => {
     const initialize = useCallback(async () => {
         try {
             await dispatch(initializeAIEngine()).unwrap();
-            await websocketService.connect();
+            // await websocketService.connect();
         } catch (error) {
             console.error('AI 엔진 초기화 실패:', error);
         }
@@ -44,10 +44,10 @@ export const useAIEngine = () => {
         try {
             await dispatch(switchAIModel(modelName)).unwrap();
             // WebSocket을 통한 모델 전환 메시지 전송
-            websocketService.sendMessage({
-                type: 'switch_model',
-                data: { model: modelName }
-            });
+            // websocketService.sendMessage({
+            //     type: 'switch_model',
+            //     data: { model: modelName }
+            // });
         } catch (error) {
             console.error('모델 전환 실패:', error);
         }
@@ -58,10 +58,10 @@ export const useAIEngine = () => {
         try {
             await dispatch(startRealtimeAnalysis()).unwrap();
             // WebSocket을 통한 실시간 분석 시작 메시지 전송
-            websocketService.sendMessage({
-                type: 'start_analysis',
-                data: config || {}
-            });
+            // websocketService.sendMessage({
+            //     type: 'start_analysis',
+            //     data: config || {}
+            // });
         } catch (error) {
             console.error('실시간 분석 시작 실패:', error);
         }
@@ -72,10 +72,10 @@ export const useAIEngine = () => {
         try {
             await dispatch(analyzeSentiment(text)).unwrap();
             // WebSocket을 통한 감정 분석 요청
-            websocketService.sendMessage({
-                type: 'sentiment_analysis',
-                data: { text }
-            });
+            // websocketService.sendMessage({
+            //     type: 'sentiment_analysis',
+            //     data: { text }
+            // });
         } catch (error) {
             console.error('감정 분석 실패:', error);
         }
@@ -86,10 +86,10 @@ export const useAIEngine = () => {
         try {
             await dispatch(detectIntent(text)).unwrap();
             // WebSocket을 통한 의도 감지 요청
-            websocketService.sendMessage({
-                type: 'intent_detection',
-                data: { text }
-            });
+            // websocketService.sendMessage({
+            //     type: 'intent_detection',
+            //     data: { text }
+            // });
         } catch (error) {
             console.error('의도 감지 실패:', error);
         }
@@ -117,22 +117,22 @@ export const useAIEngine = () => {
 
     // 웹소켓 연결 상태 확인
     const isConnected = useCallback(() => {
-        return websocketService.isConnected();
+        return false; // websocketService.isConnected();
     }, []);
 
     // 웹소켓 연결
     const connectWebSocket = useCallback(async () => {
-        await websocketService.connect();
+        // await websocketService.connect();
     }, []);
 
     // 웹소켓 연결 해제
     const disconnectWebSocket = useCallback(() => {
-        websocketService.disconnect();
+        // websocketService.disconnect();
     }, []);
 
     // 메시지 전송
     const sendWebSocketMessage = useCallback((message: any) => {
-        websocketService.sendMessage(message);
+        // websocketService.sendMessage(message);
     }, []);
 
     // 컴포넌트 마운트 시 초기화

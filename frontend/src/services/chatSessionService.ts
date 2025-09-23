@@ -1,7 +1,7 @@
 import { ChatSession, Message, ChatList } from '../types/chat';
 
 class ChatSessionService {
-  private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8001';
   private localStorageKey = 'corbu_chat_sessions';
 
   // 채팅 세션 생성

@@ -183,12 +183,34 @@ class AdaptiveLearningEngine {
         if (projects.length < 3) return null;
 
         const recentProjects = projects
-            .filter(p => new Date().getTime() - p.createdAt.getTime() < 30 * 24 * 60 * 60 * 1000) // 30일 이내
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+            .filter(p => {
+                try {
+                    return p.createdAt && p.createdAt.getTime && new Date().getTime() - p.createdAt.getTime() < 30 * 24 * 60 * 60 * 1000; // 30일 이내
+                } catch (error) {
+                    console.warn('Invalid createdAt in project:', p.createdAt);
+                    return false;
+                }
+            })
+            .sort((a, b) => {
+                try {
+                    return a.createdAt && a.createdAt.getTime && b.createdAt && b.createdAt.getTime ?
+                        b.createdAt.getTime() - a.createdAt.getTime() : 0;
+                } catch (error) {
+                    console.warn('Invalid createdAt in sort:', a.createdAt, b.createdAt);
+                    return 0;
+                }
+            });
 
         if (recentProjects.length === 0) return null;
 
-        const avgCreationTime = recentProjects.reduce((sum, p) => sum + p.createdAt.getTime(), 0) / recentProjects.length;
+        const avgCreationTime = recentProjects.reduce((sum, p) => {
+            try {
+                return sum + (p.createdAt && p.createdAt.getTime ? p.createdAt.getTime() : 0);
+            } catch (error) {
+                console.warn('Invalid createdAt in reduce:', p.createdAt);
+                return sum;
+            }
+        }, 0) / recentProjects.length;
         const creationFrequency = recentProjects.length / 30; // 일평균 생성 수
 
         return {
@@ -206,8 +228,23 @@ class AdaptiveLearningEngine {
         if (chats.length === 0) return null;
 
         const recentChats = chats
-            .filter(c => new Date().getTime() - c.createdAt.getTime() < 7 * 24 * 60 * 60 * 1000) // 7일 이내
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+            .filter(c => {
+                try {
+                    return c.createdAt && c.createdAt.getTime && new Date().getTime() - c.createdAt.getTime() < 7 * 24 * 60 * 60 * 1000; // 7일 이내
+                } catch (error) {
+                    console.warn('Invalid createdAt in chat:', c.createdAt);
+                    return false;
+                }
+            })
+            .sort((a, b) => {
+                try {
+                    return a.createdAt && a.createdAt.getTime && b.createdAt && b.createdAt.getTime ?
+                        b.createdAt.getTime() - a.createdAt.getTime() : 0;
+                } catch (error) {
+                    console.warn('Invalid createdAt in chat sort:', a.createdAt, b.createdAt);
+                    return 0;
+                }
+            });
 
         if (recentChats.length === 0) return null;
 
@@ -231,13 +268,24 @@ class AdaptiveLearningEngine {
 
         const recentMessages = messages
             .filter(m => {
-                const timestamp = m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp);
-                return new Date().getTime() - timestamp.getTime() < 24 * 60 * 60 * 1000; // 24시간 이내
+                try {
+                    const timestamp = m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp);
+                    return timestamp && timestamp.getTime && new Date().getTime() - timestamp.getTime() < 24 * 60 * 60 * 1000; // 24시간 이내
+                } catch (error) {
+                    console.warn('Invalid timestamp in message:', m.timestamp);
+                    return false;
+                }
             })
             .sort((a, b) => {
-                const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
-                const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
-                return timestampB.getTime() - timestampA.getTime();
+                try {
+                    const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+                    const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+                    return timestampB && timestampB.getTime && timestampA && timestampA.getTime ?
+                        timestampB.getTime() - timestampA.getTime() : 0;
+                } catch (error) {
+                    console.warn('Invalid timestamp in sort:', a.timestamp, b.timestamp);
+                    return 0;
+                }
             });
 
         if (recentMessages.length === 0) return null;

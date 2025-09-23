@@ -1,0 +1,26 @@
+{
+  "auto_backup": true,
+  "max_backups": 20,
+  "backup_interval": 300,
+  "excluded_files": [
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".DS_Store"
+  ],
+  "watched_files": [
+    "src/App.tsx",
+    "src/App.js",
+    "app.py"
+  ],
+  "code_templates": {
+    "react_component": "react_component_template",
+    "react_hook": "react_hook_template",
+    "api_endpoint": "api_endpoint_template"
+  },
+  "linting_rules": {
+    "max_line_length": 120,
+    "indent_size": 2,
+    "trailing_whitespace": false
+  }
+}

@@ -1,103 +1,119 @@
-// CORBU AI Service Worker
-const CACHE_NAME = 'corbu-ai-v1.0.0';
-const STATIC_CACHE = 'corbu-ai-static-v1.0.0';
-const DYNAMIC_CACHE = 'corbu-ai-dynamic-v1.0.0';
+// CORBU AI Ultimate System - Service Worker
+const CACHE_NAME = 'corbu-ai-v2.0.0';
+const STATIC_CACHE_NAME = 'corbu-ai-static-v2.0.0';
+const DYNAMIC_CACHE_NAME = 'corbu-ai-dynamic-v2.0.0';
+const API_CACHE_NAME = 'corbu-ai-api-v2.0.0';
 
-// 캐시할 정적 파일들
-const STATIC_FILES = [
+// 캐시할 정적 리소스
+const STATIC_ASSETS = [
   '/',
-  '/index.html',
   '/static/js/bundle.js',
   '/static/css/main.css',
   '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/offline.html'
 ];
 
-// API 엔드포인트들
-const API_ENDPOINTS = [
-  '/api/chat',
-  '/api/monitoring',
-  '/api/projects',
-  '/api/files'
+// 캐시할 API 엔드포인트 패턴
+const API_PATTERNS = [
+  /^https:\/\/localhost:8000\/api\/status/,
+  /^https:\/\/localhost:8000\/api\/metrics/,
+  /^https:\/\/localhost:8000\/api\/health/,
+  /^https:\/\/localhost:8000\/api\/performance/,
+  /^https:\/\/localhost:8000\/api\/security/,
+  /^https:\/\/localhost:8000\/api\/analytics/
 ];
 
-// 설치 시 정적 파일 캐시
+// 설치 이벤트
 self.addEventListener('install', (event) => {
-  console.log('Service Worker 설치 중...');
+  console.log('Service Worker: 설치 중...');
   
   event.waitUntil(
-    caches.open(STATIC_CACHE)
+    caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
-        console.log('정적 파일 캐시 중...');
-        return cache.addAll(STATIC_FILES);
+        console.log('Service Worker: 정적 리소스 캐싱 중...');
+        return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
-        console.log('Service Worker 설치 완료');
+        console.log('Service Worker: 설치 완료');
         return self.skipWaiting();
       })
       .catch((error) => {
-        console.error('Service Worker 설치 실패:', error);
+        console.error('Service Worker: 설치 실패', error);
       })
   );
 });
 
-// 활성화 시 이전 캐시 정리
+// 활성화 이벤트
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker 활성화 중...');
+  console.log('Service Worker: 활성화 중...');
   
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-              console.log('이전 캐시 삭제:', cacheName);
+            if (cacheName !== STATIC_CACHE_NAME && 
+                cacheName !== DYNAMIC_CACHE_NAME && 
+                cacheName !== API_CACHE_NAME) {
+              console.log('Service Worker: 오래된 캐시 삭제', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log('Service Worker 활성화 완료');
+        console.log('Service Worker: 활성화 완료');
         return self.clients.claim();
       })
   );
 });
 
-// 네트워크 요청 가로채기
+// 페치 이벤트
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-
+  
   // API 요청 처리
-  if (API_ENDPOINTS.some(endpoint => url.pathname.startsWith(endpoint))) {
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(handleApiRequest(request));
     return;
   }
-
-  // 정적 파일 요청 처리
+  
+  // 정적 리소스 요청 처리
   if (request.method === 'GET') {
     event.respondWith(handleStaticRequest(request));
     return;
   }
+  
+  // 기타 요청은 네트워크로 전달
+  event.respondWith(fetch(request));
 });
 
-// API 요청 처리 (네트워크 우선, 캐시 폴백)
+// API 요청 처리
 async function handleApiRequest(request) {
+  const url = new URL(request.url);
+  
+  // 캐시 가능한 API인지 확인
+  const isCacheableApi = API_PATTERNS.some(pattern => pattern.test(request.url));
+  
+  if (!isCacheableApi) {
+    return fetch(request);
+  }
+  
   try {
-    // 네트워크 요청 시도
+    // 네트워크 우선 전략
     const networkResponse = await fetch(request);
     
-    // 성공한 응답을 동적 캐시에 저장
     if (networkResponse.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
+      const cache = await caches.open(API_CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
     
     return networkResponse;
   } catch (error) {
-    console.log('네트워크 요청 실패, 캐시에서 응답:', error);
+    console.log('API 네트워크 요청 실패, 캐시에서 응답:', error);
     
     // 캐시에서 응답 찾기
     const cachedResponse = await caches.match(request);
@@ -108,6 +124,7 @@ async function handleApiRequest(request) {
     // 오프라인 응답
     return new Response(
       JSON.stringify({
+        success: false,
         error: '오프라인 상태입니다. 네트워크 연결을 확인해주세요.',
         offline: true
       }),
@@ -122,33 +139,36 @@ async function handleApiRequest(request) {
   }
 }
 
-// 정적 파일 요청 처리 (캐시 우선, 네트워크 폴백)
+// 정적 리소스 요청 처리
 async function handleStaticRequest(request) {
-  // 캐시에서 먼저 찾기
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-  
   try {
+    // 캐시에서 먼저 찾기
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
     // 네트워크에서 가져오기
     const networkResponse = await fetch(request);
     
-    // 성공한 응답을 캐시에 저장
     if (networkResponse.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
+      const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
     
     return networkResponse;
   } catch (error) {
-    console.log('정적 파일 요청 실패:', error);
+    console.log('정적 리소스 네트워크 요청 실패:', error);
     
     // 오프라인 페이지 반환
     if (request.destination === 'document') {
-      return caches.match('/offline.html');
+      const offlineResponse = await caches.match('/offline.html');
+      if (offlineResponse) {
+        return offlineResponse;
+      }
     }
     
+    // 기본 오프라인 응답
     return new Response('오프라인 상태입니다.', {
       status: 503,
       statusText: 'Service Unavailable'
@@ -158,29 +178,25 @@ async function handleStaticRequest(request) {
 
 // 백그라운드 동기화
 self.addEventListener('sync', (event) => {
-  console.log('백그라운드 동기화:', event.tag);
+  console.log('Service Worker: 백그라운드 동기화', event.tag);
   
   if (event.tag === 'background-sync') {
-    event.waitUntil(performBackgroundSync());
+    event.waitUntil(doBackgroundSync());
   }
 });
 
-// 백그라운드 동기화 수행
-async function performBackgroundSync() {
+// 백그라운드 동기화 실행
+async function doBackgroundSync() {
   try {
-    // 오프라인 중에 저장된 데이터 동기화
-    const offlineData = await getOfflineData();
+    console.log('Service Worker: 백그라운드 동기화 실행');
     
-    for (const data of offlineData) {
+    // 오프라인 상태에서 저장된 데이터 동기화
+    const pendingRequests = await getStoredRequests();
+    
+    for (const request of pendingRequests) {
       try {
-        await fetch(data.url, {
-          method: data.method,
-          headers: data.headers,
-          body: data.body
-        });
-        
-        // 성공한 요청은 오프라인 저장소에서 제거
-        await removeOfflineData(data.id);
+        await fetch(request);
+        await removeStoredRequest(request);
       } catch (error) {
         console.error('백그라운드 동기화 실패:', error);
       }
@@ -192,12 +208,12 @@ async function performBackgroundSync() {
 
 // 푸시 알림 처리
 self.addEventListener('push', (event) => {
-  console.log('푸시 알림 수신:', event);
+  console.log('Service Worker: 푸시 알림 수신');
   
   const options = {
     body: event.data ? event.data.text() : '새로운 알림이 있습니다.',
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/badge-72x72.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -207,24 +223,24 @@ self.addEventListener('push', (event) => {
       {
         action: 'explore',
         title: '확인하기',
-        icon: '/icon-192x192.png'
+        icon: '/icons/checkmark.png'
       },
       {
         action: 'close',
         title: '닫기',
-        icon: '/icon-192x192.png'
+        icon: '/icons/xmark.png'
       }
     ]
   };
   
   event.waitUntil(
-    self.registration.showNotification('CORBU AI', options)
+    self.registration.showNotification('CORBU AI 알림', options)
   );
 });
 
 // 알림 클릭 처리
 self.addEventListener('notificationclick', (event) => {
-  console.log('알림 클릭:', event);
+  console.log('Service Worker: 알림 클릭', event.action);
   
   event.notification.close();
   
@@ -237,7 +253,7 @@ self.addEventListener('notificationclick', (event) => {
 
 // 메시지 처리
 self.addEventListener('message', (event) => {
-  console.log('Service Worker 메시지 수신:', event.data);
+  console.log('Service Worker: 메시지 수신', event.data);
   
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -248,62 +264,38 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// 오프라인 데이터 저장
-async function saveOfflineData(data) {
-  const db = await openDB();
-  const tx = db.transaction('offlineData', 'readwrite');
-  const store = tx.objectStore('offlineData');
-  await store.add(data);
+// 저장된 요청 가져오기
+async function getStoredRequests() {
+  // IndexedDB에서 오프라인 요청 가져오기
+  return [];
 }
 
-// 오프라인 데이터 조회
-async function getOfflineData() {
-  const db = await openDB();
-  const tx = db.transaction('offlineData', 'readonly');
-  const store = tx.objectStore('offlineData');
-  return await store.getAll();
+// 저장된 요청 제거
+async function removeStoredRequest(request) {
+  // IndexedDB에서 요청 제거
 }
 
-// 오프라인 데이터 제거
-async function removeOfflineData(id) {
-  const db = await openDB();
-  const tx = db.transaction('offlineData', 'readwrite');
-  const store = tx.objectStore('offlineData');
-  await store.delete(id);
-}
-
-// IndexedDB 열기
-async function openDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('CORBU_AI_DB', 1);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      
-      // 오프라인 데이터 저장소 생성
-      if (!db.objectStoreNames.contains('offlineData')) {
-        const store = db.createObjectStore('offlineData', { keyPath: 'id', autoIncrement: true });
-        store.createIndex('timestamp', 'timestamp', { unique: false });
-      }
-    };
-  });
-}
-
-// 캐시 정리 (오래된 캐시 삭제)
-async function cleanupOldCaches() {
+// 캐시 정리
+async function cleanupCache() {
   const cacheNames = await caches.keys();
-  const currentCaches = [STATIC_CACHE, DYNAMIC_CACHE];
   
   for (const cacheName of cacheNames) {
-    if (!currentCaches.includes(cacheName)) {
-      await caches.delete(cacheName);
-      console.log('오래된 캐시 삭제:', cacheName);
+    const cache = await caches.open(cacheName);
+    const requests = await cache.keys();
+    
+    // 오래된 캐시 항목 제거 (7일 이상)
+    const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    
+    for (const request of requests) {
+      const response = await cache.match(request);
+      const dateHeader = response.headers.get('date');
+      
+      if (dateHeader && new Date(dateHeader).getTime() < weekAgo) {
+        await cache.delete(request);
+      }
     }
   }
 }
 
-// 주기적 캐시 정리 (7일마다)
-setInterval(cleanupOldCaches, 7 * 24 * 60 * 60 * 1000);
+// 주기적 캐시 정리 (1시간마다)
+setInterval(cleanupCache, 60 * 60 * 1000);

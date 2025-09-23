@@ -211,7 +211,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                     <FormControl fullWidth>
                         <InputLabel>플랫폼</InputLabel>
                         <Select
@@ -231,7 +231,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                     <FormControl fullWidth>
                         <InputLabel>콘텐츠 유형</InputLabel>
                         <Select
@@ -248,7 +248,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                     <TextField
                         fullWidth
                         label="회사명"
@@ -257,7 +257,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                     />
                 </Grid>
 
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                     <TextField
                         fullWidth
                         label="업종"
@@ -268,7 +268,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
             </Grid>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>톤</InputLabel>
                         <Select
@@ -313,7 +313,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                     <FormControl fullWidth>
                         <InputLabel>이메일 유형</InputLabel>
                         <Select
@@ -330,7 +330,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                     <TextField
                         fullWidth
                         label="회사명"
@@ -339,7 +339,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                     />
                 </Grid>
 
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                     <TextField
                         fullWidth
                         label="업종"
@@ -348,7 +348,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                     />
                 </Grid>
 
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                     <FormControl fullWidth>
                         <InputLabel>긴급도</InputLabel>
                         <Select
@@ -418,25 +418,25 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                     <Typography variant="h6" sx={{ mb: 2 }}>마케팅 콘텐츠 분석 결과</Typography>
 
                     <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">전체 마케팅 점수</Typography>
                             <Typography variant="h4" color="primary">
                                 {analysisResult.total_marketing_score}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">해시태그 수</Typography>
                             <Typography variant="h6" color="secondary">
                                 {analysisResult.hashtag_count}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">이모지 수</Typography>
                             <Typography variant="h6" color="success">
                                 {analysisResult.emoji_count}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">감정 톤</Typography>
                             <Chip
                                 label={analysisResult.emotion_tone}
@@ -450,7 +450,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                     <Typography variant="h6" sx={{ mb: 2 }}>마케팅 요소 분석</Typography>
                     <Grid container spacing={2}>
                         {Object.entries(analysisResult.marketing_elements).map(([element, score]) => (
-                            <Grid item xs={6} sm={4} key={element}>
+                            <Grid size={{ xs: 6, sm: 4 }} key={element}>
                                 <Box sx={{ textAlign: 'center' }}>
                                     <Typography variant="body2" color="text.secondary">
                                         {element === 'call_to_action' ? '행동 유도' :
@@ -464,7 +464,7 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
                                         value={(score as number) * 20}
                                         sx={{ mt: 1, mb: 1 }}
                                     />
-                                    <Typography variant="h6">{score}</Typography>
+                                    <Typography variant="h6">{String(score)}</Typography>
                                 </Box>
                             </Grid>
                         ))}
@@ -474,15 +474,15 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
 
                     <Typography variant="h6" sx={{ mb: 1 }}>가독성 분석</Typography>
                     <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={4}>
+                        <Grid size={{ xs: 4 }}>
                             <Typography variant="body2" color="text.secondary">단어 수</Typography>
                             <Typography variant="h6">{analysisResult.readability.word_count}</Typography>
                         </Grid>
-                        <Grid item xs={4}>
+                        <Grid size={{ xs: 4 }}>
                             <Typography variant="body2" color="text.secondary">문장 수</Typography>
                             <Typography variant="h6">{analysisResult.readability.sentence_count}</Typography>
                         </Grid>
-                        <Grid item xs={4}>
+                        <Grid size={{ xs: 4 }}>
                             <Typography variant="body2" color="text.secondary">평균 단어/문장</Typography>
                             <Typography variant="h6">{analysisResult.readability.avg_words_per_sentence}</Typography>
                         </Grid>
@@ -504,54 +504,54 @@ const MarketingContent: React.FC<MarketingContentProps> = ({ onContentGenerated 
         </Box>
     );
 
-    return (
-        <Paper sx={{ p: 2 }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <Tabs value={activeTab} onChange={handleTabChange}>
-                    <Tab label="소셜미디어" icon={<Instagram />} />
-                    <Tab label="이메일" icon={<Email />} />
-                    <Tab label="분석" icon={<Analytics />} />
-                </Tabs>
-            </Box>
+return (
+    <Paper sx={{ p: 2 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs value={activeTab} onChange={handleTabChange}>
+                <Tab label="소셜미디어" icon={<Instagram />} />
+                <Tab label="이메일" icon={<Email />} />
+                <Tab label="분석" icon={<Analytics />} />
+            </Tabs>
+        </Box>
 
-            {loading && <LinearProgress sx={{ mb: 2 }} />}
+        {loading && <LinearProgress sx={{ mb: 2 }} />}
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
+        {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+            </Alert>
+        )}
 
-            {activeTab === 0 && renderSocialTab()}
-            {activeTab === 1 && renderEmailTab()}
-            {activeTab === 2 && renderAnalysisTab()}
+        {activeTab === 0 && renderSocialTab()}
+        {activeTab === 1 && renderEmailTab()}
+        {activeTab === 2 && renderAnalysisTab()}
 
-            {generatedContent && (
-                <Card sx={{ mt: 3 }}>
-                    <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {contentType === 'social' ? <Instagram color="secondary" /> : <Email color="primary" />}
-                            생성된 {contentType === 'social' ? '소셜미디어' : '이메일'} 콘텐츠
-                        </Typography>
-                        <Box
-                            component="pre"
-                            sx={{
-                                whiteSpace: 'pre-wrap',
-                                fontFamily: 'monospace',
-                                backgroundColor: 'grey.50',
-                                p: 2,
-                                borderRadius: 1,
-                                maxHeight: 400,
-                                overflow: 'auto'
-                            }}
-                        >
-                            {generatedContent}
-                        </Box>
-                    </CardContent>
-                </Card>
-            )}
-        </Paper>
-    );
+        {generatedContent && (
+            <Card sx={{ mt: 3 }}>
+                <CardContent>
+                    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {contentType === 'social' ? <Instagram color="secondary" /> : <Email color="primary" />}
+                        생성된 {contentType === 'social' ? '소셜미디어' : '이메일'} 콘텐츠
+                    </Typography>
+                    <Box
+                        component="pre"
+                        sx={{
+                            whiteSpace: 'pre-wrap',
+                            fontFamily: 'monospace',
+                            backgroundColor: 'grey.50',
+                            p: 2,
+                            borderRadius: 1,
+                            maxHeight: 400,
+                            overflow: 'auto'
+                        }}
+                    >
+                        {generatedContent}
+                    </Box>
+                </CardContent>
+            </Card>
+        )}
+    </Paper>
+);
 };
 
 export default MarketingContent;

@@ -292,7 +292,7 @@ class DialogueAPIService {
     private baseURL: string;
 
     constructor() {
-        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
         // Axios 인터셉터 설정
         axios.interceptors.request.use((config: any) => {

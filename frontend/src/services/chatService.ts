@@ -44,7 +44,7 @@ export interface FileUploadResponse {
 }
 
 class ChatService {
-    private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
     async sendMessage(message: string, files?: File[]): Promise<ChatResponse> {
         try {

@@ -1,103 +1,86 @@
 {
-  "name": "CORBU AI - 지능형 AI 분석 플랫폼",
+  "name": "CORBU AI Ultimate System",
   "short_name": "CORBU AI",
-  "description": "고급 AI 엔진을 활용한 지능형 분석 및 대화 플랫폼",
+  "description": "고도화된 AI 플랫폼 - 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 통합 시스템",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#8B5CF6",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
   "orientation": "portrait-primary",
   "scope": "/",
-  "lang": "ko",
-  "dir": "ltr",
-  "categories": ["productivity", "utilities", "business"],
+  "lang": "ko-KR",
+  "categories": ["productivity", "business", "utilities"],
   "icons": [
     {
-      "src": "/icon-72x72.png",
+      "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icon-96x96.png",
+      "src": "/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icon-128x128.png",
+      "src": "/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icon-144x144.png",
+      "src": "/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icon-152x152.png",
+      "src": "/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icon-192x192.png",
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icon-384x384.png",
+      "src": "/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshot-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "CORBU AI 데스크톱 화면"
-    },
-    {
-      "src": "/screenshot-mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "CORBU AI 모바일 화면"
-    }
-  ],
   "shortcuts": [
     {
-      "name": "새 채팅",
-      "short_name": "채팅",
-      "description": "새로운 AI 채팅 시작",
-      "url": "/?action=new-chat",
+      "name": "통합 대시보드",
+      "short_name": "대시보드",
+      "description": "시스템 전체 상태를 한눈에 확인",
+      "url": "/?tab=dashboard",
       "icons": [
         {
-          "src": "/icon-96x96.png",
+          "src": "/icons/dashboard-icon.png",
           "sizes": "96x96"
         }
       ]
     },
     {
-      "name": "프로젝트 관리",
-      "short_name": "프로젝트",
-      "description": "프로젝트 및 파일 관리",
-      "url": "/?action=projects",
+      "name": "AI 채팅",
+      "short_name": "채팅",
+      "description": "AI와 대화하기",
+      "url": "/?tab=chat",
       "icons": [
         {
-          "src": "/icon-96x96.png",
+          "src": "/icons/chat-icon.png",
           "sizes": "96x96"
         }
       ]
@@ -105,29 +88,55 @@
     {
       "name": "성능 모니터링",
       "short_name": "성능",
-      "description": "시스템 성능 확인",
-      "url": "/?action=performance",
+      "description": "시스템 성능 실시간 모니터링",
+      "url": "/?tab=performance",
       "icons": [
         {
-          "src": "/icon-96x96.png",
+          "src": "/icons/performance-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "보안 모니터링",
+      "short_name": "보안",
+      "description": "보안 상태 및 위협 모니터링",
+      "url": "/?tab=security",
+      "icons": [
+        {
+          "src": "/icons/security-icon.png",
           "sizes": "96x96"
         }
       ]
     }
   ],
-  "related_applications": [],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "통합 대시보드 화면"
+    },
+    {
+      "src": "/screenshots/mobile-chat.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "모바일 채팅 화면"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://corbu-ai.com/manifest.json"
+    }
+  ],
   "prefer_related_applications": false,
   "edge_side_panel": {
     "preferred_width": 400
   },
   "launch_handler": {
-    "client_mode": "navigate-existing"
-  },
-  "handle_links": "preferred",
-  "protocol_handlers": [
-    {
-      "protocol": "web+corbu",
-      "url": "/?action=%s"
-    }
-  ]
+    "client_mode": "focus-existing"
+  }
 }

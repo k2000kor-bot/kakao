@@ -1,5 +1,5 @@
 // 통합 메시지 시스템 API 서비스
-const UNIFIED_MESSAGE_API_BASE = 'http://localhost:8000';
+const UNIFIED_MESSAGE_API_BASE = 'http://localhost:8001';
 
 export interface MessageFormatRequest {
   format_type: string;

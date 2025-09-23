@@ -6,8 +6,8 @@ import {
     Typography,
     LinearProgress,
     Chip,
-    Grid,
     Paper,
+    Grid,
     Alert,
     AlertTitle,
     Collapse,
@@ -169,7 +169,7 @@ const SystemHealthMonitor: React.FC = () => {
 
             {/* 서비스 상태 */}
             <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -188,7 +188,7 @@ const SystemHealthMonitor: React.FC = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -207,7 +207,7 @@ const SystemHealthMonitor: React.FC = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -233,7 +233,7 @@ const SystemHealthMonitor: React.FC = () => {
                     {/* 성능 지표 */}
                     <Typography variant="h6" sx={{ mb: 2 }}>성능 지표</Typography>
                     <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <Card>
                                 <CardContent>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -252,7 +252,7 @@ const SystemHealthMonitor: React.FC = () => {
                             </Card>
                         </Grid>
 
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <Card>
                                 <CardContent>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -272,7 +272,7 @@ const SystemHealthMonitor: React.FC = () => {
                             </Card>
                         </Grid>
 
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <Card>
                                 <CardContent>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>

@@ -9,13 +9,13 @@ import random
 import time
 import sqlite3
 import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from datetime import datetime
+from typing import Dict, List, Any
 from dataclasses import dataclass
 from collections import defaultdict, Counter
 import re
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -140,7 +140,8 @@ class PatternAnalysisRequest(BaseModel):
 
 class PredictionRequest(BaseModel):
     user_id: str
-    prediction_type: str  # 'response_time', 'success_rate', 'conflict_probability'
+    # 'response_time', 'success_rate', 'conflict_probability'
+    prediction_type: str
     context_data: Dict[str, Any]
 
 
@@ -185,7 +186,8 @@ class AdvancedAISystem:
             "conflict_probability": {"base": 0.3, "emotion": 0.4, "pattern": 0.3}
         }
 
-    def analyze_emotion_advanced(self, messages: List[Dict[str, Any]], user_id: str) -> Dict[str, Any]:
+    def analyze_emotion_advanced(self, messages: List[Dict[str, Any]], 
+                                 user_id: str) -> Dict[str, Any]:
         """고급 감정 분석"""
         emotion_scores = defaultdict(float)
         sentiment_scores = []
@@ -206,24 +208,50 @@ class AdvancedAISystem:
                     emotion_scores[emotion] /= total_words
 
             # 감정 점수 계산
-            positive_score = sum(1 for word in self.emotion_keywords["joy"] + self.emotion_keywords["trust"] if word in content)
-            negative_score = sum(1 for word in self.emotion_keywords["anger"] + self.emotion_keywords["sadness"] + self.emotion_keywords["fear"] if word in content)
+            positive_keywords = (
+                self.emotion_keywords["joy"] + 
+                self.emotion_keywords["trust"]
+            )
+            negative_keywords = (
+                self.emotion_keywords["anger"] + 
+                self.emotion_keywords["sadness"] + 
+                self.emotion_keywords["fear"]
+            )
+            positive_score = sum(
+                1 for word in positive_keywords if word in content
+            )
+            negative_score = sum(
+                1 for word in negative_keywords if word in content
+            )
             
-            sentiment = (positive_score - negative_score) / max(len(content.split()), 1)
+            sentiment = (
+                (positive_score - negative_score) / 
+                max(len(content.split()), 1)
+            )
             sentiment_scores.append(sentiment)
 
             # 주요 감정 찾기
             if emotion_scores:
-                dominant_emotion = max(emotion_scores.items(), key=lambda x: x[1])
+                dominant_emotion = max(
+                    emotion_scores.items(), key=lambda x: x[1]
+                )
                 dominant_emotions.append(dominant_emotion[0])
 
         # 결과 계산
         avg_sentiment = np.mean(sentiment_scores) if sentiment_scores else 0
-        emotion_confidence = max(emotion_scores.values()) if emotion_scores else 0
-        most_common_emotion = Counter(dominant_emotions).most_common(1)[0][0] if dominant_emotions else "neutral"
+        emotion_confidence = (
+            max(emotion_scores.values()) if emotion_scores else 0
+        )
+        most_common_emotion = (
+            Counter(dominant_emotions).most_common(1)[0][0] 
+            if dominant_emotions else "neutral"
+        )
 
         # 데이터베이스에 저장
-        self._save_emotion_analysis(user_id, "temp_id", avg_sentiment, emotion_confidence, most_common_emotion)
+        self._save_emotion_analysis(
+            user_id, "temp_id", avg_sentiment, 
+            emotion_confidence, most_common_emotion
+        )
 
         return {
             "emotion_scores": dict(emotion_scores),
@@ -231,10 +259,13 @@ class AdvancedAISystem:
             "dominant_emotion": most_common_emotion,
             "emotion_confidence": emotion_confidence,
             "emotion_trend": self._calculate_emotion_trend(user_id),
-            "emotional_stability": self._calculate_emotional_stability(sentiment_scores)
+            "emotional_stability": self._calculate_emotional_stability(
+                sentiment_scores
+            )
         }
 
-    def analyze_conversation_patterns(self, conversation_data: List[Dict[str, Any]], user_id: str) -> Dict[str, Any]:
+    def analyze_conversation_patterns(self, conversation_data: List[Dict[str, Any]], 
+                                      user_id: str) -> Dict[str, Any]:
         """대화 패턴 분석"""
         pattern_frequency = defaultdict(int)
         pattern_effectiveness = defaultdict(list)
@@ -252,22 +283,35 @@ class AdvancedAISystem:
                     pattern_effectiveness[pattern_name].append(effectiveness)
 
         # 패턴 분석 결과
-        dominant_pattern = max(pattern_frequency.items(), key=lambda x: x[1])[0] if pattern_frequency else "general"
-        avg_effectiveness = np.mean(pattern_effectiveness[dominant_pattern]) if pattern_effectiveness[dominant_pattern] else 0.7
+        dominant_pattern = (
+            max(pattern_frequency.items(), key=lambda x: x[1])[0] 
+            if pattern_frequency else "general"
+        )
+        avg_effectiveness = (
+            np.mean(pattern_effectiveness[dominant_pattern]) 
+            if pattern_effectiveness[dominant_pattern] else 0.7
+        )
 
         # 데이터베이스에 저장
-        self._save_conversation_pattern(user_id, dominant_pattern, json.dumps(pattern_frequency), 
-                                      pattern_frequency[dominant_pattern], avg_effectiveness)
+        self._save_conversation_pattern(
+            user_id, dominant_pattern, json.dumps(pattern_frequency), 
+            pattern_frequency[dominant_pattern], avg_effectiveness
+        )
 
         return {
             "pattern_frequency": dict(pattern_frequency),
             "dominant_pattern": dominant_pattern,
             "pattern_effectiveness": avg_effectiveness,
-            "conversation_style": self._classify_conversation_style(pattern_frequency),
-            "interaction_patterns": self._analyze_interaction_patterns(conversation_data)
+            "conversation_style": self._classify_conversation_style(
+                pattern_frequency
+            ),
+            "interaction_patterns": self._analyze_interaction_patterns(
+                conversation_data
+            )
         }
 
-    def predict_user_behavior(self, user_id: str, prediction_type: str, context_data: Dict[str, Any]) -> Dict[str, Any]:
+    def predict_user_behavior(self, user_id: str, prediction_type: str, 
+                              context_data: Dict[str, Any]) -> Dict[str, Any]:
         """사용자 행동 예측"""
         # 기존 데이터 기반 예측
         historical_data = self._get_historical_data(user_id, prediction_type)
@@ -277,30 +321,54 @@ class AdvancedAISystem:
         
         if prediction_type == "response_time":
             base_time = self.prediction_weights["response_time"]["base"]
-            complexity_factor = len(context_data.get('message', '')) * self.prediction_weights["response_time"]["complexity"]
-            emotion_factor = abs(context_data.get('emotion_score', 0)) * self.prediction_weights["response_time"]["emotion"]
+            complexity_factor = (
+                len(context_data.get('message', '')) * 
+                self.prediction_weights["response_time"]["complexity"]
+            )
+            emotion_factor = (
+                abs(context_data.get('emotion_score', 0)) * 
+                self.prediction_weights["response_time"]["emotion"]
+            )
             
             predicted_value = base_time + complexity_factor + emotion_factor
             confidence = random.uniform(0.7, 0.95)
 
         elif prediction_type == "success_rate":
             base_rate = self.prediction_weights["success_rate"]["base"]
-            pattern_bonus = context_data.get('pattern_effectiveness', 0.7) * self.prediction_weights["success_rate"]["pattern"]
-            context_bonus = context_data.get('context_relevance', 0.5) * self.prediction_weights["success_rate"]["context"]
+            pattern_bonus = (
+                context_data.get('pattern_effectiveness', 0.7) * 
+                self.prediction_weights["success_rate"]["pattern"]
+            )
+            context_bonus = (
+                context_data.get('context_relevance', 0.5) * 
+                self.prediction_weights["success_rate"]["context"]
+            )
             
-            predicted_value = min(1.0, base_rate + pattern_bonus + context_bonus)
+            predicted_value = min(
+                1.0, base_rate + pattern_bonus + context_bonus
+            )
             confidence = random.uniform(0.6, 0.9)
 
         elif prediction_type == "conflict_probability":
             base_prob = self.prediction_weights["conflict_probability"]["base"]
-            emotion_factor = abs(context_data.get('emotion_score', 0)) * self.prediction_weights["conflict_probability"]["emotion"]
-            pattern_factor = (1 - context_data.get('pattern_effectiveness', 0.7)) * self.prediction_weights["conflict_probability"]["pattern"]
+            emotion_factor = (
+                abs(context_data.get('emotion_score', 0)) * 
+                self.prediction_weights["conflict_probability"]["emotion"]
+            )
+            pattern_factor = (
+                (1 - context_data.get('pattern_effectiveness', 0.7)) * 
+                self.prediction_weights["conflict_probability"]["pattern"]
+            )
             
-            predicted_value = min(1.0, base_prob + emotion_factor + pattern_factor)
+            predicted_value = min(
+                1.0, base_prob + emotion_factor + pattern_factor
+            )
             confidence = random.uniform(0.5, 0.85)
 
         # 예측 결과 저장
-        self._save_prediction_result(user_id, prediction_type, predicted_value, confidence, 0, 0)
+        self._save_prediction_result(
+            user_id, prediction_type, predicted_value, confidence, 0, 0
+        )
 
         return {
             "prediction_type": prediction_type,
@@ -311,40 +379,61 @@ class AdvancedAISystem:
                 "base_factor": self.prediction_weights[prediction_type]["base"],
                 "context_factor": context_data.get('context_relevance', 0.5),
                 "emotion_factor": context_data.get('emotion_score', 0),
-                "pattern_factor": context_data.get('pattern_effectiveness', 0.7)
+                "pattern_factor": context_data.get(
+                    'pattern_effectiveness', 0.7
+                )
             }
         }
 
-    def generate_advanced_message(self, request: AdvancedMessageRequest) -> Dict[str, Any]:
+    def generate_advanced_message(self, request: AdvancedMessageRequest) -> 
+        Dict[str, Any]:
         """고급 메시지 생성"""
         try:
             # 감정 분석
-            emotion_analysis = self.analyze_emotion_advanced(request.recent_messages, request.user_id)
+            emotion_analysis = self.analyze_emotion_advanced(
+                request.recent_messages, request.user_id
+            )
             
             # 패턴 분석
-            pattern_analysis = self.analyze_conversation_patterns(request.recent_messages, request.user_id)
+            pattern_analysis = self.analyze_conversation_patterns(
+                request.recent_messages, request.user_id
+            )
             
             # 예측 모델
             prediction_results = {}
             if request.prediction_enabled:
                 prediction_results = {
-                    "response_time": self.predict_user_behavior(request.user_id, "response_time", {
-                        "message": request.original_message,
-                        "emotion_score": emotion_analysis["sentiment_score"],
-                        "pattern_effectiveness": pattern_analysis["pattern_effectiveness"]
-                    }),
-                    "success_rate": self.predict_user_behavior(request.user_id, "success_rate", {
-                        "pattern_effectiveness": pattern_analysis["pattern_effectiveness"],
-                        "context_relevance": 0.8
-                    }),
-                    "conflict_probability": self.predict_user_behavior(request.user_id, "conflict_probability", {
-                        "emotion_score": emotion_analysis["sentiment_score"],
-                        "pattern_effectiveness": pattern_analysis["pattern_effectiveness"]
-                    })
+                    "response_time": self.predict_user_behavior(
+                        request.user_id, "response_time", {
+                            "message": request.original_message,
+                            "emotion_score": emotion_analysis["sentiment_score"],
+                            "pattern_effectiveness": pattern_analysis[
+                                "pattern_effectiveness"
+                            ]
+                        }
+                    ),
+                    "success_rate": self.predict_user_behavior(
+                        request.user_id, "success_rate", {
+                            "pattern_effectiveness": pattern_analysis[
+                                "pattern_effectiveness"
+                            ],
+                            "context_relevance": 0.8
+                        }
+                    ),
+                    "conflict_probability": self.predict_user_behavior(
+                        request.user_id, "conflict_probability", {
+                            "emotion_score": emotion_analysis["sentiment_score"],
+                            "pattern_effectiveness": pattern_analysis[
+                                "pattern_effectiveness"
+                            ]
+                        }
+                    )
                 }
 
             # 학습 인사이트
-            learning_insights = self._generate_learning_insights(request.user_id, emotion_analysis, pattern_analysis)
+            learning_insights = self._generate_learning_insights(
+                request.user_id, emotion_analysis, pattern_analysis
+            )
             
             # 성능 메트릭
             performance_metrics = self._calculate_performance_metrics(request.user_id)
@@ -358,7 +447,8 @@ class AdvancedAISystem:
             )
 
             return {
-                "id": f"advanced_msg_{int(time.time())}_{random.randint(1000, 9999)}",
+                "id": f"advanced_msg_{int(time.time())}_
+                    {random.randint(1000, 9999)}",
                 "original_message": request.original_message,
                 "advanced_message": advanced_message,
                 "analytics": AdvancedAnalytics(
@@ -377,11 +467,17 @@ class AdvancedAISystem:
                 "advanced_message": "죄송합니다. 메시지 생성에 실패했습니다."
             }
 
-    def _generate_contextual_message(self, original_message: str, emotion_analysis: Dict, 
-                                   pattern_analysis: Dict, prediction_results: Dict) -> str:
+    def _generate_contextual_message(self, original_message: str, 
+                                      emotion_analysis: Dict, 
+                                      pattern_analysis: Dict, 
+                                      prediction_results: Dict) -> str:
         """맥락 기반 메시지 생성"""
-        dominant_emotion = emotion_analysis.get("dominant_emotion", "neutral")
-        dominant_pattern = pattern_analysis.get("dominant_pattern", "general")
+        dominant_emotion = emotion_analysis.get(
+            "dominant_emotion", "neutral"
+        )
+        dominant_pattern = pattern_analysis.get(
+            "dominant_pattern", "general"
+        )
         
         # 감정 기반 응답
         emotion_responses = {
@@ -403,10 +499,15 @@ class AdvancedAISystem:
             "social_interaction": "사람들과의 소통이 정말 중요하죠."
         }
 
-        base_response = emotion_responses.get(dominant_emotion, "그런 상황이시군요.")
-        pattern_response = pattern_responses.get(dominant_pattern, "")
+        base_response = emotion_responses.get(
+            dominant_emotion, "그런 상황이시군요."
+        )
+        pattern_response = pattern_responses.get(
+            dominant_pattern, ""
+        )
         
-        return f"{base_response} {pattern_response} {original_message}"
+        return f"{base_response} {pattern_response} 
+            {original_message}"
 
     def _calculate_emotion_trend(self, user_id: str) -> Dict[str, Any]:
         """감정 트렌드 계산"""
@@ -424,19 +525,24 @@ class AdvancedAISystem:
         if results:
             scores = [row[0] for row in results]
             return {
-                "trend": "increasing" if scores[0] > scores[-1] else "decreasing",
+                "trend": (
+                    "increasing" if scores[0] > scores[-1] 
+                    else "decreasing"
+                ),
                 "volatility": np.std(scores),
                 "average": np.mean(scores)
             }
         return {"trend": "stable", "volatility": 0, "average": 0}
 
-    def _calculate_emotional_stability(self, sentiment_scores: List[float]) -> float:
+    def _calculate_emotional_stability(self, 
+                                        sentiment_scores: List[float]) -> float:
         """감정 안정성 계산"""
         if len(sentiment_scores) < 2:
             return 1.0
         return 1.0 - min(1.0, np.std(sentiment_scores))
 
-    def _classify_conversation_style(self, pattern_frequency: Dict[str, int]) -> str:
+    def _classify_conversation_style(self, 
+                                      pattern_frequency: Dict[str, int]) -> str:
         """대화 스타일 분류"""
         if pattern_frequency.get("question_response", 0) > 3:
             return "inquisitive"
@@ -449,26 +555,39 @@ class AdvancedAISystem:
         else:
             return "balanced"
 
-    def _analyze_interaction_patterns(self, conversation_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_interaction_patterns(self, 
+                                      conversation_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """상호작용 패턴 분석"""
         if not conversation_data:
             return {"interaction_type": "none", "engagement_level": 0}
         
         message_count = len(conversation_data)
-        avg_length = np.mean([len(msg.get('content', '')) for msg in conversation_data])
+        avg_length = np.mean([
+            len(msg.get('content', '')) for msg in conversation_data
+        ])
         
         return {
-            "interaction_type": "high" if message_count > 5 else "medium" if message_count > 2 else "low",
+            "interaction_type": (
+                "high" if message_count > 5 
+                else "medium" if message_count > 2 
+                else "low"
+            ),
             "engagement_level": min(1.0, message_count / 10.0),
             "response_frequency": message_count / max(1, len(conversation_data)),
             "average_message_length": avg_length
         }
 
-    def _generate_learning_insights(self, user_id: str, emotion_analysis: Dict, pattern_analysis: Dict) -> Dict[str, Any]:
+    def _generate_learning_insights(self, user_id: str, 
+                                     emotion_analysis: Dict, 
+                                     pattern_analysis: Dict) -> Dict[str, Any]:
         """학습 인사이트 생성"""
         return {
-            "preferred_emotion": emotion_analysis.get("dominant_emotion", "neutral"),
-            "effective_patterns": [pattern_analysis.get("dominant_pattern", "general")],
+            "preferred_emotion": emotion_analysis.get(
+                "dominant_emotion", "neutral"
+            ),
+            "effective_patterns": [
+                pattern_analysis.get("dominant_pattern", "general")
+            ],
             "learning_recommendations": [
                 "감정 기반 응답 강화",
                 "패턴 인식 개선",
@@ -492,7 +611,9 @@ class AdvancedAISystem:
         ''', (user_id,))
         
         accuracy_result = cursor.fetchone()
-        avg_accuracy = accuracy_result[0] if accuracy_result[0] else 0.75
+        avg_accuracy = (
+            accuracy_result[0] if accuracy_result[0] else 0.75
+        )
         
         conn.close()
         
@@ -503,7 +624,8 @@ class AdvancedAISystem:
             "overall_performance": (avg_accuracy + 0.85 + 0.8) / 3
         }
 
-    def _get_historical_data(self, user_id: str, data_type: str) -> List[float]:
+    def _get_historical_data(self, user_id: str, 
+                              data_type: str) -> List[float]:
         """히스토리 데이터 조회"""
         conn = sqlite3.connect('advanced_ai_system.db')
         cursor = conn.cursor()

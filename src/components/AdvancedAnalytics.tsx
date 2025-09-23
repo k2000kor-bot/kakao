@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -32,9 +32,8 @@ import {
   TrendingUp,
   Psychology,
   Business,
-  Timeline,
   Insights,
-  Prediction,
+  TrendingUp as Prediction,
   Lightbulb,
   Speed,
   People,
@@ -45,7 +44,7 @@ interface AdvancedAnalyticsProps {
   onInsightGenerated?: (insight: string) => void;
 }
 
-const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerated }) => {
+function AdvancedAnalytics({ onInsightGenerated }: AdvancedAnalyticsProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -53,17 +52,52 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
   // 고급 분석 상태
   const [analysisType, setAnalysisType] = useState('sentiment_trend');
   const [timeRange, setTimeRange] = useState('7d');
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<{
+    data: {
+      summary: {
+        avg_positive: number;
+        avg_negative: number;
+        trend_direction: string;
+        volatility: number;
+      };
+      insights: string[];
+      session_data?: {
+        avg_session_duration: number;
+        pages_per_session: number;
+        bounce_rate: number;
+        return_visitor_rate: number;
+      };
+      feature_usage?: Record<string, number>;
+      content_types?: Record<string, { count: number; avg_rating: number }>;
+      top_keywords?: Array<{ keyword: string; count: number; trend: string }>;
+    };
+  } | null>(null);
 
   // 예측 분석 상태
   const [predictionType, setPredictionType] = useState('user_satisfaction');
   const [predictionHorizon, setPredictionHorizon] = useState('30d');
-  const [predictionResult, setPredictionResult] = useState<any>(null);
+  const [predictionResult, setPredictionResult] = useState<{
+    prediction: {
+      current_value: number;
+      predicted_value: number;
+      confidence: number;
+      factors: string[];
+      recommendations: string[];
+    };
+  } | null>(null);
 
   // 인사이트 상태
   const [insightType, setInsightType] = useState('general');
   const [focusArea, setFocusArea] = useState('all');
-  const [insightsResult, setInsightsResult] = useState<any>(null);
+  const [insightsResult, setInsightsResult] = useState<{
+    total_insights: number;
+    insights: Array<{
+      title: string;
+      description: string;
+      impact: string;
+      recommendation: string;
+    }>;
+  } | null>(null);
 
   const analysisTypes = [
     { value: 'sentiment_trend', label: '감정 트렌드', icon: <Psychology /> },
@@ -108,7 +142,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
   const runAdvancedAnalysis = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('http://localhost:5002/api/integrated/analytics/advanced', {
         method: 'POST',
@@ -122,7 +156,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setAnalysisResult(data.data);
       } else {
@@ -138,7 +172,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
   const runPredictionAnalysis = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('http://localhost:5002/api/integrated/analytics/predictions', {
         method: 'POST',
@@ -152,7 +186,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setPredictionResult(data.data);
       } else {
@@ -168,7 +202,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
   const runInsightsGeneration = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('http://localhost:5002/api/integrated/analytics/insights', {
         method: 'POST',
@@ -182,7 +216,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setInsightsResult(data.data);
         // 첫 번째 인사이트를 메시지로 전송
@@ -210,9 +244,9 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
         <TrendingUp color="primary" />
         고급 데이터 분석
       </Typography>
-      
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth>
             <InputLabel>분석 유형</InputLabel>
             <Select
@@ -231,8 +265,8 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
             </Select>
           </FormControl>
         </Grid>
-        
-        <Grid item xs={12} sm={6}>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth>
             <InputLabel>시간 범위</InputLabel>
             <Select
@@ -249,7 +283,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
           </FormControl>
         </Grid>
       </Grid>
-      
+
       <Button
         variant="contained"
         onClick={runAdvancedAnalysis}
@@ -259,44 +293,44 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
       >
         {loading ? '분석 중...' : '고급 분석 실행'}
       </Button>
-      
+
       {analysisResult && (
         <Paper sx={{ p: 2, mt: 2 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>분석 결과</Typography>
-          
+
           {analysisType === 'sentiment_trend' && (
             <Box>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>감정 트렌드 요약</Typography>
               <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={3}>
+                <Grid size={{ xs: 3 }}>
                   <Typography variant="body2" color="text.secondary">평균 긍정률</Typography>
                   <Typography variant="h6" color="success.main">
                     {analysisResult.data.summary.avg_positive}%
                   </Typography>
                 </Grid>
-                <Grid item xs={3}>
+                <Grid size={{ xs: 3 }}>
                   <Typography variant="body2" color="text.secondary">평균 부정률</Typography>
                   <Typography variant="h6" color="error.main">
                     {analysisResult.data.summary.avg_negative}%
                   </Typography>
                 </Grid>
-                <Grid item xs={3}>
+                <Grid size={{ xs: 3 }}>
                   <Typography variant="body2" color="text.secondary">트렌드</Typography>
-                  <Chip 
-                    label={analysisResult.data.summary.trend_direction === 'up' ? '상승' : '하락'} 
-                    color={analysisResult.data.summary.trend_direction === 'up' ? 'success' : 'error'} 
+                  <Chip
+                    label={analysisResult.data.summary.trend_direction === 'up' ? '상승' : '하락'}
+                    color={analysisResult.data.summary.trend_direction === 'up' ? 'success' : 'error'}
                   />
                 </Grid>
-                <Grid item xs={3}>
+                <Grid size={{ xs: 3 }}>
                   <Typography variant="body2" color="text.secondary">변동성</Typography>
                   <Typography variant="h6">
                     {analysisResult.data.summary.volatility}%
                   </Typography>
                 </Grid>
-              </Grid>
-              
+              </Grid >
+
               <Divider sx={{ my: 2 }} />
-              
+
               <Typography variant="subtitle1" sx={{ mb: 1 }}>인사이트</Typography>
               <List>
                 {analysisResult.data.insights.map((insight: string, index: number) => (
@@ -308,113 +342,106 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
                   </ListItem>
                 ))}
               </List>
-            </Box>
+            </Box >
           )}
-          
-          {analysisType === 'user_behavior' && (
-            <Box>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>사용자 행동 분석</Typography>
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="body2" color="text.secondary">평균 세션 시간</Typography>
-                  <Typography variant="h6">
-                    {Math.floor(analysisResult.data.session_data.avg_session_duration / 60)}분
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="body2" color="text.secondary">페이지/세션</Typography>
-                  <Typography variant="h6">
-                    {analysisResult.data.session_data.pages_per_session}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="body2" color="text.secondary">이탈률</Typography>
-                  <Typography variant="h6" color="error.main">
-                    {analysisResult.data.session_data.bounce_rate}%
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="body2" color="text.secondary">재방문률</Typography>
-                  <Typography variant="h6" color="success.main">
-                    {analysisResult.data.session_data.return_visitor_rate}%
-                  </Typography>
-                </Grid>
-              </Grid>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>기능 사용률</Typography>
-              <Grid container spacing={2}>
-                {Object.entries(analysisResult.data.feature_usage).map(([feature, usage]) => (
-                  <Grid item xs={6} sm={3} key={feature}>
-                    <Typography variant="body2" color="text.secondary">
-                      {feature === 'chat_usage' ? '채팅' :
-                       feature === 'analysis_usage' ? '분석' :
-                       feature === 'creative_usage' ? '창작' :
-                       feature === 'marketing_usage' ? '마케팅' : feature}
-                    </Typography>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={usage as number} 
-                      sx={{ mt: 1 }}
-                    />
-                    <Typography variant="body2" sx={{ mt: 0.5 }}>
-                      {usage}%
+
+          {
+            analysisType === 'user_behavior' && (
+              <Box>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>사용자 행동 분석</Typography>
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Typography variant="body2" color="text.secondary">평균 세션 시간</Typography>
+                    <Typography variant="h6">
+                      {Math.floor(analysisResult.data.session_data!.avg_session_duration / 60)}분
                     </Typography>
                   </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-          
-          {analysisType === 'content_performance' && (
-            <Box>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>콘텐츠 성능 분석</Typography>
-              
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>콘텐츠 유형별 성능</Typography>
-              <TableContainer component={Paper} sx={{ mb: 2 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>유형</TableCell>
-                      <TableCell align="right">생성 수</TableCell>
-                      <TableCell align="right">평균 평점</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {Object.entries(analysisResult.data.content_types).map(([type, data]: [string, any]) => (
-                      <TableRow key={type}>
-                        <TableCell>
-                          {type === 'chat_responses' ? '채팅 응답' :
-                           type === 'creative_content' ? '창작 콘텐츠' :
-                           type === 'persuasion_content' ? '설득 콘텐츠' :
-                           type === 'marketing_content' ? '마케팅 콘텐츠' : type}
-                        </TableCell>
-                        <TableCell align="right">{data.count}</TableCell>
-                        <TableCell align="right">{data.avg_rating}</TableCell>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Typography variant="body2" color="text.secondary">페이지/세션</Typography>
+                    <Typography variant="h6">
+                      {analysisResult.data.session_data!.pages_per_session}
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Typography variant="body2" color="text.secondary">이탈률</Typography>
+                    <Typography variant="h6" color="error.main">
+                      {analysisResult.data.session_data!.bounce_rate}%
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Typography variant="body2" color="text.secondary">재방문률</Typography>
+                    <Typography variant="h6" color="success.main">
+                      {analysisResult.data.session_data!.return_visitor_rate}%
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>기능 사용률</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {analysisResult.data.feature_usage ?
+                    Object.entries(analysisResult.data.feature_usage).map(([feature, usage]) =>
+                      `${feature === 'chat_usage' ? '채팅' :
+                        feature === 'analysis_usage' ? '분석' :
+                          feature === 'creative_usage' ? '창작' :
+                            feature === 'marketing_usage' ? '마케팅' : feature}: ${usage}%`
+                    ).join(', ') : '데이터 없음'}
+                </Typography>
+              </Box>
+            )
+          }
+
+          {
+            analysisType === 'content_performance' && (
+              <Box>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>콘텐츠 성능 분석</Typography>
+
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>콘텐츠 유형별 성능</Typography>
+                <TableContainer component={Paper} sx={{ mb: 2 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>유형</TableCell>
+                        <TableCell align="right">생성 수</TableCell>
+                        <TableCell align="right">평균 평점</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>인기 키워드</Typography>
-              <Grid container spacing={1}>
-                {analysisResult.data.top_keywords.map((keyword: any, index: number) => (
-                  <Grid item key={index}>
-                    <Chip 
-                      label={`${keyword.keyword} (${keyword.count})`}
-                      color={keyword.trend === 'up' ? 'success' : 'default'}
-                      variant={keyword.trend === 'up' ? 'filled' : 'outlined'}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-        </Paper>
+                    </TableHead>
+                    <TableBody>
+                      {Object.entries(analysisResult.data.content_types!).map(([type, data]) => (
+                        <TableRow key={type}>
+                          <TableCell>
+                            {type === 'chat_responses' ? '채팅 응답' :
+                              type === 'creative_content' ? '창작 콘텐츠' :
+                                type === 'persuasion_content' ? '설득 콘텐츠' :
+                                  type === 'marketing_content' ? '마케팅 콘텐츠' : type}
+                          </TableCell>
+                          <TableCell align="right">{data.count}</TableCell>
+                          <TableCell align="right">{data.avg_rating}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>인기 키워드</Typography>
+                <Grid container spacing={1}>
+                  {analysisResult.data.top_keywords!.map((keyword, index: number) => (
+                    <Grid key={index}>
+                      <Chip
+                        label={`${keyword.keyword} (${keyword.count})`}
+                        color={keyword.trend === 'up' ? 'success' : 'default'}
+                        variant={keyword.trend === 'up' ? 'filled' : 'outlined'}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            )
+          }
+        </Paper >
       )}
-    </Box>
+    </Box >
   );
 
   const renderPredictionTab = () => (
@@ -423,9 +450,9 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
         <Prediction color="secondary" />
         예측 분석
       </Typography>
-      
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth>
             <InputLabel>예측 유형</InputLabel>
             <Select
@@ -444,8 +471,8 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
             </Select>
           </FormControl>
         </Grid>
-        
-        <Grid item xs={12} sm={6}>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth>
             <InputLabel>예측 기간</InputLabel>
             <Select
@@ -462,7 +489,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
           </FormControl>
         </Grid>
       </Grid>
-      
+
       <Button
         variant="contained"
         color="secondary"
@@ -473,34 +500,34 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
       >
         {loading ? '예측 중...' : '예측 분석 실행'}
       </Button>
-      
+
       {predictionResult && (
         <Paper sx={{ p: 2, mt: 2 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>예측 결과</Typography>
-          
+
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
+            <Grid size={{ xs: 4 }}>
               <Typography variant="body2" color="text.secondary">현재 값</Typography>
               <Typography variant="h4" color="primary">
                 {predictionResult.prediction.current_value}
               </Typography>
             </Grid>
-            <Grid item xs={4}>
+            <Grid size={{ xs: 4 }}>
               <Typography variant="body2" color="text.secondary">예측 값</Typography>
               <Typography variant="h4" color="secondary">
                 {predictionResult.prediction.predicted_value}
               </Typography>
             </Grid>
-            <Grid item xs={4}>
+            <Grid size={{ xs: 4 }}>
               <Typography variant="body2" color="text.secondary">신뢰도</Typography>
               <Typography variant="h4" color="success.main">
                 {predictionResult.prediction.confidence}%
               </Typography>
             </Grid>
           </Grid>
-          
+
           <Divider sx={{ my: 2 }} />
-          
+
           <Typography variant="subtitle1" sx={{ mb: 1 }}>주요 요인</Typography>
           <List>
             {predictionResult.prediction.factors.map((factor: string, index: number) => (
@@ -512,9 +539,9 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
               </ListItem>
             ))}
           </List>
-          
+
           <Divider sx={{ my: 2 }} />
-          
+
           <Typography variant="subtitle1" sx={{ mb: 1 }}>권장사항</Typography>
           <List>
             {predictionResult.prediction.recommendations.map((recommendation: string, index: number) => (
@@ -526,9 +553,9 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
               </ListItem>
             ))}
           </List>
-        </Paper>
+        </Paper >
       )}
-    </Box>
+    </Box >
   );
 
   const renderInsightsTab = () => (
@@ -537,9 +564,9 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
         <Insights color="warning" />
         인사이트 생성
       </Typography>
-      
+
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth>
             <InputLabel>인사이트 유형</InputLabel>
             <Select
@@ -558,8 +585,8 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
             </Select>
           </FormControl>
         </Grid>
-        
-        <Grid item xs={12} sm={6}>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth>
             <InputLabel>포커스 영역</InputLabel>
             <Select
@@ -576,7 +603,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
           </FormControl>
         </Grid>
       </Grid>
-      
+
       <Button
         variant="contained"
         color="warning"
@@ -587,33 +614,33 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
       >
         {loading ? '생성 중...' : '인사이트 생성'}
       </Button>
-      
+
       {insightsResult && (
         <Paper sx={{ p: 2, mt: 2 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
             인사이트 ({insightsResult.total_insights}개)
           </Typography>
-          
-          {insightsResult.insights.map((insight: any, index: number) => (
+
+          {insightsResult.insights.map((insight, index: number) => (
             <Card key={index} sx={{ mb: 2 }}>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                   <Typography variant="h6">{insight.title}</Typography>
-                  <Chip 
+                  <Chip
                     label={insight.impact === 'high' ? '높음' :
-                           insight.impact === 'medium' ? '보통' :
-                           insight.impact === 'positive' ? '긍정' : '낮음'}
+                      insight.impact === 'medium' ? '보통' :
+                        insight.impact === 'positive' ? '긍정' : '낮음'}
                     color={insight.impact === 'high' ? 'error' :
-                           insight.impact === 'medium' ? 'warning' :
-                           insight.impact === 'positive' ? 'success' : 'default'}
+                      insight.impact === 'medium' ? 'warning' :
+                        insight.impact === 'positive' ? 'success' : 'default'}
                     size="small"
                   />
                 </Box>
-                
+
                 <Typography variant="body1" sx={{ mb: 1 }}>
                   {insight.description}
                 </Typography>
-                
+
                 <Alert severity="info" sx={{ mt: 1 }}>
                   <Typography variant="body2">
                     <strong>권장사항:</strong> {insight.recommendation}
@@ -650,6 +677,6 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ onInsightGenerate
       {activeTab === 2 && renderInsightsTab()}
     </Paper>
   );
-};
+}
 
 export default AdvancedAnalytics;

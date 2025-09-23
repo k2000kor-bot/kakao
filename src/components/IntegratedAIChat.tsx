@@ -28,6 +28,7 @@ interface Message {
     timestamp: Date;
     analysis?: IntegratedAnalysisResponse['analysis'];
     isUser: boolean;
+    sender?: string;
 }
 
 const IntegratedAIChat: React.FC = () => {
@@ -206,7 +207,8 @@ const IntegratedAIChat: React.FC = () => {
                         id: Date.now().toString(),
                         text: `[${type === 'story' ? '스토리' : type === 'poem' ? '시' : '에세이'} 생성]\n\n${content}`,
                         timestamp: new Date(),
-                        sender: 'ai'
+                        sender: 'ai',
+                        isUser: false
                     };
                     setMessages(prev => [...prev, newMessage]);
                 }} />
@@ -220,7 +222,8 @@ const IntegratedAIChat: React.FC = () => {
                         id: Date.now().toString(),
                         text: `[${type === 'construction' ? '건설사 설득' : '시공사 긍정'} 콘텐츠 생성]\n\n${content}`,
                         timestamp: new Date(),
-                        sender: 'ai'
+                        sender: 'ai',
+                        isUser: false
                     };
                     setMessages(prev => [...prev, newMessage]);
                 }} />
@@ -234,7 +237,8 @@ const IntegratedAIChat: React.FC = () => {
                         id: Date.now().toString(),
                         text: `[${type === 'social' ? '소셜미디어' : '이메일'} 마케팅 콘텐츠 생성]\n\n${content}`,
                         timestamp: new Date(),
-                        sender: 'ai'
+                        sender: 'ai',
+                        isUser: false
                     };
                     setMessages(prev => [...prev, newMessage]);
                 }} />
@@ -248,7 +252,8 @@ const IntegratedAIChat: React.FC = () => {
                         id: Date.now().toString(),
                         text: `[인사이트] ${insight}`,
                         timestamp: new Date(),
-                        sender: 'ai'
+                        sender: 'ai',
+                        isUser: false
                     };
                     setMessages(prev => [...prev, newMessage]);
                 }} />
@@ -262,7 +267,8 @@ const IntegratedAIChat: React.FC = () => {
                         id: Date.now().toString(),
                         text: `[AI 관리] ${result}`,
                         timestamp: new Date(),
-                        sender: 'ai'
+                        sender: 'ai',
+                        isUser: false
                     };
                     setMessages(prev => [...prev, newMessage]);
                 }} />

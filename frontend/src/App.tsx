@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ThemeProvider, createTheme, CssBaseline, Box, Tabs, Tab, Paper } from '@mui/material';
-import UltimateChatGPTInterface from './components/UltimateChatGPTInterface';
-import IntegratedAIChat from './components/IntegratedAIChat';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
+import SimpleChatInterface from './components/SimpleChatInterface';
+import TestComponent from './components/TestComponent';
+import AuthWrapper from './components/AuthWrapper';
 
 // 테마 생성
 const theme = createTheme({
@@ -97,35 +97,34 @@ const App: React.FC = () => {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Paper sx={{ borderRadius: 0, boxShadow: 1 }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            aria-label="CORBU AI 인터페이스 탭"
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
-          >
-            <Tab label="기본 채팅" />
-            <Tab label="통합 AI 채팅" />
-            <Tab label="분석 대시보드" />
-          </Tabs>
-        </Paper>
+    <AuthWrapper>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <Paper sx={{ borderRadius: 0, boxShadow: 1 }}>
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              aria-label="CORBU AI 인터페이스 탭"
+              sx={{ borderBottom: 1, borderColor: 'divider' }}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab label="🤖 CORBU AI 채팅" />
+              <Tab label="테스트" />
+            </Tabs>
+          </Paper>
 
-        <TabPanel value={tabValue} index={0}>
-          <UltimateChatGPTInterface />
-        </TabPanel>
+          <TabPanel value={tabValue} index={0}>
+            <SimpleChatInterface />
+          </TabPanel>
 
-        <TabPanel value={tabValue} index={1}>
-          <IntegratedAIChat />
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={2}>
-          <AnalyticsDashboard />
-        </TabPanel>
-      </Box>
-    </ThemeProvider>
+          <TabPanel value={tabValue} index={1}>
+            <TestComponent />
+          </TabPanel>
+        </Box>
+      </ThemeProvider>
+    </AuthWrapper>
   );
 };
 

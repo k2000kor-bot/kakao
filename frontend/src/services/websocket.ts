@@ -114,5 +114,5 @@ class WebSocketService {
 }
 
 // WebSocket 서비스 인스턴스 생성
-export const websocketService = new WebSocketService('ws://localhost:8000/api/security-websocket/ws/client1');
+export const websocketService = new WebSocketService('ws://localhost:8002/ws');
 export default websocketService; 

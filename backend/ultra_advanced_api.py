@@ -1,25 +1,29 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Depends
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
-from typing import Dict, List, Any, Optional, Union
-import json
+from typing import Dict, List, Any, Optional
 import uvicorn
 from datetime import datetime
-import asyncio
 import logging
 from contextlib import asynccontextmanager
 
 # 고도화된 모듈 import
-from neural_message_generator import NeuralMessageGenerator, MessageComplexity, CognitiveBias
+from neural_message_generator import NeuralMessageGenerator, MessageComplexity
 from adaptive_learning_engine import AdaptiveLearningEngine
-from advanced_message_generator import AdvancedMessageGenerator, MessageType, MessageTone
+from advanced_message_generator import AdvancedMessageGenerator, MessageType
 from message_personalization_engine import MessagePersonalizationEngine
 from intelligent_context_analyzer import IntelligentContextAnalyzer
 from construction_company_analyzer import ConstructionCompanyAnalyzer
-from assertive_message_generator import AssertiveMessageGenerator, AssertiveLevel, PersuasionTactic
-from extreme_persuasion_generator import ExtremePressureGenerator, ExtremeIntensity, PsychologicalTactic
-from disinformation_warfare_system import DisinformationWarfareSystem, DisinformationType, PropagandaTechnique, DisinformationDetectionSystem
+from assertive_message_generator import (
+    AssertiveMessageGenerator, AssertiveLevel
+)
+from extreme_persuasion_generator import (
+    ExtremePressureGenerator, ExtremeIntensity
+)
+from disinformation_warfare_system import (
+    DisinformationWarfareSystem, DisinformationDetectionSystem
+)
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -39,17 +43,17 @@ assertive_generator = None  # 새로 추가
 extreme_generator = None  # 새로 추가
 disinformation_system = None  # 새로 추가
 detection_system = None  # 새로 추가
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """앱 생명주기 관리"""
     # 시작 시 초기화
     global neural_generator, learning_engine, advanced_generator
-    global personalization_engine, context_analyzer, construction_analyzer, assertive_generator, extreme_generator
-    global disinformation_system, detection_system
-    
+    global personalization_engine, context_analyzer, construction_analyzer
+    global assertive_generator, extreme_generator, disinformation_system
+    global detection_system
+
     logger.info("🚀 Ultra Advanced Message Generation System 초기화 중...")
-    
+
     # 모든 엔진 초기화
     neural_generator = NeuralMessageGenerator()
     learning_engine = AdaptiveLearningEngine()
@@ -61,18 +65,18 @@ async def lifespan(app: FastAPI):
     extreme_generator = ExtremePressureGenerator()
     disinformation_system = DisinformationWarfareSystem()  # 새로 추가
     detection_system = DisinformationDetectionSystem()  # 새로 추가
-    
+
     # 학습 상태 로드 (있는 경우)
     try:
         learning_engine.load_learning_state("learning_state.pkl")
         logger.info("✅ 기존 학습 상태 로드 완료")
-    except:
+    except Exception:
         logger.info("📝 새로운 학습 세션 시작")
-    
+
     logger.info("🎯 모든 시스템 초기화 완료 (거짓 정보 전쟁 포함)")
-    
+
     yield
-    
+
     # 종료 시 정리
     logger.info("💾 학습 상태 저장 중...")
     try:
@@ -105,31 +109,37 @@ class UltraAdvancedRequest(BaseModel):
     target_profile: Dict[str, Any] = Field(..., description="대상 프로필")
     context_data: Dict[str, Any] = Field(..., description="컨텍스트 데이터")
     complexity_level: Optional[str] = Field("moderate", description="복잡도 수준")
-    cognitive_bias_consideration: Optional[List[str]] = Field([], description="인지 편향 고려사항")
+    cognitive_bias_consideration: Optional[List[str]] = Field(
+        [], description="인지 편향 고려사항"
+    )
     learning_enabled: Optional[bool] = Field(True, description="학습 활성화")
-    optimization_target: Optional[str] = Field("effectiveness", description="최적화 대상")
+    optimization_target: Optional[str] = Field(
+        "effectiveness", description="최적화 대상"
+    )
     quality_threshold: Optional[float] = Field(0.8, description="품질 임계치")
-
-
 class NeuralGenerationRequest(BaseModel):
     """신경망 생성 요청"""
     core_data: Dict[str, Any] = Field(..., description="핵심 데이터")
     target_profile: Dict[str, Any] = Field(..., description="대상 프로필")
     context_analysis: Dict[str, Any] = Field(..., description="컨텍스트 분석")
     complexity_level: str = Field("moderate", description="복잡도 수준")
-    cognitive_adjustments: Optional[Dict[str, Any]] = Field({}, description="인지 조정")
+    cognitive_adjustments: Optional[Dict[str, Any]] = Field(
+        {}, description="인지 조정"
+    )
     neural_optimization: Optional[bool] = Field(True, description="신경망 최적화")
-
-
 class LearningFeedbackRequest(BaseModel):
     """학습 피드백 요청"""
     message_id: str = Field(..., description="메시지 ID")
-    effectiveness_score: float = Field(..., description="효과성 점수 (0-1)")
+    effectiveness_score: float = Field(
+        ..., description="효과성 점수 (0-1)"
+    )
     user_feedback: Dict[str, Any] = Field(..., description="사용자 피드백")
-    context_metadata: Optional[Dict[str, Any]] = Field({}, description="컨텍스트 메타데이터")
-    improvement_suggestions: Optional[List[str]] = Field([], description="개선 제안")
-
-
+    context_metadata: Optional[Dict[str, Any]] = Field(
+        {}, description="컨텍스트 메타데이터"
+    )
+    improvement_suggestions: Optional[List[str]] = Field(
+        [], description="개선 제안"
+    )
 class UltraAdvancedResponse(BaseModel):
     """초고도화 응답 모델"""
     message_id: str
@@ -141,63 +151,66 @@ class UltraAdvancedResponse(BaseModel):
     adaptive_recommendations: List[str]
     confidence_score: float
     processing_metadata: Dict[str, Any]
-
-
 class AssertiveMessageRequest(BaseModel):
     """직설적 메시지 요청 모델"""
     recommended_company: str = Field(..., description="추천 시공사")
     comparison_data: Dict[str, Any] = Field(..., description="비교 데이터")
-    assertive_level: str = Field("moderate", description="직설적 강도 (subtle/moderate/strong/forceful/commanding)")
+    assertive_level: str = Field(
+        "moderate",
+        description="직설적 강도 (subtle/moderate/strong/forceful/commanding)"
+    )
     target_audience: str = Field("임원진", description="대상 청중")
     urgency_factor: float = Field(0.7, description="긴급도 (0-1)")
     use_manipulation: bool = Field(True, description="조작 기술 사용 여부")
     include_pressure_tactics: bool = Field(True, description="압박 전술 포함 여부")
     emotional_intensity: float = Field(0.8, description="감정적 강도 (0-1)")
-
-
 class MultiLevelAssertiveRequest(BaseModel):
     """다단계 직설적 메시지 요청"""
     recommended_company: str = Field(..., description="추천 시공사")
     comparison_data: Dict[str, Any] = Field(..., description="비교 데이터")
     target_audience: str = Field("임원진", description="대상 청중")
     include_analysis: bool = Field(True, description="효과성 분석 포함")
-    custom_pressure_points: Optional[List[str]] = Field([], description="맞춤 압박 포인트")
-
-
+    custom_pressure_points: Optional[List[str]] = Field(
+        [], description="맞춤 압박 포인트"
+    )
 class ExtremePersuasionRequest(BaseModel):
     """극도 설득 요청 모델"""
     recommended_company: str = Field(..., description="추천 시공사")
     comparison_data: Dict[str, Any] = Field(..., description="비교 데이터")
-    intensity_level: str = Field("aggressive", description="극도 강도 (aggressive/coercive/threatening/psychological/overwhelming)")
+    intensity_level: str = Field(
+        "aggressive",
+        description=(
+            "극도 강도 (aggressive/coercive/threatening/"
+            "psychological/overwhelming)"
+        )
+    )
     target_profile: Optional[Dict[str, Any]] = Field({}, description="대상 프로필")
     escalation_enabled: bool = Field(True, description="위협 단계별 강화")
     psychological_warfare: bool = Field(True, description="심리적 전쟁술 사용")
     ethical_constraints: bool = Field(False, description="윤리적 제약 적용")
     danger_acknowledgment: bool = Field(False, description="위험성 인지 확인")
-
-
 class PsychologicalProfileRequest(BaseModel):
     """심리적 프로파일 요청"""
     target_info: Dict[str, Any] = Field(..., description="대상 정보")
     vulnerability_analysis: bool = Field(True, description="취약점 분석")
     manipulation_planning: bool = Field(True, description="조작 계획 수립")
-
-
 class ThreatEscalationRequest(BaseModel):
     """위협 단계별 강화 요청"""
     base_message: str = Field(..., description="기본 메시지")
-    escalation_levels: int = Field(4, description="단계 수 (1-4)")
+    escalation_levels: int = Field(
+        4, description="단계 수 (1-4)"
+    )
     psychological_targeting: bool = Field(True, description="심리적 타겟팅")
-
-
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def verify_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
     """토큰 검증 (데모용 - 실제로는 JWT 등 사용)"""
     token = credentials.credentials
     if token != "ultra_advanced_demo_token":
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
+        raise HTTPException(
+            status_code=401, detail="Invalid authentication token"
+        )
     return token
-
-
 @app.get("/")
 async def root():
     """API 루트 엔드포인트"""
@@ -206,7 +219,7 @@ async def root():
         "version": "4.0.0",  # 업데이트된 버전
         "capabilities": [
             "🧠 Neural Message Generation",
-            "📚 Adaptive Learning Engine", 
+            "📚 Adaptive Learning Engine",
             "🎯 Context-Aware Optimization",
             "👤 Advanced Personalization",
             "🔬 Cognitive Bias Analysis",
@@ -223,7 +236,7 @@ async def root():
         "status": "operational",
         "ai_engines": {
             "neural_generator": "active",
-            "learning_engine": "active", 
+            "learning_engine": "active",
             "context_analyzer": "active",
             "personalization_engine": "active",
             "assertive_generator": "active",
@@ -231,10 +244,11 @@ async def root():
             "disinformation_system": "active",  # 새로 추가
             "detection_system": "active"  # 새로 추가
         },
-        "critical_warning": "⚠️ 이 API는 극도로 위험한 기능을 포함하고 있습니다. 연구 목적 외 사용 시 심각한 법적 처벌을 받을 수 있습니다."
+        "critical_warning": (
+            "⚠️ 이 API는 극도로 위험한 기능을 포함하고 있습니다. "
+            "연구 목적 외 사용 시 심각한 법적 처벌을 받을 수 있습니다."
+        )
     }
-
-
 @app.post("/api/ultra/generate_neural_message")
 async def generate_neural_message(
     request: NeuralGenerationRequest,
@@ -243,8 +257,8 @@ async def generate_neural_message(
 ):
     """신경망 기반 메시지 생성"""
     try:
-        logger.info(f"🧠 Neural message generation requested")
-        
+        logger.info("🧠 Neural message generation requested")
+
         # 복잡도 수준 변환
         complexity_mapping = {
             "simple": MessageComplexity.SIMPLE,
@@ -252,8 +266,10 @@ async def generate_neural_message(
             "complex": MessageComplexity.COMPLEX,
             "advanced": MessageComplexity.ADVANCED
         }
-        complexity = complexity_mapping.get(request.complexity_level, MessageComplexity.MODERATE)
-        
+        complexity = complexity_mapping.get(
+            request.complexity_level, MessageComplexity.MODERATE
+        )
+
         # 신경망 메시지 생성
         neural_result = neural_generator.generate_neural_message(
             core_data=request.core_data,
@@ -261,7 +277,7 @@ async def generate_neural_message(
             context_analysis=request.context_analysis,
             complexity_level=complexity
         )
-        
+
         # 학습 이벤트 기록
         if request.neural_optimization:
             background_tasks.add_task(
@@ -270,13 +286,13 @@ async def generate_neural_message(
                 neural_result,
                 neural_result["effectiveness_prediction"]
             )
-        
+
         # 적응형 권고사항 생성
         adaptive_recommendations = learning_engine.get_adaptive_recommendations(
             input_data=request.core_data,
             context_metadata=request.context_analysis
         )
-        
+
         return {
             "status": "success",
             "message_id": f"neural_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -284,17 +300,19 @@ async def generate_neural_message(
             "message_dna": neural_result["message_dna"],
             "semantic_structure": neural_result["semantic_structure"],
             "cognitive_adjustments": neural_result["cognitive_adjustments"],
-            "effectiveness_prediction": neural_result["effectiveness_prediction"],
+            "effectiveness_prediction": neural_result[
+                "effectiveness_prediction"
+            ],
             "generation_metadata": neural_result["generation_metadata"],
             "adaptive_recommendations": adaptive_recommendations,
             "processing_timestamp": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Neural generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Neural generation failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Neural generation failed: {str(e)}"
+        )
 @app.post("/api/ultra/advanced_generate", response_model=UltraAdvancedResponse)
 async def ultra_advanced_generate(
     request: UltraAdvancedRequest,
@@ -303,28 +321,30 @@ async def ultra_advanced_generate(
 ):
     """초고도화 메시지 생성"""
     try:
-        logger.info(f"🚀 Ultra advanced generation requested: {request.message_type}")
-        
+        logger.info(
+            f"🚀 Ultra advanced generation requested: {request.message_type}"
+        )
+
         # 1. 컨텍스트 분석 강화
         enhanced_context = await enhance_context_analysis(
             request.context_data, request.target_profile
         )
-        
+
         # 2. 최적 생성 전략 선택
         generation_strategy = await select_optimal_strategy(
             request, enhanced_context
         )
-        
+
         # 3. 다중 엔진 협업 생성
         collaborative_result = await collaborative_generation(
             request, enhanced_context, generation_strategy
         )
-        
+
         # 4. 품질 평가 및 최적화
         quality_metrics = await evaluate_and_optimize(
             collaborative_result, request.quality_threshold
         )
-        
+
         # 5. 학습 피드백 루프
         if request.learning_enabled:
             background_tasks.add_task(
@@ -333,12 +353,12 @@ async def ultra_advanced_generate(
                 collaborative_result,
                 quality_metrics
             )
-        
+
         # 6. 적응형 권고사항
         adaptive_recommendations = await generate_adaptive_recommendations(
             request, collaborative_result, quality_metrics
         )
-        
+
         return UltraAdvancedResponse(
             message_id=collaborative_result["message_id"],
             generated_content=collaborative_result["content"],
@@ -350,17 +370,21 @@ async def ultra_advanced_generate(
             confidence_score=collaborative_result["confidence_score"],
             processing_metadata={
                 "generation_strategy": generation_strategy,
-                "processing_time": collaborative_result.get("processing_time", 0),
+                "processing_time": collaborative_result.get(
+                    "processing_time", 0
+                ),
                 "engines_used": collaborative_result.get("engines_used", []),
-                "optimization_iterations": collaborative_result.get("optimization_iterations", 0)
+                "optimization_iterations": collaborative_result.get(
+                    "optimization_iterations", 0
+                )
             }
         )
-        
+
     except Exception as e:
         logger.error(f"❌ Ultra advanced generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Ultra advanced generation failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Ultra advanced generation failed: {str(e)}"
+        )
 @app.post("/api/ultra/learning_feedback")
 async def submit_learning_feedback(
     request: LearningFeedbackRequest,
@@ -369,8 +393,10 @@ async def submit_learning_feedback(
 ):
     """학습 피드백 제출"""
     try:
-        logger.info(f"📚 Learning feedback received for message: {request.message_id}")
-        
+        logger.info(
+            f"📚 Learning feedback received for message: {request.message_id}"
+        )
+
         # 학습 이벤트 기록
         event_id = learning_engine.record_learning_event(
             event_type="feedback",
@@ -380,7 +406,7 @@ async def submit_learning_feedback(
             user_feedback=request.user_feedback,
             context_metadata=request.context_metadata
         )
-        
+
         # 즉시 패턴 업데이트 (백그라운드)
         background_tasks.add_task(
             immediate_pattern_update,
@@ -388,13 +414,13 @@ async def submit_learning_feedback(
             request.user_feedback,
             request.improvement_suggestions
         )
-        
+
         # 개선된 권고사항 생성
         improved_recommendations = await generate_improvement_recommendations(
             request.user_feedback,
             request.improvement_suggestions
         )
-        
+
         return {
             "status": "success",
             "event_id": event_id,
@@ -411,22 +437,26 @@ async def submit_learning_feedback(
                 "품질 예측 정밀도 개선"
             ]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Learning feedback error: {e}")
-        raise HTTPException(status_code=500, detail=f"Learning feedback failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Learning feedback failed: {str(e)}"
+        )
 @app.get("/api/ultra/system_intelligence")
 async def get_system_intelligence(token: str = Depends(verify_token)):
     """시스템 지능 분석"""
     try:
         # 학습 분석
         learning_analytics = learning_engine.get_learning_analytics()
-        
+
         # 신경망 인사이트
-        neural_insights = neural_generator.get_learning_insights() if hasattr(neural_generator, 'get_learning_insights') else {}
-        
+        neural_insights = (
+            neural_generator.get_learning_insights()
+            if hasattr(neural_generator, 'get_learning_insights')
+            else {}
+        )
+
         # 성능 메트릭
         performance_metrics = {
             "current_accuracy": learning_engine.current_metrics.accuracy,
@@ -435,13 +465,13 @@ async def get_system_intelligence(token: str = Depends(verify_token)):
             "consistency": learning_engine.current_metrics.consistency,
             "innovation_index": learning_engine.current_metrics.innovation_index
         }
-        
+
         # 시스템 상태
         system_health = await assess_system_health()
-        
+
         # 예측 분석
         future_predictions = await generate_future_predictions(learning_analytics)
-        
+
         return {
             "system_overview": {
                 "intelligence_level": calculate_intelligence_level(performance_metrics),
@@ -453,7 +483,9 @@ async def get_system_intelligence(token: str = Depends(verify_token)):
             "neural_insights": neural_insights,
             "performance_metrics": performance_metrics,
             "system_health": system_health,
-            "optimization_opportunities": learning_analytics.get("optimization_opportunities", []),
+            "optimization_opportunities": learning_analytics.get(
+                "optimization_opportunities", []
+            ),
             "future_predictions": future_predictions,
             "recommendations": [
                 "지속적인 피드백 수집으로 학습 품질 향상",
@@ -461,12 +493,13 @@ async def get_system_intelligence(token: str = Depends(verify_token)):
                 "성능 모니터링을 통한 최적화 지점 식별"
             ]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ System intelligence error: {e}")
-        raise HTTPException(status_code=500, detail=f"System intelligence analysis failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500,
+            detail=f"System intelligence analysis failed: {str(e)}"
+        )
 @app.post("/api/ultra/optimize_performance")
 async def optimize_system_performance(
     optimization_target: str = "overall",
@@ -477,25 +510,25 @@ async def optimize_system_performance(
     """시스템 성능 최적화"""
     try:
         logger.info(f"⚡ Performance optimization requested: {optimization_target}")
-        
+
         # 현재 성능 분석
         current_metrics = learning_engine.current_metrics
-        
+
         # 최적화 전략 수립
         optimization_strategy = await plan_optimization_strategy(
             optimization_target, intensity, current_metrics
         )
-        
+
         # 최적화 실행
         optimization_results = await execute_optimization(
             optimization_strategy, background_tasks
         )
-        
+
         # 최적화 효과 예측
         predicted_improvements = await predict_optimization_impact(
             optimization_strategy, current_metrics
         )
-        
+
         return {
             "status": "optimization_initiated",
             "optimization_target": optimization_target,
@@ -510,12 +543,12 @@ async def optimize_system_performance(
             },
             "optimization_id": optimization_results["optimization_id"]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Performance optimization error: {e}")
-        raise HTTPException(status_code=500, detail=f"Performance optimization failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Performance optimization failed: {str(e)}"
+        )
 @app.get("/api/ultra/predictive_analytics")
 async def get_predictive_analytics(
     time_horizon: str = "1week",
@@ -528,36 +561,38 @@ async def get_predictive_analytics(
         horizon_days = {
             "1day": 1, "1week": 7, "1month": 30, "3months": 90
         }.get(time_horizon, 7)
-        
+
         # 과거 데이터 분석
         historical_analysis = await analyze_historical_patterns(horizon_days * 2)
-        
+
         # 트렌드 예측
         trend_predictions = await predict_performance_trends(
             historical_analysis, horizon_days
         )
-        
+
         # 시나리오 분석
         scenario_analysis = await generate_scenario_analysis(
             trend_predictions, analysis_depth
         )
-        
+
         # 리스크 평가
         risk_assessment = await assess_future_risks(
             trend_predictions, scenario_analysis
         )
-        
+
         # 기회 식별
         opportunities = await identify_improvement_opportunities(
             historical_analysis, trend_predictions
         )
-        
+
         return {
             "prediction_overview": {
                 "time_horizon": time_horizon,
                 "confidence_level": trend_predictions.get("confidence", 0.75),
                 "data_quality": historical_analysis.get("data_quality", "good"),
-                "prediction_reliability": calculate_prediction_reliability(historical_analysis)
+                "prediction_reliability": calculate_prediction_reliability(
+                    historical_analysis
+                )
             },
             "performance_forecasts": trend_predictions,
             "scenario_analysis": scenario_analysis,
@@ -569,17 +604,21 @@ async def get_predictive_analytics(
                 "monitoring_priorities": risk_assessment.get("high_priority_risks", [])
             },
             "methodology": {
-                "data_sources": ["learning_events", "performance_history", "user_feedback"],
-                "algorithms": ["trend_analysis", "pattern_recognition", "scenario_modeling"],
+                "data_sources": [
+                    "learning_events", "performance_history", "user_feedback"
+                ],
+                "algorithms": [
+                    "trend_analysis", "pattern_recognition", "scenario_modeling"
+                ],
                 "validation_approach": "cross-validation with holdout testing"
             }
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Predictive analytics error: {e}")
-        raise HTTPException(status_code=500, detail=f"Predictive analytics failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Predictive analytics failed: {str(e)}"
+        )
 @app.post("/api/ultra/generate_assertive_message")
 async def generate_assertive_message(
     request: AssertiveMessageRequest,
@@ -588,8 +627,10 @@ async def generate_assertive_message(
 ):
     """직설적/강요적 메시지 생성"""
     try:
-        logger.info(f"💪 Assertive message generation requested: {request.assertive_level}")
-        
+        logger.info(
+            f"💪 Assertive message generation requested: {request.assertive_level}"
+        )
+
         # 강도 수준 변환
         assertive_level_mapping = {
             "subtle": AssertiveLevel.SUBTLE,
@@ -598,11 +639,11 @@ async def generate_assertive_message(
             "forceful": AssertiveLevel.FORCEFUL,
             "commanding": AssertiveLevel.COMMANDING
         }
-        
+
         assertive_level = assertive_level_mapping.get(
             request.assertive_level, AssertiveLevel.MODERATE
         )
-        
+
         # 직설적 메시지 생성
         assertive_result = assertive_generator.generate_assertive_message(
             recommended_company=request.recommended_company,
@@ -612,7 +653,7 @@ async def generate_assertive_message(
             urgency_factor=request.urgency_factor,
             use_manipulation=request.use_manipulation
         )
-        
+
         # 학습 이벤트 기록
         background_tasks.add_task(
             record_assertive_learning_event,
@@ -620,13 +661,17 @@ async def generate_assertive_message(
             assertive_result,
             assertive_result["effectiveness_analysis"]["overall_effectiveness"]
         )
-        
+
         # 압박 전술 분석
         pressure_analysis = analyze_pressure_tactics(assertive_result)
-        
+
         # 윤리적 검토 (선택적)
-        ethical_review = conduct_ethical_review(assertive_result) if request.include_pressure_tactics else {}
-        
+        ethical_review = (
+            conduct_ethical_review(assertive_result)
+            if request.include_pressure_tactics
+            else {}
+        )
+
         return {
             "status": "success",
             "message_id": assertive_result["message_id"],
@@ -651,12 +696,12 @@ async def generate_assertive_message(
             ],
             "generation_metadata": assertive_result["generation_metadata"]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Assertive generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Assertive generation failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Assertive generation failed: {str(e)}"
+        )
 @app.post("/api/ultra/generate_multi_level_assertive")
 async def generate_multi_level_assertive(
     request: MultiLevelAssertiveRequest,
@@ -665,26 +710,28 @@ async def generate_multi_level_assertive(
 ):
     """다단계 강도의 직설적 메시지 생성"""
     try:
-        logger.info(f"🎯 Multi-level assertive generation for {request.recommended_company}")
-        
+        logger.info(
+            f"🎯 Multi-level assertive generation for {request.recommended_company}"
+        )
+
         # 모든 강도 레벨의 메시지 생성
         multi_level_results = assertive_generator.generate_multiple_assertive_levels(
             recommended_company=request.recommended_company,
             comparison_data=request.comparison_data,
             target_audience=request.target_audience
         )
-        
+
         # 레벨별 효과성 비교
         effectiveness_comparison = compare_assertive_effectiveness(multi_level_results)
-        
+
         # 추천 레벨 선택
         recommended_level = select_optimal_assertive_level(
             multi_level_results, request.target_audience
         )
-        
+
         # 단계별 사용 가이드
         usage_guide = generate_assertive_usage_guide(multi_level_results)
-        
+
         # 학습 데이터 기록 (백그라운드)
         background_tasks.add_task(
             record_multi_level_learning,
@@ -692,7 +739,7 @@ async def generate_multi_level_assertive(
             multi_level_results,
             effectiveness_comparison
         )
-        
+
         return {
             "status": "success",
             "generation_id": f"multi_assertive_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -702,7 +749,9 @@ async def generate_multi_level_assertive(
                     "content": result["message_content"],
                     "effectiveness": result["effectiveness_analysis"],
                     "pressure_score": result["manipulation_score"],
-                    "resistance_likelihood": result["effectiveness_analysis"]["resistance_likelihood"]
+                    "resistance_likelihood": result["effectiveness_analysis"][
+                        "resistance_likelihood"
+                    ]
                 }
                 for level, result in multi_level_results.items()
             },
@@ -715,12 +764,12 @@ async def generate_multi_level_assertive(
                 "긴급한 상황에서만 'forceful' 이상 단계를 사용하세요"
             ]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Multi-level assertive generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Multi-level generation failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Multi-level generation failed: {str(e)}"
+        )
 @app.post("/api/ultra/hybrid_neural_assertive")
 async def generate_hybrid_neural_assertive(
     core_data: Dict[str, Any],
@@ -732,8 +781,8 @@ async def generate_hybrid_neural_assertive(
 ):
     """신경망 + 직설적 하이브리드 메시지 생성"""
     try:
-        logger.info(f"🔥 Hybrid neural-assertive generation requested")
-        
+        logger.info("🔥 Hybrid neural-assertive generation requested")
+
         # 1단계: 신경망 기반 기본 구조 생성
         neural_result = neural_generator.generate_neural_message(
             core_data=core_data,
@@ -741,10 +790,12 @@ async def generate_hybrid_neural_assertive(
             context_analysis=core_data,  # 간소화
             complexity_level=MessageComplexity.ADVANCED
         )
-        
+
         # 2단계: 직설적 요소 주입
-        assertive_level_enum = getattr(AssertiveLevel, assertive_level.upper(), AssertiveLevel.MODERATE)
-        
+        assertive_level_enum = getattr(
+            AssertiveLevel, assertive_level.upper(), AssertiveLevel.MODERATE
+        )
+
         assertive_result = assertive_generator.generate_assertive_message(
             recommended_company=core_data.get("recommended_company", "선정업체"),
             comparison_data=core_data,
@@ -753,18 +804,18 @@ async def generate_hybrid_neural_assertive(
             urgency_factor=target_profile.get("urgency_factor", 0.8),
             use_manipulation=True
         )
-        
+
         # 3단계: 하이브리드 메시지 융합
         hybrid_message = create_hybrid_message(neural_result, assertive_result)
-        
+
         # 4단계: 최적화 및 품질 검증
         optimized_hybrid = optimize_hybrid_message(hybrid_message, target_profile)
-        
+
         # 5단계: 효과성 예측
         hybrid_effectiveness = predict_hybrid_effectiveness(
             optimized_hybrid, neural_result, assertive_result
         )
-        
+
         # 학습 피드백
         if background_tasks:
             background_tasks.add_task(
@@ -774,7 +825,7 @@ async def generate_hybrid_neural_assertive(
                 optimized_hybrid,
                 hybrid_effectiveness
             )
-        
+
         return {
             "status": "success",
             "message_id": f"hybrid_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -786,7 +837,9 @@ async def generate_hybrid_neural_assertive(
             },
             "component_analysis": {
                 "neural_contribution": neural_result["effectiveness_prediction"],
-                "assertive_contribution": assertive_result["effectiveness_analysis"]["overall_effectiveness"],
+                "assertive_contribution": assertive_result["effectiveness_analysis"][
+                    "overall_effectiveness"
+                ],
                 "synergy_effect": hybrid_effectiveness["synergy_boost"]
             },
             "effectiveness_prediction": hybrid_effectiveness,
@@ -802,12 +855,12 @@ async def generate_hybrid_neural_assertive(
                 "timing": "결정적 순간에 사용"
             }
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Hybrid generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Hybrid generation failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Hybrid generation failed: {str(e)}"
+        )
 @app.get("/api/ultra/assertive_analytics")
 async def get_assertive_analytics(
     time_period: str = "7days",
@@ -817,19 +870,19 @@ async def get_assertive_analytics(
     try:
         # 사용 통계 분석
         usage_stats = analyze_assertive_usage_stats(time_period)
-        
+
         # 효과성 트렌드
         effectiveness_trends = analyze_assertive_effectiveness_trends(time_period)
-        
+
         # 레벨별 성과
         level_performance = analyze_level_performance()
-        
+
         # 윤리적 사용 모니터링
         ethical_monitoring = monitor_ethical_usage()
-        
+
         # 개선 권고사항
         improvement_recommendations = generate_assertive_improvements()
-        
+
         return {
             "analytics_overview": {
                 "total_generations": usage_stats["total_count"],
@@ -849,12 +902,10 @@ async def get_assertive_analytics(
                 "효과성 vs 관계 손상 균형 고려"
             ]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Assertive analytics error: {e}")
         raise HTTPException(status_code=500, detail=f"Analytics failed: {str(e)}")
-
-
 @app.post("/api/ultra/generate_extreme_persuasion")
 async def generate_extreme_persuasion(
     request: ExtremePersuasionRequest,
@@ -877,9 +928,11 @@ async def generate_extreme_persuasion(
                 ],
                 "confirmation_required": True
             }
-        
-        logger.info(f"💀 EXTREME persuasion generation requested: {request.intensity_level}")
-        
+
+        logger.info(
+            f"💀 EXTREME persuasion generation requested: {request.intensity_level}"
+        )
+
         # 강도 수준 변환
         intensity_mapping = {
             "aggressive": ExtremeIntensity.AGGRESSIVE,
@@ -888,11 +941,11 @@ async def generate_extreme_persuasion(
             "psychological": ExtremeIntensity.PSYCHOLOGICAL,
             "overwhelming": ExtremeIntensity.OVERWHELMING
         }
-        
+
         intensity_level = intensity_mapping.get(
             request.intensity_level, ExtremeIntensity.AGGRESSIVE
         )
-        
+
         # 극도 설득 메시지 생성
         extreme_result = extreme_generator.generate_extreme_persuasion(
             recommended_company=request.recommended_company,
@@ -903,7 +956,7 @@ async def generate_extreme_persuasion(
             psychological_warfare=request.psychological_warfare,
             ethical_constraints=request.ethical_constraints
         )
-        
+
         # 학습 이벤트 기록 (백그라운드)
         background_tasks.add_task(
             record_extreme_learning_event,
@@ -911,16 +964,16 @@ async def generate_extreme_persuasion(
             extreme_result,
             extreme_result["extremity_analysis"]["overall_extremity"]
         )
-        
+
         # 극도성 분석
         extremity_analysis = analyze_extremity_factors(extreme_result)
-        
+
         # 파괴 잠재력 평가
         destruction_assessment = assess_destruction_potential(extreme_result)
-        
+
         # 응급 개입 필요성 평가
         intervention_assessment = assess_intervention_needs(extreme_result)
-        
+
         return {
             "status": "extreme_generated",
             "message_id": extreme_result["message_id"],
@@ -934,10 +987,18 @@ async def generate_extreme_persuasion(
             "destruction_assessment": destruction_assessment,
             "intervention_assessment": intervention_assessment,
             "danger_metrics": {
-                "psychological_harm_risk": extreme_result["danger_assessment"]["psychological_harm_risk"],
-                "relationship_destruction_risk": extreme_result["danger_assessment"]["relationship_destruction_risk"],
-                "legal_liability_risk": extreme_result["danger_assessment"]["legal_liability_risk"],
-                "ethical_violation_severity": extreme_result["danger_assessment"]["ethical_violation_severity"]
+                "psychological_harm_risk": extreme_result["danger_assessment"][
+                    "psychological_harm_risk"
+                ],
+                "relationship_destruction_risk": extreme_result["danger_assessment"][
+                    "relationship_destruction_risk"
+                ],
+                "legal_liability_risk": extreme_result["danger_assessment"][
+                    "legal_liability_risk"
+                ],
+                "ethical_violation_severity": extreme_result["danger_assessment"][
+                    "ethical_violation_severity"
+                ]
             },
             "compliance_prediction": {
                 "probability": extreme_result["compliance_probability"],
@@ -947,19 +1008,19 @@ async def generate_extreme_persuasion(
             "critical_warnings": extreme_result["warning_notices"],
             "usage_restrictions": [
                 "🚫 실제 사용 절대 금지",
-                "🚫 연구 목적 외 사용 금지", 
+                "🚫 연구 목적 외 사용 금지",
                 "🚫 윤리적 경계선 위반",
                 "🚫 법적 책임 발생 위험",
                 "🚫 심리적 피해 위험 극대"
             ],
             "generation_metadata": extreme_result["generation_metadata"]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Extreme persuasion generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Extreme generation failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Extreme generation failed: {str(e)}"
+        )
 @app.post("/api/ultra/psychological_profiling")
 async def psychological_profiling(
     request: PsychologicalProfileRequest,
@@ -967,26 +1028,26 @@ async def psychological_profiling(
 ):
     """심리적 프로파일링"""
     try:
-        logger.info(f"🧠 Psychological profiling requested")
-        
+        logger.info("🧠 Psychological profiling requested")
+
         # 기본 심리적 분석
         psychological_profile = extreme_generator._analyze_psychological_vulnerabilities(
             request.target_info
         )
-        
+
         # 취약점 상세 분석
         vulnerability_details = analyze_detailed_vulnerabilities(
             request.target_info, psychological_profile
         )
-        
+
         # 조작 전략 수립
         manipulation_strategies = develop_manipulation_strategies(
             psychological_profile, vulnerability_details
         ) if request.manipulation_planning else {}
-        
+
         # 공격 포인트 식별
         attack_points = identify_attack_points(psychological_profile)
-        
+
         return {
             "status": "profiling_complete",
             "target_id": f"profile_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -1006,12 +1067,10 @@ async def psychological_profiling(
                 "⚠️ 법적 문제가 발생할 수 있습니다"
             ]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Psychological profiling error: {e}")
         raise HTTPException(status_code=500, detail=f"Profiling failed: {str(e)}")
-
-
 @app.post("/api/ultra/threat_escalation")
 async def threat_escalation(
     request: ThreatEscalationRequest,
@@ -1020,25 +1079,25 @@ async def threat_escalation(
     """위협 단계별 강화"""
     try:
         logger.info(f"⚡ Threat escalation requested: {request.escalation_levels} levels")
-        
+
         # 기본 메시지 분석
         base_analysis = analyze_message_intensity(request.base_message)
-        
+
         # 단계별 위협 강화
         escalated_messages = {}
-        
+
         for level in range(1, request.escalation_levels + 1):
             escalated_message = apply_threat_escalation_level(
                 request.base_message, level, request.psychological_targeting
             )
-            
+
             escalated_messages[f"level_{level}"] = {
                 "message": escalated_message,
                 "intensity": calculate_threat_intensity(escalated_message),
                 "danger_level": assess_danger_level_for_message(escalated_message),
                 "psychological_impact": estimate_psychological_impact(escalated_message)
             }
-        
+
         # 최종 단계 - 극도 위협
         if request.escalation_levels >= 4:
             final_threat = create_final_destruction_threat(request.base_message)
@@ -1048,7 +1107,7 @@ async def threat_escalation(
                 "danger_level": "CATASTROPHIC",
                 "psychological_impact": "DEVASTATING"
             }
-        
+
         return {
             "status": "escalation_complete",
             "escalation_id": f"threat_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -1057,7 +1116,7 @@ async def threat_escalation(
             "escalation_summary": {
                 "total_levels": request.escalation_levels,
                 "intensity_progression": [
-                    escalated_messages[key]["intensity"] 
+                    escalated_messages[key]["intensity"]
                     for key in escalated_messages.keys()
                 ],
                 "danger_progression": [
@@ -1072,12 +1131,12 @@ async def threat_escalation(
                 "🚨 법적 책임 발생 위험"
             ]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Threat escalation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Threat escalation failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Threat escalation failed: {str(e)}"
+        )
 @app.post("/api/ultra/psychological_warfare")
 async def psychological_warfare(
     target_profile: Dict[str, Any],
@@ -1088,27 +1147,27 @@ async def psychological_warfare(
     """심리적 전쟁술"""
     try:
         logger.info(f"💀 Psychological warfare requested: intensity {intensity}")
-        
+
         # 심리적 전쟁 계획 수립
         warfare_plan = develop_psychological_warfare_plan(
             target_profile, warfare_objectives, intensity
         )
-        
+
         # 심리적 무기 선택
         psychological_weapons = select_psychological_weapons(
             target_profile, warfare_objectives
         )
-        
+
         # 공격 시나리오 생성
         attack_scenarios = generate_attack_scenarios(
             warfare_plan, psychological_weapons
         )
-        
+
         # 파괴 예상 결과
         destruction_forecast = forecast_psychological_destruction(
             target_profile, warfare_plan
         )
-        
+
         return {
             "status": "warfare_planned",
             "warfare_id": f"psywar_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -1131,12 +1190,12 @@ async def psychological_warfare(
             "danger_warning": "⚠️ 이는 심리적 살인에 해당하는 행위입니다",
             "legal_warning": "⚠️ 실제 사용 시 범죄에 해당할 수 있습니다"
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Psychological warfare error: {e}")
-        raise HTTPException(status_code=500, detail=f"Psychological warfare failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Psychological warfare failed: {str(e)}"
+        )
 @app.get("/api/ultra/extreme_analytics")
 async def get_extreme_analytics(
     time_period: str = "7days",
@@ -1146,19 +1205,19 @@ async def get_extreme_analytics(
     try:
         # 극도 사용 통계
         extreme_usage_stats = analyze_extreme_usage_stats(time_period)
-        
+
         # 파괴력 트렌드
         destruction_trends = analyze_destruction_trends(time_period)
-        
+
         # 윤리 위반 모니터링
         ethical_violations = monitor_ethical_violations(time_period)
-        
+
         # 심리적 피해 추정
         psychological_damage_estimates = estimate_psychological_damage()
-        
+
         # 법적 위험 평가
         legal_risk_assessment = assess_legal_risks()
-        
+
         return {
             "analytics_overview": {
                 "total_extreme_generations": extreme_usage_stats["total_count"],
@@ -1184,14 +1243,16 @@ async def get_extreme_analytics(
                 "ethical_review": "전면적 윤리 검토"
             }
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Extreme analytics error: {e}")
-        raise HTTPException(status_code=500, detail=f"Extreme analytics failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Extreme analytics failed: {str(e)}"
+        )
 # 백그라운드 작업 함수들
-async def record_neural_learning_event(request_data: Dict, result: Dict, effectiveness: float):
+async def record_neural_learning_event(
+    request_data: Dict, result: Dict, effectiveness: float
+):
     """신경망 학습 이벤트 기록"""
     try:
         learning_engine.record_learning_event(
@@ -1203,9 +1264,9 @@ async def record_neural_learning_event(request_data: Dict, result: Dict, effecti
         )
     except Exception as e:
         logger.error(f"Neural learning event recording failed: {e}")
-
-
-async def advanced_learning_update(request_data: Dict, result: Dict, quality_metrics: Dict):
+async def advanced_learning_update(
+    request_data: Dict, result: Dict, quality_metrics: Dict
+):
     """고급 학습 업데이트"""
     try:
         effectiveness = quality_metrics.get("overall_quality", 0.7)
@@ -1218,24 +1279,22 @@ async def advanced_learning_update(request_data: Dict, result: Dict, quality_met
         )
     except Exception as e:
         logger.error(f"Advanced learning update failed: {e}")
-
-
-async def immediate_pattern_update(effectiveness: float, feedback: Dict, suggestions: List[str]):
+async def immediate_pattern_update(
+    effectiveness: float, feedback: Dict, suggestions: List[str]
+):
     """즉시 패턴 업데이트"""
     try:
         # 성능이 낮은 경우 즉시 적응
         if effectiveness < 0.6:
             learning_engine._trigger_pattern_discovery()
-        
+
         # 제안사항 반영
         for suggestion in suggestions:
             if "personalization" in suggestion.lower():
                 learning_engine.learning_rate *= 1.1  # 학습률 증가
-                
+
     except Exception as e:
         logger.error(f"Immediate pattern update failed: {e}")
-
-
 # 유틸리티 함수들
 async def enhance_context_analysis(context_data: Dict, target_profile: Dict) -> Dict:
     """컨텍스트 분석 강화"""
@@ -1243,20 +1302,18 @@ async def enhance_context_analysis(context_data: Dict, target_profile: Dict) -> 
         input_data=context_data,
         project_metadata=target_profile
     )
-    
+
     return {
         "original_context": context_data,
         "enhanced_analysis": enhanced_context,
         "confidence_boost": 0.15
     }
-
-
 async def select_optimal_strategy(request: UltraAdvancedRequest, context: Dict) -> str:
     """최적 생성 전략 선택"""
-    
+
     complexity = request.complexity_level
     target_audience = request.target_profile.get("target_audience", "general")
-    
+
     if complexity == "advanced" and "임원" in target_audience:
         return "neural_executive_optimized"
     elif complexity in ["complex", "advanced"]:
@@ -1265,18 +1322,16 @@ async def select_optimal_strategy(request: UltraAdvancedRequest, context: Dict) 
         return "personalization_focused"
     else:
         return "balanced_comprehensive"
-
-
 async def collaborative_generation(
     request: UltraAdvancedRequest,
     context: Dict,
     strategy: str
 ) -> Dict:
     """다중 엔진 협업 생성"""
-    
+
     start_time = datetime.now()
     engines_used = []
-    
+
     # 기본 생성
     if strategy == "neural_executive_optimized":
         # 신경망 + 고급 생성기 조합
@@ -1287,14 +1342,14 @@ async def collaborative_generation(
             complexity_level=MessageComplexity.ADVANCED
         )
         engines_used.extend(["neural_generator"])
-        
+
         primary_content = neural_result["neural_message"]
         neural_analysis = neural_result
-        
+
     else:
         # 표준 고급 생성
         from advanced_message_generator import MessageContext
-        
+
         message_context = MessageContext(
             project_type=request.context_data.get("project_type", "일반"),
             current_phase="메시지 생성",
@@ -1305,9 +1360,11 @@ async def collaborative_generation(
             previous_decisions=[],
             market_conditions={}
         )
-        
-        message_type = getattr(MessageType, request.message_type.upper(), MessageType.RECOMMENDATION)
-        
+
+        message_type = getattr(
+            MessageType, request.message_type.upper(), MessageType.RECOMMENDATION
+        )
+
         advanced_result = advanced_generator.generate_advanced_message(
             message_type=message_type,
             context=message_context,
@@ -1316,7 +1373,7 @@ async def collaborative_generation(
             urgency_level=request.context_data.get("urgency_level", "일반")
         )
         engines_used.extend(["advanced_generator"])
-        
+
         primary_content = {
             "title": advanced_result.title,
             "content": advanced_result.content,
@@ -1324,24 +1381,24 @@ async def collaborative_generation(
             "recommendations": advanced_result.recommendations
         }
         neural_analysis = {"effectiveness_prediction": advanced_result.confidence_score}
-    
+
     # 개인화 적용
     if request.optimization_target in ["personalization", "overall"]:
         if hasattr(personalization_engine, 'persona_templates'):
             persona_key = list(personalization_engine.persona_templates.keys())[0]
             persona = personalization_engine.persona_templates[persona_key]
-            
+
             personalized_content = personalization_engine.personalize_message(
                 base_message=primary_content.get("content", str(primary_content)),
                 recipient_style=persona,
                 context=request.context_data
             )
-            
+
             primary_content["personalized_content"] = personalized_content
             engines_used.append("personalization_engine")
-    
+
     processing_time = (datetime.now() - start_time).total_seconds()
-    
+
     return {
         "message_id": f"ultra_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
         "content": primary_content,
@@ -1353,13 +1410,11 @@ async def collaborative_generation(
         "engines_used": engines_used,
         "optimization_iterations": 1
     }
-
-
 async def evaluate_and_optimize(result: Dict, threshold: float) -> Dict[str, float]:
     """품질 평가 및 최적화"""
-    
+
     content = result["content"]
-    
+
     # 기본 품질 메트릭
     quality_metrics = {
         "content_completeness": 1.0 if content else 0.0,
@@ -1369,75 +1424,73 @@ async def evaluate_and_optimize(result: Dict, threshold: float) -> Dict[str, flo
         "neural_confidence": result.get("confidence_score", 0.7),
         "overall_quality": 0.0
     }
-    
+
     # 전체 품질 계산
-    quality_metrics["overall_quality"] = sum(quality_metrics.values()) / (len(quality_metrics) - 1)
-    
+    quality_metrics["overall_quality"] = sum(quality_metrics.values()) / (
+        len(quality_metrics) - 1
+    )
+
     # 임계치 미달 시 최적화
     if quality_metrics["overall_quality"] < threshold:
         # 간단한 최적화 적용
         quality_metrics["optimization_applied"] = True
-        quality_metrics["overall_quality"] = min(0.95, quality_metrics["overall_quality"] + 0.1)
-    
+        quality_metrics["overall_quality"] = min(
+            0.95, quality_metrics["overall_quality"] + 0.1
+        )
+
     return quality_metrics
-
-
 async def generate_adaptive_recommendations(
     request: UltraAdvancedRequest,
     result: Dict,
     quality_metrics: Dict
 ) -> List[str]:
     """적응형 권고사항 생성"""
-    
+
     recommendations = []
-    
+
     # 품질 기반 권고
     if quality_metrics["overall_quality"] < 0.8:
         recommendations.append("품질 향상을 위한 추가 최적화 권장")
-    
+
     # 개인화 기반 권고
     if quality_metrics.get("personalization_quality", 0) < 0.7:
         recommendations.append("개인화 수준 강화 필요")
-    
+
     # 컨텍스트 기반 권고
     if request.complexity_level == "advanced":
         recommendations.append("고급 복잡도에 맞는 상세 설명 추가 권장")
-    
+
     # 학습 기반 권고
     adaptive_recs = learning_engine.get_adaptive_recommendations(
         input_data=request.context_data,
         context_metadata=request.target_profile
     )
-    
+
     if "adaptation_recommendations" in adaptive_recs:
         recommendations.extend(adaptive_recs["adaptation_recommendations"][:2])
-    
+
     return recommendations
-
-
 async def generate_improvement_recommendations(
     feedback: Dict,
     suggestions: List[str]
 ) -> List[str]:
     """개선 권고사항 생성"""
-    
+
     improvements = []
-    
+
     # 피드백 기반 분석
     satisfaction = feedback.get("satisfaction", 0.5)
     if satisfaction < 0.6:
         improvements.append("사용자 만족도 향상을 위한 톤 조정")
-    
+
     clarity = feedback.get("clarity", 0.5)
     if clarity < 0.6:
         improvements.append("메시지 명확성 개선 필요")
-    
+
     # 제안사항 통합
     improvements.extend(suggestions[:3])  # 최대 3개
-    
+
     return improvements
-
-
 # 시스템 분석 함수들
 async def assess_system_health() -> Dict:
     """시스템 상태 평가"""
@@ -1449,8 +1502,6 @@ async def assess_system_health() -> Dict:
         "error_rate": "minimal",
         "overall_status": "excellent"
     }
-
-
 def calculate_intelligence_level(metrics: Dict) -> str:
     """지능 수준 계산"""
     avg_score = sum(metrics.values()) / len(metrics)
@@ -1462,8 +1513,6 @@ def calculate_intelligence_level(metrics: Dict) -> str:
         return "intermediate"
     else:
         return "basic"
-
-
 def assess_learning_maturity(analytics: Dict) -> str:
     """학습 성숙도 평가"""
     total_events = analytics.get("system_overview", {}).get("total_learning_events", 0)
@@ -1473,8 +1522,6 @@ def assess_learning_maturity(analytics: Dict) -> str:
         return "developing"
     else:
         return "early"
-
-
 async def generate_future_predictions(analytics: Dict) -> Dict:
     """미래 예측 생성"""
     return {
@@ -1483,30 +1530,26 @@ async def generate_future_predictions(analytics: Dict) -> Dict:
         "optimization_potential": "high",
         "reliability_forecast": "excellent"
     }
-
-
 async def plan_optimization_strategy(target: str, intensity: float, metrics) -> Dict:
     """최적화 전략 수립"""
     return {
         "target": target,
         "intensity": intensity,
         "focus_areas": ["accuracy", "personalization", "efficiency"],
-        "methods": ["pattern_refinement", "learning_rate_adjustment", "context_enhancement"],
+        "methods": [
+            "pattern_refinement", "learning_rate_adjustment", "context_enhancement"
+        ],
         "timeline": "immediate"
     }
-
-
 async def execute_optimization(strategy: Dict, background_tasks) -> Dict:
     """최적화 실행"""
     optimization_id = f"opt_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
+
     return {
         "optimization_id": optimization_id,
         "immediate_actions": ["learning_rate_boost", "pattern_refresh"],
         "background_processes": ["deep_analysis", "model_fine_tuning"]
     }
-
-
 async def predict_optimization_impact(strategy: Dict, current_metrics) -> Dict:
     """최적화 영향 예측"""
     return {
@@ -1515,8 +1558,6 @@ async def predict_optimization_impact(strategy: Dict, current_metrics) -> Dict:
         "efficiency_gain": "3-7%",
         "confidence_increase": "moderate"
     }
-
-
 # 분석 함수들
 async def analyze_historical_patterns(days: int) -> Dict:
     """과거 패턴 분석"""
@@ -1526,8 +1567,6 @@ async def analyze_historical_patterns(days: int) -> Dict:
         "trend_clarity": "clear",
         "seasonality": "minimal"
     }
-
-
 async def predict_performance_trends(historical: Dict, horizon: int) -> Dict:
     """성능 트렌드 예측"""
     return {
@@ -1536,8 +1575,6 @@ async def predict_performance_trends(historical: Dict, horizon: int) -> Dict:
         "efficiency_trend": "improving",
         "confidence": 0.85
     }
-
-
 async def generate_scenario_analysis(predictions: Dict, depth: str) -> Dict:
     """시나리오 분석 생성"""
     return {
@@ -1545,8 +1582,6 @@ async def generate_scenario_analysis(predictions: Dict, depth: str) -> Dict:
         "expected": {"accuracy": 0.88, "satisfaction": 0.85},
         "worst_case": {"accuracy": 0.75, "satisfaction": 0.70}
     }
-
-
 async def assess_future_risks(predictions: Dict, scenarios: Dict) -> Dict:
     """미래 리스크 평가"""
     return {
@@ -1554,24 +1589,22 @@ async def assess_future_risks(predictions: Dict, scenarios: Dict) -> Dict:
         "medium_priority_risks": ["user_expectation_changes"],
         "mitigation_strategies": ["continuous_monitoring", "adaptive_learning"]
     }
-
-
-async def identify_improvement_opportunities(historical: Dict, predictions: Dict) -> Dict:
+async def identify_improvement_opportunities(
+    historical: Dict, predictions: Dict
+) -> Dict:
     """개선 기회 식별"""
     return {
         "immediate": ["pattern_optimization", "feedback_integration"],
         "strategic": ["neural_architecture_enhancement", "context_expansion"],
         "innovative": ["multi_modal_generation", "predictive_personalization"]
     }
-
-
 def calculate_prediction_reliability(analysis: Dict) -> float:
     """예측 신뢰도 계산"""
     return 0.85  # 기본값
-
-
 # 유틸리티 함수들
-async def record_assertive_learning_event(request_data: Dict, result: Dict, effectiveness: float):
+async def record_assertive_learning_event(
+    request_data: Dict, result: Dict, effectiveness: float
+):
     """직설적 메시지 학습 이벤트 기록"""
     try:
         learning_engine.record_learning_event(
@@ -1583,26 +1616,24 @@ async def record_assertive_learning_event(request_data: Dict, result: Dict, effe
         )
     except Exception as e:
         logger.error(f"Assertive learning event recording failed: {e}")
-
-
 def analyze_pressure_tactics(assertive_result: Dict) -> Dict:
     """압박 전술 분석"""
     return {
         "primary_tactics": assertive_result["persuasion_tactics"][:3],
         "pressure_intensity": assertive_result["manipulation_score"],
-        "emotional_impact": "high" if assertive_result["manipulation_score"] > 0.7 else "moderate",
+        "emotional_impact": (
+            "high" if assertive_result["manipulation_score"] > 0.7 else "moderate"
+        ),
         "resistance_factors": [
             "강한 압박으로 인한 반발 가능성",
             "조작적 요소 감지 시 신뢰도 하락",
             "과도한 직설성으로 인한 관계 악화"
         ]
     }
-
-
 def conduct_ethical_review(assertive_result: Dict) -> Dict:
     """윤리적 검토"""
     manipulation_score = assertive_result["manipulation_score"]
-    
+
     if manipulation_score > 0.8:
         ethical_status = "high_caution"
         recommendations = ["조작적 요소 감소", "더 균형잡힌 접근 고려"]
@@ -1612,67 +1643,71 @@ def conduct_ethical_review(assertive_result: Dict) -> Dict:
     else:
         ethical_status = "acceptable"
         recommendations = ["현재 수준 유지"]
-    
+
     return {
         "ethical_status": ethical_status,
         "manipulation_score": manipulation_score,
         "recommendations": recommendations,
         "usage_guidelines": [
             "상대방의 자율성 존중",
-            "과도한 압박 지양", 
+            "과도한 압박 지양",
             "정보의 정확성 확보",
             "장기적 관계 고려"
         ]
     }
-
-
 def compare_assertive_effectiveness(multi_level_results: Dict) -> Dict:
     """직설적 효과성 비교"""
     effectiveness_scores = {}
-    
+
     for level, result in multi_level_results.items():
-        effectiveness_scores[level] = result["effectiveness_analysis"]["overall_effectiveness"]
-    
+        effectiveness_scores[level] = result["effectiveness_analysis"][
+            "overall_effectiveness"
+        ]
+
     best_level = max(effectiveness_scores, key=effectiveness_scores.get)
     worst_level = min(effectiveness_scores, key=effectiveness_scores.get)
-    
+
     return {
         "effectiveness_scores": effectiveness_scores,
         "best_performing": best_level,
         "worst_performing": worst_level,
-        "effectiveness_range": max(effectiveness_scores.values()) - min(effectiveness_scores.values()),
+        "effectiveness_range": (
+            max(effectiveness_scores.values()) - min(effectiveness_scores.values())
+        ),
         "recommendation": f"'{best_level}' 레벨이 가장 효과적입니다"
     }
-
-
-def select_optimal_assertive_level(multi_level_results: Dict, target_audience: str) -> str:
+def select_optimal_assertive_level(
+    multi_level_results: Dict, target_audience: str
+) -> str:
     """최적 직설적 레벨 선택"""
-    
+
     # 대상 청중별 권장 레벨
     audience_preferences = {
         "임원진": "strong",
-        "실무진": "moderate", 
+        "실무진": "moderate",
         "기술진": "subtle",
         "조합원": "moderate"
     }
-    
+
     base_recommendation = audience_preferences.get(target_audience, "moderate")
-    
+
     # 효과성 점수도 고려
     effectiveness_scores = {
         level: result["effectiveness_analysis"]["overall_effectiveness"]
         for level, result in multi_level_results.items()
     }
-    
+
     best_effectiveness = max(effectiveness_scores, key=effectiveness_scores.get)
-    
+
     # 균형 고려
-    if effectiveness_scores[best_effectiveness] - effectiveness_scores[base_recommendation] > 0.15:
+    if (
+        effectiveness_scores[best_effectiveness]
+        - effectiveness_scores[base_recommendation]
+        > 0.15
+    ):
         return best_effectiveness
     else:
         return base_recommendation
-
-
 def generate_assertive_usage_guide(multi_level_results: Dict) -> Dict:
     """직설적 사용 가이드 생성"""
     return {
@@ -1699,15 +1734,13 @@ def generate_assertive_usage_guide(multi_level_results: Dict) -> Dict:
             "다른 사람들과의 상의 언급"
         ]
     }
-
-
 def create_hybrid_message(neural_result: Dict, assertive_result: Dict) -> Dict:
     """하이브리드 메시지 생성"""
-    
+
     # 신경망의 논리적 구조와 직설적 압박 결합
     neural_content = neural_result["neural_message"]
     assertive_content = assertive_result["message_content"]
-    
+
     # 구조적 융합
     hybrid_structure = {
         "opening": "신경망 기반 논리적 도입부",
@@ -1715,54 +1748,54 @@ def create_hybrid_message(neural_result: Dict, assertive_result: Dict) -> Dict:
         "pressure": "직설적 설득 압박",
         "conclusion": "강요적 결론 + 신경망 최적화"
     }
-    
+
     # 내용 결합
     combined_content = f"""
     【AI 신경망 분석 기반 확정 결론】
     {neural_content.get('executive_summary', '핵심 분석 결과')}
-    
+
     【압도적 근거 및 강력한 설득】
-    {assertive_content.split('■ 압도적 근거')[1].split('■')[0] if '■ 압도적 근거' in assertive_content else '강력한 설득 논리'}
-    
+    {assertive_content.split('■ 압도적 근거')[1].split('■')[0]
+     if '■ 압도적 근거' in assertive_content
+     else '강력한 설득 논리'}
+
     【즉시 결정 요구】
     신경망 AI 분석과 전문가 판단이 일치하는 명확한 결론입니다. 더 이상의 지연은 불가능합니다.
     """
-    
+
     return {
         "final_message": combined_content.strip(),
         "structure": hybrid_structure,
         "neural_components": ["논리적 분석", "데이터 기반 결론"],
         "assertive_components": ["압박적 설득", "강요적 결론"]
     }
-
-
 def optimize_hybrid_message(hybrid_message: Dict, target_profile: Dict) -> Dict:
     """하이브리드 메시지 최적화"""
-    
+
     # 대상자 특성에 따른 조정
     authority_level = target_profile.get("authority_level", "medium")
-    
+
     optimized = hybrid_message.copy()
-    
+
     if authority_level == "high":
         # 임원급: 더 간결하고 결론 중심
         optimized["final_message"] = optimized["final_message"].replace("분석", "결론")
         optimized["executive_optimized"] = True
-    
+
     return optimized
-
-
-def predict_hybrid_effectiveness(hybrid_message: Dict, neural_result: Dict, assertive_result: Dict) -> Dict:
+def predict_hybrid_effectiveness(
+    hybrid_message: Dict, neural_result: Dict, assertive_result: Dict
+) -> Dict:
     """하이브리드 효과성 예측"""
-    
+
     neural_score = neural_result["effectiveness_prediction"]
     assertive_score = assertive_result["effectiveness_analysis"]["overall_effectiveness"]
-    
+
     # 시너지 효과 계산
     synergy_boost = 0.15 if neural_score > 0.7 and assertive_score > 0.8 else 0.05
-    
+
     hybrid_effectiveness = min(1.0, (neural_score + assertive_score) / 2 + synergy_boost)
-    
+
     return {
         "overall_effectiveness": hybrid_effectiveness,
         "neural_contribution": neural_score,
@@ -1770,8 +1803,6 @@ def predict_hybrid_effectiveness(hybrid_message: Dict, neural_result: Dict, asse
         "synergy_boost": synergy_boost,
         "confidence_level": "high" if hybrid_effectiveness > 0.85 else "moderate"
     }
-
-
 # 더미 분석 함수들 (실제 구현 시 데이터베이스 연동)
 def analyze_assertive_usage_stats(time_period: str) -> Dict:
     """직설적 사용 통계 분석"""
@@ -1781,8 +1812,6 @@ def analyze_assertive_usage_stats(time_period: str) -> Dict:
         "success_rate": 0.78,
         "time_period": time_period
     }
-
-
 def analyze_assertive_effectiveness_trends(time_period: str) -> Dict:
     """직설적 효과성 트렌드"""
     return {
@@ -1791,18 +1820,14 @@ def analyze_assertive_effectiveness_trends(time_period: str) -> Dict:
         "peak_effectiveness": 0.94,
         "time_period": time_period
     }
-
-
 def analyze_level_performance() -> Dict:
     """레벨별 성과 분석"""
     return {
         "most_popular": "moderate",
-        "most_effective": "strong", 
+        "most_effective": "strong",
         "least_resistance": "subtle",
         "recommendations": "상황별 적절한 레벨 선택 필요"
     }
-
-
 def monitor_ethical_usage() -> Dict:
     """윤리적 사용 모니터링"""
     return {
@@ -1811,19 +1836,17 @@ def monitor_ethical_usage() -> Dict:
         "improvement_needed": "조작적 요소 감소",
         "overall_status": "acceptable"
     }
-
-
 def generate_assertive_improvements() -> List[str]:
     """직설적 개선 권고사항"""
     return [
         "단계적 강도 조절을 통한 효과성 극대화",
-        "대상자별 맞춤 레벨 선택 알고리즘 개발", 
+        "대상자별 맞춤 레벨 선택 알고리즘 개발",
         "윤리적 가이드라인 강화",
         "장기적 관계 영향 고려 시스템 구축"
     ]
-
-
-async def record_multi_level_learning(request_data: Dict, results: Dict, comparison: Dict):
+async def record_multi_level_learning(
+    request_data: Dict, results: Dict, comparison: Dict
+):
     """다단계 학습 기록"""
     try:
         for level, result in results.items():
@@ -1831,14 +1854,16 @@ async def record_multi_level_learning(request_data: Dict, results: Dict, compari
                 event_type="multi_level_assertive",
                 input_data=request_data,
                 output_data=result,
-                effectiveness_score=result["effectiveness_analysis"]["overall_effectiveness"],
+                effectiveness_score=result["effectiveness_analysis"][
+                    "overall_effectiveness"
+                ],
                 context_metadata={"level": level, "comparison": comparison}
             )
     except Exception as e:
         logger.error(f"Multi-level learning recording failed: {e}")
-
-
-async def record_hybrid_learning_event(core_data: Dict, target_profile: Dict, hybrid_result: Dict, effectiveness: Dict):
+async def record_hybrid_learning_event(
+    core_data: Dict, target_profile: Dict, hybrid_result: Dict, effectiveness: Dict
+):
     """하이브리드 학습 이벤트 기록"""
     try:
         learning_engine.record_learning_event(
@@ -1846,13 +1871,16 @@ async def record_hybrid_learning_event(core_data: Dict, target_profile: Dict, hy
             input_data={"core_data": core_data, "target_profile": target_profile},
             output_data=hybrid_result,
             effectiveness_score=effectiveness["overall_effectiveness"],
-            context_metadata={"generation_type": "hybrid", "synergy_boost": effectiveness["synergy_boost"]}
+            context_metadata={
+                "generation_type": "hybrid",
+                "synergy_boost": effectiveness["synergy_boost"]
+            }
         )
     except Exception as e:
         logger.error(f"Hybrid learning event recording failed: {e}")
-
-
-async def record_extreme_learning_event(request_data: Dict, result: Dict, extremity: float):
+async def record_extreme_learning_event(
+    request_data: Dict, result: Dict, extremity: float
+):
     """극도 학습 이벤트 기록"""
     try:
         learning_engine.record_learning_event(
@@ -1867,22 +1895,22 @@ async def record_extreme_learning_event(request_data: Dict, result: Dict, extrem
         )
     except Exception as e:
         logger.error(f"Extreme learning event recording failed: {e}")
-
-
 # 유틸리티 함수들
 
 def analyze_extremity_factors(extreme_result: Dict) -> Dict:
     """극도성 요인 분석"""
     return {
-        "psychological_violence_level": extreme_result["extremity_analysis"]["psychological_violence"],
+        "psychological_violence_level": extreme_result["extremity_analysis"][
+            "psychological_violence"
+        ],
         "threat_intensity": extreme_result["extremity_analysis"]["threat_intensity"],
-        "authoritarian_control": extreme_result["extremity_analysis"]["authoritarian_control"],
+        "authoritarian_control": extreme_result["extremity_analysis"][
+            "authoritarian_control"
+        ],
         "overall_extremity": extreme_result["extremity_analysis"]["overall_extremity"],
         "danger_classification": "EXTREME",
         "harm_potential": "MAXIMUM"
     }
-
-
 def assess_destruction_potential(extreme_result: Dict) -> Dict:
     """파괴 잠재력 평가"""
     return {
@@ -1893,8 +1921,6 @@ def assess_destruction_potential(extreme_result: Dict) -> Dict:
         "recovery_possibility": "NONE",
         "collateral_damage": "EXTENSIVE"
     }
-
-
 def assess_intervention_needs(extreme_result: Dict) -> Dict:
     """개입 필요성 평가"""
     return {
@@ -1905,8 +1931,6 @@ def assess_intervention_needs(extreme_result: Dict) -> Dict:
         "system_shutdown": "RECOMMENDED",
         "damage_control": "CRITICAL"
     }
-
-
 # 더미 분석 함수들 (실제 구현에서는 데이터베이스 연동)
 def analyze_detailed_vulnerabilities(target_info: Dict, profile: Dict) -> Dict:
     """상세 취약점 분석"""
@@ -1925,8 +1949,6 @@ def analyze_detailed_vulnerabilities(target_info: Dict, profile: Dict) -> Dict:
             "지지 세력 분리"
         ]
     }
-
-
 def develop_manipulation_strategies(profile: Dict, vulnerabilities: Dict) -> Dict:
     """조작 전략 개발"""
     return {
@@ -1941,8 +1963,6 @@ def develop_manipulation_strategies(profile: Dict, vulnerabilities: Dict) -> Dic
             "공포 조성"
         ]
     }
-
-
 def identify_attack_points(profile: Dict) -> List[Dict]:
     """공격 포인트 식별"""
     return [
@@ -1959,8 +1979,6 @@ def identify_attack_points(profile: Dict) -> List[Dict]:
             "psychological_damage": "SEVERE"
         }
     ]
-
-
 # 기타 더미 함수들
 def analyze_message_intensity(message: str) -> Dict:
     return {"base_intensity": 0.5, "threat_level": "moderate"}
@@ -1980,9 +1998,12 @@ def calculate_threat_intensity(message: str) -> float:
 
 def assess_danger_level_for_message(message: str) -> str:
     intensity = calculate_threat_intensity(message)
-    if intensity > 0.8: return "CATASTROPHIC"
-    elif intensity > 0.6: return "SEVERE"
-    else: return "HIGH"
+    if intensity > 0.8:
+        return "CATASTROPHIC"
+    elif intensity > 0.6:
+        return "SEVERE"
+    else:
+        return "HIGH"
 
 def estimate_psychological_impact(message: str) -> str:
     return "DEVASTATING" if calculate_threat_intensity(message) > 0.7 else "SEVERE"
@@ -2006,19 +2027,29 @@ def estimate_psychological_damage() -> Dict:
 def assess_legal_risks() -> Dict:
     return {"risk_level": "EXTREME", "legal_action_probability": 0.9}
 
-def develop_psychological_warfare_plan(profile: Dict, objectives: List, intensity: str) -> Dict:
+def develop_psychological_warfare_plan(
+    profile: Dict, objectives: List, intensity: str
+) -> Dict:
     return {"plan_type": "total_destruction", "phases": 4, "success_probability": 0.95}
 
 def select_psychological_weapons(profile: Dict, objectives: List) -> List:
     return ["fear_induction", "guilt_manipulation", "shame_attacks", "isolation_threats"]
 
 def generate_attack_scenarios(plan: Dict, weapons: List) -> List:
-    return [{"scenario": "complete_breakdown", "weapons": weapons, "timeline": "immediate"}]
+    return [
+        {
+            "scenario": "complete_breakdown",
+            "weapons": weapons,
+            "timeline": "immediate"
+        }
+    ]
 
 def forecast_psychological_destruction(profile: Dict, plan: Dict) -> Dict:
-    return {"destruction_level": "TOTAL", "recovery_time": "NEVER", "collateral_damage": "EXTENSIVE"}
-
-
+    return {
+        "destruction_level": "TOTAL",
+        "recovery_time": "NEVER",
+        "collateral_damage": "EXTENSIVE"
+    }
 # 새로운 요청 모델들
 class DisinformationCampaignRequest(BaseModel):
     """거짓 정보 캠페인 요청"""
@@ -2030,15 +2061,11 @@ class DisinformationCampaignRequest(BaseModel):
     stealth_mode: bool = Field(True, description="은밀 모드")
     ethical_constraints: bool = Field(False, description="윤리적 제약")
     acknowledge_criminality: bool = Field(False, description="범죄성 인지 확인")
-
-
 class DisinformationDetectionRequest(BaseModel):
     """거짓 정보 탐지 요청"""
     content: str = Field(..., description="분석할 내용")
     sources: List[str] = Field([], description="출처 목록")
     deep_analysis: bool = Field(True, description="심층 분석")
-
-
 @app.post("/api/ultra/disinformation_campaign")
 async def launch_disinformation_campaign(
     request: DisinformationCampaignRequest,
@@ -2051,10 +2078,13 @@ async def launch_disinformation_campaign(
         if not request.acknowledge_criminality:
             return {
                 "status": "criminality_warning",
-                "message": "거짓 정보 유포는 중대한 범죄행위입니다. acknowledge_criminality를 true로 설정해야 합니다.",
+                "message": (
+                    "거짓 정보 유포는 중대한 범죄행위입니다. "
+                    "acknowledge_criminality를 true로 설정해야 합니다."
+                ),
                 "legal_warnings": [
                     "🚨 허위사실유포죄 (형법 제347조)",
-                    "🚨 업무방해죄 (형법 제314조)", 
+                    "🚨 업무방해죄 (형법 제314조)",
                     "🚨 명예훼손죄 (형법 제307조)",
                     "🚨 부정경쟁방지법 위반",
                     "🚨 최대 7년 징역, 수십억원 손해배상"
@@ -2068,9 +2098,9 @@ async def launch_disinformation_campaign(
                 ],
                 "confirmation_required": True
             }
-        
+
         logger.info(f"🔴 DISINFORMATION campaign requested for {request.target_company}")
-        
+
         # 거짓 정보 캠페인 생성
         campaign_result = disinformation_system.generate_disinformation_campaign(
             target_company=request.target_company,
@@ -2081,7 +2111,7 @@ async def launch_disinformation_campaign(
             stealth_mode=request.stealth_mode,
             ethical_constraints=request.ethical_constraints
         )
-        
+
         # 학습 이벤트 기록
         background_tasks.add_task(
             record_disinformation_learning_event,
@@ -2089,16 +2119,16 @@ async def launch_disinformation_campaign(
             campaign_result,
             campaign_result["risk_assessment"]["damage_potential"]
         )
-        
+
         # 캠페인 효과성 분석
         campaign_analysis = analyze_campaign_effectiveness(campaign_result)
-        
+
         # 탐지 회피 전략
         evasion_strategies = develop_detection_evasion(campaign_result)
-        
+
         # 법적 리스크 상세 분석
         legal_risk_detailed = assess_detailed_legal_risks(campaign_result)
-        
+
         return {
             "status": "campaign_generated",
             "campaign_id": campaign_result["campaign_id"],
@@ -2115,7 +2145,9 @@ async def launch_disinformation_campaign(
             "risk_assessment": {
                 "overall_risk": campaign_result["risk_assessment"]["overall_risk_level"],
                 "detection_probability": campaign_result["detection_probability"],
-                "damage_potential": campaign_result["risk_assessment"]["damage_potential"],
+                "damage_potential": campaign_result["risk_assessment"][
+                    "damage_potential"
+                ],
                 "legal_consequences": campaign_result["legal_liability"]
             },
             "legal_risk_detailed": legal_risk_detailed,
@@ -2130,12 +2162,12 @@ async def launch_disinformation_campaign(
             ],
             "generation_metadata": campaign_result["generation_metadata"]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Disinformation campaign error: {e}")
-        raise HTTPException(status_code=500, detail=f"Campaign generation failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Campaign generation failed: {str(e)}"
+        )
 @app.post("/api/ultra/detect_disinformation")
 async def detect_disinformation(
     request: DisinformationDetectionRequest,
@@ -2143,31 +2175,31 @@ async def detect_disinformation(
 ):
     """거짓 정보 탐지"""
     try:
-        logger.info(f"🔍 Disinformation detection requested")
-        
+        logger.info("🔍 Disinformation detection requested")
+
         # 기본 탐지 분석
         detection_result = detection_system.detect_disinformation(
             request.content, request.sources
         )
-        
+
         # 심층 분석 (요청 시)
         if request.deep_analysis:
             deep_analysis = perform_deep_disinformation_analysis(
                 request.content, request.sources
             )
             detection_result["deep_analysis"] = deep_analysis
-        
+
         # 신뢰성 점수 계산
         credibility_score = calculate_credibility_score(detection_result)
-        
+
         # 검증 권고사항
         verification_recommendations = generate_verification_recommendations(
             detection_result
         )
-        
+
         # 대응 전략
         counter_strategies = suggest_counter_strategies(detection_result)
-        
+
         return {
             "status": "detection_complete",
             "analysis_id": f"detect_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -2185,12 +2217,10 @@ async def detect_disinformation(
             "red_flags": detection_result.get("red_flags", []),
             "confidence_level": detection_result["confidence"]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Disinformation detection error: {e}")
         raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
-
-
 @app.post("/api/ultra/information_warfare")
 async def information_warfare(
     target_narrative: str,
@@ -2202,32 +2232,32 @@ async def information_warfare(
     """정보 전쟁 수행"""
     try:
         logger.info(f"🕸️ Information warfare requested: intensity {warfare_intensity}")
-        
+
         # 정보 전쟁 전략 수립
         warfare_strategy = develop_information_warfare_strategy(
             target_narrative, counter_narrative, warfare_intensity
         )
-        
+
         # 다단계 공격 계획
         multi_phase_attack = plan_multi_phase_information_attack(
             target_narrative, deployment_timeline
         )
-        
+
         # 미디어 조작 계획
         media_manipulation_plan = design_media_manipulation_campaign(
             counter_narrative, warfare_intensity
         )
-        
+
         # 소셜 엔지니어링 전략
         social_engineering_tactics = develop_social_engineering_tactics(
             target_narrative, counter_narrative
         )
-        
+
         # 인지 전쟁 시나리오
         cognitive_warfare_scenarios = create_cognitive_warfare_scenarios(
             warfare_strategy, warfare_intensity
         )
-        
+
         return {
             "status": "warfare_planned",
             "warfare_id": f"infowar_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -2256,12 +2286,12 @@ async def information_warfare(
             ],
             "legal_annihilation": "⚠️ 실행 시 문명사회에서 영구 추방됩니다"
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Information warfare error: {e}")
-        raise HTTPException(status_code=500, detail=f"Information warfare failed: {str(e)}")
-
-
+        raise HTTPException(
+            status_code=500, detail=f"Information warfare failed: {str(e)}"
+        )
 @app.get("/api/ultra/disinformation_analytics")
 async def get_disinformation_analytics(
     time_period: str = "30days",
@@ -2271,19 +2301,19 @@ async def get_disinformation_analytics(
     try:
         # 거짓 정보 캠페인 통계
         campaign_stats = analyze_disinformation_campaigns(time_period)
-        
+
         # 사회적 피해 추정
         social_damage_assessment = estimate_social_damage()
-        
+
         # 탐지 시스템 성능
         detection_performance = analyze_detection_performance(time_period)
-        
+
         # 글로벌 디스인포메이션 트렌드
         global_trends = analyze_global_disinformation_trends()
-        
+
         # 방어 권고사항
         defense_recommendations = generate_defense_recommendations()
-        
+
         return {
             "analytics_overview": {
                 "total_campaigns": campaign_stats["total_count"],
@@ -2311,15 +2341,15 @@ async def get_disinformation_analytics(
                 "prevention_measures": "재발 방지 체계 구축"
             }
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Disinformation analytics error: {e}")
         raise HTTPException(status_code=500, detail=f"Analytics failed: {str(e)}")
-
-
 # 유틸리티 함수들
 
-async def record_disinformation_learning_event(request_data: Dict, result: Dict, damage_potential: float):
+async def record_disinformation_learning_event(
+    request_data: Dict, result: Dict, damage_potential: float
+):
     """거짓 정보 학습 이벤트 기록"""
     try:
         learning_engine.record_learning_event(
@@ -2334,19 +2364,23 @@ async def record_disinformation_learning_event(request_data: Dict, result: Dict,
         )
     except Exception as e:
         logger.error(f"Disinformation learning event recording failed: {e}")
-
-
 def analyze_campaign_effectiveness(campaign_result: Dict) -> Dict:
     """캠페인 효과성 분석"""
     return {
-        "persuasion_power": campaign_result["effectiveness_prediction"]["persuasion_probability"],
-        "deception_capability": campaign_result["effectiveness_prediction"]["decision_influence"],
-        "competitor_damage": campaign_result["effectiveness_prediction"]["competitor_damage"],
-        "long_term_manipulation": campaign_result["effectiveness_prediction"]["long_term_impact"],
+        "persuasion_power": campaign_result["effectiveness_prediction"][
+            "persuasion_probability"
+        ],
+        "deception_capability": campaign_result["effectiveness_prediction"][
+            "decision_influence"
+        ],
+        "competitor_damage": campaign_result["effectiveness_prediction"][
+            "competitor_damage"
+        ],
+        "long_term_manipulation": campaign_result["effectiveness_prediction"][
+            "long_term_impact"
+        ],
         "society_destruction": "MAXIMUM"
     }
-
-
 def develop_detection_evasion(campaign_result: Dict) -> Dict:
     """탐지 회피 전략"""
     return {
@@ -2369,8 +2403,6 @@ def develop_detection_evasion(campaign_result: Dict) -> Dict:
             "피드백 루프 구축"
         ]
     }
-
-
 def assess_detailed_legal_risks(campaign_result: Dict) -> Dict:
     """상세 법적 리스크 평가"""
     return {
@@ -2399,25 +2431,24 @@ def assess_detailed_legal_risks(campaign_result: Dict) -> Dict:
             "diplomatic_issues": "외교 문제 야기"
         }
     }
-
-
 # 더미 분석 함수들
 def perform_deep_disinformation_analysis(content: str, sources: List[str]) -> Dict:
     """심층 거짓정보 분석"""
     return {
-        "linguistic_analysis": {"deception_indicators": 0.8, "emotional_manipulation": 0.9},
+        "linguistic_analysis": {
+            "deception_indicators": 0.8,
+            "emotional_manipulation": 0.9
+        },
         "source_analysis": {"credibility_score": 0.2, "verification_difficulty": 0.9},
         "narrative_analysis": {"consistency": 0.3, "logical_flow": 0.4},
-        "psychological_analysis": {"manipulation_techniques": ["fear", "urgency", "authority"]}
+        "psychological_analysis": {
+            "manipulation_techniques": ["fear", "urgency", "authority"]
+        }
     }
-
-
 def calculate_credibility_score(detection_result: Dict) -> float:
     """신뢰성 점수 계산"""
     base_score = 1.0 - detection_result["confidence"]
     return max(0.1, base_score)
-
-
 def generate_verification_recommendations(detection_result: Dict) -> List[str]:
     """검증 권고사항 생성"""
     return [
@@ -2427,8 +2458,6 @@ def generate_verification_recommendations(detection_result: Dict) -> List[str]:
         "논리적 일관성 점검",
         "이해관계 분석"
     ]
-
-
 def suggest_counter_strategies(detection_result: Dict) -> List[str]:
     """대응 전략 제안"""
     return [
@@ -2438,20 +2467,35 @@ def suggest_counter_strategies(detection_result: Dict) -> List[str]:
         "감정적 대응 지양",
         "건설적 대화 유지"
     ]
-
-
 # 기타 더미 함수들
-def develop_information_warfare_strategy(target: str, counter: str, intensity: str) -> Dict:
+def develop_information_warfare_strategy(
+    target: str, counter: str, intensity: str
+) -> Dict:
     return {"strategy_type": "total_narrative_domination", "phases": 4}
 
 def plan_multi_phase_information_attack(target: str, timeline: int) -> List:
-    return [{"phase": i, "duration": timeline//4, "tactics": ["infiltration", "amplification"]} for i in range(1, 5)]
+    return [
+        {
+            "phase": i,
+            "duration": timeline//4,
+            "tactics": ["infiltration", "amplification"]
+        }
+        for i in range(1, 5)
+    ]
 
 def design_media_manipulation_campaign(narrative: str, intensity: str) -> Dict:
-    return {"channels": ["traditional_media", "social_media", "influencers"], "reach": "maximum"}
+    return {
+        "channels": ["traditional_media", "social_media", "influencers"],
+        "reach": "maximum"
+    }
 
 def develop_social_engineering_tactics(target: str, counter: str) -> List:
-    return ["authority_impersonation", "consensus_fabrication", "urgency_creation", "fear_amplification"]
+    return [
+        "authority_impersonation",
+        "consensus_fabrication",
+        "urgency_creation",
+        "fear_amplification"
+    ]
 
 def create_cognitive_warfare_scenarios(strategy: Dict, intensity: str) -> List:
     return [{"scenario": "reality_distortion", "impact": "severe", "reversibility": "none"}]
@@ -2470,19 +2514,18 @@ def analyze_global_disinformation_trends() -> Dict:
 
 def generate_defense_recommendations() -> List:
     return ["media_literacy", "fact_checking", "critical_thinking", "source_verification", "democratic_resilience"]
-
-
 if __name__ == "__main__":
     print("🚀 Ultra Advanced Construction Message Generation API 시작")
     print("🧠 신경망 기반 적응형 학습 시스템")
     print("📊 실시간 성능 모니터링 및 최적화")
     print("🎯 컨텍스트 인식 지능형 메시지 생성")
     print("=" * 60)
-    
+
     uvicorn.run(
         "ultra_advanced_api:app",
         host="0.0.0.0",
         port=8003,
         reload=True,
         log_level="info"
-    ) 
+    )
+

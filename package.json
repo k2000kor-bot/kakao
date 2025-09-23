@@ -76,5 +76,21 @@
   },
   "devDependencies": {
     "@types/node": "^24.1.0"
-  }
+  },
+  "description": "유시민 스타일 통합 고급 AI 시스템입니다.",
+  "main": ".eslintrc.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/k2000kor/kakao-frontend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/k2000kor/kakao-frontend/issues"
+  },
+  "homepage": "https://github.com/k2000kor/kakao-frontend#readme"
 }

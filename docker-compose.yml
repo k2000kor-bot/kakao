@@ -1,114 +1,178 @@
 version: '3.8'
 
 services:
-  # CORBU AI 메인 서비스
-  corbu-ai:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: corbu-ai-system
-    restart: unless-stopped
+  # 프론트엔드 (Nginx)
+  frontend:
+    build: .
     ports:
       - "80:80"
-      - "8004:8004"
+    depends_on:
+      - backend-main
+      - apartment-analyzer
+      - construction-company
+      - market-analysis
+      - dream-visualization
+    volumes:
+      - ./logs:/app/logs
+      - ./backups:/app/backups
     environment:
       - NODE_ENV=production
-      - FLASK_ENV=production
-      - PYTHONPATH=/app/backend
-      - CORBU_AI_VERSION=2.0.0
-    volumes:
-      - corbu_data:/app/backend/data
-      - corbu_logs:/app/backend/logs
-      - nginx_logs:/var/log/nginx
+    restart: unless-stopped
     networks:
       - corbu-network
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '2.0'
-        reservations:
-          memory: 1G
-          cpus: '1.0'
 
-  # Redis 캐시 서비스
-  redis:
-    image: redis:7-alpine
-    container_name: corbu-redis
-    restart: unless-stopped
+  # 메인 백엔드 서비스
+  backend-main:
+    build: .
+    command: python backend/chatgpt_unified_system.py
     ports:
-      - "6379:6379"
+      - "8001:8001"
     volumes:
-      - redis_data:/data
-    networks:
-      - corbu-network
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  # PostgreSQL 데이터베이스 (선택사항)
-  postgres:
-    image: postgres:15-alpine
-    container_name: corbu-postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
     environment:
-      - POSTGRES_DB=corbu_ai
-      - POSTGRES_USER=corbu_user
-      - POSTGRES_PASSWORD=corbu_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - DATABASE_URL=sqlite:///./data/corbu_ai.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
     networks:
       - corbu-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U corbu_user -d corbu_ai"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
 
-  # Nginx 리버스 프록시 (로드 밸런싱용)
-  nginx-proxy:
-    image: nginx:alpine
-    container_name: corbu-nginx-proxy
-    restart: unless-stopped
+  # 아파트 커뮤니티 분석기
+  apartment-analyzer:
+    build: .
+    command: python backend/apartment_community_analyzer.py
     ports:
-      - "8080:80"
+      - "8005:8005"
     volumes:
-      - ./docker/nginx-proxy.conf:/etc/nginx/nginx.conf:ro
-      - nginx_proxy_logs:/var/log/nginx
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/apartment_analyzer.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
     networks:
       - corbu-network
-    depends_on:
-      - corbu-ai
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
 
-  # 모니터링 서비스
-  monitoring:
-    image: prom/prometheus:latest
-    container_name: corbu-monitoring
+  # 시공사 정보 시스템
+  construction-company:
+    build: .
+    command: python backend/construction_company_info_system.py
+    ports:
+      - "8006:8006"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/construction_company.db
+      - LOG_LEVEL=INFO
     restart: unless-stopped
+    networks:
+      - corbu-network
+
+  # 시장 분석 엔진
+  market-analysis:
+    build: .
+    command: python backend/market_analysis_engine.py
+    ports:
+      - "8007:8007"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/market_analysis.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - corbu-network
+
+  # 꿈 시각화 시스템
+  dream-visualization:
+    build: .
+    command: python backend/dream_visualization_system.py
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/dream_visualization.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - corbu-network
+
+  # 성능 최적화 시스템
+  performance-optimizer:
+    build: .
+    command: python backend/performance_optimizer.py
+    ports:
+      - "8009:8009"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/performance_optimizer.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - corbu-network
+
+  # 확장성 관리 시스템
+  scalability-manager:
+    build: .
+    command: python backend/scalability_manager.py
+    ports:
+      - "8010:8010"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/scalability_manager.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - corbu-network
+
+  # 고급 AI 기능 시스템
+  advanced-ai-features:
+    build: .
+    command: python backend/advanced_ai_features.py
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/advanced_ai_features.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - corbu-network
+
+  # 장기 계획 시스템
+  long-term-planning:
+    build: .
+    command: python backend/long_term_planning.py
+    ports:
+      - "8012:8012"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/long_term_planning.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - corbu-network
+
+  # 모니터링 (Prometheus)
+  prometheus:
+    image: prom/prometheus:latest
     ports:
       - "9090:9090"
     volumes:
-      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
-    networks:
-      - corbu-network
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -116,42 +180,29 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
-
-  # 로그 수집 서비스
-  log-aggregator:
-    image: fluent/fluentd:v1.16-1
-    container_name: corbu-log-aggregator
     restart: unless-stopped
-    volumes:
-      - ./docker/fluentd.conf:/fluentd/etc/fluent.conf:ro
-      - corbu_logs:/app/logs
-      - fluentd_data:/fluentd/log
     networks:
       - corbu-network
-    depends_on:
-      - corbu-ai
+
+  # 로그 수집 (Grafana)
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    restart: unless-stopped
+    networks:
+      - corbu-network
 
 volumes:
-  corbu_data:
-    driver: local
-  corbu_logs:
-    driver: local
-  nginx_logs:
-    driver: local
-  nginx_proxy_logs:
-    driver: local
-  redis_data:
-    driver: local
-  postgres_data:
-    driver: local
   prometheus_data:
-    driver: local
-  fluentd_data:
-    driver: local
+  grafana_data:
 
 networks:
   corbu-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16

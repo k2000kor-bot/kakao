@@ -6,13 +6,11 @@ CORBU AI 간단한 통합 API 서버 v1.0
 - Flask 기반으로 기존 app.py와 통합
 """
 
-import json
 import logging
-import os
 import time
 import random
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime, timedelta
+from typing import List
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -34,6 +32,7 @@ CORS(app)
 
 # 설정
 app.config['SECRET_KEY'] = 'corbu-ai-integrated-secret-key-2024'
+
 
 class SimpleIntegratedAI:
     """간단한 통합 AI 엔진"""
@@ -64,7 +63,8 @@ class SimpleIntegratedAI:
             intent = self._analyze_intent(message)
             
             # 응답 생성
-            response = self._generate_response(message, emotion_analysis, intent)
+            response = self._generate_response(
+                message, emotion_analysis, intent)
             
             # 성능 메트릭 업데이트
             response_time = time.time() - start_time
@@ -174,15 +174,21 @@ class SimpleIntegratedAI:
         # 의도별 키워드 패턴
         intent_patterns = {
             'question': {
-                'keywords': ['질문', '물어', '궁금', '?', '어떻게', '왜', '언제', '어디', '누구', '무엇'],
+                'keywords': [
+                    '질문', '물어', '궁금', '?', '어떻게', '왜', '언제', '어디', '누구', '무엇'
+                ],
                 'patterns': ['어떻게', '왜', '언제', '어디서', '누가', '무엇을', '어느', '몇']
             },
             'request': {
-                'keywords': ['요청', '부탁', '해줘', '도와', '도움', '부탁해', '해주세요', '해주시면'],
+                'keywords': [
+                    '요청', '부탁', '해줘', '도와', '도움', '부탁해', '해주세요', '해주시면'
+                ],
                 'patterns': ['해줘', '해주세요', '도와줘', '부탁해', '해주시면']
             },
             'gratitude': {
-                'keywords': ['감사', '고마워', '감사해', '고맙', '감사합니다', '고마워요', '감사드려'],
+                'keywords': [
+                    '감사', '고마워', '감사해', '고맙', '감사합니다', '고마워요', '감사드려'
+                ],
                 'patterns': ['감사', '고마워', '고맙', '감사드려', '감사합니다']
             },
             'greeting': {
@@ -233,16 +239,11 @@ class SimpleIntegratedAI:
             'type': 'general',
             'confidence': 0.5
         }
-    
-    def _generate_response(self, message: str, emotion: dict, intent: dict) -> str:
+
+
+    def _generate_response(self, message: str, emotion: dict, 
+                          intent: dict) -> str:
         """고급 응답 생성"""
-        # 감정별 이모지와 톤
-        emotion_emojis = {
-            '긍정': '😊',
-            '부정': '😔',
-            '중립': '😐'
-        }
-        
         # 의도별 응답 템플릿 (감정별로 구분)
         response_templates = {
             'greeting': {
@@ -370,7 +371,8 @@ class SimpleIntegratedAI:
         emotion_sentiment = emotion.get('sentiment', '중립')
         
         # 의도와 감정에 맞는 응답 선택
-        if intent_type in response_templates and emotion_sentiment in response_templates[intent_type]:
+        if (intent_type in response_templates and
+                emotion_sentiment in response_templates[intent_type]):
             responses = response_templates[intent_type][emotion_sentiment]
         else:
             responses = response_templates['general']['중립']
@@ -391,11 +393,12 @@ class SimpleIntegratedAI:
         total_successful = self.system_metrics['successful_requests']
         if total_successful > 0:
             current_avg = self.system_metrics['average_response_time']
-            new_avg = ((current_avg * (total_successful - 1)) + response_time) / total_successful
+            new_avg = ((current_avg * (total_successful - 1)) +
+                       response_time) / total_successful
             self.system_metrics['average_response_time'] = new_avg
         
         self.system_metrics['last_updated'] = datetime.now().isoformat()
-    
+
     def get_system_status(self) -> dict:
         """시스템 상태 조회"""
         return {
@@ -513,14 +516,16 @@ def get_analytics():
                     'emotion': '중립',
                     'intent': 'question',
                     'confidence': 0.85,
-                    'timestamp': (datetime.now() - timedelta(minutes=5)).isoformat()
+                    'timestamp': (
+                        datetime.now() - timedelta(minutes=5)).isoformat()
                 },
                 {
                     'message': '도와주세요!',
                     'emotion': '중립',
                     'intent': 'request',
                     'confidence': 0.90,
-                    'timestamp': (datetime.now() - timedelta(minutes=10)).isoformat()
+                    'timestamp': (
+                        datetime.now() - timedelta(minutes=10)).isoformat()
                 }
             ]
         }
@@ -537,6 +542,7 @@ def get_analytics():
             'error': str(e),
             'timestamp': datetime.now().isoformat()
         }), 500
+
 
 @app.route('/api/integrated/logs', methods=['GET'])
 def get_logs():
@@ -555,28 +561,32 @@ def get_logs():
                 'id': '2',
                 'level': 'INFO',
                 'message': '새로운 분석 요청을 처리했습니다.',
-                'timestamp': (datetime.now() - timedelta(minutes=1)).isoformat(),
+                'timestamp': (
+                    datetime.now() - timedelta(minutes=1)).isoformat(),
                 'service': 'emotion-analyzer'
             },
             {
                 'id': '3',
                 'level': 'INFO',
                 'message': '성능 메트릭이 업데이트되었습니다.',
-                'timestamp': (datetime.now() - timedelta(minutes=2)).isoformat(),
+                'timestamp': (
+                    datetime.now() - timedelta(minutes=2)).isoformat(),
                 'service': 'metrics-collector'
             },
             {
                 'id': '4',
                 'level': 'WARNING',
                 'message': '응답 시간이 평균보다 높습니다.',
-                'timestamp': (datetime.now() - timedelta(minutes=3)).isoformat(),
+                'timestamp': (
+                    datetime.now() - timedelta(minutes=3)).isoformat(),
                 'service': 'performance-monitor'
             },
             {
                 'id': '5',
                 'level': 'INFO',
                 'message': '사용자 피드백을 수신했습니다.',
-                'timestamp': (datetime.now() - timedelta(minutes=4)).isoformat(),
+                'timestamp': (
+                    datetime.now() - timedelta(minutes=4)).isoformat(),
                 'service': 'feedback-handler'
             }
         ]
@@ -649,7 +659,8 @@ def generate_story():
 """
         }
         
-        story_content = story_templates.get(genre, story_templates['romance']).strip()
+        story_content = story_templates.get(
+            genre, story_templates['romance']).strip()
         
         result = {
             'success': True,
@@ -718,7 +729,8 @@ def generate_poem():
 """
         }
         
-        poem_content = poem_templates.get(poem_type, poem_templates['lyric']).strip()
+        poem_content = poem_templates.get(
+            poem_type, poem_templates['lyric']).strip()
         
         result = {
             'success': True,
@@ -797,7 +809,8 @@ def generate_essay():
 """
         }
         
-        essay_content = essay_templates.get(essay_type, essay_templates['personal']).strip()
+        essay_content = essay_templates.get(
+            essay_type, essay_templates['personal']).strip()
         
         result = {
             'success': True,
@@ -843,7 +856,8 @@ def analyze_writing():
         paragraph_count = len([p for p in text.split('\n\n') if p.strip()])
         
         # 읽기 수준 계산
-        reading_level = '초급' if word_count < 100 else '중급' if word_count < 500 else '고급'
+        reading_level = ('초급' if word_count < 100 else
+                         '중급' if word_count < 500 else '고급')
         
         # 감정 톤 분석
         positive_words = ['좋다', '행복', '기쁘', '사랑', '희망', '웃음', '즐거']
@@ -912,8 +926,7 @@ def generate_construction_persuasion():
         data = request.get_json()
         company_name = data.get('company_name', '우리 건설사')
         project_type = data.get('project_type', '주택건설')
-        target_audience = data.get('target_audience', '고객')
-        persuasion_level = data.get('persuasion_level', 'high')  # low, medium, high
+        persuasion_level = data.get('persuasion_level', 'high')
         
         # 설득 레벨별 템플릿
         persuasion_templates = {
@@ -925,7 +938,8 @@ def generate_construction_persuasion():
                 'closing': f"{company_name}을 선택하시면 후회하지 않으실 것입니다."
             },
             'medium': {
-                'opening': f"{company_name}은 {project_type} 분야의 선도기업으로, 20년 이상의 노하우를 보유하고 있습니다.",
+                'opening': (f"{company_name}은 {project_type} 분야의 선도기업으로, "
+                           f"20년 이상의 노하우를 보유하고 있습니다."),
                 'benefits': f"최신 기술과 검증된 공법으로 {project_type}의 품질을 보장합니다.",
                 'social_proof': "지금까지 1000건 이상의 성공적인 프로젝트를 완료했습니다.",
                 'urgency': "한정된 기회를 놓치지 마세요.",
@@ -1021,7 +1035,6 @@ def generate_contractor_persuasion():
         data = request.get_json()
         company_name = data.get('company_name', '우리 시공사')
         service_type = data.get('service_type', '인테리어')
-        target_audience = data.get('target_audience', '고객')
         persuasion_level = data.get('persuasion_level', 'high')
         
         # 시공사별 설득 템플릿
@@ -1221,7 +1234,6 @@ def generate_social_media_content():
         content_type = data.get('content_type', 'post')  # post, story, reel, carousel
         industry = data.get('industry', '건설업')
         company_name = data.get('company_name', '우리 회사')
-        target_audience = data.get('target_audience', '고객')
         tone = data.get('tone', 'professional')  # professional, casual, friendly, authoritative
         
         # 플랫폼별 템플릿
@@ -1431,7 +1443,6 @@ def generate_email_marketing():
         email_type = data.get('email_type', 'promotional')  # promotional, newsletter, follow_up, welcome
         industry = data.get('industry', '건설업')
         company_name = data.get('company_name', '우리 회사')
-        target_audience = data.get('target_audience', '고객')
         urgency_level = data.get('urgency_level', 'medium')  # low, medium, high
         
         # 이메일 유형별 템플릿

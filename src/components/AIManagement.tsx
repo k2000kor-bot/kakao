@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
     Box,
-    Card,
-    CardContent,
     Typography,
     Button,
     Select,
@@ -28,8 +26,7 @@ import {
     ListItemText,
     ListItemIcon,
     Rating,
-    TextField,
-    Slider
+    TextField
 } from '@mui/material';
 import {
     Speed,
@@ -37,7 +34,6 @@ import {
     Memory,
     Assessment,
     Feedback,
-    TrendingUp,
     Star,
     Lightbulb,
     CheckCircle,
@@ -48,7 +44,48 @@ interface AIManagementProps {
     onOptimizationComplete?: (result: string) => void;
 }
 
-const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) => {
+interface OptimizationResult {
+    before_optimization: Record<string, number>;
+    after_optimization: Record<string, number>;
+    improvements: Record<string, number>;
+    recommendations: string[];
+}
+
+interface BenchmarkResult {
+    summary: {
+        best_model: string;
+        best_score: number;
+        recommendations: string[];
+    };
+    results: Array<{
+        model_name: string;
+        response_time: number;
+        accuracy: number;
+        memory_usage: number;
+        throughput: number;
+        cost_per_request: number;
+        reliability: number;
+        comprehensive_score?: number;
+    }>;
+}
+
+interface FeedbackResult {
+    learning_update: {
+        new_training_samples: number;
+        model_accuracy_improvement: number;
+        response_quality_score: number;
+        user_satisfaction_trend: string;
+    };
+    improvements: string[];
+    feedback_stats: {
+        total_feedback_count: number;
+        average_rating: number;
+        positive_feedback_rate: number;
+        improvement_suggestions_count: number;
+    };
+}
+
+function AIManagement({ onOptimizationComplete }: AIManagementProps) {
     const [activeTab, setActiveTab] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
@@ -56,19 +93,19 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
     // 최적화 상태
     const [optimizationType, setOptimizationType] = useState('performance');
     const [targetMetric, setTargetMetric] = useState('response_time');
-    const [optimizationResult, setOptimizationResult] = useState<any>(null);
+    const [optimizationResult, setOptimizationResult] = useState<OptimizationResult | null>(null);
 
     // 벤치마크 상태
     const [benchmarkType, setBenchmarkType] = useState('comprehensive');
     const [testDataSize, setTestDataSize] = useState('medium');
-    const [benchmarkResult, setBenchmarkResult] = useState<any>(null);
+    const [benchmarkResult, setBenchmarkResult] = useState<BenchmarkResult | null>(null);
 
     // 피드백 상태
     const [feedbackType, setFeedbackType] = useState('user_rating');
     const [rating, setRating] = useState(5);
     const [feedbackContent, setFeedbackContent] = useState('');
+    const [feedbackResult, setFeedbackResult] = useState<FeedbackResult | null>(null);
     const [correction, setCorrection] = useState('');
-    const [feedbackResult, setFeedbackResult] = useState<any>(null);
 
     const optimizationTypes = [
         { value: 'performance', label: '성능 최적화', icon: <Speed /> },
@@ -208,7 +245,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>최적화 유형</InputLabel>
                         <Select
@@ -228,7 +265,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>목표 지표</InputLabel>
                         <Select
@@ -261,7 +298,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                     <Typography variant="h6" sx={{ mb: 2 }}>최적화 결과</Typography>
 
                     <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                             <Typography variant="subtitle1" sx={{ mb: 1 }}>최적화 전</Typography>
                             <Box sx={{ bgcolor: 'grey.100', p: 1, borderRadius: 1 }}>
                                 {Object.entries(optimizationResult.before_optimization).map(([key, value]) => (
@@ -277,13 +314,13 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                                         {typeof value === 'number' ?
                                             (key.includes('time') ? `${value.toFixed(0)}ms` :
                                                 key.includes('usage') || key.includes('size') ? `${value.toFixed(0)}MB` :
-                                                    `${value.toFixed(1)}%`) : value}
+                                                    `${value.toFixed(1)}%`) : String(value)}
                                     </Typography>
                                 ))}
                             </Box>
                         </Grid>
 
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                             <Typography variant="subtitle1" sx={{ mb: 1 }}>최적화 후</Typography>
                             <Box sx={{ bgcolor: 'success.light', p: 1, borderRadius: 1 }}>
                                 {Object.entries(optimizationResult.after_optimization).map(([key, value]) => (
@@ -299,7 +336,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                                         {typeof value === 'number' ?
                                             (key.includes('time') ? `${value.toFixed(0)}ms` :
                                                 key.includes('usage') || key.includes('size') ? `${value.toFixed(0)}MB` :
-                                                    `${value.toFixed(1)}%`) : value}
+                                                    `${value.toFixed(1)}%`) : String(value)}
                                     </Typography>
                                 ))}
                             </Box>
@@ -311,7 +348,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                     <Typography variant="subtitle1" sx={{ mb: 1 }}>개선 사항</Typography>
                     <Grid container spacing={1}>
                         {Object.entries(optimizationResult.improvements).map(([key, value]) => (
-                            <Grid item key={key}>
+                            <Grid key={key}>
                                 <Chip
                                     label={`${key === 'response_time_improvement' ? '응답 시간' :
                                         key === 'accuracy_improvement' ? '정확도' :
@@ -354,7 +391,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>벤치마크 유형</InputLabel>
                         <Select
@@ -374,7 +411,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>테스트 데이터 크기</InputLabel>
                         <Select
@@ -433,7 +470,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {benchmarkResult.results.map((result: any, index: number) => (
+                                {benchmarkResult.results.map((result, index: number) => (
                                     <TableRow key={index}>
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -487,7 +524,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>피드백 유형</InputLabel>
                         <Select
@@ -508,7 +545,7 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                 </Grid>
 
                 {feedbackType === 'user_rating' && (
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" sx={{ mb: 1 }}>평점</Typography>
                         <Rating
                             value={rating}
@@ -557,25 +594,25 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
                     <Typography variant="h6" sx={{ mb: 2 }}>피드백 처리 결과</Typography>
 
                     <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">새 학습 샘플</Typography>
                             <Typography variant="h6" color="primary">
                                 {feedbackResult.learning_update.new_training_samples}개
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">정확도 개선</Typography>
                             <Typography variant="h6" color="success.main">
                                 +{feedbackResult.learning_update.model_accuracy_improvement.toFixed(1)}%
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">응답 품질</Typography>
                             <Typography variant="h6" color="info.main">
                                 {feedbackResult.learning_update.response_quality_score.toFixed(1)}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">만족도 트렌드</Typography>
                             <Chip
                                 label={feedbackResult.learning_update.user_satisfaction_trend === 'improving' ? '개선 중' : '하락 중'}
@@ -603,25 +640,25 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
 
                     <Typography variant="subtitle1" sx={{ mb: 1 }}>피드백 통계</Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">총 피드백 수</Typography>
                             <Typography variant="h6">
                                 {feedbackResult.feedback_stats.total_feedback_count}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">평균 평점</Typography>
                             <Typography variant="h6">
                                 {feedbackResult.feedback_stats.average_rating.toFixed(1)}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">긍정 피드백률</Typography>
                             <Typography variant="h6" color="success.main">
                                 {feedbackResult.feedback_stats.positive_feedback_rate.toFixed(1)}%
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">개선 제안 수</Typography>
                             <Typography variant="h6">
                                 {feedbackResult.feedback_stats.improvement_suggestions_count}
@@ -656,6 +693,6 @@ const AIManagement: React.FC<AIManagementProps> = ({ onOptimizationComplete }) =
             {activeTab === 2 && renderFeedbackTab()}
         </Paper>
     );
-};
+}
 
 export default AIManagement;

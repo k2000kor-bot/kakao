@@ -1,0 +1,718 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Chip,
+    Avatar,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemAvatar,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    CircularProgress,
+    Alert,
+    Tabs,
+    Tab,
+    Paper,
+    Divider,
+    IconButton,
+    Tooltip
+} from '@mui/material';
+import {
+    People as PeopleIcon,
+    TrendingUp as TrendingUpIcon,
+    SentimentSatisfied as SentimentIcon,
+    Chat as ChatIcon,
+    Analytics as AnalyticsIcon,
+    Refresh as RefreshIcon,
+    Add as AddIcon,
+    Visibility as VisibilityIcon
+} from '@mui/icons-material';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+
+interface ResidentProfile {
+    user_id: string;
+    age_group: string;
+    family_type: string;
+    interests: string[];
+    communication_style: string;
+    activity_level: string;
+    sentiment_tendency: string;
+    response_patterns: Record<string, any>;
+}
+
+interface CommunityAnalysis {
+    total_residents: number;
+    age_distribution: Record<string, number>;
+    family_type_distribution: Record<string, number>;
+    dominant_interests: string[];
+    communication_trends: Record<string, number>;
+    sentiment_analysis: Record<string, number>;
+    activity_hotspots: string[];
+    community_cohesion_score: number;
+}
+
+interface ApartmentCommunityAnalyzerProps {
+    onClose?: () => void;
+}
+
+const ApartmentCommunityAnalyzer: React.FC<ApartmentCommunityAnalyzerProps> = ({ onClose }) => {
+    const [activeTab, setActiveTab] = useState(0);
+    const [residentProfiles, setResidentProfiles] = useState<ResidentProfile[]>([]);
+    const [communityAnalysis, setCommunityAnalysis] = useState<CommunityAnalysis | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
+    const [newResidentData, setNewResidentData] = useState({
+        user_id: '',
+        comments: ['']
+    });
+
+    // 샘플 데이터
+    const sampleResidents: ResidentProfile[] = [
+        {
+            user_id: 'resident_001',
+            age_group: '30대',
+            family_type: '신혼부부',
+            interests: ['부동산', '교육', '건강'],
+            communication_style: '친근함',
+            activity_level: '활발',
+            sentiment_tendency: '긍정적',
+            response_patterns: {
+                average_response_length: 45.2,
+                question_ratio: 0.15,
+                exclamation_ratio: 0.08,
+                emoji_usage: 12,
+                link_sharing: 0.05
+            }
+        },
+        {
+            user_id: 'resident_002',
+            age_group: '40대',
+            family_type: '육아가족',
+            interests: ['교육', '건강', '여행'],
+            communication_style: '적극적',
+            activity_level: '매우 활발',
+            sentiment_tendency: '긍정적',
+            response_patterns: {
+                average_response_length: 62.8,
+                question_ratio: 0.22,
+                exclamation_ratio: 0.12,
+                emoji_usage: 18,
+                link_sharing: 0.08
+            }
+        },
+        {
+            user_id: 'resident_003',
+            age_group: '50대',
+            family_type: '중년부부',
+            interests: ['건강', '여행', '취미'],
+            communication_style: '공식적',
+            activity_level: '보통',
+            sentiment_tendency: '중립적',
+            response_patterns: {
+                average_response_length: 38.5,
+                question_ratio: 0.08,
+                exclamation_ratio: 0.03,
+                emoji_usage: 5,
+                link_sharing: 0.02
+            }
+        }
+    ];
+
+    const sampleCommunityAnalysis: CommunityAnalysis = {
+        total_residents: 156,
+        age_distribution: {
+            '20대': 15,
+            '30대': 45,
+            '40대': 52,
+            '50대': 32,
+            '60대+': 12
+        },
+        family_type_distribution: {
+            '신혼부부': 28,
+            '육아가족': 48,
+            '학부모가족': 35,
+            '중년부부': 32,
+            '노년부부': 13
+        },
+        dominant_interests: ['부동산', '교육', '건강', '여행', '취미'],
+        communication_trends: {
+            '친근함': 45,
+            '적극적': 32,
+            '공식적': 18,
+            '소극적': 5
+        },
+        sentiment_analysis: {
+            '긍정적': 68,
+            '중립적': 25,
+            '부정적': 7
+        },
+        activity_hotspots: ['단지 내 놀이터', '커뮤니티 센터', '체육관', '도서관', '카페'],
+        community_cohesion_score: 87.5
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            // 실제 API 호출 시도
+            try {
+                const response = await fetch('http://localhost:8005/community-analysis', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('커뮤니티 분석 데이터:', result);
+                    setResidentProfiles(result.resident_profiles || []);
+                    setCommunityAnalysis(result.community_analysis || null);
+                    setError(null);
+                } else {
+                    const errorText = await response.text();
+                    console.warn('API 호출 실패, 샘플 데이터 사용:', response.status, errorText);
+                    throw new Error(`API 호출 실패: ${response.status}`);
+                }
+            } catch (apiError) {
+                console.warn('API 호출 실패, 샘플 데이터 사용:', apiError);
+                // API 호출 실패 시 샘플 데이터 사용
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                setResidentProfiles(sampleResidents);
+                setCommunityAnalysis(sampleCommunityAnalysis);
+                setError(null);
+            }
+        } catch (err) {
+            console.error('데이터 로딩 오류:', err);
+            const errorMessage = err instanceof Error ? err.message : '데이터를 불러오는 중 알 수 없는 오류가 발생했습니다.';
+            setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAnalyzeResident = async () => {
+        if (!newResidentData.user_id || newResidentData.comments.length === 0) {
+            setError('사용자 ID와 댓글을 입력해주세요.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // 실제 API 호출
+            const response = await fetch('http://localhost:8005/analyze-resident', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: newResidentData.user_id,
+                    comments: newResidentData.comments.filter(comment => comment.trim() !== '')
+                }),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('분석 결과:', result);
+                // 분석 결과 처리
+                setAnalysisDialogOpen(false);
+                setNewResidentData({ user_id: '', comments: [''] });
+                loadData(); // 데이터 새로고침
+                setError(null);
+            } else {
+                const errorText = await response.text();
+                console.error('API 오류 응답:', response.status, errorText);
+                throw new Error(`분석 요청이 실패했습니다. (상태: ${response.status}, 오류: ${errorText})`);
+            }
+        } catch (err) {
+            console.error('입주민 분석 오류:', err);
+            const errorMessage = err instanceof Error ? err.message : '입주민 분석 중 알 수 없는 오류가 발생했습니다.';
+            setError(`입주민 분석 중 오류가 발생했습니다: ${errorMessage}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const generateCustomResponse = async (userId: string) => {
+        try {
+            const response = await fetch(`http://localhost:8005/generate-response/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ context: '' }),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('맞춤형 응답 결과:', result);
+                alert(`맞춤형 응답: ${result.response}`);
+            } else {
+                const errorText = await response.text();
+                console.error('맞춤형 응답 API 오류:', response.status, errorText);
+                throw new Error(`맞춤형 응답 생성이 실패했습니다. (상태: ${response.status}, 오류: ${errorText})`);
+            }
+        } catch (err) {
+            console.error('맞춤형 응답 생성 오류:', err);
+            const errorMessage = err instanceof Error ? err.message : '맞춤형 응답 생성 중 알 수 없는 오류가 발생했습니다.';
+            setError(`맞춤형 응답 생성 중 오류가 발생했습니다: ${errorMessage}`);
+        }
+    };
+
+    const getAgeGroupColor = (ageGroup: string) => {
+        const colors: Record<string, string> = {
+            '20대': '#FF6B6B',
+            '30대': '#4ECDC4',
+            '40대': '#45B7D1',
+            '50대': '#96CEB4',
+            '60대+': '#FFEAA7'
+        };
+        return colors[ageGroup] || '#95A5A6';
+    };
+
+    const getSentimentColor = (sentiment: string) => {
+        const colors: Record<string, string> = {
+            '긍정적': '#4CAF50',
+            '중립적': '#FF9800',
+            '부정적': '#F44336'
+        };
+        return colors[sentiment] || '#95A5A6';
+    };
+
+    const getActivityLevelColor = (level: string) => {
+        const colors: Record<string, string> = {
+            '매우 활발': '#4CAF50',
+            '활발': '#8BC34A',
+            '보통': '#FFC107',
+            '소극적': '#FF5722'
+        };
+        return colors[level] || '#95A5A6';
+    };
+
+    // 차트 데이터 준비
+    const ageDistributionData = communityAnalysis ?
+        Object.entries(communityAnalysis.age_distribution).map(([age, count]) => ({
+            age,
+            count,
+            percentage: (count / communityAnalysis.total_residents * 100).toFixed(1)
+        })) : [];
+
+    const sentimentData = communityAnalysis ?
+        Object.entries(communityAnalysis.sentiment_analysis).map(([sentiment, count]) => ({
+            sentiment,
+            count,
+            percentage: (count / communityAnalysis.total_residents * 100).toFixed(1)
+        })) : [];
+
+    const communicationData = communityAnalysis ?
+        Object.entries(communityAnalysis.communication_trends).map(([style, count]) => ({
+            style,
+            count,
+            percentage: (count / communityAnalysis.total_residents * 100).toFixed(1)
+        })) : [];
+
+    const TabPanel = ({ children, value, index }: { children: React.ReactNode; value: number; index: number }) => (
+        <div hidden={value !== index}>
+            {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+        </div>
+    );
+
+    return (
+        <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#2E8B57' }}>
+                    아파트 커뮤니티 분석
+                </Typography>
+                <Box>
+                    <Tooltip title="데이터 새로고침">
+                        <IconButton onClick={loadData} disabled={loading}>
+                            <RefreshIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => setAnalysisDialogOpen(true)}
+                        sx={{ ml: 2 }}
+                    >
+                        입주민 분석
+                    </Button>
+                </Box>
+            </Box>
+
+            {error && (
+                <Alert
+                    severity="error"
+                    sx={{ mb: 3 }}
+                    onClose={() => setError(null)}
+                    action={
+                        <Button
+                            color="inherit"
+                            size="small"
+                            onClick={() => {
+                                console.log('상세 오류 정보:', error);
+                                alert(`상세 오류 정보:\n${error}\n\n브라우저 개발자 도구의 콘솔을 확인하세요.`);
+                            }}
+                        >
+                            상세보기
+                        </Button>
+                    }
+                >
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        오류가 발생했습니다:
+                    </Typography>
+                    <Typography variant="body2">
+                        {error}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', mt: 1, opacity: 0.8 }}>
+                        💡 브라우저 개발자 도구(F12)의 콘솔 탭에서 더 자세한 오류 정보를 확인할 수 있습니다.
+                    </Typography>
+                </Alert>
+            )}
+
+            <Paper sx={{ mb: 3 }}>
+                <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+                    <Tab label="커뮤니티 개요" icon={<AnalyticsIcon />} />
+                    <Tab label="입주민 프로필" icon={<PeopleIcon />} />
+                    <Tab label="감정 분석" icon={<SentimentIcon />} />
+                    <Tab label="활동 분석" icon={<TrendingUpIcon />} />
+                </Tabs>
+            </Paper>
+
+            <TabPanel value={activeTab} index={0}>
+                {loading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                        <CircularProgress />
+                    </Box>
+                ) : communityAnalysis ? (
+                    <Grid container spacing={3}>
+                        {/* 커뮤니티 응집도 */}
+                        <Grid item xs={12} md={4}>
+                            <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+                                <CardContent sx={{ textAlign: 'center' }}>
+                                    <Typography variant="h2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                        {communityAnalysis.community_cohesion_score.toFixed(1)}
+                                    </Typography>
+                                    <Typography variant="h6" sx={{ mb: 2 }}>
+                                        커뮤니티 응집도
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        전체 입주민: {communityAnalysis.total_residents}명
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* 나이대 분포 */}
+                        <Grid item xs={12} md={8}>
+                            <Card sx={{ height: '100%' }}>
+                                <CardContent>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                                        나이대 분포
+                                    </Typography>
+                                    <ResponsiveContainer width="100%" height={200}>
+                                        <BarChart data={ageDistributionData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="age" />
+                                            <YAxis />
+                                            <RechartsTooltip />
+                                            <Bar dataKey="count" fill="#4CAF50" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* 가족 유형 분포 */}
+                        <Grid item xs={12} md={6}>
+                            <Card sx={{ height: '100%' }}>
+                                <CardContent>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                                        가족 유형 분포
+                                    </Typography>
+                                    <ResponsiveContainer width="100%" height={250}>
+                                        <PieChart>
+                                            <Pie
+                                                data={Object.entries(communityAnalysis.family_type_distribution).map(([type, count]) => ({
+                                                    type,
+                                                    count,
+                                                    percentage: (count / communityAnalysis.total_residents * 100).toFixed(1)
+                                                }))}
+                                                cx="50%"
+                                                cy="50%"
+                                                outerRadius={80}
+                                                dataKey="count"
+                                                label={({ type, percentage }) => `${type}: ${percentage}%`}
+                                            >
+                                                {Object.entries(communityAnalysis.family_type_distribution).map((_, index) => (
+                                                    <Cell key={`cell-${index}`} fill={`hsl(${index * 60}, 70%, 50%)`} />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* 주요 관심사 */}
+                        <Grid item xs={12} md={6}>
+                            <Card sx={{ height: '100%' }}>
+                                <CardContent>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                                        주요 관심사
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                        {communityAnalysis.dominant_interests.map((interest, index) => (
+                                            <Chip
+                                                key={interest}
+                                                label={interest}
+                                                color="primary"
+                                                variant="outlined"
+                                                sx={{ mb: 1 }}
+                                            />
+                                        ))}
+                                    </Box>
+                                    <Divider sx={{ my: 2 }} />
+                                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                        활동 핫스팟
+                                    </Typography>
+                                    <List dense>
+                                        {communityAnalysis.activity_hotspots.map((spot, index) => (
+                                            <ListItem key={spot}>
+                                                <ListItemAvatar>
+                                                    <Avatar sx={{ bgcolor: '#4CAF50', width: 32, height: 32 }}>
+                                                        {index + 1}
+                                                    </Avatar>
+                                                </ListItemAvatar>
+                                                <ListItemText primary={spot} />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
+                ) : (
+                    <Typography>데이터를 불러오는 중...</Typography>
+                )}
+            </TabPanel>
+
+            <TabPanel value={activeTab} index={1}>
+                <Grid container spacing={3}>
+                    {residentProfiles.map((resident) => (
+                        <Grid item xs={12} md={6} lg={4} key={resident.user_id}>
+                            <Card sx={{ height: '100%', '&:hover': { boxShadow: 6 } }}>
+                                <CardContent>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                        <Avatar sx={{ bgcolor: getAgeGroupColor(resident.age_group), mr: 2 }}>
+                                            {resident.age_group.charAt(0)}
+                                        </Avatar>
+                                        <Box>
+                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                                {resident.user_id}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {resident.age_group} • {resident.family_type}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                            관심사:
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {resident.interests.map((interest) => (
+                                                <Chip key={interest} label={interest} size="small" />
+                                            ))}
+                                        </Box>
+                                    </Box>
+
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                            커뮤니케이션 스타일:
+                                        </Typography>
+                                        <Chip
+                                            label={resident.communication_style}
+                                            size="small"
+                                            sx={{ bgcolor: '#E3F2FD', color: '#1976D2' }}
+                                        />
+                                    </Box>
+
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                            활동 수준:
+                                        </Typography>
+                                        <Chip
+                                            label={resident.activity_level}
+                                            size="small"
+                                            sx={{ bgcolor: getActivityLevelColor(resident.activity_level), color: 'white' }}
+                                        />
+                                    </Box>
+
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                            감정 경향:
+                                        </Typography>
+                                        <Chip
+                                            label={resident.sentiment_tendency}
+                                            size="small"
+                                            sx={{ bgcolor: getSentimentColor(resident.sentiment_tendency), color: 'white' }}
+                                        />
+                                    </Box>
+
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        startIcon={<ChatIcon />}
+                                        onClick={() => generateCustomResponse(resident.user_id)}
+                                        sx={{ width: '100%' }}
+                                    >
+                                        맞춤형 응답 생성
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </TabPanel>
+
+            <TabPanel value={activeTab} index={2}>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                                    감정 분포
+                                </Typography>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={sentimentData}
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={100}
+                                            dataKey="count"
+                                            label={({ sentiment, percentage }) => `${sentiment}: ${percentage}%`}
+                                        >
+                                            {sentimentData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={getSentimentColor(entry.sentiment)} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                                    커뮤니케이션 트렌드
+                                </Typography>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={communicationData}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="style" />
+                                        <YAxis />
+                                        <RechartsTooltip />
+                                        <Bar dataKey="count" fill="#2196F3" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            </TabPanel>
+
+            <TabPanel value={activeTab} index={3}>
+                <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                                    활동 분석 대시보드
+                                </Typography>
+                                <Typography variant="body1" color="text.secondary">
+                                    커뮤니티 활동 패턴과 참여도를 분석하여 더 나은 소통 환경을 구축할 수 있습니다.
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            </TabPanel>
+
+            {/* 입주민 분석 다이얼로그 */}
+            <Dialog open={analysisDialogOpen} onClose={() => setAnalysisDialogOpen(false)} maxWidth="md" fullWidth>
+                <DialogTitle>새 입주민 분석</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 2 }}>
+                        <TextField
+                            fullWidth
+                            label="사용자 ID"
+                            value={newResidentData.user_id}
+                            onChange={(e) => setNewResidentData(prev => ({ ...prev, user_id: e.target.value }))}
+                            sx={{ mb: 3 }}
+                        />
+
+                        <Typography variant="h6" sx={{ mb: 2 }}>
+                            댓글 데이터
+                        </Typography>
+                        {newResidentData.comments.map((comment, index) => (
+                            <TextField
+                                key={index}
+                                fullWidth
+                                multiline
+                                rows={3}
+                                label={`댓글 ${index + 1}`}
+                                value={comment}
+                                onChange={(e) => {
+                                    const newComments = [...newResidentData.comments];
+                                    newComments[index] = e.target.value;
+                                    setNewResidentData(prev => ({ ...prev, comments: newComments }));
+                                }}
+                                sx={{ mb: 2 }}
+                            />
+                        ))}
+
+                        <Button
+                            variant="outlined"
+                            startIcon={<AddIcon />}
+                            onClick={() => setNewResidentData(prev => ({ ...prev, comments: [...prev.comments, ''] }))}
+                        >
+                            댓글 추가
+                        </Button>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setAnalysisDialogOpen(false)}>취소</Button>
+                    <Button onClick={handleAnalyzeResident} variant="contained" disabled={loading}>
+                        {loading ? <CircularProgress size={20} /> : '분석 시작'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default ApartmentCommunityAnalyzer;

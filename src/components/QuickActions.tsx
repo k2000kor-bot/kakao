@@ -97,7 +97,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => {
 
             <Grid container spacing={2}>
                 {quickActions.map((action) => (
-                    <Grid item xs={12} sm={6} md={3} key={action.id}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={action.id}>
                         <Card
                             sx={{
                                 height: '100%',

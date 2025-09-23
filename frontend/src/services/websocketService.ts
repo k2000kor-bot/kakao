@@ -36,7 +36,7 @@ class WebSocketService {
     connect(): Promise<void> {
         return new Promise((resolve, reject) => {
             try {
-                this.ws = new WebSocket(`ws://localhost:5000/ws/${this.clientId}`);
+                this.ws = new WebSocket(`ws://localhost:8002/ws`);
 
                 this.ws.onopen = () => {
                     console.log('WebSocket 연결 성공');

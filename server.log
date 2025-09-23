@@ -1,0 +1,1345 @@
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+ * Serving Flask app 'app'
+ * Debug mode: on
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.0.70:5001
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:24:41] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:24:47] "GET /api/status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:26:24] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:28:09] "OPTIONS /api/chat HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:28:09] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:28:21] "OPTIONS /api/chat HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:28:21] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/code_editor.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:37:37] "GET /api/health HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:37:45] "GET /api/files HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:37:48] "GET /api/analyze-file?path=src/App.tsx HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:46:02] "GET /api/health HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:46:05] "GET /api/files HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:46:08] "GET /api/analyze-file?path=src/App.tsx HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:46:10] "GET /api/analyze-file?path=src/App.tsx HTTP/1.1" 200 -
+ERROR:__main__:파일 생성 오류: ' useState, useEffect '
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:46:21] "[35m[1mPOST /api/create-file HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+ERROR:__main__:파일 생성 오류: 'str' object has no attribute 'lower()'
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:46:31] "[35m[1mPOST /api/create-file HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:46:58] "POST /api/create-file HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:47:01] "GET /api/file?path=TestComponent.jsx HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:47:04] "GET /api/analyze-file?path=TestComponent.jsx HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:47:08] "POST /api/auto-format HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:47:11] "GET /api/backups HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:50:22] "GET /api/health HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:50:24] "GET /api/files HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:50:28] "POST /api/create-file HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:52:11] "POST /api/chat HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:52:18] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:52:55] "POST /api/chat HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:53:00] "POST /api/analyze HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:53:53] "POST /api/chat HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:53:57] "POST /api/chat HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 09:54:00] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:00:04] "GET /api/health HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:00:06] "GET /api/health HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:00:08] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:04:00] "GET /api/health HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+ERROR:__main__:학습 시스템 오류: 'str' object has no attribute 'emotion'
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:04:03] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:04:05] "GET /api/suggestions?session_id=test_enhanced_session HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:04:08] "GET /api/suggestions?session_id=test_enhanced_session HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+ERROR:__main__:학습 시스템 오류: 'str' object has no attribute 'emotion'
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:04:11] "POST /api/chat HTTP/1.1" 200 -
+ERROR:__main__:학습 시스템 오류: 'str' object has no attribute 'emotion'
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:04:14] "POST /api/chat HTTP/1.1" 200 -
+ERROR:__main__:학습 시스템 오류: 'str' object has no attribute 'emotion'
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:04:17] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/app.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_ai_chat_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_ai_chat_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_ai_chat_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_ai_chat_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_ai_chat_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_ai_chat_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_ai_chat_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:30:02] "OPTIONS /api/chat HTTP/1.1" 200 -
+ERROR:__main__:감정 분석 오류: <EmotionType.NEUTRAL: 'neutral'>
+ERROR:__main__:학습 시스템 오류: 'str' object has no attribute 'emotion'
+INFO:werkzeug:127.0.0.1 - - [18/Sep/2025 10:30:02] "POST /api/chat HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/advanced_logic_processing_system.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758
+INFO:werkzeug: * Detected change in '/Users/aD/kakao-frontend/backend/ultra_advanced_api.py', reloading
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:데이터베이스 초기화 완료
+INFO:__main__:🚀 CORBU.AI 백엔드 서버를 시작합니다...
+INFO:__main__:📍 서버 주소: http://localhost:5001
+INFO:__main__:🔗 프론트엔드: http://localhost:3000
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 479-034-758

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오프라인 - CORBU AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 500px;
+            padding: 40px 20px;
+        }
+        
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .retry-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .retry-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .features {
+            margin-top: 40px;
+            text-align: left;
+        }
+        
+        .feature-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .feature-item h3 {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            color: #ffd700;
+        }
+        
+        .feature-item p {
+            font-size: 0.9em;
+            margin: 0;
+            opacity: 0.8;
+        }
+        
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .connection-status {
+            font-size: 1em;
+            margin: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            p {
+                font-size: 1em;
+            }
+            
+            .icon {
+                font-size: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📡</div>
+        <h1>오프라인 상태</h1>
+        <p>인터넷 연결이 없습니다.<br>네트워크 연결을 확인하고 다시 시도해주세요.</p>
+        
+        <button class="retry-btn" onclick="retryConnection()">
+            다시 시도
+        </button>
+        
+        <div class="status">
+            <span class="status-indicator"></span>
+            <span class="connection-status" id="connectionStatus">연결 확인 중...</span>
+        </div>
+        
+        <div class="features">
+            <div class="feature-item">
+                <h3>🚀 고급 AI 기능</h3>
+                <p>오프라인에서도 일부 기능을 사용할 수 있습니다</p>
+            </div>
+            <div class="feature-item">
+                <h3>📊 데이터 동기화</h3>
+                <p>연결이 복구되면 자동으로 데이터가 동기화됩니다</p>
+            </div>
+            <div class="feature-item">
+                <h3>🔒 보안 유지</h3>
+                <p>오프라인 상태에서도 보안이 유지됩니다</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let retryCount = 0;
+        const maxRetries = 5;
+        
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connectionStatus');
+            
+            if (navigator.onLine) {
+                statusElement.textContent = '연결됨 - 페이지를 새로고침합니다...';
+                statusElement.style.color = '#4CAF50';
+                
+                // 연결이 복구되면 메인 페이지로 리다이렉트
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                statusElement.textContent = `오프라인 상태 (재시도 ${retryCount}/${maxRetries})`;
+                statusElement.style.color = '#ff6b6b';
+            }
+        }
+        
+        function retryConnection() {
+            retryCount++;
+            
+            if (retryCount > maxRetries) {
+                alert('최대 재시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.');
+                retryCount = 0;
+                return;
+            }
+            
+            updateConnectionStatus();
+            
+            // 네트워크 연결 테스트
+            fetch('/', { method: 'HEAD', cache: 'no-cache' })
+                .then(() => {
+                    updateConnectionStatus();
+                })
+                .catch(() => {
+                    setTimeout(updateConnectionStatus, 1000);
+                });
+        }
+        
+        // 네트워크 상태 모니터링
+        window.addEventListener('online', () => {
+            updateConnectionStatus();
+        });
+        
+        window.addEventListener('offline', () => {
+            updateConnectionStatus();
+        });
+        
+        // 초기 상태 확인
+        updateConnectionStatus();
+        
+        // 주기적 연결 확인
+        setInterval(() => {
+            if (!navigator.onLine) {
+                updateConnectionStatus();
+            }
+        }, 5000);
+        
+        // 키보드 단축키
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                retryConnection();
+            }
+        });
+        
+        // Service Worker 상태 확인
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((registration) => {
+                console.log('Service Worker 준비됨:', registration);
+            });
+        }
+    </script>
+</body>
+</html>

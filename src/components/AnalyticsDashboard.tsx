@@ -161,7 +161,7 @@ const AnalyticsDashboard: React.FC = () => {
 
             {/* 주요 지표 카드들 */}
             <Grid container spacing={3} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -175,7 +175,7 @@ const AnalyticsDashboard: React.FC = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -189,7 +189,7 @@ const AnalyticsDashboard: React.FC = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -203,7 +203,7 @@ const AnalyticsDashboard: React.FC = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -220,7 +220,7 @@ const AnalyticsDashboard: React.FC = () => {
 
             {/* 감정 분석 차트 */}
             <Grid container spacing={3} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -264,77 +264,77 @@ const AnalyticsDashboard: React.FC = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Timeline />
-                                의도 분석 분포
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                {Object.entries(analyticsData.intentDistribution).map(([intent, count]) => (
-                                    <Chip
-                                        key={intent}
-                                        label={`${intent}: ${count}`}
-                                        sx={{
-                                            bgcolor: getIntentColor(intent),
-                                            color: 'white',
-                                            fontSize: '0.75rem'
-                                        }}
-                                    />
-                                ))}
-                            </Box>
-                        </CardContent>
-                    </Card>
+            <Grid size={{ xs: 12, md: 6 }}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Timeline />
+                            의도 분석 분포
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {Object.entries(analyticsData.intentDistribution).map(([intent, count]) => (
+                                <Chip
+                                    key={intent}
+                                    label={`${intent}: ${count}`}
+                                    sx={{
+                                        bgcolor: getIntentColor(intent),
+                                        color: 'white',
+                                        fontSize: '0.75rem'
+                                    }}
+                                />
+                            ))}
+                        </Box>
+                    </CardContent>
+                </Card>
                 </Grid>
             </Grid>
 
-            {/* 최근 메시지 */}
-            <Card>
-                <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2 }}>최근 분석된 메시지</Typography>
-                    <List>
-                        {analyticsData.recentMessages.map((msg, index) => (
-                            <React.Fragment key={index}>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <Psychology sx={{ color: getEmotionColor(msg.emotion) }} />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary={msg.message}
-                                        secondary={
-                                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                                                <Chip
-                                                    label={msg.emotion}
-                                                    size="small"
-                                                    sx={{
-                                                        bgcolor: getEmotionColor(msg.emotion),
-                                                        color: 'white',
-                                                        fontSize: '0.7rem'
-                                                    }}
-                                                />
-                                                <Chip
-                                                    label={msg.intent}
-                                                    size="small"
-                                                    sx={{
-                                                        bgcolor: getIntentColor(msg.intent),
-                                                        color: 'white',
-                                                        fontSize: '0.7rem'
-                                                    }}
-                                                />
-                                                <Typography variant="caption" sx={{ alignSelf: 'center' }}>
-                                                    {msg.timestamp}
-                                                </Typography>
-                                            </Box>
-                                        }
+    {/* 최근 메시지 */}
+    <Card>
+    <CardContent>
+        <Typography variant="h6" sx={{ mb: 2 }}>최근 분석된 메시지</Typography>
+        <List>
+            {analyticsData.recentMessages.map((msg, index) => (
+                <React.Fragment key={index}>
+                    <ListItem>
+                        <ListItemIcon>
+                            <Psychology sx={{ color: getEmotionColor(msg.emotion) }} />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={msg.message}
+                            secondary={
+                                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                                    <Chip
+                                        label={msg.emotion}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: getEmotionColor(msg.emotion),
+                                            color: 'white',
+                                            fontSize: '0.7rem'
+                                        }}
                                     />
-                                </ListItem>
-                                {index < analyticsData.recentMessages.length - 1 && <Divider />}
-                            </React.Fragment>
-                        ))}
-                    </List>
-                </CardContent>
-            </Card>
+                                    <Chip
+                                        label={msg.intent}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: getIntentColor(msg.intent),
+                                            color: 'white',
+                                            fontSize: '0.7rem'
+                                        }}
+                                    />
+                                    <Typography variant="caption" sx={{ alignSelf: 'center' }}>
+                                        {msg.timestamp}
+                                    </Typography>
+                                </Box>
+                            }
+                        />
+                    </ListItem>
+                    {index < analyticsData.recentMessages.length - 1 && <Divider />}
+                </React.Fragment>
+            ))}
+        </List>
+    </CardContent>
+    </Card>
         </Box>
     );
 };

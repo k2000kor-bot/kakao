@@ -277,8 +277,13 @@ class AIPerformanceOptimizationService extends EventEmitter {
         if (relevantMetrics.length === 0) return false;
 
         const recentMetrics = relevantMetrics.filter(metric => {
-            const timestamp = metric.timestamp instanceof Date ? metric.timestamp : new Date(metric.timestamp);
-            return Date.now() - timestamp.getTime() < condition.duration * 1000;
+            try {
+                const timestamp = metric.timestamp instanceof Date ? metric.timestamp : new Date(metric.timestamp);
+                return timestamp && timestamp.getTime && Date.now() - timestamp.getTime() < condition.duration * 1000;
+            } catch (error) {
+                console.warn('Invalid timestamp in metric:', metric.timestamp);
+                return false;
+            }
         });
 
         if (recentMetrics.length === 0) return false;

@@ -756,12 +756,28 @@ class RealTimeAIEmotionRecognitionSystem {
 
         // 오래된 감정 데이터 정리
         for (const [userId, emotions] of this.emotionData.entries()) {
-            this.emotionData.set(userId, emotions.filter(emotion => emotion.timestamp >= cutoffDate));
+            this.emotionData.set(userId, emotions.filter(emotion => {
+                try {
+                    const timestamp = emotion.timestamp instanceof Date ? emotion.timestamp : new Date(emotion.timestamp);
+                    return timestamp && timestamp.getTime && timestamp.getTime() >= cutoffDate.getTime();
+                } catch (error) {
+                    console.warn('Invalid timestamp in emotion data:', emotion.timestamp);
+                    return false;
+                }
+            }));
         }
 
         // 오래된 응답 데이터 정리
         for (const [userId, responses] of this.emotionResponses.entries()) {
-            this.emotionResponses.set(userId, responses.filter(response => response.timestamp >= cutoffDate));
+            this.emotionResponses.set(userId, responses.filter(response => {
+                try {
+                    const timestamp = response.timestamp instanceof Date ? response.timestamp : new Date(response.timestamp);
+                    return timestamp && timestamp.getTime && timestamp.getTime() >= cutoffDate.getTime();
+                } catch (error) {
+                    console.warn('Invalid timestamp in response data:', response.timestamp);
+                    return false;
+                }
+            }));
         }
 
         // 오래된 트렌드 데이터 정리

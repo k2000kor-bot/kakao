@@ -210,7 +210,7 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <FormControl fullWidth>
                         <InputLabel>장르</InputLabel>
                         <Select
@@ -227,7 +227,7 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <FormControl fullWidth>
                         <InputLabel>테마</InputLabel>
                         <Select
@@ -245,7 +245,7 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <FormControl fullWidth>
                         <InputLabel>길이</InputLabel>
                         <Select
@@ -281,7 +281,7 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>시 형태</InputLabel>
                         <Select
@@ -295,7 +295,7 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>테마</InputLabel>
                         <Select
@@ -335,7 +335,7 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>에세이 형태</InputLabel>
                         <Select
@@ -349,7 +349,7 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
                         <InputLabel>주제</InputLabel>
                         <Select
@@ -414,19 +414,19 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
                     <Typography variant="h6" sx={{ mb: 2 }}>분석 결과</Typography>
 
                     <Grid container spacing={2}>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">단어 수</Typography>
                             <Typography variant="h6">{analysisResult.word_count}</Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">문장 수</Typography>
                             <Typography variant="h6">{analysisResult.sentence_count}</Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">읽기 수준</Typography>
                             <Chip label={analysisResult.reading_level} color="primary" />
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">감정 톤</Typography>
                             <Chip
                                 label={analysisResult.emotion_tone}

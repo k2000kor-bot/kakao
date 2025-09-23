@@ -80,7 +80,7 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 30000,
@@ -457,9 +457,324 @@ class ApiService {
       throw this.handleError(error);
     }
   }
+
+  // AI Analytics API 메서드들
+  async getAIAnalyticsMetrics(): Promise<any> {
+    try {
+      const response = await this.api.get('/ai-analytics/metrics');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getAIAnalyticsRecent(): Promise<any> {
+    try {
+      const response = await this.api.get('/ai-analytics/recent');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getAIAnalyticsPerformance(): Promise<any> {
+    try {
+      const response = await this.api.get('/ai-analytics/performance');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async analyzeText(text: string): Promise<any> {
+    try {
+      const response = await this.api.post('/ai-analytics/analyze', { text });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async startAIMonitoring(): Promise<any> {
+    try {
+      const response = await this.api.post('/ai-analytics/start');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async stopAIMonitoring(): Promise<any> {
+    try {
+      const response = await this.api.post('/ai-analytics/stop');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async exportAIData(): Promise<any> {
+    try {
+      const response = await this.api.get('/ai-analytics/export');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getAIInsights(): Promise<any> {
+    try {
+      const response = await this.api.get('/ai-analytics/insights');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getAIAnalyticsHealth(): Promise<any> {
+    try {
+      const response = await this.api.get('/ai-analytics/health');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Performance Monitor API 메서드들
+  async getPerformanceMetrics(): Promise<any> {
+    try {
+      const response = await this.api.get('/api/performance/metrics');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getPerformanceAnalysis(): Promise<any> {
+    try {
+      const response = await this.api.get('/api/performance/analysis');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async runPerformanceOptimization(optimizationType: string, mode: string = 'auto'): Promise<any> {
+    try {
+      const response = await this.api.post('/api/performance/optimize', {
+        optimization_type: optimizationType,
+        mode: mode
+      });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getOptimizationHistory(): Promise<any> {
+    try {
+      const response = await this.api.get('/api/performance/optimization/history');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getPerformanceConfig(): Promise<any> {
+    try {
+      const response = await this.api.get('/api/performance/config');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async updatePerformanceConfig(config: any): Promise<any> {
+    try {
+      const response = await this.api.put('/api/performance/config', config);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getPerformanceHealth(): Promise<any> {
+    try {
+      const response = await this.api.get('/performance/health');
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
 }
 
 // 싱글톤 인스턴스 생성
 const apiService = new ApiService();
+
+// AI Analytics API 서비스
+export const aiAnalyticsApi = {
+  // 실시간 메트릭 조회
+  getMetrics: async (): Promise<any> => {
+    try {
+      return await apiService.getAIAnalyticsMetrics();
+    } catch (error) {
+      console.error('AI Analytics 메트릭 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 최근 분석 데이터 조회
+  getRecentAnalysis: async (): Promise<any> => {
+    try {
+      return await apiService.getAIAnalyticsRecent();
+    } catch (error) {
+      console.error('최근 분석 데이터 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 모델 성능 조회
+  getModelPerformance: async (): Promise<any> => {
+    try {
+      return await apiService.getAIAnalyticsPerformance();
+    } catch (error) {
+      console.error('모델 성능 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 텍스트 분석
+  analyzeText: async (text: string): Promise<any> => {
+    try {
+      return await apiService.analyzeText(text);
+    } catch (error) {
+      console.error('텍스트 분석 실패:', error);
+      throw error;
+    }
+  },
+
+  // 모니터링 시작
+  startMonitoring: async (): Promise<any> => {
+    try {
+      return await apiService.startAIMonitoring();
+    } catch (error) {
+      console.error('모니터링 시작 실패:', error);
+      throw error;
+    }
+  },
+
+  // 모니터링 중지
+  stopMonitoring: async (): Promise<any> => {
+    try {
+      return await apiService.stopAIMonitoring();
+    } catch (error) {
+      console.error('모니터링 중지 실패:', error);
+      throw error;
+    }
+  },
+
+  // 데이터 내보내기
+  exportData: async (): Promise<any> => {
+    try {
+      return await apiService.exportAIData();
+    } catch (error) {
+      console.error('데이터 내보내기 실패:', error);
+      throw error;
+    }
+  },
+
+  // AI 인사이트 조회
+  getInsights: async (): Promise<any> => {
+    try {
+      return await apiService.getAIInsights();
+    } catch (error) {
+      console.error('AI 인사이트 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 헬스 체크
+  healthCheck: async (): Promise<any> => {
+    try {
+      return await apiService.getAIAnalyticsHealth();
+    } catch (error) {
+      console.error('AI Analytics 헬스 체크 실패:', error);
+      throw error;
+    }
+  }
+};
+
+// Performance Monitor API 서비스
+export const performanceMonitorApi = {
+  // 시스템 메트릭 조회
+  getSystemMetrics: async (): Promise<any> => {
+    try {
+      return await apiService.getPerformanceMetrics();
+    } catch (error) {
+      console.error('시스템 메트릭 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 성능 분석 조회
+  getPerformanceAnalysis: async (): Promise<any> => {
+    try {
+      return await apiService.getPerformanceAnalysis();
+    } catch (error) {
+      console.error('성능 분석 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 최적화 실행
+  runOptimization: async (optimizationType: string, mode: string = 'auto'): Promise<any> => {
+    try {
+      return await apiService.runPerformanceOptimization(optimizationType, mode);
+    } catch (error) {
+      console.error('최적화 실행 실패:', error);
+      throw error;
+    }
+  },
+
+  // 최적화 히스토리 조회
+  getOptimizationHistory: async (): Promise<any> => {
+    try {
+      return await apiService.getOptimizationHistory();
+    } catch (error) {
+      console.error('최적화 히스토리 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 설정 조회
+  getConfig: async (): Promise<any> => {
+    try {
+      return await apiService.getPerformanceConfig();
+    } catch (error) {
+      console.error('설정 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  // 설정 업데이트
+  updateConfig: async (config: any): Promise<any> => {
+    try {
+      return await apiService.updatePerformanceConfig(config);
+    } catch (error) {
+      console.error('설정 업데이트 실패:', error);
+      throw error;
+    }
+  },
+
+  // 헬스 체크
+  healthCheck: async (): Promise<any> => {
+    try {
+      return await apiService.getPerformanceHealth();
+    } catch (error) {
+      console.error('Performance Monitor 헬스 체크 실패:', error);
+      throw error;
+    }
+  }
+};
 
 export default apiService; 

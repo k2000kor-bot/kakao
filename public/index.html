@@ -5,16 +5,65 @@
   <meta charset="utf-8" />
   <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
-  <meta name="description" content="CORBU.AI - 지능형 AI 분석 플랫폼" />
-  <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+  <meta name="theme-color" content="#667eea" />
+  <meta name="description" content="CORBU AI Ultimate System - 고도화된 AI 플랫폼" />
+  <meta name="keywords" content="AI, 인공지능, 분석, 플랫폼, CORBU" />
+  <meta name="author" content="CORBU AI Team" />
+
+  <!-- PWA 관련 메타 태그 -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="CORBU AI" />
+  <meta name="application-name" content="CORBU AI" />
+  <meta name="msapplication-TileColor" content="#667eea" />
+  <meta name="msapplication-tap-highlight" content="no" />
+
+  <!-- 아이콘 -->
+  <link rel="apple-touch-icon" href="%PUBLIC_URL%/icons/icon-192x192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/icons/icon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/icons/icon-16x16.png" />
+
+  <!-- PWA 매니페스트 -->
   <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-  <title>CORBU.AI - 지능형 AI 분석 플랫폼</title>
+
+  <!-- 스플래시 스크린 (iOS) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-2048-2732.jpg"
+    media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1668-2388.jpg"
+    media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1536-2048.jpg"
+    media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1125-2436.jpg"
+    media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1242-2208.jpg"
+    media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-750-1334.jpg"
+    media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-640-1136.jpg"
+    media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <title>CORBU AI Ultimate System - 고도화된 AI 플랫폼</title>
 </head>
 
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>
+
+  <!-- Service Worker 등록 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+  </script>
 </body>
 
 </html>

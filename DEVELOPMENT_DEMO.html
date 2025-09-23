@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORBU.AI 개발 도구 데모</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .tool-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .tool-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .tool-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .tool-features li {
+            padding: 5px 0;
+            color: #555;
+        }
+
+        .tool-features li:before {
+            content: "✓ ";
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .tool-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .tool-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .status-item {
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .status-item.online {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-item.offline {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-item.checking {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 0.9rem;
+        }
+
+        .guide-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .guide-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .guide-steps {
+            counter-reset: step-counter;
+        }
+
+        .guide-step {
+            counter-increment: step-counter;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .guide-step:before {
+            content: counter(step-counter);
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .guide-step h3 {
+            display: inline;
+            margin-left: 10px;
+            color: #333;
+        }
+
+        .guide-step p {
+            margin-top: 10px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.8;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: #4CAF50;
+        }
+
+        .notification.error {
+            background: #f44336;
+        }
+
+        .notification.info {
+            background: #2196F3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 CORBU.AI 개발 도구</h1>
+            <p>긴 코드를 효율적으로 편집하고 관리할 수 있는 고급 개발 환경</p>
+        </div>
+
+        <div class="status-section">
+            <h2 class="status-title">📊 서버 상태</h2>
+            <div class="status-grid" id="statusGrid">
+                <div class="status-item checking">
+                    <div class="status-label">백엔드 서버</div>
+                    <div class="status-value">
+                        <span class="loading"></span> 확인 중...
+                    </div>
+                </div>
+                <div class="status-item checking">
+                    <div class="status-label">프론트엔드 서버</div>
+                    <div class="status-value">
+                        <span class="loading"></span> 확인 중...
+                    </div>
+                </div>
+                <div class="status-item checking">
+                    <div class="status-label">웹 코드 편집기</div>
+                    <div class="status-value">
+                        <span class="loading"></span> 확인 중...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tools-grid">
+            <div class="tool-card">
+                <div class="tool-icon">💬</div>
+                <h3 class="tool-title">채팅 인터페이스</h3>
+                <p class="tool-description">
+                    CORBU.AI와 대화하며 코딩 도움을 받을 수 있는 고급 채팅 인터페이스입니다.
+                </p>
+                <ul class="tool-features">
+                    <li>감정 분석 및 의도 파악</li>
+                    <li>실시간 AI 응답</li>
+                    <li>컨텍스트 기반 대화</li>
+                    <li>웹 검색 통합</li>
+                </ul>
+                <button class="tool-button" onclick="openChatInterface()">채팅 시작하기</button>
+            </div>
+
+            <div class="tool-card">
+                <div class="tool-icon">💻</div>
+                <h3 class="tool-title">웹 코드 편집기</h3>
+                <p class="tool-description">
+                    브라우저에서 직접 코드를 편집하고 관리할 수 있는 통합 개발 환경입니다.
+                </p>
+                <ul class="tool-features">
+                    <li>다중 탭 편집</li>
+                    <li>실시간 자동 저장</li>
+                    <li>코드 분석 및 품질 검사</li>
+                    <li>자동 백업 시스템</li>
+                    <li>파일 분할 및 병합</li>
+                </ul>
+                <button class="tool-button" onclick="openCodeEditor()">편집기 열기</button>
+            </div>
+
+            <div class="tool-card">
+                <div class="tool-icon">🔧</div>
+                <h3 class="tool-title">고급 코드 관리</h3>
+                <p class="tool-description">
+                    Python 기반의 고급 코드 관리 도구로 복잡한 코드 작업을 수행할 수 있습니다.
+                </p>
+                <ul class="tool-features">
+                    <li>스마트 코드 교체</li>
+                    <li>함수 리팩토링</li>
+                    <li>컴포넌트 추출</li>
+                    <li>코드 품질 분석</li>
+                    <li>자동 포맷팅</li>
+                </ul>
+                <button class="tool-button" onclick="showAdvancedTools()">고급 도구 보기</button>
+            </div>
+
+            <div class="tool-card">
+                <div class="tool-icon">📚</div>
+                <h3 class="tool-title">개발 가이드</h3>
+                <p class="tool-description">
+                    모든 개발 도구의 사용법과 팁을 제공하는 종합 가이드입니다.
+                </p>
+                <ul class="tool-features">
+                    <li>단계별 사용법</li>
+                    <li>고급 기능 설명</li>
+                    <li>문제 해결 가이드</li>
+                    <li>성능 최적화 팁</li>
+                </ul>
+                <button class="tool-button" onclick="openGuide()">가이드 보기</button>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <h2 class="guide-title">🚀 빠른 시작 가이드</h2>
+            <div class="guide-steps">
+                <div class="guide-step">
+                    <h3>서버 시작</h3>
+                    <p>터미널에서 <code>./start_dev_tools.sh</code> 명령어를 실행하여 모든 개발 도구를 한 번에 시작합니다.</p>
+                </div>
+                <div class="guide-step">
+                    <h3>채팅 인터페이스 사용</h3>
+                    <p>http://localhost:3000 에서 CORBU.AI와 대화하며 코딩 도움을 받을 수 있습니다.</p>
+                </div>
+                <div class="guide-step">
+                    <h3>코드 편집기 사용</h3>
+                    <p>http://localhost:8080/web_code_editor.html 에서 웹 기반 코드 편집기를 사용할 수 있습니다.</p>
+                </div>
+                <div class="guide-step">
+                    <h3>고급 기능 활용</h3>
+                    <p>코드 분석, 자동 포맷팅, 파일 분할 등 고급 기능을 활용하여 효율적으로 개발하세요.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>CORBU.AI 개발팀 | 고급 개발 도구로 효율적인 코딩을 경험하세요!</p>
+        </div>
+    </div>
+
+    <!-- 알림 -->
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // 서버 상태 확인
+        async function checkServerStatus() {
+            const statusGrid = document.getElementById('statusGrid');
+            const statusItems = statusGrid.children;
+
+            // 백엔드 서버 확인
+            try {
+                const response = await fetch('http://localhost:5001/api/health');
+                if (response.ok) {
+                    statusItems[0].className = 'status-item online';
+                    statusItems[0].innerHTML = `
+                        <div class="status-label">백엔드 서버</div>
+                        <div class="status-value">✅ 온라인 (포트 5001)</div>
+                    `;
+                } else {
+                    throw new Error('서버 응답 오류');
+                }
+            } catch (error) {
+                statusItems[0].className = 'status-item offline';
+                statusItems[0].innerHTML = `
+                    <div class="status-label">백엔드 서버</div>
+                    <div class="status-value">❌ 오프라인</div>
+                `;
+            }
+
+            // 프론트엔드 서버 확인
+            try {
+                const response = await fetch('http://localhost:3000');
+                if (response.ok) {
+                    statusItems[1].className = 'status-item online';
+                    statusItems[1].innerHTML = `
+                        <div class="status-label">프론트엔드 서버</div>
+                        <div class="status-value">✅ 온라인 (포트 3000)</div>
+                    `;
+                } else {
+                    throw new Error('서버 응답 오류');
+                }
+            } catch (error) {
+                statusItems[1].className = 'status-item offline';
+                statusItems[1].innerHTML = `
+                    <div class="status-label">프론트엔드 서버</div>
+                    <div class="status-value">❌ 오프라인</div>
+                `;
+            }
+
+            // 웹 코드 편집기 확인
+            try {
+                const response = await fetch('http://localhost:8080/web_code_editor.html');
+                if (response.ok) {
+                    statusItems[2].className = 'status-item online';
+                    statusItems[2].innerHTML = `
+                        <div class="status-label">웹 코드 편집기</div>
+                        <div class="status-value">✅ 온라인 (포트 8080)</div>
+                    `;
+                } else {
+                    throw new Error('서버 응답 오류');
+                }
+            } catch (error) {
+                statusItems[2].className = 'status-item offline';
+                statusItems[2].innerHTML = `
+                    <div class="status-label">웹 코드 편집기</div>
+                    <div class="status-value">❌ 오프라인</div>
+                `;
+            }
+        }
+
+        // 도구 열기 함수들
+        function openChatInterface() {
+            window.open('http://localhost:3000', '_blank');
+            showNotification('채팅 인터페이스를 열었습니다', 'success');
+        }
+
+        function openCodeEditor() {
+            window.open('http://localhost:8080/web_code_editor.html', '_blank');
+            showNotification('웹 코드 편집기를 열었습니다', 'success');
+        }
+
+        function showAdvancedTools() {
+            showNotification('고급 코드 관리 도구는 터미널에서 사용할 수 있습니다', 'info');
+            alert(`고급 코드 관리 도구 사용법:
+
+1. 터미널에서 다음 명령어 실행:
+   cd /Users/aD/kakao-frontend
+   source venv/bin/activate
+   python advanced_code_manager.py
+
+2. 사용 가능한 기능:
+   - 코드 품질 분석
+   - 스마트 코드 교체
+   - 함수 리팩토링
+   - 컴포넌트 추출
+   - 자동 포맷팅
+
+3. 자세한 사용법은 CODE_EDITOR_GUIDE.md 파일을 참조하세요.`);
+        }
+
+        function openGuide() {
+            showNotification('개발 가이드를 표시합니다', 'info');
+            alert(`CORBU.AI 개발 도구 사용 가이드:
+
+📁 파일 위치: /Users/aD/kakao-frontend/CODE_EDITOR_GUIDE.md
+
+🚀 주요 기능:
+- 웹 기반 코드 편집기
+- Python 코드 관리 도구
+- 자동 백업 시스템
+- 코드 품질 분석
+- 파일 분할 및 병합
+
+💡 팁:
+- 긴 코드는 단계별로 편집하세요
+- 중요한 변경 전에 백업을 생성하세요
+- 코드 분석 기능으로 품질을 확인하세요
+
+🔧 문제 해결:
+- 서버가 실행되지 않으면 start_dev_tools.sh를 실행하세요
+- 백업 파일은 code_backups 폴더에서 관리됩니다`);
+        }
+
+        // 알림 표시 함수
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 페이지 로드 시 서버 상태 확인
+        document.addEventListener('DOMContentLoaded', function () {
+            checkServerStatus();
+
+            // 30초마다 서버 상태 재확인
+            setInterval(checkServerStatus, 30000);
+        });
+    </script>
+</body>
+
+</html>

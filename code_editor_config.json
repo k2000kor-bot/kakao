@@ -1,0 +1,15 @@
+{
+  "auto_backup": true,
+  "max_backups": 10,
+  "backup_interval": 300,
+  "excluded_files": [
+    ".git",
+    "node_modules",
+    "__pycache__"
+  ],
+  "watched_files": [
+    "src/App.tsx",
+    "src/App.js",
+    "app.py"
+  ]
+}

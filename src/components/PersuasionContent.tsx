@@ -184,7 +184,7 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                         fullWidth
                         label="회사명"
@@ -193,7 +193,7 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
                     />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <FormControl fullWidth>
                         <InputLabel>프로젝트 유형</InputLabel>
                         <Select
@@ -210,7 +210,7 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <FormControl fullWidth>
                         <InputLabel>설득 레벨</InputLabel>
                         <Select
@@ -254,7 +254,7 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                         fullWidth
                         label="회사명"
@@ -263,7 +263,7 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
                     />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <FormControl fullWidth>
                         <InputLabel>서비스 유형</InputLabel>
                         <Select
@@ -280,7 +280,7 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
                     </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <FormControl fullWidth>
                         <InputLabel>설득 레벨</InputLabel>
                         <Select
@@ -350,25 +350,25 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
                     <Typography variant="h6" sx={{ mb: 2 }}>설득력 분석 결과</Typography>
 
                     <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">전체 설득력 점수</Typography>
                             <Typography variant="h4" color="primary">
                                 {analysisResult.total_persuasion_score}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">가스라이팅 지수</Typography>
                             <Typography variant="h6" color="error">
                                 {analysisResult.gaslighting_score}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">신뢰도 지수</Typography>
                             <Typography variant="h6" color="success">
                                 {analysisResult.trust_score}
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} sm={3}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">감정 톤</Typography>
                             <Chip
                                 label={analysisResult.emotion_tone}
@@ -382,7 +382,7 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
                     <Typography variant="h6" sx={{ mb: 2 }}>설득 기법 분석</Typography>
                     <Grid container spacing={2}>
                         {Object.entries(analysisResult.persuasion_techniques).map(([technique, score]) => (
-                            <Grid item xs={6} sm={4} key={technique}>
+                            <Grid size={{ xs: 6, sm: 4 }} key={technique}>
                                 <Box sx={{ textAlign: 'center' }}>
                                     <Typography variant="body2" color="text.secondary">
                                         {technique === 'social_proof' ? '사회적 증명' :
@@ -396,7 +396,7 @@ const PersuasionContent: React.FC<PersuasionContentProps> = ({ onContentGenerate
                                         value={(score as number) * 20}
                                         sx={{ mt: 1, mb: 1 }}
                                     />
-                                    <Typography variant="h6">{score}</Typography>
+                                    <Typography variant="h6">{String(score)}</Typography>
                                 </Box>
                             </Grid>
                         ))}

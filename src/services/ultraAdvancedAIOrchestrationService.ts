@@ -274,6 +274,24 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
     }
 
     private async performAnalysis(input: any): Promise<any> {
+        // 입력 데이터 검증 강화
+        try {
+            if (!input || typeof input !== 'object') {
+                input = { type: 'default', data: {} };
+            }
+
+            if (!input.type) {
+                input.type = 'default';
+            }
+
+            if (!input.data) {
+                input.data = {};
+            }
+        } catch (error) {
+            console.warn('performAnalysis 입력 검증 중 오류:', error);
+            input = { type: 'default', data: {} };
+        }
+
         // 고도화된 분석 수행
         const analysis = {
             sentiment: this.analyzeSentiment(input.text || ''),
@@ -298,6 +316,24 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
     }
 
     private async performOptimization(input: any): Promise<any> {
+        // 입력 데이터 검증 강화
+        try {
+            if (!input || typeof input !== 'object') {
+                input = { type: 'default', data: {} };
+            }
+
+            if (!input.type) {
+                input.type = 'default';
+            }
+
+            if (!input.data) {
+                input.data = {};
+            }
+        } catch (error) {
+            console.warn('performOptimization 입력 검증 중 오류:', error);
+            input = { type: 'default', data: {} };
+        }
+
         // 시스템 최적화 수행
         const optimizations = [
             'AI 모델 파라미터 최적화',
@@ -321,6 +357,24 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
     }
 
     private async performLearning(input: any): Promise<any> {
+        // 입력 데이터 검증 강화
+        try {
+            if (!input || typeof input !== 'object') {
+                input = { type: 'default', data: {} };
+            }
+
+            if (!input.type) {
+                input.type = 'default';
+            }
+
+            if (!input.data) {
+                input.data = {};
+            }
+        } catch (error) {
+            console.warn('performLearning 입력 검증 중 오류:', error);
+            input = { type: 'default', data: {} };
+        }
+
         // 적응형 학습 수행
         const learningOutcomes = [
             '사용자 패턴 학습',
@@ -344,6 +398,27 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
     }
 
     private async performPrediction(input: any): Promise<any> {
+        // 입력 데이터 검증 강화
+        try {
+            // input이 null, undefined, 또는 객체가 아닌 경우 기본값 설정
+            if (!input || typeof input !== 'object' || input === null) {
+                input = { type: 'default', data: {} };
+            }
+
+            // type 속성이 없는 경우 기본값 설정
+            if (!input || !input.type) {
+                input = { ...input, type: 'default' };
+            }
+
+            // data 속성이 없는 경우 기본값 설정
+            if (!input || !input.data) {
+                input = { ...input, data: {} };
+            }
+        } catch (error) {
+            console.warn('performPrediction 입력 검증 중 오류:', error);
+            input = { type: 'default', data: {} };
+        }
+
         // 예측 분석 수행
         const predictions = [
             '사용자 행동 예측',
@@ -367,6 +442,24 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
     }
 
     private async performSynthesis(input: any): Promise<any> {
+        // 입력 데이터 검증 강화
+        try {
+            if (!input || typeof input !== 'object') {
+                input = { type: 'default', data: {} };
+            }
+
+            if (!input.type) {
+                input.type = 'default';
+            }
+
+            if (!input.data) {
+                input.data = {};
+            }
+        } catch (error) {
+            console.warn('performSynthesis 입력 검증 중 오류:', error);
+            input = { type: 'default', data: {} };
+        }
+
         // 정보 종합 및 생성
         const synthesis = {
             summary: '고도화된 AI 분석 결과를 종합한 인사이트',

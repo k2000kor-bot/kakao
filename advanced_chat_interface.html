@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORBU.AI Advanced Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 800px;
+            max-width: 95%;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .chat-header .subtitle {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.ai .message-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-time {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .analysis-panel {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .analysis-title {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .emotion-analysis, .intent-analysis {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .emotion-tag, .intent-tag {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .emotion-happy { background: #ffeb3b; color: #333; }
+        .emotion-sad { background: #2196f3; color: white; }
+        .emotion-angry { background: #f44336; color: white; }
+        .emotion-excited { background: #ff9800; color: white; }
+        .emotion-neutral { background: #9e9e9e; color: white; }
+        .emotion-confused { background: #9c27b0; color: white; }
+        .emotion-curious { background: #00bcd4; color: white; }
+        .emotion-frustrated { background: #795548; color: white; }
+
+        .intent-question { background: #4caf50; color: white; }
+        .intent-greeting { background: #2196f3; color: white; }
+        .intent-request { background: #ff9800; color: white; }
+        .intent-complaint { background: #f44336; color: white; }
+        .intent-compliment { background: #9c27b0; color: white; }
+        .intent-goodbye { background: #607d8b; color: white; }
+        .intent-help { background: #00bcd4; color: white; }
+        .intent-information { background: #795548; color: white; }
+
+        .confidence-bar {
+            flex: 1;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #4CAF50;
+        }
+
+        .chat-send-button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+
+        .chat-send-button:hover {
+            transform: scale(1.05);
+        }
+
+        .chat-send-button:active {
+            transform: scale(0.95);
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 15px 20px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            background: #f0f8ff;
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .quick-action-btn:hover {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .system-stats {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        .scroll-to-bottom {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-to-bottom.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="status-indicator"></div>
+            <div class="system-stats" id="system-stats">시스템 정상</div>
+            <h1>CORBU.AI Advanced Chat</h1>
+            <div class="subtitle">고급 감정 분석 및 의도 파악 AI</div>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+            <div class="message ai">
+                <div class="message-bubble">
+                    안녕하세요! CORBU.AI 고급 채팅 시스템입니다. 🚀<br>
+                    저는 당신의 감정과 의도를 분석하여 더욱 개인화된 응답을 제공합니다.
+                    <div class="message-time" id="welcome-time"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typing-indicator">
+            CORBU.AI가 답변을 생성하고 있습니다...
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="sendQuickMessage('안녕하세요!')">인사</button>
+                <button class="quick-action-btn" onclick="sendQuickMessage('정말 기쁩니다!')">기쁨</button>
+                <button class="quick-action-btn" onclick="sendQuickMessage('화가 나요!')">화남</button>
+                <button class="quick-action-btn" onclick="sendQuickMessage('궁금한 게 있어요')">궁금함</button>
+                <button class="quick-action-btn" onclick="sendQuickMessage('도움이 필요해요')">도움 요청</button>
+            </div>
+            <input type="text" id="user-input" class="chat-input" placeholder="메시지를 입력하세요...">
+            <button id="send-button" class="chat-send-button">전송</button>
+        </div>
+    </div>
+    
+    <button class="scroll-to-bottom" id="scroll-to-bottom" onclick="scrollToBottom()">↓</button>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const scrollToBottomBtn = document.getElementById('scroll-to-bottom');
+        const systemStats = document.getElementById('system-stats');
+        
+        let sessionId = localStorage.getItem('chatSessionId');
+        if (!sessionId) {
+            sessionId = 'session-' + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('chatSessionId', sessionId);
+        }
+
+        // 현재 시간 표시
+        document.getElementById('welcome-time').textContent = new Date().toLocaleTimeString();
+
+        function appendMessage(sender, text, analysis = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.classList.add('message-bubble');
+            
+            bubbleDiv.innerHTML = text;
+            
+            // 시간 추가
+            const timeDiv = document.createElement('div');
+            timeDiv.classList.add('message-time');
+            timeDiv.textContent = new Date().toLocaleTimeString();
+            bubbleDiv.appendChild(timeDiv);
+            
+            // 분석 결과 추가
+            if (analysis && sender === 'ai') {
+                const analysisPanel = createAnalysisPanel(analysis);
+                bubbleDiv.appendChild(analysisPanel);
+            }
+            
+            messageDiv.appendChild(bubbleDiv);
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function createAnalysisPanel(analysis) {
+            const panel = document.createElement('div');
+            panel.classList.add('analysis-panel');
+            
+            panel.innerHTML = `
+                <div class="analysis-title">🧠 AI 분석 결과</div>
+                <div class="emotion-analysis">
+                    <span class="emotion-tag emotion-${analysis.emotion_analysis.emotion}">
+                        ${getEmotionEmoji(analysis.emotion_analysis.emotion)} ${analysis.emotion_analysis.emotion}
+                    </span>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${analysis.emotion_analysis.confidence * 100}%"></div>
+                    </div>
+                    <span style="font-size: 0.8em; margin-left: 10px;">${Math.round(analysis.emotion_analysis.confidence * 100)}%</span>
+                </div>
+                <div class="intent-analysis">
+                    <span class="intent-tag intent-${analysis.intent_analysis.intent}">
+                        ${getIntentEmoji(analysis.intent_analysis.intent)} ${analysis.intent_analysis.intent}
+                    </span>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${analysis.intent_analysis.confidence * 100}%"></div>
+                    </div>
+                    <span style="font-size: 0.8em; margin-left: 10px;">${Math.round(analysis.intent_analysis.confidence * 100)}%</span>
+                </div>
+            `;
+            
+            return panel;
+        }
+
+        function getEmotionEmoji(emotion) {
+            const emojis = {
+                'happy': '😊',
+                'sad': '😢',
+                'angry': '😤',
+                'excited': '🎉',
+                'neutral': '😐',
+                'confused': '🤔',
+                'curious': '🔍',
+                'frustrated': '😩'
+            };
+            return emojis[emotion] || '😐';
+        }
+
+        function getIntentEmoji(intent) {
+            const emojis = {
+                'question': '❓',
+                'greeting': '👋',
+                'request': '🙏',
+                'complaint': '😠',
+                'compliment': '👍',
+                'goodbye': '👋',
+                'help': '🆘',
+                'information': 'ℹ️'
+            };
+            return emojis[intent] || 'ℹ️';
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            typingIndicator.classList.add('show');
+        }
+
+        function hideTypingIndicator() {
+            typingIndicator.classList.remove('show');
+        }
+
+        function updateSystemStats() {
+            fetch('http://localhost:5001/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    systemStats.textContent = `활성 세션: ${data.active_sessions} | 응답시간: ${data.performance.average_response_time.toFixed(3)}s`;
+                })
+                .catch(error => {
+                    systemStats.textContent = '시스템 연결 중...';
+                });
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') return;
+
+            appendMessage('user', message);
+            userInput.value = '';
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('http://localhost:5001/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': 'user'
+                    },
+                    body: JSON.stringify({ 
+                        message: message, 
+                        session_id: sessionId 
+                    })
+                });
+
+                const data = await response.json();
+                hideTypingIndicator();
+                
+                if (data.success) {
+                    appendMessage('ai', data.response, data);
+                } else {
+                    appendMessage('ai', '죄송합니다. 답변을 생성하는 데 문제가 발생했습니다: ' + data.error);
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Error sending message:', error);
+                appendMessage('ai', '네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+            }
+        }
+
+        function sendQuickMessage(message) {
+            userInput.value = message;
+            sendMessage();
+        }
+
+        // 스크롤 이벤트 처리
+        chatMessages.addEventListener('scroll', () => {
+            const isAtBottom = chatMessages.scrollTop + chatMessages.clientHeight >= chatMessages.scrollHeight - 10;
+            scrollToBottomBtn.classList.toggle('show', !isAtBottom);
+        });
+
+        // 이벤트 리스너
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 시스템 상태 업데이트
+        updateSystemStats();
+        setInterval(updateSystemStats, 10000); // 10초마다 업데이트
+    </script>
+</body>
+</html>
