@@ -20,7 +20,7 @@ import shutil
 import difflib
 import re
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
 # 로깅 설정
@@ -4814,11 +4814,6 @@ def quality_assurance_generate_report():
 
 
 
-@app.route('/api/performance-optimization/metrics', 
-           methods=['GET'])
-def get_performance_metrics():
-    """성능 메트릭 조회 API"""
-    return jsonify(corbu_ai.get_performance_metrics())
 
 
 
@@ -4871,17 +4866,8 @@ def get_performance_report():
 
 @app.route('/', methods=['GET'])
 def root():
-    """루트 엔드포인트"""
-    return jsonify({
-        "message": "CORBU.AI 백엔드 서버가 정상적으로 실행 중입니다.",
-        "version": "1.0.0",
-        "status": "running",
-        "endpoints": {
-            "chat": "/api/chat",
-            "emotion_recognition": "/api/emotion-recognition/analyze",
-            "data_analytics": "/api/data-analytics/sources"
-        }
-    })
+    """메인 HTML 파일 서빙"""
+    return app.send_static_file('modern_chat_interface.html')
 
 
 
@@ -6150,71 +6136,6 @@ def restore_backup():
         logger.error(f"백업 복원 오류: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/analyze-file', methods=['GET'])
-def analyze_file():
-    """파일 구조 분석"""
-    try:
-        file_path = request.args.get('path')
-        if not file_path:
-            return jsonify({'success': False, 'error': '파일 경로가 필요합니다'}), 400
-        
-        full_path = os.path.join(os.getcwd(), file_path)
-        
-        if not os.path.exists(full_path):
-            return jsonify({'success': False, 'error': '파일이 존재하지 않습니다'}), 404
-        
-        with open(full_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        analysis = {
-            'file_size': len(content),
-            'line_count': len(content.split('\n')),
-            'functions': [],
-            'classes': [],
-            'imports': [],
-            'complexity_score': 0
-        }
-        
-        lines = content.split('\n')
-        
-        # 함수 찾기 (JavaScript/TypeScript)
-        for i, line in enumerate(lines):
-            if re.match(r'^\s*function\s+\w+', line) or re.match(r'^\s*const\s+\w+\s*=\s*\(', line):
-                match = re.search(r'(\w+)', line)
-                analysis['functions'].append({
-                    'line': i + 1,
-                    'name': match.group(1) if match else 'unknown'
-                })
-        
-        # 클래스 찾기
-        for i, line in enumerate(lines):
-            if re.match(r'^\s*class\s+\w+', line):
-                match = re.search(r'class\s+(\w+)', line)
-                if match:
-                    analysis['classes'].append({
-                        'line': i + 1,
-                        'name': match.group(1)
-                    })
-        
-        # import 찾기
-        for i, line in enumerate(lines):
-            if line.strip().startswith('import '):
-                analysis['imports'].append({
-                    'line': i + 1,
-                    'statement': line.strip()
-                })
-        
-        # 복잡도 점수 계산
-        analysis['complexity_score'] = len(analysis['functions']) + len(analysis['classes']) * 2
-        
-        return jsonify({
-            'success': True,
-            'analysis': analysis
-        })
-    
-    except Exception as e:
-        logger.error(f"파일 분석 오류: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/auto-format', methods=['POST'])
 def auto_format_code():
@@ -6343,10 +6264,325 @@ def get_suggestions():
         logger.error(f"제안 생성 오류: {e}")
         return jsonify({'error': '제안 생성 중 오류가 발생했습니다.'}), 500
 
+@app.route('/api/analyze-file', methods=['POST'])
+def analyze_file():
+    """파일 분석 API"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': '파일이 제공되지 않았습니다.'}), 400
+        
+        file = request.files['file']
+        session_id = request.form.get('session_id', 'default')
+        
+        if file.filename == '':
+            return jsonify({'success': False, 'error': '파일이 선택되지 않았습니다.'}), 400
+        
+        # 파일 내용 읽기
+        if file.filename.endswith('.txt'):
+            content = file.read().decode('utf-8')
+        elif file.filename.endswith('.json'):
+            content = file.read().decode('utf-8')
+        elif file.filename.endswith('.md'):
+            content = file.read().decode('utf-8')
+        else:
+            return jsonify({'success': False, 'error': '지원하지 않는 파일 형식입니다.'}), 400
+        
+        # 파일 분석
+        analysis = analyze_file_content(content, file.filename)
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis,
+            'filename': file.filename,
+            'size': len(content),
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        logger.error(f"파일 분석 오류: {e}")
+        return jsonify({'success': False, 'error': '파일 분석 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/analyze-image', methods=['POST'])
+def analyze_image():
+    """이미지 분석 API"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': '이미지가 제공되지 않았습니다.'}), 400
+        
+        image = request.files['image']
+        session_id = request.form.get('session_id', 'default')
+        
+        if image.filename == '':
+            return jsonify({'success': False, 'error': '이미지가 선택되지 않았습니다.'}), 400
+        
+        # 이미지 분석 (기본적인 정보만 제공)
+        analysis = f"""🖼️ **이미지 분석 결과**
+
+**파일 정보:**
+- 파일명: {image.filename}
+- 크기: {len(image.read())} bytes
+- 형식: {image.content_type}
+
+**분석 내용:**
+이미지 파일이 성공적으로 업로드되었습니다. 현재는 기본적인 파일 정보만 제공하고 있으며, 향후 고급 이미지 분석 기능(객체 감지, OCR, 감정 분석 등)이 추가될 예정입니다.
+
+**제안:**
+- 이미지에 대한 구체적인 질문을 해주시면 더 자세한 분석을 도와드릴 수 있습니다.
+- 텍스트가 포함된 이미지의 경우 OCR 기능을 요청해주세요."""
+
+        return jsonify({
+            'success': True,
+            'analysis': analysis,
+            'filename': image.filename,
+            'size': len(image.read()),
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        logger.error(f"이미지 분석 오류: {e}")
+        return jsonify({'success': False, 'error': '이미지 분석 중 오류가 발생했습니다.'}), 500
+
+def analyze_file_content(content, filename):
+    """고급 파일 내용 분석 함수"""
+    try:
+        # 기본 분석
+        word_count = len(content.split())
+        char_count = len(content)
+        line_count = len(content.split('\n'))
+        
+        # 파일 유형 감지
+        file_extension = filename.split('.')[-1].lower() if '.' in filename else 'unknown'
+        file_types = {
+            'py': 'Python 스크립트',
+            'js': 'JavaScript 파일',
+            'ts': 'TypeScript 파일',
+            'html': 'HTML 문서',
+            'css': 'CSS 스타일시트',
+            'json': 'JSON 데이터',
+            'md': 'Markdown 문서',
+            'txt': '텍스트 파일',
+            'csv': 'CSV 데이터',
+            'sql': 'SQL 쿼리'
+        }
+        file_type = file_types.get(file_extension, f'{file_extension.upper()} 파일')
+        
+        # 키워드 추출 (개선된 버전)
+        words = content.lower().split()
+        word_freq = {}
+        for word in words:
+            # 특수문자 제거 및 길이 체크
+            clean_word = re.sub(r'[^\w가-힣]', '', word)
+            if len(clean_word) > 2:  # 2글자 이상
+                word_freq[clean_word] = word_freq.get(clean_word, 0) + 1
+        
+        top_keywords = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:8]
+        
+        # 코드 분석 (Python/JavaScript 파일인 경우)
+        code_analysis = ""
+        if file_extension in ['py', 'js', 'ts']:
+            functions = re.findall(r'(?:def|function)\s+(\w+)', content)
+            classes = re.findall(r'class\s+(\w+)', content)
+            imports = re.findall(r'(?:import|from)\s+([^\s]+)', content)
+            
+            if functions or classes or imports:
+                code_analysis = f"""
+**코드 구조 분석:**
+- 함수: {len(functions)}개 {f"({', '.join(functions[:3])}{'...' if len(functions) > 3 else ''})" if functions else ""}
+- 클래스: {len(classes)}개 {f"({', '.join(classes[:3])}{'...' if len(classes) > 3 else ''})" if classes else ""}
+- 임포트: {len(imports)}개 {f"({', '.join(imports[:3])}{'...' if len(imports) > 3 else ''})" if imports else ""}"""
+        
+        # 복잡도 점수 계산
+        complexity_score = len(word_freq) + line_count // 10 + word_count // 100
+        
+        analysis = f"""📄 **고급 파일 분석 결과**
+
+**파일 정보:**
+- 파일명: {filename}
+- 파일 유형: {file_type}
+- 총 문자 수: {char_count:,}자
+- 총 단어 수: {word_count:,}개
+- 총 줄 수: {line_count:,}줄
+- 복잡도 점수: {complexity_score}/100
+
+**주요 키워드:**
+{chr(10).join([f"- {word}: {count}회" for word, count in top_keywords[:6]])}{code_analysis}
+
+**내용 미리보기:**
+{content[:300]}{'...' if len(content) > 300 else ''}
+
+**분석 제안:**
+- 이 파일에 대해 구체적인 질문을 해주시면 더 자세한 분석을 제공할 수 있습니다.
+- 코드 리뷰, 최적화 제안, 버그 검사 등을 요청하실 수 있습니다.
+- 특정 함수나 클래스에 대한 심층 분석을 원하시면 말씀해주세요."""
+
+        return analysis
+        
+    except Exception as e:
+        logger.error(f"파일 내용 분석 오류: {e}")
+        return "파일 내용을 분석하는 중 오류가 발생했습니다."
+
+@app.route('/api/code-review', methods=['POST'])
+def code_review():
+    """코드 리뷰 API"""
+    try:
+        data = request.get_json()
+        code = data.get('code', '')
+        language = data.get('language', 'python')
+        
+        if not code:
+            return jsonify({'success': False, 'error': '코드가 제공되지 않았습니다.'}), 400
+        
+        # 코드 분석
+        issues = []
+        suggestions = []
+        
+        # 기본 코드 품질 체크
+        if language.lower() == 'python':
+            # Python 특화 분석
+            if 'print(' in code and 'logging' not in code:
+                issues.append("print 문 대신 logging 모듈 사용을 권장합니다.")
+            
+            if 'except:' in code:
+                issues.append("빈 except 절은 피하세요. 구체적인 예외를 처리하세요.")
+            
+            if len(code.split('\n')) > 50:
+                suggestions.append("코드가 길어 보입니다. 함수로 분리하는 것을 고려해보세요.")
+        
+        elif language.lower() in ['javascript', 'js']:
+            # JavaScript 특화 분석
+            if 'var ' in code:
+                issues.append("var 대신 let 또는 const를 사용하세요.")
+            
+            if '===' not in code and '==' in code:
+                issues.append("엄격한 비교(===)를 사용하세요.")
+        
+        # 일반적인 품질 체크
+        if len(code.split('\n')) > 100:
+            suggestions.append("코드가 매우 깁니다. 모듈화를 고려해보세요.")
+        
+        if code.count('    ') > code.count('\n') * 2:
+            suggestions.append("들여쓰기가 일관되지 않을 수 있습니다.")
+        
+        # 복잡도 분석
+        complexity = len(code.split('\n')) + code.count('if') + code.count('for') + code.count('while')
+        
+        review_result = f"""🔍 **코드 리뷰 결과**
+
+**분석된 언어:** {language.upper()}
+**코드 복잡도:** {complexity}/100
+
+**발견된 문제점:**
+{chr(10).join([f"⚠️ {issue}" for issue in issues]) if issues else "✅ 특별한 문제점이 발견되지 않았습니다."}
+
+**개선 제안:**
+{chr(10).join([f"💡 {suggestion}" for suggestion in suggestions]) if suggestions else "✅ 코드가 잘 작성되었습니다."}
+
+**전체 평가:**
+{'🟢 우수' if len(issues) == 0 else '🟡 개선 필요' if len(issues) < 3 else '🔴 리팩토링 권장'}
+
+**추가 분석이 필요하시면 구체적인 질문을 해주세요!**"""
+
+        return jsonify({
+            'success': True,
+            'review': review_result,
+            'issues_count': len(issues),
+            'suggestions_count': len(suggestions),
+            'complexity_score': complexity
+        })
+        
+    except Exception as e:
+        logger.error(f"코드 리뷰 오류: {e}")
+        return jsonify({'success': False, 'error': '코드 리뷰 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/text-summarize', methods=['POST'])
+def text_summarize():
+    """텍스트 요약 API"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        max_length = data.get('max_length', 200)
+        
+        if not text:
+            return jsonify({'success': False, 'error': '텍스트가 제공되지 않았습니다.'}), 400
+        
+        # 간단한 요약 알고리즘 (문장 기반)
+        sentences = text.split('. ')
+        if len(sentences) <= 3:
+            summary = text
+        else:
+            # 첫 번째와 마지막 문장을 포함하고, 중간에서 중요한 문장 선택
+            important_sentences = [sentences[0]]
+            
+            # 중간 문장들 중에서 긴 문장들을 선택
+            middle_sentences = sentences[1:-1]
+            middle_sentences.sort(key=len, reverse=True)
+            
+            for sentence in middle_sentences[:2]:  # 최대 2개 문장
+                if len(sentence) > 20:  # 최소 길이 체크
+                    important_sentences.append(sentence)
+            
+            if len(sentences) > 1:
+                important_sentences.append(sentences[-1])
+            
+            summary = '. '.join(important_sentences)
+            
+            # 길이 제한
+            if len(summary) > max_length:
+                summary = summary[:max_length] + '...'
+        
+        return jsonify({
+            'success': True,
+            'summary': summary,
+            'original_length': len(text),
+            'summary_length': len(summary),
+            'compression_ratio': round(len(summary) / len(text) * 100, 1)
+        })
+        
+    except Exception as e:
+        logger.error(f"텍스트 요약 오류: {e}")
+        return jsonify({'success': False, 'error': '텍스트 요약 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/performance-metrics', methods=['GET'])
+def get_performance_metrics():
+    """시스템 성능 메트릭 조회"""
+    try:
+        import os
+        
+        # 기본 시스템 정보
+        metrics = {
+            'timestamp': datetime.now().isoformat(),
+            'system': {
+                'cpu_usage': 'N/A',
+                'memory_usage': 'N/A',
+                'memory_available': 'N/A',
+                'disk_usage': 'N/A',
+                'disk_free': 'N/A'
+            },
+            'application': {
+                'process_memory': 'N/A',
+                'uptime': 'N/A',
+                'total_requests': corbu_ai.total_requests,
+                'successful_requests': corbu_ai.successful_requests,
+                'error_rate': round((corbu_ai.total_requests - corbu_ai.successful_requests) / max(corbu_ai.total_requests, 1) * 100, 2),
+                'python_version': f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
+                'platform': os.name
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'metrics': metrics
+        })
+        
+    except Exception as e:
+        logger.error(f"성능 메트릭 조회 오류: {e}")
+        return jsonify({'success': False, 'error': '성능 메트릭 조회 중 오류가 발생했습니다.'}), 500
+
+
 if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
-        port=5001,
+        port=5002,
         debug=True,
         threaded=True
     )

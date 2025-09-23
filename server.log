@@ -1343,3 +1343,23 @@ INFO:__main__:📍 서버 주소: http://localhost:5001
 INFO:__main__:🔗 프론트엔드: http://localhost:3000
 WARNING:werkzeug: * Debugger is active!
 INFO:werkzeug: * Debugger PIN: 479-034-758
+/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/resource_tracker.py:301: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown: {'/mp-f6q0fnqr'}
+  warnings.warn(
+Traceback (most recent call last):
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/util.py", line 292, in _run_finalizers
+    finalizer()
+    ~~~~~~~~~^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/util.py", line 216, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/util.py", line 125, in _remove_temp_dir
+    rmtree(tempdir)
+    ~~~~~~^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/shutil.py", line 763, in rmtree
+    _rmtree_safe_fd(stack, onexc)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/shutil.py", line 704, in _rmtree_safe_fd
+    onexc(func, path, err)
+    ~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/shutil.py", line 665, in _rmtree_safe_fd
+    orig_st = os.lstat(name, dir_fd=dirfd)
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/sp/zcth7wwn5gb06yvgr3zd7nbc0000gp/T/pymp-vdb1fik2'

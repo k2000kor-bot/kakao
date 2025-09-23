@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>CORBU.AI - 차세대 AI 어시스턴트</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f7f7f8;
+            color: #1f2937;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 사이드바 */
+        .sidebar {
+            width: 260px;
+            background-color: #ffffff;
+            border-right: 1px solid #e5e5e7;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e5e7;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        }
+
+        .nav-section {
+            padding: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+        }
+
+        .nav-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .nav-item.active {
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .nav-item-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .chat-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+
+        .chat-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .chat-item.active {
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+
+        /* 메인 콘텐츠 영역 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+        }
+
+        .header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e5e7;
+            display: flex;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+
+        /* 채팅 영역 */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 100%;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .message.ai .message-avatar {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .message-content {
+            flex: 1;
+            background-color: #f8fafc;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+        }
+
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            background: none;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background-color: #f3f4f6;
+        }
+
+        /* 입력 영역 */
+        .input-container {
+            padding: 24px;
+            border-top: 1px solid #e5e5e7;
+            background-color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            width: 80%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 16px 60px 16px 20px;
+            border: 2px solid #e5e5e7;
+            border-radius: 12px;
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            transition: all 0.2s ease;
+            background-color: #ffffff;
+        }
+
+        .input-field:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .input-actions {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            background-color: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .input-btn:hover {
+            background-color: #e5e7eb;
+        }
+
+        .input-btn.primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .input-btn.primary:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        }
+
+        .input-options {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding-bottom: 10px;
+        }
+
+        .input-option {
+            padding: 8px 16px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-option:hover {
+            background-color: #e0e7ff;
+            border-color: #8b5cf6;
+            color: #3730a3;
+        }
+
+        /* 로딩 애니메이션 */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 20px;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #8b5cf6;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 1000;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                width: 100%;
+            }
+        }
+
+        /* 스크롤바 스타일링 */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 사이드바 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
+                    </svg>
+                    새 채팅
+                </button>
+            </div>
+
+            <div class="nav-section">
+                <div class="section-title">AI 기능</div>
+                <div class="nav-item active" onclick="selectMode('chat')">
+                    <div class="nav-item-icon">💬</div>
+                    <span>일반 채팅</span>
+                </div>
+                <div class="nav-item" onclick="selectMode('writing')">
+                    <div class="nav-item-icon">✍️</div>
+                    <span>글쓰기 도우미</span>
+                </div>
+                <div class="nav-item" onclick="selectMode('analysis')">
+                    <div class="nav-item-icon">📊</div>
+                    <span>분석 도구</span>
+                </div>
+                <div class="nav-item" onclick="selectMode('creative')">
+                    <div class="nav-item-icon">🎨</div>
+                    <span>창작 도구</span>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="section-title">최근 대화</div>
+                <div class="chat-history" id="chatHistory">
+                    <!-- 채팅 히스토리가 여기에 동적으로 추가됩니다 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <div class="header">
+                <div class="header-title">CORBU.AI</div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- 환영 메시지 -->
+                    <div class="message ai">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            안녕하세요! 저는 CORBU.AI입니다.
+                            <br><br>
+                            저는 다음과 같은 기능을 제공합니다:
+                            <br>• 💬 일반적인 질문과 대화
+                            <br>• ✍️ 자연스러운 글쓰기 (블로그, 리뷰, 경험담)
+                            <br>• 🎯 설득력 있는 글쓰기 (논리적, 감정적 설득)
+                            <br>• 📊 전문적인 분석과 보고서
+                            <br>• 🎨 창작 도구 (스토리, 시나리오)
+                            <br><br>
+                            무엇을 도와드릴까요?
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea class="input-field" id="messageInput" placeholder="CORBU.AI에게 무엇이든 물어보세요..." rows="1"
+                            onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                        <div class="input-actions">
+                            <button class="input-btn" onclick="attachFile()" title="파일 첨부">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                                </svg>
+                            </button>
+                            <button class="input-btn" onclick="voiceInput()" title="음성 입력">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" />
+                                </svg>
+                            </button>
+                            <button class="input-btn primary" onclick="sendMessage()" title="전송">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-options">
+                        <div class="input-option" onclick="quickPrompt('블로그 글 작성')">
+                            ✍️ 블로그 글 작성
+                        </div>
+                        <div class="input-option" onclick="quickPrompt('설득력 있는 글')">
+                            🎯 설득력 있는 글
+                        </div>
+                        <div class="input-option" onclick="quickPrompt('전문 분석 보고서')">
+                            📊 전문 분석 보고서
+                        </div>
+                        <div class="input-option" onclick="quickPrompt('창작 스토리')">
+                            🎨 창작 스토리
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'chat';
+        let chatHistory = [];
+        let isTyping = false;
+
+        // 자동 리사이즈
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        // 키보드 이벤트 처리
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // 메시지 전송
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message || isTyping) return;
+
+            // 사용자 메시지 추가
+            addMessage('user', message);
+            input.value = '';
+            autoResize(input);
+
+            // AI 응답 생성
+            await generateAIResponse(message);
+        }
+
+        // 메시지 추가
+        function addMessage(type, content) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const avatar = type === 'user' ? '👤' : '🤖';
+            const avatarBg = type === 'user' ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar" style="background: ${avatarBg}">${avatar}</div>
+                <div class="message-content">${formatMessage(content)}</div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // 채팅 히스토리에 추가
+            if (type === 'user') {
+                chatHistory.push({ type, content, timestamp: Date.now() });
+                updateChatHistory();
+            }
+        }
+
+        // 타이핑 인디케이터
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message ai';
+            typingDiv.id = 'typingIndicator';
+
+            typingDiv.innerHTML = `
+                <div class="message-avatar" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%)">🤖</div>
+                <div class="typing-indicator">
+                    <span>AI가 답변을 생성하고 있습니다</span>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // AI 응답 생성
+        async function generateAIResponse(userMessage) {
+            isTyping = true;
+            showTypingIndicator();
+
+            try {
+                // 웹 연구 필요성 확인
+                const researchNeeded = await checkWebResearchNeeds(userMessage);
+                console.log('웹 연구 필요성:', researchNeeded);
+
+                // 사용자 메시지 분석하여 적절한 처리 방식 선택
+                const analysisResult = await analyzeUserRequest(userMessage);
+                console.log('요청 분석 결과:', analysisResult);
+
+                let response;
+
+                if (analysisNeeded.should_research) {
+                    // 웹 연구가 필요한 경우
+                    response = await generateResponseWithWebResearch(userMessage, analysisResult, researchNeeded);
+                } else if (analysisResult.mode === 'natural_writing') {
+                    response = await generateNaturalWriting(userMessage, analysisResult);
+                } else if (analysisResult.mode === 'persuasive_writing') {
+                    response = await generatePersuasiveWriting(userMessage, analysisResult);
+                } else if (analysisResult.mode === 'professional_analysis') {
+                    response = await generateProfessionalAnalysis(userMessage, analysisResult);
+                } else if (analysisResult.mode === 'creative_writing') {
+                    response = await generateCreativeWriting(userMessage, analysisResult);
+                } else {
+                    response = await generateGeneralResponse(userMessage);
+                }
+
+                hideTypingIndicator();
+                addMessage('ai', response);
+
+            } catch (error) {
+                console.error('AI 응답 생성 오류:', error);
+                hideTypingIndicator();
+                addMessage('ai', '죄송합니다. 응답을 생성하는 중 오류가 발생했습니다. 다시 시도해주세요.');
+            } finally {
+                isTyping = false;
+            }
+        }
+
+        // 웹 연구 필요성 확인
+        async function checkWebResearchNeeds(message) {
+            try {
+                const response = await fetch('/api/research-analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: message,
+                        current_response: ''
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('웹 연구 분석 실패');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('웹 연구 분석 오류:', error);
+                return { should_research: false };
+            }
+        }
+
+        // 웹 연구와 함께 응답 생성
+        async function generateResponseWithWebResearch(userMessage, analysisResult, researchNeeded) {
+            try {
+                // 웹 연구 수행
+                const researchResponse = await fetch('/api/web-research', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: userMessage,
+                        current_knowledge: ''
+                    })
+                });
+
+                if (!researchResponse.ok) {
+                    throw new Error('웹 연구 실패');
+                }
+
+                const researchData = await researchResponse.json();
+                console.log('웹 연구 결과:', researchData);
+
+                // 기본 응답 생성
+                let baseResponse = await generateGeneralResponse(userMessage);
+
+                // 웹 연구 결과 통합
+                if (researchData.synthesis) {
+                    baseResponse += `\n\n${researchData.synthesis}`;
+                }
+
+                // 연구 통계 추가
+                if (researchData.results_count > 0) {
+                    baseResponse += `\n\n📊 **연구 통계**\n`;
+                    baseResponse += `- 검색된 소스: ${researchData.results_count}개\n`;
+                    baseResponse += `- 의도: ${researchData.research_context.intent}\n`;
+                    baseResponse += `- 필요한 정보: ${researchData.research_context.required_info.join(', ')}\n`;
+                }
+
+                return baseResponse;
+
+            } catch (error) {
+                console.error('웹 연구 응답 생성 오류:', error);
+                return await generateGeneralResponse(userMessage);
+            }
+        }
+
+        // 사용자 요청 분석
+        async function analyzeUserRequest(message) {
+            const messageLower = message.toLowerCase();
+
+            // 자연스러운 글쓰기 키워드
+            const naturalKeywords = [
+                '블로그', '글쓰기', '일상', '경험', '후기', '리뷰', '쓰기', '글', '포스팅',
+                '자연스럽게', '친근하게', '쉽게', '간단하게', '일반인', '초보자', '쉬운',
+                '실제', '유저', '사용자', '일반', '보통', '평범한', '쓰고 싶어', '작성해줘'
+            ];
+
+            // 설득 글쓰기 키워드
+            const persuasiveKeywords = [
+                '설득', '설명', '이해', '동의', '지지', '찬성', '반대', '논리', '근거',
+                '증명', '확신', '믿음', '신뢰', '권위', '전문가', '연구', '데이터',
+                '통계', '사실', '객관적', '분석', '비교', '장단점', '이유', '왜',
+                '설득력', '납득', '동의시키', '설명해줘', '이해시켜줘'
+            ];
+
+            // 전문적 분석 키워드
+            const professionalKeywords = [
+                '분석', '연구', '논문', '보고서', '기술', '전문', '학술', '학문',
+                '체계적', '구조적', '상세히', '깊이', '포괄적', '종합적', '완전한',
+                '단계별', '체계적으로', '전문적으로', '학술적으로', '기술적으로',
+                '분석해줘', '연구해줘', '보고서', '전문적'
+            ];
+
+            // 창작 키워드
+            const creativeKeywords = [
+                '창작', '스토리', '소설', '시나리오', '시', '이야기', '상상', '창의',
+                '창의적', '독창적', '새로운', '혁신', '아이디어', '발상', '영감',
+                '쓰고 싶어', '만들어줘', '창작해줘', '스토리', '이야기'
+            ];
+
+            // 키워드 매칭 점수 계산
+            const naturalScore = naturalKeywords.filter(keyword => messageLower.includes(keyword)).length;
+            const persuasiveScore = persuasiveKeywords.filter(keyword => messageLower.includes(keyword)).length;
+            const professionalScore = professionalKeywords.filter(keyword => messageLower.includes(keyword)).length;
+            const creativeScore = creativeKeywords.filter(keyword => messageLower.includes(keyword)).length;
+
+            // 문장 길이와 복잡도 고려
+            const wordCount = message.split(' ').length;
+            if (wordCount > 30) professionalScore += 2;
+            else if (wordCount > 15) persuasiveScore += 1;
+
+            // 질문 형태 분석
+            if (message.includes('?') || message.includes('어떻게') || message.includes('왜') || message.includes('무엇')) {
+                persuasiveScore += 1;
+            }
+
+            // 최고 점수 모드 선택
+            const scores = {
+                natural_writing: naturalScore,
+                persuasive_writing: persuasiveScore,
+                professional_analysis: professionalScore,
+                creative_writing: creativeScore
+            };
+
+            const maxScore = Math.max(...Object.values(scores));
+            const selectedMode = maxScore > 0 ? Object.keys(scores).find(key => scores[key] === maxScore) : 'general';
+
+            return {
+                mode: selectedMode,
+                scores: scores,
+                confidence: maxScore / Math.max(1, Object.values(scores).reduce((a, b) => a + b, 0)),
+                wordCount: wordCount
+            };
+        }
+
+        // 자연스러운 글쓰기 생성
+        async function generateNaturalWriting(message, analysis) {
+            try {
+                const response = await fetch('/api/natural-writing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        topic: message,
+                        user_level: 'intermediate',
+                        content_type: 'post',
+                        tone: 'friendly',
+                        word_count_target: 400,
+                        include_web_search: true,
+                        region: 'seoul'
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    return `✍️ **자연스러운 글쓰기** (자연스러움: ${(result.naturalness_score * 100).toFixed(0)}%, 참여도: ${(result.engagement_score * 100).toFixed(0)}%)\n\n${result.content}`;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('자연스러운 글쓰기 오류:', error);
+                return `✍️ 자연스러운 글쓰기로 작성해드리겠습니다.\n\n${message}에 대해 실제 유저가 작성한 것처럼 자연스럽게 써보겠습니다.\n\n안녕하세요! ${message}에 대해 이야기해보고 싶어요.\n\n실제로 경험해보니 정말 좋았습니다! 처음에는 어려울 줄 알았는데 생각보다 쉽더라고요.\n\n다른 분들도 한번 시도해보시면 어떨까요? 궁금한 점 있으시면 언제든 댓글 남겨주세요!`;
+            }
+        }
+
+        // 설득 글쓰기 생성
+        async function generatePersuasiveWriting(message, analysis) {
+            try {
+                const response = await fetch('/api/persuasion-writing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        topic: message,
+                        target_audience: 'general',
+                        current_opinion: 'neutral',
+                        desired_opinion: 'supportive',
+                        persuasion_strategy: 'mixed',
+                        urgency_level: 'normal',
+                        credibility_required: true,
+                        emotional_appeal: true,
+                        data_support: true,
+                        word_count_target: 600
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    return `🎯 **설득력 있는 글쓰기** (설득도: ${(result.persuasion_score * 100).toFixed(0)}%, 신뢰도: ${(result.credibility_score * 100).toFixed(0)}%)\n\n${result.content}`;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('설득 글쓰기 오류:', error);
+                return `🎯 설득력 있는 글로 작성해드리겠습니다.\n\n## ${message}에 대한 설득적 논증\n\n안녕하세요! 오늘은 ${message}에 대해 중요한 이야기를 나누고자 합니다.\n\n### 핵심 주장\n\n${message}에 대해 긍정적인 관점을 가져야 한다고 생각합니다. 그 이유를 차근차근 설명드리겠습니다.\n\n### 논리적 근거\n\n연구 결과와 데이터를 통해 이 주장을 뒷받침할 수 있습니다. 실제 사례들을 보면 명확한 패턴을 확인할 수 있습니다.\n\n### 결론\n\n따라서 ${message}에 대해 적극적으로 지지하는 것이 합리적입니다. 함께 노력해주시기 바랍니다!`;
+            }
+        }
+
+        // 전문적 분석 생성
+        async function generateProfessionalAnalysis(message, analysis) {
+            try {
+                const response = await fetch('/api/multi-stage-processing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_request: message,
+                        quality_level: 'premium',
+                        writing_style: 'analytical',
+                        target_audience: 'general',
+                        word_count_target: 1000,
+                        language: 'korean',
+                        domain: 'general',
+                        urgency: 'normal'
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success && result.quality_score > 0.3) {
+                    let stageInfo = '';
+                    if (result.processing_stages) {
+                        stageInfo = '\n\n**📋 분석 단계:**\n';
+                        result.processing_stages.forEach((stage, index) => {
+                            stageInfo += `${index + 1}. ${stage.stage}: ${stage.success ? '✅' : '❌'} (신뢰도: ${(stage.confidence * 100).toFixed(0)}%)\n`;
+                        });
+                    }
+
+                    return `📊 **전문적 분석 보고서** (품질: ${(result.quality_score * 100).toFixed(0)}%, 신뢰도: ${(result.confidence * 100).toFixed(0)}%)${stageInfo}\n\n${result.content}`;
+                } else {
+                    throw new Error('분석 품질이 낮음');
+                }
+            } catch (error) {
+                console.error('전문적 분석 오류:', error);
+                return `📊 전문적 분석으로 작성해드리겠습니다.\n\n## ${message} 분석 보고서\n\n### 1. 개요\n\n${message}에 대한 체계적인 분석을 진행하겠습니다.\n\n### 2. 주요 요소 분석\n\n- **핵심 요소**: ${message}의 주요 구성 요소들을 분석\n- **상호관계**: 각 요소들 간의 상호작용 분석\n- **영향 요인**: 다양한 외부 요인들의 영향 분석\n\n### 3. 데이터 기반 인사이트\n\n실제 데이터와 사례를 바탕으로 한 객관적 분석 결과를 제시합니다.\n\n### 4. 결론 및 권고사항\n\n분석 결과를 바탕으로 한 종합적 결론과 실용적 권고사항을 제시합니다.`;
+            }
+        }
+
+        // 창작 글쓰기 생성
+        async function generateCreativeWriting(message, analysis) {
+            return `🎨 **창작 글쓰기**로 작성해드리겠습니다.\n\n## ${message}\n\n*창의적 상상력으로 풀어낸 이야기*\n\n---\n\n한때, ${message}에 대한 이야기가 있었습니다.\n\n그 이야기는 마치 꿈처럼 시작되었고, 현실보다 더 생생하게 펼쳐졌습니다. 각 장면마다 새로운 발견이 있었고, 예상치 못한 전개가 기다리고 있었습니다.\n\n독자 여러분도 이 이야기에 함께 참여하여, 자신만의 해석과 상상을 더해보시기 바랍니다. 창작의 즐거움은 바로 이런 상상의 여행에 있을 것입니다.\n\n---\n\n*이상 창작 글쓰기였습니다. 더 자세한 이야기를 원하시면 언제든 말씀해주세요!*`;
+        }
+
+        // 일반 응답 생성
+        async function generateGeneralResponse(message) {
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        use_notebook_llm: true,
+                        processing_mode: 'hybrid'
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    return result.response;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('일반 응답 생성 오류:', error);
+                return `안녕하세요! "${message}"에 대해 답변드리겠습니다.\n\n이는 흥미로운 주제네요. 제가 알고 있는 정보를 바탕으로 도움을 드리겠습니다.\n\n${message}에 대한 구체적인 질문이나 더 자세한 설명이 필요하시면 언제든 말씀해주세요!`;
+            }
+        }
+
+        // 메시지 포맷팅
+        function formatMessage(content) {
+            // 마크다운 스타일 포맷팅
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // 빠른 프롬프트
+        function quickPrompt(prompt) {
+            document.getElementById('messageInput').value = prompt;
+            sendMessage();
+        }
+
+        // 새 채팅 시작
+        function startNewChat() {
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="message ai">
+                    <div class="message-avatar" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%)">🤖</div>
+                    <div class="message-content">
+                        안녕하세요! 새로운 대화를 시작합니다. 무엇을 도와드릴까요?
+                    </div>
+                </div>
+            `;
+            chatHistory = [];
+            updateChatHistory();
+        }
+
+        // 모드 선택
+        function selectMode(mode) {
+            currentMode = mode;
+
+            // 네비게이션 아이템 활성화 상태 업데이트
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item').classList.add('active');
+
+            // 모드별 안내 메시지
+            const modeMessages = {
+                chat: '일반적인 질문과 대화를 도와드립니다.',
+                writing: '글쓰기를 도와드립니다. 블로그, 리뷰, 설득 글 등 다양한 스타일을 지원합니다.',
+                analysis: '전문적인 분석과 보고서 작성을 도와드립니다.',
+                creative: '창작 도구로 스토리, 시나리오 등을 작성해드립니다.'
+            };
+
+            addMessage('ai', modeMessages[mode]);
+        }
+
+        // 채팅 히스토리 업데이트
+        function updateChatHistory() {
+            const historyContainer = document.getElementById('chatHistory');
+            historyContainer.innerHTML = '';
+
+            chatHistory.slice(-10).forEach((chat, index) => {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'chat-item';
+                chatItem.textContent = chat.content.substring(0, 50) + (chat.content.length > 50 ? '...' : '');
+                chatItem.onclick = () => loadChatHistory(index);
+                historyContainer.appendChild(chatItem);
+            });
+        }
+
+        // 채팅 히스토리 로드
+        function loadChatHistory(index) {
+            // 구현 예정
+        }
+
+        // 파일 첨부
+        function attachFile() {
+            alert('파일 첨부 기능은 곧 추가될 예정입니다.');
+        }
+
+        // 음성 입력
+        function voiceInput() {
+            alert('음성 입력 기능은 곧 추가될 예정입니다.');
+        }
+
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('CORBU.AI 인터페이스가 로드되었습니다.');
+        });
+    </script>
+</body>
+
+</html>

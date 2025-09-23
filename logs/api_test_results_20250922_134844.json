@@ -1,0 +1,63 @@
+{
+  "test_session": "test-session-1758516519",
+  "total_tests": 8,
+  "successful_tests": 8,
+  "test_results": [
+    {
+      "test_name": "헬스체크",
+      "success": true,
+      "details": "상태: healthy",
+      "response_time": 0.009554862976074219,
+      "timestamp": "2025-09-22T13:48:39.950683"
+    },
+    {
+      "test_name": "메인 인터페이스",
+      "success": true,
+      "details": "HTML 페이지 로드 성공",
+      "response_time": 0.004575967788696289,
+      "timestamp": "2025-09-22T13:48:40.458357"
+    },
+    {
+      "test_name": "Service Worker",
+      "success": true,
+      "details": "파일 로드 성공",
+      "response_time": 0.005150318145751953,
+      "timestamp": "2025-09-22T13:48:40.963970"
+    },
+    {
+      "test_name": "채팅 API",
+      "success": true,
+      "details": "응답 길이: 299",
+      "response_time": 0.00422215461730957,
+      "timestamp": "2025-09-22T13:48:41.473014"
+    },
+    {
+      "test_name": "웹 검색 API",
+      "success": true,
+      "details": "결과: 2개",
+      "response_time": 0.3314180374145508,
+      "timestamp": "2025-09-22T13:48:42.307322"
+    },
+    {
+      "test_name": "파일 업로드 API",
+      "success": true,
+      "details": "파일 타입: text",
+      "response_time": 0.012075185775756836,
+      "timestamp": "2025-09-22T13:48:42.824590"
+    },
+    {
+      "test_name": "채팅 기록 API",
+      "success": true,
+      "details": "세션: 2개",
+      "response_time": 0.004966259002685547,
+      "timestamp": "2025-09-22T13:48:43.332613"
+    },
+    {
+      "test_name": "채팅 검색 API",
+      "success": true,
+      "details": "검색 결과: 2개",
+      "response_time": 0.003743886947631836,
+      "timestamp": "2025-09-22T13:48:43.839426"
+    }
+  ]
+}

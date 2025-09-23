@@ -1,4 +1,3 @@
-/* Modern Chat Interface Styles */
 * {
   margin: 0;
   padding: 0;
@@ -235,8 +234,15 @@ body {
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message.user {
@@ -307,37 +313,101 @@ body {
   font-size: 13px;
 }
 
-.emotion-analysis, .intent-analysis {
+.emotion-analysis,
+.intent-analysis {
   display: flex;
   align-items: center;
   margin-bottom: 6px;
   gap: 8px;
 }
 
-.emotion-tag, .intent-tag {
+.emotion-tag,
+.intent-tag {
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
 }
 
-.emotion-happy { background: #fef3c7; color: #92400e; }
-.emotion-sad { background: #dbeafe; color: #1e40af; }
-.emotion-angry { background: #fee2e2; color: #dc2626; }
-.emotion-excited { background: #fed7aa; color: #ea580c; }
-.emotion-neutral { background: #f3f4f6; color: #374151; }
-.emotion-confused { background: #e9d5ff; color: #7c3aed; }
-.emotion-curious { background: #a7f3d0; color: #065f46; }
-.emotion-frustrated { background: #d1d5db; color: #374151; }
+.emotion-happy {
+  background: #fef3c7;
+  color: #92400e;
+}
 
-.intent-question { background: #d1fae5; color: #065f46; }
-.intent-greeting { background: #dbeafe; color: #1e40af; }
-.intent-request { background: #fed7aa; color: #ea580c; }
-.intent-complaint { background: #fee2e2; color: #dc2626; }
-.intent-compliment { background: #e9d5ff; color: #7c3aed; }
-.intent-goodbye { background: #d1d5db; color: #374151; }
-.intent-help { background: #a7f3d0; color: #065f46; }
-.intent-information { background: #d1d5db; color: #374151; }
+.emotion-sad {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.emotion-angry {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.emotion-excited {
+  background: #fed7aa;
+  color: #ea580c;
+}
+
+.emotion-neutral {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.emotion-confused {
+  background: #e9d5ff;
+  color: #7c3aed;
+}
+
+.emotion-curious {
+  background: #a7f3d0;
+  color: #065f46;
+}
+
+.emotion-frustrated {
+  background: #d1d5db;
+  color: #374151;
+}
+
+.intent-question {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.intent-greeting {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.intent-request {
+  background: #fed7aa;
+  color: #ea580c;
+}
+
+.intent-complaint {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.intent-compliment {
+  background: #e9d5ff;
+  color: #7c3aed;
+}
+
+.intent-goodbye {
+  background: #d1d5db;
+  color: #374151;
+}
+
+.intent-help {
+  background: #a7f3d0;
+  color: #065f46;
+}
+
+.intent-information {
+  background: #d1d5db;
+  color: #374151;
+}
 
 .confidence-bar {
   flex: 1;
@@ -492,8 +562,16 @@ body {
 }
 
 @keyframes typing {
-  0%, 60%, 100% { opacity: 0.3; }
-  30% { opacity: 1; }
+
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+  }
+
+  30% {
+    opacity: 1;
+  }
 }
 
 /* 퀵 액션 버튼들 */
@@ -525,15 +603,15 @@ body {
   .sidebar {
     width: 240px;
   }
-  
+
   .main-header {
     padding: 12px 16px;
   }
-  
+
   .chat-messages {
     padding: 16px;
   }
-  
+
   .chat-input-container {
     padding: 16px;
   }
@@ -546,11 +624,11 @@ body {
     z-index: 1000;
     height: 100vh;
   }
-  
+
   .sidebar.open {
     left: 0;
   }
-  
+
   .main-content {
     width: 100%;
   }

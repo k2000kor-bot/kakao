@@ -1,211 +1,336 @@
-# 🚀 궁극의 AI 시스템
+# 🤖 CORBU.AI - 차세대 AI 강화 어시스턴트
 
-유시민 스타일 통합 고급 AI 시스템입니다.
+![CORBU.AI](https://img.shields.io/badge/CORBU.AI-v2.0-blue?style=for-the-badge&logo=robot)
+![Python](https://img.shields.io/badge/Python-3.13-green?style=for-the-badge&logo=python)
+![Flask](https://img.shields.io/badge/Flask-2.3.3-red?style=for-the-badge&logo=flask)
+![PWA](https://img.shields.io/badge/PWA-Ready-purple?style=for-the-badge)
 
-## 🌟 주요 기능
+> **CORBU.AI**는 최신 AI 기술을 활용한 종합적인 디지털 어시스턴트입니다. 채팅, 파일 분석, 웹 검색, 프로젝트 관리 등 다양한 기능을 통합적으로 제공합니다.
 
-- **지능형 분석**: 질문의 주제, 유형, 감정적 톤을 분석하여 맞춤형 답변 제공
-- **유시민 스타일**: 유시민의 사고방식과 표현 스타일을 학습하여 자연스러운 대화 구현
-- **지식 베이스**: 정치, 경제, 교육, 사회, 기술, 환경 등 6개 분야의 전문 지식 보유
-- **실시간 학습**: 사용자와의 대화를 통해 지속적으로 학습하고 개선
-- **고급 답변**: 단순한 템플릿이 아닌, 깊이 있는 통찰과 실용적인 해결책 제공
+## ✨ 주요 기능
 
-## 🛠️ 설치 및 실행
+### 🧠 핵심 AI 기능
 
-### 1. 필요한 패키지 설치
+- **💬 지능형 채팅**: 다양한 주제에 대한 자연스러운 대화
+- **🔍 실시간 웹 검색**: DuckDuckGo API를 통한 최신 정보 검색
+- **📁 파일 분석**: 텍스트, 이미지, 문서 등 다양한 파일 형식 분석
+- **🎭 감정 분석**: 텍스트의 감정 상태 분석 및 시각화
+
+### 📊 프로젝트 관리
+
+- **📋 프로젝트 관리**: 파일 업로드, 지침 관리, 진행상황 추적
+- **📈 데이터 분석**: 데이터 시각화 및 통계 분석
+- **🔧 품질 보증**: 코드 리뷰 및 품질 검사
+- **⚡ 성능 최적화**: 시스템 성능 분석 및 최적화 제안
+
+### 🌐 웹 기술
+
+- **📱 PWA 지원**: 앱처럼 설치 및 오프라인 사용 가능
+- **🔄 Service Worker**: 캐싱 및 백그라운드 동기화
+- **📤 대화 내보내기**: 채팅 기록 백업 및 공유
+- **🎤 음성 인식**: 음성 입력 지원 (준비완료)
+
+## 🚀 빠른 시작
+
+### 1. 환경 요구사항
+
+- **Python**: 3.11 이상
+- **Node.js**: 18 이상 (선택사항)
+- **시스템**: macOS, Linux, Windows
+- **메모리**: 최소 4GB RAM 권장
+
+### 2. 설치 및 실행
+
+#### 자동 배포 (권장)
 
 ```bash
-pip install fastapi uvicorn pydantic
+# 저장소 클론
+git clone https://github.com/your-repo/corbu-ai.git
+cd corbu-ai
+
+# 자동 배포 스크립트 실행
+chmod +x deploy.sh
+./deploy.sh local
 ```
 
-### 2. 시스템 실행
-
-#### 방법 1: 궁극의 AI 시스템 (권장)
+#### 수동 설치
 
 ```bash
-python3 ultimate_ai_system.py
-```
+# Python 가상환경 생성
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-#### 방법 2: 테스트 서버
+# 의존성 설치
+pip install -r requirements.txt
 
-```bash
-python3 test_server.py
-```
-
-#### 방법 3: 기존 시스템
-
-```bash
-python3 simple_frontend_backend_test.py
+# 개발 서버 실행
+python complete_server.py
 ```
 
 ### 3. 접속
 
-- **대시보드**: <http://localhost:8000/dashboard>
-- **API 문서**: <http://localhost:8000/docs>
-- **헬스 체크**: <http://localhost:8000/health>
+- **웹 인터페이스**: <http://localhost:8080>
+- **API 문서**: <http://localhost:8080/api/health>
 
-## 📚 API 사용법
+## 🏗️ 시스템 아키텍처
 
-### 채팅 API
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   External      │
+│   (HTML/JS)     │◄──►│   (Flask)       │◄──►│   APIs          │
+│                 │    │                 │    │                 │
+│ • PWA Support   │    │ • RESTful API   │    │ • DuckDuckGo    │
+│ • Service Worker│    │ • File Analysis │    │ • Web Search    │
+│ • Real-time UI  │    │ • AI Processing │    │ • External APIs │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   Storage       │
+                    │                 │
+                    │ • File Storage  │
+                    │ • Chat History  │
+                    │ • User Data     │
+                    └─────────────────┘
+```
+
+## 📡 API 엔드포인트
+
+### 채팅 및 대화
+
+- `POST /api/chat` - AI 채팅 메시지 전송
+- `GET /api/chat-history` - 채팅 기록 조회
+- `GET /api/chat-history/<session_id>` - 특정 세션 기록
+- `DELETE /api/chat-history/<session_id>` - 세션 기록 삭제
+- `POST /api/search-chat` - 채팅 기록 검색
+
+### 파일 및 데이터
+
+- `POST /api/upload` - 파일 업로드 및 분석
+- `GET /api/analyze-file/<file_id>` - 파일 재분석
+- `POST /api/web-search` - 실시간 웹 검색
+
+### 프로젝트 관리
+
+- `GET /api/projects` - 프로젝트 목록 조회
+- `POST /api/projects` - 새 프로젝트 생성
+- `GET /api/projects/<project_id>` - 프로젝트 상세 정보
+
+### 시스템
+
+- `GET /api/health` - 서버 상태 확인
+- `GET /sw.js` - Service Worker 파일
+- `GET /` - 메인 웹 인터페이스
+
+## 🔧 개발 도구
+
+### 모니터링
 
 ```bash
-curl -X POST http://localhost:8000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "정치에 대해 어떻게 생각하시나요?", "user_id": "test_user"}'
+# 실시간 시스템 모니터링
+python monitor.py
+
+# 연속 모니터링 (60초 간격)
+python monitor.py --continuous --interval 60
+
+# 모니터링 결과 저장
+python monitor.py --save monitoring_report.json
 ```
 
-### 상태 조회 API
+### 테스팅
 
 ```bash
-curl http://localhost:8000/api/status
+# 전체 API 테스트
+python test_all_apis.py
+
+# 성능 분석
+python performance_optimizer.py
 ```
 
-### 사용자 프로필 조회
+### 배포
 
 ```bash
-curl http://localhost:8000/api/user/test_user
+# 로컬 배포
+./deploy.sh local
+
+# Docker 배포
+./deploy.sh docker
+
+# 프로덕션 배포
+./deploy.sh production
 ```
 
-### 학습 인사이트 조회
+## 📊 성능 특징
+
+### ⚡ 응답 시간
+
+- **평균 API 응답**: < 100ms
+- **채팅 응답**: < 1초
+- **파일 분석**: < 2초
+- **웹 검색**: < 5초
+
+### 🏃‍♂️ 처리 능력
+
+- **동시 사용자**: 100+ 지원
+- **파일 크기**: 최대 10MB
+- **채팅 세션**: 무제한
+- **메모리 사용**: 자동 최적화
+
+### 🛡️ 안정성
+
+- **자동 재시작**: 오류 시 자동 복구
+- **메모리 정리**: 30분마다 자동 실행
+- **캐시 관리**: TTL 기반 자동 만료
+- **로그 관리**: 로테이션 및 압축
+
+## 🔒 보안 기능
+
+- **CORS 설정**: 크로스 오리진 요청 제어
+- **파일 검증**: 업로드 파일 타입 및 크기 제한
+- **세션 관리**: 안전한 세션 처리
+- **에러 처리**: 민감한 정보 노출 방지
+
+## 📚 사용 예시
+
+### 기본 채팅
+
+```javascript
+// JavaScript에서 API 호출
+const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        message: '안녕하세요!',
+        session_id: 'user-session-123'
+    })
+});
+const data = await response.json();
+console.log(data.response);
+```
+
+### 파일 업로드
+
+```javascript
+// 파일 업로드 및 분석
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+
+const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData
+});
+const result = await response.json();
+console.log(result.file_info.analysis);
+```
+
+### 웹 검색
+
+```javascript
+// 실시간 웹 검색
+const searchResponse = await fetch('/api/web-search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        query: 'Python 프로그래밍',
+        max_results: 5
+    })
+});
+const searchData = await searchResponse.json();
+console.log(searchData.results);
+```
+
+## 🐳 Docker 배포
+
+### Docker Compose 사용
+
+```yaml
+version: '3.8'
+services:
+  corbu-ai:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=your-secret-key
+    restart: unless-stopped
+```
+
+### 단일 컨테이너 실행
 
 ```bash
-curl http://localhost:8000/api/insights
+# 이미지 빌드
+docker build -t corbu-ai .
+
+# 컨테이너 실행
+docker run -d \
+  --name corbu-ai-container \
+  -p 8080:8080 \
+  -v $(pwd)/logs:/app/logs \
+  -v $(pwd)/uploads:/app/uploads \
+  corbu-ai
 ```
 
-## 🎯 답변 예시
+## 🔄 업데이트 및 유지보수
 
-### 정치 관련 질문
+### 정기 유지보수
 
-**질문**: "정치에 대해 어떻게 생각하시나요?"
+```bash
+# 로그 정리 (월 1회 권장)
+find logs -name "*.log" -mtime +30 -delete
 
-**답변**:
+# 업로드 파일 정리 (필요시)
+find uploads -mtime +7 -delete
 
+# 시스템 상태 점검
+python monitor.py --save health_check.json
 ```
-그런데 말이죠, 여러분이 제기하신 질문에 대해 말씀드리겠습니다.
 
-## 🧠 심층 분석
+### 백업
 
-정치는 권력의 문제가 아니라 시민들이 어떻게 함께 살아갈 것인가의 문제입니다.
+```bash
+# 데이터베이스 백업
+cp *.db backups/
 
-여기서 중요한 것은 단순히 문제를 인식하는 것만으로는 충분하지 않다는 점입니다.
+# 설정 파일 백업
+cp .env backups/
 
-## 💡 핵심 통찰
+# 전체 백업 (배포 스크립트 사용)
+./deploy.sh backup
+```
 
-정치에 대해 체계적으로 접근해보면, 다음과 같은 관점들이 중요합니다:
+## 🤝 기여하기
 
-1. **근본적 이해**: 정치의 본질을 파악하는 것이 우선입니다.
-2. **다각도 분석**: 여러 관점에서 접근하여 종합적인 이해를 제공합니다.
-3. **실용적 해결**: 이론과 실무를 결합한 구체적인 방안을 제시합니다.
-4. **미래적 관점**: 변화하는 환경에 대한 대응 방안을 고려합니다.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 🔍 상세 분석
+## 📝 라이선스
 
-정치에 대한 우리의 이해는 역사적 맥락 속에서 더욱 깊어집니다.
+이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
 
-과거의 경험들이 현재 우리가 직면한 문제들에 대한 통찰을 제공해주기 때문입니다.
+## 📞 지원 및 문의
 
-여기서 중요한 것은 단순히 과거를 회고하는 것이 아니라, 그 속에서 현재와 미래를 위한 교훈을 찾는 것입니다.
+- **이슈 보고**: [GitHub Issues](https://github.com/your-repo/corbu-ai/issues)
+- **문서**: [Wiki](https://github.com/your-repo/corbu-ai/wiki)
+- **이메일**: <support@corbu-ai.com>
 
-## 🎯 구체적 제안
+## 🎉 감사의 말
 
-정치에 대한 해결 방안을 단계적으로 제시해드리겠습니다:
-
-1. **시민 참여를 통한 정치 개혁**: 구체적인 실행 방안과 기대 효과
-2. **투명하고 책임감 있는 정치 문화 조성**: 구체적인 실행 방안과 기대 효과
-3. **장기적 비전을 가진 정책 수립**: 구체적인 실행 방안과 기대 효과
-4. **정치 교육을 통한 시민 의식 향상**: 구체적인 실행 방안과 기대 효과
-
-## 🌍 참고 사례
-
-정치 분야에서 성공한 사례들을 살펴보면:
-
-- **스위스의 직접민주주의 시스템**: 참고할 만한 모델
-- **북유럽의 복지정치 모델**: 참고할 만한 모델
-- **독일의 연방제 민주주의**: 참고할 만한 모델
-
-## 🌟 결론
-
-그래서 제가 말씀드리고 싶은 것은, 정치에 대한 우리의 이해는 이런 다양한 관점들을 종합할 때 더욱 풍부해집니다.
-
-그런데 여러분은 어떻게 생각하시나요? 이런 관점들이 정치에 대한 여러분의 이해에 어떤 도움이 되었는지 궁금합니다.
-
-함께 생각하고 토론하는 과정에서 우리는 더 나은 답을 찾아갈 수 있을 것입니다.
+CORBU.AI를 사용해주셔서 감사합니다! 더 나은 AI 어시스턴트를 만들기 위해 지속적으로 개선하고 있습니다.
 
 ---
-*유시민 스타일로 학습한 궁극의 AI 시스템이 제공하는 종합적 분석*
-```
 
-## 🔧 문제 해결
+<div align="center">
 
-### 터미널 오류 해결
+**🚀 CORBU.AI로 더 스마트한 작업을 시작하세요!**
 
-만약 `dump_zsh_state` 오류가 발생한다면:
+[시작하기](#빠른-시작) • [문서](docs/) • [데모](http://localhost:8080)
 
-1. **임시 해결책**:
-
-```bash
-echo 'dump_zsh_state() { echo "zsh state saved"; }' >> ~/.zshrc
-source ~/.zshrc
-```
-
-2. **영구 해결책**:
-
-```bash
-# .zshrc 파일에서 문제가 되는 부분 제거
-nano ~/.zshrc
-```
-
-### 포트 충돌 해결
-
-만약 포트 8000이 이미 사용 중이라면:
-
-```bash
-# 사용 중인 프로세스 확인
-lsof -i :8000
-
-# 프로세스 종료
-kill -9 [PID]
-```
-
-## 📁 파일 구조
-
-```
-kakao-frontend/
-├── ultimate_ai_system.py          # 궁극의 AI 시스템 (권장)
-├── test_server.py                 # 테스트 서버
-├── simple_frontend_backend_test.py # 기존 시스템
-├── deep_learning_yoo_system.py    # 딥러닝 유시민 시스템
-├── start_system.sh                # 시작 스크립트
-└── README.md                      # 이 파일
-```
-
-## 🚀 빠른 시작
-
-1. **터미널에서 실행**:
-
-```bash
-cd /Users/aD/kakao-frontend
-python3 ultimate_ai_system.py
-```
-
-2. **브라우저에서 접속**:
-   - <http://localhost:8000/dashboard>
-
-3. **질문하기**:
-   - "정치에 대해 어떻게 생각하시나요?"
-   - "경제 발전 방향은?"
-   - "교육 개혁이 필요한 이유는?"
-
-## 🎉 완성
-
-이제 제대로 된 고급 답변을 받을 수 있는 시스템이 완성되었습니다!
-
-- ✅ **지능형 질문 분석**
-- ✅ **유시민 스타일 답변**
-- ✅ **6개 분야 전문 지식**
-- ✅ **구체적 해결 방안**
-- ✅ **실시간 학습**
-- ✅ **사용자 프로필 관리**
-- ✅ **웹 대시보드**
-
-**더 이상 단순한 답변이 아닌, 진짜 고급 답변을 받을 수 있습니다!** 🚀
+</div>

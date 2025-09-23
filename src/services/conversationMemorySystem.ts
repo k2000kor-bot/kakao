@@ -1,0 +1,572 @@
+/**
+ * 🧠 대화 기억 및 학습 시스템
+ * 사용자별 대화 패턴, 선호도, 학습 진도를 기억하고 맞춤형 경험 제공
+ */
+
+export interface UserProfile {
+    userId: string;
+    name?: string;
+    expertise: {
+        overall: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+        technologies: Record<string, {
+            level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+            experience: number; // months
+            lastUpdated: Date;
+            projects: string[];
+        }>;
+    };
+    preferences: {
+        responseStyle: 'concise' | 'detailed' | 'comprehensive' | 'tutorial';
+        codeExamples: 'minimal' | 'standard' | 'extensive';
+        explanationDepth: 'surface' | 'moderate' | 'deep' | 'academic';
+        preferredLanguages: string[];
+        learningGoals: string[];
+    };
+    conversationPatterns: {
+        commonTopics: Array<{ topic: string; frequency: number; lastDiscussed: Date }>;
+        questionTypes: Array<{ type: string; count: number }>;
+        timePreferences: {
+            activeHours: number[];
+            sessionDuration: number; // minutes
+        };
+    };
+    learningProgress: {
+        completedTopics: Array<{
+            topic: string;
+            completionDate: Date;
+            masteryLevel: number; // 0-1
+            needsReview: boolean;
+        }>;
+        currentLearningPath: Array<{
+            topic: string;
+            progress: number; // 0-1
+            estimatedCompletion: Date;
+            difficulty: number; // 1-5
+        }>;
+        strugglingAreas: Array<{
+            area: string;
+            attempts: number;
+            lastAttempt: Date;
+            helpNeeded: string[];
+        }>;
+    };
+    interactionHistory: {
+        totalSessions: number;
+        totalMessages: number;
+        averageSessionLength: number;
+        lastActive: Date;
+        satisfactionRating: number; // 1-5
+        feedbackHistory: Array<{
+            date: Date;
+            rating: number;
+            comment?: string;
+            responseId: string;
+        }>;
+    };
+}
+
+export interface ConversationContext {
+    sessionId: string;
+    userId: string;
+    startTime: Date;
+    messages: Array<{
+        id: string;
+        role: 'user' | 'assistant';
+        content: string;
+        timestamp: Date;
+        metadata?: {
+            intent: string;
+            topics: string[];
+            sentiment: string;
+            complexity: number;
+            responseTime?: number;
+            userSatisfaction?: number;
+        };
+    }>;
+    currentTopic: string;
+    topicHistory: Array<{
+        topic: string;
+        startTime: Date;
+        endTime?: Date;
+        depth: number;
+    }>;
+    learningObjectives: string[];
+    achievements: Array<{
+        type: string;
+        description: string;
+        timestamp: Date;
+    }>;
+}
+
+export interface LearningRecommendation {
+    type: 'review' | 'advance' | 'practice' | 'explore';
+    priority: 'high' | 'medium' | 'low';
+    topic: string;
+    reason: string;
+    suggestedActions: string[];
+    estimatedTime: string;
+    resources: Array<{
+        type: 'article' | 'video' | 'practice' | 'project';
+        title: string;
+        url?: string;
+        description: string;
+    }>;
+}
+
+class ConversationMemorySystem {
+    private userProfiles: Map<string, UserProfile> = new Map();
+    private conversationContexts: Map<string, ConversationContext> = new Map();
+    private learningAnalytics: Map<string, any> = new Map();
+
+    constructor() {
+        this.loadUserProfiles();
+        this.initializeAnalytics();
+    }
+
+    /**
+     * 👤 사용자 프로필 관리
+     */
+    async getUserProfile(userId: string): Promise<UserProfile> {
+        let profile = this.userProfiles.get(userId);
+        
+        if (!profile) {
+            profile = this.createDefaultProfile(userId);
+            this.userProfiles.set(userId, profile);
+            await this.saveUserProfile(profile);
+        }
+        
+        return profile;
+    }
+
+    async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
+        const profile = await this.getUserProfile(userId);
+        const updatedProfile = { ...profile, ...updates };
+        this.userProfiles.set(userId, updatedProfile);
+        await this.saveUserProfile(updatedProfile);
+    }
+
+    /**
+     * 🧠 대화 컨텍스트 관리
+     */
+    async startConversationSession(userId: string): Promise<string> {
+        const sessionId = this.generateSessionId();
+        const userProfile = await this.getUserProfile(userId);
+        
+        const context: ConversationContext = {
+            sessionId,
+            userId,
+            startTime: new Date(),
+            messages: [],
+            currentTopic: '',
+            topicHistory: [],
+            learningObjectives: userProfile.preferences.learningGoals.slice(0, 3),
+            achievements: []
+        };
+        
+        this.conversationContexts.set(sessionId, context);
+        return sessionId;
+    }
+
+    async addMessageToContext(
+        sessionId: string, 
+        role: 'user' | 'assistant', 
+        content: string,
+        metadata?: any
+    ): Promise<void> {
+        const context = this.conversationContexts.get(sessionId);
+        if (!context) return;
+
+        const message = {
+            id: this.generateMessageId(),
+            role,
+            content,
+            timestamp: new Date(),
+            metadata
+        };
+
+        context.messages.push(message);
+
+        // 사용자 메시지인 경우 학습 패턴 분석
+        if (role === 'user') {
+            await this.analyzeUserMessage(context.userId, content, metadata);
+        }
+
+        // AI 응답인 경우 효과성 추적
+        if (role === 'assistant') {
+            await this.trackResponseEffectiveness(context.userId, message);
+        }
+
+        this.conversationContexts.set(sessionId, context);
+    }
+
+    /**
+     * 📊 학습 패턴 분석
+     */
+    private async analyzeUserMessage(userId: string, content: string, metadata?: any): Promise<void> {
+        const profile = await this.getUserProfile(userId);
+        
+        // 주제 빈도 업데이트
+        if (metadata?.topics) {
+            for (const topic of metadata.topics) {
+                const existingTopic = profile.conversationPatterns.commonTopics.find(t => t.topic === topic);
+                if (existingTopic) {
+                    existingTopic.frequency++;
+                    existingTopic.lastDiscussed = new Date();
+                } else {
+                    profile.conversationPatterns.commonTopics.push({
+                        topic,
+                        frequency: 1,
+                        lastDiscussed: new Date()
+                    });
+                }
+            }
+        }
+
+        // 질문 유형 분석
+        if (metadata?.intent) {
+            const existingType = profile.conversationPatterns.questionTypes.find(q => q.type === metadata.intent);
+            if (existingType) {
+                existingType.count++;
+            } else {
+                profile.conversationPatterns.questionTypes.push({
+                    type: metadata.intent,
+                    count: 1
+                });
+            }
+        }
+
+        // 기술 관련 질문인 경우 전문성 레벨 조정
+        if (metadata?.technologies) {
+            for (const tech of metadata.technologies) {
+                if (!profile.expertise.technologies[tech]) {
+                    profile.expertise.technologies[tech] = {
+                        level: 'beginner',
+                        experience: 0,
+                        lastUpdated: new Date(),
+                        projects: []
+                    };
+                }
+
+                // 질문 복잡도에 따라 레벨 조정
+                const complexity = metadata.complexity || 0.5;
+                const currentLevel = profile.expertise.technologies[tech].level;
+                
+                if (complexity > 0.7 && currentLevel === 'beginner') {
+                    profile.expertise.technologies[tech].level = 'intermediate';
+                } else if (complexity > 0.9 && currentLevel === 'intermediate') {
+                    profile.expertise.technologies[tech].level = 'advanced';
+                }
+                
+                profile.expertise.technologies[tech].lastUpdated = new Date();
+            }
+        }
+
+        await this.updateUserProfile(userId, profile);
+    }
+
+    /**
+     * 📈 응답 효과성 추적
+     */
+    private async trackResponseEffectiveness(userId: string, message: any): Promise<void> {
+        const profile = await this.getUserProfile(userId);
+        
+        // 응답 시간 추적
+        if (message.metadata?.responseTime) {
+            profile.interactionHistory.averageSessionLength = 
+                (profile.interactionHistory.averageSessionLength + message.metadata.responseTime) / 2;
+        }
+
+        // 사용자 만족도 추적 (추후 피드백 시스템과 연동)
+        if (message.metadata?.userSatisfaction) {
+            profile.interactionHistory.satisfactionRating = 
+                (profile.interactionHistory.satisfactionRating + message.metadata.userSatisfaction) / 2;
+        }
+
+        await this.updateUserProfile(userId, profile);
+    }
+
+    /**
+     * 🎯 개인화된 학습 추천
+     */
+    async getPersonalizedRecommendations(userId: string): Promise<LearningRecommendation[]> {
+        const profile = await this.getUserProfile(userId);
+        const recommendations: LearningRecommendation[] = [];
+
+        // 1. 복습이 필요한 주제 식별
+        const reviewTopics = profile.learningProgress.completedTopics.filter(topic => {
+            const daysSinceCompletion = (Date.now() - topic.completionDate.getTime()) / (1000 * 60 * 60 * 24);
+            return topic.needsReview || (daysSinceCompletion > 30 && topic.masteryLevel < 0.8);
+        });
+
+        for (const topic of reviewTopics.slice(0, 2)) {
+            recommendations.push({
+                type: 'review',
+                priority: 'high',
+                topic: topic.topic,
+                reason: `${topic.topic}을(를) 복습하여 기억을 강화하세요`,
+                suggestedActions: [
+                    '핵심 개념 다시 정리하기',
+                    '실습 예제 다시 풀어보기',
+                    '관련 프로젝트에 적용해보기'
+                ],
+                estimatedTime: '30-60분',
+                resources: [
+                    {
+                        type: 'practice',
+                        title: `${topic.topic} 복습 문제`,
+                        description: '핵심 개념을 확인할 수 있는 실습 문제'
+                    }
+                ]
+            });
+        }
+
+        // 2. 어려움을 겪고 있는 영역 지원
+        for (const struggle of profile.learningProgress.strugglingAreas.slice(0, 2)) {
+            recommendations.push({
+                type: 'practice',
+                priority: 'high',
+                topic: struggle.area,
+                reason: `${struggle.area}에서 어려움을 겪고 있어 추가 연습이 필요합니다`,
+                suggestedActions: struggle.helpNeeded,
+                estimatedTime: '1-2시간',
+                resources: [
+                    {
+                        type: 'tutorial',
+                        title: `${struggle.area} 단계별 가이드`,
+                        description: '기초부터 차근차근 설명하는 튜토리얼'
+                    }
+                ]
+            });
+        }
+
+        // 3. 자주 묻는 주제의 심화 학습
+        const frequentTopics = profile.conversationPatterns.commonTopics
+            .sort((a, b) => b.frequency - a.frequency)
+            .slice(0, 2);
+
+        for (const topic of frequentTopics) {
+            recommendations.push({
+                type: 'advance',
+                priority: 'medium',
+                topic: topic.topic,
+                reason: `${topic.topic}에 관심이 많으시니 심화 학습을 추천합니다`,
+                suggestedActions: [
+                    '고급 개념 학습하기',
+                    '실무 사례 분석하기',
+                    '개인 프로젝트에 적용하기'
+                ],
+                estimatedTime: '2-4시간',
+                resources: [
+                    {
+                        type: 'article',
+                        title: `${topic.topic} 고급 가이드`,
+                        description: '실무에서 사용하는 고급 기법과 패턴'
+                    }
+                ]
+            });
+        }
+
+        // 4. 학습 목표 기반 추천
+        for (const goal of profile.preferences.learningGoals.slice(0, 1)) {
+            recommendations.push({
+                type: 'explore',
+                priority: 'medium',
+                topic: goal,
+                reason: `학습 목표인 ${goal}을(를) 달성하기 위한 다음 단계입니다`,
+                suggestedActions: [
+                    '관련 기초 개념 학습',
+                    '실습 프로젝트 시작',
+                    '커뮤니티 참여'
+                ],
+                estimatedTime: '1주일',
+                resources: [
+                    {
+                        type: 'project',
+                        title: `${goal} 실습 프로젝트`,
+                        description: '실무 경험을 쌓을 수 있는 프로젝트'
+                    }
+                ]
+            });
+        }
+
+        return recommendations.sort((a, b) => {
+            const priorityOrder = { high: 3, medium: 2, low: 1 };
+            return priorityOrder[b.priority] - priorityOrder[a.priority];
+        });
+    }
+
+    /**
+     * 💡 맞춤형 응답 스타일 결정
+     */
+    async getOptimalResponseStyle(userId: string, questionType: string): Promise<{
+        style: string;
+        tone: string;
+        detailLevel: string;
+        includeExamples: boolean;
+        codeComplexity: string;
+    }> {
+        const profile = await this.getUserProfile(userId);
+        
+        // 사용자 선호도 기반
+        let style = profile.preferences.responseStyle;
+        let detailLevel = profile.preferences.explanationDepth;
+        let codeComplexity = profile.preferences.codeExamples;
+
+        // 질문 유형별 조정
+        if (questionType === 'learning') {
+            style = 'tutorial';
+            detailLevel = 'deep';
+        } else if (questionType === 'problemSolving') {
+            style = 'detailed';
+            detailLevel = 'moderate';
+        } else if (questionType === 'quickAnswer') {
+            style = 'concise';
+            detailLevel = 'surface';
+        }
+
+        // 전문성 레벨에 따른 조정
+        if (profile.expertise.overall === 'beginner') {
+            detailLevel = 'deep';
+            codeComplexity = 'extensive';
+        } else if (profile.expertise.overall === 'expert') {
+            style = 'concise';
+            detailLevel = 'surface';
+            codeComplexity = 'minimal';
+        }
+
+        return {
+            style,
+            tone: 'friendly',
+            detailLevel,
+            includeExamples: true,
+            codeComplexity
+        };
+    }
+
+    /**
+     * 🔧 유틸리티 메서드들
+     */
+    private createDefaultProfile(userId: string): UserProfile {
+        return {
+            userId,
+            expertise: {
+                overall: 'intermediate',
+                technologies: {}
+            },
+            preferences: {
+                responseStyle: 'detailed',
+                codeExamples: 'standard',
+                explanationDepth: 'moderate',
+                preferredLanguages: ['JavaScript', 'TypeScript'],
+                learningGoals: []
+            },
+            conversationPatterns: {
+                commonTopics: [],
+                questionTypes: [],
+                timePreferences: {
+                    activeHours: [9, 10, 11, 14, 15, 16, 19, 20, 21],
+                    sessionDuration: 30
+                }
+            },
+            learningProgress: {
+                completedTopics: [],
+                currentLearningPath: [],
+                strugglingAreas: []
+            },
+            interactionHistory: {
+                totalSessions: 0,
+                totalMessages: 0,
+                averageSessionLength: 0,
+                lastActive: new Date(),
+                satisfactionRating: 4.0,
+                feedbackHistory: []
+            }
+        };
+    }
+
+    private generateSessionId(): string {
+        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    private generateMessageId(): string {
+        return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    private async loadUserProfiles(): Promise<void> {
+        // 실제로는 데이터베이스나 로컬 스토리지에서 로드
+        const stored = localStorage.getItem('userProfiles');
+        if (stored) {
+            const profiles = JSON.parse(stored);
+            for (const [userId, profile] of Object.entries(profiles)) {
+                this.userProfiles.set(userId, profile as UserProfile);
+            }
+        }
+    }
+
+    private async saveUserProfile(profile: UserProfile): Promise<void> {
+        // 실제로는 데이터베이스에 저장
+        const allProfiles = {};
+        for (const [userId, userProfile] of this.userProfiles.entries()) {
+            allProfiles[userId] = userProfile;
+        }
+        localStorage.setItem('userProfiles', JSON.stringify(allProfiles));
+    }
+
+    private initializeAnalytics(): void {
+        // 학습 분석을 위한 초기화
+        console.log('🧠 대화 기억 시스템 초기화 완료');
+    }
+
+    /**
+     * 📊 사용자 통계 생성
+     */
+    async getUserStats(userId: string): Promise<{
+        learningStreak: number;
+        topicsExplored: number;
+        questionsAsked: number;
+        averageSessionTime: number;
+        mostActiveDay: string;
+        preferredTopics: string[];
+        skillProgression: Array<{
+            skill: string;
+            level: string;
+            progress: number;
+        }>;
+    }> {
+        const profile = await this.getUserProfile(userId);
+        
+        return {
+            learningStreak: this.calculateLearningStreak(profile),
+            topicsExplored: profile.conversationPatterns.commonTopics.length,
+            questionsAsked: profile.interactionHistory.totalMessages,
+            averageSessionTime: profile.interactionHistory.averageSessionLength,
+            mostActiveDay: this.getMostActiveDay(profile),
+            preferredTopics: profile.conversationPatterns.commonTopics
+                .sort((a, b) => b.frequency - a.frequency)
+                .slice(0, 5)
+                .map(t => t.topic),
+            skillProgression: Object.entries(profile.expertise.technologies).map(([skill, data]) => ({
+                skill,
+                level: data.level,
+                progress: this.calculateSkillProgress(data.level, data.experience)
+            }))
+        };
+    }
+
+    private calculateLearningStreak(profile: UserProfile): number {
+        // 연속 학습 일수 계산 로직
+        return 7; // 예시값
+    }
+
+    private getMostActiveDay(profile: UserProfile): string {
+        // 가장 활동적인 요일 계산
+        return 'Monday'; // 예시값
+    }
+
+    private calculateSkillProgress(level: string, experience: number): number {
+        const levelMap = { beginner: 0.25, intermediate: 0.5, advanced: 0.75, expert: 1.0 };
+        return levelMap[level] || 0;
+    }
+}
+
+export default ConversationMemorySystem;

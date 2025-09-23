@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#8b5cf6">
+    <title>CORBU.AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #ffffff;
+            color: #1f2937;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 사이드바 - 공유된 화면과 정확히 동일 */
+        .sidebar {
+            width: 260px;
+            background-color: #f7f7f8;
+            border-right: 1px solid #e5e5e7;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e5e7;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .nav-item:hover {
+            background-color: #e5e7eb;
+            color: #1f2937;
+        }
+
+        .nav-item.active {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .nav-item-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #e5e5e7;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-plan {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        /* 메인 컨텐츠 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+        }
+
+        .main-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e5e7;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #ffffff;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background-color: #f3f4f6;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #6b7280;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .upgrade-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .upgrade-btn:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        }
+
+        .profile-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* 채팅 영역 */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 메시지 스타일 - 말풍선 크기 및 줄바꿈 문제 완전 해결 */
+        .message {
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .message.ai .message-avatar {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .message-content {
+            background-color: #f8fafc;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 6px;
+            opacity: 0.7;
+        }
+
+        /* 입력 영역 - 공유된 화면과 정확히 동일 */
+        .chat-input-container {
+            padding: 24px;
+            border-top: 1px solid #e5e5e7;
+            background-color: #ffffff;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quick-action-btn {
+            padding: 8px 12px;
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            color: #374151;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .quick-action-btn:hover {
+            background-color: #e5e7eb;
+            color: #1f2937;
+            border-color: #d1d5db;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            background-color: #f8fafc;
+            border: 2px solid #e5e5e7;
+            border-radius: 12px;
+            padding: 12px 16px;
+            transition: all 0.2s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .input-attachments {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 12px;
+        }
+
+        .attachment-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            background-color: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .attachment-btn:hover {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+            color: #1f2937;
+            resize: none;
+            max-height: 120px;
+            min-height: 24px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        .chat-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .input-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 12px;
+        }
+
+        .voice-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            background-color: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .voice-btn:hover {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .send-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .send-btn:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 타이핑 인디케이터 */
+        .typing-indicator {
+            display: none;
+            padding: 12px 24px;
+            color: #6b7280;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-dots {
+            display: inline-block;
+            animation: typing 1.4s infinite;
+        }
+
+        @keyframes typing {
+
+            0%,
+            60%,
+            100% {
+                opacity: 0.3;
+            }
+
+            30% {
+                opacity: 1;
+            }
+        }
+
+        /* 하단 안내 문구 */
+        .bottom-notice {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                left: -100%;
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.mobile-open {
+                left: 0;
+            }
+
+            .main-content {
+                width: 100%;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 1001;
+                background: #8b5cf6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px;
+                cursor: pointer;
+            }
+
+            .quick-actions {
+                gap: 6px;
+            }
+
+            .quick-action-btn {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        /* 스크롤바 스타일링 */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* 관리자 전용 요소 */
+        .admin-only {
+            display: none;
+        }
+
+        body.admin-mode .admin-only {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 📱 모바일 메뉴 버튼 -->
+    <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleMobileSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+    </button>
+
+    <div class="app-container">
+        <!-- 사이드바 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">CORBU.AI</div>
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    새 채팅
+                </button>
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">기능</div>
+                    <div class="nav-item active" onclick="switchMode('chat')">
+                        <div class="nav-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </div>
+                        일반 채팅
+                    </div>
+                    <div class="nav-item" onclick="switchMode('coding')">
+                        <div class="nav-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                            </svg>
+                        </div>
+                        코딩 파트너
+                    </div>
+                    <div class="nav-item" onclick="switchMode('analysis')">
+                        <div class="nav-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M9 19c-5 0-9-4-9-9s4-9 9-9 9 4 9 9-4 9-9 9z" />
+                                <path d="M21 3l-6 6" />
+                            </svg>
+                        </div>
+                        텍스트 분석
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">최근 대화</div>
+                    <div class="nav-item">
+                        <div class="nav-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </div>
+                        웹 개발 질문
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </div>
+                        데이터 분석 도움
+                    </div>
+                </div>
+
+                <!-- 관리자 전용 섹션 -->
+                <div class="nav-section admin-only">
+                    <div class="nav-section-title">관리자 대화</div>
+                    <div class="nav-item">
+                        <div class="nav-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" />
+                            </svg>
+                        </div>
+                        웹 개발 질문
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M9 19c-5 0-9-4-9-9s4-9 9-9 9 4 9 9-4 9-9 9z" />
+                            </svg>
+                        </div>
+                        데이터 분석 도움
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">U</div>
+                    <div>
+                        <div style="font-weight: 500; color: #1f2937;">사용자</div>
+                        <div class="user-plan">CORBU.AI Plus</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="main-content">
+            <!-- 상단 헤더 -->
+            <div class="main-header">
+                <div class="header-left">
+                    <div class="header-title">CORBU.AI</div>
+                    <div class="model-selector" onclick="showModelSelector()">
+                        <span>고급 AI</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="6,9 12,15 18,9" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="upgrade-btn" onclick="showUpgradeInfo()">
+                        업그레이드
+                    </button>
+                    <button class="profile-btn" onclick="showUserMenu()">U</button>
+                </div>
+            </div>
+
+            <!-- 채팅 영역 -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <!-- 메시지들이 여기에 동적으로 추가됨 -->
+                </div>
+
+                <!-- 타이핑 인디케이터 -->
+                <div class="typing-indicator" id="typing-indicator">
+                    AI가 답변을 생성하고 있습니다<span class="typing-dots">...</span>
+                </div>
+
+                <!-- 입력 영역 -->
+                <div class="chat-input-container">
+                    <!-- 퀵 액션 버튼들 (공유된 화면과 정확히 동일) -->
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="sendQuickMessage('인사')">인사</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('웹개발')">웹개발</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('어시스턴트')">어시스턴트</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('데이터 분석')">데이터 분석</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('창작 도움')">창작 도움</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('마케팅 컨텐츠')">마케팅 컨텐츠</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('도움말')">도움말</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('코드 리뷰')">코드 리뷰</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('텍스트 요약')">텍스트 요약</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('시스템 상태')">시스템 상태</button>
+                    </div>
+
+                    <!-- 입력 창 -->
+                    <div class="input-wrapper">
+                        <div class="input-attachments">
+                            <button class="attachment-btn" onclick="attachFile()" title="파일 첨부">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49" />
+                                </svg>
+                            </button>
+                            <button class="attachment-btn" onclick="attachImage()" title="이미지 첨부">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                    <polyline points="21,15 16,10 5,21" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <textarea class="chat-input" id="user-input" placeholder="CORBU.AI에게 무엇이든 물어보세요..."
+                            rows="1"></textarea>
+
+                        <div class="input-actions">
+                            <button class="voice-btn" onclick="startVoiceInput()" title="음성 입력">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                    <line x1="12" y1="19" x2="12" y2="23" />
+                                    <line x1="8" y1="23" x2="16" y2="23" />
+                                </svg>
+                            </button>
+                            <button class="send-btn" id="send-btn" onclick="sendMessage()" title="전송">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13" />
+                                    <polygon points="22,2 15,22 11,13 2,9 22,2" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 하단 안내 문구 -->
+                    <div class="bottom-notice">
+                        CORBU.AI는 실수할 수 있습니다. 중요한 정보는 확인해주세요.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 기본 요소들
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        let sessionId = localStorage.getItem('chatSessionId') || 'session_' + Date.now();
+        let conversationHistory = [];
+        let currentMode = 'chat';
+
+        // 🔐 간단한 권한 관리
+        class UserRoleManager {
+            constructor() {
+                this.currentUser = {
+                    role: localStorage.getItem('userRole') || 'user',
+                    name: '사용자'
+                };
+                this.updateUI();
+            }
+
+            isAdmin() {
+                return this.currentUser.role === 'admin';
+            }
+
+            switchToAdmin() {
+                if (confirm('관리자 모드로 전환하시겠습니까?')) {
+                    localStorage.setItem('userRole', 'admin');
+                    this.currentUser.role = 'admin';
+                    this.updateUI();
+                }
+            }
+
+            switchToUser() {
+                localStorage.setItem('userRole', 'user');
+                this.currentUser.role = 'user';
+                this.updateUI();
+            }
+
+            updateUI() {
+                if (this.isAdmin()) {
+                    document.body.classList.add('admin-mode');
+                } else {
+                    document.body.classList.remove('admin-mode');
+                }
+            }
+        }
+
+        const roleManager = new UserRoleManager();
+
+        // 🤖 AI 응답 시스템 (완전 통합 버전)
+        class IntegratedAISystem {
+            constructor() {
+                this.responses = this.initializeResponses();
+                this.context = {
+                    userProfile: { expertise: 'intermediate' },
+                    conversationHistory: []
+                };
+            }
+
+            async generateResponse(message) {
+                // 타이핑 시뮬레이션
+                await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+
+                const messageLower = message.toLowerCase();
+                let response = '';
+
+                // 메시지 유형별 응답
+                if (messageLower.includes('인사') || messageLower.includes('안녕')) {
+                    response = this.responses.greeting;
+                } else if (messageLower.includes('웹개발') || messageLower.includes('웹 개발')) {
+                    response = this.responses.webDev;
+                } else if (messageLower.includes('어시스턴트')) {
+                    response = this.responses.assistant;
+                } else if (messageLower.includes('데이터 분석')) {
+                    response = this.responses.dataAnalysis;
+                } else if (messageLower.includes('창작')) {
+                    response = this.responses.creative;
+                } else if (messageLower.includes('마케팅')) {
+                    response = this.responses.marketing;
+                } else if (messageLower.includes('도움말')) {
+                    response = this.responses.help;
+                } else if (messageLower.includes('코드 리뷰')) {
+                    response = this.responses.codeReview;
+                } else if (messageLower.includes('텍스트 요약')) {
+                    response = this.responses.textSummary;
+                } else if (messageLower.includes('시스템 상태')) {
+                    response = this.responses.systemStatus;
+                } else {
+                    response = this.generateContextualResponse(message);
+                }
+
+                return {
+                    content: response,
+                    metadata: {
+                        confidence: 0.9,
+                        responseTime: Date.now(),
+                        model: 'CORBU-AI-Enhanced'
+                    }
+                };
+            }
+
+            generateContextualResponse(message) {
+                return `안녕하세요! "${message}"에 대해 답변드리겠습니다.
+
+## 💡 맞춤형 답변
+
+저는 CORBU.AI로, 다음과 같은 도움을 드릴 수 있습니다:
+
+### 🔧 **기술 지원**
+- 프로그래밍 문제 해결
+- 코드 리뷰 및 최적화
+- 아키텍처 설계 조언
+
+### 📊 **데이터 분석**
+- 통계 분석 및 시각화
+- 머신러닝 모델 구축
+- 비즈니스 인텔리전스
+
+### ✍️ **창작 지원**
+- 콘텐츠 작성 도움
+- 아이디어 브레인스토밍
+- 문서 작성 및 편집
+
+더 구체적인 질문을 해주시면 더 정확한 답변을 드릴 수 있습니다!`;
+            }
+
+            initializeResponses() {
+                return {
+                    greeting: `안녕하세요! CORBU.AI입니다. 🚀
+
+저는 그 고급 감정 분석과 의도 파악 기능을 갖춘 AI 어시스턴트입니다.
+무엇을 도와드릴까요?`,
+
+                    webDev: `# 🌐 웹 개발 전문가
+
+## 지원 가능한 기술 스택
+
+### Frontend
+- **React** / **Vue** / **Angular**
+- **TypeScript** / **JavaScript**
+- **HTML5** / **CSS3** / **Sass**
+- **Tailwind CSS** / **Bootstrap**
+
+### Backend  
+- **Node.js** / **Express**
+- **Python** / **Django** / **Flask**
+- **Java** / **Spring Boot**
+- **PHP** / **Laravel**
+
+### Database
+- **PostgreSQL** / **MySQL**
+- **MongoDB** / **Redis**
+- **Firebase** / **Supabase**
+
+## 💻 도움 가능한 영역
+- 웹 애플리케이션 아키텍처 설계
+- 성능 최적화 및 SEO
+- 보안 강화 방안
+- API 설계 및 구현
+- 테스팅 전략
+
+구체적인 프로젝트나 문제를 말씀해 주세요!`,
+
+                    assistant: `# 🤖 CORBU.AI 어시스턴트 기능
+
+## ✨ 핵심 능력
+
+### 🧠 **지능형 분석**
+- 고급 자연어 처리
+- 맥락 이해 및 의도 파악
+- 감정 분석 및 톤 조절
+
+### 💻 **기술 전문성**
+- 다양한 프로그래밍 언어 지원
+- 코드 리뷰 및 최적화
+- 아키텍처 설계 조언
+
+### 📊 **데이터 처리**
+- 통계 분석 및 시각화
+- 머신러닝 모델 구축
+- 비즈니스 인텔리전스
+
+### ✍️ **창작 지원**
+- 콘텐츠 작성 및 편집
+- 마케팅 자료 제작
+- 아이디어 브레인스토밍
+
+## 🎯 특별한 기능
+- **실시간 학습**: 대화를 통해 계속 발전
+- **개인화**: 사용자 맞춤형 응답
+- **다중 언어**: 한국어, 영어 완벽 지원
+
+어떤 도움이 필요하신가요?`,
+
+                    dataAnalysis: `# 📊 데이터 분석 전문가
+
+## 🔍 분석 서비스
+
+### **통계 분석**
+- 기술통계 (평균, 분산, 분포)
+- 추론통계 (가설검정, 신뢰구간)
+- 상관관계 및 회귀분석
+
+### **시각화**
+- 차트 및 그래프 설계
+- 대시보드 구축
+- 인터랙티브 시각화
+
+### **머신러닝**
+- 예측 모델 구축
+- 분류 및 클러스터링
+- 딥러닝 모델 설계
+
+## 🛠️ 지원 도구
+- **Python**: pandas, numpy, matplotlib, seaborn
+- **R**: ggplot2, dplyr, tidyr
+- **SQL**: 복잡한 쿼리 및 최적화
+- **Tableau** / **Power BI**: 비즈니스 인텔리전스
+
+## 💡 활용 분야
+- 비즈니스 성과 분석
+- 고객 행동 분석
+- 마케팅 효과 측정
+- 운영 최적화
+
+어떤 데이터를 분석하고 싶으신가요?`,
+
+                    creative: `# ✍️ 창작 지원 전문가
+
+## 🎨 창작 영역
+
+### **콘텐츠 작성**
+- 블로그 포스트 및 아티클
+- 소셜미디어 콘텐츠
+- 뉴스레터 및 이메일
+
+### **마케팅 자료**
+- 광고 카피 작성
+- 브랜드 스토리텔링
+- 제품 설명서
+
+### **창의적 글쓰기**
+- 소설 및 시나리오
+- 시 및 에세이
+- 브레인스토밍
+
+## 💡 지원 기능
+- 아이디어 발굴 및 확장
+- 톤앤매너 조절
+- SEO 최적화
+- 다양한 스타일 변환
+
+어떤 창작물을 만들고 싶으신가요?`,
+
+                    marketing: `# 📢 마케팅 컨텐츠 전문가
+
+## 🎯 마케팅 전략
+
+### **콘텐츠 마케팅**
+- 블로그 콘텐츠 기획
+- 소셜미디어 전략
+- 인플루언서 협업 방안
+
+### **디지털 마케팅**
+- SEO/SEM 최적화
+- 이메일 마케팅
+- 퍼포먼스 마케팅
+
+### **브랜딩**
+- 브랜드 아이덴티티 구축
+- 메시지 프레임워크
+- 고객 여정 설계
+
+## 📝 제작 가능한 자료
+- 광고 카피 및 슬로건
+- 제품 소개서
+- 마케팅 제안서
+- 캠페인 기획안
+
+어떤 마케팅 도움이 필요하신가요?`,
+
+                    help: `# 🆘 CORBU.AI 도움말
+
+## 🎮 사용 방법
+
+### **기본 채팅**
+1. 하단 입력창에 질문 입력
+2. Enter 키 또는 전송 버튼 클릭
+3. AI의 답변 확인
+
+### **파일 업로드**
+- 📎 버튼: 문서, 코드 파일 분석
+- 🖼️ 버튼: 이미지 분석 및 설명
+
+### **음성 입력**
+- 🎤 버튼: 음성으로 질문하기
+
+### **퀵 액션**
+- 자주 사용하는 질문들을 빠르게 선택
+
+## ⌨️ 키보드 단축키
+- **Ctrl/Cmd + K**: 새 채팅
+- **Ctrl/Cmd + /**: 도움말
+- **Enter**: 메시지 전송
+- **Shift + Enter**: 줄바꿈
+
+## 💡 팁
+- 구체적인 질문일수록 정확한 답변
+- 코드나 파일을 첨부하면 더 상세한 분석
+- 이전 대화 맥락을 기억합니다
+
+더 궁금한 점이 있으시면 언제든 물어보세요!`,
+
+                    codeReview: `# 🔍 코드 리뷰 서비스
+
+## 📝 리뷰 범위
+
+### **코드 품질**
+- 가독성 및 유지보수성
+- 성능 최적화 포인트
+- 보안 취약점 검사
+
+### **베스트 프랙티스**
+- 언어별 코딩 컨벤션
+- 디자인 패턴 적용
+- 테스트 코드 품질
+
+### **아키텍처**
+- 모듈 구조 분석
+- 의존성 관리
+- 확장성 고려사항
+
+## 🛠️ 지원 언어
+- JavaScript/TypeScript
+- Python
+- Java
+- C#/.NET
+- Go
+- Rust
+- PHP
+
+## 📋 리뷰 프로세스
+1. 코드 파일 업로드
+2. 자동 분석 실행
+3. 상세 피드백 제공
+4. 개선 방안 제시
+
+코드를 업로드해주시면 즉시 리뷰해드리겠습니다!`,
+
+                    textSummary: `# 📄 텍스트 요약 서비스
+
+## 🎯 요약 유형
+
+### **문서 요약**
+- 긴 문서의 핵심 내용 추출
+- 주요 포인트 정리
+- 구조화된 요약 제공
+
+### **뉴스 요약**
+- 뉴스 기사 핵심 정보
+- 팩트 체크 및 분석
+- 트렌드 파악
+
+### **학술 논문**
+- 연구 목적 및 방법론
+- 주요 발견사항
+- 결론 및 시사점
+
+## ⚙️ 요약 옵션
+- **길이**: 짧음 / 보통 / 상세
+- **스타일**: 불릿 포인트 / 문단 / 구조화
+- **관점**: 객관적 / 분석적 / 비판적
+
+## 📋 지원 형식
+- 텍스트 파일 (.txt, .md)
+- 문서 파일 (.pdf, .docx)
+- 웹 URL 링크
+- 직접 텍스트 입력
+
+요약하고 싶은 텍스트를 입력하거나 파일을 업로드해주세요!`,
+
+                    systemStatus: `# 🔧 시스템 상태
+
+## ✅ 현재 상태: 정상 작동
+
+### **AI 엔진**
+- 🟢 CORBU.AI Core: 정상
+- 🟢 자연어 처리: 정상  
+- 🟢 감정 분석: 정상
+- 🟢 코드 분석: 정상
+
+### **백엔드 서비스**
+- 🟢 API 서버: 정상
+- 🟢 데이터베이스: 정상
+- 🟢 파일 처리: 정상
+- 🟢 실시간 통신: 정상
+
+### **성능 지표**
+- **응답 시간**: 평균 1.2초
+- **정확도**: 92.5%
+- **가용성**: 99.8%
+- **동시 사용자**: 활성
+
+### **최근 업데이트**
+- AI 모델 성능 향상 (v2.1)
+- 새로운 언어 지원 추가
+- 보안 강화 업데이트
+
+모든 시스템이 정상적으로 작동하고 있습니다! 🚀`
+                };
+            }
+        }
+
+        const aiSystem = new IntegratedAISystem();
+
+        // 메시지 전송 함수
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // 사용자 메시지 추가
+            appendMessage('user', message);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            // 전송 버튼 비활성화
+            sendBtn.disabled = true;
+            showTypingIndicator();
+
+            try {
+                const response = await aiSystem.generateResponse(message);
+                hideTypingIndicator();
+                appendMessage('ai', response.content, response.metadata);
+
+                // 대화 기록 저장
+                conversationHistory.push(
+                    { role: 'user', content: message, timestamp: new Date() },
+                    { role: 'assistant', content: response.content, timestamp: new Date() }
+                );
+
+            } catch (error) {
+                hideTypingIndicator();
+                appendMessage('ai', '죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.');
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        // 메시지 추가 함수 (말풍선 크기 문제 완전 해결)
+        function appendMessage(sender, content, metadata = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = sender === 'user' ? 'U' : 'AI';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            // 마크다운 처리 및 줄바꿈 최적화
+            let processedContent = content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace;">$1</code>')
+                .replace(/### (.*?)(\n|$)/g, '<h3 style="margin: 16px 0 8px 0; font-size: 16px; font-weight: 600;">$1</h3>')
+                .replace(/## (.*?)(\n|$)/g, '<h2 style="margin: 20px 0 12px 0; font-size: 18px; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">$1</h2>')
+                .replace(/# (.*?)(\n|$)/g, '<h1 style="margin: 24px 0 16px 0; font-size: 20px; font-weight: 700;">$1</h1>')
+                .replace(/\n/g, '<br>');
+
+            // 코드 블록 처리
+            processedContent = processedContent.replace(
+                /```(\w+)?\n([\s\S]*?)\n```/g,
+                '<pre style="background: #1f2937; color: #f9fafb; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; font-family: monospace; font-size: 13px; line-height: 1.5;"><code>$2</code></pre>'
+            );
+
+            contentDiv.innerHTML = processedContent;
+
+            // 시간 표시
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = new Date().toLocaleTimeString('ko-KR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            contentDiv.appendChild(timeDiv);
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+
+            // 스크롤을 맨 아래로
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 빠른 메시지 전송
+        function sendQuickMessage(message) {
+            userInput.value = message;
+            sendMessage();
+        }
+
+        // 타이핑 인디케이터
+        function showTypingIndicator() {
+            typingIndicator.classList.add('show');
+        }
+
+        function hideTypingIndicator() {
+            typingIndicator.classList.remove('show');
+        }
+
+        // 새 채팅 시작
+        function startNewChat() {
+            chatMessages.innerHTML = '';
+            conversationHistory = [];
+            sessionId = 'session_' + Date.now();
+            localStorage.setItem('chatSessionId', sessionId);
+
+            // 환영 메시지
+            setTimeout(() => {
+                appendMessage('ai', `안녕하세요! CORBU.AI입니다. 🚀
+
+저는 고급 감정 분석과 의도 파악 기능을 갖춘 AI 어시스턴트입니다.
+무엇을 도와드릴까요?`);
+            }, 300);
+        }
+
+        // 모드 전환
+        function switchMode(mode) {
+            currentMode = mode;
+
+            // 네비게이션 아이템 활성화 상태 변경
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item').classList.add('active');
+
+            // 모드별 환영 메시지
+            const modeMessages = {
+                chat: '일반 채팅 모드입니다. 무엇이든 물어보세요!',
+                coding: '코딩 파트너 모드로 전환했습니다! 프로그래밍 관련 질문을 해주세요.',
+                analysis: '텍스트 분석 모드로 전환했습니다! 분석하고 싶은 텍스트를 입력해주세요.'
+            };
+
+            appendMessage('ai', modeMessages[mode] || modeMessages.chat);
+        }
+
+        // 파일 첨부
+        function attachFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.txt,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.html,.css,.json,.md';
+            input.onchange = function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    sendQuickMessage(`📎 ${file.name} 파일을 분석해주세요`);
+                }
+            };
+            input.click();
+        }
+
+        // 이미지 첨부
+        function attachImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    sendQuickMessage(`🖼️ ${file.name} 이미지를 분석해주세요`);
+                }
+            };
+            input.click();
+        }
+
+        // 음성 입력
+        function startVoiceInput() {
+            sendQuickMessage('음성 입력 기능을 사용하고 싶습니다');
+        }
+
+        // 모델 선택기
+        function showModelSelector() {
+            const models = ['기본 AI', '고급 AI', '전문가 AI'];
+            const currentModel = '고급 AI';
+
+            const dropdown = document.createElement('div');
+            dropdown.style.cssText = `
+                position: absolute;
+                top: 60px;
+                left: 180px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+                min-width: 150px;
+            `;
+
+            dropdown.innerHTML = models.map(model => `
+                <div style="padding: 12px 16px; cursor: pointer; ${model === currentModel ? 'background: #f3f4f6; font-weight: 600;' : ''}" 
+                     onmouseover="this.style.background='#f9fafb'" 
+                     onmouseout="this.style.background='${model === currentModel ? '#f3f4f6' : ''}'"
+                     onclick="selectModel('${model}'); this.parentElement.remove();">
+                    ${model} ${model === currentModel ? '✓' : ''}
+                </div>
+            `).join('');
+
+            document.body.appendChild(dropdown);
+
+            setTimeout(() => {
+                document.addEventListener('click', function closeDropdown(e) {
+                    if (!dropdown.contains(e.target)) {
+                        dropdown.remove();
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                });
+            }, 100);
+        }
+
+        function selectModel(model) {
+            document.querySelector('.model-selector span').textContent = model;
+            appendMessage('ai', `${model} 모델로 전환되었습니다. 더 나은 답변을 제공하겠습니다!`);
+        }
+
+        // 업그레이드 정보
+        function showUpgradeInfo() {
+            appendMessage('ai', `# 🚀 CORBU.AI Plus 업그레이드
+
+## ✨ Plus 기능
+- **무제한 메시지**: 제한 없이 대화
+- **고급 AI 모델**: 더 정확한 답변
+- **파일 분석**: 대용량 파일 지원
+- **우선 지원**: 빠른 응답 시간
+
+## 💎 프리미엄 기능
+- **개인화 AI**: 맞춤형 학습
+- **팀 협업**: 워크스페이스 공유
+- **API 접근**: 개발자 도구
+- **고급 분석**: 상세한 인사이트
+
+업그레이드를 원하시면 말씀해 주세요!`);
+        }
+
+        // 사용자 메뉴
+        function showUserMenu() {
+            const menu = document.createElement('div');
+            menu.style.cssText = `
+                position: fixed;
+                top: 60px;
+                right: 20px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+                min-width: 200px;
+            `;
+
+            const menuItems = [
+                { text: '👤 프로필 설정', action: () => sendQuickMessage('프로필을 설정하고 싶습니다') },
+                { text: '📊 사용 통계', action: () => sendQuickMessage('내 사용 통계를 보여주세요') },
+                { text: '🌟 맞춤 추천', action: () => sendQuickMessage('개인 맞춤 추천을 해주세요') },
+                { text: '⚙️ 설정', action: () => sendQuickMessage('설정을 변경하고 싶습니다') }
+            ];
+
+            if (roleManager.isAdmin()) {
+                menuItems.push({ text: '👤 사용자 모드', action: () => roleManager.switchToUser() });
+            } else {
+                menuItems.push({ text: '🔧 관리자 모드', action: () => roleManager.switchToAdmin() });
+            }
+
+            let menuHTML = '<div style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #1f2937;">사용자 메뉴</div><div style="padding: 8px 0;">';
+
+            menuItems.forEach(item => {
+                menuHTML += `<div style="padding: 10px 16px; cursor: pointer; transition: background 0.2s; color: #374151;" 
+                             onmouseover="this.style.background='#f9fafb'" 
+                             onmouseout="this.style.background=''" 
+                             onclick="(${item.action.toString()})(); this.parentElement.parentElement.remove();">${item.text}</div>`;
+            });
+
+            menuHTML += '</div>';
+            menu.innerHTML = menuHTML;
+
+            document.body.appendChild(menu);
+
+            // 외부 클릭시 메뉴 닫기
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!menu.contains(e.target)) {
+                        menu.remove();
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }, 100);
+        }
+
+        // 모바일 사이드바 토글
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('mobile-open');
+        }
+
+        // 키보드 이벤트
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 자동 높이 조절
+        userInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // 키보드 단축키
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                startNewChat();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                e.preventDefault();
+                sendQuickMessage('도움말을 보여주세요');
+            }
+        });
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🤖 CORBU.AI 인터페이스 초기화 완료');
+
+            // 환영 메시지 표시
+            startNewChat();
+
+            // 입력 창에 포커스
+            setTimeout(() => userInput.focus(), 1000);
+        });
+    </script>
+</body>
+
+</html>
