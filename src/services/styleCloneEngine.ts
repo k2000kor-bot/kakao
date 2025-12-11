@@ -4,7 +4,7 @@
  */
 
 import { styleAnalysisEngine, StyleProfile, StyleAnalysisRequest } from './styleAnalysisEngine';
-import { masterWritingEngine, MasterWritingProfile } from './masterWritingEngine';
+import masterWritingEngine, { MasterWritingProfile } from './masterWritingEngine';
 
 export interface StyleCloneRequest {
     originalText: string;

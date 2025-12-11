@@ -4,9 +4,9 @@
  * 다양한 텍스트 조작 및 생성 기능을 통합하여 최고 수준의 응답 제공
  */
 
-import { advancedTextAnalysisService, TextAnalysisRequest } from './advancedTextAnalysisService.js';
+import { advancedTextAnalysisService, TextAnalysisRequest } from './advancedTextAnalysisService';
 import { integratedWritingService, UnifiedWritingRequest } from './integratedWritingService';
-import { masterWritingEngine, MasterWritingProfile, WritingTemplate } from './masterWritingEngine';
+import masterWritingEngine, { MasterWritingProfile, WritingTemplate } from './masterWritingEngine';
 import { politicalWritingEngine, PoliticalSpectrum, PoliticalStance } from './politicalWritingEngine';
 import { generationWritingEngine, AgeGroup } from './generationWritingEngine';
 import { stanceWritingEngine, StancePosition } from './stanceWritingEngine';
@@ -45,7 +45,7 @@ export interface ConversationalResponse {
     writingRecommendations?: string[];
 }
 
-class ConversationalAnalysisService {
+export class ConversationalAnalysisService {
     private baseUrl = 'http://localhost:8006/api/v1';
     private enableAdvancedAnalysis = true; // 고급 분석 기능 활성화
 

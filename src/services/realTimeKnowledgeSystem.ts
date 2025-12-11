@@ -1,6 +1,6 @@
 // 실시간 지식 베이스 업데이트 및 학습 시스템
 import { clientFileProcessor, FileAnalysisResult } from './clientFileProcessor';
-import { learningFeedbackSystem } from './learningFeedbackSystem';
+import learningFeedbackSystem from './learningFeedbackSystem';
 
 interface RealTimeKnowledgeUpdate {
     projectId: string;

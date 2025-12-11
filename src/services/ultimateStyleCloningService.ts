@@ -7,7 +7,7 @@
 import { styleAnalysisEngine, StyleProfile, StyleAnalysisRequest, StyleAnalysisResponse } from './styleAnalysisEngine';
 import { styleCloneEngine, StyleCloneRequest, StyleCloneResponse, DetailedStyleControl } from './styleCloneEngine';
 import { advancedLogicAnalysisEngine, AdvancedStyleProfile, LogicalStructure, TonalProgression } from './advancedLogicAnalysisEngine';
-import { masterWritingEngine, MasterWritingProfile } from './masterWritingEngine';
+import masterWritingEngine, { MasterWritingProfile } from './masterWritingEngine';
 
 export interface UltimateStyleAnalysisRequest {
     originalText: string;
