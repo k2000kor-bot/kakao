@@ -66,13 +66,13 @@ export interface EnhancedResponse {
     };
 }
 
-class AIEnhancedResponseSystem {
+export class AIEnhancedResponseSystem {
     private config: AIEnhancementConfig;
     private conversationContext: Map<string, any> = new Map();
     private learningPatterns: Map<string, any> = new Map();
     private responseHistory: Array<any> = [];
 
-    constructor(config: AIEnhancementConfig) {
+    constructor(config: Partial<AIEnhancementConfig> = {}) {
         this.config = {
             model: 'gpt-4-turbo',
             maxTokens: 4000,
@@ -82,7 +82,7 @@ class AIEnhancedResponseSystem {
             enableIterativeRefinement: true,
             qualityThreshold: 0.8,
             ...config
-        };
+        } as AIEnhancementConfig;
         this.initializeSystem();
     }
 
@@ -370,7 +370,7 @@ JSON 형태로 응답해주세요:
                 initialResponse: followUpResponse,
                 conversationHistory: context.conversationHistory || [],
                 userProfile: context.userProfile || { expertise: 'intermediate', preferences: {}, learningGoals: [] },
-                contextualData: { previousResponse: originalResponse },
+                contextualData: { previousResponse: originalResponse } as any,
                 enhancementGoals: ['maintain_continuity', 'deepen_understanding', 'provide_advanced_insights']
             };
 

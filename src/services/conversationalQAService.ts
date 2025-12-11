@@ -34,7 +34,7 @@ export interface ConversationContext {
     };
 }
 
-class ConversationalQAService {
+export class ConversationalQAService {
     private context: ConversationContext = {
         history: [],
         currentTopic: '',

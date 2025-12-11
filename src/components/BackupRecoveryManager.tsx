@@ -80,6 +80,7 @@ import {
     CloudDownload
 } from '@mui/icons-material';
 import axios from 'axios';
+import { errorLogger } from '../utils/errorLogger';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -193,7 +194,7 @@ const BackupRecoveryManager: React.FC = () => {
         loadBackupData();
     }, []);
 
-    const loadBackupData = async () => {
+    const loadBackupData = async (): Promise<void> => {
         try {
             const [jobsRes, recordsRes, recoveriesRes, statusRes, storageRes] = await Promise.all([
                 axios.get(`${API_BASE_URL}/backup/jobs`),
@@ -218,9 +219,12 @@ const BackupRecoveryManager: React.FC = () => {
             if (storageRes.data.success) {
                 setStorageUsage(storageRes.data.data);
             }
-        } catch (err) {
+        } catch (err: unknown) {
             setError('백업 데이터를 불러오는 중 오류가 발생했습니다.');
-            console.error('Backup data loading error:', err);
+            errorLogger.error('백업 데이터 로드 오류', err, {
+                component: 'BackupRecoveryManager',
+                action: 'loadBackupData',
+            });
         } finally {
             setLoading(false);
         }

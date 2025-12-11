@@ -486,3 +486,4 @@ class AIQualityAnalysisEngine {
 }
 
 export const aiQualityAnalysisEngine = new AIQualityAnalysisEngine();
+export default aiQualityAnalysisEngine;

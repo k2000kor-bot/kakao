@@ -52,7 +52,7 @@ export interface NLPAnalysis {
 }
 
 // 고급 프롬프트 템플릿
-class AdvancedPromptEngine {
+export class AdvancedPromptEngine {
     private static readonly SYSTEM_PROMPTS = {
         'gemini-pro': `당신은 CORBU AI의 고급 AI 어시스턴트입니다. 다음 지침을 엄격히 따라주세요:
 
@@ -199,7 +199,7 @@ class AdvancedPromptEngine {
 }
 
 // 응답 품질 분석기
-class ResponseQualityAnalyzer {
+export class ResponseQualityAnalyzer {
     static analyzeResponse(content: string): AIResponse['quality'] {
         const words = content.split(' ').length;
         const sentences = content.split(/[.!?]+/).length;

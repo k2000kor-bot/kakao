@@ -39,7 +39,7 @@ export interface SharedDocument {
     collaborators: string[];
 }
 
-class RealTimeCollaborationService {
+export class RealTimeCollaborationService {
     private sessions: Map<string, CollaborationSession> = new Map();
     private users: Map<string, CollaborationUser> = new Map();
     private documents: Map<string, SharedDocument> = new Map();

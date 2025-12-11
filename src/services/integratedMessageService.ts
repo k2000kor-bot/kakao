@@ -28,7 +28,7 @@ interface IntegratedMessageResponse {
   };
 }
 
-class IntegratedMessageService {
+export class IntegratedMessageService {
   private baseURL = 'http://localhost:8003';
   private systems: AISystem[] = [];
 
@@ -286,5 +286,5 @@ class IntegratedMessageService {
   }
 }
 
-const integratedMessageService = new IntegratedMessageService();
+export const integratedMessageService = new IntegratedMessageService();
 export default integratedMessageService; 

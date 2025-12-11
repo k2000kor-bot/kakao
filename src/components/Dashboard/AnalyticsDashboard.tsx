@@ -14,6 +14,18 @@ import {
     AreaChart,
     Area
 } from 'recharts';
+import { errorLogger } from '../../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
+
 import {
     TrendingUp,
     MessageSquare,
@@ -67,7 +79,11 @@ const AnalyticsDashboard: React.FC = () => {
                 setAnalyticsData(data.data);
             }
         } catch (error) {
-            console.error('Failed to fetch analytics:', error);
+            const err = toError(error);
+            errorLogger.error('Failed to fetch analytics', err, {
+                component: 'AnalyticsDashboard',
+                action: 'fetchAnalytics',
+            });
         } finally {
             setLoading(false);
         }

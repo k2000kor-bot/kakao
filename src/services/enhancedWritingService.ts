@@ -22,7 +22,7 @@ export interface WritingResponse {
     error?: string;
 }
 
-class EnhancedWritingService {
+export class EnhancedWritingService {
     private baseUrl: string;
 
     constructor() {
@@ -191,5 +191,5 @@ class EnhancedWritingService {
     }
 }
 
-const enhancedWritingService = new EnhancedWritingService();
+export const enhancedWritingService = new EnhancedWritingService();
 export default enhancedWritingService; 

@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import ultraAdvancedAIService from './ultraAdvancedAIService';
+import { ultraAdvancedAIService } from './ultraAdvancedAIService';
 import ultraAdvancedAIOrchestrationService from './ultraAdvancedAIOrchestrationService';
 
 export interface AIIntegrationConfig {
@@ -329,11 +329,16 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
             }
 
             // Ultra AI 서비스를 통해 분석 수행
-            const result = await ultraAdvancedAIService.processMessage(
+            const result = await ultraAdvancedAIService.performUltraAnalysis(
                 typeof data === 'string' ? data : JSON.stringify(data),
                 {
-                    analysis_type: integration.name,
-                    settings: integration.settings
+                    sessionId: `analysis-${analysisId}`,
+                    userId: 'system',
+                    messageHistory: [],
+                    metadata: {
+                        analysis_type: integration.name,
+                        settings: integration.settings
+                    }
                 }
             );
 

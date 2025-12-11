@@ -20,7 +20,7 @@ export interface SimpleUserProfile {
     totalInteractions: number;
 }
 
-class SimpleAdvancedAIService {
+export class SimpleAdvancedAIService {
     private userData: Map<string, any[]> = new Map();
 
     async generateAdvancedResponse(
@@ -57,7 +57,7 @@ class SimpleAdvancedAIService {
 
     getUserProfile(userId: string): SimpleUserProfile {
         const userData = this.userData.get(userId) || [];
-        
+
         return {
             expertise: ['AI', '기술', '분석'],
             interests: ['뉴스', '트렌드', '인사이트'],

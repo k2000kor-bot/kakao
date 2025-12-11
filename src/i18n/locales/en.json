@@ -1,0 +1,66 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "refresh": "Refresh",
+    "search": "Search"
+  },
+  "chat": {
+    "title": "AI Chat",
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "newChat": "New Chat",
+    "typing": "Typing...",
+    "noMessages": "No messages"
+  },
+  "sidebar": {
+    "newChat": "New Chat",
+    "chat": "Chat",
+    "coding": "Coding Partner",
+    "analysis": "Text Analysis",
+    "advancedFeatures": "Advanced Features",
+    "monitoring": "Performance Monitoring"
+  },
+  "advancedFeatures": {
+    "title": "Advanced Features",
+    "voiceRecognition": "Voice Recognition",
+    "imageAnalysis": "Image Analysis",
+    "prediction": "Prediction Analysis",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "selectImage": "Select Image",
+    "analyzing": "Analyzing...",
+    "userActivity": "User Activity Prediction",
+    "messageQuality": "Message Quality Prediction",
+    "systemPerformance": "System Performance Prediction"
+  },
+  "monitoring": {
+    "title": "Performance Monitoring",
+    "cpu": "CPU Usage",
+    "memory": "Memory Usage",
+    "disk": "Disk Usage",
+    "responseTime": "Response Time",
+    "autoRefresh": "Auto Refresh",
+    "connected": "Real-time Connected",
+    "disconnected": "Disconnected"
+  },
+  "errors": {
+    "networkError": "Network error occurred",
+    "serverError": "Server error occurred",
+    "unknownError": "Unknown error occurred",
+    "retry": "Retry"
+  },
+  "theme": {
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "toggleTheme": "Toggle Theme"
+  }
+}
+

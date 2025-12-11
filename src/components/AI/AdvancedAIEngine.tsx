@@ -72,6 +72,17 @@ import {
     Hash as HashIcon3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { errorLogger } from '../../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface AIProcessingConfig {
     model: 'gpt-4' | 'claude-3' | 'gemini-pro' | 'custom';
@@ -632,7 +643,11 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                 }
             }));
         } catch (error) {
-            console.error('Processing error:', error);
+            const err = toError(error);
+            errorLogger.error('Processing error', err, {
+                component: 'AdvancedAIEngine',
+                action: 'processRequest',
+            });
         } finally {
             setIsProcessing(false);
             setProcessingProgress(0);

@@ -30,7 +30,7 @@ export interface AIConfig {
   autoSpeak: boolean;
 }
 
-class ExternalAIService {
+export class ExternalAIService {
   private providers: AIProvider[] = [
     {
       id: 'openai',
@@ -437,5 +437,5 @@ class ExternalAIService {
   }
 }
 
-const externalAIService = new ExternalAIService();
+export const externalAIService = new ExternalAIService();
 export default externalAIService;

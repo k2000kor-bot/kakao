@@ -66,6 +66,19 @@ import {
     Close
 } from '@mui/icons-material';
 import securityService, { SecurityEvent, SecurityConfig, User } from '../../services/securityService';
+import advancedSecurityService from '../../services/advancedSecurityService';
+import AdvancedSecurityPanel from './AdvancedSecurityPanel';
+import { errorLogger } from '../../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -120,7 +133,11 @@ const SecurityDashboard: React.FC = () => {
                 loadSecurityMetrics()
             ]);
         } catch (error) {
-            console.error('보안 데이터 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 데이터 로드 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'loadSecurityData',
+            });
         } finally {
             setIsLoading(false);
         }
@@ -131,7 +148,11 @@ const SecurityDashboard: React.FC = () => {
             const events = await securityService.getSecurityEvents(50);
             setSecurityEvents(events);
         } catch (error) {
-            console.error('보안 이벤트 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 이벤트 로드 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'loadSecurityEvents',
+            });
         }
     };
 
@@ -141,7 +162,11 @@ const SecurityDashboard: React.FC = () => {
             setSecurityConfig(config);
             setTempConfig(config);
         } catch (error) {
-            console.error('보안 설정 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 설정 로드 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'loadSecurityConfig',
+            });
         }
     };
 
@@ -150,7 +175,11 @@ const SecurityDashboard: React.FC = () => {
             const metrics = await securityService.getSecurityMetrics();
             setSecurityMetrics(metrics);
         } catch (error) {
-            console.error('보안 메트릭 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 메트릭 로드 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'loadSecurityMetrics',
+            });
         }
     };
 
@@ -168,7 +197,11 @@ const SecurityDashboard: React.FC = () => {
                 setIsConfigDialogOpen(false);
             }
         } catch (error) {
-            console.error('보안 설정 저장 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 설정 저장 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'handleConfigSave',
+            });
         }
     };
 
@@ -352,6 +385,7 @@ const SecurityDashboard: React.FC = () => {
                     <Tab label="사용자 관리" />
                     <Tab label="권한 관리" />
                     <Tab label="보안 정책" />
+                    <Tab label="고급 보안" />
                 </Tabs>
             </Box>
 
@@ -804,6 +838,11 @@ const SecurityDashboard: React.FC = () => {
                     <Button onClick={handleConfigSave} variant="contained">저장</Button>
                 </DialogActions>
             </Dialog>
+
+            {/* 고급 보안 탭 */}
+            <TabPanel value={selectedTab} index={4}>
+                <AdvancedSecurityPanel />
+            </TabPanel>
         </Box>
     );
 };

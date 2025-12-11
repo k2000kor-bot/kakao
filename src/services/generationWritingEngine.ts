@@ -41,7 +41,7 @@ export interface GenerationWritingResponse {
     formalityLevel: string;
 }
 
-class GenerationWritingEngine {
+export class GenerationWritingEngine {
     private generationVocabulary: Map<AgeGroup, any>;
     private generationPatterns: Map<AgeGroup, string[]>;
     private communicationStyles: Map<CommunicationPattern, any>;

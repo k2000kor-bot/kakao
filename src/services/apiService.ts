@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+import { errorLogger } from '../utils/errorLogger';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
 interface ApiResponse<T = any> {
     success: boolean;
@@ -10,14 +12,19 @@ interface ApiResponse<T = any> {
 
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        // 백엔드 API 엔드포인트는 /api로 시작하므로 중복 방지
+        const url = endpoint.startsWith('/api') 
+            ? `${API_BASE_URL}${endpoint}` 
+            : `${API_BASE_URL}/api${endpoint}`;
+        
+        const response = await fetch(url, {
             headers: { 'Content-Type': 'application/json', ...options.headers },
             ...options,
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return await response.json();
     } catch (error) {
-        console.error(`API 요청 실패 (${endpoint}):`, error);
+        errorLogger.error(`API 요청 실패 (${endpoint})`, error instanceof Error ? error : new Error(String(error)), { component: 'apiService', action: 'apiRequest', endpoint });
         return {
             success: false,
             error: error instanceof Error ? error.message : '알 수 없는 오류',

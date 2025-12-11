@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import ultraAdvancedAIService from './ultraAdvancedAIService';
+import { ultraAdvancedAIService } from './ultraAdvancedAIService';
 
 export interface AIOrchestrationTask {
     id: string;

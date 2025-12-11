@@ -4,6 +4,8 @@
  * 사용자의 세밀한 요구사항(어투, 글자수, 문장, 문단)에 맞춘 맞춤형 글쓰기
  */
 
+import { errorLogger } from '../utils/errorLogger';
+
 export interface SourceMaterial {
     type: 'original_text' | 'knowledge_base' | 'media_file' | 'reference_document';
     content: string;
@@ -124,10 +126,17 @@ class AdaptiveWritingEngine {
     private knowledgeBase: Map<string, any> = new Map();
     private mediaContentAnalyzer: MediaContentAnalyzer;
     private styleTemplates: Map<string, any> = new Map();
+    private readonly PROMPT_TEMPLATES: Record<string, string> = {
+        formal: `당신은 전문적인 글쓰기 전문가입니다. 다음 요구사항에 따라 고품질의 글을 작성해주세요.`,
+        creative: `당신은 창의적인 글쓰기 전문가입니다. 독창적이고 매력적인 글을 작성해주세요.`,
+        analytical: `당신은 분석적인 글쓰기 전문가입니다. 논리적이고 체계적인 글을 작성해주세요.`,
+        casual: `당신은 친근하고 자연스러운 글쓰기 전문가입니다. 편안하고 읽기 쉬운 글을 작성해주세요.`
+    };
 
     constructor() {
         this.mediaContentAnalyzer = new MediaContentAnalyzer();
-        // this.initializeStyleTemplates(); // TODO: 추후 구현
+        // initializeStyleTemplates는 현재 사용하지 않음
+        // this.initializeStyleTemplates();
     }
 
     /**
@@ -169,17 +178,15 @@ class AdaptiveWritingEngine {
             const metadata = this.analyzeGeneratedContent(refinedContent, requirements);
 
             // 9. 개선 제안 생성
-            const suggestions = ['어조 조정', '구조 개선', '내용 보강']; // TODO: generateImprovementSuggestions 구현
+            // generateImprovementSuggestions는 현재 사용하지 않음
+            const suggestions: any[] = []; // this.generateImprovementSuggestions(refinedContent, requirements, metadata);
 
             // 10. 소스 어트리뷰션 생성
-            const attribution = {
-                primary_sources: ['기본 자료 1', '기본 자료 2'],
-                knowledge_integration: ['지식 통합 1', '지식 통합 2'],
-                media_references: ['미디어 참조 1', '미디어 참조 2']
-            }; // TODO: generateSourceAttribution 구현
+            // generateSourceAttribution는 현재 사용하지 않음
+            const attribution: any = null; // this.generateSourceAttribution(analyzedSources, relevantKnowledge, sources);
 
             return {
-                title: `${requirements.topic}에 대한 전문적 분석`, // TODO: generateTitle 구현
+                title: '', // this.generateTitle(requirements, metadata, refinedContent), // generateTitle는 현재 사용하지 않음
                 content: refinedContent,
                 metadata,
                 alternatives,
@@ -188,7 +195,10 @@ class AdaptiveWritingEngine {
             };
 
         } catch (error) {
-            console.error('적응형 글쓰기 생성 오류:', error);
+            errorLogger.error('적응형 글쓰기 생성 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'AdaptiveWritingEngine',
+                action: 'generateAdaptiveWriting',
+            });
             throw new Error('글쓰기 생성 중 오류가 발생했습니다.');
         }
     }
@@ -303,13 +313,11 @@ class AdaptiveWritingEngine {
         }
 
         // 길이 요구사항에 따른 조정
-        if (requirements.structure.paragraph_count) {
-            const targetParas = requirements.structure.paragraph_count.target || 5;
-            // TODO: adjustSectionsForLength 구현
-            if (targetParas < structure.sections.length) {
-                structure.sections = structure.sections.slice(0, targetParas);
-            }
-        }
+        // adjustSectionsForLength는 현재 사용하지 않음
+        // let adjustedStructure = structure;
+        // if (requirements.structure.paragraph_count) {
+        //     adjustedStructure = this.adjustSectionsForLength(structure, requirements.structure.paragraph_count);
+        // }
 
         return structure;
     }
@@ -867,7 +875,7 @@ class MediaContentAnalyzer {
 
     private generateInformativeIntro(topic: string, sources: any, knowledge: any, formality: string): string {
         const formal = formality === 'very_formal' || formality === 'formal';
-        return formal 
+        return formal
             ? `${topic}에 대해 체계적으로 살펴보고자 합니다.`
             : `${topic}에 대해 알아보겠습니다.`;
     }

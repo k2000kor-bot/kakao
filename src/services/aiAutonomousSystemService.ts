@@ -114,7 +114,7 @@ export interface DecisionOption {
     resourceRequirement: number;
 }
 
-class AIAutonomousSystemService {
+export class AIAutonomousSystemService {
     private capabilities: AutonomousCapability[] = [];
     private diagnostics: SelfDiagnostic[] = [];
     private healingActions: SelfHealing[] = [];

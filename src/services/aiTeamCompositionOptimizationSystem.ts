@@ -183,7 +183,7 @@ export interface TeamAnalytics {
   developmentProgress: number;
 }
 
-class AITeamCompositionOptimizationSystem {
+export class AITeamCompositionOptimizationSystem {
   private teams: Map<string, TeamComposition> = new Map();
   private isRunning: boolean = false;
   private analytics: TeamAnalytics = {

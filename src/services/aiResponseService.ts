@@ -12,7 +12,7 @@ export interface AIResponseResult {
   error?: string;
 }
 
-class AIResponseService {
+export class AIResponseService {
   private baseUrl = 'http://localhost:8002/api/v7';
 
   async generateResponse(request: AIResponseRequest): Promise<AIResponseResult> {

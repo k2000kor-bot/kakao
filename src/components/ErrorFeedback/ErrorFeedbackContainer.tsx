@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ErrorToast from './ErrorToast';
 import { UserFeedback, errorHandlingService } from '../../services/errorHandlingService';
+import { errorLogger } from '../../utils/errorLogger';
 
 interface ActiveFeedback extends UserFeedback {
   id: string;
@@ -43,7 +44,7 @@ const ErrorFeedbackContainer: React.FC = () => {
   const handleFeedbackAction = (id: string, actionIndex: number) => {
     // 액션 실행 후 피드백 제거 (선택적)
     // 일부 액션은 피드백을 유지할 수도 있음
-    console.log(`피드백 ${id}의 액션 ${actionIndex} 실행됨`);
+    errorLogger.info('피드백 액션 실행', { component: 'ErrorFeedbackContainer', action: 'handleFeedbackAction', feedbackId: id, actionIndex });
   };
 
   return (

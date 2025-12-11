@@ -288,7 +288,7 @@ export const utils = {
 };
 
 // DialogueAPIService 클래스
-class DialogueAPIService {
+export class DialogueAPIService {
     private baseURL: string;
 
     constructor() {
@@ -353,5 +353,5 @@ class DialogueAPIService {
 }
 
 // 기본 인스턴스 생성 및 내보내기
-const dialogueAPI = new DialogueAPIService();
+export const dialogueAPI = new DialogueAPIService();
 export default dialogueAPI; 

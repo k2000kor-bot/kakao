@@ -1,4 +1,5 @@
 import { advancedTextProcessor, TextProcessingRequest, WritingStyle, PoliticalTendency, MessageFormat } from './advancedTextProcessor';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface ChatMessage {
     id: string;
@@ -43,21 +44,58 @@ export interface FileUploadResponse {
     error?: string;
 }
 
-class ChatService {
-    private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+export class ChatService {
+    private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
-    async sendMessage(message: string, files?: File[]): Promise<ChatResponse> {
+    async sendMessage(message: string, files?: File[], conversationId?: string, context?: any): Promise<ChatResponse> {
         try {
             // 텍스트 처리 요청인지 확인
             if (this.isTextProcessingRequest(message)) {
                 return await this.handleTextProcessingRequest(message);
             }
 
-            // 일반 채팅 응답
+            // 백엔드 API를 통한 채팅 응답
+            try {
+                const response = await fetch(`${this.baseUrl}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message,
+                        conversation_id: conversationId,
+                        context,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // 백엔드 응답 형식에 맞게 변환
+                if (data.response) {
+                    return {
+                        message: data.response,
+                        files: [],
+                        metadata: {
+                            model: data.model || 'unknown',
+                            tokens: data.tokens || 0,
+                            processingTime: data.processing_time || 0,
+                            confidence: data.confidence || data.quality_score || 0.8,
+                        },
+                    };
+                }
+            } catch (apiError) {
+                errorLogger.warn('백엔드 API 호출 실패, 폴백 응답 사용', { component: 'chatService', action: 'sendMessage', error: apiError instanceof Error ? apiError : new Error(String(apiError)) });
+            }
+
+            // 폴백: 일반 채팅 응답
             const response = await this.generateAIResponse(message, files);
             return response;
         } catch (error) {
-            console.error('Error sending message:', error);
+            errorLogger.error('메시지 전송 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'sendMessage' });
             throw new Error('메시지 전송에 실패했습니다. 다시 시도해 주세요.');
         }
     }
@@ -385,7 +423,7 @@ class ChatService {
                 url: `https://example.com/uploads/${file.name}`
             };
         } catch (error) {
-            console.error('Error uploading file:', error);
+            errorLogger.error('파일 업로드 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'uploadFile' });
             return {
                 success: false,
                 fileId: '',
@@ -416,7 +454,7 @@ class ChatService {
                 }
             ];
         } catch (error) {
-            console.error('Error fetching chat history:', error);
+            errorLogger.error('채팅 히스토리 조회 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'getChatHistory' });
             return [];
         }
     }
@@ -427,7 +465,7 @@ class ChatService {
             await new Promise(resolve => setTimeout(resolve, 300));
             return `chat_${Date.now()}`;
         } catch (error) {
-            console.error('Error creating new chat:', error);
+            errorLogger.error('새 채팅 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'createNewChat' });
             throw new Error('새 채팅 생성에 실패했습니다.');
         }
     }
@@ -438,7 +476,7 @@ class ChatService {
             await new Promise(resolve => setTimeout(resolve, 200));
             return true;
         } catch (error) {
-            console.error('Error saving message:', error);
+            errorLogger.error('메시지 저장 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'saveChatMessage' });
             return false;
         }
     }

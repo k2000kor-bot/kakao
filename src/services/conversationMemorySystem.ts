@@ -113,7 +113,7 @@ export interface LearningRecommendation {
     }>;
 }
 
-class ConversationMemorySystem {
+export class ConversationMemorySystem {
     private userProfiles: Map<string, UserProfile> = new Map();
     private conversationContexts: Map<string, ConversationContext> = new Map();
     private learningAnalytics: Map<string, any> = new Map();
@@ -125,24 +125,54 @@ class ConversationMemorySystem {
 
     /**
      * 👤 사용자 프로필 관리
+     * 
+     * @param userId - 사용자 ID
+     * @returns Promise<UserProfile> - 사용자 프로필
+     * @throws Error - 프로필 로드 실패 시
      */
     async getUserProfile(userId: string): Promise<UserProfile> {
-        let profile = this.userProfiles.get(userId);
-        
-        if (!profile) {
-            profile = this.createDefaultProfile(userId);
-            this.userProfiles.set(userId, profile);
-            await this.saveUserProfile(profile);
+        if (!userId || typeof userId !== 'string') {
+            throw new Error('유효하지 않은 사용자 ID입니다.');
         }
-        
-        return profile;
+
+        try {
+            let profile = this.userProfiles.get(userId);
+            
+            if (!profile) {
+                profile = this.createDefaultProfile(userId);
+                this.userProfiles.set(userId, profile);
+                await this.saveUserProfile(profile);
+            }
+            
+            return profile;
+        } catch (error) {
+            console.error(`사용자 프로필 로드 실패 (${userId}):`, error);
+            // 기본 프로필 반환으로 폴백
+            return this.createDefaultProfile(userId);
+        }
     }
 
+    /**
+     * 사용자 프로필 업데이트
+     * 
+     * @param userId - 사용자 ID
+     * @param updates - 업데이트할 프로필 정보
+     * @throws Error - 업데이트 실패 시
+     */
     async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
-        const profile = await this.getUserProfile(userId);
-        const updatedProfile = { ...profile, ...updates };
-        this.userProfiles.set(userId, updatedProfile);
-        await this.saveUserProfile(updatedProfile);
+        if (!userId || typeof userId !== 'string') {
+            throw new Error('유효하지 않은 사용자 ID입니다.');
+        }
+
+        try {
+            const profile = await this.getUserProfile(userId);
+            const updatedProfile = { ...profile, ...updates };
+            this.userProfiles.set(userId, updatedProfile);
+            await this.saveUserProfile(updatedProfile);
+        } catch (error) {
+            console.error(`사용자 프로필 업데이트 실패 (${userId}):`, error);
+            throw new Error(`프로필 업데이트에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     /**
@@ -167,36 +197,65 @@ class ConversationMemorySystem {
         return sessionId;
     }
 
+    /**
+     * 대화 컨텍스트에 메시지 추가
+     * 
+     * @param sessionId - 세션 ID
+     * @param role - 메시지 역할
+     * @param content - 메시지 내용
+     * @param metadata - 메시지 메타데이터
+     * @throws Error - 세션이 없거나 메시지 추가 실패 시
+     */
     async addMessageToContext(
         sessionId: string, 
         role: 'user' | 'assistant', 
         content: string,
         metadata?: any
     ): Promise<void> {
-        const context = this.conversationContexts.get(sessionId);
-        if (!context) return;
-
-        const message = {
-            id: this.generateMessageId(),
-            role,
-            content,
-            timestamp: new Date(),
-            metadata
-        };
-
-        context.messages.push(message);
-
-        // 사용자 메시지인 경우 학습 패턴 분석
-        if (role === 'user') {
-            await this.analyzeUserMessage(context.userId, content, metadata);
+        if (!sessionId || typeof sessionId !== 'string') {
+            throw new Error('유효하지 않은 세션 ID입니다.');
         }
 
-        // AI 응답인 경우 효과성 추적
-        if (role === 'assistant') {
-            await this.trackResponseEffectiveness(context.userId, message);
+        if (!content || typeof content !== 'string') {
+            throw new Error('메시지 내용이 필요합니다.');
         }
 
-        this.conversationContexts.set(sessionId, context);
+        try {
+            const context = this.conversationContexts.get(sessionId);
+            if (!context) {
+                throw new Error(`세션을 찾을 수 없습니다: ${sessionId}`);
+            }
+
+            const message = {
+                id: this.generateMessageId(),
+                role,
+                content,
+                timestamp: new Date(),
+                metadata
+            };
+
+            context.messages.push(message);
+
+            // 메시지 히스토리 최적화 (최대 100개 유지)
+            if (context.messages.length > 100) {
+                context.messages = context.messages.slice(-100);
+            }
+
+            // 사용자 메시지인 경우 학습 패턴 분석
+            if (role === 'user') {
+                await this.analyzeUserMessage(context.userId, content, metadata);
+            }
+
+            // AI 응답인 경우 효과성 추적
+            if (role === 'assistant') {
+                await this.trackResponseEffectiveness(context.userId, message);
+            }
+
+            this.conversationContexts.set(sessionId, context);
+        } catch (error) {
+            console.error(`메시지 추가 실패 (${sessionId}):`, error);
+            throw error;
+        }
     }
 
     /**
@@ -331,7 +390,7 @@ class ConversationMemorySystem {
                 estimatedTime: '1-2시간',
                 resources: [
                     {
-                        type: 'tutorial',
+                        type: 'article',
                         title: `${struggle.area} 단계별 가이드`,
                         description: '기초부터 차근차근 설명하는 튜토리얼'
                     }
@@ -340,9 +399,8 @@ class ConversationMemorySystem {
         }
 
         // 3. 자주 묻는 주제의 심화 학습
-        const frequentTopics = profile.conversationPatterns.commonTopics
-            .sort((a, b) => b.frequency - a.frequency)
-            .slice(0, 2);
+        const sortedTopics = [...profile.conversationPatterns.commonTopics].sort((a, b) => b.frequency - a.frequency);
+        const frequentTopics = sortedTopics.slice(0, 2);
 
         for (const topic of frequentTopics) {
             recommendations.push({
@@ -389,10 +447,11 @@ class ConversationMemorySystem {
             });
         }
 
-        return recommendations.sort((a, b) => {
+        const sortedRecommendations = [...recommendations].sort((a, b) => {
             const priorityOrder = { high: 3, medium: 2, low: 1 };
             return priorityOrder[b.priority] - priorityOrder[a.priority];
         });
+        return sortedRecommendations;
     }
 
     /**
@@ -478,38 +537,84 @@ class ConversationMemorySystem {
                 totalMessages: 0,
                 averageSessionLength: 0,
                 lastActive: new Date(),
-                satisfactionRating: 4.0,
+                satisfactionRating: 4,
                 feedbackHistory: []
             }
         };
     }
 
     private generateSessionId(): string {
-        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        return 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
     }
 
     private generateMessageId(): string {
-        return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        return 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
     }
 
+    /**
+     * 사용자 프로필 로드 (로컬 스토리지에서)
+     * 
+     * @throws Error - 로드 실패 시
+     */
     private async loadUserProfiles(): Promise<void> {
-        // 실제로는 데이터베이스나 로컬 스토리지에서 로드
-        const stored = localStorage.getItem('userProfiles');
-        if (stored) {
-            const profiles = JSON.parse(stored);
-            for (const [userId, profile] of Object.entries(profiles)) {
-                this.userProfiles.set(userId, profile as UserProfile);
+        try {
+            const stored = localStorage.getItem('userProfiles');
+            if (stored) {
+                const profiles = JSON.parse(stored);
+                for (const [userId, profile] of Object.entries(profiles)) {
+                    // 타입 검증
+                    if (userId && typeof userId === 'string' && profile) {
+                        this.userProfiles.set(userId, profile as UserProfile);
+                    }
+                }
             }
+        } catch (error) {
+            console.error('사용자 프로필 로드 실패:', error);
+            // 로드 실패해도 계속 진행 (빈 상태로 시작)
         }
     }
 
+    /**
+     * 사용자 프로필 저장 (로컬 스토리지에)
+     * 
+     * @param profile - 저장할 프로필
+     * @throws Error - 저장 실패 시
+     */
     private async saveUserProfile(profile: UserProfile): Promise<void> {
-        // 실제로는 데이터베이스에 저장
-        const allProfiles = {};
-        for (const [userId, userProfile] of this.userProfiles.entries()) {
-            allProfiles[userId] = userProfile;
+        try {
+            const allProfiles: Record<string, UserProfile> = {};
+            for (const [userId, userProfile] of this.userProfiles.entries()) {
+                allProfiles[userId] = userProfile;
+            }
+            
+            // 로컬 스토리지 용량 초과 처리
+            try {
+                localStorage.setItem('userProfiles', JSON.stringify(allProfiles));
+            } catch (storageError) {
+                if (storageError instanceof Error && storageError.name === 'QuotaExceededError') {
+                    // 오래된 프로필 제거 (마지막 활동일 기준)
+                    const sortedProfiles = Object.entries(allProfiles).sort((a, b) => {
+                        const dateA = new Date(a[1].interactionHistory.lastActive).getTime();
+                        const dateB = new Date(b[1].interactionHistory.lastActive).getTime();
+                        return dateB - dateA;
+                    });
+                    
+                    // 최신 50개만 유지
+                    const cleanedProfiles: Record<string, UserProfile> = {};
+                    for (const [userId, profile] of sortedProfiles.slice(0, 50)) {
+                        cleanedProfiles[userId] = profile;
+                    }
+                    
+                    localStorage.setItem('userProfiles', JSON.stringify(cleanedProfiles));
+                    console.warn('⚠️ 로컬 스토리지 용량 초과: 오래된 프로필이 제거되었습니다.');
+                } else {
+                    throw storageError;
+                }
+            }
+        } catch (error) {
+            console.error('사용자 프로필 저장 실패:', error);
+            throw new Error(`프로필 저장에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`);
         }
-        localStorage.setItem('userProfiles', JSON.stringify(allProfiles));
     }
 
     private initializeAnalytics(): void {
@@ -541,10 +646,10 @@ class ConversationMemorySystem {
             questionsAsked: profile.interactionHistory.totalMessages,
             averageSessionTime: profile.interactionHistory.averageSessionLength,
             mostActiveDay: this.getMostActiveDay(profile),
-            preferredTopics: profile.conversationPatterns.commonTopics
-                .sort((a, b) => b.frequency - a.frequency)
-                .slice(0, 5)
-                .map(t => t.topic),
+            preferredTopics: (() => {
+                const sortedTopics = [...profile.conversationPatterns.commonTopics].sort((a, b) => b.frequency - a.frequency);
+                return sortedTopics.slice(0, 5).map(t => t.topic);
+            })(),
             skillProgression: Object.entries(profile.expertise.technologies).map(([skill, data]) => ({
                 skill,
                 level: data.level,
@@ -564,8 +669,13 @@ class ConversationMemorySystem {
     }
 
     private calculateSkillProgress(level: string, experience: number): number {
-        const levelMap = { beginner: 0.25, intermediate: 0.5, advanced: 0.75, expert: 1.0 };
-        return levelMap[level] || 0;
+        const levelMap: Record<string, number> = { 
+            beginner: 0.25, 
+            intermediate: 0.5, 
+            advanced: 0.75, 
+            expert: 1 
+        };
+        return levelMap[level] ?? 0;
     }
 }
 

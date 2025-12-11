@@ -3,6 +3,8 @@
  * Web Speech API를 활용한 실시간 음성-텍스트 변환
  */
 
+import { errorLogger } from '../utils/errorLogger';
+
 export interface SpeechRecognitionConfig {
     language: string;
     continuous: boolean;
@@ -38,15 +40,9 @@ export interface SpeechRecognitionEvents {
     onNoSpeech?: () => void;
 }
 
-// 웹 브라우저 타입 정의
-declare global {
-    interface Window {
-        SpeechRecognition: any;
-        webkitSpeechRecognition: any;
-    }
-}
+// 웹 브라우저 타입 정의는 speechRecognition.ts에서 처리
 
-class SpeechRecognitionService {
+export class SpeechRecognitionService {
     private recognition: any = null;
     private audioContext: AudioContext | null = null;
     private analyser: AnalyserNode | null = null;
@@ -81,7 +77,10 @@ class SpeechRecognitionService {
             (window as any).webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-            console.warn('Web Speech API가 지원되지 않는 브라우저입니다.');
+            errorLogger.warn('Web Speech API가 지원되지 않는 브라우저입니다.', {
+                component: 'SpeechRecognitionService',
+                action: 'initializeSpeechRecognition',
+            });
             this.isSupported = false;
             return;
         }
@@ -111,7 +110,10 @@ class SpeechRecognitionService {
         if (!this.recognition) return;
 
         this.recognition.onstart = () => {
-            console.log('🎙️ 음성 인식이 시작되었습니다.');
+            errorLogger.info('음성 인식이 시작되었습니다', {
+                component: 'SpeechRecognitionService',
+                action: 'onstart',
+            });
             this.isListening = true;
             this.events.onStart?.();
             this.startVoiceActivityDetection();
@@ -122,28 +124,44 @@ class SpeechRecognitionService {
         };
 
         this.recognition.onerror = (event: any) => {
-            console.error('음성 인식 오류:', event.error);
+            errorLogger.error('음성 인식 오류', event.error instanceof Error ? event.error : new Error(String(event.error)), {
+                component: 'SpeechRecognitionService',
+                action: 'onerror',
+                errorCode: event.error,
+            });
             this.handleRecognitionError(event.error);
         };
 
         this.recognition.onend = () => {
-            console.log('🛑 음성 인식이 종료되었습니다.');
+            errorLogger.info('음성 인식이 종료되었습니다', {
+                component: 'SpeechRecognitionService',
+                action: 'onend',
+            });
             this.isListening = false;
             this.events.onEnd?.();
             this.stopVoiceActivityDetection();
         };
 
         this.recognition.onnomatch = () => {
-            console.log('음성을 인식할 수 없습니다.');
+            errorLogger.info('음성을 인식할 수 없습니다', {
+                component: 'SpeechRecognitionService',
+                action: 'onnomatch',
+            });
         };
 
         this.recognition.onspeechstart = () => {
-            console.log('음성 감지됨');
+            errorLogger.info('음성 감지됨', {
+                component: 'SpeechRecognitionService',
+                action: 'onspeechstart',
+            });
             this.clearSilenceTimer();
         };
 
         this.recognition.onspeechend = () => {
-            console.log('음성 끝남');
+            errorLogger.info('음성 끝남', {
+                component: 'SpeechRecognitionService',
+                action: 'onspeechend',
+            });
             this.startSilenceTimer();
         };
     }
@@ -176,7 +194,13 @@ class SpeechRecognitionService {
             timestamp: Date.now()
         };
 
-        console.log(`음성 인식 결과: "${transcript}" (신뢰도: ${confidence})`);
+        errorLogger.info(`음성 인식 결과: "${transcript}" (신뢰도: ${confidence})`, {
+            component: 'SpeechRecognitionService',
+            action: 'handleRecognitionResult',
+            transcript,
+            confidence,
+            isFinal,
+        });
         this.events.onResult?.(result);
 
         // 최종 결과이고 한국어 명령어 처리
@@ -275,7 +299,10 @@ class SpeechRecognitionService {
 
             this.monitorVoiceActivity();
         } catch (error) {
-            console.error('음성 활동 감지 초기화 실패:', error);
+            errorLogger.error('음성 활동 감지 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'SpeechRecognitionService',
+                action: 'startVoiceActivityDetection',
+            });
         }
     }
 
@@ -337,7 +364,10 @@ class SpeechRecognitionService {
     private startSilenceTimer(): void {
         this.silenceTimer = setTimeout(() => {
             if (this.isListening) {
-                console.log('침묵 감지로 인한 음성 인식 중지');
+                errorLogger.info('침묵 감지로 인한 음성 인식 중지', {
+                    component: 'SpeechRecognitionService',
+                    action: 'startSilenceTimer',
+                });
                 this.stopListening();
             }
         }, 3000); // 3초 침묵 후 자동 중지
@@ -358,12 +388,18 @@ class SpeechRecognitionService {
      */
     public async startListening(events?: SpeechRecognitionEvents): Promise<boolean> {
         if (!this.isSupported) {
-            console.error('음성 인식이 지원되지 않습니다.');
+            errorLogger.error('음성 인식이 지원되지 않습니다', new Error('Speech recognition not supported'), {
+                component: 'SpeechRecognitionService',
+                action: 'startListening',
+            });
             return false;
         }
 
         if (this.isListening) {
-            console.warn('이미 음성 인식이 진행 중입니다.');
+            errorLogger.warn('이미 음성 인식이 진행 중입니다', {
+                component: 'SpeechRecognitionService',
+                action: 'startListening',
+            });
             return true;
         }
 
@@ -378,7 +414,10 @@ class SpeechRecognitionService {
             this.recognition?.start();
             return true;
         } catch (error) {
-            console.error('음성 인식 시작 실패:', error);
+            errorLogger.error('음성 인식 시작 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'SpeechRecognitionService',
+                action: 'startListening',
+            });
             this.events.onError?.('마이크 권한이 필요합니다.');
             return false;
         }
@@ -464,7 +503,10 @@ class SpeechRecognitionService {
             stream.getTracks().forEach(track => track.stop());
             return true;
         } catch (error) {
-            console.error('마이크 권한 확인 실패:', error);
+            errorLogger.error('마이크 권한 확인 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'SpeechRecognitionService',
+                action: 'checkMicrophonePermission',
+            });
             return false;
         }
     }

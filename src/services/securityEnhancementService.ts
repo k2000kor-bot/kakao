@@ -50,7 +50,7 @@ interface AccessControl {
     expiresAt?: Date;
 }
 
-class SecurityEnhancementService extends EventEmitter {
+export class SecurityEnhancementService extends EventEmitter {
     private securityEvents: SecurityEvent[] = [];
     private securityPolicies: SecurityPolicy[] = [];
     private threatDetections: ThreatDetection[] = [];
@@ -695,4 +695,4 @@ class SecurityEnhancementService extends EventEmitter {
 const securityEnhancementService = new SecurityEnhancementService();
 
 export default securityEnhancementService;
-export type { SecurityEnhancementService, SecurityEvent, SecurityPolicy, ThreatDetection, AccessControl };
+export type { SecurityEvent, SecurityPolicy, ThreatDetection, AccessControl };

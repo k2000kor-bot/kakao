@@ -1,0 +1,151 @@
+/* 메시지 편집 컴포넌트 스타일 */
+
+.message-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 8px);
+  padding: var(--spacing-md, 12px);
+  background: var(--bg-secondary, #f8fafc);
+  border: 2px solid var(--accent-primary, #667eea);
+  border-radius: var(--radius-md, 6px);
+  position: relative;
+}
+
+.message-editor-textarea {
+  width: 100%;
+  min-height: 60px;
+  max-height: 300px;
+  padding: var(--spacing-sm, 8px);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-base, 16px);
+  font-family: inherit;
+  line-height: 1.5;
+  color: var(--text-primary, #1f2937);
+  background: var(--bg-primary, #ffffff);
+  resize: none;
+  overflow-y: auto;
+  transition: border-color var(--transition-base, 200ms ease);
+}
+
+.message-editor-textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary, #667eea);
+  box-shadow: 0 0 0 3px var(--accent-primary-light, rgba(102, 126, 234, 0.1));
+}
+
+.message-editor-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+}
+
+.message-editor-hint {
+  display: flex;
+  gap: var(--spacing-md, 12px);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-secondary, #64748b);
+}
+
+.message-editor-hint span {
+  white-space: nowrap;
+}
+
+.message-editor-buttons {
+  display: flex;
+  gap: var(--spacing-xs, 4px);
+}
+
+.message-editor-btn {
+  padding: var(--spacing-xs, 4px) var(--spacing-md, 12px);
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  transition: all var(--transition-base, 200ms ease);
+}
+
+.message-editor-btn-save {
+  background: var(--accent-primary, #667eea);
+  color: var(--text-inverse, #ffffff);
+}
+
+.message-editor-btn-save:hover:not(:disabled) {
+  background: var(--accent-primary-hover, #5568d3);
+  transform: translateY(-1px);
+}
+
+.message-editor-btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.message-editor-btn-cancel {
+  background: var(--bg-tertiary, #f1f5f9);
+  color: var(--text-primary, #1f2937);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.message-editor-btn-cancel:hover {
+  background: var(--bg-secondary, #f8fafc);
+  border-color: var(--border-hover, #cbd5e1);
+}
+
+/* 다크 모드 지원 */
+.dark-mode .message-editor {
+  background: var(--bg-secondary, #111827);
+  border-color: var(--accent-primary, #818cf8);
+}
+
+.dark-mode .message-editor-textarea {
+  background: var(--bg-primary, #1f2937);
+  border-color: var(--border-color, #374151);
+  color: var(--text-primary, #f9fafb);
+}
+
+.dark-mode .message-editor-textarea:focus {
+  border-color: var(--accent-primary, #818cf8);
+}
+
+.dark-mode .message-editor-btn-cancel {
+  background: var(--bg-tertiary, #0f172a);
+  border-color: var(--border-color, #374151);
+  color: var(--text-primary, #f9fafb);
+}
+
+.dark-mode .message-editor-btn-cancel:hover {
+  background: var(--bg-secondary, #111827);
+  border-color: var(--border-hover, #4b5563);
+}
+
+/* 접근성 */
+.message-editor-textarea:focus-visible {
+  outline: 2px solid var(--accent-primary, #667eea);
+  outline-offset: 2px;
+}
+
+/* 반응형 */
+@media (max-width: 640px) {
+  .message-editor-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .message-editor-hint {
+    order: 2;
+    justify-content: center;
+  }
+
+  .message-editor-buttons {
+    order: 1;
+    width: 100%;
+  }
+
+  .message-editor-btn {
+    flex: 1;
+  }
+}
+

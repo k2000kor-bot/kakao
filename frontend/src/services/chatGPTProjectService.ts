@@ -1,30 +1,36 @@
-// 간단한 ChatGPT 프로젝트 서비스
-class ChatGPTProjectService {
-  async sendMessage(message: string): Promise<string> {
-    try {
-      const response = await fetch('http://localhost:8001/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-          message,
-          user_id: 'user',
-          session_id: 'session'
-        }),
-            });
+/**
+ * ChatGPT 프로젝트 서비스 (더미 구현)
+ * 실제 기능이 필요한 경우 구현 필요
+ */
 
-            if (!response.ok) {
-        throw new Error('API 요청 실패');
-      }
-      
-      const data = await response.json();
-      return data.response || '응답을 받을 수 없습니다.';
-        } catch (error) {
-      console.error('ChatGPT 서비스 오류:', error);
-      return '죄송합니다. 서비스에 문제가 있습니다.';
+class ChatGPTProjectService {
+  private static instance: ChatGPTProjectService;
+
+  private constructor() { }
+
+  static getInstance(): ChatGPTProjectService {
+    if (!ChatGPTProjectService.instance) {
+      ChatGPTProjectService.instance = new ChatGPTProjectService();
     }
+    return ChatGPTProjectService.instance;
+  }
+
+  // 더미 메서드들
+  async createProject(data: any): Promise<any> {
+    return { success: true, message: '프로젝트 생성 기능은 아직 구현되지 않았습니다.' };
+  }
+
+  async getProjects(): Promise<any[]> {
+    return [];
+  }
+
+  async updateProject(id: string, data: any): Promise<any> {
+    return { success: true, message: '프로젝트 업데이트 기능은 아직 구현되지 않았습니다.' };
+  }
+
+  async deleteProject(id: string): Promise<any> {
+    return { success: true, message: '프로젝트 삭제 기능은 아직 구현되지 않았습니다.' };
   }
 }
 
-export default new ChatGPTProjectService();
+export default ChatGPTProjectService;

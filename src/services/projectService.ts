@@ -1,43 +1,287 @@
 import { Project, Chat, Message, ProjectFile, ProjectGuidelines } from '../types/project';
+import { retryApiCall, RetryOptions } from '../utils/retryHandler';
+import { errorLogger } from '../utils/errorLogger';
 
-// 로컬 스토리지 키
+// API 기본 URL
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
+// 로컬 스토리지 키 (폴백용)
 const PROJECTS_KEY = 'corbu_projects';
 const CHATS_KEY = 'corbu_chats';
 const MESSAGES_KEY = 'corbu_messages';
 
+// 재시도 옵션 설정
+const defaultRetryOptions: RetryOptions = {
+    maxRetries: 3,
+    initialDelay: 1000,
+    retryable: (error: any) => {
+        // 네트워크 오류 또는 5xx 서버 오류만 재시도
+        if (error instanceof TypeError && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+            return true;
+        }
+        // 5xx 서버 오류 재시도
+        if (error?.status >= 500 && error?.status < 600) {
+            return true;
+        }
+        // 408 Timeout 재시도
+        if (error?.status === 408) {
+            return true;
+        }
+        return false;
+    },
+};
+
+// 백엔드 API 호출 헬퍼 (재시도 로직 포함)
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
+    const fetchFunction = async (): Promise<T | null> => {
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+                ...options,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage = errorData.message || errorData.error || errorMessage;
+                } catch {
+                    errorMessage = errorText || errorMessage;
+                }
+                const error: any = new Error(errorMessage);
+                error.status = response.status;
+                throw error;
+            }
+
+            const data = await response.json();
+            return data.success ? data.data : null;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            
+            // 네트워크 오류인 경우 사용자 친화적 메시지 제공
+            if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+                errorLogger.warn('백엔드 서버에 연결할 수 없습니다. 로컬 스토리지를 사용합니다.', {
+                    component: 'projectService',
+                    action: 'apiRequest',
+                    endpoint,
+                });
+            }
+            
+            throw error;
+        }
+    };
+
+    try {
+        const result = await retryApiCall(fetchFunction, defaultRetryOptions);
+        return result;
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        errorLogger.error(`API 요청 실패 (${endpoint})`, error instanceof Error ? error : new Error(errorMessage), {
+            component: 'projectService',
+            action: 'apiRequest',
+            endpoint,
+        });
+        return null;
+    }
+}
+
 // 프로젝트 관리
 export const projectService = {
-    // 프로젝트 목록 조회
-    getProjects(): Project[] {
+    // 프로젝트 목록 조회 (백엔드 API 우선, 실패 시 로컬 스토리지)
+    async getProjects(): Promise<Project[]> {
+        try {
+            // 백엔드 API 시도
+            const apiData = await apiRequest<{ projects: any[] }>('/api/projects');
+            if (apiData?.projects) {
+                // 백엔드 데이터를 프론트엔드 타입에 맞게 변환
+                return apiData.projects.map((p: any) => ({
+                    id: p.id,
+                    name: p.name,
+                    description: p.description || '',
+                    createdAt: new Date(p.createdAt),
+                    updatedAt: new Date(p.updatedAt),
+                    files: [],
+                    instructions: '',
+                    tags: [],
+                    isActive: true,
+                    type: 'conversation' as const,
+                    status: 'active' as const,
+                    chats: [],
+                }));
+            }
+        } catch (error) {
+            errorLogger.warn('백엔드 API 호출 실패, 로컬 스토리지 사용', {
+                component: 'projectService',
+                action: 'getProjects',
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+
+        // 폴백: 로컬 스토리지
         try {
             const projects = localStorage.getItem(PROJECTS_KEY);
-            return projects ? JSON.parse(projects) : [];
+            if (projects) {
+                const parsed = JSON.parse(projects);
+                return parsed.map((p: any) => ({
+                    ...p,
+                    createdAt: new Date(p.createdAt),
+                    updatedAt: new Date(p.updatedAt),
+                }));
+            }
         } catch (error) {
-            console.error('프로젝트 목록 조회 실패:', error);
-            return [];
+            errorLogger.error('프로젝트 목록 조회 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'projectService',
+                action: 'getProjects',
+            });
         }
+        return [];
     },
 
-    // 프로젝트 생성
-    createProject(projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'chats'>): Project {
+    // 프로젝트 생성 (백엔드 API 우선)
+    async createProject(projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'chats'>): Promise<Project> {
+        const fetchFunction = async (): Promise<Project | null> => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/projects`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: projectData.name,
+                        description: projectData.description || '',
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data.project) {
+                        const apiProject = data.data.project;
+                        const newProject: Project = {
+                            id: apiProject.id,
+                            name: apiProject.name,
+                            description: apiProject.description || '',
+                            createdAt: new Date(apiProject.createdAt),
+                            updatedAt: new Date(apiProject.updatedAt),
+                            files: projectData.files || [],
+                            instructions: projectData.instructions || '',
+                            tags: projectData.tags || [],
+                            isActive: projectData.isActive ?? true,
+                            type: projectData.type || 'conversation',
+                            status: projectData.status || 'active',
+                            chats: [],
+                        };
+
+                        // 로컬 스토리지에도 저장 (동기화)
+                        const projects = await this.getProjects();
+                        projects.push(newProject);
+                        localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+
+                        return newProject;
+                    }
+                } else {
+                    const error: any = new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    error.status = response.status;
+                    throw error;
+                }
+            } catch (error) {
+                // 에러를 상위로 전파
+                errorLogger.error('프로젝트 데이터 로드 실패', error instanceof Error ? error : new Error(String(error)), {
+                    component: 'projectService',
+                    action: 'loadProjectData',
+                });
+                throw error;
+            }
+            return null;
+        };
+
+        try {
+            const result = await retryApiCall(fetchFunction, defaultRetryOptions);
+            if (result) {
+                return result;
+            }
+        } catch (error) {
+            errorLogger.warn('백엔드 API 호출 실패, 로컬 스토리지 사용', {
+                component: 'projectService',
+                action: 'getProjects',
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+
+        // 폴백: 로컬 스토리지
         const newProject: Project = {
             ...projectData,
             id: generateId(),
             createdAt: new Date(),
             updatedAt: new Date(),
-            chats: []
+            chats: [],
         };
 
-        const projects = this.getProjects();
+        const projects = await this.getProjects();
         projects.push(newProject);
         localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
 
         return newProject;
     },
 
-    // 프로젝트 업데이트
-    updateProject(projectId: string, updates: Partial<Project>): Project | null {
-        const projects = this.getProjects();
+    // 프로젝트 업데이트 (백엔드 API 우선)
+    async updateProject(projectId: string, updates: Partial<Project>): Promise<Project | null> {
+        try {
+            // 백엔드 API 시도
+            const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: updates.name,
+                    description: updates.description,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data.project) {
+                    const apiProject = data.data.project;
+                    const updatedProject: Project = {
+                        id: apiProject.id,
+                        name: apiProject.name,
+                        description: apiProject.description || '',
+                        createdAt: new Date(apiProject.createdAt),
+                        updatedAt: new Date(apiProject.updatedAt),
+                        files: updates.files || [],
+                        instructions: updates.instructions || '',
+                        tags: updates.tags || [],
+                        isActive: updates.isActive ?? true,
+                        type: updates.type || 'conversation',
+                        status: updates.status || 'active',
+                        chats: updates.chats || [],
+                    };
+
+                    // 로컬 스토리지도 업데이트
+                    const projects = await this.getProjects();
+                    const projectIndex = projects.findIndex(p => p.id === projectId);
+                    if (projectIndex !== -1) {
+                        projects[projectIndex] = updatedProject;
+                        localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+                    }
+
+                    return updatedProject;
+                }
+            }
+        } catch (error) {
+            errorLogger.warn('백엔드 API 호출 실패, 로컬 스토리지 사용', {
+                component: 'projectService',
+                action: 'getProjects',
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+
+        // 폴백: 로컬 스토리지
+        const projects = await this.getProjects();
         const projectIndex = projects.findIndex(p => p.id === projectId);
 
         if (projectIndex === -1) return null;
@@ -45,16 +289,45 @@ export const projectService = {
         projects[projectIndex] = {
             ...projects[projectIndex],
             ...updates,
-            updatedAt: new Date()
+            updatedAt: new Date(),
         };
 
         localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
         return projects[projectIndex];
     },
 
-    // 프로젝트 삭제
-    deleteProject(projectId: string): boolean {
-        const projects = this.getProjects();
+    // 프로젝트 삭제 (백엔드 API 우선)
+    async deleteProject(projectId: string): Promise<boolean> {
+        try {
+            // 백엔드 API 시도
+            const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    // 로컬 스토리지에서도 삭제
+                    const projects = await this.getProjects();
+                    const filteredProjects = projects.filter(p => p.id !== projectId);
+                    localStorage.setItem(PROJECTS_KEY, JSON.stringify(filteredProjects));
+
+                    // 관련 채팅과 메시지도 삭제
+                    this.deleteProjectChats(projectId);
+
+                    return true;
+                }
+            }
+        } catch (error) {
+            errorLogger.warn('백엔드 API 호출 실패, 로컬 스토리지 사용', {
+                component: 'projectService',
+                action: 'getProjects',
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+
+        // 폴백: 로컬 스토리지
+        const projects = await this.getProjects();
         const filteredProjects = projects.filter(p => p.id !== projectId);
 
         if (filteredProjects.length === projects.length) return false;
@@ -67,9 +340,38 @@ export const projectService = {
         return true;
     },
 
-    // 프로젝트 조회
-    getProject(projectId: string): Project | null {
-        const projects = this.getProjects();
+    // 프로젝트 조회 (백엔드 API 우선)
+    async getProject(projectId: string): Promise<Project | null> {
+        try {
+            // 백엔드 API 시도
+            const apiData = await apiRequest<{ project: any }>(`/api/projects/${projectId}`);
+            if (apiData?.project) {
+                const apiProject = apiData.project;
+                return {
+                    id: apiProject.id,
+                    name: apiProject.name,
+                    description: apiProject.description || '',
+                    createdAt: new Date(apiProject.createdAt),
+                    updatedAt: new Date(apiProject.updatedAt),
+                    files: [],
+                    instructions: '',
+                    tags: [],
+                    isActive: true,
+                    type: 'conversation' as const,
+                    status: 'active' as const,
+                    chats: [],
+                };
+            }
+        } catch (error) {
+            errorLogger.warn('백엔드 API 호출 실패, 로컬 스토리지 사용', {
+                component: 'projectService',
+                action: 'getProjects',
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+
+        // 폴백: 로컬 스토리지
+        const projects = await this.getProjects();
         return projects.find(p => p.id === projectId) || null;
     },
 
@@ -89,29 +391,22 @@ export const projectService = {
     },
 
     // 초기 프로젝트 시드 생성
-    seedProjectsIfEmpty(): void {
-        const projects = this.getProjects();
+    async seedProjectsIfEmpty(): Promise<void> {
+        const projects = await this.getProjects();
         if (projects.length === 0) {
-            const seedProjects: Project[] = [
-                {
-                    id: generateId(),
-                    name: '샘플 프로젝트',
-                    description: '프로젝트 관리 시스템을 테스트하기 위한 샘플 프로젝트입니다.',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    status: 'active',
-                    priority: 'medium',
-                    tags: ['샘플', '테스트'],
-                    guidelines: '이 프로젝트는 시스템 테스트를 위한 것입니다.',
-                    files: [],
-                    chats: [],
-                    messageCount: 0,
-                    instructions: '',
-                    isActive: true,
-                    type: 'conversation'
-                }
-            ];
-            localStorage.setItem(PROJECTS_KEY, JSON.stringify(seedProjects));
+            await this.createProject({
+                name: '샘플 프로젝트',
+                description: '프로젝트 관리 시스템을 테스트하기 위한 샘플 프로젝트입니다.',
+                status: 'active',
+                priority: 'medium',
+                tags: ['샘플', '테스트'],
+                guidelines: '이 프로젝트는 시스템 테스트를 위한 것입니다.',
+                files: [],
+                messageCount: 0,
+                instructions: '',
+                isActive: true,
+                type: 'conversation'
+            });
         }
     }
 };
@@ -125,13 +420,17 @@ export const chatService = {
             const allChats: Chat[] = chats ? JSON.parse(chats) : [];
             return allChats.filter(chat => chat.projectId === projectId);
         } catch (error) {
-            console.error('채팅 목록 조회 실패:', error);
+            errorLogger.error('채팅 목록 조회 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'projectService',
+                action: 'getProjectChats',
+                projectId,
+            });
             return [];
         }
     },
 
     // 채팅 생성
-    createChat(projectId: string, title: string): Chat {
+    async createChat(projectId: string, title: string): Promise<Chat> {
         const newChat: Chat = {
             id: generateId(),
             projectId,
@@ -146,11 +445,11 @@ export const chatService = {
         localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
 
         // 프로젝트의 채팅 목록 업데이트
-        const project = projectService.getProject(projectId);
+        const project = await projectService.getProject(projectId);
         if (project) {
             if (!project.chats) project.chats = [];
             project.chats.push(newChat);
-            projectService.updateProject(projectId, { chats: project.chats });
+            await projectService.updateProject(projectId, { chats: project.chats });
         }
 
         return newChat;
@@ -200,7 +499,10 @@ export const chatService = {
             const chats = localStorage.getItem(CHATS_KEY);
             return chats ? JSON.parse(chats) : [];
         } catch (error) {
-            console.error('모든 채팅 조회 실패:', error);
+            errorLogger.error('모든 채팅 조회 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'projectService',
+                action: 'getAllChats',
+            });
             return [];
         }
     },
@@ -230,7 +532,11 @@ export const messageService = {
             const allMessages: Message[] = messages ? JSON.parse(messages) : [];
             return allMessages.filter(msg => msg.chatId === chatId);
         } catch (error) {
-            console.error('메시지 목록 조회 실패:', error);
+            errorLogger.error('메시지 목록 조회 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'projectService',
+                action: 'getChatMessages',
+                chatId,
+            });
             return [];
         }
     },
@@ -301,7 +607,10 @@ export const messageService = {
             const messages = localStorage.getItem(MESSAGES_KEY);
             return messages ? JSON.parse(messages) : [];
         } catch (error) {
-            console.error('모든 메시지 조회 실패:', error);
+            errorLogger.error('모든 메시지 조회 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'projectService',
+                action: 'getAllMessages',
+            });
             return [];
         }
     }
@@ -310,8 +619,8 @@ export const messageService = {
 // 시스템 관리용 추가 메서드들
 export const systemService = {
     // 전체 시스템 통계
-    getSystemStats: () => {
-        const projects = projectService.getProjects();
+    async getSystemStats() {
+        const projects = await projectService.getProjects();
         const allChats = chatService.getAllChats();
         const allMessages = messageService.getAllMessages();
 
@@ -326,8 +635,8 @@ export const systemService = {
     },
 
     // 프로젝트 검색 및 필터링
-    searchProjects: (query: string, filters: any = {}) => {
-        let projects = projectService.getProjects();
+    async searchProjects(query: string, filters: any = {}) {
+        let projects = await projectService.getProjects();
 
         // 검색어 필터링
         if (query) {
@@ -415,7 +724,10 @@ export const systemService = {
 
             return { success: true, backup };
         } catch (error) {
-            console.error('시스템 데이터 복원 실패:', error);
+            errorLogger.error('시스템 데이터 복원 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'projectService',
+                action: 'restoreSystemData',
+            });
             return { success: false, error };
         }
     }
@@ -427,8 +739,8 @@ function generateId(): string {
 }
 
 // 프로젝트 통계 계산
-export const getProjectStats = (projectId: string) => {
-    const project = projectService.getProject(projectId);
+export const getProjectStats = async (projectId: string) => {
+    const project = await projectService.getProject(projectId);
     if (!project) return null;
 
     const chats = chatService.getProjectChats(projectId);

@@ -1,0 +1,72 @@
+/* MessageItem 컴포넌트는 ModernChatInterface.css의 .message 스타일을 사용 */
+
+/* 이미지 표시 스타일 */
+.message-image-container {
+    margin: var(--spacing-md, 12px) 0;
+    border-radius: var(--radius-md, 6px);
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.message-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md, 6px);
+    display: block;
+    box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+    transition: transform var(--transition-base, 200ms ease);
+}
+
+.message-image:hover {
+    transform: scale(1.02);
+    cursor: pointer;
+}
+
+.image-error {
+    padding: var(--spacing-md, 12px);
+    background: var(--bg-tertiary, #f1f5f9);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 6px);
+    color: var(--text-secondary, #64748b);
+    font-size: var(--font-size-sm, 14px);
+    text-align: center;
+}
+
+.dark-mode .image-error {
+    background: var(--bg-tertiary, #0f172a);
+    border-color: var(--border-color, #374151);
+    color: var(--text-secondary, #d1d5db);
+}
+
+/* 검색 하이라이트 스타일 */
+.search-highlight {
+    background: var(--accent-warning, #fef3c7);
+    color: var(--text-primary, #1f2937);
+    padding: 2px 4px;
+    border-radius: var(--radius-sm, 4px);
+    font-weight: var(--font-weight-semibold, 600);
+    animation: highlight-pulse 1.5s ease-in-out;
+}
+
+.dark-mode .search-highlight {
+    background: var(--accent-warning, #78350f);
+    color: var(--text-primary, #f9fafb);
+}
+
+@keyframes highlight-pulse {
+    0%, 100% {
+        background: var(--accent-warning, #fef3c7);
+    }
+    50% {
+        background: var(--accent-warning-hover, #fde68a);
+    }
+}
+
+.dark-mode @keyframes highlight-pulse {
+    0%, 100% {
+        background: var(--accent-warning, #78350f);
+    }
+    50% {
+        background: var(--accent-warning-hover, #92400e);
+    }
+}

@@ -24,7 +24,7 @@ export interface UserBehavior {
     category?: string;
 }
 
-class RecommendationService {
+export class RecommendationService {
     private userBehaviors: UserBehavior[] = [];
     private recommendations: Recommendation[] = [];
     private userPreferences: Map<string, number> = new Map();

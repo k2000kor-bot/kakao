@@ -1,6 +1,8 @@
 // CORBU AI 통합 API 서비스 - 모든 백엔드 API 호출을 중앙에서 관리
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8005';
+import { errorLogger } from '../utils/errorLogger';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
 // ===== 기본 인터페이스 =====
 export interface APIResponse<T = unknown> {
@@ -465,7 +467,7 @@ export interface SystemStatus {
 // ===== 음성 관련 인터페이스 =====
 export interface VoiceRequest {
   audio_data: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 export interface VoiceResponse {
@@ -525,12 +527,23 @@ class UnifiedAPIService {
     this.baseURL = baseURL;
   }
 
-  // 기본 HTTP 요청 헬퍼
+  /**
+   * 기본 HTTP 요청 헬퍼
+   * 
+   * @param endpoint - API 엔드포인트
+   * @param options - fetch 옵션
+   * @param retries - 재시도 횟수 (기본값: 0)
+   * @returns Promise<T> - 응답 데이터
+   * @throws Error - 요청 실패 시
+   */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retries: number = 0
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1초
 
     const defaultOptions: RequestInit = {
       headers: {
@@ -544,13 +557,31 @@ class UnifiedAPIService {
       const response = await fetch(url, defaultOptions);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // 5xx 서버 오류인 경우 재시도
+        if (response.status >= 500 && retries < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay * (retries + 1)));
+          return this.request<T>(endpoint, options, retries + 1);
+        }
+        
+        // 4xx 클라이언트 오류는 재시도하지 않음
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error(`API 요청 실패 (${endpoint}):`, error);
-      throw error;
+      // 네트워크 오류인 경우 재시도
+      if (error instanceof TypeError && error.message.includes('fetch') && retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay * (retries + 1)));
+        return this.request<T>(endpoint, options, retries + 1);
+      }
+      
+      errorLogger.error(`API 요청 실패 (${endpoint})`, error, {
+        component: 'UnifiedAPI',
+        action: 'request',
+        endpoint,
+      });
+      this.handleError(error);
     }
   }
 
@@ -686,7 +717,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async predictiveAnalysis(request: { content: string; prediction_type?: string }): Promise<any> {
+  async predictiveAnalysis(request: { content: string; prediction_type?: string }): Promise<APIResponse<PredictiveAnalysis>> {
     const response = await fetch(`${this.baseURL}/api/ai/predictive-analysis`, {
       method: 'POST',
       headers: {
@@ -697,7 +728,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async riskAssessment(request: { content: string }): Promise<any> {
+  async riskAssessment(request: { content: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/risk-assessment`, {
       method: 'POST',
       headers: {
@@ -708,7 +739,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async competitorAnalysis(request: { content: string }): Promise<any> {
+  async competitorAnalysis(request: { content: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/competitor-analysis`, {
       method: 'POST',
       headers: {
@@ -719,7 +750,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async financialAnalysis(request: { content: string }): Promise<any> {
+  async financialAnalysis(request: { content: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/financial-analysis`, {
       method: 'POST',
       headers: {
@@ -730,7 +761,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async advancedSentimentAnalysis(request: { content: string }): Promise<any> {
+  async advancedSentimentAnalysis(request: { content: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/sentiment-analysis-advanced`, {
       method: 'POST',
       headers: {
@@ -741,7 +772,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async machineLearningPrediction(request: { content: string; prediction_type?: string }): Promise<any> {
+  async machineLearningPrediction(request: { content: string; prediction_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/machine-learning-prediction`, {
       method: 'POST',
       headers: {
@@ -752,7 +783,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async deepLearningAnalysis(request: { content: string }): Promise<any> {
+  async deepLearningAnalysis(request: { content: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/deep-learning-analysis`, {
       method: 'POST',
       headers: {
@@ -763,7 +794,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async naturalLanguageProcessing(request: { content: string }): Promise<any> {
+  async naturalLanguageProcessing(request: { content: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/natural-language-processing`, {
       method: 'POST',
       headers: {
@@ -774,7 +805,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async cognitiveComputing(request: { content: string }): Promise<any> {
+  async cognitiveComputing(request: { content: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/cognitive-computing`, {
       method: 'POST',
       headers: {
@@ -785,7 +816,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async realTimeDataAnalysis(request: { content: string; data_type?: string }): Promise<any> {
+  async realTimeDataAnalysis(request: { content: string; data_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/real-time-data-analysis`, {
       method: 'POST',
       headers: {
@@ -796,7 +827,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async advancedPredictiveModeling(request: { content: string; model_type?: string }): Promise<any> {
+  async advancedPredictiveModeling(request: { content: string; model_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/advanced-predictive-modeling`, {
       method: 'POST',
       headers: {
@@ -807,7 +838,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async adaptiveLearningSystem(request: { content: string; learning_mode?: string }): Promise<any> {
+  async adaptiveLearningSystem(request: { content: string; learning_mode?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/adaptive-learning-system`, {
       method: 'POST',
       headers: {
@@ -818,7 +849,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async realTimeCollaboration(request: { content: string; collaboration_type?: string }): Promise<any> {
+  async realTimeCollaboration(request: { content: string; collaboration_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/real-time-collaboration`, {
       method: 'POST',
       headers: {
@@ -829,7 +860,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async advancedVisualization(request: { content: string; visualization_type?: string }): Promise<any> {
+  async advancedVisualization(request: { content: string; visualization_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/advanced-visualization`, {
       method: 'POST',
       headers: {
@@ -840,7 +871,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async aiIntegratedAnalysis(request: { content: string; analysis_depth?: string }): Promise<any> {
+  async aiIntegratedAnalysis(request: { content: string; analysis_depth?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/ai-integrated-analysis`, {
       method: 'POST',
       headers: {
@@ -851,7 +882,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async realTimeDecisionSupport(request: { content: string; decision_type?: string; urgency_level?: string }): Promise<any> {
+  async realTimeDecisionSupport(request: { content: string; decision_type?: string; urgency_level?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/real-time-decision-support`, {
       method: 'POST',
       headers: {
@@ -862,7 +893,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async autoInsightsGeneration(request: { content: string; insight_type?: string; data_sources?: string[] }): Promise<any> {
+  async autoInsightsGeneration(request: { content: string; insight_type?: string; data_sources?: string[] }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/auto-insights-generation`, {
       method: 'POST',
       headers: {
@@ -873,7 +904,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async personalizedDashboard(request: { content: string; user_preferences?: any; dashboard_type?: string }): Promise<any> {
+  async personalizedDashboard(request: { content: string; user_preferences?: Record<string, unknown>; dashboard_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/personalized-dashboard`, {
       method: 'POST',
       headers: {
@@ -884,7 +915,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async multilingualSupport(request: { content: string; source_language?: string; target_language?: string; translation_type?: string }): Promise<any> {
+  async multilingualSupport(request: { content: string; source_language?: string; target_language?: string; translation_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/multilingual-support`, {
       method: 'POST',
       headers: {
@@ -895,7 +926,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async arVrSupport(request: { content: string; vr_type?: string; interaction_mode?: string }): Promise<any> {
+  async arVrSupport(request: { content: string; vr_type?: string; interaction_mode?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/ar-vr-support`, {
       method: 'POST',
       headers: {
@@ -906,7 +937,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async advancedInsightsGeneration(request: { content: string; insight_depth?: string; analysis_focus?: string }): Promise<any> {
+  async advancedInsightsGeneration(request: { content: string; insight_depth?: string; analysis_focus?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/advanced-insights-generation`, {
       method: 'POST',
       headers: {
@@ -917,7 +948,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async blockchainSecurity(request: { content: string; security_level?: string; blockchain_type?: string }): Promise<any> {
+  async blockchainSecurity(request: { content: string; security_level?: string; blockchain_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/blockchain-security`, {
       method: 'POST',
       headers: {
@@ -928,7 +959,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async automatedWorkflowEngine(request: { content: string; workflow_type?: string; automation_level?: string }): Promise<any> {
+  async automatedWorkflowEngine(request: { content: string; workflow_type?: string; automation_level?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/automated-workflow-engine`, {
       method: 'POST',
       headers: {
@@ -939,7 +970,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async quantumComputingSupport(request: { content: string; quantum_type?: string; algorithm_type?: string }): Promise<any> {
+  async quantumComputingSupport(request: { content: string; quantum_type?: string; algorithm_type?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/quantum-computing-support`, {
       method: 'POST',
       headers: {
@@ -950,7 +981,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async edgeComputingSupport(request: { content: string; edge_type?: string; processing_mode?: string }): Promise<any> {
+  async edgeComputingSupport(request: { content: string; edge_type?: string; processing_mode?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/edge-computing-support`, {
       method: 'POST',
       headers: {
@@ -961,7 +992,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async researchUnlimitedAnalysis(request: { content: string; analysis_type?: string; research_depth?: string }): Promise<any> {
+  async researchUnlimitedAnalysis(request: { content: string; analysis_type?: string; research_depth?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/research-unlimited-analysis`, {
       method: 'POST',
       headers: {
@@ -972,7 +1003,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async advancedResearchControl(request: { content: string; control_level?: string; research_mode?: string }): Promise<any> {
+  async advancedResearchControl(request: { content: string; control_level?: string; research_mode?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/advanced-research-control`, {
       method: 'POST',
       headers: {
@@ -983,7 +1014,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async experimentalResearchSystem(request: { content: string; research_scope?: string; innovation_level?: string }): Promise<any> {
+  async experimentalResearchSystem(request: { content: string; research_scope?: string; innovation_level?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/experimental-research-system`, {
       method: 'POST',
       headers: {
@@ -994,7 +1025,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async innovativeResearchPlatform(request: { content: string; platform_type?: string; research_focus?: string }): Promise<any> {
+  async innovativeResearchPlatform(request: { content: string; platform_type?: string; research_focus?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/innovative-research-platform`, {
       method: 'POST',
       headers: {
@@ -1005,7 +1036,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async futureTechnologyResearch(request: { content: string; technology_focus?: string; research_horizon?: string }): Promise<any> {
+  async futureTechnologyResearch(request: { content: string; technology_focus?: string; research_horizon?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/future-technology-research`, {
       method: 'POST',
       headers: {
@@ -1016,7 +1047,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async integratedResearchEcosystem(request: { content: string; ecosystem_type?: string; integration_level?: string }): Promise<any> {
+  async integratedResearchEcosystem(request: { content: string; ecosystem_type?: string; integration_level?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/integrated-research-ecosystem`, {
       method: 'POST',
       headers: {
@@ -1027,7 +1058,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async nextGenerationResearchInnovation(request: { content: string; innovation_type?: string; research_focus?: string }): Promise<any> {
+  async nextGenerationResearchInnovation(request: { content: string; innovation_type?: string; research_focus?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/next-generation-research-innovation`, {
       method: 'POST',
       headers: {
@@ -1038,7 +1069,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async ultimateResearchSystem(request: { content: string; system_type?: string; integration_level?: string }): Promise<any> {
+  async ultimateResearchSystem(request: { content: string; system_type?: string; integration_level?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/ultimate-research-system`, {
       method: 'POST',
       headers: {
@@ -1049,7 +1080,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async ultimateResearchInnovationPlatform(request: { content: string; platform_type?: string; innovation_level?: string }): Promise<any> {
+  async ultimateResearchInnovationPlatform(request: { content: string; platform_type?: string; innovation_level?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/ultimate-research-innovation-platform`, {
       method: 'POST',
       headers: {
@@ -1060,7 +1091,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async ultimateResearchEcosystem(request: { content: string; ecosystem_type?: string; integration_level?: string }): Promise<any> {
+  async ultimateResearchEcosystem(request: { content: string; ecosystem_type?: string; integration_level?: string }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/ultimate-research-ecosystem`, {
       method: 'POST',
       headers: {
@@ -1071,7 +1102,7 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async cosmicAIIntegration(request: { input: string; context?: Record<string, any> }): Promise<any> {
+  async cosmicAIIntegration(request: { input: string; context?: Record<string, unknown> }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/cosmic-ai-integration`, {
       method: 'POST',
       headers: {
@@ -1164,14 +1195,57 @@ class UnifiedAPIService {
     return response.blob();
   }
 
-  // ===== 에러 핸들링 =====
-  private handleError(error: any): never {
-    console.error('API Error:', error);
-    throw new Error(`API 호출 중 오류가 발생했습니다: ${error.message}`);
+  /**
+   * 에러 핸들링 및 분류
+   * 
+   * @param error - 발생한 오류
+   * @throws Error - 사용자 친화적인 오류 메시지와 함께
+   */
+  private handleError(error: unknown): never {
+    errorLogger.error('API Error', error, {
+      component: 'UnifiedAPI',
+      action: 'handleError',
+    });
+    
+    let errorMessage: string;
+    let errorType: string = 'UNKNOWN';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // 에러 타입 분류
+      if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        errorType = 'NETWORK';
+        errorMessage = '네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.';
+      } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
+        errorType = 'AUTH';
+        errorMessage = '인증에 실패했습니다. 다시 로그인해주세요.';
+      } else if (errorMessage.includes('403') || errorMessage.includes('forbidden')) {
+        errorType = 'PERMISSION';
+        errorMessage = '접근 권한이 없습니다.';
+      } else if (errorMessage.includes('404')) {
+        errorType = 'NOT_FOUND';
+        errorMessage = '요청한 리소스를 찾을 수 없습니다.';
+      } else if (errorMessage.includes('500') || errorMessage.includes('502') || errorMessage.includes('503')) {
+        errorType = 'SERVER';
+        errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+      } else if (errorMessage.includes('timeout')) {
+        errorType = 'TIMEOUT';
+        errorMessage = '요청 시간이 초과되었습니다. 다시 시도해주세요.';
+      }
+    } else {
+      errorMessage = String(error);
+    }
+    
+    const enhancedError = new Error(errorMessage);
+    (enhancedError as any).type = errorType;
+    (enhancedError as any).originalError = error;
+    
+    throw enhancedError;
   }
 
   // ===== 추가 메서드들 =====
-  async conversationalQA(question: string, context?: Record<string, unknown>): Promise<APIResponse<any>> {
+  async conversationalQA(question: string, context?: Record<string, unknown>): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/conversational-qa`, {
       method: 'POST',
       headers: {
@@ -1182,18 +1256,21 @@ class UnifiedAPIService {
     return response.json();
   }
 
-  async processFile(request: any): Promise<APIResponse<any>> {
+  async processFile(request: { file: File; project_id?: string;[key: string]: unknown }): Promise<APIResponse<Record<string, unknown>>> {
+    const formData = new FormData();
+    formData.append('file', request.file);
+    if (request.project_id) {
+      formData.append('project_id', request.project_id);
+    }
+
     const response = await fetch(`${this.baseURL}/api/ai/process-file`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
+      body: formData,
     });
     return response.json();
   }
 
-  async analyzeImage(request: any): Promise<APIResponse<any>> {
+  async analyzeImage(request: { image_data: string; format?: string;[key: string]: unknown }): Promise<APIResponse<Record<string, unknown>>> {
     const response = await fetch(`${this.baseURL}/api/ai/analyze-image`, {
       method: 'POST',
       headers: {
@@ -1220,18 +1297,30 @@ export class WebSocketManager {
         this.ws = new WebSocket(`ws://localhost:8004/ws/chat/${this.roomId}`);
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected');
+          errorLogger.info('WebSocket connected', {
+            component: 'UnifiedAPI',
+            action: 'connect',
+            roomId: this.roomId,
+          });
           this.reconnectAttempts = 0;
           resolve();
         };
 
-        this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+        this.ws.onerror = (error: Event) => {
+          errorLogger.error('WebSocket error', error instanceof Error ? error : new Error('WebSocket error'), {
+            component: 'UnifiedAPI',
+            action: 'connect',
+            roomId: this.roomId,
+          });
           reject(error);
         };
 
         this.ws.onclose = () => {
-          console.log('WebSocket disconnected');
+          errorLogger.info('WebSocket disconnected', {
+            component: 'UnifiedAPI',
+            action: 'disconnect',
+            roomId: this.roomId,
+          });
           this.attemptReconnect();
         };
 
@@ -1244,10 +1333,20 @@ export class WebSocketManager {
   private attemptReconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      errorLogger.info(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`, {
+        component: 'UnifiedAPI',
+        action: 'attemptReconnect',
+        attempts: this.reconnectAttempts,
+        maxAttempts: this.maxReconnectAttempts,
+      });
 
       setTimeout(() => {
-        this.connect().catch(console.error);
+        this.connect().catch((err: unknown) => {
+          errorLogger.error('WebSocket reconnect failed', err instanceof Error ? err : new Error(String(err)), {
+            component: 'UnifiedAPI',
+            action: 'reconnect',
+          });
+        });
       }, this.reconnectDelay * this.reconnectAttempts);
     }
   }
@@ -1256,7 +1355,11 @@ export class WebSocketManager {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(message);
     } else {
-      console.error('WebSocket is not connected');
+      errorLogger.error('WebSocket is not connected', new Error('WebSocket not connected'), {
+        component: 'UnifiedAPI',
+        action: 'sendMessage',
+        roomId: this.roomId,
+      });
     }
   }
 
@@ -1268,7 +1371,11 @@ export class WebSocketManager {
       });
       this.ws.send(message);
     } else {
-      console.error('WebSocket is not connected');
+      errorLogger.error('WebSocket is not connected', new Error('WebSocket not connected'), {
+        component: 'UnifiedAPI',
+        action: 'sendMessage',
+        roomId: this.roomId,
+      });
     }
   }
 
@@ -1278,8 +1385,12 @@ export class WebSocketManager {
         try {
           const data = JSON.parse(event.data);
           callback(data);
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+        } catch (error: unknown) {
+          errorLogger.error('Error parsing WebSocket message', error instanceof Error ? error : new Error(String(error)), {
+            component: 'UnifiedAPI',
+            action: 'onMessage',
+            roomId: this.roomId,
+          });
         }
       };
     }

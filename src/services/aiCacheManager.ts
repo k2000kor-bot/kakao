@@ -37,7 +37,7 @@ export interface CacheConfig {
 }
 
 // AI 캐시 관리자 클래스
-class AICacheManager extends EventEmitter {
+export class AICacheManager extends EventEmitter {
     private cache: Map<string, CacheEntry> = new Map();
     private hitCount: number = 0;
     private missCount: number = 0;

@@ -41,7 +41,7 @@ interface SystemStatus {
     timestamp: string;
 }
 
-class IntegratedAPIService {
+export class IntegratedAPIService {
     private baseURL: string;
     private timeout: number;
 
@@ -174,4 +174,4 @@ export type {
     SystemStatus
 };
 
-export default IntegratedAPIService;
+export default integratedAPIService;

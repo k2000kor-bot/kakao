@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { Send, Psychology, Analytics, Speed } from '@mui/icons-material';
 import { integratedAPIService, IntegratedAnalysisResponse } from '../services/integratedAPIService';
+import { errorLogger } from '../utils/errorLogger';
 import SystemStatus from './SystemStatus';
 import QuickActions from './QuickActions';
 import SystemHealthMonitor from './SystemHealthMonitor';
@@ -71,7 +72,7 @@ const IntegratedAIChat: React.FC = () => {
             const status = await integratedAPIService.getSystemStatus();
             setSystemMetrics(status.metrics);
         } catch (error) {
-            console.error('시스템 메트릭 로드 실패:', error);
+            errorLogger.error('시스템 메트릭 로드 실패', error instanceof Error ? error : new Error(String(error)), { component: 'IntegratedAIChat', action: 'loadSystemMetrics' });
         }
     };
 
@@ -105,7 +106,7 @@ const IntegratedAIChat: React.FC = () => {
             // 메트릭 업데이트
             loadSystemMetrics();
         } catch (error) {
-            console.error('메시지 전송 실패:', error);
+            errorLogger.error('메시지 전송 실패', error instanceof Error ? error : new Error(String(error)), { component: 'IntegratedAIChat', action: 'handleSendMessage' });
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 text: '죄송합니다. 메시지를 처리하는 중 오류가 발생했습니다.',
@@ -118,7 +119,7 @@ const IntegratedAIChat: React.FC = () => {
         }
     };
 
-    const handleKeyPress = (event: React.KeyboardEvent) => {
+    const handleKeyDown = (event: React.KeyboardEvent) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             handleSendMessage();
@@ -377,7 +378,7 @@ const IntegratedAIChat: React.FC = () => {
                         placeholder="메시지를 입력하세요..."
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
-                        onKeyPress={handleKeyPress}
+                        onKeyDown={handleKeyDown}
                         disabled={isLoading}
                         variant="outlined"
                         size="small"

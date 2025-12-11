@@ -3,21 +3,54 @@ import ReactDOM from 'react-dom/client';
 
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import errorReportingService from './services/errorReportingService';
+import { errorLogger } from './utils/errorLogger';
+// CSS 파일 import (존재하지 않으면 무시됨)
+import './styles/theme.css';
+import './styles/responsive.css';
 
 // 전역 에러 핸들러 설정
 window.addEventListener('error', (event) => {
-  console.error('전역 에러 발생:', event.error);
-  // 에러를 서버로 전송하거나 로깅 시스템에 기록
+  if (event.error) {
+    errorLogger.error('전역 에러 발생', event.error, {
+      component: 'global',
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+    });
+    errorReportingService.reportError(event.error, {
+      severity: 'high',
+      additionalContext: {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+      },
+    });
+  }
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('처리되지 않은 Promise 거부:', event.reason);
-  // Promise 거부를 서버로 전송하거나 로깅 시스템에 기록
+  const error = event.reason instanceof Error
+    ? event.reason
+    : new Error(String(event.reason));
+  errorLogger.error('처리되지 않은 Promise 거부', error, {
+    component: 'global',
+    type: 'unhandledrejection',
+  });
+  errorReportingService.reportError(error, {
+    severity: 'medium',
+    additionalContext: {
+      type: 'unhandledrejection',
+    },
+  });
 });
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
+
+const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <App />

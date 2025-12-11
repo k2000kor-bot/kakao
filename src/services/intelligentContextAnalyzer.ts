@@ -262,7 +262,12 @@ class IntelligentContextAnalyzer {
         projectInfo: any
     ): Promise<any> {
         
-        const requirements = {
+        const requirements: {
+            explicit: string[];
+            implicit: string[];
+            contextual: string[];
+            emotional: string[];
+        } = {
             explicit: [],
             implicit: [],
             contextual: [],
@@ -306,7 +311,7 @@ class IntelligentContextAnalyzer {
             }
         }
 
-        // 감정적 요구사항 (사용자 상태 기반)
+        // 감정적 요구사항 (사용자 상태 기반) - 타입 명시
         const emotionalCues = {
             '답답해요|짜증나요|힘들어요': ['단계별 가이드', '친절한 설명'],
             '궁금해요|흥미로워요': ['깊이 있는 설명', '추가 학습 자료'],
@@ -372,8 +377,13 @@ class IntelligentContextAnalyzer {
      * 🌊 대화 흐름 분석
      */
     private async analyzeConversationFlow(history: any[], currentMessage: string): Promise<any> {
-        const flow = {
-            phase: 'problem_identification' as any,
+        const flow: {
+            phase: 'problem_identification' | 'solution_seeking' | 'implementation' | 'validation';
+            continuity: number;
+            previousContext: any[];
+            expectedFollowUp: string[];
+        } = {
+            phase: 'problem_identification',
             continuity: 0,
             previousContext: [],
             expectedFollowUp: []

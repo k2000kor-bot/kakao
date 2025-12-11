@@ -50,7 +50,7 @@ export interface HealthThreshold {
 }
 
 // AI 시스템 헬스 모니터 클래스
-class AIHealthMonitor extends EventEmitter {
+export class AIHealthMonitor extends EventEmitter {
     private services: Map<string, ServiceHealth> = new Map();
     private thresholds: Map<string, HealthThreshold> = new Map();
     private healthHistory: Map<string, HealthCheckResult[]> = new Map();
@@ -618,6 +618,11 @@ class AIHealthMonitor extends EventEmitter {
 
         const availableServices = services.filter(s => s.status !== 'offline').length;
         return (availableServices / services.length) * 100;
+    }
+
+    // 실행 상태 확인
+    public isSystemRunning(): boolean {
+        return this.isRunning;
     }
 
     // 서비스 종료

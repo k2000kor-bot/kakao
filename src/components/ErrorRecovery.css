@@ -1,0 +1,208 @@
+/* 에러 복구 컴포넌트 스타일 */
+
+.error-recovery {
+  width: 100%;
+  max-width: 500px;
+  margin: 20px auto;
+  padding: 24px;
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.error-recovery-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.error-recovery-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.error-recovery-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  margin: 0;
+}
+
+.error-recovery-message {
+  font-size: 14px;
+  color: var(--text-secondary, #64748b);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.error-recovery-status {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--bg-secondary, #f1f5f9);
+  color: var(--text-secondary, #64748b);
+}
+
+.error-recovery-status.retrying {
+  background: var(--accent-primary, #667eea);
+  color: var(--text-inverse, #ffffff);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.error-recovery-offline {
+  padding: 12px;
+  background: var(--warning-bg, #fef3c7);
+  border: 1px solid var(--warning-border, #fbbf24);
+  border-radius: 6px;
+  color: var(--warning-text, #92400e);
+  font-size: 13px;
+  width: 100%;
+}
+
+.error-recovery-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent-primary, #667eea);
+  color: var(--text-inverse, #ffffff);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-primary-dark, #5568d3);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
+}
+
+.btn-secondary {
+  background: var(--bg-secondary, #f1f5f9);
+  color: var(--text-primary, #1e293b);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-tertiary, #e2e8f0);
+}
+
+.error-recovery-spinner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--bg-secondary, #f1f5f9);
+  border-top-color: var(--accent-primary, #667eea);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-recovery-auto-retry {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary, #94a3b8);
+}
+
+/* 다크 모드 */
+.dark-mode .error-recovery {
+  background: var(--bg-primary, #1f2937);
+  border-color: var(--border-color, #374151);
+}
+
+.dark-mode .error-recovery-title {
+  color: var(--text-primary, #f1f5f9);
+}
+
+.dark-mode .error-recovery-message {
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.dark-mode .error-recovery-status {
+  background: var(--bg-secondary, #374151);
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.dark-mode .error-recovery-offline {
+  background: var(--warning-bg-dark, #78350f);
+  border-color: var(--warning-border-dark, #f59e0b);
+  color: var(--warning-text-dark, #fbbf24);
+}
+
+.dark-mode .btn-secondary {
+  background: var(--bg-tertiary, #374151);
+  color: var(--text-primary, #f1f5f9);
+  border-color: var(--border-color, #4b5563);
+}
+
+.dark-mode .error-recovery-auto-retry {
+  background: var(--bg-tertiary, #374151);
+  color: var(--text-tertiary, #9ca3af);
+}
+
+/* 반응형 */
+@media (max-width: 640px) {
+  .error-recovery {
+    margin: 12px;
+    padding: 20px;
+  }
+
+  .error-recovery-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

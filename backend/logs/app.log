@@ -1,0 +1,851 @@
+2025-10-29 14:23:00,875 - main - INFO - ============================================================
+2025-10-29 14:23:00,876 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:23:00,876 - main - INFO - 📍 환경: development
+2025-10-29 14:23:00,876 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:23:00,876 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:23:00,876 - main - INFO - ============================================================
+2025-10-29 14:23:00,876 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:23:00,876 - main - INFO - ============================================================
+2025-10-29 14:23:00,877 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:23:00,877 - main - INFO - 📍 환경: development
+2025-10-29 14:23:00,877 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:23:00,877 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:23:00,877 - main - INFO - ============================================================
+2025-10-29 14:23:00,877 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:23:00,881 - main - INFO - ============================================================
+2025-10-29 14:23:00,881 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:23:00,881 - main - INFO - ============================================================
+2025-10-29 14:23:00,882 - main - INFO - 📍 환경: development
+2025-10-29 14:23:00,882 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:23:00,882 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:23:00,882 - main - INFO - 📍 환경: development
+2025-10-29 14:23:00,882 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:23:00,882 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:23:00,882 - main - INFO - ============================================================
+2025-10-29 14:23:00,882 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:23:00,882 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:23:00,882 - main - INFO - ============================================================
+2025-10-29 14:23:00,883 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:23:00,895 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:23:00,895 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:23:00,895 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:23:00,895 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:23:00,895 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:23:00,895 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:23:00,895 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:23:00,895 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:23:00,895 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:23:00,895 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:23:00,895 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:23:00,895 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:23:00,895 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:23:00,895 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:23:00,895 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:23:00,896 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:25:36,354 - main - INFO - ============================================================
+2025-10-29 14:25:36,354 - main - INFO - ============================================================
+2025-10-29 14:25:36,354 - main - INFO - ============================================================
+2025-10-29 14:25:36,354 - main - INFO - ============================================================
+2025-10-29 14:25:36,360 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:25:36,360 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:25:36,360 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:25:36,360 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:25:36,360 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:25:36,360 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:25:36,360 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:25:36,360 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:25:36,367 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:25:36,367 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:25:36,367 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:25:36,367 - main - INFO - ✅ 정리 완료
+2025-10-29 14:25:36,367 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:25:36,367 - main - INFO - ✅ 정리 완료
+2025-10-29 14:25:36,367 - main - INFO - ============================================================
+2025-10-29 14:25:36,367 - main - INFO - ✅ 정리 완료
+2025-10-29 14:25:36,367 - main - INFO - ✅ 정리 완료
+2025-10-29 14:25:36,368 - main - INFO - ============================================================
+2025-10-29 14:25:36,368 - main - INFO - ============================================================
+2025-10-29 14:25:36,368 - main - INFO - ============================================================
+2025-10-29 14:25:41,607 - main - INFO - ============================================================
+2025-10-29 14:25:41,607 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:25:41,608 - main - INFO - 📍 환경: development
+2025-10-29 14:25:41,608 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:25:41,608 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:25:41,608 - main - INFO - ============================================================
+2025-10-29 14:25:41,608 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:25:41,610 - main - INFO - ============================================================
+2025-10-29 14:25:41,610 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:25:41,610 - main - INFO - ============================================================
+2025-10-29 14:25:41,610 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:25:41,610 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:25:41,610 - main - INFO - 📍 환경: development
+2025-10-29 14:25:41,610 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:25:41,610 - main - INFO - 📍 환경: development
+2025-10-29 14:25:41,610 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:25:41,610 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:25:41,610 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:25:41,610 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:25:41,610 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:25:41,610 - main - INFO - ============================================================
+2025-10-29 14:25:41,610 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:25:41,611 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:25:41,611 - main - INFO - ============================================================
+2025-10-29 14:25:41,611 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:25:41,612 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:25:41,612 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:25:41,612 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:25:41,612 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:25:41,612 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:25:41,612 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:25:41,612 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:25:41,612 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:25:41,614 - main - INFO - ============================================================
+2025-10-29 14:25:41,614 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:25:41,614 - main - INFO - 📍 환경: development
+2025-10-29 14:25:41,614 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:25:41,614 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:25:41,614 - main - INFO - ============================================================
+2025-10-29 14:25:41,615 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:25:41,616 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:25:41,617 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:25:41,617 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:25:41,617 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:29:35,985 - src.core.cache - INFO - Cache stored: get_overview
+2025-10-29 14:34:56,778 - main - WARNING - Validation error: [{'type': 'missing', 'loc': ('query', 'name'), 'msg': 'Field required', 'input': None}, {'type': 'list_type', 'loc': ('body',), 'msg': 'Input should be a valid list', 'input': {'chat_room_id': 'test_room_1761716096747', 'name': '테스트 채팅방', 'description': 'API 테스트용'}}]
+2025-10-29 14:34:56,790 - src.core.cache - INFO - Cache stored: get_chat_rooms
+2025-10-29 14:34:56,808 - src.core.cache - INFO - Cache stored: get_overview
+2025-10-29 14:34:56,944 - src.core.cache - INFO - Cache stored: get_widgets_data
+2025-10-29 14:34:57,008 - main - WARNING - Validation error: [{'type': 'string_type', 'loc': ('body',), 'msg': 'Input should be a valid string', 'input': {'user_id': 'test_user'}}]
+2025-10-29 14:34:57,028 - src.core.database - ERROR - Database error: no such column: status
+2025-10-29 14:34:57,029 - main - ERROR - Unexpected error: no such column: status
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 288, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aD/kakao-frontend/backend/src/api/v8/sync.py", line 88, in get_sync_status
+    log_rows = db_manager.execute_query(logs_query, fetch_all=True)
+  File "/Users/aD/kakao-frontend/backend/src/core/database.py", line 63, in execute_query
+    cursor.execute(query, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: status
+2025-10-29 14:34:57,054 - src.services.sync_service - INFO - 새 채팅방 발견: 1개
+2025-10-29 14:34:57,071 - main - WARNING - Validation error: [{'type': 'missing', 'loc': ('body', 'message_id'), 'msg': 'Field required', 'input': None}, {'type': 'missing', 'loc': ('body', 'feedback_type'), 'msg': 'Field required', 'input': None}]
+2025-10-29 14:34:57,083 - main - WARNING - Validation error: [{'type': 'missing', 'loc': ('body', 'project_id'), 'msg': 'Field required', 'input': None}]
+2025-10-29 14:34:57,117 - main - WARNING - Validation error: [{'type': 'missing', 'loc': ('body', 'title'), 'msg': 'Field required', 'input': {'user_id': 'test_user', 'type': 'info', 'message': '테스트 알림'}}]
+2025-10-29 14:34:57,127 - main - WARNING - Validation error: [{'type': 'list_type', 'loc': ('body',), 'msg': 'Input should be a valid list', 'input': {'chat_room_id': 'test_room', 'analysis_types': ['sentiment', 'keywords']}}]
+2025-10-29 14:38:26,250 - main - INFO - ============================================================
+2025-10-29 14:38:26,250 - main - INFO - ============================================================
+2025-10-29 14:38:26,251 - main - INFO - ============================================================
+2025-10-29 14:38:26,252 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:38:26,252 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:38:26,252 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:38:26,252 - main - INFO - 📊 캐시 통계: {'size': 2, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 2, 'hit_rate': 0.0, 'memory_usage': '453 B'}
+2025-10-29 14:38:26,252 - main - INFO - 📊 캐시 통계: {'size': 1, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 1, 'hit_rate': 0.0, 'memory_usage': '277 B'}
+2025-10-29 14:38:26,253 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:38:26,259 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:38:26,259 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:38:26,260 - main - INFO - ✅ 정리 완료
+2025-10-29 14:38:26,260 - main - INFO - ✅ 정리 완료
+2025-10-29 14:38:26,260 - main - INFO - ============================================================
+2025-10-29 14:38:26,260 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:38:26,260 - main - INFO - ============================================================
+2025-10-29 14:38:26,260 - main - INFO - ✅ 정리 완료
+2025-10-29 14:38:26,260 - main - INFO - ============================================================
+2025-10-29 14:38:26,328 - main - INFO - ============================================================
+2025-10-29 14:38:26,328 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:38:26,328 - main - INFO - 📊 캐시 통계: {'size': 1, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 1, 'hit_rate': 0.0, 'memory_usage': '276 B'}
+2025-10-29 14:38:26,329 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:38:26,329 - main - INFO - ✅ 정리 완료
+2025-10-29 14:38:26,329 - main - INFO - ============================================================
+2025-10-29 14:38:31,999 - main - INFO - ============================================================
+2025-10-29 14:38:31,999 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:38:32,000 - main - INFO - 📍 환경: development
+2025-10-29 14:38:32,000 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:38:32,000 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:38:32,000 - main - INFO - ============================================================
+2025-10-29 14:38:32,000 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:38:32,003 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:38:32,003 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:38:32,003 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:38:32,003 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:38:32,004 - main - INFO - ============================================================
+2025-10-29 14:38:32,004 - main - INFO - ============================================================
+2025-10-29 14:38:32,004 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:38:32,004 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:38:32,004 - main - INFO - 📍 환경: development
+2025-10-29 14:38:32,004 - main - INFO - 📍 환경: development
+2025-10-29 14:38:32,004 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:38:32,004 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:38:32,004 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:38:32,004 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:38:32,004 - main - INFO - ============================================================
+2025-10-29 14:38:32,004 - main - INFO - ============================================================
+2025-10-29 14:38:32,004 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:38:32,005 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:38:32,006 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:38:32,006 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:38:32,006 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:38:32,006 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:38:32,006 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:38:32,006 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:38:32,006 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:38:32,006 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:38:32,013 - main - INFO - ============================================================
+2025-10-29 14:38:32,013 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:38:32,013 - main - INFO - 📍 환경: development
+2025-10-29 14:38:32,013 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:38:32,013 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:38:32,013 - main - INFO - ============================================================
+2025-10-29 14:38:32,013 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:38:32,015 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:38:32,015 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:38:32,015 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:38:32,015 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:38:42,676 - main - WARNING - Validation error: [{'type': 'missing', 'loc': ('query', 'name'), 'msg': 'Field required', 'input': None}, {'type': 'list_type', 'loc': ('body',), 'msg': 'Input should be a valid list', 'input': {'chat_room_id': 'test_room_1761716322662', 'name': '테스트 채팅방', 'description': 'API 테스트용'}}]
+2025-10-29 14:38:42,684 - src.core.cache - INFO - Cache stored: get_chat_rooms
+2025-10-29 14:38:42,699 - src.core.cache - INFO - Cache stored: get_overview
+2025-10-29 14:38:42,740 - src.core.cache - INFO - Cache stored: get_widgets_data
+2025-10-29 14:38:42,763 - main - WARNING - Validation error: [{'type': 'string_type', 'loc': ('body',), 'msg': 'Input should be a valid string', 'input': {'user_id': 'test_user'}}]
+2025-10-29 14:38:42,780 - src.core.database - ERROR - Database error: no such column: status
+2025-10-29 14:38:42,780 - main - ERROR - Unexpected error: no such column: status
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 288, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aD/kakao-frontend/backend/src/api/v8/sync.py", line 88, in get_sync_status
+    log_rows = db_manager.execute_query(logs_query, fetch_all=True)
+  File "/Users/aD/kakao-frontend/backend/src/core/database.py", line 63, in execute_query
+    cursor.execute(query, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: status
+2025-10-29 14:38:42,801 - src.services.sync_service - INFO - 새 채팅방 발견: 1개
+2025-10-29 14:38:42,812 - main - WARNING - Validation error: [{'type': 'missing', 'loc': ('body', 'message_id'), 'msg': 'Field required', 'input': None}, {'type': 'missing', 'loc': ('body', 'feedback_type'), 'msg': 'Field required', 'input': None}]
+2025-10-29 14:38:42,816 - main - WARNING - Validation error: [{'type': 'missing', 'loc': ('body', 'project_id'), 'msg': 'Field required', 'input': None}]
+2025-10-29 14:38:42,822 - main - ERROR - Unexpected error: No module named 'psutil'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 288, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aD/kakao-frontend/backend/src/api/v8/scalability.py", line 510, in get_resource_usage
+    import psutil
+ModuleNotFoundError: No module named 'psutil'
+2025-10-29 14:38:42,826 - main - ERROR - Unexpected error: 'LoadBalancer' object has no attribute 'get_status'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 288, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aD/kakao-frontend/backend/src/api/v8/scalability.py", line 585, in get_load_balancing_status
+    balancer_info = load_balancer.get_status()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'LoadBalancer' object has no attribute 'get_status'
+2025-10-29 14:38:42,841 - main - WARNING - Validation error: [{'type': 'missing', 'loc': ('body', 'title'), 'msg': 'Field required', 'input': {'user_id': 'test_user', 'type': 'info', 'message': '테스트 알림'}}]
+2025-10-29 14:38:42,851 - main - WARNING - Validation error: [{'type': 'list_type', 'loc': ('body',), 'msg': 'Input should be a valid list', 'input': {'chat_room_id': 'test_room', 'analysis_types': ['sentiment', 'keywords']}}]
+2025-10-29 14:41:33,637 - main - INFO - ============================================================
+2025-10-29 14:41:33,638 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:41:33,638 - main - INFO - 📊 캐시 통계: {'size': 1, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 1, 'hit_rate': 0.0, 'memory_usage': '277 B'}
+2025-10-29 14:41:33,639 - main - INFO - ============================================================
+2025-10-29 14:41:33,639 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:41:33,640 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:41:33,640 - main - INFO - ============================================================
+2025-10-29 14:41:33,640 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:41:33,641 - main - INFO - 📊 캐시 통계: {'size': 2, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 2, 'hit_rate': 0.0, 'memory_usage': '453 B'}
+2025-10-29 14:41:33,640 - main - INFO - ============================================================
+2025-10-29 14:41:33,641 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:41:33,641 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:41:33,654 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:41:33,654 - main - INFO - ✅ 정리 완료
+2025-10-29 14:41:33,654 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:41:33,654 - main - INFO - ============================================================
+2025-10-29 14:41:33,654 - main - INFO - ✅ 정리 완료
+2025-10-29 14:41:33,654 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:41:33,655 - main - INFO - ✅ 정리 완료
+2025-10-29 14:41:33,655 - main - INFO - ============================================================
+2025-10-29 14:41:33,655 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 2, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:41:33,655 - main - INFO - ✅ 정리 완료
+2025-10-29 14:41:33,656 - main - INFO - ============================================================
+2025-10-29 14:41:33,654 - main - INFO - ============================================================
+2025-10-29 14:42:30,719 - main - INFO - ============================================================
+2025-10-29 14:42:30,719 - main - INFO - ============================================================
+2025-10-29 14:42:30,719 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:42:30,720 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:42:30,720 - main - INFO - 📍 환경: development
+2025-10-29 14:42:30,720 - main - INFO - 📍 환경: development
+2025-10-29 14:42:30,720 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:42:30,720 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:42:30,720 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:42:30,720 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:42:30,720 - main - INFO - ============================================================
+2025-10-29 14:42:30,720 - main - INFO - ============================================================
+2025-10-29 14:42:30,720 - main - INFO - ============================================================
+2025-10-29 14:42:30,720 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:42:30,720 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:42:30,720 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:42:30,720 - main - INFO - 📍 환경: development
+2025-10-29 14:42:30,721 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:42:30,721 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:42:30,721 - main - INFO - ============================================================
+2025-10-29 14:42:30,721 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:42:30,721 - main - INFO - ============================================================
+2025-10-29 14:42:30,722 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:42:30,722 - main - INFO - 📍 환경: development
+2025-10-29 14:42:30,722 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:42:30,722 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:42:30,722 - main - INFO - ============================================================
+2025-10-29 14:42:30,722 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:42:30,722 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:42:30,722 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:42:30,722 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:42:30,723 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:42:30,723 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:42:30,723 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:42:30,723 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:42:30,723 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:42:30,723 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:42:30,723 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:42:30,723 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:42:30,723 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:42:30,723 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:42:30,723 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:42:30,724 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:42:30,724 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:42:44,567 - src.core.cache - INFO - Cache stored: get_chat_rooms
+2025-10-29 14:42:44,579 - src.core.cache - INFO - Cache stored: get_overview
+2025-10-29 14:42:44,635 - src.core.cache - INFO - Cache stored: get_widgets_data
+2025-10-29 14:42:44,656 - main - WARNING - Validation error: [{'type': 'string_type', 'loc': ('body',), 'msg': 'Input should be a valid string', 'input': {'user_id': 'test_user'}}]
+2025-10-29 14:42:44,667 - main - ERROR - Unexpected error: 'SyncService' object has no attribute 'discover_sync_files'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 288, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aD/kakao-frontend/backend/src/api/v8/sync.py", line 63, in discover_files
+    files = await sync_service.discover_sync_files()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SyncService' object has no attribute 'discover_sync_files'
+2025-10-29 14:42:44,721 - main - ERROR - Unexpected error: No module named 'psutil'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 288, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aD/kakao-frontend/backend/src/api/v8/scalability.py", line 510, in get_resource_usage
+    import psutil
+ModuleNotFoundError: No module named 'psutil'
+2025-10-29 14:43:13,571 - main - INFO - ============================================================
+2025-10-29 14:43:13,571 - main - INFO - ============================================================
+2025-10-29 14:43:13,571 - main - INFO - ============================================================
+2025-10-29 14:43:13,572 - main - INFO - ============================================================
+2025-10-29 14:43:13,573 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:43:13,573 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:43:13,573 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:43:13,573 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:43:13,573 - main - INFO - 📊 캐시 통계: {'size': 3, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 3, 'hit_rate': 0.0, 'memory_usage': '732 B'}
+2025-10-29 14:43:13,573 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:43:13,573 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:43:13,574 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:43:13,581 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 3, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:43:13,581 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 3, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:43:13,581 - main - INFO - ✅ 정리 완료
+2025-10-29 14:43:13,581 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 3, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:43:13,581 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 3, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:43:13,581 - main - INFO - ✅ 정리 완료
+2025-10-29 14:43:13,581 - main - INFO - ============================================================
+2025-10-29 14:43:13,581 - main - INFO - ✅ 정리 완료
+2025-10-29 14:43:13,581 - main - INFO - ✅ 정리 완료
+2025-10-29 14:43:13,581 - main - INFO - ============================================================
+2025-10-29 14:43:13,582 - main - INFO - ============================================================
+2025-10-29 14:43:13,582 - main - INFO - ============================================================
+2025-10-29 14:43:20,116 - main - INFO - ============================================================
+2025-10-29 14:43:20,117 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:43:20,117 - main - INFO - 📍 환경: development
+2025-10-29 14:43:20,117 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:43:20,117 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:43:20,117 - main - INFO - ============================================================
+2025-10-29 14:43:20,117 - main - INFO - ============================================================
+2025-10-29 14:43:20,117 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:43:20,117 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:43:20,117 - main - INFO - 📍 환경: development
+2025-10-29 14:43:20,118 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:43:20,118 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:43:20,118 - main - INFO - ============================================================
+2025-10-29 14:43:20,118 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:43:20,118 - main - INFO - ============================================================
+2025-10-29 14:43:20,118 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:43:20,118 - main - INFO - 📍 환경: development
+2025-10-29 14:43:20,119 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:43:20,119 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:43:20,119 - main - INFO - ============================================================
+2025-10-29 14:43:20,119 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:43:20,119 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:43:20,119 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:43:20,119 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:43:20,119 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:43:20,120 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:43:20,120 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:43:20,120 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:43:20,120 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:43:20,120 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:43:20,120 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:43:20,120 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:43:20,120 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:43:20,128 - main - INFO - ============================================================
+2025-10-29 14:43:20,128 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:43:20,128 - main - INFO - 📍 환경: development
+2025-10-29 14:43:20,128 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:43:20,129 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:43:20,129 - main - INFO - ============================================================
+2025-10-29 14:43:20,129 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:43:20,130 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:43:20,130 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:43:20,130 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:43:20,130 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:43:20,194 - src.core.cache - INFO - Cache stored: get_chat_rooms
+2025-10-29 14:43:20,210 - src.core.cache - INFO - Cache stored: get_overview
+2025-10-29 14:43:20,274 - src.core.cache - INFO - Cache stored: get_widgets_data
+2025-10-29 14:43:20,301 - main - WARNING - Validation error: [{'type': 'string_type', 'loc': ('body',), 'msg': 'Input should be a valid string', 'input': {'user_id': 'test_user'}}]
+2025-10-29 14:43:20,325 - main - ERROR - Unexpected error: No module named 'psutil'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 288, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aD/kakao-frontend/backend/src/api/v8/scalability.py", line 510, in get_resource_usage
+    import psutil
+ModuleNotFoundError: No module named 'psutil'
+2025-10-29 14:49:14,316 - main - INFO - ============================================================
+2025-10-29 14:49:14,316 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:49:14,316 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:49:14,320 - main - INFO - ============================================================
+2025-10-29 14:49:14,320 - main - INFO - ============================================================
+2025-10-29 14:49:14,321 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:49:14,321 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:49:14,321 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:49:14,321 - main - INFO - 📊 캐시 통계: {'size': 3, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 3, 'hit_rate': 0.0, 'memory_usage': '729 B'}
+2025-10-29 14:49:14,330 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 4, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:49:14,330 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 4, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:49:14,330 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 4, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:49:14,330 - main - INFO - ✅ 정리 완료
+2025-10-29 14:49:14,330 - main - INFO - ✅ 정리 완료
+2025-10-29 14:49:14,331 - main - INFO - ✅ 정리 완료
+2025-10-29 14:49:14,331 - main - INFO - ============================================================
+2025-10-29 14:49:14,331 - main - INFO - ============================================================
+2025-10-29 14:49:14,331 - main - INFO - ============================================================
+2025-10-29 14:49:14,347 - main - INFO - ============================================================
+2025-10-29 14:49:14,347 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 14:49:14,347 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 14:49:14,350 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 4, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 14:49:14,350 - main - INFO - ✅ 정리 완료
+2025-10-29 14:49:14,350 - main - INFO - ============================================================
+2025-10-29 14:49:20,683 - main - INFO - ============================================================
+2025-10-29 14:49:20,683 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:49:20,683 - main - INFO - 📍 환경: development
+2025-10-29 14:49:20,683 - main - INFO - ============================================================
+2025-10-29 14:49:20,683 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:49:20,683 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:49:20,683 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:49:20,684 - main - INFO - ============================================================
+2025-10-29 14:49:20,684 - main - INFO - 📍 환경: development
+2025-10-29 14:49:20,684 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:49:20,684 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:49:20,684 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:49:20,684 - main - INFO - ============================================================
+2025-10-29 14:49:20,684 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:49:20,685 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:49:20,685 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:49:20,685 - main - INFO - ============================================================
+2025-10-29 14:49:20,685 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:49:20,685 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:49:20,685 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:49:20,685 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:49:20,685 - main - INFO - 📍 환경: development
+2025-10-29 14:49:20,685 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:49:20,686 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:49:20,686 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:49:20,686 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:49:20,686 - main - INFO - ============================================================
+2025-10-29 14:49:20,686 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:49:20,686 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:49:20,687 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:49:20,687 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:49:20,687 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:49:20,687 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:49:20,688 - main - INFO - ============================================================
+2025-10-29 14:49:20,689 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 14:49:20,689 - main - INFO - 📍 환경: development
+2025-10-29 14:49:20,689 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 14:49:20,689 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 14:49:20,689 - main - INFO - ============================================================
+2025-10-29 14:49:20,689 - src.core.database - INFO - Initializing database tables...
+2025-10-29 14:49:20,691 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 14:49:20,691 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 14:49:20,691 - src.core.cache - INFO - Cache cleared
+2025-10-29 14:49:20,691 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 14:51:34,954 - src.core.cache - INFO - Cache stored: get_chat_rooms
+2025-10-29 14:51:34,967 - src.core.cache - INFO - Cache stored: get_overview
+2025-10-29 14:51:35,022 - src.core.cache - INFO - Cache stored: get_widgets_data
+2025-10-29 14:51:35,050 - main - WARNING - Validation error: [{'type': 'string_type', 'loc': ('body',), 'msg': 'Input should be a valid string', 'input': {'user_id': 'test_user'}}]
+2025-10-29 14:51:35,086 - main - ERROR - Unexpected error: No module named 'psutil'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/fastapi/routing.py", line 288, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aD/kakao-frontend/backend/src/api/v8/scalability.py", line 510, in get_resource_usage
+    import psutil
+ModuleNotFoundError: No module named 'psutil'
+2025-10-29 15:12:23,481 - main - INFO - ============================================================
+2025-10-29 15:12:23,481 - main - INFO - ============================================================
+2025-10-29 15:12:23,482 - main - INFO - ============================================================
+2025-10-29 15:12:23,483 - main - INFO - ============================================================
+2025-10-29 15:12:23,487 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 15:12:23,487 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 15:12:23,487 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 15:12:23,487 - main - INFO - 🛑 서버 종료 중...
+2025-10-29 15:12:23,488 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 15:12:23,488 - main - INFO - 📊 캐시 통계: {'size': 2, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 2, 'hit_rate': 0.0, 'memory_usage': '453 B'}
+2025-10-29 15:12:23,488 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-29 15:12:23,488 - main - INFO - 📊 캐시 통계: {'size': 1, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 1, 'hit_rate': 0.0, 'memory_usage': '277 B'}
+2025-10-29 15:12:23,495 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 15:12:23,495 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 15:12:23,495 - main - INFO - ✅ 정리 완료
+2025-10-29 15:12:23,495 - main - INFO - ✅ 정리 완료
+2025-10-29 15:12:23,495 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 15:12:23,495 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-29 15:12:23,495 - main - INFO - ============================================================
+2025-10-29 15:12:23,495 - main - INFO - ✅ 정리 완료
+2025-10-29 15:12:23,495 - main - INFO - ============================================================
+2025-10-29 15:12:23,495 - main - INFO - ============================================================
+2025-10-29 15:12:23,496 - main - INFO - ✅ 정리 완료
+2025-10-29 15:12:23,496 - main - INFO - ============================================================
+2025-10-29 15:12:30,080 - main - INFO - ============================================================
+2025-10-29 15:12:30,080 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 15:12:30,080 - main - INFO - 📍 환경: development
+2025-10-29 15:12:30,080 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 15:12:30,080 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 15:12:30,081 - main - INFO - ============================================================
+2025-10-29 15:12:30,081 - src.core.database - INFO - Initializing database tables...
+2025-10-29 15:12:30,081 - main - INFO - ============================================================
+2025-10-29 15:12:30,081 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 15:12:30,081 - main - INFO - 📍 환경: development
+2025-10-29 15:12:30,081 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 15:12:30,082 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 15:12:30,082 - main - INFO - ============================================================
+2025-10-29 15:12:30,082 - src.core.database - INFO - Initializing database tables...
+2025-10-29 15:12:30,082 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 15:12:30,082 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 15:12:30,083 - src.core.cache - INFO - Cache cleared
+2025-10-29 15:12:30,083 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 15:12:30,083 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 15:12:30,083 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 15:12:30,083 - src.core.cache - INFO - Cache cleared
+2025-10-29 15:12:30,084 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 15:12:30,084 - main - INFO - ============================================================
+2025-10-29 15:12:30,085 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 15:12:30,085 - main - INFO - 📍 환경: development
+2025-10-29 15:12:30,085 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 15:12:30,085 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 15:12:30,085 - main - INFO - ============================================================
+2025-10-29 15:12:30,085 - src.core.database - INFO - Initializing database tables...
+2025-10-29 15:12:30,086 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 15:12:30,086 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 15:12:30,086 - src.core.cache - INFO - Cache cleared
+2025-10-29 15:12:30,086 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 15:12:30,101 - main - INFO - ============================================================
+2025-10-29 15:12:30,101 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 15:12:30,101 - main - INFO - 📍 환경: development
+2025-10-29 15:12:30,101 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 15:12:30,101 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 15:12:30,101 - main - INFO - ============================================================
+2025-10-29 15:12:30,101 - src.core.database - INFO - Initializing database tables...
+2025-10-29 15:12:30,102 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 15:12:30,102 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 15:12:30,102 - src.core.cache - INFO - Cache cleared
+2025-10-29 15:12:30,102 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 16:11:46,901 - src.core.cache - INFO - Cache stored: get_chat_rooms
+2025-10-29 16:11:46,906 - main - ERROR - API Exception: RESOURCE_NOT_FOUND - 채팅방을(를) 찾을 수 없습니다
+2025-10-29 16:11:46,909 - main - ERROR - API Exception: RESOURCE_NOT_FOUND - 채팅방을(를) 찾을 수 없습니다
+2025-10-29 16:11:46,961 - src.core.cache - INFO - Cache stored: get_overview
+2025-10-31 13:20:36,614 - main - INFO - ============================================================
+2025-10-31 13:20:36,614 - main - INFO - ============================================================
+2025-10-31 13:20:36,618 - main - INFO - 🛑 서버 종료 중...
+2025-10-31 13:20:36,618 - main - INFO - 🛑 서버 종료 중...
+2025-10-31 13:20:36,620 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-31 13:20:36,621 - main - INFO - 📊 캐시 통계: {'size': 2, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 4, 'hit_rate': 0.0, 'memory_usage': '546 B'}
+2025-10-31 13:20:36,635 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-31 13:20:36,635 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-31 13:20:36,636 - main - INFO - ✅ 정리 완료
+2025-10-31 13:20:36,636 - main - INFO - ✅ 정리 완료
+2025-10-31 13:20:36,636 - main - INFO - ============================================================
+2025-10-31 13:20:36,636 - main - INFO - ============================================================
+2025-10-31 13:20:36,641 - main - INFO - ============================================================
+2025-10-31 13:20:36,641 - main - INFO - 🛑 서버 종료 중...
+2025-10-31 13:20:36,642 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-31 13:20:36,644 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-31 13:20:36,644 - main - INFO - ✅ 정리 완료
+2025-10-31 13:20:36,644 - main - INFO - ============================================================
+2025-10-31 13:20:36,647 - main - INFO - ============================================================
+2025-10-31 13:20:36,648 - main - INFO - 🛑 서버 종료 중...
+2025-10-31 13:20:36,648 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-31 13:20:36,651 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-31 13:20:36,651 - main - INFO - ✅ 정리 완료
+2025-10-31 13:20:36,651 - main - INFO - ============================================================

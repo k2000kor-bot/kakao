@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchProjects, setCurrentProject } from '../../store/slices/projectsSlice';
 import { fetchSessions, setCurrentSession, createSession } from '../../store/slices/sessionsSlice';
+import { errorLogger } from '../../utils/errorLogger';
 import {
     Menu,
     Search,
@@ -86,7 +87,7 @@ const Sidebar: React.FC = () => {
                 dispatch(setCurrentSession(result.id));
             }
         } catch (error) {
-            console.error('Failed to create session:', error);
+            errorLogger.error('세션 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'Sidebar', action: 'handleCreateSession' });
         }
     };
 
@@ -114,7 +115,7 @@ const Sidebar: React.FC = () => {
                 setShowNewProjectModal(false);
             }
         } catch (error) {
-            console.error('Failed to create project:', error);
+            errorLogger.error('프로젝트 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'Sidebar', action: 'handleCreateProject' });
         }
     };
 

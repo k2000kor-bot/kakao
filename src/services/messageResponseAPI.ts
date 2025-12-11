@@ -522,4 +522,6 @@ class MessageResponseAPI {
     }
 }
 
-export default new MessageResponseAPI(); 
+const messageResponseAPI = new MessageResponseAPI();
+export default messageResponseAPI;
+export { MessageResponseAPI }; 

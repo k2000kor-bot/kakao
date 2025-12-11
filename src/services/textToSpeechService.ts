@@ -45,7 +45,7 @@ export interface TTSEvents {
     onVoiceChange?: (voice: SpeechSynthesisVoice) => void;
 }
 
-class TextToSpeechService {
+export class TextToSpeechService {
     private synthesis: SpeechSynthesis;
     private supportStatus: boolean = false;
     private availableVoices: SpeechSynthesisVoice[] = [];

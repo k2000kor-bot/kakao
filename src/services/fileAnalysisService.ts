@@ -50,7 +50,7 @@ export interface ChatFileAnalysis {
   recommendations: string[];
 }
 
-class FileAnalysisService {
+export class FileAnalysisService {
   private static instance: FileAnalysisService;
   private analysisCache: Map<string, FileAnalysisResult> = new Map();
 
@@ -78,7 +78,11 @@ class FileAnalysisService {
     let analysisResult: FileAnalysisResult;
 
     try {
-      switch (file.type.toLowerCase()) {
+      // 파일명에서 확장자 추출
+      const fileName = file.name.toLowerCase();
+      const extension = fileName.split('.').pop() || '';
+
+      switch (extension) {
         case 'pdf':
         case 'doc':
         case 'docx':
@@ -335,7 +339,8 @@ class FileAnalysisService {
     
     const relevantFiles = files.filter(file => {
       const fileNameLower = file.name.toLowerCase();
-      const fileTypeLower = file.type.toLowerCase();
+      // 파일명에서 확장자 추출
+      const extension = fileNameLower.split('.').pop() || '';
       
       // 파일명에 키워드가 포함된 경우
       if (relevantKeywords.some(keyword => fileNameLower.includes(keyword))) {
@@ -344,19 +349,19 @@ class FileAnalysisService {
       
       // 특정 질문 패턴에 따른 파일 타입 매칭
       if (queryLower.includes('이미지') || queryLower.includes('사진') || queryLower.includes('그림')) {
-        return ['jpg', 'jpeg', 'png', 'gif'].includes(fileTypeLower);
+        return ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
       }
       
       if (queryLower.includes('비디오') || queryLower.includes('영상') || queryLower.includes('동영상')) {
-        return ['mp4', 'avi', 'mov'].includes(fileTypeLower);
+        return ['mp4', 'avi', 'mov'].includes(extension);
       }
       
       if (queryLower.includes('문서') || queryLower.includes('pdf') || queryLower.includes('파일')) {
-        return ['pdf', 'doc', 'docx', 'txt'].includes(fileTypeLower);
+        return ['pdf', 'doc', 'docx', 'txt'].includes(extension);
       }
       
       if (queryLower.includes('오디오') || queryLower.includes('음성') || queryLower.includes('음악')) {
-        return ['mp3', 'wav'].includes(fileTypeLower);
+        return ['mp3', 'wav'].includes(extension);
       }
       
       return false;

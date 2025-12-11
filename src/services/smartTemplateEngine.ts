@@ -487,7 +487,7 @@ class SmartTemplateEngine {
         };
 
         // 프로젝트 생성
-        const project = projectService.createProject(projectData);
+        const project = await projectService.createProject(projectData);
 
         // 초기 채팅 생성 (비동기로 처리)
         setTimeout(() => {
@@ -650,7 +650,7 @@ class SmartTemplateEngine {
         const { chatService } = await import('./projectService');
 
         for (const chatTemplate of template.structure.initialChats) {
-            const chat = chatService.createChat(projectId, chatTemplate.title);
+            const chat = await chatService.createChat(projectId, chatTemplate.title);
 
             // 환영 메시지 추가
             const { messageService } = await import('./projectService');

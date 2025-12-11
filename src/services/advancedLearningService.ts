@@ -802,3 +802,4 @@ class AdvancedLearningService {
 }
 
 export const advancedLearningService = new AdvancedLearningService();
+export default advancedLearningService;

@@ -235,7 +235,7 @@ export interface LearningAnalytics {
   adaptiveContentUsage: number;
 }
 
-class AIMultimodalLearningPathOptimizationSystem {
+export class AIMultimodalLearningPathOptimizationSystem {
   private learningPaths: Map<string, LearningPath> = new Map();
   private isRunning: boolean = false;
   private analytics: LearningAnalytics = {

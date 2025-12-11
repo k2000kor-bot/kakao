@@ -103,6 +103,17 @@ import {
     Storage as StorageIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { errorLogger } from '../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -191,7 +202,11 @@ const AdvancedPerformanceMonitor: React.FC = () => {
             // 임계값 체크 및 알림 생성
             checkThresholds(response.data);
         } catch (err) {
-            console.error('성능 메트릭 수집 실패:', err);
+            const error = toError(err);
+            errorLogger.error('성능 메트릭 수집 실패', error, {
+                component: 'AdvancedPerformanceMonitor',
+                action: 'collectPerformanceMetrics',
+            });
             setError('성능 메트릭 수집 중 오류가 발생했습니다.');
         }
     }, []);

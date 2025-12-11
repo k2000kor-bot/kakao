@@ -41,7 +41,7 @@ export interface GeneratedMessage {
   };
 }
 
-class DeepLearningService {
+export class DeepLearningService {
   private openaiApiKey: string = '';
   private useLocalModel: boolean = true;
   private localModelConfig = {

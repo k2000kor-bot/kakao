@@ -57,7 +57,7 @@ export interface SystemIntelligenceReport {
     optimizations: AutoOptimizationAction[];
 }
 
-class SystemIntelligenceService {
+export class SystemIntelligenceService {
     private healthHistory: SystemHealthMetrics[] = [];
     private anomalies: SystemAnomaly[] = [];
     private insights: PredictiveInsight[] = [];

@@ -137,7 +137,7 @@ export interface ResponseMetadata {
   learningInsights: string[];
 }
 
-class ChatGPT5LevelService {
+export class ChatGPT5LevelService {
   private baseUrl = 'http://localhost:8006/api/v10';
   private modelVersion = 'gpt-5-phd-level-v1.0';
   private expertiseDomains = new Map<string, DomainExpertise>();

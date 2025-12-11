@@ -51,7 +51,7 @@ interface SmartSuggestion {
     data: any;
 }
 
-class AutomationWorkflowEngine {
+export class AutomationWorkflowEngine {
     private workflows: Map<string, WorkflowStep> = new Map();
     private rules: Map<string, AutomationRule> = new Map();
     private suggestions: SmartSuggestion[] = [];

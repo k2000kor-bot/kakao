@@ -1,0 +1,142 @@
+OpenAI 초기화 실패 (데모 모드로 동작): No module named 'openai'
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started parent process [5547]
+OpenAI 초기화 실패 (데모 모드로 동작): No module named 'openai'
+OpenAI 초기화 실패 (데모 모드로 동작): No module named 'openai'
+OpenAI 초기화 실패 (데모 모드로 동작): No module named 'openai'
+OpenAI 초기화 실패 (데모 모드로 동작): No module named 'openai'
+INFO:     Started server process [5603]
+INFO:     Waiting for application startup.
+2025-10-29 15:12:30,080 - main - INFO - ============================================================
+2025-10-29 15:12:30,080 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 15:12:30,080 - main - INFO - 📍 환경: development
+2025-10-29 15:12:30,080 - main - INFO - 📍 서버: http://0.0.0.0:8000
+INFO:     Started server process [5605]
+2025-10-29 15:12:30,080 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+INFO:     Waiting for application startup.
+2025-10-29 15:12:30,081 - main - INFO - ============================================================
+2025-10-29 15:12:30,081 - src.core.database - INFO - Initializing database tables...
+2025-10-29 15:12:30,081 - main - INFO - ============================================================
+2025-10-29 15:12:30,081 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 15:12:30,081 - main - INFO - 📍 환경: development
+2025-10-29 15:12:30,081 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 15:12:30,082 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 15:12:30,082 - main - INFO - ============================================================
+2025-10-29 15:12:30,082 - src.core.database - INFO - Initializing database tables...
+2025-10-29 15:12:30,082 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 15:12:30,082 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 15:12:30,083 - src.core.cache - INFO - Cache cleared
+2025-10-29 15:12:30,083 - main - INFO - ✅ 캐시 초기화 완료
+2025-10-29 15:12:30,083 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 15:12:30,083 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 15:12:30,083 - src.core.cache - INFO - Cache cleared
+INFO:     Application startup complete.
+2025-10-29 15:12:30,084 - main - INFO - ✅ 캐시 초기화 완료
+INFO:     Started server process [5602]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+2025-10-29 15:12:30,084 - main - INFO - ============================================================
+2025-10-29 15:12:30,085 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 15:12:30,085 - main - INFO - 📍 환경: development
+2025-10-29 15:12:30,085 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 15:12:30,085 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 15:12:30,085 - main - INFO - ============================================================
+2025-10-29 15:12:30,085 - src.core.database - INFO - Initializing database tables...
+2025-10-29 15:12:30,086 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 15:12:30,086 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 15:12:30,086 - src.core.cache - INFO - Cache cleared
+2025-10-29 15:12:30,086 - main - INFO - ✅ 캐시 초기화 완료
+INFO:     Application startup complete.
+INFO:     Started server process [5604]
+INFO:     Waiting for application startup.
+2025-10-29 15:12:30,101 - main - INFO - ============================================================
+2025-10-29 15:12:30,101 - main - INFO - 🚀 Unified Kakao AI API v8.0.0 시작
+2025-10-29 15:12:30,101 - main - INFO - 📍 환경: development
+2025-10-29 15:12:30,101 - main - INFO - 📍 서버: http://0.0.0.0:8000
+2025-10-29 15:12:30,101 - main - INFO - 📚 문서: http://0.0.0.0:8000/api/docs
+2025-10-29 15:12:30,101 - main - INFO - ============================================================
+2025-10-29 15:12:30,101 - src.core.database - INFO - Initializing database tables...
+2025-10-29 15:12:30,102 - src.core.database - INFO - ✅ Database tables initialized successfully
+2025-10-29 15:12:30,102 - main - INFO - ✅ 데이터베이스 초기화 완료
+2025-10-29 15:12:30,102 - src.core.cache - INFO - Cache cleared
+2025-10-29 15:12:30,102 - main - INFO - ✅ 캐시 초기화 완료
+INFO:     Application startup complete.
+INFO:     127.0.0.1:59999 - "POST /api/v8/edge-ai/federated/learn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60001 - "POST /api/v8/blockchain/smart-contract/deploy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60003 - "POST /api/v8/ar-vr/spatial/mapping HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60009 - "POST /api/v8/consciousness/consciousness/model HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60011 - "POST /api/v8/space/space/exploration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60013 - "POST /api/v8/iot/smart-city/optimize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61870 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61871 - "GET /api HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61870 - "GET /api/v8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61871 - "GET /api/v8/chat-rooms HTTP/1.1" 307 Temporary Redirect
+2025-10-29 16:11:46,901 - src.core.cache - INFO - Cache stored: get_chat_rooms
+INFO:     127.0.0.1:61870 - "GET /api/v8/chat-rooms/ HTTP/1.1" 200 OK
+2025-10-29 16:11:46,906 - main - ERROR - API Exception: RESOURCE_NOT_FOUND - 채팅방을(를) 찾을 수 없습니다
+INFO:     127.0.0.1:61871 - "GET /api/v8/chat-rooms/test-room HTTP/1.1" 404 Not Found
+2025-10-29 16:11:46,909 - main - ERROR - API Exception: RESOURCE_NOT_FOUND - 채팅방을(를) 찾을 수 없습니다
+INFO:     127.0.0.1:61870 - "GET /api/v8/messages/chat-rooms/test-room HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61871 - "GET /api/v8/messages/chat-rooms/test-room/search?q=test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61870 - "POST /api/v8/analysis/conversation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61871 - "POST /api/v8/generation/gpt-message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61870 - "GET /api/v8/generation/gpt-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61871 - "GET /api/v8/projects HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:61870 - "GET /api/v8/projects/ HTTP/1.1" 200 OK
+2025-10-29 16:11:46,961 - src.core.cache - INFO - Cache stored: get_overview
+INFO:     127.0.0.1:61871 - "GET /api/v8/dashboard/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61870 - "POST /api/v8/predictive/trends/predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61871 - "POST /api/v8/predictive/behavior/forecast HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61870 - "POST /api/v8/intelligent/recommend HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61871 - "POST /api/v8/quantum/optimize HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61870 - "POST /api/v8/multimodal/analyze HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Received SIGTERM, exiting.
+INFO:     Terminated child process [5602]
+INFO:     Terminated child process [5603]
+INFO:     Terminated child process [5604]
+INFO:     Terminated child process [5605]
+INFO:     Waiting for child process [5602]
+INFO:     Shutting down
+INFO:     Shutting down
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Waiting for application shutdown.
+2025-10-31 13:20:36,614 - main - INFO - ============================================================
+2025-10-31 13:20:36,614 - main - INFO - ============================================================
+2025-10-31 13:20:36,618 - main - INFO - 🛑 서버 종료 중...
+2025-10-31 13:20:36,618 - main - INFO - 🛑 서버 종료 중...
+2025-10-31 13:20:36,620 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-31 13:20:36,621 - main - INFO - 📊 캐시 통계: {'size': 2, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 4, 'hit_rate': 0.0, 'memory_usage': '546 B'}
+2025-10-31 13:20:36,635 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-31 13:20:36,635 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-31 13:20:36,636 - main - INFO - ✅ 정리 완료
+2025-10-31 13:20:36,636 - main - INFO - ✅ 정리 완료
+2025-10-31 13:20:36,636 - main - INFO - ============================================================
+2025-10-31 13:20:36,636 - main - INFO - ============================================================
+INFO:     Application shutdown complete.
+INFO:     Application shutdown complete.
+INFO:     Waiting for application shutdown.
+INFO:     Finished server process [5602]
+INFO:     Finished server process [5604]
+2025-10-31 13:20:36,641 - main - INFO - ============================================================
+2025-10-31 13:20:36,641 - main - INFO - 🛑 서버 종료 중...
+2025-10-31 13:20:36,642 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+2025-10-31 13:20:36,644 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-31 13:20:36,644 - main - INFO - ✅ 정리 완료
+2025-10-31 13:20:36,644 - main - INFO - ============================================================
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5603]
+2025-10-31 13:20:36,647 - main - INFO - ============================================================
+2025-10-31 13:20:36,648 - main - INFO - 🛑 서버 종료 중...
+2025-10-31 13:20:36,648 - main - INFO - 📊 캐시 통계: {'size': 0, 'max_size': 1000, 'ttl': 300, 'hit_count': 0, 'miss_count': 0, 'hit_rate': 0, 'memory_usage': '0 B'}
+INFO:     Waiting for child process [5603]
+2025-10-31 13:20:36,651 - main - INFO - 📊 DB 통계: {'chat_rooms_count': 5, 'messages_count': 4913, 'media_files_count': 258, 'sync_logs_count': 3, 'database_size': 4599808}
+2025-10-31 13:20:36,651 - main - INFO - ✅ 정리 완료
+2025-10-31 13:20:36,651 - main - INFO - ============================================================
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5605]
+INFO:     Waiting for child process [5604]
+INFO:     Waiting for child process [5605]
+INFO:     Stopping parent process [5547]

@@ -56,7 +56,7 @@ export interface OptimizationConfig {
     alert_channels: string[];
 }
 
-class AIPerformanceOptimizationService extends EventEmitter {
+export class AIPerformanceOptimizationService extends EventEmitter {
     private metrics: Map<string, PerformanceMetric[]> = new Map();
     private optimizationRules: Map<string, OptimizationRule> = new Map();
     private systemHealth: SystemHealth = {

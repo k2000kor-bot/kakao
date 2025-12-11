@@ -962,3 +962,4 @@ class AdvancedQuestionAnalyzer {
 }
 
 export const advancedQuestionAnalyzer = new AdvancedQuestionAnalyzer();
+export default advancedQuestionAnalyzer;

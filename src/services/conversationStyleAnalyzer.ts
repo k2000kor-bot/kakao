@@ -57,7 +57,7 @@ export interface StyleBasedMessage {
     natural_flow_score: number;
 }
 
-class ConversationStyleAnalyzer {
+export class ConversationStyleAnalyzer {
     private speakerProfiles: Map<string, PersonaProfile> = new Map();
     private conversationPatterns: Map<string, ConversationLogic> = new Map();
 
@@ -137,7 +137,17 @@ class ConversationStyleAnalyzer {
      * 말하기 스타일 분석
      */
     private analyzeSpeakingStyle(messages: any[]): SpeakingStyle {
-        const contents = messages.map(msg => msg.content);
+        const contents = messages.map(msg => {
+            if (typeof msg === 'string') {
+                return msg;
+            }
+            return msg?.content || msg?.message || msg?.text || String(msg);
+        }).filter(content => typeof content === 'string' && content.trim().length > 0);
+
+        // 빈 배열 처리
+        if (contents.length === 0) {
+            return this.createDefaultSpeakingStyle();
+        }
 
         // 격식도 분석
         const formalityLevel = this.analyzeFormalityLevel(contents);
@@ -179,6 +189,10 @@ class ConversationStyleAnalyzer {
      * 격식도 분석
      */
     private analyzeFormalityLevel(contents: string[]): number {
+        if (!contents || contents.length === 0) {
+            return 0.5; // 기본값
+        }
+
         let formalScore = 0;
         let totalPatterns = 0;
 
@@ -221,6 +235,9 @@ class ConversationStyleAnalyzer {
      * 문장 길이 분석
      */
     private analyzeSentenceLength(contents: string[]): 'short' | 'medium' | 'long' {
+        if (!contents || contents.length === 0) {
+            return 'medium';
+        }
         const avgLength = contents.reduce((sum, content) => sum + content.length, 0) / contents.length;
 
         if (avgLength < 20) return 'short';
@@ -454,7 +471,24 @@ class ConversationStyleAnalyzer {
      * 대화 논리 분석
      */
     private analyzeConversationLogic(messages: any[]): ConversationLogic {
-        const contents = messages.map(msg => msg.content);
+        const contents = messages.map(msg => {
+            if (typeof msg === 'string') {
+                return msg;
+            }
+            return msg?.content || msg?.message || msg?.text || String(msg);
+        }).filter(content => typeof content === 'string' && content.trim().length > 0);
+
+        // 빈 배열 처리
+        if (contents.length === 0) {
+            return {
+                argument_structure: 'linear',
+                evidence_usage: 'experiential',
+                persuasion_style: 'mixed',
+                decision_making: 'deliberate',
+                conflict_resolution: 'diplomatic',
+                topic_transitions: 'smooth'
+            };
+        }
 
         return {
             argument_structure: this.analyzeArgumentStructure(contents),
@@ -737,10 +771,18 @@ class ConversationStyleAnalyzer {
     private calculateConsistencyScore(messages: any[]): number {
         if (messages.length < 2) return 0.5;
 
-        const contents = messages.map(msg => msg.content);
+        const contents = messages.map(msg => {
+            if (typeof msg === 'string') {
+                return msg;
+            }
+            return msg?.content || msg?.message || msg?.text || String(msg);
+        }).filter(content => typeof content === 'string' && content.trim().length > 0);
 
         // 격식도 일관성
         const formalityLevels = contents.map(content => {
+            if (typeof content !== 'string') {
+                return 0.5;
+            }
             let score = 0;
             if (this.koreanStylePatterns.formality.honorific.some(pattern => content.includes(pattern))) score += 2;
             if (this.koreanStylePatterns.formality.polite.some(pattern => content.includes(pattern))) score += 1;
@@ -1104,6 +1146,27 @@ class ConversationStyleAnalyzer {
         elements.push(`역할: ${profile.speaking_style.conversation_role}`);
 
         return elements;
+    }
+
+    /**
+     * 기본 말하기 스타일 생성
+     */
+    private createDefaultSpeakingStyle(): SpeakingStyle {
+        return {
+            formality_level: 0.7,
+            sentence_length: 'medium',
+            emotional_expression: 'moderate',
+            logical_pattern: 'deductive',
+            conversation_role: 'supporter',
+            characteristic_phrases: [],
+            verbal_habits: [],
+            tone_indicators: {
+                concern: 0.3,
+                confidence: 0.5,
+                enthusiasm: 0.4,
+                caution: 0.3
+            }
+        };
     }
 
     /**

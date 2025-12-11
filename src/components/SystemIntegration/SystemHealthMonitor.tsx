@@ -37,6 +37,17 @@ import {
     Assessment
 } from '@mui/icons-material';
 import integratedSystemAPI, { SystemStatus } from '../../services/integratedSystemAPI';
+import { errorLogger } from '../../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface HealthMetric {
     name: string;
@@ -69,7 +80,11 @@ const SystemHealthMonitor: React.FC = () => {
             setSystemStatus(status);
             setLastUpdate(new Date());
         } catch (error) {
-            console.error('시스템 상태 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('시스템 상태 로드 실패', err, {
+                component: 'SystemHealthMonitor',
+                action: 'loadSystemStatus',
+            });
         } finally {
             setIsLoading(false);
         }

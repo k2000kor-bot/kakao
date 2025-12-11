@@ -41,7 +41,7 @@ interface LearningData {
     timestamp: Date;
 }
 
-class AIQualityEnhancementService {
+export class AIQualityEnhancementService {
     private enhancementRules: EnhancementRule[] = [];
     private learningHistory: LearningData[] = [];
     private qualityThresholds = {
@@ -247,7 +247,9 @@ class AIQualityEnhancementService {
         const queryAspects = this.identifyQueryAspects(query);
         const addressedAspects = this.identifyAddressedAspects(response, queryAspects);
 
-        const completenessRatio = addressedAspects.length / queryAspects.length;
+        const completenessRatio = queryAspects.length > 0 
+            ? addressedAspects.length / queryAspects.length 
+            : 0.8; // 기본값
 
         // 적절한 길이 확인
         const lengthScore = this.evaluateResponseLength(response, query);

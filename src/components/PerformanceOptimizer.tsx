@@ -32,6 +32,17 @@ import {
     Analytics
 } from '@mui/icons-material';
 import { performanceApi } from '../services/apiService';
+import { errorLogger } from '../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface PerformanceMetrics {
     cpu: number;
@@ -97,7 +108,11 @@ function PerformanceOptimizer() {
                 setMetrics(result.data as PerformanceMetrics);
             }
         } catch (error) {
-            console.error('메트릭 수집 실패:', error);
+            const err = toError(error);
+            errorLogger.error('메트릭 수집 실패', err, {
+                component: 'PerformanceOptimizer',
+                action: 'collectMetrics',
+            });
         }
     }, []);
 
@@ -119,7 +134,12 @@ function PerformanceOptimizer() {
                 await collectMetrics();
             }
         } catch (error) {
-            console.error('최적화 실행 실패:', error);
+            const err = toError(error);
+            errorLogger.error('최적화 실행 실패', err, {
+                component: 'PerformanceOptimizer',
+                action: 'runSpeed',
+                optimizationType,
+            });
         }
     }, [settings, collectMetrics]);
 

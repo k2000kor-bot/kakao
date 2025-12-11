@@ -52,7 +52,7 @@ export interface AutoLearningInsight {
     timestamp: Date;
 }
 
-class AutoFileClassifier {
+export class AutoFileClassifier {
     private classifications = new Map<string, FileClassification>();
     private projectStructures = new Map<string, ProjectFileStructure>();
     private learningPatterns = new Map<string, LearningPattern[]>();

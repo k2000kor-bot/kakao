@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { errorLogger } from './errorLogger';
 
 export interface ErrorInfo {
     code: string;
@@ -127,11 +128,20 @@ export class ErrorHandler {
         }
 
         // 콘솔 로깅
-        console.error('Error occurred:', errorInfo);
+        errorLogger.error('Error occurred', new Error(errorInfo.message), {
+            component: 'ErrorHandler',
+            action: 'logError',
+            errorInfo,
+        });
 
         // 심각한 에러는 추가 로깅
         if (errorInfo.severity === 'critical' || errorInfo.severity === 'high') {
-            console.error('Critical/High severity error:', errorInfo);
+            errorLogger.error('Critical/High severity error', new Error(errorInfo.message), {
+                component: 'ErrorHandler',
+                action: 'logCriticalError',
+                errorInfo,
+                severity: errorInfo.severity,
+            });
         }
     }
 
@@ -234,7 +244,11 @@ export const setupGlobalErrorHandling = (): void => {
             url: window.location.href
         });
 
-        console.error('Unhandled promise rejection:', errorResponse);
+        errorLogger.error('Unhandled promise rejection', errorResponse.error instanceof Error ? errorResponse.error : new Error(errorResponse.error.message), {
+            component: 'ErrorHandler',
+            action: 'handleUnhandledRejection',
+            errorResponse,
+        });
 
         // 심각한 에러는 사용자에게 알림
         if (errorResponse.error.severity === 'critical') {
@@ -252,7 +266,11 @@ export const setupGlobalErrorHandling = (): void => {
             url: window.location.href
         });
 
-        console.error('JavaScript error:', errorResponse);
+        errorLogger.error('JavaScript error', errorResponse.error instanceof Error ? errorResponse.error : new Error(errorResponse.error.message), {
+            component: 'ErrorHandler',
+            action: 'handleJavaScriptError',
+            errorResponse,
+        });
     });
 };
 

@@ -1,0 +1,219 @@
+.writing-quality-panel {
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-top: 20px;
+}
+
+.writing-quality-panel.empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 40px;
+}
+
+.quality-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.quality-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.overall-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.score-value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.metrics-chart {
+  margin-bottom: 24px;
+}
+
+.statistics-section {
+  margin-bottom: 20px;
+}
+
+.statistics-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.stat-item {
+  padding: 12px;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.style-section {
+  margin-bottom: 20px;
+}
+
+.style-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.style-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.style-tag {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.style-tag.formal {
+  background: var(--accent-info-light, #dbeafe);
+  color: var(--accent-info, #1e40af);
+}
+
+.style-tag.casual {
+  background: var(--accent-warning-light, #fef3c7);
+  color: var(--accent-warning, #92400e);
+}
+
+.style-tag.mixed {
+  background: var(--accent-secondary-light, #e9d5ff);
+  color: var(--accent-secondary, #7c3aed);
+}
+
+.style-tag.positive {
+  background: var(--accent-success-light, #d1fae5);
+  color: var(--accent-success, #065f46);
+}
+
+.style-tag.negative {
+  background: var(--accent-danger-light, #fee2e2);
+  color: var(--accent-danger, #dc2626);
+}
+
+.style-tag.neutral {
+  background: var(--bg-tertiary, #f3f4f6);
+  color: var(--text-secondary, #374151);
+}
+
+.style-tag.simple {
+  background: var(--accent-primary-light, #e0e7ff);
+  color: var(--accent-primary, #3730a3);
+}
+
+.style-tag.complex {
+  background: var(--accent-danger-light, #fce7f3);
+  color: var(--accent-danger, #9f1239);
+}
+
+.style-tag.moderate {
+  background: var(--bg-tertiary, #f3f4f6);
+  color: var(--text-secondary, #374151);
+}
+
+.strengths-section,
+.weaknesses-section,
+.suggestions-section {
+  margin-bottom: 20px;
+}
+
+.strengths-section h4,
+.weaknesses-section h4,
+.suggestions-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.strengths-list,
+.weaknesses-list,
+.suggestions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.strengths-list li,
+.weaknesses-list li,
+.suggestions-list li {
+  padding: 10px;
+  margin-bottom: 8px;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  border-left: 3px solid;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.strengths-list li {
+  border-left-color: var(--accent-success, #28a745);
+}
+
+.weaknesses-list li {
+  border-left-color: var(--accent-warning, #ffc107);
+}
+
+.suggestions-list li {
+  border-left-color: var(--accent-primary);
+}
+
+.apply-suggestion-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--accent-primary);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent-primary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.apply-suggestion-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+}

@@ -1,0 +1,55 @@
+{
+  "system_info": {
+    "name": "CORBU AI",
+    "version": "1.0.0",
+    "description": "차세대 AI 어시스턴트 - 자연어 대화, 질문 답변, 정보 검색을 지원합니다"
+  },
+  "capabilities": [
+    "자연어 대화",
+    "질문 답변",
+    "정보 검색",
+    "텍스트 분석",
+    "코드 작성 지원",
+    "프로그래밍 도움",
+    "일반 상식 질문"
+  ],
+  "common_responses": {
+    "greeting": "안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?",
+    "unknown": "죄송합니다. 그 질문에 대한 답변을 준비하지 못했습니다. 다른 질문을 해주시겠어요?",
+    "error": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+  },
+  "knowledge_topics": {
+    "programming": {
+      "description": "프로그래밍 관련 질문",
+      "examples": ["Python", "JavaScript", "TypeScript", "React", "FastAPI", "알고리즘", "자료구조"],
+      "responses": {
+        "python": "Python은 간결하고 읽기 쉬운 문법을 가진 프로그래밍 언어입니다. 데이터 분석, 웹 개발, AI/ML 등 다양한 분야에서 사용됩니다.",
+        "javascript": "JavaScript는 웹 브라우저에서 실행되는 스크립트 언어입니다. React, Vue, Node.js 등과 함께 사용됩니다.",
+        "react": "React는 사용자 인터페이스를 구축하기 위한 JavaScript 라이브러리입니다. 컴포넌트 기반 아키텍처를 사용합니다."
+      }
+    },
+    "general": {
+      "description": "일반적인 질문",
+      "examples": ["날씨", "뉴스", "정보 검색", "상식"]
+    },
+    "system": {
+      "description": "시스템 관련 질문",
+      "examples": ["사용법", "기능", "도움말"]
+    }
+  },
+  "faq": [
+    {
+      "question": "CORBU AI는 무엇을 할 수 있나요?",
+      "answer": "CORBU AI는 자연어 대화, 질문 답변, 정보 검색, 텍스트 분석, 코드 작성 지원 등을 제공합니다."
+    },
+    {
+      "question": "어떻게 사용하나요?",
+      "answer": "메시지를 입력하고 전송하면 AI가 응답을 생성합니다. 대화는 자동으로 저장되며, 여러 대화를 관리할 수 있습니다."
+    },
+    {
+      "question": "LLM API 키는 어떻게 설정하나요?",
+      "answer": "환경 변수로 OPENAI_API_KEY, ANTHROPIC_API_KEY, 또는 OLLAMA_BASE_URL을 설정하면 해당 LLM을 사용할 수 있습니다."
+    }
+  ]
+}
+

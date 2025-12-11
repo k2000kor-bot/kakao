@@ -13,7 +13,7 @@ export interface VoiceRecognitionResult {
     timestamp: number;
 }
 
-class VoiceService {
+export class VoiceService {
     private recognition: any;
     private synthesis: SpeechSynthesis;
     private isListening: boolean = false;

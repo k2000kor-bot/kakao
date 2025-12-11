@@ -1566,3 +1566,4 @@ class MultiLayerStyleAnalysisSystem {
 
 export const multiLayerStyleAnalysisSystem = new MultiLayerStyleAnalysisSystem();
 export default multiLayerStyleAnalysisSystem;
+export { MultiLayerStyleAnalysisSystem };

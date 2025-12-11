@@ -10,7 +10,6 @@ import {
     Alert,
     Card,
     CardContent,
-    Grid,
     IconButton,
     Tooltip,
     Divider
@@ -181,40 +180,32 @@ const AdvancedUniversalChatInterface: React.FC = () => {
                 {systemStatus && (
                     <Card sx={{ mb: 2 }}>
                         <CardContent sx={{ py: 1 }}>
-                            <Grid container spacing={2} alignItems="center">
-                                <Grid item xs={12} sm={3}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <PsychologyIcon color="primary" />
-                                        <Typography variant="body2">
-                                            AI 시스템: {systemStatus.online_systems}/{systemStatus.total_systems}
-                                        </Typography>
-                                    </Box>
-                                </Grid>
-                                <Grid item xs={12} sm={3}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <SpeedIcon color="primary" />
-                                        <Typography variant="body2">
-                                            작업 완료: {systemStatus.completed_tasks}/{systemStatus.total_tasks}
-                                        </Typography>
-                                    </Box>
-                                </Grid>
-                                <Grid item xs={12} sm={3}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <MemoryIcon color="primary" />
-                                        <Typography variant="body2">
-                                            성공률: {((systemStatus.completed_tasks / Math.max(systemStatus.total_tasks, 1)) * 100).toFixed(1)}%
-                                        </Typography>
-                                    </Box>
-                                </Grid>
-                                <Grid item xs={12} sm={3}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <TimelineIcon color="primary" />
-                                        <Typography variant="body2">
-                                            마지막 업데이트: {new Date(systemStatus.last_update).toLocaleTimeString()}
-                                        </Typography>
-                                    </Box>
-                                </Grid>
-                            </Grid>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: { xs: '1 1 100%', sm: '1 1 calc(25% - 16px)' } }}>
+                                    <PsychologyIcon color="primary" />
+                                    <Typography variant="body2">
+                                        AI 시스템: {systemStatus.online_systems}/{systemStatus.total_systems}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: { xs: '1 1 100%', sm: '1 1 calc(25% - 16px)' } }}>
+                                    <SpeedIcon color="primary" />
+                                    <Typography variant="body2">
+                                        작업 완료: {systemStatus.completed_tasks}/{systemStatus.total_tasks}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: { xs: '1 1 100%', sm: '1 1 calc(25% - 16px)' } }}>
+                                    <MemoryIcon color="primary" />
+                                    <Typography variant="body2">
+                                        성공률: {((systemStatus.completed_tasks / Math.max(systemStatus.total_tasks, 1)) * 100).toFixed(1)}%
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: { xs: '1 1 100%', sm: '1 1 calc(25% - 16px)' } }}>
+                                    <TimelineIcon color="primary" />
+                                    <Typography variant="body2">
+                                        마지막 업데이트: {new Date(systemStatus.last_update).toLocaleTimeString()}
+                                    </Typography>
+                                </Box>
+                            </Box>
                         </CardContent>
                     </Card>
                 )}

@@ -34,7 +34,7 @@ interface ConversationContext {
     };
 }
 
-class IntelligentContextManager {
+export class IntelligentContextManager {
     private contexts: Map<string, ConversationContext> = new Map();
     private globalContext: Map<string, any> = new Map();
 
@@ -409,4 +409,5 @@ class IntelligentContextManager {
     }
 }
 
-export default new IntelligentContextManager();
+const intelligentContextManager = new IntelligentContextManager();
+export default intelligentContextManager;

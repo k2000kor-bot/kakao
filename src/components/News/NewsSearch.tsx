@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, TrendingUp, BarChart, ExternalLink } from 'lucide-react';
 import { newsService, NewsArticle, CommentAnalysis } from '../../services/newsService';
+import { errorLogger } from '../../utils/errorLogger';
 
 interface NewsSearchProps {
     onArticleSelect?: (article: NewsArticle) => void;
@@ -30,7 +31,7 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
             const result = await newsService.searchNews(searchQuery);
             setSearchResults(result.articles);
         } catch (error) {
-            console.error('뉴스 검색 실패:', error);
+            errorLogger.error('뉴스 검색 실패', error instanceof Error ? error : new Error(String(error)), { component: 'NewsSearch', action: 'handleSearch' });
             // 오류 시 시뮬레이션 데이터 사용 (원베일리 하자 관련)
             setSearchResults([
                 {
@@ -84,7 +85,7 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
             const trending = await newsService.getTrendingNews('technology');
             setTrendingNews(trending);
         } catch (error) {
-            console.error('트렌딩 뉴스 가져오기 실패:', error);
+            errorLogger.error('트렌딩 뉴스 가져오기 실패', error instanceof Error ? error : new Error(String(error)), { component: 'NewsSearch', action: 'loadTrendingNews' });
             // 시뮬레이션 데이터 (원베일리 하자 관련 트렌딩)
             setTrendingNews([
                 {
@@ -116,7 +117,7 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
             const analysis = await newsService.analyzeComments(articleId);
             setCommentAnalysis(analysis);
         } catch (error) {
-            console.error('댓글 분석 실패:', error);
+            errorLogger.error('댓글 분석 실패', error instanceof Error ? error : new Error(String(error)), { component: 'NewsSearch', action: 'analyzeComments' });
         } finally {
             setIsAnalyzing(false);
         }
@@ -147,7 +148,7 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 placeholder="뉴스 검색어를 입력하세요..."
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />

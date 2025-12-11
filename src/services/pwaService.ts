@@ -43,7 +43,7 @@ export interface NotificationOptions {
     data?: any;
 }
 
-class PWAService {
+export class PWAService {
     private config: PWAConfig;
     private registration: ServiceWorkerRegistration | null = null;
     private deferredPrompt: InstallPromptEvent | null = null;

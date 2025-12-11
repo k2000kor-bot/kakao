@@ -1,18 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import AdvancedFeaturesPanel from './components/AdvancedFeaturesPanel';
-import PerformanceMonitoringDashboard from './components/PerformanceMonitoringDashboard';
-import WritingAssistant from './components/WritingAssistant';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import {
+  AdvancedFeaturesPanel,
+  PerformanceMonitoringDashboard,
+  WritingAssistant,
+  UserSettings,
+  SearchPanel,
+  AdvancedSearchPanel,
+  SessionManager,
+  NotificationCenter,
+  KeyboardShortcutsHelp,
+  BreadcrumbNavigation,
+} from './components/LazyComponents';
 import LanguageSelector from './components/LanguageSelector';
-import NotificationCenter from './components/NotificationCenter';
-import UserSettings from './components/UserSettings';
-import SearchPanel from './components/SearchPanel';
-import AdvancedSearchPanel from './components/AdvancedSearchPanel';
-import BreadcrumbNavigation from './components/BreadcrumbNavigation';
-import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import ErrorBoundary from './components/ErrorBoundary';
 import MessageItem from './components/MessageItem';
 import FileUploadZone from './components/FileUploadZone';
-import SessionManager from './components/SessionManager';
 import TypingIndicator from './components/TypingIndicator';
 import MessageReply from './components/MessageReply';
 import messageHistoryService from './services/messageHistoryService';
@@ -20,12 +22,57 @@ import errorReportingService from './services/errorReportingService';
 import { sendChatMessage, isValidChatResponse } from './utils/apiClient';
 import { streamChatMessage, isStreamingSupported } from './utils/streamingClient';
 import { getUserFriendlyError, getErrorIcon } from './utils/errorMessages';
+import { errorLogger } from './utils/errorLogger';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useTranslation } from './hooks/useTranslation';
 import { useNotifications } from './hooks/useNotifications';
+import useChatEnhancements from './hooks/useChatEnhancements';
+import { useOptimizedMessages } from './hooks/useOptimizedMessages';
+import { advancedWritingEngine } from './services/advancedWritingEngine';
+import { localLLMService } from './services/localLLMService';
+import ProjectLLMSettings from './components/ProjectLLMSettings';
+import NotebookLLM from './components/NotebookLLM';
+import { debounce, throttle, batchUpdates } from './utils/performanceOptimizer';
 import type { Message, ChatMode } from './types';
 import './ModernChatInterface.css';
+
+// 타입 정의
+interface ImageAnalysisResult {
+  analysis?: {
+    image_info?: { width?: number; height?: number; format?: string };
+    object_detection?: { total_objects?: number };
+    ocr_results?: { extracted_text?: string };
+  };
+}
+
+interface PredictionResult {
+  prediction?: {
+    predicted_activities?: Array<{ activity: string; probability: number }>;
+  };
+  quality_analysis?: {
+    suggestions?: string[];
+    overall_score?: number;
+    quality_level?: string;
+  };
+  performance_prediction?: {
+    predicted_metrics?: {
+      cpu_usage?: number;
+      memory_usage?: number;
+      response_time_ms?: number;
+    };
+  };
+}
+
+interface SearchResult {
+  type: 'message' | 'writing' | 'file' | 'template';
+  metadata?: { sessionId?: string };
+}
+
+interface AdvancedSearchResult {
+  type: 'message' | 'writing' | 'file' | 'template';
+  metadata?: { sessionId?: string };
+}
 
 const ModernChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -51,6 +98,10 @@ const ModernChatInterface: React.FC = () => {
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showSessionManager, setShowSessionManager] = useState(false);
   const [sessions, setSessions] = useState<Array<{ id: string; name: string; createdAt: string; updatedAt: string; messageCount?: number }>>([]);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [showProjectLLMSettings, setShowProjectLLMSettings] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string>('default-project');
+  const [useLocalLLM, setUseLocalLLM] = useState(false);
 
   // 다크 모드
   const darkMode = useDarkMode();
@@ -67,6 +118,29 @@ const ModernChatInterface: React.FC = () => {
     clearAll,
     requestPermission,
   } = useNotifications();
+
+  // 채팅 경험 향상 훅
+  const chatEnhancements = useChatEnhancements({
+    enableSmartSuggestions: true,
+    enableRealTimeSync: true,
+    enableTypingIndicators: true,
+    enableReadReceipts: true,
+    enableReactions: true,
+    enableQuickReplies: true,
+  });
+
+  // 성능 최적화된 메시지 관리 (메시지 가상화)
+  const {
+    messages: optimizedMessages,
+    containerRef: messagesContainerRef,
+    virtualizedInfo,
+    shouldVirtualize,
+  } = useOptimizedMessages({
+    messages,
+    maxVisible: MAX_MESSAGES,
+    enableVirtualization: true,
+    threshold: 30,
+  });
 
   // 브라우저 알림 권한 요청
   useEffect(() => {
@@ -124,7 +198,7 @@ const ModernChatInterface: React.FC = () => {
 
   const handleSessionRename = useCallback((sessionIdToRename: string, newName: string) => {
     setSessions((prev) => {
-      const updatedSessions = prev.map((s) => 
+      const updatedSessions = prev.map((s) =>
         s.id === sessionIdToRename ? { ...s, name: newName, updatedAt: new Date().toISOString() } : s
       );
       localStorage.setItem('chatSessions', JSON.stringify(updatedSessions));
@@ -136,10 +210,10 @@ const ModernChatInterface: React.FC = () => {
     setSessions((prev) => {
       const updatedSessions = prev.filter((s) => s.id !== sessionIdToDelete);
       localStorage.setItem('chatSessions', JSON.stringify(updatedSessions));
-      
+
       // 메시지 히스토리에서 세션 삭제
       messageHistoryService.deleteSession(sessionIdToDelete);
-      
+
       if (sessionId === sessionIdToDelete && updatedSessions.length > 0) {
         handleSessionSelect(updatedSessions[0].id);
       } else if (updatedSessions.length === 0) {
@@ -153,7 +227,7 @@ const ModernChatInterface: React.FC = () => {
           analysis: null
         }]);
       }
-      
+
       return updatedSessions;
     });
   }, [sessionId, handleSessionSelect]);
@@ -166,7 +240,10 @@ const ModernChatInterface: React.FC = () => {
         const parsed = JSON.parse(savedSessions);
         setSessions(parsed);
       } catch (e) {
-        console.error('Failed to parse saved sessions:', e);
+        errorLogger.error('Failed to parse saved sessions', e instanceof Error ? e : new Error(String(e)), {
+          component: 'ModernChatInterface',
+          action: 'loadSessions',
+        });
       }
     } else {
       // 기본 세션 생성
@@ -180,17 +257,28 @@ const ModernChatInterface: React.FC = () => {
       setSessions([defaultSession]);
       localStorage.setItem('chatSessions', JSON.stringify([defaultSession]));
     }
-  }, []);
+  }, [sessionId]);
 
-  // 세션 메시지 수 업데이트
+  // 세션 메시지 수 업데이트 (메모이제이션된 메시지 길이 사용)
+  const messagesLength = useMemo(() => messages.length, [messages.length]);
   useEffect(() => {
     setSessions(prev => prev.map(s => {
       if (s.id === sessionId) {
-        return { ...s, messageCount: messages.length, updatedAt: new Date().toISOString() };
+        return { ...s, messageCount: messagesLength, updatedAt: new Date().toISOString() };
       }
       return s;
     }));
-  }, [messages.length, sessionId]);
+  }, [messagesLength, sessionId]);
+
+  // 로컬 LLM 사용 설정 저장
+  useEffect(() => {
+    localStorage.setItem('useLocalLLM', String(useLocalLLM));
+  }, [useLocalLLM]);
+
+  // 프로젝트 ID를 세션 ID와 동기화
+  useEffect(() => {
+    setCurrentProjectId(sessionId);
+  }, [sessionId]);
 
   useEffect(() => {
     localStorage.setItem('chatSessionId', sessionId);
@@ -210,34 +298,383 @@ const ModernChatInterface: React.FC = () => {
     }
   }, [sessionId]);
 
-  // 메시지 변경 시 자동 저장 (디바운스)
+  // 메시지 변경 시 자동 저장 (고급 디바운스 및 배치 처리)
+  const debouncedSaveMessages = useMemo(
+    () => debounce((messagesToSave: Message[], currentSessionId: string) => {
+      // 배치 처리로 성능 최적화
+      const savePromises = messagesToSave.map(message =>
+        messageHistoryService.saveMessage({
+          id: message.id,
+          sender: message.sender,
+          text: message.text,
+          timestamp: message.timestamp,
+          sessionId: currentSessionId,
+          isLiked: message.isLiked,
+          isDisliked: message.isDisliked,
+          isBookmarked: message.isBookmarked,
+          metadata: {
+            analysis: message.analysis,
+          },
+        })
+      );
+      // 병렬 처리로 저장 속도 향상
+      Promise.all(savePromises).catch(error => {
+        errorLogger.error('메시지 저장 오류', error instanceof Error ? error : new Error(String(error)), {
+          component: 'ModernChatInterface',
+          action: 'saveMessages',
+          sessionId: currentSessionId,
+        });
+        errorReportingService.reportError(error as Error, {
+          severity: 'medium',
+          additionalContext: {
+            component: 'ModernChatInterface',
+            action: 'saveMessages',
+            sessionId: currentSessionId,
+            messageCount: messagesToSave.length,
+          },
+        });
+      });
+    }, 500),
+    []
+  );
+
   useEffect(() => {
     if (messages.length > 0) {
-      const timeoutId = setTimeout(() => {
-        messages.forEach(message => {
-          messageHistoryService.saveMessage({
-            id: message.id,
-            sender: message.sender,
-            text: message.text,
-            timestamp: message.timestamp,
-            sessionId: sessionId,
-            isLiked: message.isLiked,
-            isDisliked: message.isDisliked,
-            isBookmarked: message.isBookmarked,
-            metadata: {
-              analysis: message.analysis,
-            },
-          });
-        });
-      }, 500); // 500ms 디바운스
+      debouncedSaveMessages(messages, sessionId); // 500ms 디바운스
 
-      return () => clearTimeout(timeoutId);
+      return () => {
+        debouncedSaveMessages.cancel();
+      };
     }
-  }, [messages, sessionId]);
+  }, [messages, sessionId, debouncedSaveMessages]);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  // 성능 최적화된 스크롤 (스로틀링)
+  const throttledScrollToBottom = useMemo(
+    () => throttle(scrollToBottom, 100),
+    [scrollToBottom]
+  );
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // 메시지가 추가될 때만 스크롤 (가상화 고려)
+    if (!shouldVirtualize || virtualizedInfo.endIndex === messages.length - 1) {
+      throttledScrollToBottom();
+    }
+  }, [messages.length, throttledScrollToBottom, shouldVirtualize, virtualizedInfo]);
+
+  // 메시지 추가 헬퍼 함수
+  const addMessage = useCallback((message: Message) => {
+    setMessages(prev => {
+      const newMessages = [...prev, message];
+      return newMessages.length > MAX_MESSAGES
+        ? newMessages.slice(-MAX_MESSAGES)
+        : newMessages;
+    });
+  }, []);
+
+  // 메시지 업데이트 헬퍼 함수
+  const updateMessage = useCallback((messageId: number, updater: (msg: Message) => Message) => {
+    setMessages(prev => prev.map(m => m.id === messageId ? updater(m) : m));
+  }, []);
+
+  // 에러 메시지 생성 헬퍼 함수
+  const createErrorMessage = useCallback((error: unknown, canRetry = false): Message => {
+    const errorInfo = getUserFriendlyError(error);
+    const errorSuggestions = errorInfo.suggestions.map(s => `• ${s}`).join('\n');
+    const retryMessage = canRetry ? '\n\n🔄 재시도 버튼을 클릭하여 다시 시도할 수 있습니다.' : '';
+    const errorText = `${getErrorIcon(errorInfo.type)} ${errorInfo.userMessage}\n\n${errorSuggestions}${retryMessage}`;
+
+    return {
+      id: Date.now() + 1,
+      sender: 'ai',
+      text: errorText,
+      timestamp: new Date().toLocaleTimeString(),
+      analysis: null
+    };
+  }, []);
+
+  // 고급 글생성 모드 확인 (메모이제이션)
+  const isWritingMode = useMemo(() => currentMode === 'writing', [currentMode]);
+
+  // 스트리밍 응답 처리 (성능 최적화)
+  const handleStreamingResponse = useCallback(async (message: string, aiMessageId: number) => {
+    try {
+      // 글쓰기 모드인 경우 고급 엔진 사용
+      if (isWritingMode) {
+        const context = {
+          topic: message,
+          audience: '일반 독자',
+          purpose: '정보 제공 및 가치 전달',
+          tone: 'professional' as const,
+          style: 'detailed' as const,
+          keywords: message.split(' ').slice(0, 5),
+        };
+
+        let accumulatedText = '';
+        const prompt = advancedWritingEngine.generateAdvancedPrompt(context);
+
+        await streamChatMessage(prompt.userPrompt, sessionId, {
+          onChunk: (chunk: string) => {
+            accumulatedText += chunk;
+            // 성능 최적화: 배치 업데이트
+            batchUpdates([
+              () => updateMessage(aiMessageId, (m) => ({ ...m, text: accumulatedText }))
+            ]);
+          },
+          onComplete: (fullText: string) => {
+            // 스트리밍 완료 후 품질 향상 (비동기 처리)
+            (async () => {
+              try {
+                const enhanced = advancedWritingEngine.analyzeAndEnhance(fullText, context);
+                setIsStreaming(false);
+                setStreamingMessageId(null);
+                updateMessage(aiMessageId, (m) => ({ ...m, text: enhanced.content }));
+                addNotification({
+                  type: 'success',
+                  title: '고품질 글 생성 완료',
+                  message: `품질 점수 ${(enhanced.quality * 100).toFixed(0)}%의 최적화된 글을 생성했습니다.`,
+                });
+              } catch (error) {
+                // 향상 실패 시 원본 사용
+                const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+                errorLogger.error('글 향상 오류', error instanceof Error ? error : new Error(errorMessage), {
+                  component: 'ModernChatInterface',
+                  action: 'enhanceWriting',
+                });
+                setIsStreaming(false);
+                setStreamingMessageId(null);
+                updateMessage(aiMessageId, (m) => ({ ...m, text: fullText }));
+                addNotification({
+                  type: 'success',
+                  title: '글 생성 완료',
+                  message: 'AI가 글을 생성했습니다.',
+                });
+              }
+            })();
+          },
+          onError: (error: Error) => {
+            setIsStreaming(false);
+            setStreamingMessageId(null);
+            const errorMessage = createErrorMessage(error);
+            updateMessage(aiMessageId, () => errorMessage);
+            addNotification({
+              type: 'error',
+              title: '스트리밍 오류',
+              message: getUserFriendlyError(error).userMessage,
+            });
+          },
+        });
+      } else {
+        // 로컬 LLM 사용 여부 확인
+        const useLocalLLMForStreaming = useLocalLLM && localLLMService.getProjectLLM(currentProjectId);
+
+        if (useLocalLLMForStreaming) {
+          // 로컬 LLM 스트리밍
+          let accumulatedText = '';
+          try {
+            await localLLMService.sendProjectRequest(
+              currentProjectId,
+              [
+                { role: 'system', content: '당신은 도움이 되는 AI 어시스턴트입니다.' },
+                { role: 'user', content: message },
+              ],
+              (chunk: string) => {
+                accumulatedText += chunk;
+                const throttledUpdate = throttle(() => {
+                  updateMessage(aiMessageId, (m) => ({ ...m, text: accumulatedText }));
+                }, 50);
+                throttledUpdate();
+
+                if (Math.random() < 0.1) {
+                  throttledScrollToBottom();
+                }
+              }
+            );
+
+            setIsStreaming(false);
+            setStreamingMessageId(null);
+            updateMessage(aiMessageId, (m) => ({ ...m, text: accumulatedText }));
+            throttledScrollToBottom();
+            addNotification({
+              type: 'success',
+              title: '응답 생성 완료',
+              message: '로컬 LLM이 응답을 생성했습니다.',
+            });
+          } catch (error) {
+            setIsStreaming(false);
+            setStreamingMessageId(null);
+            const errorMessage = createErrorMessage(error);
+            updateMessage(aiMessageId, () => errorMessage);
+            addNotification({
+              type: 'error',
+              title: '로컬 LLM 오류',
+              message: getUserFriendlyError(error).userMessage,
+            });
+          }
+        } else {
+          // 일반 채팅 모드 (성능 최적화된 스트리밍)
+          const throttledUpdate = throttle((chunk: string, currentText: string) => {
+            updateMessage(aiMessageId, (m) => ({ ...m, text: currentText + chunk }));
+          }, 50);
+
+          let accumulatedText = '';
+          await streamChatMessage(message, sessionId, {
+            onChunk: (chunk: string) => {
+              accumulatedText += chunk;
+              // 스로틀링으로 업데이트 빈도 제한
+              throttledUpdate(chunk, accumulatedText);
+              // 스크롤은 덜 자주 실행 (10% 확률)
+              if (Math.random() < 0.1) {
+                throttledScrollToBottom();
+              }
+            },
+            onComplete: (fullText: string) => {
+              setIsStreaming(false);
+              setStreamingMessageId(null);
+              updateMessage(aiMessageId, (m) => ({ ...m, text: fullText }));
+              throttledScrollToBottom();
+              addNotification({
+                type: 'success',
+                title: '응답 생성 완료',
+                message: 'AI가 응답을 생성했습니다.',
+              });
+            },
+            onError: (error: Error) => {
+              setIsStreaming(false);
+              setStreamingMessageId(null);
+              const errorMessage = createErrorMessage(error);
+              updateMessage(aiMessageId, () => errorMessage);
+              addNotification({
+                type: 'error',
+                title: '스트리밍 오류',
+                message: getUserFriendlyError(error).userMessage,
+              });
+            },
+          });
+        }
+      }
+    } catch (error) {
+      setIsStreaming(false);
+      setStreamingMessageId(null);
+      const errorMessage = createErrorMessage(error);
+      updateMessage(aiMessageId, () => errorMessage);
+    }
+  }, [sessionId, updateMessage, throttledScrollToBottom, addNotification, createErrorMessage, isWritingMode, useLocalLLM, currentProjectId]);
+
+  // 재시도 핸들러 (sendMessage와 분리하여 순환 참조 방지)
+  const handleRetry = useCallback((message: string) => {
+    setInputText(message);
+    // sendMessage는 inputText 변경 후 자동으로 호출되도록 하거나
+    // 별도의 재시도 로직 구현
+  }, []);
+
+  // 일반 응답 처리 (로컬 LLM 지원)
+  const handleRegularResponse = useCallback(async (message: string) => {
+    setIsTyping(true);
+
+    try {
+      let data;
+
+      // 로컬 LLM 사용 여부 확인
+      if (useLocalLLM) {
+        const projectConfig = localLLMService.getProjectLLM(currentProjectId);
+        if (projectConfig) {
+          // 로컬 LLM으로 요청
+          const response = await localLLMService.sendProjectRequest(
+            currentProjectId,
+            [
+              { role: 'system', content: '당신은 도움이 되는 AI 어시스턴트입니다.' },
+              { role: 'user', content: message },
+            ]
+          );
+
+          data = {
+            success: true,
+            response: response.content,
+            session_id: sessionId,
+            timestamp: new Date().toISOString(),
+          };
+        } else {
+          // 프로젝트 설정이 없으면 일반 API 사용
+          data = await sendChatMessage(message, sessionId);
+        }
+      } else {
+        data = await sendChatMessage(message, sessionId);
+      }
+
+      setIsTyping(false);
+
+      if (!isValidChatResponse(data)) {
+        throw new Error('Invalid API response format');
+      }
+
+      if (data.success && data.response) {
+        const aiMessage: Message = {
+          id: Date.now() + 1,
+          sender: 'ai',
+          text: data.response,
+          timestamp: new Date().toLocaleTimeString(),
+          analysis: data.emotion_analysis && data.intent_analysis ? {
+            emotion_analysis: data.emotion_analysis,
+            intent_analysis: data.intent_analysis,
+            success: true,
+            response: data.response,
+            response_time: data.response_time || 0,
+            session_id: data.session_id || sessionId,
+            timestamp: data.timestamp || new Date().toISOString(),
+            type: data.type || 'chat',
+          } : null
+        };
+
+        addMessage(aiMessage);
+        addNotification({
+          type: 'success',
+          title: '응답 생성 완료',
+          message: 'AI가 응답을 생성했습니다.',
+        });
+      } else {
+        const errorObj = new Error(data.error || '알 수 없는 오류가 발생했습니다.');
+        errorReportingService.reportError(errorObj, {
+          severity: 'medium',
+          additionalContext: { apiResponse: data, sessionId },
+        });
+
+        const errorMessage = createErrorMessage(errorObj);
+        addMessage(errorMessage);
+        addNotification({
+          type: 'error',
+          title: '응답 생성 실패',
+          message: getUserFriendlyError(errorObj).userMessage,
+        });
+      }
+    } catch (error) {
+      setIsTyping(false);
+      setIsStreaming(false);
+      setStreamingMessageId(null);
+
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      errorReportingService.reportError(errorObj, {
+        severity: 'high',
+        additionalContext: { action: 'sendMessage', sessionId, message },
+      });
+
+      const errorMessage = createErrorMessage(error, true);
+      addMessage(errorMessage);
+      const errorInfo = getUserFriendlyError(error);
+      addNotification({
+        type: 'error',
+        title: '전송 실패',
+        message: errorInfo.userMessage,
+        action: errorInfo.canRetry ? {
+          label: '재시도',
+          onClick: () => handleRetry(message),
+        } : undefined,
+      });
+    }
+  }, [sessionId, addMessage, addNotification, createErrorMessage, handleRetry, useLocalLLM, currentProjectId]);
 
   const startNewChat = useCallback(() => {
     const newSessionId = 'session-' + Math.random().toString(36).substring(2, 15);
@@ -350,11 +787,15 @@ const ModernChatInterface: React.FC = () => {
       },
       description: '분석 모드',
     },
+    {
+      key: '4',
+      ctrl: true,
+      action: () => {
+        setCurrentMode('notebook');
+      },
+      description: '노트북 LLM 모드',
+    },
   ]);
-
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
 
   // 메시지 액션 핸들러들 (메모이제이션)
   const handleCopyMessage = useCallback((text: string) => {
@@ -416,7 +857,7 @@ const ModernChatInterface: React.FC = () => {
         ? { ...m, text: newText }
         : m
     ));
-    
+
     // 메시지 히스토리 업데이트
     const message = messages.find(m => m.id === id);
     if (message) {
@@ -450,41 +891,17 @@ const ModernChatInterface: React.FC = () => {
     }
   }, [messages]);
 
-  const getEmotionEmoji = (emotion: string): string => {
-    const emojis: { [key: string]: string } = {
-      'happy': '😊',
-      'sad': '😢',
-      'angry': '😤',
-      'excited': '🎉',
-      'neutral': '😐',
-      'confused': '🤔',
-      'curious': '🔍',
-      'frustrated': '😩'
-    };
-    return emojis[emotion] || '😐';
-  };
 
-  const getIntentEmoji = (intent: string): string => {
-    const emojis: { [key: string]: string } = {
-      'question': '❓',
-      'greeting': '👋',
-      'request': '🙏',
-      'complaint': '😠',
-      'compliment': '👍',
-      'goodbye': '👋',
-      'help': '🆘',
-      'information': 'ℹ️'
-    };
-    return emojis[intent] || 'ℹ️';
-  };
+  // 스트리밍 지원 여부 확인 (메모이제이션)
+  const isStreamingEnabled = useMemo(() => isStreamingSupported(), []);
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     let message = inputText.trim();
     if (message === '') return;
 
     // 답장 중인 경우 인용 메시지 추가
     if (replyingTo) {
-      message = `> ${replyingTo.text.replace(/\n/g, '\n> ')}\n\n${message}`;
+      message = `> ${replyingTo.text.replaceAll('\n', '\n> ')}\n\n${message}`;
       setReplyingTo(null);
     }
 
@@ -496,25 +913,14 @@ const ModernChatInterface: React.FC = () => {
       analysis: null
     };
 
-    setMessages(prev => {
-      const newMessages = [...prev, userMessage];
-      return newMessages.length > MAX_MESSAGES
-        ? newMessages.slice(-MAX_MESSAGES)
-        : newMessages;
-    });
-
+    addMessage(userMessage);
     setInputText('');
 
-    // 스트리밍 지원 여부 확인
-    const useStreaming = isStreamingSupported();
-    
-    if (useStreaming) {
-      // 스트리밍 모드
+    if (isStreamingEnabled) {
       setIsStreaming(true);
       const aiMessageId = Date.now() + 1;
       setStreamingMessageId(aiMessageId);
 
-      // 스트리밍 메시지 초기화
       const aiMessage: Message = {
         id: aiMessageId,
         sender: 'ai',
@@ -523,224 +929,36 @@ const ModernChatInterface: React.FC = () => {
         analysis: null
       };
 
-      setMessages(prev => {
-        const newMessages = [...prev, aiMessage];
-        return newMessages.length > MAX_MESSAGES
-          ? newMessages.slice(-MAX_MESSAGES)
-          : newMessages;
-      });
-
-      try {
-        await streamChatMessage(message, sessionId, {
-          onChunk: (chunk: string) => {
-            setMessages(prev => prev.map(m =>
-              m.id === aiMessageId
-                ? { ...m, text: m.text + chunk }
-                : m
-            ));
-            scrollToBottom();
-          },
-          onComplete: (fullText: string) => {
-            setIsStreaming(false);
-            setStreamingMessageId(null);
-            
-            // 최종 메시지 업데이트 (분석 데이터 포함)
-            setMessages(prev => prev.map(m =>
-              m.id === aiMessageId
-                ? { ...m, text: fullText }
-                : m
-            ));
-
-            addNotification({
-              type: 'success',
-              title: '응답 생성 완료',
-              message: 'AI가 응답을 생성했습니다.',
-            });
-          },
-          onError: (error: Error) => {
-            setIsStreaming(false);
-            setStreamingMessageId(null);
-            
-            const errorInfo = getUserFriendlyError(error);
-            setMessages(prev => prev.map(m =>
-              m.id === aiMessageId
-                ? {
-                    ...m,
-                    text: `${getErrorIcon(errorInfo.type)} ${errorInfo.userMessage}\n\n${errorInfo.suggestions.map(s => `• ${s}`).join('\n')}`,
-                  }
-                : m
-            ));
-
-            addNotification({
-              type: 'error',
-              title: '스트리밍 오류',
-              message: errorInfo.userMessage,
-            });
-          },
-        });
-      } catch (error) {
-        setIsStreaming(false);
-        setStreamingMessageId(null);
-        
-        const errorInfo = getUserFriendlyError(error);
-        setMessages(prev => prev.map(m =>
-          m.id === aiMessageId
-            ? {
-                ...m,
-                text: `${getErrorIcon(errorInfo.type)} ${errorInfo.userMessage}\n\n${errorInfo.suggestions.map(s => `• ${s}`).join('\n')}`,
-              }
-            : m
-        ));
-      }
+      addMessage(aiMessage);
+      await handleStreamingResponse(message, aiMessageId);
     } else {
-      // 일반 모드 (기존 로직)
-      setIsTyping(true);
-
-      try {
-        const data = await sendChatMessage(message, sessionId);
-        setIsTyping(false);
-
-        if (!isValidChatResponse(data)) {
-          throw new Error('Invalid API response format');
-        }
-
-        if (data.success && data.response) {
-        const aiMessage: Message = {
-          id: Date.now() + 1,
-          sender: 'ai',
-          text: data.response,
-          timestamp: new Date().toLocaleTimeString(),
-          analysis: data.emotion_analysis && data.intent_analysis ? {
-            emotion_analysis: data.emotion_analysis,
-            intent_analysis: data.intent_analysis,
-            success: true,
-            response: data.response,
-            response_time: data.response_time || 0,
-            session_id: data.session_id || sessionId,
-            timestamp: data.timestamp || new Date().toISOString(),
-            type: data.type || 'chat',
-          } : null
-        };
-
-        setMessages(prev => {
-          const newMessages = [...prev, aiMessage];
-          return newMessages.length > MAX_MESSAGES
-            ? newMessages.slice(-MAX_MESSAGES)
-            : newMessages;
-        });
-
-        // 성공 알림 추가
-        addNotification({
-          type: 'success',
-          title: '응답 생성 완료',
-          message: 'AI가 응답을 생성했습니다.',
-        });
-      } else {
-        // API가 success: false를 반환한 경우
-        const errorInfo = getUserFriendlyError(new Error(data.error || '알 수 없는 오류가 발생했습니다.'));
-
-        // 에러 리포팅
-        errorReportingService.reportError(
-          new Error(data.error || 'API 응답 오류'),
-          {
-            severity: 'medium',
-            additionalContext: {
-              apiResponse: data,
-              sessionId,
-            },
-          }
-        );
-
-        const errorMessage: Message = {
-          id: Date.now() + 1,
-          sender: 'ai',
-          text: `${getErrorIcon(errorInfo.type)} ${errorInfo.userMessage}\n\n${errorInfo.suggestions.map(s => `• ${s}`).join('\n')}`,
-          timestamp: new Date().toLocaleTimeString(),
-          analysis: null
-        };
-
-        setMessages(prev => {
-          const newMessages = [...prev, errorMessage];
-          return newMessages.length > MAX_MESSAGES
-            ? newMessages.slice(-MAX_MESSAGES)
-            : newMessages;
-        });
-
-        addNotification({
-          type: 'error',
-          title: '응답 생성 실패',
-          message: errorInfo.userMessage,
-        });
-        }
-      } catch (error) {
-        setIsTyping(false);
-        setIsStreaming(false);
-        setStreamingMessageId(null);
-
-      // 에러 리포팅
-      const errorObj = error instanceof Error ? error : new Error(String(error));
-      errorReportingService.reportError(errorObj, {
-        severity: 'high',
-        additionalContext: {
-          action: 'sendMessage',
-          sessionId,
-          message,
-        },
-      });
-
-      const errorInfo = getUserFriendlyError(error);
-
-      const errorMessage: Message = {
-        id: Date.now() + 1,
-        sender: 'ai',
-        text: `${getErrorIcon(errorInfo.type)} ${errorInfo.userMessage}\n\n${errorInfo.suggestions.map(s => `• ${s}`).join('\n')}\n\n${errorInfo.canRetry ? '🔄 재시도 버튼을 클릭하여 다시 시도할 수 있습니다.' : ''}`,
-        timestamp: new Date().toLocaleTimeString(),
-        analysis: null
-      };
-
-      setMessages(prev => {
-        const newMessages = [...prev, errorMessage];
-        return newMessages.length > MAX_MESSAGES
-          ? newMessages.slice(-MAX_MESSAGES)
-          : newMessages;
-      });
-
-      addNotification({
-        type: 'error',
-        title: '전송 실패',
-        message: errorInfo.userMessage,
-        action: errorInfo.canRetry ? {
-          label: '재시도',
-          onClick: () => {
-            setInputText(message);
-            setTimeout(() => sendMessage(), 100);
-          },
-        } : undefined,
-      });
+      await handleRegularResponse(message);
     }
-  };
+  }, [inputText, replyingTo, addMessage, handleStreamingResponse, handleRegularResponse, isStreamingEnabled]);
 
-  const sendQuickMessage = (message: string) => {
+  const sendQuickMessage = useCallback((message: string) => {
     setInputText(message);
     setTimeout(() => sendMessage(), 100);
-  };
+  }, [sendMessage]);
 
+  // 모드 메시지 맵 메모이제이션 (성능 최적화)
+  const modeMessagesMap = useMemo(() => ({
+    'coding': '코딩 파트너 모드로 전환했습니다! 프로그래밍 관련 질문을 해주세요.',
+    'analysis': '텍스트 분석 모드로 전환했습니다! 분석하고 싶은 텍스트를 입력해주세요.',
+    'chat': '일반 채팅 모드입니다. 무엇이든 물어보세요!',
+    'monitoring': '성능 모니터링 모드로 전환했습니다! 시스템 성능을 실시간으로 확인할 수 있습니다.',
+    'writing': '글쓰기 모드로 전환했습니다! 창의적인 글을 작성해보세요!',
+    'notebook': '노트북 LLM 모드로 전환했습니다! 프로젝트별 맞춤 AI를 사용할 수 있습니다!'
+  } as Record<ChatMode, string>), []);
 
-  const switchMode = (mode: ChatMode) => {
+  const switchMode = useCallback((mode: ChatMode) => {
     setCurrentMode(mode);
     setShowAdvancedFeatures(false);
-
-    const modeMessages: { [key: string]: string } = {
-      'coding': '코딩 파트너 모드로 전환했습니다! 프로그래밍 관련 질문을 해주세요.',
-      'analysis': '텍스트 분석 모드로 전환했습니다! 분석하고 싶은 텍스트를 입력해주세요.',
-      'chat': '일반 채팅 모드입니다. 무엇이든 물어보세요!',
-      'monitoring': '성능 모니터링 모드로 전환했습니다! 시스템 성능을 실시간으로 확인할 수 있습니다.'
-    };
 
     const modeMessage: Message = {
       id: Date.now(),
       sender: 'ai',
-      text: modeMessages[mode] || modeMessages['chat'],
+      text: modeMessagesMap[mode] || modeMessagesMap.chat,
       timestamp: new Date().toLocaleTimeString(),
       analysis: null
     };
@@ -751,12 +969,12 @@ const ModernChatInterface: React.FC = () => {
         ? newMessages.slice(-MAX_MESSAGES)
         : newMessages;
     });
-  };
+  }, [modeMessagesMap]);
 
   const handleFilesSelected = useCallback((files: Array<{ file: File; preview?: string; type: 'image' | 'document' | 'other' }>) => {
-    files.forEach(({ file, preview, type }) => {
+    for (const { file, preview, type } of files) {
       let messageText = '';
-      
+
       if (type === 'image' && preview) {
         messageText = `🖼️ 이미지 첨부: ${file.name}\n\n![${file.name}](${preview})`;
       } else if (type === 'document') {
@@ -779,7 +997,7 @@ const ModernChatInterface: React.FC = () => {
           ? newMessages.slice(-MAX_MESSAGES)
           : newMessages;
       });
-    });
+    }
 
     addNotification({
       type: 'success',
@@ -798,8 +1016,8 @@ const ModernChatInterface: React.FC = () => {
       if (files && files.length > 0) {
         const fileResults = Array.from(files).map(file => ({
           file,
-          type: (file.type.includes('pdf') || file.type.includes('document') || file.type.includes('text')) 
-            ? 'document' as const 
+          type: (file.type.includes('pdf') || file.type.includes('document') || file.type.includes('text'))
+            ? 'document' as const
             : 'other' as const,
         }));
         handleFilesSelected(fileResults);
@@ -853,18 +1071,56 @@ const ModernChatInterface: React.FC = () => {
     });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
-  };
+  }, [sendMessage]);
 
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputText(e.target.value);
-    e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-  };
+  // 성능 최적화된 텍스트 입력 핸들러 (디바운싱)
+  const debouncedTypingIndicator = useMemo(
+    () => debounce((isTyping: boolean) => {
+      chatEnhancements.sendTypingIndicator(isTyping, '나');
+    }, 300),
+    [chatEnhancements]
+  );
+
+  const debouncedSmartSuggestions = useMemo(
+    () => debounce((text: string) => {
+      if (text.trim().length >= 3) {
+        chatEnhancements.generateSmartSuggestions(text);
+      }
+    }, 500),
+    [chatEnhancements]
+  );
+
+  const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setInputText(newValue);
+
+    // 타이핑 인디케이터 전송 (디바운싱)
+    debouncedTypingIndicator(newValue.trim().length > 0);
+
+    // 스마트 제안 생성 (디바운싱)
+    debouncedSmartSuggestions(newValue);
+
+    // 텍스트 영역 높이 자동 조정 (성능 최적화)
+    requestAnimationFrame(() => {
+      if (e.target) {
+        e.target.style.height = 'auto';
+        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+      }
+    });
+  }, [debouncedTypingIndicator, debouncedSmartSuggestions]);
+
+  // 컴포넌트 언마운트 시 디바운스 함수 정리 (메모리 누수 방지)
+  useEffect(() => {
+    return () => {
+      debouncedTypingIndicator.cancel();
+      debouncedSmartSuggestions.cancel();
+    };
+  }, [debouncedTypingIndicator, debouncedSmartSuggestions]);
 
   return (
     <div className="app-container">
@@ -918,6 +1174,20 @@ const ModernChatInterface: React.FC = () => {
               {t('sidebar.analysis')}
             </div>
             <button
+              type="button"
+              aria-label="노트북 LLM 모드로 전환"
+              className={`nav-item ${currentMode === 'notebook' ? 'active' : ''}`}
+              onClick={() => switchMode('notebook')}
+            >
+              <div className="nav-item-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+              </div>
+              노트북 LLM
+            </button>
+            <button
               className={`nav-item ${showAdvancedFeatures ? 'active' : ''}`}
               onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)}
               onKeyDown={(e) => {
@@ -926,7 +1196,6 @@ const ModernChatInterface: React.FC = () => {
                   setShowAdvancedFeatures(!showAdvancedFeatures);
                 }
               }}
-              role="button"
               tabIndex={0}
               aria-label="고급 기능 패널 열기/닫기"
             >
@@ -970,14 +1239,38 @@ const ModernChatInterface: React.FC = () => {
               </div>
               세션 목록
             </button>
+            <button
+              className="nav-item"
+              onClick={() => setShowProjectLLMSettings(true)}
+              aria-label="프로젝트별 LLM 설정"
+            >
+              <div className="nav-item-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+              </div>
+              프로젝트 LLM 설정
+            </button>
+            <div className="nav-item" style={{ padding: '8px 12px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', width: '100%' }}>
+                <input
+                  type="checkbox"
+                  checked={useLocalLLM}
+                  onChange={(e) => setUseLocalLLM(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '14px' }}>로컬 LLM 사용</span>
+              </label>
+            </div>
             {sessions.slice(0, 5).map((session) => (
-              <div
+              <button
                 key={session.id}
                 className={`nav-item ${sessionId === session.id ? 'active' : ''}`}
                 onClick={() => handleSessionSelect(session.id)}
-                role="button"
+                type="button"
                 tabIndex={0}
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     handleSessionSelect(session.id);
@@ -990,7 +1283,7 @@ const ModernChatInterface: React.FC = () => {
                   </svg>
                 </div>
                 {session.name}
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -1024,17 +1317,16 @@ const ModernChatInterface: React.FC = () => {
                 setShowAdvancedFeatures(false);
               },
             },
-            ...(currentMode !== 'chat'
+            ...(currentMode === 'writing' || currentMode === 'monitoring' || currentMode === 'coding' || currentMode === 'analysis' || currentMode === 'notebook'
               ? [
                 {
-                  label:
-                    currentMode === 'writing'
-                      ? '글쓰기'
-                      : currentMode === 'monitoring'
-                        ? '성능 모니터링'
-                        : currentMode === 'coding'
-                          ? '코딩 파트너'
-                          : '분석',
+                  label: (() => {
+                    if (currentMode === 'writing') return '글쓰기';
+                    if (currentMode === 'monitoring') return '성능 모니터링';
+                    if (currentMode === 'coding') return '코딩 파트너';
+                    if (currentMode === 'notebook') return '노트북 LLM';
+                    return '분석';
+                  })(),
                   icon: (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
@@ -1142,8 +1434,10 @@ const ModernChatInterface: React.FC = () => {
           >
             <SearchPanel
               isOpen={showSearch}
-              onClose={() => setShowSearch(false)}
-              onSelect={(result) => {
+              onClose={() => {
+                setShowSearch(false);
+              }}
+              onSelect={(result: SearchResult) => {
                 // 검색 결과 선택 시 처리
                 if (result.type === 'message') {
                   // 메시지로 스크롤
@@ -1152,33 +1446,6 @@ const ModernChatInterface: React.FC = () => {
                   }, 100);
                 } else if (result.type === 'writing') {
                   // 글쓰기 모드로 전환
-                  setCurrentMode('writing');
-                }
-              }}
-            />
-          </ErrorBoundary>
-        )}
-
-        {/* 검색 패널 */}
-        {showSearch && (
-          <ErrorBoundary
-            fallback={
-              <div className="error-fallback" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 10000 }}>
-                <h3>검색 패널 로드 실패</h3>
-                <p>검색 패널을 불러오는 중 오류가 발생했습니다.</p>
-                <button onClick={() => setShowSearch(false)}>닫기</button>
-              </div>
-            }
-          >
-            <SearchPanel
-              isOpen={showSearch}
-              onClose={() => setShowSearch(false)}
-              onSelect={(result) => {
-                if (result.type === 'message') {
-                  setTimeout(() => {
-                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
-                } else if (result.type === 'writing') {
                   setCurrentMode('writing');
                 }
               }}
@@ -1199,8 +1466,10 @@ const ModernChatInterface: React.FC = () => {
           >
             <AdvancedSearchPanel
               isOpen={showAdvancedSearch}
-              onClose={() => setShowAdvancedSearch(false)}
-              onSelect={(result) => {
+              onClose={() => {
+                setShowAdvancedSearch(false);
+              }}
+              onSelect={(result: AdvancedSearchResult) => {
                 if (result.type === 'message' && result.metadata?.sessionId) {
                   if (result.metadata.sessionId !== sessionId) {
                     setSessionId(result.metadata.sessionId);
@@ -1223,301 +1492,571 @@ const ModernChatInterface: React.FC = () => {
         />
 
         <div className="chat-container">
-          {currentMode === 'writing' ? (
-            <div className="writing-wrapper">
-              <ErrorBoundary
-                fallback={
-                  <div className="error-fallback">
-                    <h3>글쓰기 어시스턴트 로드 실패</h3>
-                    <p>글쓰기 어시스턴트를 불러오는 중 오류가 발생했습니다.</p>
-                    <button onClick={() => setCurrentMode('chat')}>채팅으로 돌아가기</button>
-                  </div>
-                }
-              >
-                <WritingAssistant
-                  onGenerate={(content) => {
-                    // 생성된 글을 채팅 메시지로 추가
-                    const message: Message = {
-                      id: Date.now(),
-                      sender: 'ai',
-                      text: `📝 생성된 글:\n\n${content}`,
-                      timestamp: new Date().toLocaleTimeString(),
-                      analysis: null,
-                    };
-                    setMessages((prev) => [...prev, message]);
-
-                    // 글쓰기 완료 알림
-                    addNotification({
-                      type: 'writing',
-                      title: '글쓰기 생성 완료',
-                      message: '새로운 글이 생성되었습니다.',
-                      action: {
-                        label: '보기',
-                        onClick: () => {
-                          // 메시지로 스크롤
-                          setTimeout(() => {
-                            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                          }, 100);
-                        },
-                      },
-                    });
-                  }}
-                />
-              </ErrorBoundary>
-            </div>
-          ) : currentMode === 'monitoring' ? (
-            <div className="monitoring-wrapper">
-              <ErrorBoundary
-                fallback={
-                  <div className="error-fallback">
-                    <h3>성능 모니터링 로드 실패</h3>
-                    <p>성능 모니터링 대시보드를 불러오는 중 오류가 발생했습니다.</p>
-                    <button onClick={() => window.location.reload()}>페이지 새로고침</button>
-                  </div>
-                }
-              >
-                <PerformanceMonitoringDashboard
-                  refreshInterval={30}
-                  showPredictions={true}
-                />
-              </ErrorBoundary>
-            </div>
-          ) : showAdvancedFeatures ? (
-            <div className="advanced-features-wrapper">
-              <div className="advanced-features-header">
-                <h2>고급 기능</h2>
-                <button
-                  className="close-btn"
-                  onClick={() => setShowAdvancedFeatures(false)}
-                  title="닫기"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-              <ErrorBoundary
-                fallback={
-                  <div className="error-fallback">
-                    <h3>고급 기능 패널 로드 실패</h3>
-                    <p>고급 기능 패널을 불러오는 중 오류가 발생했습니다.</p>
-                    <button onClick={() => setShowAdvancedFeatures(false)}>패널 닫기</button>
-                  </div>
-                }
-              >
-                <AdvancedFeaturesPanel
-                  userId={sessionId}
-                  onImageAnalyzed={(result) => {
-                    const imageMessage: Message = {
-                      id: Date.now(),
-                      sender: 'ai',
-                      text: `🖼️ 이미지 분석 완료!\n\n이미지 크기: ${result.analysis?.image_info.width}x${result.analysis?.image_info.height}\n형식: ${result.analysis?.image_info.format}\n${result.analysis?.object_detection
-                        ? `감지된 객체: ${result.analysis.object_detection.total_objects}개\n`
-                        : ''
-                        }${result.analysis?.ocr_results?.extracted_text
-                          ? `추출된 텍스트: ${result.analysis.ocr_results.extracted_text}\n`
-                          : ''
-                        }`,
-                      timestamp: new Date().toLocaleTimeString(),
-                      analysis: null
-                    };
-                    setMessages(prev => [...prev, imageMessage]);
-                  }}
-                  onPredictionComplete={(type, result) => {
-                    let predictionText = '';
-                    if (type === 'user_activity' && result.prediction) {
-                      predictionText = `👤 사용자 활동 예측 완료!\n\n다음 예상 활동:\n${result.prediction.predicted_activities.map((a: any) => `- ${a.activity} (${(a.probability * 100).toFixed(1)}%)`).join('\n')}`;
-                    } else if (type === 'message_quality' && result.quality_analysis) {
-                      predictionText = `✍️ 메시지 품질 분석 완료!\n\n종합 점수: ${(result.quality_analysis.overall_score * 100).toFixed(1)}점\n품질 수준: ${result.quality_analysis.quality_level}\n\n개선 제안:\n${result.quality_analysis.suggestions.map((s: string) => `- ${s}`).join('\n')}`;
-                    } else if (type === 'system_performance' && result.performance_prediction) {
-                      predictionText = `⚙️ 시스템 성능 예측 완료!\n\n예상 CPU: ${result.performance_prediction.predicted_metrics.cpu_usage.toFixed(1)}%\n예상 메모리: ${result.performance_prediction.predicted_metrics.memory_usage.toFixed(1)}%\n응답 시간: ${result.performance_prediction.predicted_metrics.response_time_ms.toFixed(0)}ms`;
-                    }
-
-                    if (predictionText) {
-                      const predictionMessage: Message = {
-                        id: Date.now(),
-                        sender: 'ai',
-                        text: predictionText,
-                        timestamp: new Date().toLocaleTimeString(),
-                        analysis: null
-                      };
-                      setMessages(prev => [...prev, predictionMessage]);
-                    }
-                  }}
-                />
-              </ErrorBoundary>
-            </div>
-          ) : (
-            <>
-              <div
-                className="chat-messages"
-                role="log"
-                aria-label="채팅 메시지 목록"
-                aria-live="polite"
-                aria-atomic="false"
-              >
-                {messages.map((message) => (
-                  <MessageItem
-                    key={message.id}
-                    id={message.id}
-                    sender={message.sender}
-                    text={message.text}
-                    timestamp={message.timestamp}
-                    analysis={message.analysis}
-                    isLiked={message.isLiked}
-                    isDisliked={message.isDisliked}
-                    isBookmarked={message.isBookmarked}
-                    sessionId={sessionId}
-                    onCopy={handleCopyMessage}
-                    onRegenerate={handleRegenerateMessage}
-                    onEdit={handleEditMessage}
-                    onReply={handleReplyToMessage}
-                    onLike={handleLikeMessage}
-                    onDislike={handleDislikeMessage}
-                    onBookmark={handleBookmarkMessage}
-                  />
-                ))}
-
-                {(isTyping || isStreaming) && !streamingMessageId && (
-                  <div
-                    className="message ai typing-message"
-                    role="status"
-                    aria-live="polite"
-                    aria-label="AI가 메시지를 입력 중입니다"
-                  >
-                    <div className="message-avatar" aria-hidden="true">AI</div>
-                    <div className="message-content">
-                      <TypingIndicator 
-                        userName="AI"
-                        size="medium"
-                        theme="primary"
-                      />
-                      <div className="message-time" aria-hidden="true">
-                        {new Date().toLocaleTimeString()}
+          {(() => {
+            if (currentMode === 'writing') {
+              return (
+                <div className="writing-wrapper">
+                  <ErrorBoundary
+                    fallback={
+                      <div className="error-fallback">
+                        <h3>글쓰기 어시스턴트 로드 실패</h3>
+                        <p>글쓰기 어시스턴트를 불러오는 중 오류가 발생했습니다.</p>
+                        <button onClick={() => setCurrentMode('chat')}>채팅으로 돌아가기</button>
                       </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
+                    }
+                  >
+                    <WritingAssistant
+                      onGenerate={async (content: string) => {
+                        // 고급 글생성 엔진으로 품질 향상
+                        try {
+                          const context = {
+                            topic: content.substring(0, 100),
+                            audience: '일반 독자',
+                            purpose: '정보 제공 및 가치 전달',
+                            tone: 'professional' as const,
+                            style: 'detailed' as const,
+                            keywords: content.split(' ').slice(0, 5),
+                            previousContent: content,
+                          };
 
-              <div className="chat-input-container">
-                <div className="quick-actions">
-                  <button className="quick-action-btn" onClick={() => sendQuickMessage('안녕하세요!')}>인사</button>
-                  <button className="quick-action-btn" onClick={() => sendQuickMessage('파이썬 웹 개발에 대해 알려주세요')}>웹 개발</button>
-                  <button className="quick-action-btn" onClick={() => sendQuickMessage('머신러닝 기초를 설명해주세요')}>머신러닝</button>
-                  <button className="quick-action-btn" onClick={() => sendQuickMessage('데이터 분석 도구를 추천해주세요')}>데이터 분석</button>
+                          const enhanced = await advancedWritingEngine.generateWithContext(
+                            context,
+                            async (prompt) => {
+                              // 실제 API 호출 대신 프롬프트 기반 개선
+                              return advancedWritingEngine.analyzeAndEnhance(content, context).content;
+                            }
+                          );
+
+                          // 품질 정보 포맷팅
+                          const qualityScore = (enhanced.quality * 100).toFixed(0);
+                          const coherenceScore = (enhanced.coherence * 100).toFixed(0);
+                          const creativityScore = (enhanced.creativity * 100).toFixed(0);
+
+                          let messageText = `📝 고품질 글 생성 완료!\n\n품질 점수: ${qualityScore}%\n일관성: ${coherenceScore}%\n창의성: ${creativityScore}%\n\n${enhanced.content}`;
+
+                          if (enhanced.suggestions.length > 0) {
+                            const suggestionsList = enhanced.suggestions.map(s => `• ${s}`).join('\n');
+                            messageText += `\n\n💡 개선 제안:\n${suggestionsList}`;
+                          }
+
+                          // 생성된 글을 채팅 메시지로 추가
+                          const message: Message = {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: messageText,
+                            timestamp: new Date().toLocaleTimeString(),
+                            analysis: null,
+                          };
+                          addMessage(message);
+
+                          // 글쓰기 완료 알림
+                          addNotification({
+                            type: 'writing',
+                            title: '고품질 글 생성 완료',
+                            message: `품질 점수 ${(enhanced.quality * 100).toFixed(0)}%의 글을 생성했습니다.`,
+                            action: {
+                              label: '보기',
+                              onClick: () => {
+                                setTimeout(() => {
+                                  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                                }, 100);
+                              },
+                            },
+                          });
+                        } catch (error) {
+                          // 에러 발생 시 원본 내용 사용
+                          const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+                          errorLogger.error('글생성 오류', error instanceof Error ? error : new Error(errorMessage), {
+                            component: 'ModernChatInterface',
+                            action: 'generateWriting',
+                          });
+
+                          const message: Message = {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: `📝 생성된 글:\n\n${content}`,
+                            timestamp: new Date().toLocaleTimeString(),
+                            analysis: null,
+                          };
+                          addMessage(message);
+                          addNotification({
+                            type: 'writing',
+                            title: '글쓰기 생성 완료',
+                            message: '새로운 글이 생성되었습니다.',
+                          });
+                        }
+                      }}
+                    />
+                  </ErrorBoundary>
                 </div>
-
-                <div className="input-wrapper" role="form" aria-label="메시지 입력">
-                  <div className="input-attachments" role="group" aria-label="첨부 파일 옵션">
+              );
+            }
+            if (currentMode === 'notebook') {
+              return (
+                <div className="notebook-wrapper">
+                  <ErrorBoundary
+                    fallback={
+                      <div className="error-fallback">
+                        <h3>노트북 LLM 로드 실패</h3>
+                        <p>노트북 LLM을 불러오는 중 오류가 발생했습니다.</p>
+                        <button onClick={() => setCurrentMode('chat')}>채팅으로 돌아가기</button>
+                      </div>
+                    }
+                  >
+                    <NotebookLLM
+                      projectId={currentProjectId === 'default-project' ? undefined : currentProjectId}
+                      initialPrompt={inputText || undefined}
+                      onResponseComplete={(response) => {
+                        // 노트북 LLM 응답을 채팅 메시지로 추가
+                        const message: Message = {
+                          id: Date.now(),
+                          sender: 'ai',
+                          text: `📓 노트북 LLM 응답:\n\n${response.content}`,
+                          timestamp: new Date().toLocaleTimeString(),
+                          analysis: null,
+                        };
+                        addMessage(message);
+                        addNotification({
+                          type: 'success',
+                          title: '노트북 LLM 응답 완료',
+                          message: '노트북 LLM이 응답을 생성했습니다.',
+                        });
+                      }}
+                      onError={(error) => {
+                        errorLogger.error('노트북 LLM 오류', error instanceof Error ? error : new Error(String(error)), {
+                          component: 'ModernChatInterface',
+                          action: 'notebookLLM',
+                        });
+                        addNotification({
+                          type: 'error',
+                          title: '노트북 LLM 오류',
+                          message: error.message || '노트북 LLM 처리 중 오류가 발생했습니다.',
+                        });
+                      }}
+                    />
+                  </ErrorBoundary>
+                </div>
+              );
+            }
+            if (currentMode === 'monitoring') {
+              return (
+                <div className="monitoring-wrapper">
+                  <ErrorBoundary
+                    fallback={
+                      <div className="error-fallback">
+                        <h3>성능 모니터링 로드 실패</h3>
+                        <p>성능 모니터링 대시보드를 불러오는 중 오류가 발생했습니다.</p>
+                        <button onClick={() => globalThis.location.reload()}>페이지 새로고침</button>
+                      </div>
+                    }
+                  >
+                    <PerformanceMonitoringDashboard
+                      refreshInterval={30}
+                      showPredictions={true}
+                    />
+                  </ErrorBoundary>
+                </div>
+              );
+            }
+            if (showAdvancedFeatures) {
+              return (
+                <div className="advanced-features-wrapper">
+                  <div className="advanced-features-header">
+                    <h2>고급 기능</h2>
                     <button
-                      className="attachment-btn"
-                      onClick={handleFileUpload}
-                      title="파일 첨부"
-                      aria-label="파일 첨부"
-                      type="button"
+                      className="close-btn"
+                      onClick={() => setShowAdvancedFeatures(false)}
+                      title="닫기"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49" />
-                      </svg>
-                    </button>
-                    <button
-                      className="attachment-btn"
-                      onClick={handleImageUpload}
-                      title="이미지 첨부"
-                      aria-label="이미지 첨부"
-                      type="button"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21,15 16,10 5,21" />
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
                     </button>
                   </div>
+                  <ErrorBoundary
+                    fallback={
+                      <div className="error-fallback">
+                        <h3>고급 기능 패널 로드 실패</h3>
+                        <p>고급 기능 패널을 불러오는 중 오류가 발생했습니다.</p>
+                        <button onClick={() => setShowAdvancedFeatures(false)}>패널 닫기</button>
+                      </div>
+                    }
+                  >
+                    <AdvancedFeaturesPanel
+                      userId={sessionId}
+                      onImageAnalyzed={(result: ImageAnalysisResult) => {
+                        const imageMessage: Message = {
+                          id: Date.now(),
+                          sender: 'ai',
+                          text: `🖼️ 이미지 분석 완료!\n\n이미지 크기: ${result.analysis?.image_info?.width || 'N/A'}x${result.analysis?.image_info?.height || 'N/A'}\n형식: ${result.analysis?.image_info?.format || 'N/A'}\n${result.analysis?.object_detection
+                            ? `감지된 객체: ${result.analysis.object_detection.total_objects || 0}개\n`
+                            : ''
+                            }${result.analysis?.ocr_results?.extracted_text
+                              ? `추출된 텍스트: ${result.analysis.ocr_results.extracted_text}\n`
+                              : ''
+                            }`,
+                          timestamp: new Date().toLocaleTimeString(),
+                          analysis: null
+                        };
+                        setMessages(prev => [...prev, imageMessage]);
+                      }}
+                      onPredictionComplete={(type: string, result: PredictionResult) => {
+                        let predictionText = '';
+                        if (type === 'user_activity' && result.prediction) {
+                          const activities = (result.prediction.predicted_activities || []).map((a) => `- ${a.activity} (${(a.probability * 100).toFixed(1)}%)`).join('\n');
+                          predictionText = `👤 사용자 활동 예측 완료!\n\n다음 예상 활동:\n${activities}`;
+                        } else if (type === 'message_quality' && result.quality_analysis) {
+                          const suggestions = (result.quality_analysis.suggestions || []).map((s) => `- ${s}`).join('\n');
+                          const score = ((result.quality_analysis.overall_score || 0) * 100).toFixed(1);
+                          predictionText = `✍️ 메시지 품질 분석 완료!\n\n종합 점수: ${score}점\n품질 수준: ${result.quality_analysis.quality_level || 'N/A'}\n\n개선 제안:\n${suggestions}`;
+                        } else if (type === 'system_performance' && result.performance_prediction) {
+                          const cpu = (result.performance_prediction.predicted_metrics?.cpu_usage || 0).toFixed(1);
+                          const memory = (result.performance_prediction.predicted_metrics?.memory_usage || 0).toFixed(1);
+                          const responseTime = (result.performance_prediction.predicted_metrics?.response_time_ms || 0).toFixed(0);
+                          predictionText = `⚙️ 시스템 성능 예측 완료!\n\n예상 CPU: ${cpu}%\n예상 메모리: ${memory}%\n응답 시간: ${responseTime}ms`;
+                        }
 
-                  {/* 파일 업로드 존 (드래그 앤 드롭) - 접을 수 있는 형태로 표시 */}
-                  {!isTyping && (
-                    <FileUploadZone
-                      onFilesSelected={handleFilesSelected}
-                      accept="*/*"
-                      multiple={true}
-                      maxSize={10 * 1024 * 1024}
-                      maxFiles={5}
-                      disabled={isTyping}
+                        if (predictionText) {
+                          const predictionMessage: Message = {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: predictionText,
+                            timestamp: new Date().toLocaleTimeString(),
+                            analysis: null
+                          };
+                          setMessages(prev => [...prev, predictionMessage]);
+                        }
+                      }}
+                    />
+                  </ErrorBoundary>
+                </div>
+              );
+            }
+            return (
+              <>
+                <div
+                  ref={messagesContainerRef}
+                  className="chat-messages"
+                  role="log"
+                  aria-label="채팅 메시지 목록"
+                  aria-live="polite"
+                  aria-atomic="false"
+                  style={shouldVirtualize ? {
+                    height: '100%',
+                    overflow: 'auto',
+                    position: 'relative',
+                  } : {}}
+                >
+                  {shouldVirtualize && virtualizedInfo.startIndex > 0 && (
+                    <div
+                      style={{
+                        height: virtualizedInfo.startIndex * 120,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        pointerEvents: 'none',
+                      }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  {optimizedMessages.map((message) => (
+                    <MessageItem
+                      key={message.id}
+                      id={message.id}
+                      sender={message.sender}
+                      text={message.text}
+                      timestamp={message.timestamp}
+                      analysis={message.analysis}
+                      isLiked={message.isLiked}
+                      isDisliked={message.isDisliked}
+                      isBookmarked={message.isBookmarked}
+                      sessionId={sessionId}
+                      onCopy={handleCopyMessage}
+                      onRegenerate={handleRegenerateMessage}
+                      onEdit={handleEditMessage}
+                      onReply={handleReplyToMessage}
+                      onLike={handleLikeMessage}
+                      onDislike={handleDislikeMessage}
+                      onBookmark={handleBookmarkMessage}
+                    />
+                  ))}
+                  {shouldVirtualize && virtualizedInfo.hasMore && (
+                    <div
+                      style={{
+                        height: (virtualizedInfo.totalCount - virtualizedInfo.endIndex - 1) * 120,
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        pointerEvents: 'none',
+                      }}
+                      aria-hidden="true"
                     />
                   )}
 
-                  <textarea
-                    ref={textareaRef}
-                    className="chat-input"
-                    placeholder="CORBU.AI에게 무엇이든 물어보세요..."
-                    value={inputText}
-                    onChange={handleTextareaChange}
-                    onKeyPress={handleKeyPress}
-                    rows={1}
-                    aria-label="메시지 입력창"
-                    aria-describedby="input-hint"
-                    aria-required="true"
-                  />
-                  <span id="input-hint" className="sr-only">
-                    Enter 키를 누르면 메시지가 전송되고, Shift+Enter를 누르면 줄바꿈됩니다.
-                  </span>
-
-                  <div className="input-actions">
-                    <button
-                      className="voice-btn"
-                      onClick={startVoiceInput}
-                      title="음성 입력"
-                      aria-label="음성 입력"
-                      type="button"
+                  {(isTyping || isStreaming) && !streamingMessageId && (
+                    <output
+                      className="message ai typing-message"
+                      aria-live="polite"
+                      aria-label="AI가 메시지를 입력 중입니다"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                        <line x1="12" y1="19" x2="12" y2="23" />
-                        <line x1="8" y1="23" x2="16" y2="23" />
-                      </svg>
-                    </button>
-                    <button
-                      className="send-btn"
-                      onClick={sendMessage}
-                      title="전송"
-                      aria-label="메시지 전송"
-                      disabled={!inputText.trim() || isTyping}
-                      type="submit"
-                      aria-disabled={!inputText.trim() || isTyping}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                        <line x1="22" y1="2" x2="11" y2="13" />
-                        <polygon points="22,2 15,22 11,13 2,9 22,2" />
-                      </svg>
-                    </button>
-                  </div>
+                      <div className="message-avatar" aria-hidden="true">AI</div>
+                      <div className="message-content">
+                        <TypingIndicator
+                          userName="AI"
+                          size="medium"
+                          theme="primary"
+                        />
+                        <div className="message-time" aria-hidden="true">
+                          {new Date().toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </output>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
-              </div>
-            </>
-          )}
+
+                <div className="chat-input-container">
+                  <div className="quick-actions">
+                    <button className="quick-action-btn" onClick={() => sendQuickMessage('안녕하세요!')}>인사</button>
+                    <button className="quick-action-btn" onClick={() => sendQuickMessage('파이썬 웹 개발에 대해 알려주세요')}>웹 개발</button>
+                    <button className="quick-action-btn" onClick={() => sendQuickMessage('머신러닝 기초를 설명해주세요')}>머신러닝</button>
+                    <button className="quick-action-btn" onClick={() => sendQuickMessage('데이터 분석 도구를 추천해주세요')}>데이터 분석</button>
+                  </div>
+
+                  <form className="input-wrapper" aria-label="메시지 입력" onSubmit={(e) => { e.preventDefault(); sendMessage(); }}>
+                    <fieldset className="input-attachments" aria-label="첨부 파일 옵션">
+                      <button
+                        className="attachment-btn"
+                        onClick={handleFileUpload}
+                        title="파일 첨부"
+                        aria-label="파일 첨부"
+                        type="button"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49" />
+                        </svg>
+                      </button>
+                      <button
+                        className="attachment-btn"
+                        onClick={handleImageUpload}
+                        title="이미지 첨부"
+                        aria-label="이미지 첨부"
+                        type="button"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21,15 16,10 5,21" />
+                        </svg>
+                      </button>
+                    </fieldset>
+
+                    {/* 파일 업로드 존 (드래그 앤 드롭) - 접을 수 있는 형태로 표시 */}
+                    {!isTyping && (
+                      <FileUploadZone
+                        onFilesSelected={handleFilesSelected}
+                        accept="*/*"
+                        multiple={true}
+                        maxSize={10 * 1024 * 1024}
+                        maxFiles={5}
+                        disabled={isTyping}
+                      />
+                    )}
+
+                    {/* 답장 인용 메시지 */}
+                    {replyingTo && (
+                      <MessageReply
+                        quotedMessage={{
+                          id: replyingTo.id,
+                          sender: replyingTo.sender,
+                          text: replyingTo.text,
+                          timestamp: replyingTo.timestamp,
+                        }}
+                        onClose={() => setReplyingTo(null)}
+                        compact={true}
+                      />
+                    )}
+
+                    {chatEnhancements.smartSuggestions.length > 0 && (
+                      <div className="smart-suggestions-container" style={{ marginBottom: '8px', padding: '8px', background: 'var(--bg-secondary, #f5f5f5)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary, #666)', marginBottom: '4px' }}>💡 제안:</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          {chatEnhancements.smartSuggestions.map((suggestion) => (
+                            <button
+                              key={`suggestion-${suggestion.substring(0, 20)}-${suggestion.length}`}
+                              type="button"
+                              onClick={() => {
+                                setInputText(suggestion);
+                                chatEnhancements.sendTypingIndicator(false, '나');
+                                if (textareaRef.current) {
+                                  textareaRef.current.focus();
+                                }
+                              }}
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: '12px',
+                                background: 'var(--bg-primary, white)',
+                                border: '1px solid var(--border-color, #ddd)',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'var(--accent-color, #007bff)';
+                                e.currentTarget.style.color = 'white';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'var(--bg-primary, white)';
+                                e.currentTarget.style.color = 'inherit';
+                              }}
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <textarea
+                      ref={textareaRef}
+                      className="chat-input"
+                      placeholder={replyingTo ? "답장을 입력하세요..." : "CORBU.AI에게 무엇이든 물어보세요..."}
+                      value={inputText}
+                      onChange={handleTextareaChange}
+                      onKeyDown={handleKeyDown}
+                      rows={1}
+                      aria-label="메시지 입력창"
+                      aria-describedby="input-hint"
+                      aria-required="true"
+                    />
+                    <span id="input-hint" className="sr-only">
+                      Enter 키를 누르면 메시지가 전송되고, Shift+Enter를 누르면 줄바꿈됩니다.
+                    </span>
+
+                    <div className="input-actions">
+                      <button
+                        className="voice-btn"
+                        onClick={startVoiceInput}
+                        title="음성 입력"
+                        aria-label="음성 입력"
+                        type="button"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                          <line x1="12" y1="19" x2="12" y2="23" />
+                          <line x1="8" y1="23" x2="16" y2="23" />
+                        </svg>
+                      </button>
+                      <button
+                        className="send-btn"
+                        onClick={sendMessage}
+                        title="전송"
+                        aria-label="메시지 전송"
+                        disabled={!inputText.trim() || isTyping}
+                        type="submit"
+                        aria-disabled={!inputText.trim() || isTyping}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22,2 15,22 11,13 2,9 22,2" />
+                        </svg>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 
       {/* 세션 관리 모달 */}
       {showSessionManager && (
-        <div className="modal-overlay" onClick={() => setShowSessionManager(false)}>
-          <div className="modal-content session-manager-modal" onClick={(e) => e.stopPropagation()}>
-            <SessionManager
-              currentSessionId={sessionId}
-              sessions={sessions}
-              onSessionSelect={handleSessionSelect}
-              onSessionCreate={handleSessionCreate}
-              onSessionRename={handleSessionRename}
-              onSessionDelete={handleSessionDelete}
-              onClose={() => setShowSessionManager(false)}
+        <button
+          type="button"
+          className="modal-overlay"
+          onClick={() => setShowSessionManager(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowSessionManager(false);
+            }
+          }}
+          aria-label="모달 닫기"
+          style={{ background: 'transparent', border: 'none', position: 'fixed', inset: 0, zIndex: 1000 }}
+        >
+          <dialog
+            className="modal-content session-manager-modal"
+            open={showSessionManager}
+            onCancel={(e) => {
+              e.preventDefault();
+              setShowSessionManager(false);
+            }}
+            aria-label="세션 관리"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                }
+              }}
+            >
+              <SessionManager
+                currentSessionId={sessionId}
+                sessions={sessions}
+                onSessionSelect={handleSessionSelect}
+                onSessionCreate={handleSessionCreate}
+                onSessionRename={handleSessionRename}
+                onSessionDelete={handleSessionDelete}
+                onClose={() => setShowSessionManager(false)}
+              />
+            </div>
+          </dialog>
+        </button>
+      )}
+
+      {/* 프로젝트별 LLM 설정 모달 */}
+      {showProjectLLMSettings && (
+        <dialog
+          className="modal-overlay"
+          open
+          aria-modal="true"
+          aria-label="프로젝트별 LLM 설정"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowProjectLLMSettings(false);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowProjectLLMSettings(false);
+            }
+          }}
+          style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0, 0, 0, 0.5)', border: 'none', padding: 0 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <ProjectLLMSettings
+              projectId={currentProjectId}
+              projectName={sessionId || '기본 프로젝트'}
+              onClose={() => setShowProjectLLMSettings(false)}
+              onSave={(config) => {
+                setCurrentProjectId(config.projectId);
+                addNotification({
+                  type: 'success',
+                  title: 'LLM 설정 저장 완료',
+                  message: `${config.provider.name} - ${config.model.name} 모델이 설정되었습니다.`,
+                });
+              }}
             />
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { errorLogger } from '../utils/errorLogger';
 import {
   Send, Plus, Settings, Search, Mic, ChevronDown, ChevronRight, ExternalLink, FileText,
   Github, Folder, Globe, Calendar, Mail, PenTool, Code, TrendingUp, Hammer, Pencil,
@@ -165,7 +166,7 @@ const UltimateChatGPTInterface: React.FC = () => {
         throw new Error(data.error || 'API 호출 실패');
       }
     } catch (error) {
-      console.error('메시지 전송 오류:', error);
+      // 오프라인 모드로 폴백 (에러 로깅은 선택적)
 
       // 오프라인 모드로 폴백
       const aiMessage: Message = {
@@ -480,7 +481,7 @@ const UltimateChatGPTInterface: React.FC = () => {
         setMessages(prev => [...prev, analysisMessage]);
       }
     } catch (error) {
-      console.error('파일 분석 오류:', error);
+      errorLogger.error('파일 분석 오류', error);
 
       // 오프라인 분석 결과
       const analysis = {
@@ -1015,7 +1016,7 @@ const UltimateChatGPTInterface: React.FC = () => {
                     ref={inputRef}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         handleSendMessage();

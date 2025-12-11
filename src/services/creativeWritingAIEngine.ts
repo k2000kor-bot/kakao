@@ -111,7 +111,7 @@ export interface ArtisticVision {
     cultural_commentary: string[];
 }
 
-class CreativeWritingAIEngine {
+export class CreativeWritingAIEngine {
     private creativeTechniques: Map<string, any> = new Map();
     private literaryDevices: Map<string, any> = new Map();
     private inspirationSources: Map<string, any> = new Map();

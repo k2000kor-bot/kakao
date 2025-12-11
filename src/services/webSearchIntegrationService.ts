@@ -1,4 +1,5 @@
 import { NLPAnalysisResult } from './advancedNLPEngine';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface SearchResult {
     id: string;
@@ -288,8 +289,12 @@ class WebSearchIntegrationService {
             setTimeout(() => this.searchCache.delete(cacheKey), 60 * 60 * 1000);
 
             return results;
-        } catch (error) {
-            console.error('Multi-source search error:', error);
+        } catch (error: unknown) {
+            errorLogger.error('Multi-source search error', error instanceof Error ? error : new Error(String(error)), {
+                component: 'WebSearchIntegrationService',
+                action: 'searchMultipleSources',
+                searchQuery: searchQuery.original_query,
+            });
             return this.getFallbackResults(searchQuery);
         }
     }

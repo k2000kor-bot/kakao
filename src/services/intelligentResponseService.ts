@@ -3,7 +3,7 @@
  * 향상된 의도 분석 및 스마트 응답 생성
  */
 
-interface SmartResponse {
+export interface SmartResponse {
   content: string;
   type: 'analysis' | 'suggestion' | 'insight' | 'warning';
   confidence: number;
@@ -14,7 +14,7 @@ interface SmartResponse {
   relatedQuestions?: string[];
 }
 
-class IntelligentResponseService {
+export class IntelligentResponseService {
   /**
    * 스마트 응답 생성
    */

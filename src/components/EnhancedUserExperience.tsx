@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { errorLogger } from '../utils/errorLogger';
 import {
     Box,
     Card,
@@ -202,8 +203,11 @@ function EnhancedUserExperience() {
                 // 로컬 스토리지에도 저장
                 localStorage.setItem('userPreferences', JSON.stringify(preferences));
             }
-        } catch (error) {
-            console.error('선호도 저장 실패:', error);
+        } catch (error: unknown) {
+            errorLogger.error('선호도 저장 실패', error, {
+                component: 'EnhancedUserExperience',
+                action: 'savePreferences',
+            });
         }
     }, [preferences]);
 
@@ -216,8 +220,11 @@ function EnhancedUserExperience() {
             if (data.success) {
                 setUserStats(data.stats);
             }
-        } catch (error) {
-            console.error('사용자 통계 업데이트 실패:', error);
+        } catch (error: unknown) {
+            errorLogger.error('사용자 통계 업데이트 실패', error, {
+                component: 'EnhancedUserExperience',
+                action: 'updateUserStats',
+            });
         }
     }, []);
 
@@ -236,8 +243,11 @@ function EnhancedUserExperience() {
                 setFeedback({ rating: 0, comment: '', category: 'general' });
                 // 피드백 제출 성공 알림
             }
-        } catch (error) {
-            console.error('피드백 제출 실패:', error);
+        } catch (error: unknown) {
+            errorLogger.error('피드백 제출 실패', error, {
+                component: 'EnhancedUserExperience',
+                action: 'submitFeedback',
+            });
         }
     }, [feedback]);
 

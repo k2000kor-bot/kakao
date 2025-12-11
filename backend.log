@@ -1,4 +1,19 @@
-Traceback (most recent call last):
-  File "/Users/aD/kakao-frontend/app.py", line 1, in <module>
-    from flask import Flask, request, jsonify
-ModuleNotFoundError: No module named 'flask'
+INFO:notebook_llm_integration:✅ Ollama 초기화 완료: 2개 모델 발견
+INFO:notebook_llm_integration:✅ Ollama 초기화 완료: 2개 모델 발견
+INFO:llm_service:✅ 노트북 LLM 통합 초기화 완료
+INFO:     Started server process [66397]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5001 (Press CTRL+C to quit)
+⚠️ psutil 패키지가 없습니다. 시스템 모니터링이 제한됩니다.
+✅ LLM 서비스 초기화 완료
+🚀 CORBU AI Backend API 시작 중...
+📍 서버: http://0.0.0.0:5001
+📚 문서: http://0.0.0.0:5001/docs
+🔍 ReDoc: http://0.0.0.0:5001/redoc
+💚 헬스 체크: http://0.0.0.0:5001/api/health
+📦 API 버전: 1.0.0
+🤖 노트북 LLM: 사용 가능
+[2025-12-08T10:23:25.452121] GET /api/health  - IP: 127.0.0.1
+[2025-12-08T10:23:25.453299] GET /api/health - Status: 200 - Time: 0.001s
+INFO:     127.0.0.1:63374 - "GET /api/health HTTP/1.1" 200 OK

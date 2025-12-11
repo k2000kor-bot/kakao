@@ -95,7 +95,7 @@ export interface ConversationMediaContext {
     narrativeFlow: string;
 }
 
-class MediaAnalysisService {
+export class MediaAnalysisService {
     private analysisCache = new Map<string, MediaAnalysisResult>();
     private conversationContext = new Map<string, ConversationMediaContext>();
 

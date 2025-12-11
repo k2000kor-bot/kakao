@@ -184,7 +184,7 @@ interface RealTimeLearning {
     modelId: string;
 }
 
-class AIPredictiveAnalyticsService {
+export class AIPredictiveAnalyticsService {
     private predictiveModels: PredictiveModel[] = [];
     private predictions: Prediction[] = [];
     private anomalies: AnomalyDetection[] = [];
@@ -395,6 +395,7 @@ class AIPredictiveAnalyticsService {
     }
 
     private async predictMetric(metricName: string, currentMetrics: any[], timeframe: '1h' | '6h' | '24h' | '7d' | '30d'): Promise<Prediction | null> {
+        if (!currentMetrics || !Array.isArray(currentMetrics)) return null;
         const metric = currentMetrics.find(m => m.id === metricName);
         if (!metric) return null;
 
@@ -436,7 +437,9 @@ class AIPredictiveAnalyticsService {
     async detectAnomalies(projects: Project[], chats: Chat[], messages: Message[]): Promise<AnomalyDetection[]> {
         const anomalies: AnomalyDetection[] = [];
         const metrics = realTimeMonitoringService.getMetrics();
-
+        
+        if (!metrics || !Array.isArray(metrics)) return anomalies;
+        
         for (const metric of metrics) {
             const anomaly = this.checkForAnomaly(metric);
             if (anomaly) {
@@ -505,6 +508,8 @@ class AIPredictiveAnalyticsService {
     async analyzeTrends(projects: Project[], chats: Chat[], messages: Message[]): Promise<TrendAnalysis[]> {
         const trends: TrendAnalysis[] = [];
         const metrics = realTimeMonitoringService.getMetrics();
+
+        if (!metrics || !Array.isArray(metrics)) return trends;
 
         for (const metric of metrics) {
             const trend = this.calculateTrend(metric);

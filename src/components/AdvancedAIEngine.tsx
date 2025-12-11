@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { errorLogger } from '../utils/errorLogger';
 import {
     Box,
     Card,
@@ -170,8 +171,11 @@ function AdvancedAIEngine() {
             if (data.success) {
                 setMetrics(data.metrics);
             }
-        } catch (error) {
-            console.error('AI 엔진 메트릭 수집 실패:', error);
+        } catch (error: unknown) {
+            errorLogger.error('AI 엔진 메트릭 수집 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'AdvancedAIEngine',
+                action: 'fetchMetrics',
+            });
         }
     }, []);
 
@@ -184,8 +188,11 @@ function AdvancedAIEngine() {
             if (data.success) {
                 setModels(data.models);
             }
-        } catch (error) {
-            console.error('모델 상태 업데이트 실패:', error);
+        } catch (error: unknown) {
+            errorLogger.error('모델 상태 업데이트 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'AdvancedAIEngine',
+                action: 'updateModelStatus',
+            });
         }
     }, []);
 
@@ -231,8 +238,11 @@ function AdvancedAIEngine() {
                     confidence: stage.confidence || Math.random() * 0.2 + 0.8
                 })));
             }
-        } catch (error) {
-            console.error('AI 처리 실패:', error);
+        } catch (error: unknown) {
+            errorLogger.error('AI 처리 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'AdvancedAIEngine',
+                action: 'processAI',
+            });
         } finally {
             setIsProcessing(false);
             setProcessingProgress(100);
@@ -251,8 +261,11 @@ function AdvancedAIEngine() {
             if (data.success) {
                 await updateModelStatus();
             }
-        } catch (error) {
-            console.error('모델 재훈련 실패:', error);
+        } catch (error: unknown) {
+            errorLogger.error('모델 재훈련 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'AdvancedAIEngine',
+                action: 'retrainModel',
+            });
         }
     }, [updateModelStatus]);
 
@@ -268,8 +281,11 @@ function AdvancedAIEngine() {
             if (data.success) {
                 await updateModelStatus();
             }
-        } catch (error) {
-            console.error('모델 최적화 실패:', error);
+        } catch (error: unknown) {
+            errorLogger.error('모델 최적화 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'AdvancedAIEngine',
+                action: 'optimizeModel',
+            });
         }
     }, [updateModelStatus]);
 

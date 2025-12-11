@@ -90,7 +90,7 @@ export interface Notification {
     metadata?: any;
 }
 
-class WorkflowAutomationService {
+export class WorkflowAutomationService {
     private readonly WORKFLOW_TEMPLATES_KEY = 'workflow_templates';
     private readonly WORKFLOW_INSTANCES_KEY = 'workflow_instances_';
     private readonly NOTIFICATIONS_KEY = 'notifications_';

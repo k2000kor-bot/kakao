@@ -369,7 +369,7 @@ export interface AllocationAnalytics {
   roi: number;
 }
 
-class AIResourceAllocationOptimizationSystem {
+export class AIResourceAllocationOptimizationSystem {
   private allocations: Map<string, ResourceAllocation> = new Map();
   private resources: Map<string, Resource> = new Map();
   private isRunning: boolean = false;

@@ -385,3 +385,23 @@
 2025-09-11 13:44:20,703 - werkzeug - INFO -  * Debugger PIN: 479-034-758
 2025-09-11 13:45:18,507 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:45:18] "[33mGET /api/health HTTP/1.1[0m" 404 -
 2025-09-11 13:45:30,225 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 13:45:30] "[33mGET /api/health HTTP/1.1[0m" 404 -
+2025-12-11 13:44:22,601 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-12-11 13:44:22,602 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-12-11 13:44:22,602 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-12-11 13:44:22,852 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.0.30:5002
+2025-12-11 13:44:22,852 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-11 13:44:22,853 - werkzeug - INFO -  * Restarting with stat
+2025-12-11 13:44:23,117 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2025-12-11 13:44:23,117 - __main__ - INFO - 📍 서버 주소: http://localhost:5002
+2025-12-11 13:44:23,118 - __main__ - INFO - 🔗 기존 백엔드: http://localhost:5001
+2025-12-11 13:44:23,159 - werkzeug - WARNING -  * Debugger is active!
+2025-12-11 13:44:23,178 - werkzeug - INFO -  * Debugger PIN: 246-542-735
+2025-12-11 13:44:42,609 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:42] "[33mGET / HTTP/1.1[0m" 404 -
+2025-12-11 13:44:43,253 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:43] "[33mGET / HTTP/1.1[0m" 404 -
+2025-12-11 13:44:43,608 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:43] "[33mGET / HTTP/1.1[0m" 404 -
+2025-12-11 13:44:51,592 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:51] "[33mGET / HTTP/1.1[0m" 404 -
+2025-12-11 13:44:51,720 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:51] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-11 13:44:51,985 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:51] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -

@@ -3,6 +3,7 @@ import { User, Bot, Copy, ThumbsUp, ThumbsDown, MoreVertical, Bookmark } from 'l
 import { motion } from 'framer-motion';
 import { useDispatch } from 'react-redux';
 import { toggleMessageBookmark } from '../../store/slices/sessionsSlice';
+import { errorLogger } from '../../utils/errorLogger';
 
 // sessionsSlice의 Message 타입을 사용
 interface Message {
@@ -33,13 +34,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, sessionId }) => 
             await navigator.clipboard.writeText(message.content);
             // 복사 성공 알림
         } catch (error) {
-            console.error('Failed to copy:', error);
+            errorLogger.error('메시지 복사 실패', error instanceof Error ? error : new Error(String(error)), { component: 'MessageBubble', action: 'handleCopy' });
         }
     };
 
     const handleFeedback = (type: 'positive' | 'negative') => {
         // 피드백 처리 로직
-        console.log('Feedback:', type, message.id);
+        errorLogger.info('메시지 피드백', { component: 'MessageBubble', action: 'handleFeedback', feedbackType: type, messageId: message.id });
     };
 
     const handleBookmark = () => {

@@ -25,7 +25,7 @@ export interface BackendAPIRequest {
     };
 }
 
-class EnhancedBackendAPI {
+export class EnhancedBackendAPI {
     private baseURLs = {
         ultimate: 'http://localhost:8004',
         enhanced: 'http://localhost:8003',
@@ -318,6 +318,5 @@ class EnhancedBackendAPI {
 }
 
 // 싱글톤 인스턴스 생성
-const enhancedBackendAPI = new EnhancedBackendAPI();
-
+export const enhancedBackendAPI = new EnhancedBackendAPI();
 export default enhancedBackendAPI;

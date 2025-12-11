@@ -45,7 +45,7 @@ interface BackendMessage {
 }
 
 
-class PersistentChatSessionService {
+export class PersistentChatSessionService {
     private static instance: PersistentChatSessionService;
     private sessions: Map<string, ChatSession> = new Map();
     private config: PersistentChatConfig;

@@ -3,6 +3,8 @@
  * 모든 에러를 체계적으로 관리하고 사용자에게 친화적인 피드백 제공
  */
 
+import { errorLogger } from '../utils/errorLogger';
+
 export interface ErrorContext {
   component: string;
   action: string;
@@ -325,7 +327,12 @@ class ErrorHandlingService {
           break;
       }
     } catch (recoveryError) {
-      console.warn('자동 복구 실패:', recoveryError);
+      errorLogger.warn('자동 복구 실패', {
+        component: 'ErrorHandlingService',
+        action: 'attemptAutoRecovery',
+        errorType: errorReport.type,
+        recoveryError: recoveryError instanceof Error ? recoveryError.message : String(recoveryError),
+      });
     }
   }
 
@@ -352,7 +359,10 @@ class ErrorHandlingService {
    */
   private async restartAIService(): Promise<void> {
     // AI 서비스 상태 확인 및 재시작 로직
-    console.log('AI 서비스 재시작 시도...');
+    errorLogger.info('AI 서비스 재시작 시도', {
+      component: 'ErrorHandlingService',
+      action: 'restartAIService',
+    });
   }
 
   /**
@@ -360,7 +370,11 @@ class ErrorHandlingService {
    */
   private async retryFileProcessing(context: Partial<ErrorContext>): Promise<void> {
     // 파일 처리 재시도 로직
-    console.log('파일 처리 재시도...', context);
+    errorLogger.info('파일 처리 재시도', {
+      component: 'ErrorHandlingService',
+      action: 'retryFileProcessing',
+      context,
+    });
   }
 
   /**
@@ -398,7 +412,10 @@ class ErrorHandlingService {
         await this.sendErrorToServer(errorReport);
       }
     } catch (loggingError) {
-      console.error('에러 로깅 실패:', loggingError);
+      errorLogger.error('에러 로깅 실패', loggingError instanceof Error ? loggingError : new Error(String(loggingError)), {
+        component: 'ErrorHandlingService',
+        action: 'logError',
+      });
     }
   }
 

@@ -38,6 +38,17 @@ import {
     Info
 } from '@mui/icons-material';
 import integratedSystemAPI from '../../services/integratedSystemAPI';
+import { errorLogger } from '../../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface ServiceConfig {
     id: string;
@@ -155,7 +166,11 @@ const SystemIntegrationManager: React.FC = () => {
                 ]);
             }
         } catch (error) {
-            console.error('설정 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('설정 로드 실패', err, {
+                component: 'SystemIntegrationManager',
+                action: 'loadConfig',
+            });
         } finally {
             setIsLoading(false);
         }
@@ -184,7 +199,11 @@ const SystemIntegrationManager: React.FC = () => {
             setIsServiceDialogOpen(false);
             setSelectedService(null);
         } catch (error) {
-            console.error('서비스 설정 저장 실패:', error);
+            const err = toError(error);
+            errorLogger.error('서비스 설정 저장 실패', err, {
+                component: 'SystemIntegrationManager',
+                action: 'handleServiceSave',
+            });
         }
     };
 
@@ -211,7 +230,11 @@ const SystemIntegrationManager: React.FC = () => {
             setIsRuleDialogOpen(false);
             setSelectedRule(null);
         } catch (error) {
-            console.error('통합 규칙 저장 실패:', error);
+            const err = toError(error);
+            errorLogger.error('통합 규칙 저장 실패', err, {
+                component: 'SystemIntegrationManager',
+                action: 'handleRuleSave',
+            });
         }
     };
 
@@ -227,7 +250,12 @@ const SystemIntegrationManager: React.FC = () => {
                 integrationRules
             });
         } catch (error) {
-            console.error('서비스 상태 변경 실패:', error);
+            const err = toError(error);
+            errorLogger.error('서비스 상태 변경 실패', err, {
+                component: 'SystemIntegrationManager',
+                action: 'handleServiceToggle',
+                serviceId,
+            });
         }
     };
 
@@ -243,7 +271,12 @@ const SystemIntegrationManager: React.FC = () => {
                 integrationRules: updatedRules
             });
         } catch (error) {
-            console.error('통합 규칙 상태 변경 실패:', error);
+            const err = toError(error);
+            errorLogger.error('통합 규칙 상태 변경 실패', err, {
+                component: 'SystemIntegrationManager',
+                action: 'handleRuleToggle',
+                ruleId,
+            });
         }
     };
 
@@ -289,7 +322,11 @@ const SystemIntegrationManager: React.FC = () => {
 
             setTestResults(results);
         } catch (error) {
-            console.error('통합 테스트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('통합 테스트 실패', err, {
+                component: 'SystemIntegrationManager',
+                action: 'runIntegrationTest',
+            });
         } finally {
             setIsTestRunning(false);
         }

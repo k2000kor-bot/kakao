@@ -325,4 +325,6 @@ class LearningFeedbackSystem {
     }
 }
 
-export const learningFeedbackSystem = new LearningFeedbackSystem();
+const learningFeedbackSystem = new LearningFeedbackSystem();
+export default learningFeedbackSystem;
+export { LearningFeedbackSystem };

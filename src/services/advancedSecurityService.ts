@@ -1,681 +1,600 @@
-/**
- * 고급 보안 및 데이터 암호화 서비스
- * 데이터 암호화, 인증, 권한 관리, 보안 감사 기능 제공
- */
+// 고급 보안 API 서비스
+// backend/api/advanced_security_api.py의 모든 엔드포인트와 통합
 
-export interface SecurityConfig {
-  encryptionEnabled: boolean;
-  encryptionAlgorithm: 'AES-256-GCM' | 'ChaCha20-Poly1305';
-  keyDerivationIterations: number;
-  sessionTimeout: number; // minutes
-  maxLoginAttempts: number;
-  passwordPolicy: {
-    minLength: number;
-    requireUppercase: boolean;
-    requireLowercase: boolean;
-    requireNumbers: boolean;
-    requireSpecialChars: boolean;
-  };
-  auditLogging: boolean;
-  dataRetentionDays: number;
-}
+import axios, { AxiosInstance } from 'axios';
 
-export interface EncryptedData {
-  encrypted: string;
-  iv: string;
-  salt: string;
-  algorithm: string;
-  version: string;
-}
-
-export interface SecurityAudit {
-  id: string;
-  timestamp: Date;
-  userId: string;
-  action: string;
-  resource: string;
-  ipAddress: string;
-  userAgent: string;
-  success: boolean;
-  details: any;
-}
-
-export interface UserSession {
-  id: string;
-  userId: string;
-  token: string;
-  createdAt: Date;
-  expiresAt: Date;
-  ipAddress: string;
-  userAgent: string;
-  isActive: boolean;
-}
-
-export interface SecurityMetrics {
-  totalLogins: number;
-  failedLogins: number;
-  activeSessions: number;
-  encryptionOperations: number;
-  auditEvents: number;
-  securityScore: number; // 0-100
-  lastSecurityScan: Date;
-  vulnerabilities: Array<{
+// ===== 타입 정의 =====
+export interface SecurityThreat {
+    id: string;
     type: string;
     severity: 'low' | 'medium' | 'high' | 'critical';
     description: string;
-    recommendation: string;
-  }>;
+    source_ip: string;
+    user_agent: string;
+    timestamp: string;
+    status: 'detected' | 'investigating' | 'resolved' | 'false_positive';
+    risk_score: number;
 }
 
+export interface SecurityEvent {
+    id: string;
+    event_type: string;
+    user_id?: string;
+    ip_address: string;
+    user_agent: string;
+    timestamp: string;
+    details: Record<string, any>;
+    risk_level: 'low' | 'medium' | 'high';
+}
+
+export interface EncryptionKey {
+    id: string;
+    name: string;
+    algorithm: string;
+    key_size: number;
+    created_at: string;
+    expires_at?: string;
+    status: 'active' | 'expired' | 'revoked';
+    usage_count: number;
+}
+
+export interface AuditLog {
+    id: string;
+    user_id?: string;
+    action: string;
+    resource: string;
+    ip_address: string;
+    user_agent: string;
+    timestamp: string;
+    success: boolean;
+    details: Record<string, any>;
+}
+
+export interface IPBlock {
+    ip_address: string;
+    reason: string;
+    blocked_at: string;
+    blocked_until?: string;
+    blocked_by: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface SecurityPolicy {
+    id: string;
+    name: string;
+    description: string;
+    policy_type: 'access_control' | 'rate_limit' | 'encryption' | 'authentication';
+    rules: Record<string, any>;
+    enabled: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SecurityAlert {
+    id: string;
+    alert_type: 'threat' | 'anomaly' | 'policy_violation' | 'system_alert';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    title: string;
+    description: string;
+    source: string;
+    timestamp: string;
+    status: 'new' | 'acknowledged' | 'resolved';
+    details: Record<string, any>;
+}
+
+export interface SecurityStatus {
+    overall_status: 'healthy' | 'warning' | 'critical';
+    security_score: number;
+    threats: {
+        total: number;
+        active: number;
+        critical: number;
+    };
+    events: {
+        total: number;
+        high_risk: number;
+    };
+    audit: {
+        total_logs: number;
+        failed_logins: number;
+    };
+    encryption: {
+        active_keys: number;
+        total_keys: number;
+    };
+    recommendations: string[];
+}
+
+export interface SecurityScanResult {
+    scan_id: string;
+    scan_type: string;
+    started_at: string;
+    completed_at: string;
+    vulnerabilities_found: number;
+    threats_detected: number;
+    risk_level: 'low' | 'medium' | 'high';
+    recommendations: string[];
+}
+
+export interface RateLimitConfig {
+    endpoint: string;
+    requests_per_minute: number;
+    requests_per_hour: number;
+    requests_per_day: number;
+    enabled: boolean;
+    updated_at: string;
+}
+
+// ===== 서비스 클래스 =====
 class AdvancedSecurityService {
-  private config!: SecurityConfig;
-  private sessions: Map<string, UserSession> = new Map();
-  private auditLog: SecurityAudit[] = [];
-  private encryptionKey: CryptoKey | null = null;
-  private keyDerivationSalt: Uint8Array | null = null;
-  private securityMetrics!: SecurityMetrics;
+    private api: AxiosInstance;
+    private baseURL: string;
 
-  constructor() {
-    this.initializeSecurityConfig();
-    this.initializeSecurityMetrics();
-    this.setupSecurityMonitoring();
-  }
-
-  /**
-   * 보안 설정 초기화
-   */
-  private initializeSecurityConfig(): void {
-    this.config = {
-      encryptionEnabled: true,
-      encryptionAlgorithm: 'AES-256-GCM',
-      keyDerivationIterations: 100000,
-      sessionTimeout: 60, // 60 minutes
-      maxLoginAttempts: 5,
-      passwordPolicy: {
-        minLength: 12,
-        requireUppercase: true,
-        requireLowercase: true,
-        requireNumbers: true,
-        requireSpecialChars: true
-      },
-      auditLogging: true,
-      dataRetentionDays: 90
-    };
-
-    // 로컬 스토리지에서 설정 로드
-    const savedConfig = localStorage.getItem('securityConfig');
-    if (savedConfig) {
-      try {
-        this.config = { ...this.config, ...JSON.parse(savedConfig) };
-      } catch (error) {
-        console.error('보안 설정 로드 실패:', error);
-      }
-    }
-  }
-
-  /**
-   * 보안 메트릭 초기화
-   */
-  private initializeSecurityMetrics(): void {
-    this.securityMetrics = {
-      totalLogins: 0,
-      failedLogins: 0,
-      activeSessions: 0,
-      encryptionOperations: 0,
-      auditEvents: 0,
-      securityScore: 85,
-      lastSecurityScan: new Date(),
-      vulnerabilities: []
-    };
-
-    // 저장된 메트릭 로드
-    const savedMetrics = localStorage.getItem('securityMetrics');
-    if (savedMetrics) {
-      try {
-        this.securityMetrics = { ...this.securityMetrics, ...JSON.parse(savedMetrics) };
-      } catch (error) {
-        console.error('보안 메트릭 로드 실패:', error);
-      }
-    }
-  }
-
-  /**
-   * 보안 모니터링 설정
-   */
-  private setupSecurityMonitoring(): void {
-    // 세션 만료 체크
-    setInterval(() => {
-      this.cleanupExpiredSessions();
-    }, 60000); // 1분마다
-
-    // 보안 스캔
-    setInterval(() => {
-      this.performSecurityScan();
-    }, 300000); // 5분마다
-
-    // 메트릭 저장
-    setInterval(() => {
-      this.saveSecurityMetrics();
-    }, 300000); // 5분마다
-
-    // 오디트 로그 정리
-    setInterval(() => {
-      this.cleanupOldAuditLogs();
-    }, 86400000); // 24시간마다
-  }
-
-  /**
-   * 암호화 키 생성
-   */
-  async generateEncryptionKey(password: string, salt?: Uint8Array): Promise<CryptoKey> {
-    if (!salt) {
-      salt = crypto.getRandomValues(new Uint8Array(32));
-      this.keyDerivationSalt = salt;
+    constructor() {
+        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+        this.api = axios.create({
+            baseURL: this.baseURL,
+            timeout: 30000,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
     }
 
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(password),
-      { name: 'PBKDF2' },
-      false,
-      ['deriveBits', 'deriveKey']
-    );
+    // ===== 보안 위협 관리 =====
+    async getSecurityThreats(
+        severity?: string,
+        status?: string
+    ): Promise<{ threats: SecurityThreat[]; total_count: number; severity_counts: Record<string, number> }> {
+        try {
+            // 입력 검증
+            if (severity && !['low', 'medium', 'high', 'critical'].includes(severity)) {
+                throw new Error('유효하지 않은 심각도 값입니다.');
+            }
+            if (status && !['detected', 'investigating', 'resolved', 'false_positive'].includes(status)) {
+                throw new Error('유효하지 않은 상태 값입니다.');
+            }
 
-    const key = await crypto.subtle.deriveKey(
-      {
-        name: 'PBKDF2',
-        salt: salt,
-        iterations: this.config.keyDerivationIterations,
-        hash: 'SHA-256'
-      },
-      keyMaterial,
-      { name: 'AES-GCM', length: 256 },
-      true,
-      ['encrypt', 'decrypt']
-    );
+            const params = new URLSearchParams();
+            if (severity) params.append('severity', severity);
+            if (status) params.append('status', status);
 
-    this.encryptionKey = key;
-    return key;
-  }
+            const response = await this.api.get(`/security/threats?${params.toString()}`);
 
-  /**
-   * 데이터 암호화
-   */
-  async encryptData(data: string): Promise<EncryptedData> {
-    if (!this.config.encryptionEnabled) {
-      return {
-        encrypted: data,
-        iv: '',
-        salt: '',
-        algorithm: 'none',
-        version: '1.0'
-      };
+            if (!response.data?.success) {
+                throw new Error(response.data?.error || '보안 위협 조회 실패');
+            }
+
+            return response.data.data;
+        } catch (error: any) {
+            console.error('보안 위협 조회 실패:', error);
+            if (error.response) {
+                throw new Error(`서버 오류: ${error.response.status} - ${error.response.data?.detail || error.message}`);
+            }
+            throw error;
+        }
     }
 
-    if (!this.encryptionKey) {
-      throw new Error('암호화 키가 설정되지 않았습니다.');
+    async resolveThreat(threatId: string, resolution: Record<string, any>): Promise<SecurityThreat> {
+        try {
+            const response = await this.api.post(`/security/threats/${threatId}/resolve`, resolution);
+            return response.data.data;
+        } catch (error) {
+            console.error('보안 위협 해결 실패:', error);
+            throw error;
+        }
     }
 
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const encodedData = new TextEncoder().encode(data);
-
-    const encryptedBuffer = await crypto.subtle.encrypt(
-      {
-        name: 'AES-GCM',
-        iv: iv
-      },
-      this.encryptionKey,
-      encodedData
-    );
-
-    const encrypted = btoa(String.fromCharCode(...Array.from(new Uint8Array(encryptedBuffer))));
-    const salt = this.keyDerivationSalt ? btoa(String.fromCharCode(...Array.from(this.keyDerivationSalt))) : '';
-
-    this.securityMetrics.encryptionOperations++;
-
-    return {
-      encrypted,
-      iv: btoa(String.fromCharCode(...Array.from(iv))),
-      salt,
-      algorithm: this.config.encryptionAlgorithm,
-      version: '1.0'
-    };
-  }
-
-  /**
-   * 데이터 복호화
-   */
-  async decryptData(encryptedData: EncryptedData): Promise<string> {
-    if (!this.config.encryptionEnabled || encryptedData.algorithm === 'none') {
-      return encryptedData.encrypted;
+    // ===== 보안 이벤트 =====
+    async getSecurityEvents(limit: number = 50): Promise<{
+        events: SecurityEvent[];
+        total_count: number;
+        risk_distribution: Record<string, number>;
+    }> {
+        try {
+            const response = await this.api.get(`/security/events?limit=${limit}`);
+            return response.data.data;
+        } catch (error) {
+            console.error('보안 이벤트 조회 실패:', error);
+            throw error;
+        }
     }
 
-    if (!this.encryptionKey) {
-      throw new Error('암호화 키가 설정되지 않았습니다.');
+    // ===== 암호화/복호화 =====
+    async encryptData(data: Record<string, any>): Promise<{
+        encrypted_data: string;
+        key_id: string;
+        algorithm: string;
+        timestamp: string;
+    }> {
+        try {
+            const response = await this.api.post('/security/encrypt', data);
+            return response.data.data;
+        } catch (error) {
+            console.error('데이터 암호화 실패:', error);
+            throw error;
+        }
     }
 
-    try {
-      const iv = new Uint8Array(atob(encryptedData.iv).split('').map(char => char.charCodeAt(0)));
-      const encrypted = new Uint8Array(atob(encryptedData.encrypted).split('').map(char => char.charCodeAt(0)));
-
-      const decryptedBuffer = await crypto.subtle.decrypt(
-        {
-          name: 'AES-GCM',
-          iv: iv
-        },
-        this.encryptionKey,
-        encrypted
-      );
-
-      this.securityMetrics.encryptionOperations++;
-
-      return new TextDecoder().decode(decryptedBuffer);
-    } catch (error) {
-      throw new Error('데이터 복호화 실패: ' + error);
-    }
-  }
-
-  /**
-   * 비밀번호 검증
-   */
-  validatePassword(password: string): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
-
-    if (password.length < this.config.passwordPolicy.minLength) {
-      errors.push(`비밀번호는 최소 ${this.config.passwordPolicy.minLength}자 이상이어야 합니다.`);
+    async decryptData(encryptedData: string, keyId: string): Promise<Record<string, any>> {
+        try {
+            const response = await this.api.post('/security/decrypt', {
+                encrypted_data: encryptedData,
+                key_id: keyId,
+            });
+            return response.data.data;
+        } catch (error) {
+            console.error('데이터 복호화 실패:', error);
+            throw error;
+        }
     }
 
-    if (this.config.passwordPolicy.requireUppercase && !/[A-Z]/.test(password)) {
-      errors.push('대문자를 포함해야 합니다.');
+    // ===== 암호화 키 관리 =====
+    async getEncryptionKeys(): Promise<{
+        keys: EncryptionKey[];
+        total_count: number;
+        active_count: number;
+    }> {
+        try {
+            const response = await this.api.get('/security/keys');
+            return response.data.data;
+        } catch (error) {
+            console.error('암호화 키 조회 실패:', error);
+            throw error;
+        }
     }
 
-    if (this.config.passwordPolicy.requireLowercase && !/[a-z]/.test(password)) {
-      errors.push('소문자를 포함해야 합니다.');
+    async createEncryptionKey(keyConfig: {
+        name?: string;
+        expires_days?: number;
+    }): Promise<EncryptionKey> {
+        try {
+            const response = await this.api.post('/security/keys', keyConfig);
+            return response.data.data;
+        } catch (error) {
+            console.error('암호화 키 생성 실패:', error);
+            throw error;
+        }
     }
 
-    if (this.config.passwordPolicy.requireNumbers && !/\d/.test(password)) {
-      errors.push('숫자를 포함해야 합니다.');
+    // ===== 비밀번호 관리 =====
+    async hashPassword(password: string): Promise<{
+        hashed_password: string;
+        algorithm: string;
+        salt: string;
+    }> {
+        try {
+            const response = await this.api.post('/security/hash', null, {
+                params: { password },
+            });
+            return response.data.data;
+        } catch (error) {
+            console.error('비밀번호 해시 실패:', error);
+            throw error;
+        }
     }
 
-    if (this.config.passwordPolicy.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      errors.push('특수문자를 포함해야 합니다.');
+    async verifyPassword(password: string, hashedPassword: string): Promise<{
+        is_valid: boolean;
+        message: string;
+    }> {
+        try {
+            const response = await this.api.post('/security/verify-password', null, {
+                params: { password, hashed_password: hashedPassword },
+            });
+            return response.data.data;
+        } catch (error) {
+            console.error('비밀번호 검증 실패:', error);
+            throw error;
+        }
     }
 
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
-  }
-
-  /**
-   * 비밀번호 해시 생성
-   */
-  async hashPassword(password: string): Promise<string> {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + salt);
-
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-    return btoa(String.fromCharCode(...Array.from(salt))) + ':' + hashHex;
-  }
-
-  /**
-   * 비밀번호 검증
-   */
-  async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-    const [saltB64, hash] = hashedPassword.split(':');
-    const salt = new Uint8Array(atob(saltB64).split('').map(char => char.charCodeAt(0)));
-    
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + salt);
-    
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    return hash === computedHash;
-  }
-
-  /**
-   * 사용자 세션 생성
-   */
-  createUserSession(userId: string, ipAddress: string, userAgent: string): UserSession {
-    const sessionId = crypto.randomUUID();
-    const token = this.generateSecureToken();
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + this.config.sessionTimeout * 60000);
-
-    const session: UserSession = {
-      id: sessionId,
-      userId,
-      token,
-      createdAt: now,
-      expiresAt,
-      ipAddress,
-      userAgent,
-      isActive: true
-    };
-
-    this.sessions.set(sessionId, session);
-    this.securityMetrics.activeSessions = this.sessions.size;
-    this.securityMetrics.totalLogins++;
-
-    this.logAuditEvent(userId, 'login', 'session', ipAddress, userAgent, true);
-
-    return session;
-  }
-
-  /**
-   * 세션 검증
-   */
-  validateSession(sessionId: string, token: string): boolean {
-    const session = this.sessions.get(sessionId);
-    
-    if (!session || !session.isActive) {
-      return false;
+    // ===== JWT 토큰 관리 =====
+    async generateJWTToken(payload: Record<string, any>): Promise<{
+        token: string;
+        expires_at: string;
+        algorithm: string;
+    }> {
+        try {
+            const response = await this.api.post('/security/generate-token', payload);
+            return response.data.data;
+        } catch (error) {
+            console.error('JWT 토큰 생성 실패:', error);
+            throw error;
+        }
     }
 
-    if (session.token !== token) {
-      this.logAuditEvent(session.userId, 'session_validation_failed', 'session', session.ipAddress, session.userAgent, false);
-      return false;
+    async verifyJWTToken(token: string): Promise<{
+        payload: Record<string, any>;
+        is_valid: boolean;
+        expires_at: string;
+    }> {
+        try {
+            const response = await this.api.post('/security/verify-token', null, {
+                params: { token },
+            });
+            return response.data.data;
+        } catch (error) {
+            console.error('JWT 토큰 검증 실패:', error);
+            throw error;
+        }
     }
 
-    if (new Date() > session.expiresAt) {
-      session.isActive = false;
-      this.logAuditEvent(session.userId, 'session_expired', 'session', session.ipAddress, session.userAgent, false);
-      return false;
+    // ===== 감사 로그 =====
+    async getAuditLogs(userId?: string, limit: number = 100): Promise<{
+        logs: AuditLog[];
+        total_count: number;
+        success_count: number;
+        failure_count: number;
+    }> {
+        try {
+            const params = new URLSearchParams();
+            if (userId) params.append('user_id', userId);
+            params.append('limit', limit.toString());
+
+            const response = await this.api.get(`/security/audit-logs?${params.toString()}`);
+            return response.data.data;
+        } catch (error) {
+            console.error('감사 로그 조회 실패:', error);
+            throw error;
+        }
     }
 
-    return true;
-  }
-
-  /**
-   * 세션 종료
-   */
-  terminateSession(sessionId: string): boolean {
-    const session = this.sessions.get(sessionId);
-    if (session) {
-      session.isActive = false;
-      this.securityMetrics.activeSessions = this.sessions.size;
-      this.logAuditEvent(session.userId, 'logout', 'session', session.ipAddress, session.userAgent, true);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * 만료된 세션 정리
-   */
-  private cleanupExpiredSessions(): void {
-    const now = new Date();
-    let cleanedCount = 0;
-
-    for (const [, session] of Array.from(this.sessions.entries())) {
-      if (now > session.expiresAt) {
-        session.isActive = false;
-        cleanedCount++;
-      }
+    // ===== 보안 상태 =====
+    async getSecurityStatus(): Promise<SecurityStatus> {
+        try {
+            const response = await this.api.get('/security/status');
+            return response.data.data;
+        } catch (error) {
+            console.error('보안 상태 조회 실패:', error);
+            throw error;
+        }
     }
 
-    this.securityMetrics.activeSessions = this.sessions.size - cleanedCount;
-
-    if (cleanedCount > 0) {
-      console.log(`${cleanedCount}개의 만료된 세션을 정리했습니다.`);
-    }
-  }
-
-  /**
-   * 보안 토큰 생성
-   */
-  private generateSecureToken(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  }
-
-  /**
-   * 오디트 이벤트 로깅
-   */
-  logAuditEvent(
-    userId: string,
-    action: string,
-    resource: string,
-    ipAddress: string,
-    userAgent: string,
-    success: boolean,
-    details?: any
-  ): void {
-    if (!this.config.auditLogging) return;
-
-    const auditEvent: SecurityAudit = {
-      id: crypto.randomUUID(),
-      timestamp: new Date(),
-      userId,
-      action,
-      resource,
-      ipAddress,
-      userAgent,
-      success,
-      details
-    };
-
-    this.auditLog.push(auditEvent);
-    this.securityMetrics.auditEvents++;
-
-    // 로컬 스토리지에 저장
-    this.saveAuditLog();
-  }
-
-  /**
-   * 오디트 로그 저장
-   */
-  private saveAuditLog(): void {
-    try {
-      const recentLogs = this.auditLog.slice(-1000); // 최근 1000개만 저장
-      localStorage.setItem('securityAuditLog', JSON.stringify(recentLogs));
-    } catch (error) {
-      console.error('오디트 로그 저장 실패:', error);
-    }
-  }
-
-  /**
-   * 오래된 오디트 로그 정리
-   */
-  private cleanupOldAuditLogs(): void {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - this.config.dataRetentionDays);
-
-    this.auditLog = this.auditLog.filter(log => log.timestamp > cutoffDate);
-    console.log('오래된 오디트 로그를 정리했습니다.');
-  }
-
-  /**
-   * 보안 스캔 수행
-   */
-  private performSecurityScan(): void {
-    const vulnerabilities: Array<{
-      type: string;
-      severity: 'low' | 'medium' | 'high' | 'critical';
-      description: string;
-      recommendation: string;
-    }> = [];
-
-    // 세션 보안 검사
-    if (this.securityMetrics.activeSessions > 10) {
-      vulnerabilities.push({
-        type: 'session_overflow',
-        severity: 'medium',
-        description: '활성 세션이 너무 많습니다.',
-        recommendation: '불필요한 세션을 정리하세요.'
-      });
+    // ===== 보안 스캔 =====
+    async runSecurityScan(scanType: 'full' | 'quick' | 'custom' = 'full'): Promise<SecurityScanResult> {
+        try {
+            const response = await this.api.post('/security/scan', null, {
+                params: { scan_type: scanType },
+            });
+            return response.data.data;
+        } catch (error) {
+            console.error('보안 스캔 실행 실패:', error);
+            throw error;
+        }
     }
 
-    // 로그인 실패율 검사
-    const failureRate = this.securityMetrics.failedLogins / Math.max(this.securityMetrics.totalLogins, 1);
-    if (failureRate > 0.3) {
-      vulnerabilities.push({
-        type: 'high_failure_rate',
-        severity: 'high',
-        description: '로그인 실패율이 높습니다.',
-        recommendation: '계정 보안을 강화하세요.'
-      });
+    // ===== IP 관리 =====
+    async blockIP(ipData: {
+        ip_address: string;
+        reason?: string;
+        blocked_until?: string;
+        blocked_by?: string;
+        severity?: 'low' | 'medium' | 'high' | 'critical';
+    }): Promise<IPBlock> {
+        try {
+            // IP 주소 검증
+            const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if (!ipData.ip_address || !ipRegex.test(ipData.ip_address)) {
+                throw new Error('유효하지 않은 IP 주소 형식입니다.');
+            }
+
+            // 심각도 검증
+            if (ipData.severity && !['low', 'medium', 'high', 'critical'].includes(ipData.severity)) {
+                throw new Error('유효하지 않은 심각도 값입니다.');
+            }
+
+            const response = await this.api.post('/security/ip/block', ipData);
+
+            if (!response.data?.success) {
+                throw new Error(response.data?.error || 'IP 차단 실패');
+            }
+
+            return response.data.data;
+        } catch (error: any) {
+            console.error('IP 차단 실패:', error);
+            if (error.response) {
+                throw new Error(`서버 오류: ${error.response.status} - ${error.response.data?.detail || error.message}`);
+            }
+            throw error;
+        }
     }
 
-    // 암호화 사용률 검사
-    if (this.securityMetrics.encryptionOperations === 0) {
-      vulnerabilities.push({
-        type: 'no_encryption',
-        severity: 'critical',
-        description: '데이터 암호화가 사용되지 않고 있습니다.',
-        recommendation: '암호화를 활성화하세요.'
-      });
+    async unblockIP(ipAddress: string): Promise<void> {
+        try {
+            await this.api.delete(`/security/ip/block/${ipAddress}`);
+        } catch (error) {
+            console.error('IP 차단 해제 실패:', error);
+            throw error;
+        }
     }
 
-    this.securityMetrics.vulnerabilities = vulnerabilities;
-    this.securityMetrics.lastSecurityScan = new Date();
-
-    // 보안 점수 계산
-    this.calculateSecurityScore();
-  }
-
-  /**
-   * 보안 점수 계산
-   */
-  private calculateSecurityScore(): void {
-    let score = 100;
-
-    // 취약점에 따른 점수 감점
-    this.securityMetrics.vulnerabilities.forEach(vuln => {
-      switch (vuln.severity) {
-        case 'critical':
-          score -= 25;
-          break;
-        case 'high':
-          score -= 15;
-          break;
-        case 'medium':
-          score -= 10;
-          break;
-        case 'low':
-          score -= 5;
-          break;
-      }
-    });
-
-    // 암호화 사용률에 따른 점수
-    if (this.securityMetrics.encryptionOperations === 0) {
-      score -= 20;
+    async getBlockedIPs(): Promise<{
+        blocked_ips: IPBlock[];
+        total_count: number;
+    }> {
+        try {
+            const response = await this.api.get('/security/ip/blocked');
+            return response.data.data;
+        } catch (error) {
+            console.error('차단된 IP 목록 조회 실패:', error);
+            throw error;
+        }
     }
 
-    // 세션 관리에 따른 점수
-    if (this.securityMetrics.activeSessions > 20) {
-      score -= 10;
+    async whitelistIP(ipData: {
+        ip_address: string;
+        reason?: string;
+        added_by?: string;
+        notes?: string;
+    }): Promise<{
+        ip_address: string;
+        reason: string;
+        added_at: string;
+        added_by: string;
+        notes: string;
+    }> {
+        try {
+            const response = await this.api.post('/security/ip/whitelist', ipData);
+            return response.data.data;
+        } catch (error) {
+            console.error('IP 화이트리스트 추가 실패:', error);
+            throw error;
+        }
     }
 
-    this.securityMetrics.securityScore = Math.max(0, Math.min(100, score));
-  }
-
-  /**
-   * 보안 메트릭 저장
-   */
-  private saveSecurityMetrics(): void {
-    try {
-      localStorage.setItem('securityMetrics', JSON.stringify(this.securityMetrics));
-    } catch (error) {
-      console.error('보안 메트릭 저장 실패:', error);
+    async getWhitelistedIPs(): Promise<{
+        whitelisted_ips: Array<{
+            ip_address: string;
+            reason: string;
+            added_at: string;
+            added_by: string;
+            notes: string;
+        }>;
+        total_count: number;
+    }> {
+        try {
+            const response = await this.api.get('/security/ip/whitelist');
+            return response.data.data;
+        } catch (error) {
+            console.error('화이트리스트 IP 목록 조회 실패:', error);
+            throw error;
+        }
     }
-  }
 
-  /**
-   * 보안 설정 업데이트
-   */
-  updateSecurityConfig(newConfig: Partial<SecurityConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-    localStorage.setItem('securityConfig', JSON.stringify(this.config));
-  }
-
-  /**
-   * 보안 메트릭 조회
-   */
-  getSecurityMetrics(): SecurityMetrics {
-    return { ...this.securityMetrics };
-  }
-
-  /**
-   * 오디트 로그 조회
-   */
-  getAuditLog(limit: number = 100): SecurityAudit[] {
-    return this.auditLog.slice(-limit);
-  }
-
-  /**
-   * 활성 세션 조회
-   */
-  getActiveSessions(): UserSession[] {
-    return Array.from(this.sessions.values()).filter(session => session.isActive);
-  }
-
-  /**
-   * 보안 설정 조회
-   */
-  getSecurityConfig(): SecurityConfig {
-    return { ...this.config };
-  }
-
-  /**
-   * 데이터 안전한 저장
-   */
-  async secureStore(key: string, data: any): Promise<void> {
-    const dataString = JSON.stringify(data);
-    const encrypted = await this.encryptData(dataString);
-    localStorage.setItem(key, JSON.stringify(encrypted));
-  }
-
-  /**
-   * 데이터 안전한 로드
-   */
-  async secureLoad(key: string): Promise<any> {
-    const encryptedData = localStorage.getItem(key);
-    if (!encryptedData) return null;
-
-    try {
-      const encrypted = JSON.parse(encryptedData) as EncryptedData;
-      const decrypted = await this.decryptData(encrypted);
-      return JSON.parse(decrypted);
-    } catch (error) {
-      console.error('데이터 로드 실패:', error);
-      return null;
+    // ===== Rate Limiting =====
+    async configureRateLimit(config: {
+        endpoint: string;
+        requests_per_minute?: number;
+        requests_per_hour?: number;
+        requests_per_day?: number;
+        enabled?: boolean;
+    }): Promise<RateLimitConfig> {
+        try {
+            const response = await this.api.post('/security/rate-limit', config);
+            return response.data.data;
+        } catch (error) {
+            console.error('Rate limiting 설정 실패:', error);
+            throw error;
+        }
     }
-  }
 
-  /**
-   * 보안 초기화
-   */
-  async initializeSecurity(password: string): Promise<void> {
-    await this.generateEncryptionKey(password);
-    this.logAuditEvent('system', 'security_initialized', 'system', 'localhost', 'system', true);
-  }
-
-  /**
-   * 서비스 정리
-   */
-  cleanup(): void {
-    // 모든 세션 종료
-    for (const session of Array.from(this.sessions.values())) {
-      session.isActive = false;
+    async getRateLimitConfig(): Promise<{
+        configs: Record<string, RateLimitConfig>;
+        total_endpoints: number;
+    }> {
+        try {
+            const response = await this.api.get('/security/rate-limit');
+            return response.data.data;
+        } catch (error) {
+            console.error('Rate limiting 설정 조회 실패:', error);
+            throw error;
+        }
     }
-    this.sessions.clear();
 
-    // 메트릭 저장
-    this.saveSecurityMetrics();
-    this.saveAuditLog();
-  }
+    // ===== 보안 정책 관리 =====
+    async createSecurityPolicy(policy: {
+        name: string;
+        description?: string;
+        policy_type: 'access_control' | 'rate_limit' | 'encryption' | 'authentication';
+        rules?: Record<string, any>;
+        enabled?: boolean;
+    }): Promise<SecurityPolicy> {
+        try {
+            // 입력 검증
+            if (!policy.name || policy.name.trim().length === 0) {
+                throw new Error('정책 이름은 필수입니다.');
+            }
+
+            if (policy.name.length > 100) {
+                throw new Error('정책 이름은 100자 이하여야 합니다.');
+            }
+
+            const validPolicyTypes = ['access_control', 'rate_limit', 'encryption', 'authentication'];
+            if (!validPolicyTypes.includes(policy.policy_type)) {
+                throw new Error('유효하지 않은 정책 유형입니다.');
+            }
+
+            const response = await this.api.post('/security/policies', policy);
+
+            if (!response.data?.success) {
+                throw new Error(response.data?.error || '보안 정책 생성 실패');
+            }
+
+            return response.data.data;
+        } catch (error: any) {
+            console.error('보안 정책 생성 실패:', error);
+            if (error.response) {
+                throw new Error(`서버 오류: ${error.response.status} - ${error.response.data?.detail || error.message}`);
+            }
+            throw error;
+        }
+    }
+
+    async getSecurityPolicies(): Promise<{
+        policies: SecurityPolicy[];
+        total_count: number;
+        enabled_count: number;
+    }> {
+        try {
+            const response = await this.api.get('/security/policies');
+            return response.data.data;
+        } catch (error) {
+            console.error('보안 정책 조회 실패:', error);
+            throw error;
+        }
+    }
+
+    async updateSecurityPolicy(
+        policyId: string,
+        policyUpdate: Partial<SecurityPolicy>
+    ): Promise<SecurityPolicy> {
+        try {
+            const response = await this.api.put(`/security/policies/${policyId}`, policyUpdate);
+            return response.data.data;
+        } catch (error) {
+            console.error('보안 정책 업데이트 실패:', error);
+            throw error;
+        }
+    }
+
+    // ===== 보안 알림 =====
+    async getSecurityAlerts(
+        severity?: string,
+        status?: string,
+        limit: number = 50
+    ): Promise<{
+        alerts: SecurityAlert[];
+        total_count: number;
+        severity_counts: Record<string, number>;
+        status_counts: Record<string, number>;
+    }> {
+        try {
+            const params = new URLSearchParams();
+            if (severity) params.append('severity', severity);
+            if (status) params.append('status', status);
+            params.append('limit', limit.toString());
+
+            const response = await this.api.get(`/security/alerts?${params.toString()}`);
+            return response.data.data;
+        } catch (error) {
+            console.error('보안 알림 조회 실패:', error);
+            throw error;
+        }
+    }
+
+    async acknowledgeAlert(alertId: string): Promise<void> {
+        try {
+            await this.api.post(`/security/alerts/${alertId}/acknowledge`);
+        } catch (error) {
+            console.error('알림 확인 처리 실패:', error);
+            throw error;
+        }
+    }
 }
 
-// 싱글톤 인스턴스
-export const advancedSecurityService = new AdvancedSecurityService();
+// 싱글톤 인스턴스 생성
+const advancedSecurityService = new AdvancedSecurityService();
 
 export default advancedSecurityService;
+export { AdvancedSecurityService };

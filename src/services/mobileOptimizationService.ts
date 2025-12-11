@@ -43,7 +43,7 @@ export interface MobileOptimizationSettings {
   enableVirtualScrolling: boolean;
 }
 
-class MobileOptimizationService {
+export class MobileOptimizationService {
   private deviceInfo: DeviceInfo | null = null;
   private pwaConfig!: PWAConfig;
   private optimizationSettings!: MobileOptimizationSettings;

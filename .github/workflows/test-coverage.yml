@@ -1,0 +1,48 @@
+name: Test Coverage Report
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-coverage:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests with coverage
+      run: npm run test:ci
+    
+    - name: Generate coverage report
+      run: npm run test:report
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/coverage-final.json
+        flags: unittests
+        name: codecov-umbrella
+    
+    - name: Comment PR with coverage
+      if: github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        message: |
+          ## 📊 테스트 커버리지 리포트
+          
+          테스트 커버리지 리포트가 생성되었습니다.
+          
+          자세한 내용은 [여기](./TEST_COVERAGE_REPORT.md)를 확인하세요.
+

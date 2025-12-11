@@ -530,7 +530,7 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                                         <textarea
                                             value={currentMessage}
                                             onChange={(e) => setCurrentMessage(e.target.value)}
-                                            onKeyPress={(e) => {
+                                            onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
                                                     handleSendMessage();

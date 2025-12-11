@@ -3,6 +3,8 @@
  * 네트워크 오류를 더 잘 처리하기 위한 유틸리티
  */
 
+import { errorLogger } from './errorLogger';
+
 interface ApiResponse<T = any> {
     success: boolean;
     data?: T;
@@ -22,7 +24,11 @@ export class ApiHelper {
      */
     static async safeFetch(url: string, options: RequestInit = {}): Promise<ApiResponse> {
         try {
-            console.log(`API 호출: ${url}`);
+            errorLogger.info(`API 호출: ${url}`, {
+                component: 'apiHelper',
+                action: 'safeFetch',
+                url,
+            });
 
             const response = await fetch(url, {
                 ...options,
@@ -38,14 +44,23 @@ export class ApiHelper {
             }
 
             const data = await response.json();
-            console.log(`API 응답 성공: ${url}`);
+            errorLogger.info(`API 응답 성공: ${url}`, {
+                component: 'apiHelper',
+                action: 'safeFetch',
+                url,
+                status: response.status,
+            });
 
             return {
                 success: true,
                 data
             };
         } catch (error: any) {
-            console.error(`API 호출 실패: ${url}`, error);
+            errorLogger.error(`API 호출 실패: ${url}`, error instanceof Error ? error : new Error(String(error)), {
+                component: 'apiHelper',
+                action: 'safeFetch',
+                url,
+            });
 
             return {
                 success: false,
@@ -59,16 +74,28 @@ export class ApiHelper {
  */
     static async getChatRooms(): Promise<ApiResponse> {
         try {
-            console.log('채팅방 목록 조회 URL:', `${this.baseUrls.advanced}/api/v7/chat-rooms`);
-            const result = await this.safeFetch(`${this.baseUrls.advanced}/api/v7/chat-rooms`);
+            const url = `${this.baseUrls.advanced}/api/v7/chat-rooms`;
+            errorLogger.info('채팅방 목록 조회 URL', {
+                component: 'apiHelper',
+                action: 'getChatRooms',
+                url,
+            });
+            const result = await this.safeFetch(url);
 
             if (result.success && result.data) {
-                console.log('채팅방 목록 조회 성공:', result.data.chat_rooms?.length || 0, '개');
+                errorLogger.info(`채팅방 목록 조회 성공: ${result.data.chat_rooms?.length || 0}개`, {
+                    component: 'apiHelper',
+                    action: 'getChatRooms',
+                    count: result.data.chat_rooms?.length || 0,
+                });
             }
 
             return result;
         } catch (error: any) {
-            console.error('채팅방 목록 조회 중 오류:', error);
+            errorLogger.error('채팅방 목록 조회 중 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'apiHelper',
+                action: 'getChatRooms',
+            });
             return {
                 success: false,
                 error: error?.message || '채팅방 목록 조회 중 오류가 발생했습니다.'
@@ -82,16 +109,31 @@ export class ApiHelper {
     static async getChatMessages(roomId: string): Promise<ApiResponse> {
         try {
             const encodedRoomId = encodeURIComponent(roomId);
-            console.log('메시지 조회 URL:', `${this.baseUrls.advanced}/api/v7/chat-messages/${encodedRoomId}`);
-            const result = await this.safeFetch(`${this.baseUrls.advanced}/api/v7/chat-messages/${encodedRoomId}`);
+            const url = `${this.baseUrls.advanced}/api/v7/chat-messages/${encodedRoomId}`;
+            errorLogger.info('메시지 조회 URL', {
+                component: 'apiHelper',
+                action: 'getChatMessages',
+                url,
+                roomId,
+            });
+            const result = await this.safeFetch(url);
 
             if (result.success && result.data) {
-                console.log('메시지 조회 성공:', result.data.messages?.length || 0, '개');
+                errorLogger.info(`메시지 조회 성공: ${result.data.messages?.length || 0}개`, {
+                    component: 'apiHelper',
+                    action: 'getChatMessages',
+                    count: result.data.messages?.length || 0,
+                    roomId,
+                });
             }
 
             return result;
         } catch (error: any) {
-            console.error('메시지 조회 중 오류:', error);
+            errorLogger.error('메시지 조회 중 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'apiHelper',
+                action: 'getChatMessages',
+                roomId,
+            });
             return {
                 success: false,
                 error: error?.message || '메시지 조회 중 오류가 발생했습니다.'
@@ -104,7 +146,12 @@ export class ApiHelper {
      */
     static async uploadChatFile(file: File): Promise<ApiResponse> {
         try {
-            console.log(`파일 업로드: ${file.name}`);
+            errorLogger.info(`파일 업로드: ${file.name}`, {
+                component: 'apiHelper',
+                action: 'uploadChatFile',
+                fileName: file.name,
+                fileSize: file.size,
+            });
 
             const formData = new FormData();
             formData.append('file', file);
@@ -120,14 +167,22 @@ export class ApiHelper {
             }
 
             const data = await response.json();
-            console.log('파일 업로드 성공');
+            errorLogger.info('파일 업로드 성공', {
+                component: 'apiHelper',
+                action: 'uploadChatFile',
+                fileName: file.name,
+            });
 
             return {
                 success: true,
                 data
             };
         } catch (error: any) {
-            console.error('파일 업로드 실패:', error);
+            errorLogger.error('파일 업로드 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'apiHelper',
+                action: 'uploadChatFile',
+                fileName: file.name,
+            });
 
             return {
                 success: false,
@@ -154,7 +209,12 @@ export class ApiHelper {
                 const response = await fetch(server.url, { mode: 'cors' });
                 results[server.name] = response.ok;
             } catch (error) {
-                console.error(`${server.name} 서버 연결 실패:`, error);
+                errorLogger.error(`${server.name} 서버 연결 실패`, error instanceof Error ? error : new Error(String(error)), {
+                    component: 'apiHelper',
+                    action: 'checkServerHealth',
+                    serverName: server.name,
+                    serverUrl: server.url,
+                });
                 results[server.name] = false;
             }
         }

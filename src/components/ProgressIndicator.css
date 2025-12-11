@@ -1,0 +1,141 @@
+/* 진행률 표시 컴포넌트 스타일 */
+
+.progress-indicator {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 크기 변형 */
+.progress-indicator-small {
+  font-size: 12px;
+}
+
+.progress-indicator-small .progress-bar-container {
+  height: 4px;
+}
+
+.progress-indicator-medium {
+  font-size: 14px;
+}
+
+.progress-indicator-medium .progress-bar-container {
+  height: 6px;
+}
+
+.progress-indicator-large {
+  font-size: 16px;
+}
+
+.progress-indicator-large .progress-bar-container {
+  height: 8px;
+}
+
+/* 레이블 */
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary, #64748b);
+  font-weight: 500;
+}
+
+.progress-percentage {
+  color: var(--text-primary, #1e293b);
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+/* 진행률 바 컨테이너 */
+.progress-bar-container {
+  width: 100%;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 진행률 바 */
+.progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 애니메이션 */
+.progress-bar-animated::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: progress-shimmer 1.5s infinite;
+}
+
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* 색상 변형 */
+.progress-indicator-primary .progress-bar {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.progress-indicator-success .progress-bar {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.progress-indicator-warning .progress-bar {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.progress-indicator-danger .progress-bar {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* 상세 정보 */
+.progress-details {
+  font-size: 0.85em;
+  color: var(--text-tertiary, #94a3b8);
+  margin-top: 4px;
+}
+
+/* 다크 모드 */
+.dark-mode .progress-label {
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.dark-mode .progress-percentage {
+  color: var(--text-primary, #f1f5f9);
+}
+
+.dark-mode .progress-bar-container {
+  background: var(--bg-tertiary, #1e293b);
+}
+
+.dark-mode .progress-details {
+  color: var(--text-tertiary, #94a3b8);
+}
+
+/* 접근성 */
+.progress-indicator:focus-within {
+  outline: 2px solid var(--accent-primary, #667eea);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+

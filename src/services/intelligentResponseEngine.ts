@@ -847,4 +847,5 @@ export class IntelligentResponseEngine {
     }
 }
 
-export const intelligentResponseEngine = new IntelligentResponseEngine();
+const intelligentResponseEngine = new IntelligentResponseEngine();
+export default intelligentResponseEngine;

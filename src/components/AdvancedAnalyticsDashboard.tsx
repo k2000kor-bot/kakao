@@ -61,8 +61,19 @@ import {
     Error
 } from '@mui/icons-material';
 import axios from 'axios';
+import { errorLogger } from '../utils/errorLogger';
 
 const API_BASE_URL = 'http://localhost:8000/api';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err));
+};
 
 interface AnalyticsOverview {
     total_users: number;
@@ -179,7 +190,11 @@ const AdvancedAnalyticsDashboard: React.FC = () => {
 
         } catch (err) {
             setError('분석 데이터를 불러오는 중 오류가 발생했습니다.');
-            console.error('Analytics data loading error:', err);
+            const error = toError(err);
+            errorLogger.error('Analytics data loading error', error, {
+                component: 'AdvancedAnalyticsDashboard',
+                action: 'loadAnalyticsData',
+            });
         } finally {
             setLoading(false);
         }

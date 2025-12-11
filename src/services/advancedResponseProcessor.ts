@@ -296,7 +296,23 @@ class AdvancedResponseProcessor {
   }
 
   private analyzeUserProfile(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history) || history.length === 0) {
+      return {
+        avgMessageLength: 0,
+        technicalLevel: 'normal',
+        interactionStyle: 'concise'
+      };
+    }
+    
     const userMessages = history.filter(msg => msg.isUser);
+    if (userMessages.length === 0) {
+      return {
+        avgMessageLength: 0,
+        technicalLevel: 'normal',
+        interactionStyle: 'concise'
+      };
+    }
+    
     const avgLength = userMessages.reduce((sum, msg) => sum + msg.content.length, 0) / userMessages.length;
     const technicalTerms = userMessages.filter(msg => /(API|코드|함수|클래스|데이터베이스)/g.test(msg.content)).length;
     
@@ -308,6 +324,15 @@ class AdvancedResponseProcessor {
   }
 
   private analyzeConversationPatterns(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history)) {
+      return {
+        questionFrequency: 0,
+        followUpQuestions: [],
+        topicConsistency: 0.5,
+        responseTime: 0
+      };
+    }
+    
     const patterns = {
       questionFrequency: history.filter(msg => msg.isUser && /[?？]/.test(msg.content)).length,
       followUpQuestions: this.countFollowUpQuestions(history),
@@ -330,6 +355,15 @@ class AdvancedResponseProcessor {
   }
 
   private analyzeTemporalContext(context: ResponseProcessingContext) {
+    if (!context.currentTime) {
+      const now = new Date();
+      return {
+        isBusinessHours: true,
+        isWeekend: false,
+        timeOfDay: 'afternoon'
+      };
+    }
+    
     const hour = context.currentTime.getHours();
     const isBusinessHours = hour >= 9 && hour <= 18;
     const isWeekend = context.currentTime.getDay() === 0 || context.currentTime.getDay() === 6;
@@ -342,6 +376,15 @@ class AdvancedResponseProcessor {
   }
 
   private extractUserPreferences(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history)) {
+      return {
+        responseLength: 'medium',
+        detailLevel: 'normal',
+        tone: 'professional',
+        format: 'structured'
+      };
+    }
+    
     const preferences = {
       responseLength: this.analyzePreferredResponseLength(history),
       detailLevel: this.analyzePreferredDetailLevel(history),
@@ -360,9 +403,9 @@ class AdvancedResponseProcessor {
     let baseResponse = `안녕하세요! ${userInput}에 대한 답변을 드리겠습니다.`;
     
     // 분석 결과에 따른 기본 응답 조정
-    if (enhancedAnalysis.intent === 'question') {
+    if (enhancedAnalysis && enhancedAnalysis.intent === 'question') {
       baseResponse = `질문해주신 "${userInput}"에 대해 답변드리겠습니다.`;
-    } else if (enhancedAnalysis.intent === 'request') {
+    } else if (enhancedAnalysis && enhancedAnalysis.intent === 'request') {
       baseResponse = `요청하신 "${userInput}"에 대해 도움을 드리겠습니다.`;
     }
     
@@ -411,7 +454,7 @@ class AdvancedResponseProcessor {
       response.content += `\n\n프로젝트 관련 추가 정보:\n- 현재 프로젝트 상태: 활성화\n- 관련 파일 수: ${context.projectContext?.files?.length || 0}개\n- 최근 활동: ${context.projectContext?.lastActivity || '없음'}`;
     }
     
-    if (enhancedAnalysis.topics.includes('analysis')) {
+    if (enhancedAnalysis && enhancedAnalysis.topics && Array.isArray(enhancedAnalysis.topics) && enhancedAnalysis.topics.includes('analysis')) {
       response.content += `\n\n분석 관련 상세 정보를 제공해드릴 수 있습니다.`;
     }
     
@@ -437,13 +480,13 @@ class AdvancedResponseProcessor {
   private enhanceTone(response: any, context: any) {
     const { userProfile, enhancedAnalysis } = context;
     
-    if (userProfile.technicalLevel === 'high') {
+    if (userProfile && userProfile.technicalLevel === 'high') {
       response.content = response.content.replace(/입니다/g, '입니다.');
     } else {
       response.content = response.content.replace(/입니다/g, '입니다 😊');
     }
     
-    if (enhancedAnalysis.sentiment === 'negative') {
+    if (enhancedAnalysis && enhancedAnalysis.sentiment === 'negative') {
       response.content = `이해했습니다. ${response.content} 더 자세히 도움을 드리겠습니다.`;
     }
     
@@ -453,7 +496,7 @@ class AdvancedResponseProcessor {
   private enhanceStructure(response: any, context: any) {
     const { enhancedAnalysis } = context;
     
-    if (enhancedAnalysis.complexity === 'complex') {
+    if (enhancedAnalysis && enhancedAnalysis.complexity === 'complex') {
       response.content = `📋 요약\n${response.content}\n\n🔍 상세 분석\n추가적인 분석이 필요하시면 말씀해 주세요.`;
     }
     
@@ -504,17 +547,20 @@ class AdvancedResponseProcessor {
 
   // 유틸리티 메서드들
   private countFollowUpQuestions(history: ChatMessage[]) {
-    let count = 0;
+    if (!history || !Array.isArray(history)) return [];
+    const followUpQuestions: string[] = [];
     for (let i = 1; i < history.length; i++) {
       if (history[i].isUser && history[i-1].isUser && /[?？]/.test(history[i].content)) {
-        count++;
+        followUpQuestions.push(history[i].content);
       }
     }
-    return count;
+    return followUpQuestions;
   }
 
   private calculateTopicConsistency(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history) || history.length === 0) return 0.5;
     const userMessages = history.filter(msg => msg.isUser);
+    if (userMessages.length === 0) return 0.5;
     const topics = userMessages.map(msg => this.identifyTopics(msg.content));
     
     let consistency = 0;
@@ -527,6 +573,7 @@ class AdvancedResponseProcessor {
   }
 
   private analyzeResponseTime(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history) || history.length < 2) return 0;
     const responseTimes = [];
     for (let i = 1; i < history.length; i++) {
       if (!history[i].isUser && history[i-1].isUser) {
@@ -539,7 +586,9 @@ class AdvancedResponseProcessor {
   }
 
   private analyzePreferredResponseLength(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history) || history.length === 0) return 'medium';
     const aiResponses = history.filter(msg => !msg.isUser);
+    if (aiResponses.length === 0) return 'medium';
     const avgLength = aiResponses.reduce((sum, msg) => sum + msg.content.length, 0) / aiResponses.length;
     
     if (avgLength > 300) return 'long';
@@ -548,16 +597,19 @@ class AdvancedResponseProcessor {
   }
 
   private analyzePreferredDetailLevel(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history) || history.length === 0) return 'normal';
     const detailedResponses = history.filter(msg => !msg.isUser && msg.content.includes('상세'));
     return detailedResponses.length > history.length * 0.3 ? 'high' : 'normal';
   }
 
   private analyzePreferredTone(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history) || history.length === 0) return 'professional';
     const formalResponses = history.filter(msg => !msg.isUser && /입니다|습니다/g.test(msg.content));
     return formalResponses.length > history.length * 0.5 ? 'formal' : 'casual';
   }
 
   private analyzePreferredFormat(history: ChatMessage[]) {
+    if (!history || !Array.isArray(history) || history.length === 0) return 'structured';
     const structuredResponses = history.filter(msg => !msg.isUser && /[1-9]\.|•|✓/g.test(msg.content));
     return structuredResponses.length > history.length * 0.3 ? 'structured' : 'narrative';
   }
@@ -675,3 +727,4 @@ class AdvancedResponseProcessor {
 }
 
 export const advancedResponseProcessor = new AdvancedResponseProcessor();
+export default advancedResponseProcessor;

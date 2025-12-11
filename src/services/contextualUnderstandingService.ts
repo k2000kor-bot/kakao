@@ -41,7 +41,7 @@ export interface ContextualResponse {
     relatedTopics: string[];
 }
 
-class ContextualUnderstandingService {
+export class ContextualUnderstandingService {
     private conversationHistory: ContextualMessage[] = [];
     private maxHistoryLength = 50;
 
@@ -385,14 +385,18 @@ class ContextualUnderstandingService {
         let response = `전체 문맥을 파악했습니다. `;
 
         if (intent === 'analysis_request') {
-            response += `${mainTopics.join(', ')}에 대한 종합적인 분석을 제공하겠습니다. `;
+            if (mainTopics && Array.isArray(mainTopics) && mainTopics.length > 0) {
+                response += `${mainTopics.join(', ')}에 대한 종합적인 분석을 제공하겠습니다. `;
+            } else {
+                response += `종합적인 분석을 제공하겠습니다. `;
+            }
         } else if (intent === 'summary_request') {
             response += `주요 내용을 요약하여 정리해드리겠습니다. `;
         } else if (intent === 'writing_request') {
             response += `요청하신 형식으로 글을 작성해드리겠습니다. `;
         }
 
-        if (requirements.length > 0) {
+        if (requirements && Array.isArray(requirements) && requirements.length > 0) {
             response += `특별히 ${requirements.join(', ')} 요구사항을 반영하여 처리하겠습니다.`;
         }
 
@@ -411,11 +415,11 @@ class ContextualUnderstandingService {
             suggestions.push('다른 관점에서의 분석도 가능합니다.');
         }
 
-        if (mainTopics.includes('시공사')) {
+        if (mainTopics && Array.isArray(mainTopics) && mainTopics.includes('시공사')) {
             suggestions.push('다른 시공사와의 비교 분석을 제공할 수 있습니다.');
         }
 
-        if (requirements.includes('카드뉴스')) {
+        if (requirements && Array.isArray(requirements) && requirements.includes('카드뉴스')) {
             suggestions.push('카드뉴스 외에도 다른 형식으로 제작 가능합니다.');
         }
 
@@ -428,6 +432,10 @@ class ContextualUnderstandingService {
     private generateRelatedTopics(understanding: ContextualAnalysis): string[] {
         const { mainTopics } = understanding;
         const relatedTopics: string[] = [];
+
+        if (!mainTopics || !Array.isArray(mainTopics)) {
+            return relatedTopics;
+        }
 
         if (mainTopics.includes('시공사')) {
             relatedTopics.push('시공사 선정 기준', '시공사 평가 방법', '시공사 비교 분석');

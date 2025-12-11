@@ -16,7 +16,8 @@ import {
     Chip,
     Alert,
     Divider,
-    Grid
+    Grid,
+    Menu
 } from '@mui/material';
 import {
     Create,
@@ -24,8 +25,13 @@ import {
     Psychology,
     Edit,
     Analytics,
-    Refresh
+    Refresh,
+    ContentCopy,
+    Save,
+    Download,
+    Print
 } from '@mui/icons-material';
+import { writingExporter } from '../utils/writingExport';
 
 interface CreativeWritingProps {
     onContentGenerated?: (content: string, type: string) => void;
@@ -37,6 +43,8 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
     const [contentType, setContentType] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
+    const [copied, setCopied] = useState(false);
+    const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
 
     // 스토리 생성 상태
     const [storyGenre, setStoryGenre] = useState('romance');
@@ -200,6 +208,80 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
         setError('');
         setGeneratedContent('');
         setAnalysisResult(null);
+    };
+
+    const getContentTypeLabel = (type: string): string => {
+        if (type === 'story') return '스토리';
+        if (type === 'poem') return '시';
+        if (type === 'essay') return '에세이';
+        return '콘텐츠';
+    };
+
+    const getContentTypeTitle = (type: string): string => {
+        if (type === 'story') return '창작 스토리';
+        if (type === 'poem') return '창작 시';
+        if (type === 'essay') return '창작 에세이';
+        return '창작 콘텐츠';
+    };
+
+    const handleCopy = async () => {
+        if (generatedContent) {
+            const success = await writingExporter.copyToClipboard(generatedContent);
+            if (success) {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } else {
+                setError('복사에 실패했습니다.');
+            }
+        }
+    };
+
+    const handleSave = () => {
+        if (generatedContent) {
+            try {
+                const savedWritings = JSON.parse(localStorage.getItem('creativeWritings') || '[]');
+                const newWriting = {
+                    id: Date.now(),
+                    content: generatedContent,
+                    type: contentType,
+                    createdAt: new Date().toISOString(),
+                    genre: storyGenre,
+                    theme: storyTheme || poemTheme || essayTopic,
+                };
+                savedWritings.unshift(newWriting);
+                // 최대 50개만 저장
+                if (savedWritings.length > 50) {
+                    savedWritings.pop();
+                }
+                localStorage.setItem('creativeWritings', JSON.stringify(savedWritings));
+                setError('');
+                // 성공 알림은 Alert로 표시
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류';
+                setError(`저장에 실패했습니다: ${errorMessage}`);
+            }
+        }
+    };
+
+    const handleExport = (format: 'txt' | 'html' | 'markdown') => {
+        if (generatedContent) {
+            const metadata = {
+                title: getContentTypeTitle(contentType),
+                date: new Date().toLocaleDateString('ko-KR'),
+                template: contentType,
+            };
+            writingExporter.export(generatedContent, { format, includeMetadata: true }, metadata);
+        }
+    };
+
+    const handlePrint = () => {
+        if (generatedContent) {
+            const metadata = {
+                title: getContentTypeTitle(contentType),
+                date: new Date().toLocaleDateString('ko-KR'),
+            };
+            writingExporter.print(generatedContent, metadata);
+        }
     };
 
     const renderStoryTab = () => (
@@ -480,9 +562,61 @@ const CreativeWriting: React.FC<CreativeWritingProps> = ({ onContentGenerated })
             {generatedContent && (
                 <Card sx={{ mt: 3 }}>
                     <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2 }}>
-                            생성된 {contentType === 'story' ? '스토리' : contentType === 'poem' ? '시' : '에세이'}
-                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6">
+                                생성된 {getContentTypeLabel(contentType)}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Button
+                                    size="small"
+                                    variant={copied ? 'contained' : 'outlined'}
+                                    color={copied ? 'success' : 'primary'}
+                                    startIcon={<ContentCopy />}
+                                    onClick={handleCopy}
+                                >
+                                    {copied ? '복사됨' : '복사'}
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<Save />}
+                                    onClick={handleSave}
+                                >
+                                    저장
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<Download />}
+                                    onClick={(e) => setExportMenuAnchor(e.currentTarget)}
+                                >
+                                    내보내기
+                                </Button>
+                                <Menu
+                                    anchorEl={exportMenuAnchor}
+                                    open={Boolean(exportMenuAnchor)}
+                                    onClose={() => setExportMenuAnchor(null)}
+                                >
+                                    <MenuItem onClick={() => { handleExport('txt'); setExportMenuAnchor(null); }}>
+                                        텍스트 파일 (.txt)
+                                    </MenuItem>
+                                    <MenuItem onClick={() => { handleExport('html'); setExportMenuAnchor(null); }}>
+                                        HTML 파일 (.html)
+                                    </MenuItem>
+                                    <MenuItem onClick={() => { handleExport('markdown'); setExportMenuAnchor(null); }}>
+                                        Markdown 파일 (.md)
+                                    </MenuItem>
+                                </Menu>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<Print />}
+                                    onClick={handlePrint}
+                                >
+                                    인쇄
+                                </Button>
+                            </Box>
+                        </Box>
                         <Box
                             component="pre"
                             sx={{

@@ -67,15 +67,15 @@
 
 /* 사이드바 호버 효과 */
 .sidebar-item:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-    transition: background-color 0.2s ease;
+    background-color: var(--bg-hover, rgba(0, 0, 0, 0.04));
+    transition: background-color var(--transition-base, 0.2s ease);
 }
 
 /* 프로젝트 카드 호버 효과 */
 .project-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
     transform: translateY(-2px);
-    transition: all 0.2s ease;
+    transition: all var(--transition-base, 0.2s ease);
 }
 
 /* AI 모델 선택 애니메이션 */
@@ -86,8 +86,8 @@
 
 /* 입력 필드 포커스 효과 */
 .input-focused {
-    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
-    transition: box-shadow 0.2s ease;
+    box-shadow: 0 0 0 2px var(--accent-primary-light, rgba(102, 126, 234, 0.2));
+    transition: box-shadow var(--transition-base, 0.2s ease);
 }
 
 /* 로딩 스피너 */
@@ -111,55 +111,90 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
+    background: var(--bg-secondary, #f1f5f9);
+    border-radius: var(--radius-sm, 3px);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
+    background: var(--border-color, #cbd5e1);
+    border-radius: var(--radius-sm, 3px);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: var(--border-hover, #94a3b8);
 }
 
 /* 반응형 디자인 */
-@media (max-width: 768px) {
+@media (max-width: 960px) {
+    /* 모바일 및 태블릿에서 사이드바 숨김 */
     .sidebar {
-        width: 240px;
+        display: none;
     }
 
     .main-content {
-        margin-left: 240px;
+        margin-left: 0;
+        width: 100%;
+    }
+
+    /* 모바일 메뉴 버튼 표시 */
+    .mobile-menu-button {
+        display: block !important;
+    }
+
+    /* 입력 필드 크기 조정 */
+    .message-input {
+        font-size: 16px; /* iOS 줌 방지 */
+    }
+
+    /* 버튼 크기 조정 */
+    .action-button {
+        min-width: 44px; /* 터치 타겟 최소 크기 */
+        min-height: 44px;
+    }
+
+    /* 카드 패딩 조정 */
+    .message-card {
+        padding: 12px;
+    }
+
+    /* 타이포그래피 크기 조정 */
+    .message-text {
+        font-size: 14px;
+        line-height: 1.5;
     }
 }
 
 @media (max-width: 480px) {
-    .sidebar {
-        width: 200px;
+    /* 작은 모바일 화면 추가 최적화 */
+    .message-input {
+        padding: 12px;
     }
 
-    .main-content {
-        margin-left: 200px;
+    .button-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .button-group button {
+        width: 100%;
     }
 }
 
 /* 다크 모드 지원 */
 @media (prefers-color-scheme: dark) {
     .dark-mode {
-        background-color: #1a1a1a;
-        color: #ffffff;
+        background-color: var(--bg-primary, #1a1a1a);
+        color: var(--text-primary, #ffffff);
     }
 
     .dark-mode .sidebar {
-        background-color: #2d2d2d;
-        border-color: #404040;
+        background-color: var(--bg-secondary, #2d2d2d);
+        border-color: var(--border-color, #404040);
     }
 
     .dark-mode .message-bubble {
-        background-color: #3d3d3d;
-        color: #ffffff;
+        background-color: var(--bg-tertiary, #3d3d3d);
+        color: var(--text-primary, #ffffff);
     }
 }
 
@@ -178,18 +213,18 @@
 
 /* 키보드 네비게이션 */
 .keyboard-focus:focus {
-    outline: 2px solid #1976d2;
+    outline: 2px solid var(--accent-primary, #667eea);
     outline-offset: 2px;
 }
 
 /* 고대비 모드 */
 @media (prefers-contrast: high) {
     .high-contrast {
-        border: 2px solid #000000;
+        border: 2px solid var(--text-primary, #000000);
     }
 
     .high-contrast .text {
-        color: #000000;
+        color: var(--text-primary, #000000);
     }
 }
 

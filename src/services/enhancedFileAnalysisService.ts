@@ -1,4 +1,5 @@
 import unifiedAPI from './unifiedAPI';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface FileAnalysis {
     id: string;
@@ -38,8 +39,8 @@ class EnhancedFileAnalysisService {
     private analyses: Map<string, FileAnalysis> = new Map();
 
     async analyzeFile(file: File, analysisType: string = 'auto'): Promise<AnalysisResponse> {
+        const fileId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
         try {
-            const fileId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
             // 파일 업로드
             const uploadResponse = await unifiedAPI.uploadFile(file);
@@ -53,6 +54,7 @@ class EnhancedFileAnalysisService {
 
             // 분석 요청
             const analysisRequest = {
+                file: file,
                 query: `파일 "${file.name}"을 분석해주세요.`,
                 context: {
                     fileType: detectedType,
@@ -92,8 +94,12 @@ class EnhancedFileAnalysisService {
             } else {
                 throw new Error('파일 분석에 실패했습니다.');
             }
-        } catch (error) {
-            console.error('파일 분석 오류:', error);
+        } catch (error: unknown) {
+            errorLogger.error('파일 분석 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'EnhancedFileAnalysisService',
+                action: 'analyzeFile',
+                fileId,
+            });
             return {
                 success: false,
                 analysis: {
@@ -119,6 +125,7 @@ class EnhancedFileAnalysisService {
     }
 
     async analyzeImage(imageFile: File): Promise<AnalysisResponse> {
+        const fileId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
         try {
             // 이미지를 base64로 변환
             const base64 = await this.fileToBase64(imageFile);
@@ -160,8 +167,12 @@ class EnhancedFileAnalysisService {
             } else {
                 throw new Error('이미지 분석에 실패했습니다.');
             }
-        } catch (error) {
-            console.error('이미지 분석 오류:', error);
+        } catch (error: unknown) {
+            errorLogger.error('이미지 분석 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'EnhancedFileAnalysisService',
+                action: 'analyzeImage',
+                fileId,
+            });
             return {
                 success: false,
                 analysis: {

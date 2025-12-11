@@ -861,5 +861,6 @@ class MasterWritingEngine {
     }
 }
 
-export const masterWritingEngine = new MasterWritingEngine();
+const masterWritingEngine = new MasterWritingEngine();
 export default masterWritingEngine;
+export { MasterWritingEngine };

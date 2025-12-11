@@ -72,6 +72,17 @@ import {
     NetworkCheck,
     Storage
 } from '@mui/icons-material';
+import { errorLogger } from '../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface SecurityMetrics {
     threatLevel: 'low' | 'medium' | 'high' | 'critical';
@@ -246,7 +257,11 @@ function AdvancedSecurityMonitor() {
                 setMetrics(data.metrics);
             }
         } catch (error) {
-            console.error('보안 메트릭 수집 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 메트릭 수집 실패', err, {
+                component: 'AdvancedSecurityMonitor',
+                action: 'collectSecurityMetrics',
+            });
         }
     }, []);
 
@@ -260,7 +275,11 @@ function AdvancedSecurityMonitor() {
                 setEvents(data.events);
             }
         } catch (error) {
-            console.error('보안 이벤트 업데이트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 이벤트 업데이트 실패', err, {
+                component: 'AdvancedSecurityMonitor',
+                action: 'updateSecurityEvents',
+            });
         }
     }, []);
 
@@ -274,7 +293,11 @@ function AdvancedSecurityMonitor() {
                 setPolicies(data.policies);
             }
         } catch (error) {
-            console.error('보안 정책 업데이트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 정책 업데이트 실패', err, {
+                component: 'AdvancedSecurityMonitor',
+                action: 'updateSecurityPolicies',
+            });
         }
     }, []);
 
@@ -288,7 +311,11 @@ function AdvancedSecurityMonitor() {
                 setAuditLogs(data.logs);
             }
         } catch (error) {
-            console.error('감사 로그 업데이트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('감사 로그 업데이트 실패', err, {
+                component: 'AdvancedSecurityMonitor',
+                action: 'updateAuditLogs',
+            });
         }
     }, []);
 
@@ -324,7 +351,11 @@ function AdvancedSecurityMonitor() {
                 }, 5000);
             }
         } catch (error) {
-            console.error('보안 스캔 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 스캔 실패', err, {
+                component: 'AdvancedSecurityMonitor',
+                action: 'runSecurityScan',
+            });
             setIsScanning(false);
         }
     }, [collectSecurityMetrics, updateSecurityEvents]);
@@ -348,7 +379,12 @@ function AdvancedSecurityMonitor() {
                 updateSecurityEvents();
             }
         } catch (error) {
-            console.error('위협 해결 실패:', error);
+            const err = toError(error);
+            errorLogger.error('위협 해결 실패', err, {
+                component: 'AdvancedSecurityMonitor',
+                action: 'resolveThreat',
+                threatId,
+            });
         }
     }, [updateSecurityEvents]);
 
@@ -367,7 +403,13 @@ function AdvancedSecurityMonitor() {
                 updateSecurityPolicies();
             }
         } catch (error) {
-            console.error('정책 상태 변경 실패:', error);
+            const err = toError(error);
+            errorLogger.error('정책 상태 변경 실패', err, {
+                component: 'AdvancedSecurityMonitor',
+                action: 'togglePolicy',
+                policyId,
+                status,
+            });
         }
     }, [updateSecurityPolicies]);
 

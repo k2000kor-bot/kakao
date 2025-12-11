@@ -31,7 +31,10 @@ import {
     FormLabel,
     Collapse,
     Tooltip,
-    Badge
+    Badge,
+    Drawer,
+    AppBar,
+    Toolbar
 } from '@mui/material';
 import {
     Add,
@@ -82,12 +85,25 @@ import {
     MoreHoriz,
     Security,
     Memory,
-    Speed
+    Speed,
+    FileCopy,
+    Menu as MenuIcon
 } from '@mui/icons-material';
 import ChatGPTProjectService from '../services/chatGPTProjectService';
 import PersistentChatSessionService, { ChatSessionStats } from '../services/persistentChatSessionService';
 import { ChatSession } from '../types/chat';
-import { ErrorBoundary, setupGlobalErrorHandling } from '../utils/errorHandler';
+import { setupGlobalErrorHandling } from '../utils/errorHandler';
+import { errorLogger } from '../utils/errorLogger';
+import ErrorBoundary from '../components/ErrorBoundary';
+import { useNotifications } from '../hooks/useNotifications';
+import { useResponsive } from '../hooks/useResponsive';
+import MessageModifyRequestDialog from './MessageModifyRequestDialog';
+import ProjectHub from './ProjectHub';
+import ProjectTemplateSelector from './ProjectTemplateSelector';
+import ProjectEditDialog from './ProjectEditDialog';
+import ConfirmDialog from './ConfirmDialog';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import projectTemplateService from '../services/projectTemplateService';
 import {
     evaluateAnswerQuality,
     enhanceAnswerQuality,
@@ -103,9 +119,11 @@ import SystemHealthMonitor from './SystemIntegration/SystemHealthMonitor';
 import SystemIntegrationManager from './SystemIntegration/SystemIntegrationManager';
 import AdvancedAIIntelligenceDashboard from './AI/AdvancedAIIntelligenceDashboard';
 import SecurityDashboard from './Security/SecurityDashboard';
+import SecurityNotificationCenter from './Security/SecurityNotificationCenter';
 import PerformanceOptimizer from './UI/PerformanceOptimizer';
 import EnhancedUserExperience from './UI/EnhancedUserExperience';
 import AuthenticationForm from './Security/AuthenticationForm';
+import NotebookLLM from './NotebookLLM';
 
 interface Project {
     id: string;
@@ -298,6 +316,27 @@ const AI_MODELS = [
 ];
 
 export const ChatGPT5CompleteInterface: React.FC = () => {
+    // 알림 관리
+    const {
+        notifications,
+        markAsRead,
+        dismiss,
+        clearAll,
+        addNotification,
+    } = useNotifications();
+
+    // 확인 다이얼로그
+    const {
+        dialogState: confirmDialog,
+        showConfirm,
+        closeDialog: closeConfirmDialog,
+        handleConfirm: handleConfirmDialog,
+        handleCancel: handleCancelDialog,
+    } = useConfirmDialog();
+
+    // 반응형 디자인
+    const { isMobile, isTablet, isDesktop } = useResponsive();
+
     // 상태 관리
     const [projects, setProjects] = useState<Project[]>([]);
     const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -307,6 +346,10 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
 
     // UI 상태
     const [showProjectCreation, setShowProjectCreation] = useState(false);
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+    const [showProjectEdit, setShowProjectEdit] = useState(false);
+    const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
     const [showFileManager, setShowFileManager] = useState(false);
     const [showSessionList, setShowSessionList] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
@@ -336,6 +379,10 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
     });
     const [mlPerformanceMetrics, setMLPerformanceMetrics] = useState<MLPerformanceMetrics | null>(null);
     const [isModelTraining, setIsModelTraining] = useState(false);
+
+    // 메시지 수정 요청 상태
+    const [modifyRequestDialogOpen, setModifyRequestDialogOpen] = useState(false);
+    const [selectedMessageForModify, setSelectedMessageForModify] = useState<ChatMessage | null>(null);
     const [selectedModel, setSelectedModel] = useState<DeepLearningModel | null>(null);
 
     // 실시간 데이터 및 협업 상태
@@ -374,6 +421,10 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
     const [selectedMemoryType, setSelectedMemoryType] = useState<'default' | 'project_exclusive'>('default');
     const [showMemorySettings, setShowMemorySettings] = useState(false);
 
+    // 노트북 LLM 상태
+    const [showNotebookLLM, setShowNotebookLLM] = useState(false);
+    const [showProjectNotebookLLM, setShowProjectNotebookLLM] = useState(false);
+
     // 초기 데이터 로드
     useEffect(() => {
         // 전역 에러 핸들링 설정
@@ -403,7 +454,7 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
             if (autoLearningConfig.enabled) {
                 deepLearningModels.forEach(model => {
                     if (model.status === 'deployed' && model.accuracy < autoLearningConfig.performanceThreshold) {
-                        console.log(`⚠️ ${model.name} 성능 저하 감지 - 자동 재학습 시작`);
+                        errorLogger.warn(`${model.name} 성능 저하 감지 - 자동 재학습 시작`, { model: model.name });
                         startModelTraining(model.id);
                     }
                 });
@@ -429,13 +480,16 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
     useEffect(() => {
         const completedSessions = activeTrainingSessions.filter(session => session.status === 'completed');
         if (completedSessions.length > 0) {
-            console.log('🎉 학습 세션 완료:', completedSessions.length);
+            errorLogger.info('학습 세션 완료', { count: completedSessions.length });
 
             // 성능 향상 확인
             completedSessions.forEach(session => {
                 const model = deepLearningModels.find(m => m.id === session.modelId);
                 if (model) {
-                    console.log(`✅ ${model.name} 학습 완료 - 정확도: ${(model.accuracy * 100).toFixed(1)}%`);
+                    errorLogger.info(`${model.name} 학습 완료`, {
+                        model: model.name,
+                        accuracy: (model.accuracy * 100).toFixed(1)
+                    });
                 }
             });
         }
@@ -538,7 +592,7 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
                 loadProjectData(defaultProject.id);
             }
         } catch (error) {
-            console.error('프로젝트 로드 실패:', error);
+            errorLogger.error('프로젝트 로드 실패', error);
             // 오프라인 모드로 기본 데이터 사용
             const mockProjects: Project[] = [
                 {
@@ -648,7 +702,7 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
             setSelectedCategory('travel');
             setSelectedMemoryType('default');
         } catch (error) {
-            console.error('프로젝트 생성 실패:', error);
+            errorLogger.error('프로젝트 생성 실패', error, { projectName });
             // 오프라인 모드로 로컬 생성
             const newProject: Project = {
                 id: Date.now().toString(),
@@ -778,7 +832,10 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
             }
 
         } catch (error) {
-            console.error('AI 응답 생성 중 오류:', error);
+            errorLogger.error('AI 응답 생성 중 오류', error, {
+                sessionId: currentSession?.id,
+                messageLength: inputValue.length
+            });
 
             const errorMessage: ChatMessage = {
                 id: (Date.now() + 1).toString(),
@@ -794,6 +851,72 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
         }
     };
 
+    // 메시지 수정 요청 핸들러
+    const handleModifyRequest = (messageId: string) => {
+        const message = messages.find(msg => msg.id === messageId);
+        if (message && message.role === 'assistant') {
+            setSelectedMessageForModify(message);
+            setModifyRequestDialogOpen(true);
+        }
+    };
+
+    // 수정 요청 확인 핸들러
+    const handleModifyRequestConfirm = async (modifyRequest: string) => {
+        if (!selectedMessageForModify || !currentSession) return;
+
+        setModifyRequestDialogOpen(false);
+        setIsTyping(true);
+
+        try {
+            // 원본 질문 찾기 (선택된 메시지 이전의 사용자 메시지)
+            const messageIndex = messages.findIndex(msg => msg.id === selectedMessageForModify.id);
+            const previousUserMessage = messages
+                .slice(0, messageIndex)
+                .reverse()
+                .find(msg => msg.role === 'user');
+
+            // 수정 요청을 포함한 새로운 프롬프트 생성
+            const originalQuestion = previousUserMessage?.content || '';
+            const modifyPrompt = `다음은 이전에 생성한 응답입니다:\n\n${selectedMessageForModify.content}\n\n사용자의 수정 요청: ${modifyRequest}\n\n위 응답을 사용자의 수정 요청에 맞게 다시 작성해주세요. 원본 질문은 "${originalQuestion}"입니다.`;
+
+            // 수정된 응답 생성
+            let modifiedResponse = await generateIntegratedAIResponse(modifyPrompt);
+
+            // 답변 품질 향상 적용
+            if (autoReview) {
+                modifiedResponse = await enhanceAnswerQuality(modifiedResponse, modifyPrompt);
+            }
+
+            // 메시지 업데이트 (기존 응답을 수정된 응답으로 교체)
+            setMessages(prev => prev.map(msg =>
+                msg.id === selectedMessageForModify.id
+                    ? {
+                        ...msg,
+                        content: modifiedResponse,
+                        timestamp: new Date().toISOString(),
+                        qualityScore: evaluateAnswerQuality(modifiedResponse, modifyPrompt).overallScore,
+                        reviewStatus: 'reviewed' as const,
+                    }
+                    : msg
+            ));
+
+            // 지속적 채팅 세션에 수정된 메시지 추가 (기존 메시지는 로컬에서만 업데이트)
+            // 참고: 백엔드 API에 메시지 업데이트 엔드포인트가 없으므로 로컬 상태만 업데이트
+            // 필요시 백엔드에 메시지 업데이트 API를 추가할 수 있습니다
+
+            setSelectedMessageForModify(null);
+        } catch (error) {
+            errorLogger.error('수정 요청 처리 중 오류', error);
+            addNotification({
+                type: 'error',
+                title: '수정 요청 실패',
+                message: '수정 요청 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+            });
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
     // 새 세션 생성
     const handleCreateNewSession = async () => {
         if (!currentProject) return;
@@ -806,7 +929,7 @@ export const ChatGPT5CompleteInterface: React.FC = () => {
             setCurrentSession(newSession);
             setMessages([]);
         } catch (error) {
-            console.error('세션 생성 실패:', error);
+            errorLogger.error('세션 생성 실패', error, { projectId: currentProject?.id });
             // 오프라인 모드로 로컬 생성
             const newSession: ProjectSession = {
                 id: Date.now().toString(),
@@ -989,7 +1112,7 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
         setPersistentSessions(prev => [...prev, newSession]);
         setCurrentPersistentSession(newSession);
         setShowPersistentSessionManager(false);
-        console.log('🔄 새로운 지속적 채팅 세션 생성:', newSession.title);
+        errorLogger.info('새로운 지속적 채팅 세션 생성', { sessionTitle: newSession.title });
     };
 
     const switchToPersistentSession = (sessionId: string) => {
@@ -1004,7 +1127,7 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
                 timestamp: new Date(msg.timestamp).toISOString()
             }));
             setMessages(convertedMessages);
-            console.log('🔄 지속적 채팅 세션으로 전환:', session.title);
+            errorLogger.info('지속적 채팅 세션으로 전환', { sessionTitle: session.title });
         }
     };
 
@@ -1053,7 +1176,7 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
         });
 
         if (inactiveSessions.length > 0) {
-            console.log(`🔄 ${inactiveSessions.length}개의 비활성 세션을 아카이브했습니다.`);
+            errorLogger.info('비활성 세션 아카이브', { count: inactiveSessions.length });
         }
     };
 
@@ -1065,8 +1188,15 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#f5f5f5' }}>
-            {/* 왼쪽 사이드바 */}
-            <Box sx={{ width: 280, bgcolor: 'white', borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
+            {/* 왼쪽 사이드바 (데스크톱만 표시) */}
+            <Box sx={{
+                width: 280,
+                bgcolor: 'white',
+                borderRight: 1,
+                borderColor: 'divider',
+                display: { xs: 'none', md: 'flex' },
+                flexDirection: 'column'
+            }}>
                 {/* 상단 네비게이션 */}
                 <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -1235,8 +1365,242 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
                 </Box>
             </Box>
 
+            {/* 모바일 Drawer */}
+            <Drawer
+                anchor="left"
+                open={mobileDrawerOpen}
+                onClose={() => setMobileDrawerOpen(false)}
+                ModalProps={{
+                    keepMounted: true, // 모바일 성능 향상
+                }}
+                sx={{
+                    display: { xs: 'block', md: 'none' },
+                    '& .MuiDrawer-paper': {
+                        boxSizing: 'border-box',
+                        width: 280,
+                    },
+                }}
+            >
+                {/* 사이드바 내용 재사용 */}
+                <Box sx={{ width: 280, bgcolor: 'white', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    {/* 상단 네비게이션 */}
+                    <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                            <Box sx={{ width: 24, height: 24, bgcolor: '#1976d2', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Typography variant="caption" sx={{ color: 'white', fontWeight: 'bold' }}>5</Typography>
+                            </Box>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                ChatGPT 5
+                            </Typography>
+                            <IconButton
+                                size="small"
+                                onClick={() => setMobileDrawerOpen(false)}
+                                sx={{ ml: 'auto' }}
+                            >
+                                <KeyboardArrowDown />
+                            </IconButton>
+                        </Box>
+
+                        {/* 기본 액션 버튼들 */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Button
+                                variant="outlined"
+                                startIcon={<Create />}
+                                onClick={() => {
+                                    handleCreateNewSession();
+                                    setMobileDrawerOpen(false);
+                                }}
+                                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                            >
+                                새 채팅
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                startIcon={<Search />}
+                                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                                onClick={() => setMobileDrawerOpen(false)}
+                            >
+                                Q 채팅 검색
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                startIcon={<LibraryBooks />}
+                                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                                onClick={() => setMobileDrawerOpen(false)}
+                            >
+                                라이브러리
+                            </Button>
+                        </Box>
+                    </Box>
+
+                    {/* AI 모델 선택 */}
+                    <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                            AI 모델
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {AI_MODELS.map((model) => {
+                                const Icon = model.icon;
+                                const isSelected = selectedAIModel === model.id;
+
+                                return (
+                                    <Tooltip key={model.id} title={model.name}>
+                                        <IconButton
+                                            onClick={() => {
+                                                setSelectedAIModel(model.id);
+                                                setMobileDrawerOpen(false);
+                                            }}
+                                            sx={{
+                                                bgcolor: isSelected ? model.color : 'transparent',
+                                                color: isSelected ? 'white' : 'text.secondary',
+                                                '&:hover': {
+                                                    bgcolor: isSelected ? model.color : 'grey.100'
+                                                }
+                                            }}
+                                        >
+                                            <Icon />
+                                        </IconButton>
+                                    </Tooltip>
+                                );
+                            })}
+                        </Box>
+                    </Box>
+
+                    {/* 프로젝트 목록 */}
+                    <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                            <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                                새 프로젝트
+                            </Typography>
+                            <IconButton size="small" onClick={() => {
+                                setShowProjectCreation(true);
+                                setMobileDrawerOpen(false);
+                            }}>
+                                <Add />
+                            </IconButton>
+                        </Box>
+
+                        {projects.map((project) => {
+                            const isExpanded = expandedProjects.has(project.id);
+                            const projectSessions = sessions.filter(s => s.id.startsWith(project.id) || s.title.includes(project.name));
+
+                            return (
+                                <Box key={project.id} sx={{ mb: 1 }}>
+                                    <Card
+                                        sx={{
+                                            cursor: 'pointer',
+                                            border: currentProject?.id === project.id ? 2 : 1,
+                                            borderColor: currentProject?.id === project.id ? '#1976d2' : 'divider',
+                                            bgcolor: currentProject?.id === project.id ? '#e3f2fd' : 'white',
+                                            '&:hover': { boxShadow: 2 }
+                                        }}
+                                        onClick={() => {
+                                            setCurrentProject(project);
+                                            loadProjectData(project.id);
+                                            setMobileDrawerOpen(false);
+                                        }}
+                                    >
+                                        <CardContent sx={{ p: 1.5 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                {project.name === '한양2차' ? (
+                                                    <Diamond sx={{ color: '#9c27b0', fontSize: 20 }} />
+                                                ) : (
+                                                    <Folder sx={{ color: '#1976d2', fontSize: 20 }} />
+                                                )}
+                                                <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>
+                                                    {project.name}
+                                                </Typography>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleProjectExpansion(project.id);
+                                                    }}
+                                                >
+                                                    {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                                                </IconButton>
+                                            </Box>
+
+                                            {isExpanded && (
+                                                <Box sx={{ mt: 1, ml: 3 }}>
+                                                    {projectSessions.map((session) => (
+                                                        <Box
+                                                            key={session.id}
+                                                            sx={{
+                                                                p: 1,
+                                                                borderRadius: 1,
+                                                                cursor: 'pointer',
+                                                                bgcolor: currentSession?.id === session.id ? '#f5f5f5' : 'transparent',
+                                                                '&:hover': { bgcolor: '#f5f5f5' },
+                                                                mb: 0.5
+                                                            }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleSessionSelect(session.id);
+                                                                setMobileDrawerOpen(false);
+                                                            }}
+                                                        >
+                                                            <Typography variant="caption" sx={{ display: 'block', fontWeight: 500 }}>
+                                                                {session.title}
+                                                            </Typography>
+                                                            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                                                                {formatDate(session.lastActivity)}
+                                                            </Typography>
+                                                        </Box>
+                                                    ))}
+                                                </Box>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </Box>
+                            );
+                        })}
+                    </Box>
+
+                    {/* 사용자 프로필 */}
+                    <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: '#1976d2' }}>
+                                <Person />
+                            </Avatar>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                KIM HOBUM Plus
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Box>
+            </Drawer>
+
             {/* 메인 콘텐츠 영역 */}
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {/* 모바일 앱바 */}
+                {isMobile && (
+                    <AppBar position="static" sx={{ bgcolor: 'white', color: 'text.primary', boxShadow: 1 }}>
+                        <Toolbar>
+                            <IconButton
+                                edge="start"
+                                color="inherit"
+                                aria-label="menu"
+                                onClick={() => setMobileDrawerOpen(true)}
+                                sx={{ mr: 2 }}
+                            >
+                                <MenuIcon />
+                            </IconButton>
+                            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+                                ChatGPT 5
+                            </Typography>
+                            {currentProject && (
+                                <Chip
+                                    label={currentProject.name}
+                                    size="small"
+                                    sx={{ mr: 1 }}
+                                />
+                            )}
+                            {isAuthenticated && <SecurityNotificationCenter />}
+                        </Toolbar>
+                    </AppBar>
+                )}
+
                 {/* 통합 시스템 탭 */}
                 <Box sx={{ bgcolor: 'white', borderBottom: 1, borderColor: 'divider' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
@@ -1279,6 +1643,22 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
                             sx={{ textTransform: 'none' }}
                         >
                             성능 최적화
+                        </Button>
+                        <Button
+                            variant={activeTab === 5 ? "contained" : "text"}
+                            onClick={() => setActiveTab(5)}
+                            startIcon={<Folder />}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            프로젝트 허브
+                        </Button>
+                        <Button
+                            variant={activeTab === 6 ? "contained" : "text"}
+                            onClick={() => setActiveTab(6)}
+                            startIcon={<Code />}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            노트북 LLM
                         </Button>
                     </Box>
                 </Box>
@@ -1396,22 +1776,58 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
                                                             maxWidth: '70%',
                                                             bgcolor: message.role === 'user' ? '#1976d2' : 'white',
                                                             color: message.role === 'user' ? 'white' : 'text.primary',
-                                                            boxShadow: 1
+                                                            boxShadow: 1,
+                                                            position: 'relative',
+                                                            '&:hover .message-actions': {
+                                                                opacity: 1
+                                                            }
                                                         }}
                                                     >
                                                         <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                                                             {message.content}
                                                         </Typography>
-                                                        <Typography
-                                                            variant="caption"
+                                                        <Box
                                                             sx={{
-                                                                display: 'block',
-                                                                mt: 1,
-                                                                opacity: 0.7
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center',
+                                                                mt: 1
                                                             }}
                                                         >
-                                                            {formatTime(message.timestamp)}
-                                                        </Typography>
+                                                            <Typography
+                                                                variant="caption"
+                                                                sx={{
+                                                                    opacity: 0.7
+                                                                }}
+                                                            >
+                                                                {formatTime(message.timestamp)}
+                                                            </Typography>
+                                                            {message.role === 'assistant' && (
+                                                                <Box
+                                                                    className="message-actions"
+                                                                    sx={{
+                                                                        display: 'flex',
+                                                                        gap: 0.5,
+                                                                        opacity: 0,
+                                                                        transition: 'opacity 0.2s'
+                                                                    }}
+                                                                >
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={() => handleModifyRequest(message.id)}
+                                                                        title="수정 요청"
+                                                                        sx={{
+                                                                            color: 'text.secondary',
+                                                                            '&:hover': {
+                                                                                bgcolor: 'action.hover'
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <Edit fontSize="small" />
+                                                                    </IconButton>
+                                                                </Box>
+                                                            )}
+                                                        </Box>
                                                     </Paper>
                                                 </Box>
                                             ))}
@@ -1450,7 +1866,7 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
                                                     placeholder={`${currentProject.name}에서 새 채팅`}
                                                     variant="outlined"
                                                     size="small"
-                                                    onKeyPress={(e) => {
+                                                    onKeyDown={(e) => {
                                                         if (e.key === 'Enter' && !e.shiftKey) {
                                                             e.preventDefault();
                                                             handleSendMessage();
@@ -1521,6 +1937,17 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
                     </Box>
                 )}
 
+                {/* 메시지 수정 요청 다이얼로그 */}
+                <MessageModifyRequestDialog
+                    open={modifyRequestDialogOpen}
+                    originalMessage={selectedMessageForModify?.content || ''}
+                    onClose={() => {
+                        setModifyRequestDialogOpen(false);
+                        setSelectedMessageForModify(null);
+                    }}
+                    onConfirm={handleModifyRequestConfirm}
+                />
+
                 {/* 보안 탭 */}
                 {activeTab === 2 && (
                     <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -1547,14 +1974,199 @@ AI 시스템이 안정적으로 작동하고 있으며, 지속적인 개선이 �
                         <PerformanceOptimizer />
                     </Box>
                 )}
+
+                {/* 프로젝트 허브 탭 */}
+                {activeTab === 5 && (
+                    <Box sx={{ flex: 1, overflow: 'auto' }}>
+                        <ProjectHub
+                            projects={projects.map(p => ({
+                                id: p.id,
+                                name: p.name,
+                                description: p.description || '',
+                                status: 'active' as const,
+                                createdAt: new Date(p.createdAt),
+                                updatedAt: new Date(p.createdAt),
+                                messageCount: p.sessionCount,
+                                fileCount: p.fileCount,
+                                tags: [],
+                                category: p.category,
+                            }))}
+                            onProjectSelect={(project) => {
+                                const selected = projects.find(p => p.id === project.id);
+                                if (selected) {
+                                    setCurrentProject(selected);
+                                    loadProjectData(selected.id);
+                                    setActiveTab(0); // 채팅 탭으로 이동
+                                }
+                            }}
+                            onProjectCreate={() => setShowProjectCreation(true)}
+                            onProjectEdit={(projectId) => {
+                                const project = projects.find(p => p.id === projectId);
+                                if (project) {
+                                    setProjectToEdit(project);
+                                    setShowProjectEdit(true);
+                                }
+                            }}
+                            onProjectDelete={async (projectId) => {
+                                const project = projects.find(p => p.id === projectId);
+                                showConfirm(
+                                    {
+                                        title: '프로젝트 삭제',
+                                        message: `정말로 "${project?.name || '이 프로젝트'}"를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`,
+                                        type: 'error',
+                                        confirmText: '삭제',
+                                        cancelText: '취소',
+                                        confirmColor: 'error',
+                                    },
+                                    async () => {
+                                        try {
+                                            const projectService = ChatGPTProjectService.getInstance();
+                                            await projectService.deleteProject(projectId);
+                                            setProjects(prev => prev.filter(p => p.id !== projectId));
+                                            if (currentProject?.id === projectId) {
+                                                setCurrentProject(null);
+                                            }
+                                            addNotification({
+                                                type: 'success',
+                                                title: '프로젝트 삭제 완료',
+                                                message: '프로젝트가 성공적으로 삭제되었습니다.',
+                                            });
+                                        } catch (error) {
+                                            errorLogger.error('프로젝트 삭제 실패', error, { projectId });
+                                            addNotification({
+                                                type: 'error',
+                                                title: '프로젝트 삭제 실패',
+                                                message: '프로젝트 삭제에 실패했습니다. 다시 시도해주세요.',
+                                            });
+                                        }
+                                    }
+                                );
+                            }}
+                            onProjectArchive={async (projectId) => {
+                                const project = projects.find(p => p.id === projectId);
+                                showConfirm(
+                                    {
+                                        title: '프로젝트 보관',
+                                        message: `"${project?.name || '이 프로젝트'}"를 보관하시겠습니까?`,
+                                        type: 'info',
+                                        confirmText: '보관',
+                                        cancelText: '취소',
+                                    },
+                                    async () => {
+                                        try {
+                                            const projectService = ChatGPTProjectService.getInstance();
+                                            await projectService.archiveProject(projectId);
+                                            setProjects(prev => prev.map(p =>
+                                                p.id === projectId ? { ...p, status: 'archived' as const } : p
+                                            ));
+                                            addNotification({
+                                                type: 'success',
+                                                title: '프로젝트 보관 완료',
+                                                message: '프로젝트가 성공적으로 보관되었습니다.',
+                                            });
+                                        } catch (error) {
+                                            errorLogger.error('프로젝트 보관 실패', error, { projectId });
+                                            addNotification({
+                                                type: 'error',
+                                                title: '프로젝트 보관 실패',
+                                                message: '프로젝트 보관에 실패했습니다. 다시 시도해주세요.',
+                                            });
+                                        }
+                                    }
+                                );
+                            }}
+                        />
+                    </Box>
+                )}
+
+                {/* 노트북 LLM 탭 */}
+                {activeTab === 6 && (
+                    <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+                        <NotebookLLM
+                            projectId={currentProject?.id}
+                            onResponseComplete={(response) => {
+                                errorLogger.debug('노트북 LLM 응답', { responseLength: JSON.stringify(response).length });
+                            }}
+                            onError={(error) => {
+                                errorLogger.error('노트북 LLM 오류', error);
+                            }}
+                        />
+                    </Box>
+                )}
             </Box>
+
+            {/* 템플릿 선택 다이얼로그 */}
+            <ProjectTemplateSelector
+                open={showTemplateSelector}
+                onClose={() => setShowTemplateSelector(false)}
+                onSelectTemplate={(template) => {
+                    const projectData = projectTemplateService.createProjectDataFromTemplate(template);
+                    setProjectName(projectData.name);
+                    setSelectedCategory(projectData.category);
+                    setSelectedMemoryType(projectData.memoryType || 'default');
+                    setShowTemplateSelector(false);
+                    setShowProjectCreation(true);
+                }}
+            />
+
+            {/* 프로젝트 편집 다이얼로그 */}
+            <ProjectEditDialog
+                open={showProjectEdit}
+                onClose={() => {
+                    setShowProjectEdit(false);
+                    setProjectToEdit(null);
+                }}
+                project={projectToEdit}
+                onSave={async (projectId, updates) => {
+                    try {
+                        const projectService = ChatGPTProjectService.getInstance();
+                        const updatedProject = await projectService.updateProject(projectId, updates);
+                        if (updatedProject) {
+                            setProjects(prev => prev.map(p =>
+                                p.id === projectId ? updatedProject : p
+                            ));
+                            if (currentProject?.id === projectId) {
+                                setCurrentProject(updatedProject);
+                            }
+                        }
+                    } catch (error) {
+                        errorLogger.error('프로젝트 업데이트 실패', error);
+                        throw error;
+                    }
+                }}
+            />
+
+            {/* 확인 다이얼로그 */}
+            <ConfirmDialog
+                open={confirmDialog.open}
+                onClose={handleCancelDialog}
+                onConfirm={handleConfirmDialog}
+                title={confirmDialog.title || '확인'}
+                message={confirmDialog.message}
+                type={confirmDialog.type}
+                confirmText={confirmDialog.confirmText}
+                cancelText={confirmDialog.cancelText}
+                confirmColor={confirmDialog.confirmColor}
+                showCancel={confirmDialog.showCancel}
+            />
 
             {/* 프로젝트 생성 모달 */}
             <Dialog open={showProjectCreation} onClose={() => setShowProjectCreation(false)} maxWidth="md" fullWidth>
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Folder />
-                    프로젝트 이름
+                    프로젝트 생성
                     <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<FileCopy />}
+                            onClick={() => {
+                                setShowProjectCreation(false);
+                                setShowTemplateSelector(true);
+                            }}
+                        >
+                            템플릿 선택
+                        </Button>
                         <IconButton size="small" onClick={() => setShowMemorySettings(!showMemorySettings)}>
                             <Settings />
                         </IconButton>

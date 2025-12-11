@@ -1,0 +1,68 @@
+
+> corbu-ai@0.1.0 start
+> BROWSER=none PORT=3000 WDS_SOCKET_PORT=0 FAST_REFRESH=false react-scripts start
+
+[HPM] Proxy created: /  -> http://localhost:5000
+[HPM] Proxy created: /  -> http://localhost:5000
+(node:79687) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:79687) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+
+
+warn - As of Tailwind CSS v3.3, the `@tailwindcss/line-clamp` plugin is now included by default.
+warn - Remove it from the `plugins` array in your configuration to eliminate this warning.
+Compiled successfully!
+
+You can now view corbu-ai in the browser.
+
+  Local:            http://localhost:3000
+  On Your Network:  http://192.168.0.30:3000
+
+Note that the development build is not optimized.
+To create a production build, use npm run build.
+
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/SimpleChatGPTInterface.tsx:156:19
+TS2304: Cannot find name 'generateAndSaveChatHistory'.
+    154 |                 // 자동 제목 생성 및 채팅 히스토리 저장
+    155 |                 if (updatedMessages.length >= 2) { // 최소 1개 질문 + 1개 답변
+  > 156 |                   generateAndSaveChatHistory(updatedMessages);
+        |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    157 |                 }
+    158 |                 
+    159 |                 return updatedMessages;
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/SimpleChatGPTInterface.tsx:156:19
+TS2304: Cannot find name 'generateAndSaveChatHistory'.
+    154 |                 // 자동 제목 생성 및 채팅 히스토리 저장
+    155 |                 if (updatedMessages.length >= 2) { // 최소 1개 질문 + 1개 답변
+  > 156 |                   generateAndSaveChatHistory(updatedMessages);
+        |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    157 |                 }
+    158 |                 
+    159 |                 return updatedMessages;
+
+ERROR in src/services/advancedResponseGenerator.ts:501:37
+TS1205: Re-exporting a type when the '--isolatedModules' flag is provided requires using 'export type'.
+    499 |
+    500 | export default advancedResponseGenerator;
+  > 501 | export { AdvancedResponseGenerator, ResponseContext, GeneratedResponse };
+        |                                     ^^^^^^^^^^^^^^^
+    502 |
+
+ERROR in src/services/advancedResponseGenerator.ts:501:54
+TS1205: Re-exporting a type when the '--isolatedModules' flag is provided requires using 'export type'.
+    499 |
+    500 | export default advancedResponseGenerator;
+  > 501 | export { AdvancedResponseGenerator, ResponseContext, GeneratedResponse };
+        |                                                      ^^^^^^^^^^^^^^^^^
+    502 |
+

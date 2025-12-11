@@ -1,0 +1,157 @@
+/* 메시지 액션 컴포넌트 스타일 */
+
+.message-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  margin-top: 8px;
+}
+
+.message:hover .message-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.action-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+.action-btn svg {
+  flex-shrink: 0;
+}
+
+/* 복사 버튼 */
+.copy-btn.copied {
+  background: var(--accent-success);
+  border-color: var(--accent-success);
+  color: var(--text-inverse);
+}
+
+.copy-btn.copied:hover {
+  background: var(--accent-success, #10b981);
+  opacity: 0.9;
+}
+
+/* 좋아요 버튼 */
+.like-btn.liked {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--text-inverse);
+}
+
+.like-btn.liked:hover {
+  background: var(--accent-primary, #667eea);
+  opacity: 0.9;
+}
+
+.like-btn.liked svg {
+  fill: white;
+}
+
+/* 싫어요 버튼 */
+.dislike-btn.disliked {
+  background: var(--accent-danger);
+  border-color: var(--accent-danger);
+  color: var(--text-inverse);
+}
+
+.dislike-btn.disliked:hover {
+  background: var(--accent-danger, #dc2626);
+  opacity: 0.9;
+}
+
+.dislike-btn.disliked svg {
+  fill: white;
+}
+
+/* 즐겨찾기 버튼 */
+.bookmark-btn.bookmarked {
+  background: var(--accent-warning);
+  border-color: var(--accent-warning);
+  color: var(--text-inverse);
+}
+
+.bookmark-btn.bookmarked:hover {
+  background: var(--accent-warning, #f59e0b);
+  opacity: 0.9;
+}
+
+.bookmark-btn.bookmarked svg {
+  fill: white;
+}
+
+/* 편집 버튼 */
+.edit-btn:hover {
+  background: var(--accent-primary, #667eea);
+  border-color: var(--accent-primary, #667eea);
+  color: white;
+}
+
+/* 답장 버튼 */
+.reply-btn:hover {
+  background: var(--accent-secondary, #764ba2);
+  border-color: var(--accent-secondary, #764ba2);
+  color: white;
+}
+
+/* 재생성 버튼 */
+.regenerate-btn:hover {
+  background: var(--accent-primary, #667eea);
+  border-color: var(--accent-primary, #667eea);
+  color: white;
+}
+
+/* 접근성 */
+.action-btn:focus {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.action-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.action-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .message-actions {
+    opacity: 1;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .action-btn span {
+    display: none;
+  }
+}

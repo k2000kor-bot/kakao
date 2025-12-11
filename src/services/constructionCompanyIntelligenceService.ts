@@ -114,7 +114,7 @@ export interface ResponseStrategy {
     successMetrics: string[];
 }
 
-class ConstructionCompanyIntelligenceService {
+export class ConstructionCompanyIntelligenceService {
     private defectIssues: DefectIssue[] = [];
     private companyPerformances: CompanyPerformance[] = [];
     private selectionCriteria: SelectionCriteria[] = [];

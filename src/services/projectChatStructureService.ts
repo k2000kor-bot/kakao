@@ -21,7 +21,7 @@ export interface ProjectGuideline extends BaseGuideline {
     associatedChatId?: string;
 }
 
-class ProjectChatStructureService {
+export class ProjectChatStructureService {
     private static instance: ProjectChatStructureService;
 
     constructor() { }

@@ -55,7 +55,7 @@ export interface LearningContext {
     };
 }
 
-class KnowledgeIntegrationService {
+export class KnowledgeIntegrationService {
     private knowledgeBase: Map<string, KnowledgeSource[]> = new Map();
     private learningContext: LearningContext;
     private reliabilityWeights: Map<string, number> = new Map();

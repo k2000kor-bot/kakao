@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+  <link rel="icon" href="/favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#667eea" />
   <meta name="description" content="CORBU AI Ultimate System - 고도화된 AI 플랫폼" />
@@ -20,28 +20,28 @@
   <meta name="msapplication-tap-highlight" content="no" />
 
   <!-- 아이콘 -->
-  <link rel="apple-touch-icon" href="%PUBLIC_URL%/icons/icon-192x192.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/icons/icon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/icons/icon-16x16.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
 
   <!-- PWA 매니페스트 -->
-  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  <link rel="manifest" href="/manifest.json" />
 
   <!-- 스플래시 스크린 (iOS) -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-2048-2732.jpg"
+  <link rel="apple-touch-startup-image" href="/icons/apple-splash-2048-2732.jpg"
     media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1668-2388.jpg"
+  <link rel="apple-touch-startup-image" href="/icons/apple-splash-1668-2388.jpg"
     media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1536-2048.jpg"
+  <link rel="apple-touch-startup-image" href="/icons/apple-splash-1536-2048.jpg"
     media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1125-2436.jpg"
+  <link rel="apple-touch-startup-image" href="/icons/apple-splash-1125-2436.jpg"
     media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1242-2208.jpg"
+  <link rel="apple-touch-startup-image" href="/icons/apple-splash-1242-2208.jpg"
     media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-750-1334.jpg"
+  <link rel="apple-touch-startup-image" href="/icons/apple-splash-750-1334.jpg"
     media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-640-1136.jpg"
+  <link rel="apple-touch-startup-image" href="/icons/apple-splash-640-1136.jpg"
     media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <title>CORBU AI Ultimate System - 고도화된 AI 플랫폼</title>
 </head>
@@ -50,18 +50,35 @@
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>
 
-  <!-- Service Worker 등록 -->
+  <!-- Service Worker 등록 (개발 모드에서는 완전 비활성화) -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((registration) => {
-            console.log('SW registered: ', registration);
-          })
-          .catch((registrationError) => {
-            console.log('SW registration failed: ', registrationError);
+      // 개발 모드에서는 Service Worker를 완전히 제거하고 등록하지 않음
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      if (isDevelopment) {
+        // 개발 모드: 기존 Service Worker 완전 제거
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister().then(() => {
+              console.log('Service Worker unregistered for development mode');
+            }).catch((error) => {
+              console.error('Service Worker unregister error:', error);
+            });
           });
-      });
+        });
+      } else {
+        // 프로덕션 모드에서만 Service Worker 등록
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.error('SW registration failed: ', registrationError);
+            });
+        });
+      }
     }
   </script>
 </body>

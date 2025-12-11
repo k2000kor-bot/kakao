@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface PWAInfo {
   isInstalled: boolean;
@@ -87,7 +88,7 @@ export const usePWA = (): PWAInfo & {
           });
         })
         .catch((error) => {
-          console.error('Service Worker 등록 실패:', error);
+          errorLogger.error('Service Worker 등록 실패', error instanceof Error ? error : new Error(String(error)), { component: 'usePWA', action: 'registerServiceWorker' });
         });
     }
 
@@ -106,19 +107,19 @@ export const usePWA = (): PWAInfo & {
 
     try {
       const result = await installPrompt.prompt();
-      console.log('PWA 설치 프롬프트 결과:', result);
+      errorLogger.info('PWA 설치 프롬프트 결과', { component: 'usePWA', action: 'installApp', result: result.outcome });
       
       if (result.outcome === 'accepted') {
-        console.log('PWA 설치 승인됨');
+        errorLogger.info('PWA 설치 승인됨', { component: 'usePWA', action: 'installApp' });
       } else {
-        console.log('PWA 설치 거부됨');
+        errorLogger.info('PWA 설치 거부됨', { component: 'usePWA', action: 'installApp' });
       }
       
       setInstallPrompt(null);
       setIsInstallable(false);
       setCanInstall(false);
     } catch (error) {
-      console.error('PWA 설치 실패:', error);
+      errorLogger.error('PWA 설치 실패', error instanceof Error ? error : new Error(String(error)), { component: 'usePWA', action: 'installApp' });
       throw error;
     }
   };
@@ -137,7 +138,7 @@ export const usePWA = (): PWAInfo & {
         window.location.reload();
       }
     } catch (error) {
-      console.error('앱 업데이트 실패:', error);
+      errorLogger.error('앱 업데이트 실패', error instanceof Error ? error : new Error(String(error)), { component: 'usePWA', action: 'updateApp' });
       throw error;
     }
   };
@@ -150,7 +151,7 @@ export const usePWA = (): PWAInfo & {
     try {
       await swRegistration.update();
     } catch (error) {
-      console.error('업데이트 확인 실패:', error);
+      errorLogger.error('업데이트 확인 실패', error instanceof Error ? error : new Error(String(error)), { component: 'usePWA', action: 'checkForUpdates' });
       throw error;
     }
   };

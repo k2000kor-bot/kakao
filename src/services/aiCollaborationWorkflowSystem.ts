@@ -365,7 +365,7 @@ export interface WorkflowMetrics {
     optimizationOpportunities: number;
 }
 
-class AICollaborationWorkflowSystem {
+export class AICollaborationWorkflowSystem {
     private workflows: Map<string, CollaborationWorkflow> = new Map();
     private isRunning: boolean = false;
     private metrics: WorkflowMetrics = {

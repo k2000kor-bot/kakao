@@ -1,0 +1,151 @@
+/* 파일 업로드 존 스타일 */
+
+.file-upload-zone {
+  border: 2px dashed var(--border-color, #e2e8f0);
+  border-radius: var(--radius-lg, 8px);
+  padding: var(--spacing-md, 12px) var(--spacing-lg, 16px);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-base, 200ms ease);
+  background: var(--bg-secondary, #f8fafc);
+  position: relative;
+  margin: var(--spacing-sm, 8px) 0;
+  min-height: auto;
+}
+
+.file-upload-zone:hover:not(.disabled) {
+  border-color: var(--accent-primary, #667eea);
+  background: var(--bg-tertiary, #f1f5f9);
+}
+
+.file-upload-zone.dragging {
+  border-color: var(--accent-primary, #667eea);
+  background: var(--accent-primary-light, #e0e7ff);
+  transform: scale(1.02);
+}
+
+.file-upload-zone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.upload-zone-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+.upload-icon {
+  color: var(--text-secondary, #64748b);
+  transition: color var(--transition-base, 200ms ease);
+  flex-shrink: 0;
+}
+
+.upload-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.file-upload-zone:hover:not(.disabled) .upload-icon {
+  color: var(--accent-primary, #667eea);
+}
+
+.upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs, 4px);
+}
+
+.upload-title {
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-primary, #1f2937);
+  margin: 0;
+}
+
+.upload-hint {
+  font-size: var(--font-size-sm, 14px);
+  color: var(--text-secondary, #64748b);
+  margin: 0;
+}
+
+.upload-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md, 12px);
+  margin-top: var(--spacing-lg, 16px);
+  padding-top: var(--spacing-lg, 16px);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.preview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  padding: var(--spacing-sm, 8px);
+  border-radius: var(--radius-md, 6px);
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.preview-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.preview-name {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-secondary, #64748b);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 다크 모드 지원 */
+.dark-mode .file-upload-zone {
+  background: var(--bg-secondary, #111827);
+  border-color: var(--border-color, #374151);
+}
+
+.dark-mode .file-upload-zone:hover:not(.disabled) {
+  background: var(--bg-tertiary, #0f172a);
+  border-color: var(--accent-primary, #818cf8);
+}
+
+.dark-mode .file-upload-zone.dragging {
+  background: var(--accent-primary-light, #312e81);
+}
+
+.dark-mode .preview-item {
+  background: var(--bg-primary, #1f2937);
+  border-color: var(--border-color, #374151);
+}
+
+/* 접근성 */
+.file-upload-zone:focus {
+  outline: 2px solid var(--border-focus, #667eea);
+  outline-offset: 2px;
+}
+
+.file-upload-zone:focus:not(:focus-visible) {
+  outline: none;
+}
+

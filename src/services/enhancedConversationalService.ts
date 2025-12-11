@@ -111,7 +111,7 @@ export interface HealthResponse {
   active_conversations: number;
 }
 
-class EnhancedConversationalService {
+export class EnhancedConversationalService {
   private baseUrl: string = 'http://localhost:8003';
 
   constructor(baseUrl?: string) {
@@ -379,6 +379,5 @@ ${response.confidence ? `🎯 신뢰도: ${(response.confidence * 100).toFixed(1
 }
 
 // 싱글톤 인스턴스 생성
-const enhancedConversationalService = new EnhancedConversationalService();
-
+export const enhancedConversationalService = new EnhancedConversationalService();
 export default enhancedConversationalService; 

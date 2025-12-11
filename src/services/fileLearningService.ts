@@ -1,6 +1,6 @@
 import type { ProjectFile, LearningSession, AIInsight, FileClassification } from '../types/chat';
 
-class FileLearningService {
+export class FileLearningService {
   private baseUrl = 'http://localhost:8003/api';
 
   // 파일 학습 시작
@@ -229,4 +229,5 @@ class FileLearningService {
   }
 }
 
-export default new FileLearningService(); 
+export const fileLearningService = new FileLearningService();
+export default fileLearningService; 

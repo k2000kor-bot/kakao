@@ -88,7 +88,7 @@ export interface KnowledgeBase {
     }>;
 }
 
-class ConstructionAnalyticsService {
+export class ConstructionAnalyticsService {
     private baseUrl = process.env.NODE_ENV === 'development' ? '' : 'http://localhost:8002';
     private companiesData: Record<string, CompanyData> = {};
     private evaluationResult: EvaluationResult | null = null;

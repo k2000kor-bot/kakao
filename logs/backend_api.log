@@ -1,0 +1,24 @@
+INFO:notebook_llm_integration:✅ Ollama 초기화 완료: 2개 모델 발견
+INFO:notebook_llm_integration:✅ Ollama 초기화 완료: 2개 모델 발견
+INFO:llm_service:✅ 노트북 LLM 통합 초기화 완료
+INFO:     Started server process [41485]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5001 (Press CTRL+C to quit)
+✅ LLM 서비스 초기화 완료
+🚀 CORBU AI Backend API 시작 중...
+📍 서버: http://0.0.0.0:5001
+📚 문서: http://0.0.0.0:5001/docs
+🔍 ReDoc: http://0.0.0.0:5001/redoc
+💚 헬스 체크: http://0.0.0.0:5001/api/health
+📦 API 버전: 1.0.0
+🤖 노트북 LLM: 사용 가능
+[2025-12-11T11:30:43.551277] GET /api/health  - IP: 127.0.0.1
+[2025-12-11T11:30:43.661277] GET /api/health - Status: 200 - Time: 0.110s
+INFO:     127.0.0.1:65414 - "GET /api/health HTTP/1.1" 200 OK
+[2025-12-11T12:09:08.532696] GET /api/health  - IP: 127.0.0.1
+[2025-12-11T12:09:08.702600] GET /api/health - Status: 200 - Time: 0.171s
+INFO:     127.0.0.1:55047 - "GET /api/health HTTP/1.1" 200 OK
+[2025-12-11T13:21:41.515566] GET /api/health  - IP: 127.0.0.1
+[2025-12-11T13:21:41.627098] GET /api/health - Status: 200 - Time: 0.113s
+INFO:     127.0.0.1:57503 - "GET /api/health HTTP/1.1" 200 OK

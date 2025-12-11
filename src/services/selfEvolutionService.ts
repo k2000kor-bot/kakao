@@ -109,7 +109,7 @@ export interface GoalMilestone {
     learningValue: number;
 }
 
-class SelfEvolutionService {
+export class SelfEvolutionService {
     private capabilities: SelfEvolutionCapability[] = [];
     private metaLearning: MetaLearning[] = [];
     private selfOptimizations: SelfOptimization[] = [];

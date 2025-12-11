@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ThemeProvider, createTheme, CssBaseline, Box, Tabs, Tab, Paper } from '@mui/material';
 import SimpleChatInterface from './components/SimpleChatInterface';
 import TestComponent from './components/TestComponent';
+import IntegratedAPIDemo from './components/IntegratedAPIDemo';
 import AuthWrapper from './components/AuthWrapper';
 
 // 테마 생성
@@ -111,6 +112,7 @@ const App: React.FC = () => {
               scrollButtons="auto"
             >
               <Tab label="🤖 CORBU AI 채팅" />
+              <Tab label="🚀 통합 API" />
               <Tab label="테스트" />
             </Tabs>
           </Paper>
@@ -120,6 +122,10 @@ const App: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
+            <IntegratedAPIDemo />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={2}>
             <TestComponent />
           </TabPanel>
         </Box>

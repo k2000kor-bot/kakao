@@ -24,6 +24,24 @@ import {
     Timeline
 } from '@mui/icons-material';
 import { integratedAPIService } from '../services/integratedAPIService';
+import { errorLogger } from '../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    // Jest 환경에서 instanceof가 제대로 작동하지 않을 수 있으므로
+    // 더 안전한 방법 사용
+    if (err && typeof err === 'object' && 'message' in err && 'stack' in err) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    try {
+        const ErrorConstructor = globalThis.Error || Error;
+        return new ErrorConstructor(String(err)) as Error;
+    } catch {
+        // 최후의 수단
+        return new Error(String(err));
+    }
+};
 
 interface AnalyticsData {
     totalRequests: number;
@@ -110,7 +128,11 @@ const AnalyticsDashboard: React.FC = () => {
             setAnalyticsData(mockAnalytics);
             setLoading(false);
         } catch (error) {
-            console.error('분석 데이터 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('분석 데이터 로드 실패', err, {
+                component: 'AnalyticsDashboard',
+                action: 'loadAnalyticsData',
+            });
             setLoading(false);
         }
     };

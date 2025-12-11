@@ -19,7 +19,7 @@ export interface SearchOptions {
     sources?: string[];
 }
 
-class WebSearchService {
+export class WebSearchService {
     private apiKey: string = '';
     private searchEngine: string = 'google'; // 'google', 'naver', 'daum' 등
 

@@ -89,7 +89,7 @@ export interface WorkflowMetrics {
 }
 
 // AI 자동화 워크플로우 시스템 클래스
-class AIAutomationWorkflowSystem extends EventEmitter {
+export class AIAutomationWorkflowSystem extends EventEmitter {
     private workflows: Map<string, Workflow> = new Map();
     private tasks: Map<string, WorkflowTask> = new Map();
     private workers: Map<string, WorkflowWorker> = new Map();

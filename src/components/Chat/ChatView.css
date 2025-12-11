@@ -1,0 +1,166 @@
+/* ChatView 컴포넌트 스타일 */
+
+/* TypingIndicator 컴포넌트 스타일 */
+
+.typing-indicator-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-lg, 12px);
+  max-width: fit-content;
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.typing-indicator-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--accent-success, #10b981);
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
+}
+
+.typing-indicator-avatar-icon {
+  color: var(--text-inverse, #ffffff);
+}
+
+.typing-indicator-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.typing-indicator-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.typing-indicator-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-success, #10b981);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.typing-indicator-text {
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+  font-weight: 500;
+  letter-spacing: -0.2px;
+}
+
+/* 타이핑 사용자 인디케이터 (실시간 동기화용) */
+.typing-users-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 10px);
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--text-primary, #1f2937);
+}
+
+.typing-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.typing-user::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-success, #10b981);
+  animation: typing-pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes typing-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+/* 다크 모드 지원 */
+[data-theme='dark'] .typing-indicator-container {
+  background: var(--bg-secondary, #1f2937);
+  border-color: var(--border-color, #374151);
+}
+
+[data-theme='dark'] .typing-indicator-text {
+  color: var(--text-secondary, #9ca3af);
+}
+
+[data-theme='dark'] .typing-users-indicator {
+  background: var(--bg-secondary, #1f2937);
+  border-color: var(--border-color, #374151);
+  color: var(--text-primary, #f3f4f6);
+}
+
+[data-theme='dark'] .typing-user::before {
+  background: var(--accent-success, #10b981);
+}
+
+
+
+
+/* 로딩 컨테이너 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+/* 스크린 리더 전용 텍스트 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* 에러 메시지 */
+.error-message {
+  padding: 16px;
+  margin: 16px;
+  background: var(--accent-danger-light, #fee2e2);
+  border: 1px solid var(--accent-danger, #dc2626);
+  border-radius: var(--radius-md, 8px);
+  color: var(--accent-danger, #dc2626);
+  text-align: center;
+  font-size: 14px;
+}
+
+.error-message::before {
+  content: "⚠️ ";
+  margin-right: 8px;
+}

@@ -11,7 +11,6 @@ import {
     IconButton,
     Drawer,
     List,
-    ListItem,
     ListItemIcon,
     ListItemText,
     Divider,
@@ -24,6 +23,7 @@ import {
     Home as HomeIcon,
     Info as InfoIcon
 } from '@mui/icons-material';
+import { ListItemButton } from '@mui/material';
 import SimpleChatInterface from './SimpleChatInterface';
 import TestComponent from './TestComponent';
 import AuthWrapper from './AuthWrapper';
@@ -143,9 +143,8 @@ const ImprovedMinimalApp: React.FC = () => {
                         <Box sx={{ overflow: 'auto', mt: 2 }}>
                             <List>
                                 {menuItems.map((item) => (
-                                    <ListItem
+                                    <ListItemButton
                                         key={item.id}
-                                        button
                                         onClick={() => handleMenuClick(item.id)}
                                         selected={currentView === item.id}
                                         sx={{
@@ -165,7 +164,7 @@ const ImprovedMinimalApp: React.FC = () => {
                                             {item.icon}
                                         </ListItemIcon>
                                         <ListItemText primary={item.label} />
-                                    </ListItem>
+                                    </ListItemButton>
                                 ))}
                             </List>
                             <Divider sx={{ my: 2 }} />

@@ -1,0 +1,66 @@
+2025-10-20 13:58:04,793 - __main__ - INFO - ✅ 완전한 ChatGPT 시스템 초기화 완료
+2025-10-20 13:58:04,795 - __main__ - INFO - ============================================================
+2025-10-20 13:58:04,795 - __main__ - INFO - 🚀 완전한 ChatGPT 도시정비 시스템 시작
+2025-10-20 13:58:04,795 - __main__ - INFO - ============================================================
+2025-10-20 13:58:04,795 - __main__ - INFO - 📡 서버: http://localhost:8000
+2025-10-20 13:58:04,795 - __main__ - INFO - 📚 문서: http://localhost:8000/docs
+2025-10-20 13:58:04,795 - __main__ - INFO - 🔌 WebSocket: ws://localhost:8000/ws
+2025-10-20 13:58:04,795 - __main__ - INFO - ============================================================
+2025-10-20 13:58:04,795 - __main__ - INFO - 💡 질문, 요청, 글쓰기, 분석, 계산 모두 가능!
+2025-10-20 13:58:04,796 - __main__ - INFO - ============================================================
+INFO:     Will watch for changes in these directories: ['/Users/aD/kakao-frontend/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [27665] using StatReload
+2025-10-20 13:58:07,041 - __mp_main__ - INFO - ✅ 완전한 ChatGPT 시스템 초기화 완료
+2025-10-20 13:58:07,212 - complete_chatgpt_server - INFO - ✅ 완전한 ChatGPT 시스템 초기화 완료
+INFO:     Started server process [27685]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60228 - "WebSocket /ws" [accepted]
+INFO:     127.0.0.1:60230 - "WebSocket /ws" [accepted]
+INFO:     connection closed
+INFO:     connection open
+2025-10-20 14:04:31,125 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     127.0.0.1:60235 - "WebSocket /ws" [accepted]
+INFO:     connection open
+2025-10-20 14:04:47,702 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+2025-10-20 14:04:47,702 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60257 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60265 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60273 - "GET /health HTTP/1.1" 200 OK
+2025-10-20 14:06:47,028 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+2025-10-20 14:06:47,028 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60342 - "WebSocket /ws" [accepted]
+INFO:     connection closed
+2025-10-20 14:06:47,825 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     127.0.0.1:60344 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60350 - "WebSocket /ws" [accepted]
+INFO:     connection open
+2025-10-20 14:06:52,785 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+2025-10-20 14:06:52,785 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60360 - "WebSocket /ws" [accepted]
+INFO:     connection closed
+2025-10-20 14:06:53,406 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     127.0.0.1:60362 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60369 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60433 - "GET / HTTP/1.1" 200 OK
+INFO:     Shutting down
+2025-10-20 14:10:37,534 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+2025-10-20 14:10:37,536 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27685]
+INFO:     Stopping reloader process [27665]

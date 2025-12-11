@@ -23,7 +23,7 @@ export interface LocalAIResponse {
     };
 }
 
-class LocalAIService {
+export class LocalAIService {
     private projectData = {
         '개포우성7차': {
             name: '개포우성7차',
@@ -431,4 +431,5 @@ class LocalAIService {
     }
 }
 
-export default new LocalAIService(); 
+export const localAIService = new LocalAIService();
+export default localAIService; 

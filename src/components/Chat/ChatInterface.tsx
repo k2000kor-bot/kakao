@@ -106,7 +106,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setAttachedFiles([]);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -416,7 +416,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="메시지를 입력하세요... (Shift + Enter로 줄바꿈)"
               className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
               rows={1}

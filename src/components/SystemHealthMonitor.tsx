@@ -24,6 +24,17 @@ import {
     Memory,
     Storage
 } from '@mui/icons-material';
+import { errorLogger } from '../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface HealthData {
     status: 'healthy' | 'warning' | 'error';
@@ -110,7 +121,11 @@ const SystemHealthMonitor: React.FC = () => {
             setHealthData(mockHealthData);
             setLoading(false);
         } catch (error) {
-            console.error('헬스 데이터 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('헬스 데이터 로드 실패', err, {
+                component: 'SystemHealthMonitor',
+                action: 'loadHealthData',
+            });
             setLoading(false);
         }
     };

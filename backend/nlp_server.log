@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/aD/kakao-frontend/backend/advanced_korean_nlp_engine.py", line 27, in <module>
+    from soynlp.tokenizer import LTokenizer
+ModuleNotFoundError: No module named 'soynlp'

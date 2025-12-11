@@ -72,7 +72,7 @@ export interface OptimizationResult {
   message: string;
 }
 
-class PerformanceOptimizationService {
+export class PerformanceOptimizationService {
   private baseURL = 'http://localhost:8004/api/performance';
   private metricsCache: PerformanceMetrics | null = null;
   private healthCache: SystemHealth | null = null;
@@ -285,4 +285,5 @@ class PerformanceOptimizationService {
   }
 }
 
-export default new PerformanceOptimizationService();
+export const performanceOptimizationService = new PerformanceOptimizationService();
+export default performanceOptimizationService;

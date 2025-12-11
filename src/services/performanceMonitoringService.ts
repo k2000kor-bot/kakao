@@ -30,7 +30,7 @@ interface UserInteraction {
     timestamp: Date;
 }
 
-class PerformanceMonitoringService {
+export class PerformanceMonitoringService {
     private metrics: PerformanceMetrics[] = [];
     private apiPerformance: ApiPerformance[] = [];
     private userInteractions: UserInteraction[] = [];

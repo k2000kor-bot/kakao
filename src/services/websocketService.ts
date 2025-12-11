@@ -3,6 +3,8 @@
  * 실시간 통신을 위한 WebSocket 서비스
  */
 
+import { errorLogger } from '../utils/errorLogger';
+
 export interface SystemMetrics {
   cpu: number;
   memory: number;
@@ -49,7 +51,7 @@ export interface WebSocketMessage {
   data: any;
 }
 
-class WebSocketService {
+export class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
@@ -68,7 +70,10 @@ class WebSocketService {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('WebSocket 연결 성공');
+        errorLogger.info('WebSocket 연결 성공', {
+          component: 'WebSocketService',
+          action: 'connect',
+        });
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.startHeartbeat();
@@ -80,12 +85,18 @@ class WebSocketService {
           const message: WebSocketMessage = JSON.parse(event.data);
           this.handleMessage(message);
         } catch (error) {
-          console.error('WebSocket 메시지 파싱 오류:', error);
+          errorLogger.error('WebSocket 메시지 파싱 오류', error instanceof Error ? error : new Error(String(error)), {
+            component: 'WebSocketService',
+            action: 'parseMessage',
+          });
         }
       };
 
       this.ws.onclose = () => {
-        console.log('WebSocket 연결 종료');
+        errorLogger.info('WebSocket 연결 종료', {
+          component: 'WebSocketService',
+          action: 'close',
+        });
         this.isConnected = false;
         this.stopHeartbeat();
         this.emit('disconnected', {});
@@ -93,12 +104,18 @@ class WebSocketService {
       };
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket 오류:', error);
+        errorLogger.error('WebSocket 오류', error instanceof Error ? error : new Error(String(error)), {
+          component: 'WebSocketService',
+          action: 'websocketError',
+        });
         this.emit('error', error);
       };
 
     } catch (error) {
-      console.error('WebSocket 연결 실패:', error);
+      errorLogger.error('WebSocket 연결 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'WebSocketService',
+        action: 'connect',
+      });
       this.attemptReconnect();
     }
   }
@@ -121,7 +138,11 @@ class WebSocketService {
         // Heartbeat 응답
         break;
       default:
-        console.log('알 수 없는 메시지 타입:', message.type);
+        errorLogger.warn('알 수 없는 메시지 타입', {
+          component: 'WebSocketService',
+          action: 'handleMessage',
+          messageType: message.type,
+        });
     }
   }
 
@@ -146,13 +167,22 @@ class WebSocketService {
   private attemptReconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`WebSocket 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+      errorLogger.info(`WebSocket 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`, {
+        component: 'WebSocketService',
+        action: 'attemptReconnect',
+        attempt: this.reconnectAttempts,
+        maxAttempts: this.maxReconnectAttempts,
+      });
       
       setTimeout(() => {
         this.connect();
       }, this.reconnectInterval);
     } else {
-      console.error('WebSocket 재연결 실패: 최대 시도 횟수 초과');
+      errorLogger.error('WebSocket 재연결 실패: 최대 시도 횟수 초과', new Error('Max reconnect attempts exceeded'), {
+        component: 'WebSocketService',
+        action: 'attemptReconnect',
+        maxAttempts: this.maxReconnectAttempts,
+      });
       this.emit('reconnectFailed', {});
     }
   }
@@ -161,7 +191,10 @@ class WebSocketService {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket이 연결되지 않음');
+      errorLogger.warn('WebSocket이 연결되지 않음', {
+        component: 'WebSocketService',
+        action: 'send',
+      });
     }
   }
 
@@ -248,7 +281,10 @@ export class MetricsWebSocket {
       this.ws = new WebSocket('ws://localhost:8000/ws/metrics');
 
       this.ws.onopen = () => {
-        console.log('메트릭 WebSocket 연결 성공');
+        errorLogger.info('메트릭 WebSocket 연결 성공', {
+          component: 'MetricsWebSocket',
+          action: 'connect',
+        });
       };
 
       this.ws.onmessage = (event) => {
@@ -258,21 +294,33 @@ export class MetricsWebSocket {
             this.emit('metrics', message.data as SystemMetrics);
           }
         } catch (error) {
-          console.error('메트릭 WebSocket 메시지 파싱 오류:', error);
+          errorLogger.error('메트릭 WebSocket 메시지 파싱 오류', error instanceof Error ? error : new Error(String(error)), {
+            component: 'MetricsWebSocket',
+            action: 'parseMessage',
+          });
         }
       };
 
       this.ws.onclose = () => {
-        console.log('메트릭 WebSocket 연결 종료');
+        errorLogger.info('메트릭 WebSocket 연결 종료', {
+          component: 'MetricsWebSocket',
+          action: 'close',
+        });
         setTimeout(() => this.connect(), 3000);
       };
 
       this.ws.onerror = (error) => {
-        console.error('메트릭 WebSocket 오류:', error);
+        errorLogger.error('메트릭 WebSocket 오류', error instanceof Error ? error : new Error(String(error)), {
+          component: 'MetricsWebSocket',
+          action: 'websocketError',
+        });
       };
 
     } catch (error) {
-      console.error('메트릭 WebSocket 연결 실패:', error);
+      errorLogger.error('메트릭 WebSocket 연결 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'MetricsWebSocket',
+        action: 'connect',
+      });
     }
   }
 
@@ -311,7 +359,10 @@ export class AlertsWebSocket {
       this.ws = new WebSocket('ws://localhost:8000/ws/alerts');
 
       this.ws.onopen = () => {
-        console.log('알림 WebSocket 연결 성공');
+        errorLogger.info('알림 WebSocket 연결 성공', {
+          component: 'AlertsWebSocket',
+          action: 'connect',
+        });
       };
 
       this.ws.onmessage = (event) => {
@@ -321,21 +372,33 @@ export class AlertsWebSocket {
             this.emit('alert', message.data as SecurityAlert);
           }
         } catch (error) {
-          console.error('알림 WebSocket 메시지 파싱 오류:', error);
+          errorLogger.error('알림 WebSocket 메시지 파싱 오류', error instanceof Error ? error : new Error(String(error)), {
+            component: 'AlertsWebSocket',
+            action: 'parseMessage',
+          });
         }
       };
 
       this.ws.onclose = () => {
-        console.log('알림 WebSocket 연결 종료');
+        errorLogger.info('알림 WebSocket 연결 종료', {
+          component: 'AlertsWebSocket',
+          action: 'close',
+        });
         setTimeout(() => this.connect(), 3000);
       };
 
       this.ws.onerror = (error) => {
-        console.error('알림 WebSocket 오류:', error);
+        errorLogger.error('알림 WebSocket 오류', error instanceof Error ? error : new Error(String(error)), {
+          component: 'AlertsWebSocket',
+          action: 'websocketError',
+        });
       };
 
     } catch (error) {
-      console.error('알림 WebSocket 연결 실패:', error);
+      errorLogger.error('알림 WebSocket 연결 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AlertsWebSocket',
+        action: 'connect',
+      });
     }
   }
 

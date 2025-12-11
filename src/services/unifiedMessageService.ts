@@ -1,4 +1,5 @@
 import { Message, ChatContext } from '../types/chat';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface UnifiedMessageRequest {
     type: 'chat' | 'analysis' | 'guidance' | 'project' | 'file' | 'system';
@@ -24,12 +25,13 @@ export interface UnifiedMessageResponse {
 }
 
 class UnifiedMessageService {
+    private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
     private baseUrls = {
-        ai: 'http://localhost:8002/api/v7',
-        guidance: 'http://localhost:8003/api/guidance',
-        project: 'http://localhost:8003/api/project',
-        file: 'http://localhost:8003/api/file',
-        system: 'http://localhost:8003/api/system'
+        ai: `${this.baseUrl}/api`,
+        guidance: `${this.baseUrl}/api`,
+        project: `${this.baseUrl}/api/projects`,
+        file: `${this.baseUrl}/api`,
+        system: `${this.baseUrl}/api`
     };
 
     async processMessage(request: UnifiedMessageRequest): Promise<UnifiedMessageResponse> {
@@ -71,7 +73,11 @@ class UnifiedMessageService {
 
             return response;
         } catch (error) {
-            console.error('통합 메시지 서비스 오류:', error);
+            errorLogger.error('통합 메시지 서비스 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'UnifiedMessageService',
+                action: 'processMessage',
+                messageType: request.type,
+            });
             return this.createFallbackResponse(request);
         }
     }
@@ -111,7 +117,10 @@ class UnifiedMessageService {
                 };
             }
         } catch (error) {
-            console.error('AI 채팅 오류:', error);
+            errorLogger.error('AI 채팅 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'UnifiedMessageService',
+                action: 'handleChatMessage',
+            });
         }
 
         return this.createFallbackResponse(request);
@@ -151,7 +160,10 @@ class UnifiedMessageService {
                 };
             }
         } catch (error) {
-            console.error('분석 오류:', error);
+            errorLogger.error('분석 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'UnifiedMessageService',
+                action: 'handleAnalysisMessage',
+            });
         }
 
         return this.createFallbackResponse(request);
@@ -191,7 +203,10 @@ class UnifiedMessageService {
                 };
             }
         } catch (error) {
-            console.error('가이드 오류:', error);
+            errorLogger.error('가이드 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'UnifiedMessageService',
+                action: 'handleGuidanceMessage',
+            });
         }
 
         return this.createFallbackResponse(request);
@@ -231,7 +246,10 @@ class UnifiedMessageService {
                 };
             }
         } catch (error) {
-            console.error('프로젝트 오류:', error);
+            errorLogger.error('프로젝트 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'UnifiedMessageService',
+                action: 'handleProjectMessage',
+            });
         }
 
         return this.createFallbackResponse(request);
@@ -271,7 +289,10 @@ class UnifiedMessageService {
                 };
             }
         } catch (error) {
-            console.error('파일 오류:', error);
+            errorLogger.error('파일 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'UnifiedMessageService',
+                action: 'handleFileMessage',
+            });
         }
 
         return this.createFallbackResponse(request);
@@ -311,7 +332,10 @@ class UnifiedMessageService {
                 };
             }
         } catch (error) {
-            console.error('시스템 오류:', error);
+            errorLogger.error('시스템 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'UnifiedMessageService',
+                action: 'handleSystemMessage',
+            });
         }
 
         return this.createFallbackResponse(request);

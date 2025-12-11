@@ -30,7 +30,7 @@ interface OptimizationResult {
     reasoning: string;
 }
 
-class AILearningOptimizer {
+export class AILearningOptimizer {
     private learningPatterns: Map<string, LearningPattern> = new Map();
     private globalOptimizations: Map<string, any> = new Map();
 

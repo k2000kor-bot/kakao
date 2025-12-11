@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box,
     Card,
@@ -47,6 +47,8 @@ import { performanceApi, aiEngineApi, securityApi, userExperienceApi } from '../
 import { websocketService, SystemMetrics as WSSystemMetrics, SecurityAlert, AIEngineStatus, PerformanceOptimization } from '../services/websocketService';
 import { notificationService } from '../services/notificationService';
 import NotificationCenter from './NotificationCenter';
+import { useNotifications } from '../hooks/useNotifications';
+import { errorLogger } from '../utils/errorLogger';
 
 interface SystemMetrics {
     cpu: number;
@@ -74,6 +76,14 @@ interface AlertData {
 }
 
 const IntegratedDashboard: React.FC = () => {
+    // 알림 관리
+    const {
+        notifications,
+        markAsRead,
+        dismiss,
+        clearAll,
+    } = useNotifications();
+
     const [metrics, setMetrics] = useState<SystemMetrics>({
         cpu: 0,
         memory: 0,
@@ -139,7 +149,10 @@ const IntegratedDashboard: React.FC = () => {
                 setAlerts(prev => [newAlert, ...prev.slice(0, 9)]); // 최대 10개 알림 유지
 
             } catch (error) {
-                console.error('데이터 수집 실패:', error);
+                errorLogger.error('데이터 수집 실패', error instanceof Error ? error : new Error(String(error)), {
+                    component: 'IntegratedDashboard',
+                    action: 'collectMetrics',
+                });
                 notificationService.error('데이터 수집 오류', '시스템 메트릭 수집 중 오류가 발생했습니다.');
                 const errorAlert: AlertData = {
                     id: Date.now().toString(),
@@ -182,7 +195,14 @@ const IntegratedDashboard: React.FC = () => {
                     actions: [
                         {
                             label: '상세 보기',
-                            action: () => console.log('보안 알림 상세:', data),
+                            action: () => {
+                                errorLogger.info('보안 알림 상세', {
+                                    component: 'IntegratedDashboard',
+                                    action: 'securityAlertDetail',
+                                    alertType: data.alert_type,
+                                    severity: data.severity,
+                                });
+                            },
                             variant: 'primary',
                         },
                     ],
@@ -233,23 +253,23 @@ const IntegratedDashboard: React.FC = () => {
         };
     }, []);
 
-    const getStatusColor = (status: string) => {
+    const getStatusColor = useCallback((status: string) => {
         switch (status) {
             case 'healthy': return 'success';
             case 'warning': return 'warning';
             case 'error': return 'error';
             default: return 'default';
         }
-    };
+    }, []);
 
-    const getStatusIcon = (status: string) => {
+    const getStatusIcon = useCallback((status: string) => {
         switch (status) {
             case 'healthy': return <CheckCircleIcon />;
             case 'warning': return <WarningIcon />;
             case 'error': return <ErrorIcon />;
             default: return <InfoIcon />;
         }
-    };
+    }, []);
 
     const MetricCard: React.FC<{
         title: string;
@@ -288,7 +308,11 @@ const IntegratedDashboard: React.FC = () => {
         icon: React.ReactNode;
         description: string;
     }> = ({ title, status, icon, description }) => (
-        <Card sx={{ height: '100%' }}>
+        <Card 
+            sx={{ height: '100%' }}
+            role="region"
+            aria-label={`${title} 상태: ${status}`}
+        >
             <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                     <Typography variant="h6" component="div">
@@ -299,10 +323,11 @@ const IntegratedDashboard: React.FC = () => {
                         label={status.toUpperCase()}
                         color={getStatusColor(status) as any}
                         size="small"
+                        aria-label={`상태: ${status}`}
                     />
                 </Box>
                 <Box display="flex" alignItems="center" mb={1}>
-                    {icon}
+                    <span aria-hidden="true">{icon}</span>
                     <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
                         {description}
                     </Typography>
@@ -322,7 +347,12 @@ const IntegratedDashboard: React.FC = () => {
                     </Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
-                    <NotificationCenter />
+                    <NotificationCenter
+                        notifications={notifications}
+                        onMarkAsRead={markAsRead}
+                        onDismiss={dismiss}
+                        onClearAll={clearAll}
+                    />
                     <Tooltip title="새로고침">
                         <IconButton onClick={() => window.location.reload()}>
                             <RefreshIcon />
@@ -545,7 +575,7 @@ const IntegratedDashboard: React.FC = () => {
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setSettingsOpen(false)}>닫기</Button>
+                    <Button onClick={() => setSettingsOpen(false)} aria-label="설정 다이얼로그 닫기">닫기</Button>
                 </DialogActions>
             </Dialog>
 

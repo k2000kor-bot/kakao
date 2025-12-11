@@ -75,7 +75,7 @@ export interface RebuttalAnalysis {
     };
 }
 
-class CommentAndRebuttalSystem {
+export class CommentAndRebuttalSystem {
     private commentTemplates: Map<string, any> = new Map();
     private rebuttalStrategies: Map<string, any> = new Map();
     private platformGuidelines: Map<string, any> = new Map();

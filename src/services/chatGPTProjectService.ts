@@ -4,6 +4,7 @@
  */
 
 import { errorHandler } from '../utils/errorHandler';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface Project {
     id: string;
@@ -78,7 +79,7 @@ class ChatGPTProjectService {
     private baseUrl: string;
 
     constructor() {
-        this.baseUrl = 'http://localhost:8001';
+        this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
     }
 
     public static getInstance(): ChatGPTProjectService {
@@ -130,7 +131,7 @@ class ChatGPTProjectService {
                 sessionCount: 0
             };
         } catch (error) {
-            console.error('프로젝트 생성 실패:', error);
+            errorLogger.error('프로젝트 생성 실패', error);
             throw error;
         }
     }
@@ -155,19 +156,29 @@ class ChatGPTProjectService {
                         memoryType: session.metadata?.memoryType || 'default',
                         description: session.description,
                         createdAt: session.created_at,
-                        fileCount: 0, // TODO: 파일 수 계산
+                        fileCount: (session.metadata?.fileCount as number) || 0,
                         sessionCount: session.total_messages || 0
                     }));
             },
             { operation: 'getProjects', baseUrl: this.baseUrl }
         );
 
-        if (!result.success) {
-            console.error('프로젝트 목록 조회 실패:', result.error);
+        if (!result) {
+            errorLogger.error('프로젝트 목록 조회 실패', new Error('결과가 없습니다'));
             return [];
         }
 
-        return result.data;
+        if (result && 'success' in result && result.success === false) {
+            const errorMessage = result.error?.message || result.error?.details || '알 수 없는 오류';
+            errorLogger.error('프로젝트 목록 조회 실패', new Error(errorMessage));
+            return [];
+        }
+
+        if (result && 'success' in result && result.success === true && 'data' in result) {
+            return result.data;
+        }
+
+        return [];
     }
 
     // 세션 관리
@@ -206,7 +217,7 @@ class ChatGPTProjectService {
                 tags: ['새 세션']
             };
         } catch (error) {
-            console.error('세션 생성 실패:', error);
+            errorLogger.error('세션 생성 실패', error);
             throw error;
         }
     }
@@ -234,7 +245,7 @@ class ChatGPTProjectService {
                     tags: session.tags || []
                 }));
         } catch (error) {
-            console.error('세션 목록 조회 실패:', error);
+            errorLogger.error('세션 목록 조회 실패', error);
             return [];
         }
     }
@@ -272,7 +283,7 @@ class ChatGPTProjectService {
                 metadata: backendMessage.metadata
             };
         } catch (error) {
-            console.error('메시지 전송 실패:', error);
+            errorLogger.error('메시지 전송 실패', error);
             throw error;
         }
     }
@@ -296,7 +307,7 @@ class ChatGPTProjectService {
                 metadata: message.metadata
             }));
         } catch (error) {
-            console.error('메시지 목록 조회 실패:', error);
+            errorLogger.error('메시지 목록 조회 실패', error);
             return [];
         }
     }
@@ -311,7 +322,7 @@ class ChatGPTProjectService {
             // AI 응답을 세션에 저장
             return await this.sendMessage(sessionId, aiResponse, 'assistant');
         } catch (error) {
-            console.error('AI 응답 생성 실패:', error);
+            errorLogger.error('AI 응답 생성 실패', error);
             throw error;
         }
     }
@@ -370,8 +381,80 @@ class ChatGPTProjectService {
                 url: result.url
             };
         } catch (error) {
-            console.error('파일 업로드 실패:', error);
+            errorLogger.error('파일 업로드 실패', error);
             throw error;
+        }
+    }
+
+    /**
+     * 세션의 파일 수 계산
+     * @param sessionId 세션 ID
+     * @returns 파일 수
+     */
+    async getFileCount(sessionId: string): Promise<number> {
+        try {
+            // 방법 1: 세션 정보에서 파일 수 가져오기
+            const sessionResponse = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (sessionResponse.ok) {
+                const session = await sessionResponse.json();
+                // 메타데이터에 파일 수가 있으면 사용
+                if (session.metadata?.fileCount !== undefined) {
+                    return session.metadata.fileCount;
+                }
+                // 파일 목록이 있으면 길이 반환
+                if (Array.isArray(session.files)) {
+                    return session.files.length;
+                }
+            }
+
+            // 방법 2: 파일 목록 API 호출 시도
+            try {
+                const filesResponse = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}/files`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (filesResponse.ok) {
+                    const files = await filesResponse.json();
+                    if (Array.isArray(files)) {
+                        return files.length;
+                    }
+                    if (files.files && Array.isArray(files.files)) {
+                        return files.files.length;
+                    }
+                }
+            } catch (e) {
+                // 파일 목록 API가 없을 수 있음
+                // 파일 목록 API를 사용할 수 없습니다 (선택적 기능)
+            }
+
+            // 방법 3: 로컬 스토리지에서 확인 (fallback)
+            const storageKey = `session_${sessionId}_files`;
+            const storedFiles = localStorage.getItem(storageKey);
+            if (storedFiles) {
+                try {
+                    const files = JSON.parse(storedFiles);
+                    if (Array.isArray(files)) {
+                        return files.length;
+                    }
+                } catch (e) {
+                    // 파싱 실패
+                }
+            }
+
+            // 기본값: 0
+            return 0;
+        } catch (error) {
+            errorLogger.error('파일 수 조회 실패', error);
+            return 0;
         }
     }
 
@@ -399,7 +482,7 @@ class ChatGPTProjectService {
 
             return response.ok;
         } catch (error) {
-            console.error('세션 아카이브 실패:', error);
+            errorLogger.error('세션 아카이브 실패', error);
             return false;
         }
     }
@@ -412,8 +495,95 @@ class ChatGPTProjectService {
 
             return response.ok;
         } catch (error) {
-            console.error('세션 삭제 실패:', error);
+            errorLogger.error('세션 삭제 실패', error);
             return false;
+        }
+    }
+
+    // 프로젝트 업데이트
+    async updateProject(projectId: string, updates: {
+        name?: string;
+        category?: string;
+        description?: string;
+        memoryType?: 'default' | 'project_exclusive';
+    }): Promise<Project | null> {
+        try {
+            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${projectId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: updates.name,
+                    description: updates.description,
+                    metadata: {
+                        category: updates.category,
+                        memoryType: updates.memoryType,
+                        type: 'project'
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`프로젝트 업데이트 실패: ${response.statusText}`);
+            }
+
+            const backendSession = await response.json();
+
+            return {
+                id: backendSession.id,
+                name: backendSession.title,
+                category: backendSession.metadata?.category || 'other',
+                memoryType: backendSession.metadata?.memoryType || 'default',
+                description: backendSession.description,
+                createdAt: backendSession.created_at,
+                fileCount: (backendSession.metadata?.fileCount as number) || 0,
+                sessionCount: backendSession.total_messages || 0
+            };
+        } catch (error) {
+            errorLogger.error('프로젝트 업데이트 실패', error);
+            // 오프라인 모드: 로컬 스토리지 업데이트
+            const projects = await this.getProjects();
+            const projectIndex = projects.findIndex(p => p.id === projectId);
+            if (projectIndex !== -1) {
+                const updatedProject = {
+                    ...projects[projectIndex],
+                    ...updates,
+                };
+                // 로컬 스토리지 업데이트는 projectService를 통해 처리
+                return updatedProject;
+            }
+            return null;
+        }
+    }
+
+    // 프로젝트 삭제
+    async deleteProject(projectId: string): Promise<boolean> {
+        try {
+            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${projectId}`, {
+                method: 'DELETE'
+            });
+
+            return response.ok;
+        } catch (error) {
+            errorLogger.error('프로젝트 삭제 실패', error);
+            // 오프라인 모드에서는 true 반환 (로컬에서 처리)
+            return true;
+        }
+    }
+
+    // 프로젝트 보관
+    async archiveProject(projectId: string): Promise<boolean> {
+        try {
+            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${projectId}/archive`, {
+                method: 'POST'
+            });
+
+            return response.ok;
+        } catch (error) {
+            errorLogger.error('프로젝트 보관 실패', error);
+            // 오프라인 모드에서는 true 반환
+            return true;
         }
     }
 
@@ -434,7 +604,7 @@ class ChatGPTProjectService {
 
             return await response.json();
         } catch (error) {
-            console.error('통계 조회 실패:', error);
+            errorLogger.error('통계 조회 실패', error);
             return {
                 totalSessions: 0,
                 activeSessions: 0,

@@ -32,7 +32,7 @@ export interface ResponseAnalysis {
   };
 }
 
-class AIResponseQualityService {
+export class AIResponseQualityService {
   private qualityThresholds = {
     accuracy: 0.8,
     relevance: 0.85,

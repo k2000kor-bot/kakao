@@ -34,6 +34,7 @@ import {
     Apple
 } from '@mui/icons-material';
 import securityService from '../../services/securityService';
+import { errorLogger } from '../../utils/errorLogger';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -107,7 +108,7 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
 
         try {
             const result = await securityService.login(loginData.username, loginData.password);
-            
+
             if (result.success) {
                 setSuccess('로그인에 성공했습니다!');
                 // 로그인 성공 후 리다이렉트 또는 상태 업데이트
@@ -139,7 +140,7 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
             }
 
             const result = await securityService.register(registerData);
-            
+
             if (result.success) {
                 setSuccess('회원가입이 완료되었습니다! 로그인해주세요.');
                 setActiveTab(0); // 로그인 탭으로 이동
@@ -160,7 +161,7 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
 
         try {
             const result = await securityService.resetPassword(resetData.email);
-            
+
             if (result.success) {
                 setSuccess('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
             } else {
@@ -175,26 +176,26 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
 
     const handleSocialLogin = (provider: string) => {
         // 소셜 로그인 구현
-        console.log(`${provider} 로그인 시도`);
+        errorLogger.info(`${provider} 로그인 시도`, { component: 'AuthenticationForm', action: 'handleSocialLogin', provider });
     };
 
     return (
-        <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
+        <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
             minHeight: '100vh',
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             p: 2
         }}>
-            <Card sx={{ 
-                maxWidth: 500, 
+            <Card sx={{
+                maxWidth: 500,
                 width: '100%',
                 boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
             }}>
                 <CardContent sx={{ p: 0 }}>
                     {/* 헤더 */}
-                    <Box sx={{ 
+                    <Box sx={{
                         background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
                         color: 'white',
                         p: 3,
@@ -288,8 +289,8 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
                                         }
                                         label="로그인 상태 유지"
                                     />
-                                    <Link 
-                                        component="button" 
+                                    <Link
+                                        component="button"
                                         type="button"
                                         onClick={() => setActiveTab(2)}
                                         sx={{ fontSize: '0.875rem' }}

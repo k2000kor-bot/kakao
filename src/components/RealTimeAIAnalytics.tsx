@@ -100,8 +100,19 @@ import {
     Storage as StorageIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { errorLogger } from '../utils/errorLogger';
 
 const API_BASE_URL = 'http://localhost:8000/api';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface AIAnalysisData {
     id: string;
@@ -172,7 +183,11 @@ const RealTimeAIAnalytics: React.FC = () => {
             setAnalysisData(analysisResponse);
             setModelPerformance(performanceResponse);
         } catch (err) {
-            console.error('실시간 데이터 수집 실패:', err);
+            const error = toError(err);
+            errorLogger.error('실시간 데이터 수집 실패', error, {
+                component: 'RealTimeAIAnalytics',
+                action: 'fetchRealTimeData',
+            });
             setError('실시간 데이터 수집 중 오류가 발생했습니다.');
         }
     }, []);

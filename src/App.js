@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
+import { errorLogger } from './utils/errorLogger';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -91,7 +92,11 @@ function App() {
       }
     } catch (error) {
       setIsTyping(false);
-      console.error('Error sending message:', error);
+      errorLogger.error('메시지 전송 오류', error instanceof Error ? error : new Error(String(error)), {
+        component: 'App',
+        action: 'sendMessage',
+        sessionId,
+      });
       const errorMessage = {
         id: Date.now() + 1,
         sender: 'ai',
@@ -103,7 +108,7 @@ function App() {
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -336,7 +341,7 @@ function App() {
                 className="chat-input" 
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder="CORBU.AI에게 무엇이든 물어보세요..."
                 rows="1"
               />

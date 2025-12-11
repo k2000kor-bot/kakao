@@ -52,6 +52,17 @@ import {
     Info as InfoIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import { errorLogger } from '../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 // 통합된 인터페이스 타입 정의
 interface SystemStatus {
@@ -121,7 +132,7 @@ const IntegratedMasterInterface: React.FC = () => {
             const ws = new WebSocket('ws://localhost:8000/ws?client_id=master_interface');
 
             ws.onopen = () => {
-                console.log('WebSocket 연결됨');
+                errorLogger.info('WebSocket 연결됨', { component: 'IntegratedMasterInterface', action: 'websocketConnect' });
                 setWsConnection(ws);
             };
 
@@ -139,7 +150,7 @@ const IntegratedMasterInterface: React.FC = () => {
             };
 
             ws.onclose = () => {
-                console.log('WebSocket 연결 해제됨');
+                errorLogger.info('WebSocket 연결 해제됨', { component: 'IntegratedMasterInterface', action: 'websocketDisconnect' });
                 setWsConnection(null);
             };
 
@@ -154,7 +165,11 @@ const IntegratedMasterInterface: React.FC = () => {
             const data = await response.json();
             setSystemStatus(data);
         } catch (error) {
-            console.error('시스템 상태 조회 오류:', error);
+            const err = toError(error);
+            errorLogger.error('시스템 상태 조회 오류', err, {
+                component: 'IntegratedMasterInterface',
+                action: 'fetchSystemStatus',
+            });
         }
     }, []);
 
@@ -167,7 +182,11 @@ const IntegratedMasterInterface: React.FC = () => {
                 setAnalytics(data.data);
             }
         } catch (error) {
-            console.error('분석 데이터 조회 오류:', error);
+            const err = toError(error);
+            errorLogger.error('분석 데이터 조회 오류', err, {
+                component: 'IntegratedMasterInterface',
+                action: 'fetchAnalytics',
+            });
         }
     }, []);
 
@@ -229,7 +248,10 @@ const IntegratedMasterInterface: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error('메시지 전송 오류:', error);
+            errorLogger.error('메시지 전송 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'IntegratedMasterInterface',
+                action: 'sendMessage',
+            });
             setNotifications(prev => [...prev, {
                 id: Date.now().toString(),
                 type: 'error',

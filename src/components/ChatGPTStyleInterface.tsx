@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ChatGPTProjectService from '../services/chatGPTProjectService';
+import { errorLogger } from '../utils/errorLogger';
 import {
     Box,
     Button,
@@ -156,7 +157,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                 loadProjectData(defaultProject.id);
             }
         } catch (error) {
-            console.error('프로젝트 로드 실패:', error);
+            errorLogger.error('프로젝트 로드 실패', error instanceof Error ? error : new Error(String(error)), { component: 'ChatGPTStyleInterface', action: 'loadProjectData' });
             // 오프라인 모드로 기본 데이터 사용
             const mockProjects: Project[] = [
                 {
@@ -233,7 +234,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
             setSelectedCategory('travel');
             setSelectedMemoryType('default');
         } catch (error) {
-            console.error('프로젝트 생성 실패:', error);
+            errorLogger.error('프로젝트 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'ChatGPTStyleInterface', action: 'handleCreateProject' });
             // 오프라인 모드로 로컬 생성
             const newProject: Project = {
                 id: Date.now().toString(),
@@ -302,7 +303,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
             setMessages(prev => [...prev, aiMessage]);
             setIsTyping(false);
         } catch (error) {
-            console.error('메시지 전송 실패:', error);
+            errorLogger.error('메시지 전송 실패', error instanceof Error ? error : new Error(String(error)), { component: 'ChatGPTStyleInterface', action: 'handleSendMessage' });
             // 오프라인 모드로 로컬 처리
             const userMessage: ChatMessage = {
                 id: Date.now().toString(),
@@ -341,7 +342,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
             setCurrentSession(newSession);
             setMessages([]);
         } catch (error) {
-            console.error('세션 생성 실패:', error);
+            errorLogger.error('세션 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'ChatGPTStyleInterface', action: 'handleCreateSession' });
             // 오프라인 모드로 로컬 생성
             const newSession: ProjectSession = {
                 id: Date.now().toString(),
@@ -614,7 +615,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                             placeholder={`${currentProject.name}에서 새 채팅`}
                                             variant="outlined"
                                             size="small"
-                                            onKeyPress={(e) => {
+                                            onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
                                                     handleSendMessage();

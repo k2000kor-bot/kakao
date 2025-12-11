@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     Box,
     Drawer,
@@ -54,59 +54,70 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
     const { isMobile, orientation } = useResponsive();
     const [notifications] = useState(3); // 알림 개수 시뮬레이션
 
-    const menuItems = [
-        { text: '홈', icon: <HomeIcon />, id: 'home' },
-        { text: '코딩 파트너', icon: <ChatIcon />, id: 'coding' },
-        { text: '심리 분석', icon: <PsychologyIcon />, id: 'psychology' },
-        { text: '데이터 분석', icon: <AnalyticsIcon />, id: 'analytics' },
-    ];
+    const menuItems = useMemo(() => [
+        { text: '홈', icon: <HomeIcon aria-hidden="true" />, id: 'home' },
+        { text: '코딩 파트너', icon: <ChatIcon aria-hidden="true" />, id: 'coding' },
+        { text: '심리 분석', icon: <PsychologyIcon aria-hidden="true" />, id: 'psychology' },
+        { text: '데이터 분석', icon: <AnalyticsIcon aria-hidden="true" />, id: 'analytics' },
+    ], []);
 
-    const systemMenuItems = [
-        { text: '통합 대시보드', icon: <DashboardIcon />, id: '통합 대시보드' },
-        { text: '성능 최적화', icon: <SpeedIcon />, id: '성능 최적화' },
-        { text: 'AI 엔진 관리', icon: <PsychologyIcon />, id: 'AI 엔진 관리' },
-        { text: '보안 모니터링', icon: <SecurityIcon />, id: '보안 모니터링' },
-        { text: '사용자 경험', icon: <PersonIcon />, id: '사용자 경험' },
-        { text: '고급 분석', icon: <AssessmentIcon />, id: '고급 분석' },
-        { text: '자동화 워크플로우', icon: <WorkflowIcon />, id: '자동화 워크플로우' },
-        { text: '고급 보안', icon: <ShieldIcon />, id: '고급 보안' },
-        { text: '백업 및 복구', icon: <BackupIcon />, id: '백업 및 복구' },
-    ];
+    const systemMenuItems = useMemo(() => [
+        { text: '통합 대시보드', icon: <DashboardIcon aria-hidden="true" />, id: '통합 대시보드' },
+        { text: '성능 최적화', icon: <SpeedIcon aria-hidden="true" />, id: '성능 최적화' },
+        { text: 'AI 엔진 관리', icon: <PsychologyIcon aria-hidden="true" />, id: 'AI 엔진 관리' },
+        { text: '보안 모니터링', icon: <SecurityIcon aria-hidden="true" />, id: '보안 모니터링' },
+        { text: '사용자 경험', icon: <PersonIcon aria-hidden="true" />, id: '사용자 경험' },
+        { text: '고급 분석', icon: <AssessmentIcon aria-hidden="true" />, id: '고급 분석' },
+        { text: '자동화 워크플로우', icon: <WorkflowIcon aria-hidden="true" />, id: '자동화 워크플로우' },
+        { text: '고급 보안', icon: <ShieldIcon aria-hidden="true" />, id: '고급 보안' },
+        { text: '백업 및 복구', icon: <BackupIcon aria-hidden="true" />, id: '백업 및 복구' },
+    ], []);
 
-    const handleItemClick = (itemId: string) => {
+    const handleItemClick = useCallback((itemId: string) => {
         onChatChange(itemId);
         onClose();
-    };
+    }, [onChatChange, onClose]);
 
-    const drawerWidth = isMobile ? '100%' : 280;
-    const drawerVariant = isMobile ? 'temporary' : 'persistent';
+    const drawerWidth = useMemo(() => isMobile ? '100%' : 280, [isMobile]);
+    const drawerVariant = useMemo(() => isMobile ? 'temporary' : 'persistent', [isMobile]);
 
     const drawerContent = (
         <Box sx={{ width: drawerWidth, height: '100%', overflow: 'auto' }}>
             {/* 헤더 */}
-            <Box sx={{
-                p: 2,
-                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-            }}>
-                <Typography variant="h6" fontWeight="bold">
+            <Box
+                component="header"
+                sx={{
+                    p: 2,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                }}
+            >
+                <Typography variant="h6" component="h1" fontWeight="bold">
                     CORBU AI
                 </Typography>
                 {isMobile && (
-                    <IconButton onClick={onClose} sx={{ color: 'white' }}>
-                        <MenuIcon />
+                    <IconButton
+                        onClick={onClose}
+                        sx={{ color: 'white' }}
+                        aria-label="메뉴 닫기"
+                        type="button"
+                    >
+                        <MenuIcon aria-hidden="true" />
                     </IconButton>
                 )}
             </Box>
 
             {/* 알림 섹션 */}
-            <Box sx={{ p: 2 }}>
+            <Box component="nav" aria-label="알림" sx={{ p: 2 }}>
                 <ListItem
                     component="button"
                     onClick={() => handleItemClick('notifications')}
+                    aria-label={`알림, ${notifications}개의 새 알림`}
+                    aria-current={currentChat === 'notifications' ? 'page' : undefined}
+                    type="button"
                     sx={{
                         borderRadius: 2,
                         mb: 1,
@@ -114,8 +125,8 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                     }}
                 >
                     <ListItemIcon>
-                        <Badge badgeContent={notifications} color="error">
-                            <NotificationsIcon />
+                        <Badge badgeContent={notifications} color="error" aria-label={`${notifications}개의 새 알림`}>
+                            <NotificationsIcon aria-hidden="true" />
                         </Badge>
                     </ListItemIcon>
                     <ListItemText
@@ -128,16 +139,20 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             <Divider />
 
             {/* 메인 메뉴 */}
-            <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: '#666', fontWeight: 'bold' }}>
+            <Box component="nav" aria-label="AI 서비스 메뉴" sx={{ p: 2 }}>
+                <Typography variant="subtitle2" component="h2" sx={{ px: 2, py: 1, color: '#666', fontWeight: 'bold' }}>
                     AI 서비스
                 </Typography>
-                <List>
+                <List role="list" aria-label="AI 서비스 목록">
                     {menuItems.map((item) => (
                         <ListItem
                             key={item.id}
                             component="button"
                             onClick={() => handleItemClick(item.id)}
+                            aria-label={item.text}
+                            aria-current={currentChat === item.id ? 'page' : undefined}
+                            type="button"
+                            role="listitem"
                             sx={{
                                 backgroundColor: currentChat === item.id ? theme.palette.primary.main + '20' : 'transparent',
                                 borderRadius: 2,
@@ -155,16 +170,20 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             <Divider />
 
             {/* 시스템 관리 메뉴 */}
-            <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: '#666', fontWeight: 'bold' }}>
+            <Box component="nav" aria-label="시스템 관리 메뉴" sx={{ p: 2 }}>
+                <Typography variant="subtitle2" component="h2" sx={{ px: 2, py: 1, color: '#666', fontWeight: 'bold' }}>
                     시스템 관리
                 </Typography>
-                <List>
+                <List role="list" aria-label="시스템 관리 목록">
                     {systemMenuItems.map((item) => (
                         <ListItem
                             key={item.id}
                             component="button"
                             onClick={() => handleItemClick(item.id)}
+                            aria-label={item.text}
+                            aria-current={currentChat === item.id ? 'page' : undefined}
+                            type="button"
+                            role="listitem"
                             sx={{
                                 backgroundColor: currentChat === item.id ? theme.palette.primary.main + '20' : 'transparent',
                                 borderRadius: 2,
@@ -182,17 +201,20 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             <Divider />
 
             {/* 설정 메뉴 */}
-            <Box sx={{ p: 2 }}>
+            <Box component="nav" aria-label="설정" sx={{ p: 2 }}>
                 <ListItem
                     component="button"
                     onClick={() => handleItemClick('settings')}
+                    aria-label="설정"
+                    aria-current={currentChat === 'settings' ? 'page' : undefined}
+                    type="button"
                     sx={{
                         borderRadius: 2,
                         backgroundColor: currentChat === 'settings' ? theme.palette.primary.main + '20' : 'transparent',
                     }}
                 >
                     <ListItemIcon>
-                        <SettingsIcon />
+                        <SettingsIcon aria-hidden="true" />
                     </ListItemIcon>
                     <ListItemText primary="설정" />
                 </ListItem>
@@ -206,8 +228,11 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                 {/* 모바일 메뉴 버튼 */}
                 <Fab
                     color="primary"
-                    aria-label="menu"
+                    aria-label="메뉴 열기"
+                    aria-expanded={open}
+                    aria-controls="mobile-navigation-drawer"
                     onClick={onOpen}
+                    type="button"
                     sx={{
                         position: 'fixed',
                         bottom: 16,
@@ -216,7 +241,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                         display: { xs: 'flex', md: 'none' }
                     }}
                 >
-                    <MenuIcon />
+                    <MenuIcon aria-hidden="true" />
                 </Fab>
 
                 {/* 모바일 드로어 */}
@@ -230,6 +255,8 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                     ModalProps={{
                         keepMounted: true,
                     }}
+                    aria-label="모바일 네비게이션 메뉴"
+                    id="mobile-navigation-drawer"
                 >
                     {drawerContent}
                 </SwipeableDrawer>
@@ -243,6 +270,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             anchor="left"
             open={open}
             onClose={onClose}
+            aria-label="네비게이션 메뉴"
             sx={{
                 width: drawerWidth,
                 flexShrink: 0,

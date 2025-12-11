@@ -76,7 +76,7 @@ export interface AutoOptimizationAction {
     results?: Record<string, any>;
 }
 
-class AISystemOptimizationEngine {
+export class AISystemOptimizationEngine {
     private optimizationHistory: OptimizationRecommendation[] = [];
     private healthScores: SystemHealthScore[] = [];
     private predictiveAnalyses: PredictiveAnalysis[] = [];

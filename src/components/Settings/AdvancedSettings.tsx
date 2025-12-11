@@ -23,6 +23,7 @@ import {
     Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { errorLogger } from '../../utils/errorLogger';
 
 interface UserProfile {
     id: string;
@@ -194,8 +195,11 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
                     setSecurity(data.security || security);
                     setAppearance(data.appearance || appearance);
                     setAdvanced(data.advanced || advanced);
-                } catch (error) {
-                    console.error('설정 파일을 불러올 수 없습니다:', error);
+                } catch (error: unknown) {
+                    errorLogger.error('설정 파일 로드 실패', error, {
+                        component: 'AdvancedSettings',
+                        action: 'loadSettingsFile',
+                    });
                 }
             };
             reader.readAsText(file);

@@ -1,22 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     Box,
     Card,
     CardContent,
     Typography,
     Button,
-    Chip,
     Paper,
-    Grid,
-    IconButton,
-    Tooltip
+    Grid
 } from '@mui/material';
 import {
     Psychology,
     QuestionAnswer,
-    ThumbUp,
-    ThumbDown,
-    Help,
     Feedback,
     Speed,
     Analytics
@@ -29,7 +23,7 @@ interface QuickActionsProps {
 const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => {
     const [selectedAction, setSelectedAction] = useState<string | null>(null);
 
-    const quickActions = [
+    const quickActions = useMemo(() => [
         {
             id: 'emotion_test',
             title: '감정 분석 테스트',
@@ -78,17 +72,22 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => {
                 '완벽합니다!'
             ]
         }
-    ];
+    ], []);
 
-    const handleActionClick = (actionId: string, example: string) => {
+    const handleActionClick = useCallback((actionId: string, example: string) => {
         setSelectedAction(actionId);
         onActionClick(example);
-    };
+    }, [onActionClick]);
+
+    const selectedActionData = useMemo(() =>
+        quickActions.find(a => a.id === selectedAction),
+        [quickActions, selectedAction]
+    );
 
     return (
-        <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Analytics />
+        <Paper component="section" sx={{ p: 3, mb: 3 }} aria-label="빠른 테스트 액션">
+            <Typography variant="h6" component="h2" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Analytics aria-hidden="true" />
                 빠른 테스트 액션
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -111,10 +110,10 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => {
                         >
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                                    <Box sx={{ color: action.color }}>
+                                    <Box sx={{ color: action.color }} aria-hidden="true">
                                         {action.icon}
                                     </Box>
-                                    <Typography variant="h6" sx={{ fontSize: '1rem' }}>
+                                    <Typography variant="h6" component="h3" sx={{ fontSize: '1rem' }}>
                                         {action.title}
                                     </Typography>
                                 </Box>
@@ -123,13 +122,16 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => {
                                     {action.description}
                                 </Typography>
 
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                <Box component="fieldset" sx={{ display: 'flex', flexDirection: 'column', gap: 1, border: 'none', p: 0, m: 0 }} aria-label={`${action.title} 예제`}>
                                     {action.examples.map((example, index) => (
                                         <Button
-                                            key={index}
+                                            key={`${action.id}-example-${index}`}
                                             variant={selectedAction === action.id ? "contained" : "outlined"}
                                             size="small"
                                             onClick={() => handleActionClick(action.id, example)}
+                                            aria-label={`${action.title}: ${example}`}
+                                            aria-pressed={selectedAction === action.id}
+                                            type="button"
                                             sx={{
                                                 justifyContent: 'flex-start',
                                                 textTransform: 'none',
@@ -154,10 +156,10 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => {
                 ))}
             </Grid>
 
-            {selectedAction && (
-                <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+            {selectedAction && selectedActionData && (
+                <Box component="output" sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1, display: 'block' }} aria-live="polite">
                     <Typography variant="body2" color="text.secondary">
-                        💡 선택된 액션: {quickActions.find(a => a.id === selectedAction)?.title}
+                        <span aria-hidden="true">💡</span> 선택된 액션: {selectedActionData.title}
                     </Typography>
                 </Box>
             )}

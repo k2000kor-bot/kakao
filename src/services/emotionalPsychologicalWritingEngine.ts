@@ -189,7 +189,7 @@ export interface EmotionalState {
     overall_wellbeing: number;
 }
 
-class EmotionalPsychologicalWritingEngine {
+export class EmotionalPsychologicalWritingEngine {
     private emotionDatabase: Map<string, EmotionType> = new Map();
     private therapeuticTechniques: Map<string, any> = new Map();
     private personalityProfiles: Map<string, PersonalityType> = new Map();

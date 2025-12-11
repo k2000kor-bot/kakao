@@ -170,6 +170,82 @@ class ConnectionManager:
             
         except Exception as e:
             logger.error(f"성능 최적화 상태 전송 실패: {e}")
+    
+    async def send_security_threats(self, websocket: WebSocket = None):
+        """보안 위협 정보 전송"""
+        try:
+            threat_types = ['SQL Injection', 'XSS Attack', 'Brute Force', 'DDoS', 'Malware']
+            threat = {
+                'type': 'threat',
+                'timestamp': datetime.now().isoformat(),
+                'data': {
+                    'id': f"threat_{int(time.time())}",
+                    'type': random.choice(threat_types),
+                    'severity': random.choice(['low', 'medium', 'high', 'critical']),
+                    'description': f"Detected {random.choice(threat_types).lower()} attempt",
+                    'source_ip': f"192.168.{random.randint(1, 255)}.{random.randint(1, 255)}",
+                    'status': 'detected',
+                    'risk_score': round(random.uniform(0.1, 1.0), 2)
+                }
+            }
+            
+            if websocket:
+                await self.send_personal_message(json.dumps(threat), websocket)
+            else:
+                await self.broadcast(json.dumps(threat))
+                
+        except Exception as e:
+            logger.error(f"보안 위협 전송 실패: {e}")
+    
+    async def send_security_alerts_to_client(self, websocket: WebSocket):
+        """클라이언트에게 보안 알림 전송"""
+        try:
+            if random.random() < 0.1:  # 10% 확률로 알림 생성
+                alert_types = ['threat', 'anomaly', 'policy_violation', 'system_alert']
+                alert = {
+                    'type': 'alert',
+                    'timestamp': datetime.now().isoformat(),
+                    'data': {
+                        'id': f"alert_{int(time.time())}",
+                        'alert_type': random.choice(alert_types),
+                        'severity': random.choice(['low', 'medium', 'high', 'critical']),
+                        'title': f"보안 알림 {int(time.time())}",
+                        'description': f"{random.choice(alert_types)} 관련 보안 이벤트가 감지되었습니다",
+                        'source': f"system_{random.randint(1, 10)}",
+                        'status': 'new'
+                    }
+                }
+                
+                await self.send_personal_message(json.dumps(alert), websocket)
+                
+        except Exception as e:
+            logger.error(f"보안 알림 전송 실패: {e}")
+    
+    async def send_security_status_update(self, websocket: WebSocket):
+        """보안 상태 업데이트 전송"""
+        try:
+            status = {
+                'type': 'status_update',
+                'timestamp': datetime.now().isoformat(),
+                'data': {
+                    'overall_status': random.choice(['healthy', 'warning', 'critical']),
+                    'security_score': random.randint(60, 100),
+                    'threats': {
+                        'total': random.randint(0, 20),
+                        'active': random.randint(0, 5),
+                        'critical': random.randint(0, 2)
+                    },
+                    'events': {
+                        'total': random.randint(0, 100),
+                        'high_risk': random.randint(0, 10)
+                    }
+                }
+            }
+            
+            await self.send_personal_message(json.dumps(status), websocket)
+            
+        except Exception as e:
+            logger.error(f"보안 상태 업데이트 전송 실패: {e}")
 
 # 전역 연결 관리자
 manager = ConnectionManager()
@@ -244,6 +320,82 @@ async def websocket_alerts(websocket: WebSocket):
         manager.disconnect(websocket)
     except Exception as e:
         logger.error(f"알림 WebSocket 오류: {e}")
+        manager.disconnect(websocket)
+
+@router.websocket("/ws/security")
+async def websocket_security(websocket: WebSocket):
+    """실시간 보안 모니터링 전용 WebSocket"""
+    client_id = f"security_client_{int(time.time())}"
+    await manager.connect(websocket, client_id)
+    
+    try:
+        # 보안 이벤트 구독 관리
+        subscriptions = set(['threat', 'alert', 'event', 'status_update'])
+        
+        while True:
+            # 클라이언트로부터 메시지 수신
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                message = json.loads(data)
+                
+                # 구독 요청 처리
+                if message.get('action') == 'subscribe':
+                    event_type = message.get('event_type')
+                    if event_type:
+                        subscriptions.add(event_type)
+                        await manager.send_personal_message(
+                            json.dumps({
+                                'type': 'subscription_confirmed',
+                                'event_type': event_type,
+                                'timestamp': datetime.now().isoformat()
+                            }),
+                            websocket
+                        )
+                
+                # 구독 해제 요청 처리
+                elif message.get('action') == 'unsubscribe':
+                    event_type = message.get('event_type')
+                    if event_type:
+                        subscriptions.discard(event_type)
+                        await manager.send_personal_message(
+                            json.dumps({
+                                'type': 'unsubscription_confirmed',
+                                'event_type': event_type,
+                                'timestamp': datetime.now().isoformat()
+                            }),
+                            websocket
+                        )
+                
+                # ping/pong
+                elif message.get('type') == 'ping':
+                    await manager.send_personal_message(
+                        json.dumps({
+                            'type': 'pong',
+                            'timestamp': datetime.now().isoformat()
+                        }),
+                        websocket
+                    )
+                    
+            except asyncio.TimeoutError:
+                # 타임아웃은 정상 (주기적 데이터 전송을 위해)
+                pass
+            
+            # 구독된 이벤트 타입에 따라 데이터 전송
+            if 'threat' in subscriptions:
+                await manager.send_security_threats(websocket)
+            
+            if 'alert' in subscriptions:
+                await manager.send_security_alerts_to_client(websocket)
+            
+            if 'status_update' in subscriptions:
+                await manager.send_security_status_update(websocket)
+            
+            await asyncio.sleep(2)  # 2초마다 업데이트
+            
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"보안 WebSocket 오류: {e}")
         manager.disconnect(websocket)
 
 @router.get("/ws/status")

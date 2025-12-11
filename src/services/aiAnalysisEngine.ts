@@ -43,13 +43,13 @@ export interface ConversationPattern {
   sentiment: 'positive' | 'negative' | 'neutral';
 }
 
-class AIAnalysisEngine {
+export class AIAnalysisEngine {
   private readonly ANALYSIS_CACHE_KEY = 'ai_analysis_cache';
   private readonly CACHE_DURATION = 1000 * 60 * 30; // 30분
 
   // 프로젝트 종합 분석
   async analyzeProject(projectId: string): Promise<ProjectAnalysis> {
-    const project = projectService.getProject(projectId);
+    const project = await projectService.getProject(projectId);
     if (!project) {
       throw new Error('프로젝트를 찾을 수 없습니다.');
     }
@@ -565,7 +565,7 @@ class AIAnalysisEngine {
 
   // 실시간 인사이트 생성
   async generateRealTimeInsight(projectId: string, newMessage: Message): Promise<ProjectInsight | null> {
-    const project = projectService.getProject(projectId);
+    const project = await projectService.getProject(projectId);
     if (!project) return null;
 
     // 새 메시지 기반 즉시 분석

@@ -20,7 +20,7 @@ export interface IntegratedBackendResponse {
     confidence: number;
 }
 
-class BackendIntegrationSystem {
+export class BackendIntegrationSystem {
     private availableServices: Map<string, BackendService> = new Map();
     private serviceEndpoints: Map<string, string> = new Map();
     private cacheResults: Map<string, any> = new Map();
@@ -198,11 +198,12 @@ class BackendIntegrationSystem {
 
                 case 'sentimentAnalysis':
                     if (result.sentiment) {
-                        const sentimentText = {
+                        const sentimentMap: Record<string, string> = {
                             positive: '긍정적',
                             negative: '부정적',
                             neutral: '중립적'
-                        }[result.sentiment] || result.sentiment;
+                        };
+                        const sentimentText = sentimentMap[result.sentiment] || result.sentiment;
                         insights.push(`감정 분석: ${sentimentText} (신뢰도: ${Math.round(result.confidence * 100)}%)`);
                     }
                     break;
@@ -243,7 +244,12 @@ class BackendIntegrationSystem {
      * 📊 교차 서비스 분석
      */
     private async performCrossServiceAnalysis(serviceResults: Map<string, any>): Promise<any> {
-        const analysis = {
+        const analysis: {
+            correlations: any[];
+            conflicts: any[];
+            synergies: any[];
+            overallInsights: string[];
+        } = {
             correlations: [],
             conflicts: [],
             synergies: [],
@@ -260,7 +266,7 @@ class BackendIntegrationSystem {
 
                 const correlation = this.analyzeServiceCorrelation(service1, result1, service2, result2);
                 if (correlation) {
-                    analysis.correlations.push(correlation);
+                    (analysis.correlations as any[]).push(correlation);
                 }
             }
         }
@@ -288,7 +294,7 @@ class BackendIntegrationSystem {
         if (serviceResults.has('codeAnalysis')) {
             const codeResult = serviceResults.get('codeAnalysis');
             if (codeResult.suggestions) {
-                recommendations.push(...codeResult.suggestions.slice(0, 3).map(s => `코드 개선: ${s}`));
+                recommendations.push(...codeResult.suggestions.slice(0, 3).map((s: string) => `코드 개선: ${s}`));
             }
         }
 
@@ -296,7 +302,7 @@ class BackendIntegrationSystem {
         if (serviceResults.has('learningAnalytics')) {
             const learningResult = serviceResults.get('learningAnalytics');
             if (learningResult.recommendations) {
-                recommendations.push(...learningResult.recommendations.slice(0, 2).map(r => `학습 추천: ${r}`));
+                recommendations.push(...learningResult.recommendations.slice(0, 2).map((r: string) => `학습 추천: ${r}`));
             }
         }
 
@@ -304,7 +310,7 @@ class BackendIntegrationSystem {
         if (serviceResults.has('performanceAnalysis')) {
             const perfResult = serviceResults.get('performanceAnalysis');
             if (perfResult.optimizations) {
-                recommendations.push(...perfResult.optimizations.slice(0, 2).map(o => `성능 최적화: ${o}`));
+                recommendations.push(...perfResult.optimizations.slice(0, 2).map((o: string) => `성능 최적화: ${o}`));
             }
         }
 

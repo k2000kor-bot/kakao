@@ -1,13 +1,49 @@
 # 🤖 CORBU.AI - 차세대 AI 강화 어시스턴트
 
 ![CORBU.AI](https://img.shields.io/badge/CORBU.AI-v2.0-blue?style=for-the-badge&logo=robot)
-![Python](https://img.shields.io/badge/Python-3.13-green?style=for-the-badge&logo=python)
-![Flask](https://img.shields.io/badge/Flask-2.3.3-red?style=for-the-badge&logo=flask)
-![PWA](https://img.shields.io/badge/PWA-Ready-purple?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.8+-green?style=for-the-badge&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104-red?style=for-the-badge)
+![React](https://img.shields.io/badge/React-19.1-blue?style=for-the-badge&logo=react)
+![LLM](https://img.shields.io/badge/LLM-Ready-purple?style=for-the-badge)
 
-> **CORBU.AI**는 최신 AI 기술을 활용한 종합적인 디지털 어시스턴트입니다. 채팅, 파일 분석, 웹 검색, 프로젝트 관리 등 다양한 기능을 통합적으로 제공합니다.
+> **CORBU.AI**는 ChatGPT 스타일 인터페이스와 실제 LLM 연동을 지원하는 종합 AI 어시스턴트입니다. OpenAI, Anthropic, Ollama를 지원하며, 지식 베이스와 대화 컨텍스트 관리 기능을 제공합니다.
+
+**🚀 [빠른 시작 가이드](./START_HERE.md)**
+
+**📖 [처음 시작하기](./README_FIRST.md)** - 가장 빠른 시작 방법
 
 ## ✨ 주요 기능
+
+### 🆕 ChatGPT 스타일 인터페이스
+
+- **💬 ChatGPT 스타일 채팅**: 직관적이고 아름다운 채팅 인터페이스
+- **📋 대화 관리**: 여러 대화를 생성하고 관리
+- **💾 자동 저장**: 로컬 스토리지에 대화 자동 저장
+- **📝 마크다운 지원**: 코드 블록, 링크, 표 등 마크다운 렌더링
+- **📋 메시지 복사**: 클릭 한 번으로 메시지 복사
+- **✍️ 긴 글 자동 생성**: 질문/요구 시 상세한 글 자동 생성 🆕
+
+### 🤖 LLM 연동 시스템 (신규)
+
+- **🔗 다중 LLM 지원**: OpenAI, Anthropic, Ollama 지원
+- **💻 노트북 LLM**: 로컬 Ollama 기반 LLM 통합 (하이브리드 모드)
+- **🧠 지식 베이스**: 기본 지식 저장 및 활용
+- **💬 대화 컨텍스트**: 대화 히스토리 관리 및 연속성 유지
+- **🔄 폴백 모드**: LLM 없이도 기본 응답 생성
+
+### 📁 프로젝트 관리 (신규)
+
+- **📂 프로젝트 생성**: 프로젝트별 대화 관리
+- **🔍 프로젝트 선택**: 프로젝트별 대화 필터링
+- **💾 자동 저장**: 프로젝트 정보 로컬 스토리지 저장
+- **🎯 컨텍스트 관리**: 프로젝트 컨텍스트를 LLM에 전달
+
+### 🔐 인증 및 보안 시스템
+
+- **👤 사용자 인증**: 회원가입, 로그인, 로그아웃
+- **🔑 토큰 관리**: 액세스 토큰 및 리프레시 토큰
+- **🛡️ 보안 이벤트**: 로그인 시도, 보안 이벤트 추적
+- **📊 보안 메트릭**: 실시간 보안 상태 모니터링
 
 ### 🧠 핵심 AI 기능
 
@@ -34,43 +70,62 @@
 
 ### 1. 환경 요구사항
 
-- **Python**: 3.11 이상
-- **Node.js**: 18 이상 (선택사항)
+- **Python**: 3.8 이상
+- **Node.js**: 18 이상
 - **시스템**: macOS, Linux, Windows
 - **메모리**: 최소 4GB RAM 권장
 
 ### 2. 설치 및 실행
 
-#### 자동 배포 (권장)
+#### 🎯 ChatGPT 스타일 인터페이스 (신규)
+
+**통합 실행 (권장):**
 
 ```bash
-# 저장소 클론
-git clone https://github.com/your-repo/corbu-ai.git
-cd corbu-ai
-
-# 자동 배포 스크립트 실행
-chmod +x deploy.sh
-./deploy.sh local
+chmod +x start_all.sh
+./start_all.sh
 ```
 
-#### 수동 설치
+**개별 실행:**
+
+백엔드:
 
 ```bash
-# Python 가상환경 생성
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 의존성 설치
+cd backend
 pip install -r requirements.txt
+python app.py
+```
 
-# 개발 서버 실행
-python complete_server.py
+프론트엔드 (새 터미널):
+
+```bash
+npm install
+npm start
 ```
 
 ### 3. 접속
 
-- **웹 인터페이스**: <http://localhost:8080>
-- **API 문서**: <http://localhost:8080/api/health>
+- **프론트엔드 (ChatGPT 스타일)**: <http://localhost:3000>
+- **백엔드 API**: <http://localhost:5001>
+- **API 문서 (Swagger)**: <http://localhost:5001/docs>
+- **헬스 체크**: <http://localhost:5001/api/health>
+
+### 📚 상세 가이드
+
+- [완전한 설정 가이드](./COMPLETE_SETUP.md)
+- [상세 설정 가이드](./SETUP_GUIDE.md)
+- [빠른 실행 가이드](./RUN_GUIDE.md)
+- [개발 로드맵](./DEVELOPMENT_ROADMAP.md)
+- [통합 테스트 가이드](./INTEGRATION_TEST_GUIDE.md)
+- [빠른 테스트 가이드](./QUICK_TEST.md)
+- [LLM 연동 가이드](./README_LLM.md) 🆕
+- [프로젝트 및 노트북 LLM 완료 보고서](./PROJECT_AND_NOTEBOOK_LLM_COMPLETE.md) 🆕
+- [사용 가이드](./USAGE_GUIDE.md) 🆕
+- [긴 글 생성 기능](./LONG_FORM_WRITING_FEATURE.md) 🆕
+- [시스템 준비 완료](./SYSTEM_READY.md) 🆕
+- [최종 통합 보고서](./FINAL_INTEGRATION_REPORT.md) 🆕
+- [시스템 상태](./SYSTEM_STATUS.md) 🆕
+- [최종 상태 보고서](./FINAL_STATUS_REPORT.md) 🆕
 
 ## 🏗️ 시스템 아키텍처
 

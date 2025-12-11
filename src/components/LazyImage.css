@@ -1,0 +1,105 @@
+/* 지연 로딩 이미지 컴포넌트 스타일 */
+
+.lazy-image-container {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.lazy-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary, #f1f5f9);
+}
+
+.lazy-image-skeleton {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0px,
+    #e0e0e0 40px,
+    #f0f0f0 80px
+  );
+  background-size: 200px 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.lazy-image-hidden {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.lazy-image-loaded {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease-in-out;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lazy-image-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary, #f1f5f9);
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+  border: 1px dashed var(--border-color, #e2e8f0);
+  border-radius: 4px;
+  min-height: 100px;
+}
+
+/* 다크 모드 */
+.dark-mode .lazy-image-placeholder {
+  background: var(--bg-tertiary, #1e293b);
+}
+
+.dark-mode .lazy-image-skeleton {
+  background: linear-gradient(
+    90deg,
+    #1e293b 0px,
+    #374151 40px,
+    #1e293b 80px
+  );
+  background-size: 200px 100%;
+}
+
+.dark-mode .lazy-image-error {
+  background: var(--bg-tertiary, #1e293b);
+  color: var(--text-secondary, #cbd5e1);
+  border-color: var(--border-color, #374151);
+}
+
+/* 반응형 */
+@media (max-width: 640px) {
+  .lazy-image-container {
+    width: 100%;
+  }
+}
+

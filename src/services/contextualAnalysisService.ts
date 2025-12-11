@@ -28,7 +28,7 @@ export interface ContextualResponse {
   nextActions: string[];
 }
 
-class ContextualAnalysisService {
+export class ContextualAnalysisService {
   private baseUrl = 'http://localhost:8003/api/v7';
 
   async analyzeContext(request: ContextualRequest): Promise<ContextualResponse> {

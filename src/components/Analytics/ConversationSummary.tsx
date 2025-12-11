@@ -3,6 +3,17 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { FileText, Sparkles, Copy, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { errorLogger } from '../../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface ConversationSummaryProps {
   sessionId: string;
@@ -111,7 +122,11 @@ AI 응답: ${conversationData.aiMessages}개
       await navigator.clipboard.writeText(summary);
       // 복사 성공 알림
     } catch (error) {
-      console.error('Failed to copy summary:', error);
+      const err = toError(error);
+      errorLogger.error('Failed to copy summary', err, {
+        component: 'ConversationSummary',
+        action: 'copySummary',
+      });
     }
   };
 

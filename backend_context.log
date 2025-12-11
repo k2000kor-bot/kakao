@@ -1,0 +1,450 @@
+2025-10-20 17:18:23,209 - __main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:18:23,211 - __main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:18:23,212 - __main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:18:23,213 - __main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:18:23,214 - __main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:18:23,216 - __main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:18:23,218 - __main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:18:23,218 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:18:23,218 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:18:23,218 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:18:23,218 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:18:23,218 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:18:23,218 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료
+2025-10-20 17:18:23,218 - __main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:18:23,220 - __main__ - INFO - ============================================================
+2025-10-20 17:18:23,221 - __main__ - INFO - 🚀 완전한 ChatGPT 도시정비 시스템 시작
+2025-10-20 17:18:23,221 - __main__ - INFO - ============================================================
+2025-10-20 17:18:23,221 - __main__ - INFO - 📡 서버: http://localhost:8000
+2025-10-20 17:18:23,221 - __main__ - INFO - 📚 문서: http://localhost:8000/docs
+2025-10-20 17:18:23,221 - __main__ - INFO - 🔌 WebSocket: ws://localhost:8000/ws
+2025-10-20 17:18:23,221 - __main__ - INFO - ============================================================
+2025-10-20 17:18:23,221 - __main__ - INFO - 💡 질문, 요청, 글쓰기, 분석, 계산 모두 가능!
+2025-10-20 17:18:23,221 - __main__ - INFO - ============================================================
+INFO:     Will watch for changes in these directories: ['/Users/aD/kakao-frontend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [51845] using StatReload
+2025-10-20 17:18:24,521 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:18:24,522 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:18:24,523 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:18:24,523 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:18:24,524 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:18:24,525 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:18:24,527 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:18:24,527 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:18:24,527 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:18:24,527 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:18:24,528 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:18:24,528 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:18:24,528 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료
+2025-10-20 17:18:24,528 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:18:24,589 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:18:24,589 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:18:24,589 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:18:24,589 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:18:24,589 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:18:24,589 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:18:24,592 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:18:24,592 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [51940]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:59750 - "WebSocket /ws" [accepted]
+INFO:     connection open
+2025-10-20 17:19:27,320 - complete_chatgpt_server - INFO - 🔍 NLP 기본 분석:
+2025-10-20 17:19:27,320 - complete_chatgpt_server - INFO -    - 키워드: ['현대산업개발에', '대해', '알려줘']
+2025-10-20 17:19:27,320 - complete_chatgpt_server - INFO -    - 점수: Q=2.0, R=2.0, A=0.0
+2025-10-20 17:19:27,330 - complete_chatgpt_server - INFO - 📊 최종 의도 분석:
+2025-10-20 17:19:27,330 - complete_chatgpt_server - INFO -    - 유형: request
+2025-10-20 17:19:27,330 - complete_chatgpt_server - INFO -    - 도메인: construction (점수: {'urban': 0, 'realestate': 0, 'construction': 1})
+2025-10-20 17:19:27,331 - complete_chatgpt_server - INFO -    - 핵심 키워드: ['현대산업개발에', '대해', '알려줘']
+2025-10-20 17:19:27,331 - complete_chatgpt_server - INFO -    - 복합 요청: False
+2025-10-20 17:19:27,331 - complete_chatgpt_server - INFO -    - 다단계 응답 필요: False
+2025-10-20 17:19:28,740 - complete_chatgpt_server - INFO - 품질 평가: 64.65 (보통)
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO - 🔍 NLP 기본 분석:
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO -    - 키워드: ['입찰', '노쇼', '사건에', '대해', '설명해줘']
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO -    - 점수: Q=0.0, R=5.0, A=0.0
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO - 📊 최종 의도 분석:
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO -    - 유형: request
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO -    - 도메인: general (점수: {'urban': 0, 'realestate': 0, 'construction': 0})
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO -    - 핵심 키워드: ['입찰', '노쇼', '사건에']
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO -    - 복합 요청: False
+2025-10-20 17:19:30,743 - complete_chatgpt_server - INFO -    - 다단계 응답 필요: False
+2025-10-20 17:19:31,758 - complete_chatgpt_server - INFO - 품질 평가: 59.85 (보통)
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO - 🔍 NLP 기본 분석:
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO -    - 키워드: ['이에', '대한', '비난글을', '작성해줘']
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO -    - 점수: Q=0.0, R=3.0, A=0.0
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO - 📊 최종 의도 분석:
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO -    - 유형: writing
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO -    - 도메인: general (점수: {'urban': 0, 'realestate': 0, 'construction': 0})
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO -    - 핵심 키워드: ['이에', '대한', '비난글을']
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO -    - 복합 요청: False
+2025-10-20 17:19:33,760 - complete_chatgpt_server - INFO -    - 다단계 응답 필요: False
+2025-10-20 17:19:34,262 - advanced_writing_system - INFO - 글쓰기 요청 분석: {'doc_type': '의견서/비판글', 'target_length': None, 'requires_logic': False, 'tone': '중립', 'style_requirements': ['표준'], 'subject': '이에', 'keywords': ['이에', '비난글을', '작성해줘']}
+2025-10-20 17:19:37,982 - complete_chatgpt_server - INFO - 품질 평가: 77.25 (양호)
+2025-10-20 17:19:37,983 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     127.0.0.1:59756 - "WebSocket /ws" [accepted]
+INFO:     connection open
+2025-10-20 17:28:57,193 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     127.0.0.1:60256 - "WebSocket /ws" [accepted]
+INFO:     connection open
+WARNING:  StatReload detected changes in 'backend/complete_chatgpt_server.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:31:05,418 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [51940]
+2025-10-20 17:31:07,071 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:31:07,074 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:31:07,075 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:31:07,081 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:31:07,085 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:31:07,088 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:31:07,092 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:31:07,092 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:31:07,092 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:31:07,092 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:31:07,092 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:31:07,092 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:31:07,093 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료
+2025-10-20 17:31:07,093 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:31:07,291 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:31:07,292 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:31:07,292 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:31:07,292 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:31:07,292 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:31:07,292 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:31:07,294 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:31:07,294 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [70248]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60373 - "WebSocket /ws" [accepted]
+INFO:     connection open
+WARNING:  StatReload detected changes in 'backend/elite_writing_engine.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:33:31,717 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [70248]
+2025-10-20 17:33:32,878 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:33:32,880 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:33:32,882 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:33:32,883 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:33:32,884 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:33:32,902 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:33:32,904 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:33:32,904 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:33:32,904 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:33:32,905 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:33:32,905 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:33:32,905 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:33:32,905 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료 (30가지 입장/스타일 통합)
+2025-10-20 17:33:32,905 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:33:32,975 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:33:32,975 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:33:32,975 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:33:32,975 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:33:32,975 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:33:32,975 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:33:32,976 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:33:32,976 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [73962]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60441 - "WebSocket /ws" [accepted]
+INFO:     connection open
+WARNING:  StatReload detected changes in 'backend/complete_chatgpt_server.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:36:05,430 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [73962]
+2025-10-20 17:36:07,100 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:36:07,101 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:36:07,102 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:36:07,104 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:36:07,106 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:36:07,217 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:36:07,222 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:36:07,223 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:36:07,223 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:36:07,223 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:36:07,223 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:36:07,223 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:36:07,223 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료 (30가지 입장/스타일 통합)
+2025-10-20 17:36:07,223 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:36:07,417 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:36:07,417 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:36:07,417 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:36:07,417 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:36:07,417 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:36:07,417 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:36:07,423 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:36:07,424 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [77758]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60564 - "WebSocket /ws" [accepted]
+INFO:     connection open
+WARNING:  StatReload detected changes in 'backend/complete_chatgpt_server.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:36:37,391 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [77758]
+2025-10-20 17:36:38,355 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:36:38,356 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:36:38,357 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:36:38,357 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:36:38,358 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:36:38,374 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:36:38,375 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:36:38,376 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:36:38,376 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:36:38,376 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:36:38,376 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:36:38,376 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:36:38,376 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료 (30가지 입장/스타일 통합)
+2025-10-20 17:36:38,376 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:36:38,525 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:36:38,525 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:36:38,525 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:36:38,525 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:36:38,525 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:36:38,525 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:36:38,535 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:36:38,535 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [78306]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60617 - "WebSocket /ws" [accepted]
+INFO:     connection open
+2025-10-20 17:37:02,457 - complete_chatgpt_server - INFO - 🔍 NLP 기본 분석:
+2025-10-20 17:37:02,459 - complete_chatgpt_server - INFO -    - 키워드: ['현대산업개발', '입찰노쇼에', '대한', '비난글을', '만들어줘']
+2025-10-20 17:37:02,459 - complete_chatgpt_server - INFO -    - 점수: Q=0.0, R=0.0, A=0.0
+2025-10-20 17:37:02,466 - complete_chatgpt_server - INFO - 📊 최종 의도 분석:
+2025-10-20 17:37:02,466 - complete_chatgpt_server - INFO -    - 유형: writing
+2025-10-20 17:37:02,466 - complete_chatgpt_server - INFO -    - 도메인: construction (점수: {'urban': 0, 'realestate': 0, 'construction': 1})
+2025-10-20 17:37:02,466 - complete_chatgpt_server - INFO -    - 핵심 키워드: ['현대산업개발', '입찰노쇼에', '대한']
+2025-10-20 17:37:02,466 - complete_chatgpt_server - INFO -    - 복합 요청: False
+2025-10-20 17:37:02,466 - complete_chatgpt_server - INFO -    - 다단계 응답 필요: False
+2025-10-20 17:37:02,467 - advanced_writing_system - INFO - 글쓰기 요청 분석: {'doc_type': '의견서/비판글', 'target_length': None, 'requires_logic': False, 'tone': '중립', 'style_requirements': ['표준'], 'subject': '현대산업개발', 'keywords': ['현대산업개발', '입찰노쇼에', '비난글을', '만들어줘']}
+2025-10-20 17:37:06,013 - complete_chatgpt_server - INFO - 품질 평가: 75.45 (양호)
+2025-10-20 17:38:10,075 - complete_chatgpt_server - INFO - 🔍 NLP 기본 분석:
+2025-10-20 17:38:10,076 - complete_chatgpt_server - INFO -    - 키워드: ['쳇GPT처럼', '보다', '고민과', '생각하는', '시간']
+2025-10-20 17:38:10,076 - complete_chatgpt_server - INFO -    - 점수: Q=0.0, R=6.0, A=0.0
+2025-10-20 17:38:10,076 - complete_chatgpt_server - INFO - 📊 최종 의도 분석:
+2025-10-20 17:38:10,076 - complete_chatgpt_server - INFO -    - 유형: writing
+2025-10-20 17:38:10,076 - complete_chatgpt_server - INFO -    - 도메인: general (점수: {'urban': 0, 'realestate': 0, 'construction': 0})
+2025-10-20 17:38:10,076 - complete_chatgpt_server - INFO -    - 핵심 키워드: ['쳇GPT처럼', '보다', '고민과']
+2025-10-20 17:38:10,076 - complete_chatgpt_server - INFO -    - 복합 요청: False
+2025-10-20 17:38:10,076 - complete_chatgpt_server - INFO -    - 다단계 응답 필요: False
+2025-10-20 17:38:10,578 - advanced_writing_system - INFO - 글쓰기 요청 분석: {'doc_type': '보고서', 'target_length': None, 'requires_logic': False, 'tone': '중립', 'style_requirements': ['표준'], 'subject': '처럼', 'keywords': ['처럼', '보다', '고민과', '생각하는', '시간', '작성한', '부분을', '스스로', '새롭게', '고쳐서']}
+2025-10-20 17:38:13,100 - complete_chatgpt_server - INFO - 품질 평가: 70.75 (양호)
+WARNING:  StatReload detected changes in 'backend/elite_writing_engine.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:38:18,925 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [78306]
+2025-10-20 17:38:19,872 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:38:19,873 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:38:19,874 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:38:19,875 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:38:19,876 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:38:19,885 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:38:19,887 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:38:19,887 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:38:19,887 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:38:19,887 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:38:19,887 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:38:19,887 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:38:19,888 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료 (30가지 입장 + 심리기법 + 눈높이 글쓰기)
+2025-10-20 17:38:19,888 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:38:19,939 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:38:19,939 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:38:19,939 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:38:19,939 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:38:19,939 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:38:19,939 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:38:19,940 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:38:19,940 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [80015]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60701 - "WebSocket /ws" [accepted]
+INFO:     connection open
+WARNING:  StatReload detected changes in 'backend/elite_writing_engine.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:40:23,194 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [80015]
+2025-10-20 17:40:24,502 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:40:24,503 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:40:24,504 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:40:24,506 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:40:24,507 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:40:24,522 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:40:24,525 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:40:24,525 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:40:24,525 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:40:24,525 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:40:24,525 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:40:24,525 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:40:24,525 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료 (30가지 입장 + 심리기법 + 눈높이 글쓰기 + 자체검토)
+2025-10-20 17:40:24,526 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:40:24,597 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:40:24,598 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:40:24,598 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:40:24,598 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:40:24,598 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:40:24,598 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:40:24,599 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:40:24,599 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [83314]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60789 - "WebSocket /ws" [accepted]
+INFO:     connection open
+WARNING:  StatReload detected changes in 'backend/elite_writing_engine.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:42:08,024 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [83314]
+2025-10-20 17:42:09,580 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:42:09,582 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:42:09,583 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:42:09,584 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:42:09,586 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=5, pipe_handle=7)
+                                                  ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/spawn.py", line 131, in _main
+    prepare(preparation_data)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/spawn.py", line 246, in prepare
+    _fixup_main_from_path(data['init_main_from_path'])
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/spawn.py", line 297, in _fixup_main_from_path
+    main_content = runpy.run_path(main_path,
+                                  run_name="__mp_main__")
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/aD/kakao-frontend/backend/complete_chatgpt_server.py", line 74, in <module>
+    from elite_writing_engine import get_elite_engine
+  File "/Users/aD/kakao-frontend/backend/elite_writing_engine.py", line 847
+    yield f'*※ 이전 대화 참고: "{previous_context}"*\n\n"
+          ^
+SyntaxError: unterminated f-string literal (detected at line 847)
+WARNING:  StatReload detected changes in 'backend/elite_writing_engine.py'. Reloading...
+2025-10-20 17:43:00,834 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:43:00,835 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:43:00,836 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:43:00,838 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:43:00,839 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:43:00,882 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:43:00,885 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:43:00,885 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:43:00,885 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:43:00,885 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:43:00,886 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:43:00,886 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:43:00,886 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료 (30가지 입장 + 심리기법 + 눈높이 글쓰기 + 자체검토)
+2025-10-20 17:43:00,886 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:43:01,005 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:43:01,006 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:43:01,006 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:43:01,006 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:43:01,006 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:43:01,006 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:43:01,009 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:43:01,009 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [87136]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60862 - "WebSocket /ws" [accepted]
+INFO:     connection open
+WARNING:  StatReload detected changes in 'backend/elite_writing_engine.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:48:49,225 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [87136]
+2025-10-20 17:48:50,630 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:48:50,632 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:48:50,634 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:48:50,637 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:48:50,638 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:48:50,667 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:48:50,671 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:48:50,671 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:48:50,671 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:48:50,672 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:48:50,672 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:48:50,672 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:48:50,672 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료 (30가지 입장 + 심리기법 + 눈높이 글쓰기 + 자체검토 + 자료수집 + 다양성)
+2025-10-20 17:48:50,672 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:48:50,765 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:48:50,765 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:48:50,765 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:48:50,765 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:48:50,765 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:48:50,766 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:48:50,768 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:48:50,769 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [95369]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:61232 - "WebSocket /ws" [accepted]
+INFO:     connection open
+WARNING:  StatReload detected changes in 'backend/elite_writing_engine.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 17:49:31,749 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [95369]
+2025-10-20 17:49:33,339 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:49:33,340 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:49:33,341 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:49:33,343 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:49:33,344 - __mp_main__ - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:49:33,374 - __mp_main__ - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:49:33,377 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:49:33,377 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 17:49:33,378 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 17:49:33,378 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 17:49:33,378 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 17:49:33,378 - advanced_writing_system - INFO - ✅ 고급 글쓰기 시스템 초기화 완료
+2025-10-20 17:49:33,378 - elite_writing_engine - INFO - ✅ Elite Writing Engine 초기화 완료 (30가지 입장 + 심리기법 + 눈높이 글쓰기 + 자체검토 + 자료수집 + 다양성)
+2025-10-20 17:49:33,378 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 17:49:33,503 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 17:49:33,503 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 17:49:33,503 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 17:49:33,503 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 17:49:33,503 - complete_chatgpt_server - INFO - ✅ 고급 글쓰기 시스템 로드 완료
+2025-10-20 17:49:33,503 - complete_chatgpt_server - INFO - ✅ Elite Writing Engine 로드 완료
+2025-10-20 17:49:33,506 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 17:49:33,506 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [96054]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:61272 - "WebSocket /ws" [accepted]
+INFO:     connection open

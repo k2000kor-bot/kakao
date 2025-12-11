@@ -55,6 +55,17 @@ import advancedAIIntelligenceService, {
     AdaptiveResponse
 } from '../../services/advancedAIIntelligenceService';
 import integratedSystemAPI from '../../services/integratedSystemAPI';
+import { errorLogger } from '../../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 interface DashboardMetrics {
     totalInsights: number;
@@ -138,7 +149,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
                 context: { source: 'dashboard-analysis' }
             });
 
-            console.log('고급 분석 결과:', result);
+            errorLogger.info('고급 분석 결과', { result, component: 'AdvancedAIIntelligenceDashboard', action: 'performAnalysis' });
 
             // 기존 서비스도 함께 실행
             const legacyResult = await advancedAIIntelligenceService.performAdvancedAnalysis(
@@ -146,10 +157,14 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
                 { context: 'dashboard-analysis' }
             );
 
-            console.log('레거시 분석 결과:', legacyResult);
+            errorLogger.info('레거시 분석 결과', { legacyResult, component: 'AdvancedAIIntelligenceDashboard', action: 'performAnalysis' });
 
         } catch (error) {
-            console.error('고급 분석 중 오류:', error);
+            const err = toError(error);
+            errorLogger.error('고급 분석 중 오류', err, {
+                component: 'AdvancedAIIntelligenceDashboard',
+                action: 'performAnalysis',
+            });
         } finally {
             setIsAnalyzing(false);
             setAnalysisProgress(0);

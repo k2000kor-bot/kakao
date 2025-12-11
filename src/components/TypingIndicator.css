@@ -1,0 +1,135 @@
+/* 실시간 타이핑 인디케이터 스타일 */
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+  border-radius: var(--radius-lg, 8px);
+  background: var(--bg-secondary, #f8fafc);
+  width: fit-content;
+  min-width: 60px;
+}
+
+.typing-indicator-label {
+  font-size: var(--font-size-sm, 14px);
+  color: var(--text-secondary, #64748b);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.typing-indicator-dots {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+}
+
+.typing-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-secondary, #64748b);
+  animation: typing-bounce 1.4s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* 애니메이션 */
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+/* 크기 변형 */
+.typing-indicator-small {
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  min-width: 40px;
+}
+
+.typing-indicator-small .typing-indicator-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.typing-indicator-small .typing-indicator-label {
+  font-size: var(--font-size-xs, 12px);
+}
+
+.typing-indicator-medium {
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+  min-width: 60px;
+}
+
+.typing-indicator-medium .typing-indicator-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.typing-indicator-large {
+  padding: var(--spacing-md, 12px) var(--spacing-lg, 16px);
+  min-width: 80px;
+}
+
+.typing-indicator-large .typing-indicator-dot {
+  width: 10px;
+  height: 10px;
+}
+
+.typing-indicator-large .typing-indicator-label {
+  font-size: var(--font-size-base, 16px);
+}
+
+/* 테마 변형 */
+.typing-indicator-default .typing-indicator-dot {
+  background: var(--text-secondary, #64748b);
+}
+
+.typing-indicator-primary .typing-indicator-dot {
+  background: var(--accent-primary, #667eea);
+}
+
+.typing-indicator-secondary .typing-indicator-dot {
+  background: var(--accent-secondary, #764ba2);
+}
+
+/* 다크 모드 지원 */
+.dark-mode .typing-indicator {
+  background: var(--bg-secondary, #111827);
+}
+
+.dark-mode .typing-indicator-label {
+  color: var(--text-secondary, #d1d5db);
+}
+
+.dark-mode .typing-indicator-default .typing-indicator-dot {
+  background: var(--text-secondary, #d1d5db);
+}
+
+/* 접근성: 애니메이션 비활성화 옵션 */
+@media (prefers-reduced-motion: reduce) {
+  .typing-indicator-dot {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/* 메시지 내부에서 사용할 때 */
+.message .typing-indicator {
+  background: transparent;
+  padding: var(--spacing-xs, 4px) 0;
+}
+
+.message.ai .typing-indicator {
+  background: var(--bg-secondary, #f8fafc);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+  border-radius: var(--radius-md, 6px);
+}
+
+.dark-mode .message.ai .typing-indicator {
+  background: var(--bg-secondary, #111827);
+}
+

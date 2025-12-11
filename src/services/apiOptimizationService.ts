@@ -25,7 +25,7 @@ interface OptimizationSuggestion {
     estimatedImprovement: string;
 }
 
-class ApiOptimizationService {
+export class ApiOptimizationService {
     private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
     private metrics: Map<string, ApiMetrics> = new Map();
     private cacheConfig: CacheConfig = {
@@ -338,7 +338,7 @@ class ApiOptimizationService {
 }
 
 // 싱글톤 인스턴스
-const apiOptimizationService = new ApiOptimizationService();
+export const apiOptimizationService = new ApiOptimizationService();
 
 export default apiOptimizationService;
-export type { ApiOptimizationService, CacheConfig, ApiMetrics, OptimizationSuggestion };
+export type { CacheConfig, ApiMetrics, OptimizationSuggestion };

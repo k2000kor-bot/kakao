@@ -632,3 +632,4 @@ A안 vs B안:
 }
 
 export const advancedTextProcessor = new AdvancedTextProcessor();
+export default advancedTextProcessor;

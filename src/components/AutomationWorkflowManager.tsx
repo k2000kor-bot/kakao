@@ -76,6 +76,17 @@ import {
     Business
 } from '@mui/icons-material';
 import axios from 'axios';
+import { errorLogger } from '../utils/errorLogger';
+
+// Helper function to safely convert unknown error types to Error objects
+const toError = (err: unknown): Error => {
+    if (err instanceof Error) {
+        return err as Error;
+    }
+    // Error 생성자를 명시적으로 사용
+    const ErrorConstructor = globalThis.Error;
+    return new ErrorConstructor(String(err)) as Error;
+};
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -147,7 +158,11 @@ const AutomationWorkflowManager: React.FC = () => {
             }
         } catch (err) {
             setError('워크플로우를 불러오는 중 오류가 발생했습니다.');
-            console.error('Workflows loading error:', err);
+            const error = toError(err);
+            errorLogger.error('Workflows loading error', error, {
+                component: 'AutomationWorkflowManager',
+                action: 'loadWorkflows',
+            });
         }
     };
 
@@ -159,7 +174,11 @@ const AutomationWorkflowManager: React.FC = () => {
             }
         } catch (err) {
             setError('실행 기록을 불러오는 중 오류가 발생했습니다.');
-            console.error('Executions loading error:', err);
+            const error = toError(err);
+            errorLogger.error('Executions loading error', error, {
+                component: 'AutomationWorkflowManager',
+                action: 'loadExecutions',
+            });
         } finally {
             setLoading(false);
         }

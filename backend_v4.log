@@ -1,0 +1,71 @@
+2025-10-20 16:19:40,733 - __main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 16:19:40,734 - __main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 16:19:40,735 - __main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 16:19:40,736 - __main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 16:19:40,739 - __main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 16:19:40,739 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 16:19:40,739 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 16:19:40,739 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 16:19:40,739 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 16:19:40,740 - __main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 16:19:40,742 - __main__ - INFO - ============================================================
+2025-10-20 16:19:40,742 - __main__ - INFO - 🚀 완전한 ChatGPT 도시정비 시스템 시작
+2025-10-20 16:19:40,742 - __main__ - INFO - ============================================================
+2025-10-20 16:19:40,742 - __main__ - INFO - 📡 서버: http://localhost:8000
+2025-10-20 16:19:40,742 - __main__ - INFO - 📚 문서: http://localhost:8000/docs
+2025-10-20 16:19:40,742 - __main__ - INFO - 🔌 WebSocket: ws://localhost:8000/ws
+2025-10-20 16:19:40,742 - __main__ - INFO - ============================================================
+2025-10-20 16:19:40,742 - __main__ - INFO - 💡 질문, 요청, 글쓰기, 분석, 계산 모두 가능!
+2025-10-20 16:19:40,742 - __main__ - INFO - ============================================================
+INFO:     Will watch for changes in these directories: ['/Users/aD/kakao-frontend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [78408] using StatReload
+2025-10-20 16:19:41,563 - __mp_main__ - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 16:19:41,563 - __mp_main__ - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 16:19:41,564 - __mp_main__ - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 16:19:41,564 - __mp_main__ - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 16:19:41,566 - __mp_main__ - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 16:19:41,566 - advanced_cache_system - INFO - ✅ 캐시 시스템 초기화 (최대: 1000개, TTL: 3600초)
+2025-10-20 16:19:41,566 - async_batch_processor - INFO - 비동기 배치 프로세서 초기화 (배치 크기: 5, 타임아웃: 30.0초)
+2025-10-20 16:19:41,566 - smart_prefetching - INFO - 스마트 프리페칭 시스템 초기화 완료
+2025-10-20 16:19:41,566 - quality_evaluator - INFO - ✅ AI 품질 평가 시스템 초기화 완료
+2025-10-20 16:19:41,566 - __mp_main__ - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+2025-10-20 16:19:41,735 - complete_chatgpt_server - INFO - ✅ 캐시 시스템 로드 완료
+2025-10-20 16:19:41,736 - complete_chatgpt_server - INFO - ✅ 배치 프로세서 로드 완료
+2025-10-20 16:19:41,736 - complete_chatgpt_server - INFO - ✅ 스마트 프리페칭 로드 완료
+2025-10-20 16:19:41,736 - complete_chatgpt_server - INFO - ✅ 품질 평가 시스템 로드 완료
+2025-10-20 16:19:41,738 - complete_chatgpt_server - INFO - ✅ 한국어 NLP 엔진 (최상급) 초기화 완료
+2025-10-20 16:19:41,738 - complete_chatgpt_server - INFO - 완전한 ChatGPT 시스템 초기화 완료 (캐싱: 활성화)
+INFO:     Started server process [78451]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:56740 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:56754 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56763 - "GET /stats HTTP/1.1" 200 OK
+2025-10-20 16:20:17,928 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     127.0.0.1:56795 - "WebSocket /ws" [accepted]
+INFO:     connection open
+2025-10-20 16:22:22,322 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     127.0.0.1:56847 - "WebSocket /ws" [accepted]
+INFO:     connection open
+2025-10-20 16:22:30,197 - complete_chatgpt_server - INFO - 🔍 NLP 기본 분석:
+2025-10-20 16:22:30,197 - complete_chatgpt_server - INFO -    - 키워드: ['현대산업개발', '입찰노쇼에', '대한', '비난글을', '만들어줘']
+2025-10-20 16:22:30,197 - complete_chatgpt_server - INFO -    - 점수: Q=0.0, R=0.0, A=0.0
+2025-10-20 16:22:30,217 - complete_chatgpt_server - INFO - 📊 최종 의도 분석:
+2025-10-20 16:22:30,217 - complete_chatgpt_server - INFO -    - 유형: writing
+2025-10-20 16:22:30,217 - complete_chatgpt_server - INFO -    - 도메인: construction (점수: {'urban': 0, 'realestate': 0, 'construction': 1})
+2025-10-20 16:22:30,218 - complete_chatgpt_server - INFO -    - 핵심 키워드: ['현대산업개발', '입찰노쇼에', '대한']
+2025-10-20 16:22:30,218 - complete_chatgpt_server - INFO -    - 복합 요청: False
+2025-10-20 16:22:30,218 - complete_chatgpt_server - INFO -    - 다단계 응답 필요: False
+2025-10-20 16:22:31,532 - complete_chatgpt_server - INFO - 품질 평가: 64.25 (보통)
+INFO:     127.0.0.1:56899 - "GET / HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'backend/complete_chatgpt_server.py'. Reloading...
+INFO:     Shutting down
+2025-10-20 16:26:37,451 - complete_chatgpt_server - INFO - WebSocket 연결 해제
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [78451]

@@ -75,7 +75,7 @@ export interface ImageMetadata {
     lastModified?: string;
 }
 
-class ImageAnalysisService {
+export class ImageAnalysisService {
     private canvas: HTMLCanvasElement | null = null;
     private ctx: CanvasRenderingContext2D | null = null;
 

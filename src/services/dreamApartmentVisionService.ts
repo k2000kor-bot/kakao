@@ -228,7 +228,7 @@ export interface DreamAnalysis {
     };
 }
 
-class DreamApartmentVisionService {
+export class DreamApartmentVisionService {
     private dreamApartments: DreamApartment[] = [];
     private visionBoards: VisionBoard[] = [];
     private roadmaps: Roadmap[] = [];

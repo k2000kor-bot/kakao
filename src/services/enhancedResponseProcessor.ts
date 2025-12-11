@@ -41,7 +41,7 @@ export interface ResponseQualityMetrics {
     overall: number;
 }
 
-class EnhancedResponseProcessor {
+export class EnhancedResponseProcessor {
     private qualityThreshold = 0.8;
     private maxRetries = 3;
 
@@ -801,6 +801,5 @@ ${content}
 }
 
 // 싱글톤 인스턴스 생성
-const enhancedResponseProcessor = new EnhancedResponseProcessor();
-
+export const enhancedResponseProcessor = new EnhancedResponseProcessor();
 export default enhancedResponseProcessor;

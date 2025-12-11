@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, FileText, Settings, Tag, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { errorLogger } from '../../utils/errorLogger';
 
 interface ProjectCreationModalProps {
   isOpen: boolean;
@@ -75,7 +76,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
       setStep(1);
       onClose();
     } catch (error) {
-      console.error('프로젝트 생성 오류:', error);
+      errorLogger.error('프로젝트 생성 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ProjectCreationModal', action: 'handleCreateProject' });
     } finally {
       setIsCreating(false);
     }
@@ -222,7 +223,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                           type="text"
                           value={newTag}
                           onChange={(e) => setNewTag(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
                           placeholder="태그를 입력하고 Enter를 누르세요"
                           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         />

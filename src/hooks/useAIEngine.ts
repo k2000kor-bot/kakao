@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
+import { errorLogger } from '../utils/errorLogger';
 import {
     selectAIEngine,
     selectRealtimeAnalysis,
@@ -35,7 +36,7 @@ export const useAIEngine = () => {
             await dispatch(initializeAIEngine()).unwrap();
             // await websocketService.connect();
         } catch (error) {
-            console.error('AI 엔진 초기화 실패:', error);
+            errorLogger.error('AI 엔진 초기화 실패', error instanceof Error ? error : new Error(String(error)), { component: 'useAIEngine', action: 'initializeAIEngine' });
         }
     }, [dispatch]);
 
@@ -49,7 +50,7 @@ export const useAIEngine = () => {
             //     data: { model: modelName }
             // });
         } catch (error) {
-            console.error('모델 전환 실패:', error);
+            errorLogger.error('모델 전환 실패', error instanceof Error ? error : new Error(String(error)), { component: 'useAIEngine', action: 'switchModel', modelName });
         }
     }, [dispatch]);
 
@@ -63,7 +64,7 @@ export const useAIEngine = () => {
             //     data: config || {}
             // });
         } catch (error) {
-            console.error('실시간 분석 시작 실패:', error);
+            errorLogger.error('실시간 분석 시작 실패', error instanceof Error ? error : new Error(String(error)), { component: 'useAIEngine', action: 'startAnalysis' });
         }
     }, [dispatch]);
 
@@ -77,7 +78,7 @@ export const useAIEngine = () => {
             //     data: { text }
             // });
         } catch (error) {
-            console.error('감정 분석 실패:', error);
+            errorLogger.error('감정 분석 실패', error instanceof Error ? error : new Error(String(error)), { component: 'useAIEngine', action: 'analyzeTextSentiment' });
         }
     }, [dispatch]);
 
@@ -91,7 +92,7 @@ export const useAIEngine = () => {
             //     data: { text }
             // });
         } catch (error) {
-            console.error('의도 감지 실패:', error);
+            errorLogger.error('의도 감지 실패', error instanceof Error ? error : new Error(String(error)), { component: 'useAIEngine', action: 'detectTextIntent' });
         }
     }, [dispatch]);
 

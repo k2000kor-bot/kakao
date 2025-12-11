@@ -1,0 +1,5 @@
+
+> corbu-ai@0.1.0 start
+> BROWSER=none PORT=3000 WDS_SOCKET_PORT=0 FAST_REFRESH=false react-scripts start
+
+Something is already running on port 3000.

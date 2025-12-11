@@ -61,7 +61,7 @@ export interface ContentAnalysis {
     };
 }
 
-class WritingService {
+export class WritingService {
     private templates: WritingTemplate[] = [
         {
             id: 'report',

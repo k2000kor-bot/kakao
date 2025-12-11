@@ -1,0 +1,316 @@
+/* MultiIntentResponseView 컴포넌트 스타일 */
+
+.multi-intent-response-view {
+  width: 100%;
+  margin: 20px 0;
+  padding: 20px;
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.multi-intent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border-color, #e2e8f0);
+}
+
+.multi-intent-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  margin: 0;
+}
+
+.multi-intent-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+  padding: 4px 12px;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 6px;
+}
+
+.multi-intent-summary {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 6px;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.multi-intent-action-status {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--info-bg, #dbeafe);
+  color: var(--info-text, #1e40af);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.multi-intent-responses {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.multi-intent-response-item {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s;
+  background: var(--bg-primary, #ffffff);
+}
+
+.multi-intent-response-item:hover {
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.multi-intent-response-item.expanded {
+  border-color: var(--accent-primary, #667eea);
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.multi-intent-response-item.selected {
+  border-color: var(--accent-primary, #667eea);
+  background: var(--accent-bg, #f0f4ff);
+}
+
+.multi-intent-response-item.pinned {
+  border-left: 4px solid var(--accent-primary, #667eea);
+}
+
+.multi-intent-response-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--bg-secondary, #f8fafc);
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+
+.multi-intent-response-header:hover {
+  background: var(--bg-tertiary, #f1f5f9);
+}
+
+.response-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.response-index {
+  font-weight: 600;
+  color: var(--accent-primary, #667eea);
+  font-size: 14px;
+}
+
+.response-type {
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+  padding: 2px 8px;
+  background: var(--bg-tertiary, #e2e8f0);
+  border-radius: 4px;
+}
+
+.response-badge {
+  font-size: 16px;
+}
+
+.response-badge.pinned {
+  color: var(--accent-primary, #667eea);
+}
+
+.response-badge.starred {
+  color: var(--warning-color, #f59e0b);
+}
+
+.response-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.response-metric {
+  font-size: 12px;
+  color: var(--text-tertiary, #94a3b8);
+  font-weight: 500;
+}
+
+.expand-indicator {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+  padding: 4px 8px;
+  transition: transform 0.2s;
+}
+
+.response-prompt-preview {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+  background: var(--bg-primary, #ffffff);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.response-prompt-preview strong {
+  color: var(--text-primary, #1e293b);
+  margin-right: 8px;
+}
+
+.multi-intent-response-content {
+  padding: 16px;
+  background: var(--bg-primary, #ffffff);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.response-content-text {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 6px;
+  color: var(--text-primary, #1e293b);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.response-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-button {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #1e293b);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-button:hover {
+  background: var(--bg-secondary, #f1f5f9);
+  border-color: var(--accent-primary, #667eea);
+}
+
+.action-button.active {
+  background: var(--accent-primary, #667eea);
+  color: white;
+  border-color: var(--accent-primary, #667eea);
+}
+
+.action-button.copy:hover {
+  background: var(--success-bg, #d1fae5);
+  border-color: var(--success-color, #10b981);
+}
+
+.action-button.use-prompt:hover {
+  background: var(--info-bg, #dbeafe);
+  border-color: var(--info-color, #3b82f6);
+}
+
+.action-button.follow-up:hover {
+  background: var(--warning-bg, #fef3c7);
+  border-color: var(--warning-color, #f59e0b);
+}
+
+/* 다크 모드 */
+.dark-mode .multi-intent-response-view {
+  background: var(--bg-primary, #1f2937);
+  border-color: var(--border-color, #374151);
+}
+
+.dark-mode .multi-intent-title {
+  color: var(--text-primary, #f1f5f9);
+}
+
+.dark-mode .stat-item {
+  background: var(--bg-tertiary, #374151);
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.dark-mode .multi-intent-summary {
+  background: var(--bg-tertiary, #374151);
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.dark-mode .multi-intent-response-item {
+  background: var(--bg-primary, #1f2937);
+  border-color: var(--border-color, #374151);
+}
+
+.dark-mode .multi-intent-response-header {
+  background: var(--bg-secondary, #374151);
+}
+
+.dark-mode .multi-intent-response-header:hover {
+  background: var(--bg-tertiary, #4b5563);
+}
+
+.dark-mode .response-content-text {
+  background: var(--bg-secondary, #374151);
+  color: var(--text-primary, #f1f5f9);
+}
+
+.dark-mode .action-button {
+  background: var(--bg-secondary, #374151);
+  color: var(--text-primary, #f1f5f9);
+  border-color: var(--border-color, #4b5563);
+}
+
+.dark-mode .action-button:hover {
+  background: var(--bg-tertiary, #4b5563);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .multi-intent-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .multi-intent-stats {
+    width: 100%;
+  }
+
+  .response-header-right {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .response-metric {
+    font-size: 11px;
+  }
+
+  .response-actions {
+    flex-direction: column;
+  }
+
+  .action-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

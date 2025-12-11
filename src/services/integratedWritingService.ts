@@ -5,7 +5,7 @@
 
 import { professionalWritingEngine, WritingStyle, WritingRequest as ProfessionalWritingRequest } from './professionalWritingEngine';
 import { adaptiveWritingEngine, SourceMaterial, WritingRequirements, GeneratedContent } from './adaptiveWritingEngine';
-import { advancedTextAnalysisService, TextAnalysisRequest } from './advancedTextAnalysisService.js';
+import { advancedTextAnalysisService, TextAnalysisRequest } from './advancedTextAnalysisService';
 import { contextualResponseEnhancer } from './contextualResponseEnhancer';
 
 export interface UnifiedWritingRequest {

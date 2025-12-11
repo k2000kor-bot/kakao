@@ -221,7 +221,7 @@ class AdvancedKnowledgeBase {
             }
         };
 
-        return learningPaths[targetRole] || {
+        return (learningPaths as Record<string, any>)[targetRole] || {
             path: [],
             totalDuration: '개인 맞춤 계획 필요',
             difficulty: 'varies'
@@ -560,8 +560,8 @@ app.listen(PORT, () => {
      * 📊 사용자 레벨 적합성 확인
      */
     private isAppropriateForLevel(difficulty: string, userLevel: string): boolean {
-        const levels = { beginner: 1, intermediate: 2, advanced: 3, expert: 4 };
-        return levels[difficulty] <= levels[userLevel] + 1;
+        const levels: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3, expert: 4 };
+        return (levels[difficulty] || 0) <= (levels[userLevel] || 0) + 1;
     }
 }
 

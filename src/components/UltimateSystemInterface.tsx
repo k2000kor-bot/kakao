@@ -1,4 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { errorLogger } from '../utils/errorLogger';
+
+// Error 타입을 명시적으로 사용하기 위한 헬퍼 함수
+const toError = (err: unknown): Error => {
+  if (err instanceof Error) {
+    return err as Error;
+  }
+  // Error 생성자를 명시적으로 사용
+  const ErrorConstructor = globalThis.Error;
+  return new ErrorConstructor(String(err)) as Error;
+};
 import {
     Box,
     Card,
@@ -210,8 +221,11 @@ function UltimateSystemInterface() {
             if (data.success) {
                 setSystemStatus(data.status);
             }
-        } catch (error) {
-            console.error('시스템 상태 업데이트 실패:', error);
+        } catch (err) {
+            errorLogger.error('시스템 상태 업데이트 실패', toError(err), {
+                component: 'UltimateSystemInterface',
+                action: 'updateSystemStatus',
+            });
         }
     }, []);
 
@@ -224,8 +238,11 @@ function UltimateSystemInterface() {
             if (data.success) {
                 setSystemMetrics(data.metrics);
             }
-        } catch (error) {
-            console.error('시스템 메트릭 업데이트 실패:', error);
+        } catch (err) {
+            errorLogger.error('시스템 메트릭 업데이트 실패', toError(err), {
+                component: 'UltimateSystemInterface',
+                action: 'updateSystemMetrics',
+            });
         }
     }, []);
 
@@ -267,8 +284,11 @@ function UltimateSystemInterface() {
                     read: false
                 }]);
             }
-        } catch (error) {
-            console.error('시스템 재시작 실패:', error);
+        } catch (err) {
+            errorLogger.error('시스템 재시작 실패', toError(err), {
+                component: 'UltimateSystemInterface',
+                action: 'restartSystem',
+            });
         }
     }, []);
 
@@ -292,8 +312,11 @@ function UltimateSystemInterface() {
                     read: false
                 }]);
             }
-        } catch (error) {
-            console.error('시스템 백업 실패:', error);
+        } catch (err) {
+            errorLogger.error('시스템 백업 실패', toError(err), {
+                component: 'UltimateSystemInterface',
+                action: 'backupSystem',
+            });
         }
     }, []);
 

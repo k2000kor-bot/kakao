@@ -1,0 +1,39 @@
+/* ReadReceipts 컴포넌트 스타일 */
+
+.read-receipt-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-secondary, #999);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.read-receipt-single {
+  color: var(--text-secondary, #999);
+}
+
+.read-receipt-read {
+  color: var(--accent-primary, #667eea);
+}
+
+.read-receipt-double {
+  color: var(--accent-primary, #667eea);
+}
+
+.read-receipt-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-primary, #667eea);
+  margin-left: 2px;
+}
+
+/* 다크 모드 지원 */
+[data-theme='dark'] .read-receipt-icon {
+  color: var(--text-secondary-dark, #999);
+}
+
+[data-theme='dark'] .read-receipt-read {
+  color: var(--accent-primary-dark, #8b9aff);
+}
+

@@ -1,0 +1,159 @@
+/Users/aD/kakao-frontend/simple_backend_server.py:251: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Started server process [1200]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+
+============================================================
+🚀 CORBU AI 백엔드 서버 시작
+============================================================
+📍 서버 주소: http://localhost:8001
+📖 API 문서: http://localhost:8001/docs
+🎯 주요 엔드포인트:
+   POST /chat - 채팅 메시지 전송
+   GET  /api/projects - 프로젝트 목록
+   POST /api/projects - 프로젝트 생성
+   GET  /api/projects/{id}/sessions - 세션 목록
+   POST /api/sessions - 세션 생성
+============================================================
+
+✅ 데이터베이스 초기화 완료
+INFO:     127.0.0.1:65228 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65300 - "POST /api/sessions HTTP/1.1" 200 OK
+⚠️ 제목 생성 오류 (폴백 사용): 
+🤖 LLM 요청 시작: 안녕하세요. 간단히 인사해주세요....
+📨 Ollama로 전송: 1개 메시지
+INFO:     127.0.0.1:49319 - "POST /api/sessions HTTP/1.1" 200 OK
+❌ LLM 생성 오류: ReadTimeout: 
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/anyio/_core/_tasks.py", line 120, in fail_after
+    yield cancel_scope
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_backends/anyio.py", line 34, in read
+    return await self._stream.receive(max_bytes=max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 1263, in receive
+    await self._protocol.read_event.wait()
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/locks.py", line 213, in wait
+    await fut
+asyncio.exceptions.CancelledError: Cancelled via cancel scope 105bc7110; reason: deadline exceeded
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_exceptions.py", line 10, in map_exceptions
+    yield
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with anyio.fail_after(timeout):
+         ~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/anyio/_core/_tasks.py", line 123, in fail_after
+    raise TimeoutError
+TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/httpx/_transports/default.py", line 66, in map_httpcore_exceptions
+    yield
+  File "/usr/local/lib/python3.13/site-packages/httpx/_transports/default.py", line 366, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_async/connection_pool.py", line 262, in handle_async_request
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_async/connection_pool.py", line 245, in handle_async_request
+    response = await connection.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_async/http11.py", line 133, in handle_async_request
+    raise exc
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_async/http11.py", line 111, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_async/http11.py", line 176, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_async/http11.py", line 212, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_backends/anyio.py", line 31, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/aD/kakao-frontend/simple_backend_server.py", line 59, in generate_llm_response
+    response = await client.post(
+               ^^^^^^^^^^^^^^^^^^
+    ...<10 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/httpx/_client.py", line 1848, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/httpx/_client.py", line 1530, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpx/_client.py", line 1617, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/httpx/_client.py", line 1645, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/httpx/_client.py", line 1682, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpx/_client.py", line 1719, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpx/_transports/default.py", line 365, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/local/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/httpx/_transports/default.py", line 83, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+INFO:     127.0.0.1:49657 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49657 - "OPTIONS /api/projects/47cfce53-0676-4dfb-aea1-498b9c74b54c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49657 - "PUT /api/projects/47cfce53-0676-4dfb-aea1-498b9c74b54c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49751 - "OPTIONS /api/projects/755756ef-14b3-43f6-b994-dfdf2bf81e74 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49751 - "DELETE /api/projects/755756ef-14b3-43f6-b994-dfdf2bf81e74 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49831 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50825 - "GET /api/projects/47cfce53-0676-4dfb-aea1-498b9c74b54c/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58897 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59562 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60964 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60964 - "GET /api/projects/47cfce53-0676-4dfb-aea1-498b9c74b54c/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60964 - "GET /api/sessions/81f25b5d-cc56-4a52-8e81-b5c7cd8138a5/messages HTTP/1.1" 200 OK

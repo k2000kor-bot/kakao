@@ -1,0 +1,8 @@
+WARNING:root:일부 도시정비 시스템 로드 실패: No module named 'yfinance'
+INFO:urban_redevelopment_integration_api:🏙️ 도시정비 통합 시스템 초기화 중...
+WARNING:urban_redevelopment_integration_api:⚠️ 도시정비 시스템 모듈을 사용할 수 없습니다
+INFO:urban_redevelopment_integration_api:✅ 도시정비 통합 시스템 초기화 완료
+INFO:     Started server process [49750]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8100 (Press CTRL+C to quit)

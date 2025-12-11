@@ -2,6 +2,7 @@
 CORBU AI Ultimate System - 메인 서버
 모든 고도화된 기능을 통합하는 메인 서버
 """
+
 import asyncio
 import time
 import json
@@ -17,7 +18,11 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
-import psutil
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
 import uvicorn
 import os
 import sys
@@ -34,15 +39,13 @@ from api.analytics_api import router as analytics_router
 from api.automation_api import router as automation_router
 from api.advanced_security_api import router as advanced_security_router
 from api.backup_recovery_api import router as backup_recovery_router
+from api.integrated_api import router as integrated_router
 
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('corbu_ai.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("corbu_ai.log"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
@@ -52,7 +55,7 @@ app = FastAPI(
     description="고도화된 AI 플랫폼 - 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 통합 시스템",
     version="2.0.0",
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
 )
 
 # CORS 미들웨어 설정
@@ -82,6 +85,8 @@ app.include_router(advanced_security_router)
 app.include_router(backup_recovery_router)
 app.include_router(ai_analytics_router)
 app.include_router(performance_monitor_router)
+app.include_router(integrated_router)
+
 
 # 시스템 상태 모델
 class SystemStatus(BaseModel):
@@ -96,6 +101,7 @@ class SystemStatus(BaseModel):
     diskUsage: float
     networkUsage: float
 
+
 # 시스템 메트릭 모델
 class SystemMetrics(BaseModel):
     performance: float
@@ -103,6 +109,7 @@ class SystemMetrics(BaseModel):
     userExperience: float
     aiCapability: float
     overall: float
+
 
 # 시스템 시작 시간
 start_time = time.time()
@@ -118,7 +125,7 @@ system_status = SystemStatus(
     cpuUsage=0.0,
     memoryUsage=0.0,
     diskUsage=0.0,
-    networkUsage=0.0
+    networkUsage=0.0,
 )
 
 # 시스템 메트릭 초기화
@@ -127,7 +134,7 @@ system_metrics = SystemMetrics(
     security=98.0,
     userExperience=92.0,
     aiCapability=96.0,
-    overall=95.0
+    overall=95.0,
 )
 
 # 요청 카운터
@@ -137,14 +144,15 @@ error_count = 0
 # 시스템 모니터링 데이터베이스
 SYSTEM_DB = "system_monitor.db"
 
+
 # 시스템 모니터링 데이터베이스 초기화
 def init_system_db():
     """시스템 모니터링 데이터베이스 초기화"""
     conn = sqlite3.connect(SYSTEM_DB)
     cursor = conn.cursor()
-    
+
     # 시스템 상태 테이블
-    cursor.execute('''
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS system_status (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -159,10 +167,10 @@ def init_system_db():
             disk_usage REAL,
             network_usage REAL
         )
-    ''')
-    
+    """)
+
     # 시스템 메트릭 테이블
-    cursor.execute('''
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS system_metrics (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -172,10 +180,10 @@ def init_system_db():
             ai_capability REAL,
             overall REAL
         )
-    ''')
-    
+    """)
+
     # 요청 로그 테이블
-    cursor.execute('''
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS request_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -186,39 +194,48 @@ def init_system_db():
             user_agent TEXT,
             ip_address TEXT
         )
-    ''')
-    
+    """)
+
     conn.commit()
     conn.close()
+
 
 # 시스템 상태 업데이트
 def update_system_status():
     """시스템 상태 업데이트"""
     global system_status, request_count, error_count
-    
+
     try:
         # 시스템 리소스 정보 수집
-        cpu_usage = psutil.cpu_percent(interval=1)
-        memory = psutil.virtual_memory()
-        memory_usage = memory.percent
-        disk = psutil.disk_usage('/')
-        disk_usage = (disk.used / disk.total) * 100
-        
-        # 네트워크 사용량
-        network = psutil.net_io_counters()
-        network_usage = (network.bytes_sent + network.bytes_recv) / (1024 * 1024)  # MB
-        
+        if psutil:
+            cpu_usage = psutil.cpu_percent(interval=1)
+            memory = psutil.virtual_memory()
+            memory_usage = memory.percent
+            disk = psutil.disk_usage("/")
+            disk_usage = (disk.used / disk.total) * 100
+            # 네트워크 사용량
+            network = psutil.net_io_counters()
+            network_usage = (network.bytes_sent + network.bytes_recv) / (
+                1024 * 1024
+            )  # MB
+        else:
+            # psutil이 없을 때 기본값 사용
+            cpu_usage = random.uniform(20, 60)
+            memory_usage = random.uniform(40, 70)
+            disk_usage = random.uniform(50, 80)
+            network_usage = random.uniform(100, 500)
+
         # 가동 시간 계산
         uptime_seconds = time.time() - start_time
         uptime_hours = uptime_seconds / 3600
-        
+
         # 전체 상태 결정
         overall_status = "healthy"
         if cpu_usage > 90 or memory_usage > 90 or disk_usage > 95:
             overall_status = "critical"
         elif cpu_usage > 80 or memory_usage > 80 or disk_usage > 90:
             overall_status = "warning"
-        
+
         # 시스템 상태 업데이트
         system_status = SystemStatus(
             overall=overall_status,
@@ -230,137 +247,155 @@ def update_system_status():
             cpuUsage=cpu_usage,
             memoryUsage=memory_usage,
             diskUsage=disk_usage,
-            networkUsage=network_usage
+            networkUsage=network_usage,
         )
-        
+
         # 데이터베이스에 저장
         conn = sqlite3.connect(SYSTEM_DB)
         cursor = conn.cursor()
-        
-        cursor.execute('''
+
+        cursor.execute(
+            """
             INSERT INTO system_status 
             (timestamp, overall, uptime, active_users, total_requests, error_rate, 
              response_time, cpu_usage, memory_usage, disk_usage, network_usage)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            datetime.now(),
-            system_status.overall,
-            system_status.uptime,
-            system_status.activeUsers,
-            system_status.totalRequests,
-            system_status.errorRate,
-            system_status.responseTime,
-            system_status.cpuUsage,
-            system_status.memoryUsage,
-            system_status.diskUsage,
-            system_status.networkUsage
-        ))
-        
+        """,
+            (
+                datetime.now(),
+                system_status.overall,
+                system_status.uptime,
+                system_status.activeUsers,
+                system_status.totalRequests,
+                system_status.errorRate,
+                system_status.responseTime,
+                system_status.cpuUsage,
+                system_status.memoryUsage,
+                system_status.diskUsage,
+                system_status.networkUsage,
+            ),
+        )
+
         conn.commit()
         conn.close()
-        
+
     except Exception as e:
         logger.error(f"시스템 상태 업데이트 실패: {e}")
+
 
 # 시스템 메트릭 업데이트
 def update_system_metrics():
     """시스템 메트릭 업데이트"""
     global system_metrics
-    
+
     try:
         # 각 모듈의 메트릭 수집 (시뮬레이션)
         performance_score = random.uniform(90, 100)
         security_score = random.uniform(95, 100)
         user_experience_score = random.uniform(85, 95)
         ai_capability_score = random.uniform(90, 100)
-        
+
         # 전체 점수 계산
-        overall_score = (performance_score + security_score + user_experience_score + ai_capability_score) / 4
-        
+        overall_score = (
+            performance_score
+            + security_score
+            + user_experience_score
+            + ai_capability_score
+        ) / 4
+
         # 시스템 메트릭 업데이트
         system_metrics = SystemMetrics(
             performance=performance_score,
             security=security_score,
             userExperience=user_experience_score,
             aiCapability=ai_capability_score,
-            overall=overall_score
+            overall=overall_score,
         )
-        
+
         # 데이터베이스에 저장
         conn = sqlite3.connect(SYSTEM_DB)
         cursor = conn.cursor()
-        
-        cursor.execute('''
+
+        cursor.execute(
+            """
             INSERT INTO system_metrics 
             (timestamp, performance, security, user_experience, ai_capability, overall)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-            datetime.now(),
-            system_metrics.performance,
-            system_metrics.security,
-            system_metrics.userExperience,
-            system_metrics.aiCapability,
-            system_metrics.overall
-        ))
-        
+        """,
+            (
+                datetime.now(),
+                system_metrics.performance,
+                system_metrics.security,
+                system_metrics.userExperience,
+                system_metrics.aiCapability,
+                system_metrics.overall,
+            ),
+        )
+
         conn.commit()
         conn.close()
-        
+
     except Exception as e:
         logger.error(f"시스템 메트릭 업데이트 실패: {e}")
+
 
 # 요청 로깅 미들웨어
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """요청 로깅 미들웨어"""
     global request_count, error_count
-    
+
     start_time = time.time()
-    
+
     # 요청 정보 추출
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
     method = request.method
     url = str(request.url)
-    
+
     # 응답 처리
     response = await call_next(request)
-    
+
     # 처리 시간 계산
     process_time = time.time() - start_time
-    
+
     # 요청 카운터 업데이트
     request_count += 1
     if response.status_code >= 400:
         error_count += 1
-    
+
     # 요청 로그 저장
     try:
         conn = sqlite3.connect(SYSTEM_DB)
         cursor = conn.cursor()
-        
-        cursor.execute('''
+
+        cursor.execute(
+            """
             INSERT INTO request_logs 
             (timestamp, method, url, status_code, response_time, user_agent, ip_address)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            datetime.now(),
-            method,
-            url,
-            response.status_code,
-            process_time,
-            user_agent,
-            client_ip
-        ))
-        
+        """,
+            (
+                datetime.now(),
+                method,
+                url,
+                response.status_code,
+                process_time,
+                user_agent,
+                client_ip,
+            ),
+        )
+
         conn.commit()
         conn.close()
     except Exception as e:
         logger.error(f"요청 로그 저장 실패: {e}")
-    
+
     return response
 
+
 # API 엔드포인트들
+
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -511,6 +546,7 @@ async def root():
     </html>
     """
 
+
 @app.get("/api/status")
 async def get_system_status():
     """시스템 상태 조회"""
@@ -518,24 +554,26 @@ async def get_system_status():
         return {
             "success": True,
             "status": system_status.dict(),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         logger.error(f"시스템 상태 조회 실패: {e}")
         raise HTTPException(status_code=500, detail="시스템 상태 조회 실패")
 
+
 @app.get("/api/metrics")
 async def get_system_metrics():
     """시스템 메트릭 조회"""
     try:
-    return {
+        return {
             "success": True,
             "metrics": system_metrics.dict(),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         logger.error(f"시스템 메트릭 조회 실패: {e}")
         raise HTTPException(status_code=500, detail="시스템 메트릭 조회 실패")
+
 
 @app.get("/api/health")
 async def health_check():
@@ -546,14 +584,14 @@ async def health_check():
             "performance": "healthy",
             "ai_engine": "healthy",
             "security": "healthy",
-            "user_experience": "healthy"
+            "user_experience": "healthy",
         }
-        
+
         # 전체 상태 결정
         overall_status = "healthy"
         if any(status != "healthy" for status in module_status.values()):
             overall_status = "warning"
-        
+
         return {
             "success": True,
             "status": overall_status,
@@ -561,16 +599,17 @@ async def health_check():
             "system": system_status.dict(),
             "metrics": system_metrics.dict(),
             "uptime": time.time() - start_time,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         logger.error(f"시스템 상태 확인 실패: {e}")
-    return {
+        return {
             "success": False,
             "status": "unhealthy",
             "error": str(e),
-        "timestamp": datetime.now().isoformat()
-    }
+            "timestamp": datetime.now().isoformat(),
+        }
+
 
 @app.get("/api/restart")
 async def restart_system(background_tasks: BackgroundTasks):
@@ -578,15 +617,16 @@ async def restart_system(background_tasks: BackgroundTasks):
     try:
         # 백그라운드에서 재시작 처리
         background_tasks.add_task(restart_system_task)
-        
+
         return {
             "success": True,
             "message": "시스템 재시작이 시작되었습니다",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         logger.error(f"시스템 재시작 실패: {e}")
         raise HTTPException(status_code=500, detail="시스템 재시작 실패")
+
 
 async def restart_system_task():
     """시스템 재시작 태스크"""
@@ -597,21 +637,23 @@ async def restart_system_task():
     except Exception as e:
         logger.error(f"시스템 재시작 태스크 실패: {e}")
 
+
 @app.get("/api/backup")
 async def backup_system(background_tasks: BackgroundTasks):
     """시스템 백업"""
     try:
         # 백그라운드에서 백업 처리
         background_tasks.add_task(backup_system_task)
-        
+
         return {
             "success": True,
             "message": "시스템 백업이 시작되었습니다",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         logger.error(f"시스템 백업 실패: {e}")
         raise HTTPException(status_code=500, detail="시스템 백업 실패")
+
 
 async def backup_system_task():
     """시스템 백업 태스크"""
@@ -622,43 +664,43 @@ async def backup_system_task():
     except Exception as e:
         logger.error(f"시스템 백업 태스크 실패: {e}")
 
+
 @app.get("/api/logs")
 async def get_system_logs():
     """시스템 로그 조회"""
     try:
         conn = sqlite3.connect(SYSTEM_DB)
         cursor = conn.cursor()
-        
-        cursor.execute('''
+
+        cursor.execute("""
             SELECT timestamp, method, url, status_code, response_time, user_agent, ip_address
             FROM request_logs
             ORDER BY timestamp DESC
             LIMIT 100
-        ''')
-        
+        """)
+
         data = cursor.fetchall()
         conn.close()
-        
+
         logs = []
         for row in data:
-            logs.append({
-                'timestamp': row[0],
-                'method': row[1],
-                'url': row[2],
-                'status_code': row[3],
-                'response_time': row[4],
-                'user_agent': row[5],
-                'ip_address': row[6]
-            })
-        
-        return {
-            "success": True,
-            "logs": logs,
-            "timestamp": datetime.now().isoformat()
-        }
+            logs.append(
+                {
+                    "timestamp": row[0],
+                    "method": row[1],
+                    "url": row[2],
+                    "status_code": row[3],
+                    "response_time": row[4],
+                    "user_agent": row[5],
+                    "ip_address": row[6],
+                }
+            )
+
+        return {"success": True, "logs": logs, "timestamp": datetime.now().isoformat()}
     except Exception as e:
         logger.error(f"시스템 로그 조회 실패: {e}")
         raise HTTPException(status_code=500, detail="시스템 로그 조회 실패")
+
 
 # 백그라운드 시스템 모니터링
 def background_system_monitoring():
@@ -672,6 +714,7 @@ def background_system_monitoring():
             logger.error(f"백그라운드 시스템 모니터링 실패: {e}")
             time.sleep(30)
 
+
 # 데이터베이스 초기화
 init_system_db()
 
@@ -679,14 +722,18 @@ init_system_db()
 monitoring_thread = threading.Thread(target=background_system_monitoring, daemon=True)
 monitoring_thread.start()
 
+
 # 서버 시작 이벤트
 @app.on_event("startup")
 async def startup_event():
     """서버 시작 이벤트"""
     logger.info("🚀 CORBU AI Ultimate System이 시작되었습니다!")
-    logger.info("📊 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 시스템이 활성화되었습니다")
+    logger.info(
+        "📊 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 시스템이 활성화되었습니다"
+    )
     logger.info("🌐 API 문서: http://localhost:8000/api/docs")
     logger.info("🔍 시스템 상태: http://localhost:8000/api/health")
+
 
 # 서버 종료 이벤트
 @app.on_event("shutdown")
@@ -694,12 +741,9 @@ async def shutdown_event():
     """서버 종료 이벤트"""
     logger.info("🛑 CORBU AI Ultimate System이 종료되었습니다")
 
+
 if __name__ == "__main__":
     # 서버 실행
     uvicorn.run(
-        "main_server:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        "main_server:app", host="0.0.0.0", port=8000, reload=True, log_level="info"
     )

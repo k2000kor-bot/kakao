@@ -1,0 +1,35 @@
+/**
+ * 프로젝트 템플릿 선택 컴포넌트 스타일
+ * Task-B4: 프로젝트 허브 확장
+ */
+
+.template-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.template-card {
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-lg, 8px);
+}
+
+.template-card:hover {
+  border-color: var(--border-hover, #cbd5e1);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl, 32px);
+  text-align: center;
+  min-height: 300px;
+}
+
+.dark-mode .template-card {
+  background: var(--bg-secondary, #111827);
+  border-color: var(--border-color, #374151);
+}
+

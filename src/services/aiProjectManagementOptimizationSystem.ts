@@ -189,7 +189,7 @@ export interface ProjectAnalytics {
     stakeholderSatisfaction: number;
 }
 
-class AIProjectManagementOptimizationSystem {
+export class AIProjectManagementOptimizationSystem {
     private projects: Map<string, ProjectManagement> = new Map();
     private isRunning: boolean = false;
     private analytics: ProjectAnalytics = {
