@@ -67,6 +67,7 @@ async def lifespan(app: FastAPI):
     # WebSocket 백그라운드 태스크 시작
     try:
         from api.websocket_api import start_websocket_background_tasks
+
         await start_websocket_background_tasks()
     except ImportError:
         logger.warning("WebSocket 백그라운드 태스크를 시작할 수 없습니다")
