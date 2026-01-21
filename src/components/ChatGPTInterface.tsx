@@ -2962,6 +2962,7 @@ const ChatGPTInterface: React.FC = () => {
                             aria-atomic="false"
                             ref={messagesContainerRef}
                             onScroll={handleMessagesScroll}
+                            data-testid="messages-container"
                         >
                             {currentConversation.messages.length === 0 ? (
                                 <div className="empty-state">
@@ -2971,7 +2972,7 @@ const ChatGPTInterface: React.FC = () => {
                                     </output>
                                 </div>
                             ) : (
-                                currentConversation.messages.map((message) => (
+                                currentConversation.messages.map((message, index) => (
                                     <article
                                         key={message.id}
                                         id={`message-${message.id}`}
@@ -2980,6 +2981,7 @@ const ChatGPTInterface: React.FC = () => {
                                         style={{
                                             borderLeft: message.bookmarked ? '3px solid #fbbf24' : undefined,
                                         }}
+                                        data-testid={`message-${message.role}${isStreaming && message.role === 'assistant' && index === currentConversation.messages.length - 1 ? '-streaming' : ''}`}
                                     >
                                         <div className="message-avatar" aria-hidden="true">
                                             {message.role === 'user' ? '👤' : '🤖'}
@@ -3369,7 +3371,7 @@ const ChatGPTInterface: React.FC = () => {
                                 ))
                             )}
                             {isLoading && !isStreaming && (
-                                <div className="message assistant-message" aria-live="polite" aria-busy="true">
+                                <div className="message assistant-message" aria-live="polite" aria-busy="true" data-testid="loading-indicator">
                                     <div className="message-avatar" aria-hidden="true">🤖</div>
                                     <div className="message-content">
                                         <output>
@@ -3984,7 +3986,7 @@ const ChatGPTInterface: React.FC = () => {
                                 <span><kbd style={{ padding: '2px 6px', background: themeStyles.bgSecondary, borderRadius: '4px', marginRight: '4px' }}>?</kbd> 단축키 보기</span>
                             </div>
                         </div>
-                        <section className="input-container" aria-label="메시지 입력 영역">
+                        <section className="input-container" aria-label="메시지 입력 영역" data-testid="input-container">
                             <div className="input-wrapper">
                                 <textarea
                                     ref={inputRef}
@@ -3994,11 +3996,13 @@ const ChatGPTInterface: React.FC = () => {
                                     placeholder="메시지를 입력하세요..."
                                     rows={1}
                                     className="message-input"
+                                    data-testid="chat-input"
                                 />
                                 <button
                                     className="send-button"
                                     onClick={sendMessage}
                                     disabled={!input.trim() || isLoading}
+                                    data-testid="send-button"
                                 >
                                     <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M2 10l16-8-8 16-2-6-6-2z" />
