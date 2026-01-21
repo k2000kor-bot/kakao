@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import sys
 import os
 
@@ -147,8 +147,8 @@ class UnifiedChatRequest(BaseModel):
         None  # 특정 관점 지정 (practical, theoretical, creative, critical)
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "message": "퇴직금은 어떻게 계산하나요?",
                 "user_id": "user123",
@@ -158,6 +158,7 @@ class UnifiedChatRequest(BaseModel):
                 "max_tokens": 4096,
             }
         }
+    )
 
 
 class ChatStreamRequest(BaseModel):
@@ -3176,7 +3177,7 @@ const response = await fetch('https://api.example.com/users', {
 
 ```python
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 app = FastAPI()
 
@@ -6182,14 +6183,15 @@ class VariationsRequest(BaseModel):
     options: Optional[Dict[str, Any]] = {}
     num_variations: Optional[int] = 3
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "message": "인공지능의 미래에 대해 설명해주세요",
                 "num_variations": 3,
                 "options": {"writing_style": "yoo_simin"},
             }
         }
+    )
 
 
 @router.post("/chat/variations", summary="다양한 답변 생성")
