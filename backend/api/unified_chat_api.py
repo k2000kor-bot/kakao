@@ -2530,7 +2530,9 @@ async def generate_chat_response(
                     else None,
                 )
                 if intelligent_response and len(intelligent_response.strip()) > 200:
-                    logger.info(f"✅ 고급 AI 엔진 응답 사용: {len(intelligent_response)}자")
+                    logger.info(
+                        f"✅ 고급 AI 엔진 응답 사용: {len(intelligent_response)}자"
+                    )
                     return intelligent_response
             except Exception as e:
                 logger.warning(f"⚠️ 고급 AI 엔진 응답 실패: {e}")
