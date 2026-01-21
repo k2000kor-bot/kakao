@@ -10,6 +10,7 @@ import logging
 import sqlite3
 import threading
 import random
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Depends
@@ -50,6 +51,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+# Lifespan 이벤트 핸들러 (on_event deprecated 대체)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """서버 시작/종료 이벤트 핸들러"""
+    # 시작 이벤트
+    logger.info("🚀 CORBU AI Ultimate System이 시작되었습니다!")
+    logger.info(
+        "📊 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 시스템이 활성화되었습니다"
+    )
+    logger.info("🌐 API 문서: http://localhost:8000/api/docs")
+    logger.info("🔍 시스템 상태: http://localhost:8000/api/health")
+    yield
+    # 종료 이벤트
+    logger.info("🛑 CORBU AI Ultimate System이 종료되었습니다")
+
+
 # FastAPI 앱 생성
 app = FastAPI(
     title="CORBU AI Ultimate System",
@@ -57,6 +75,7 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
+    lifespan=lifespan,
 )
 
 # CORS 미들웨어 설정
@@ -555,7 +574,7 @@ async def get_system_status():
     try:
         return {
             "success": True,
-            "status": system_status.dict(),
+            "status": system_status.model_dump(),
             "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
@@ -569,7 +588,7 @@ async def get_system_metrics():
     try:
         return {
             "success": True,
-            "metrics": system_metrics.dict(),
+            "metrics": system_metrics.model_dump(),
             "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
@@ -598,8 +617,8 @@ async def health_check():
             "success": True,
             "status": overall_status,
             "modules": module_status,
-            "system": system_status.dict(),
-            "metrics": system_metrics.dict(),
+            "system": system_status.model_dump(),
+            "metrics": system_metrics.model_dump(),
             "uptime": time.time() - start_time,
             "timestamp": datetime.now().isoformat(),
         }
@@ -723,25 +742,6 @@ init_system_db()
 # 백그라운드 스레드 시작
 monitoring_thread = threading.Thread(target=background_system_monitoring, daemon=True)
 monitoring_thread.start()
-
-
-# 서버 시작 이벤트
-@app.on_event("startup")
-async def startup_event():
-    """서버 시작 이벤트"""
-    logger.info("🚀 CORBU AI Ultimate System이 시작되었습니다!")
-    logger.info(
-        "📊 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 시스템이 활성화되었습니다"
-    )
-    logger.info("🌐 API 문서: http://localhost:8000/api/docs")
-    logger.info("🔍 시스템 상태: http://localhost:8000/api/health")
-
-
-# 서버 종료 이벤트
-@app.on_event("shutdown")
-async def shutdown_event():
-    """서버 종료 이벤트"""
-    logger.info("🛑 CORBU AI Ultimate System이 종료되었습니다")
 
 
 if __name__ == "__main__":
