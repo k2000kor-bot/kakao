@@ -440,11 +440,17 @@ async def background_data_sender():
             logger.error(f"백그라운드 데이터 전송 오류: {e}")
             await asyncio.sleep(5)
 
-# 백그라운드 태스크 시작
-@router.on_event("startup")
-async def start_background_tasks():
-    """백그라운드 태스크 시작"""
-    asyncio.create_task(background_data_sender())
-    logger.info("WebSocket 백그라운드 데이터 전송 시작")
+# 백그라운드 태스크 시작 함수 (메인 서버에서 호출)
+_background_task_started = False
+
+
+async def start_websocket_background_tasks():
+    """WebSocket 백그라운드 태스크 시작 (메인 서버의 lifespan에서 호출)"""
+    global _background_task_started
+    if not _background_task_started:
+        asyncio.create_task(background_data_sender())
+        _background_task_started = True
+        logger.info("WebSocket 백그라운드 데이터 전송 시작")
+
 
 logger.info("WebSocket API가 초기화되었습니다")
