@@ -40,6 +40,7 @@ from api.automation_api import router as automation_router
 from api.advanced_security_api import router as advanced_security_router
 from api.backup_recovery_api import router as backup_recovery_router
 from api.integrated_api import router as integrated_router
+from api.unified_chat_api import router as unified_chat_router
 
 # 로깅 설정
 logging.basicConfig(
@@ -86,6 +87,7 @@ app.include_router(backup_recovery_router)
 app.include_router(ai_analytics_router)
 app.include_router(performance_monitor_router)
 app.include_router(integrated_router)
+app.include_router(unified_chat_router, tags=["Chat"])
 
 
 # 시스템 상태 모델

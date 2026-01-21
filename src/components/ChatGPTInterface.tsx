@@ -1,19 +1,106 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { projectService } from '../services/projectService';
 import NotebookLLM from './NotebookLLM';
 import { errorLogger } from '../utils/errorLogger';
+import { API_BASE_URL } from '../config/api';
+import { isStreamingSupported, streamChatMessage } from '../utils/streamingClient';
 import './ChatGPTInterface.css';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+// 코드 블록 복사 버튼 컴포넌트
+const CodeBlock: React.FC<{ children: React.ReactNode; className?: string; theme: 'dark' | 'light' }> = ({ children, className, theme }) => {
+    const [copied, setCopied] = useState(false);
+    const language = className?.replace('language-', '') || '';
+    const codeContent = String(children).replace(/\n$/, '');
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(codeContent);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // 복사 실패 시 무시
+        }
+    };
+
+    return (
+        <div style={{
+            position: 'relative',
+            margin: '12px 0',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f5f5f5',
+        }}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '8px 12px',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#e8e8e8',
+                fontSize: '12px',
+                color: theme === 'dark' ? '#888' : '#666',
+            }}>
+                <span>{language || 'code'}</span>
+                <button
+                    onClick={handleCopy}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '4px 8px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: copied ? '#22c55e' : (theme === 'dark' ? '#888' : '#666'),
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        borderRadius: '4px',
+                        transition: 'all 0.2s',
+                    }}
+                    title="코드 복사"
+                >
+                    {copied ? (
+                        <>
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
+                            </svg>
+                            복사됨
+                        </>
+                    ) : (
+                        <>
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z" />
+                            </svg>
+                            복사
+                        </>
+                    )}
+                </button>
+            </div>
+            <pre style={{
+                margin: 0,
+                padding: '12px',
+                overflow: 'auto',
+                fontSize: '13px',
+                lineHeight: '1.5',
+            }}>
+                <code className={className} style={{ color: theme === 'dark' ? '#e0e0e0' : '#333' }}>
+                    {children}
+                </code>
+            </pre>
+        </div>
+    );
+};
+
+type MessageReaction = 'like' | 'dislike' | null;
 
 interface Message {
     id: string;
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
+    bookmarked?: boolean;
+    reaction?: MessageReaction;
 }
 
 interface Project {
@@ -31,6 +118,7 @@ interface Conversation {
     projectId?: string;
     createdAt: Date;
     updatedAt: Date;
+    pinned?: boolean;
 }
 
 const ChatGPTInterface: React.FC = () => {
@@ -46,8 +134,61 @@ const ChatGPTInterface: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showCopyToast, setShowCopyToast] = useState(false);
     const [viewMode, setViewMode] = useState<'chat' | 'notebook'>('chat');
+    const [useStreaming, setUseStreaming] = useState<boolean>(true);
+    const [isStreaming, setIsStreaming] = useState<boolean>(false);
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+    const [editingContent, setEditingContent] = useState<string>('');
+    const [deleteConfirmConversation, setDeleteConfirmConversation] = useState<Conversation | null>(null);
+    const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
+    const [editingConversationTitle, setEditingConversationTitle] = useState<string>('');
+    // 응답 스타일 설정
+    const [responseStyle, setResponseStyle] = useState<'concise' | 'balanced' | 'detailed' | 'comprehensive'>('balanced');
+    const [perspective, setPerspective] = useState<string | null>(null);
+    const [showStyleOptions, setShowStyleOptions] = useState<boolean>(false);
+    // 빠른 제안
+    const [quickSuggestions, setQuickSuggestions] = useState<string[]>([]);
+    // 대화 내 검색
+    const [messageSearchQuery, setMessageSearchQuery] = useState<string>('');
+    const [showMessageSearch, setShowMessageSearch] = useState<boolean>(false);
+    const [messageSearchIndex, setMessageSearchIndex] = useState<number>(0);
+    // 테마 설정
+    const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+        const saved = localStorage.getItem('chatgpt-theme');
+        if (saved === 'light' || saved === 'dark') return saved;
+        // 시스템 설정 확인
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            return 'light';
+        }
+        return 'dark';
+    });
+    // TTS 설정
+    const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+    const [showTimestamps, setShowTimestamps] = useState<boolean>(() => {
+        return localStorage.getItem('chatgpt-show-timestamps') === 'true';
+    });
+    // 키보드 단축키 도움말
+    const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
+    // 대화 정렬
+    type SortOption = 'recent' | 'name' | 'messages';
+    const [sortOption, setSortOption] = useState<SortOption>('recent');
+    // 자동 스크롤 설정
+    const [autoScroll, setAutoScroll] = useState<boolean>(true);
+    // 메시지 접기 상태
+    const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set());
+    // 응답 시간 측정
+    const [responseStartTime, setResponseStartTime] = useState<number | null>(null);
+    const [lastResponseTime, setLastResponseTime] = useState<number | null>(null);
+    // 네트워크 상태
+    const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+    // 스토리지 사용량
+    const [storageUsage, setStorageUsage] = useState<{ used: number; total: number } | null>(null);
+    const speechSynthRef = useRef<SpeechSynthesisUtterance | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const streamingRafRef = useRef<number | null>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const isNearBottomRef = useRef<boolean>(true);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     // 로컬 스토리지에서 프로젝트와 대화 불러오기
     useEffect(() => {
@@ -170,14 +311,25 @@ const ChatGPTInterface: React.FC = () => {
         localStorage.setItem('chatgpt-conversations', JSON.stringify(toSave));
     }, [conversations]);
 
-    // 메시지 스크롤
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    // 메시지 스크롤 (사용자가 아래쪽을 보고 있을 때만 자동 스크롤)
+    const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+        messagesEndRef.current?.scrollIntoView({ behavior });
+    }, []);
+
+    const handleMessagesScroll = useCallback(() => {
+        const el = messagesContainerRef.current;
+        if (!el) return;
+        const threshold = 120; // px
+        const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        isNearBottomRef.current = distanceToBottom <= threshold;
+    }, []);
 
     useEffect(() => {
-        scrollToBottom();
-    }, [currentConversation?.messages]);
+        // 자동 스크롤이 활성화되어 있고, 아래를 보고 있는 경우에만 따라가기
+        if (autoScroll && isNearBottomRef.current) {
+            scrollToBottom(isStreaming ? 'auto' : 'smooth');
+        }
+    }, [currentConversation?.messages, isStreaming, scrollToBottom, autoScroll]);
 
     // 새 프로젝트 생성 (백엔드 API 사용)
     // 프로젝트 생성 (useCallback으로 메모이제이션)
@@ -373,6 +525,37 @@ const ChatGPTInterface: React.FC = () => {
         return '알 수 없는 오류가 발생했습니다.';
     }, []);
 
+    // 대화 제목 자동 생성 함수
+    const generateConversationTitle = useCallback(async (
+        userMessage: string,
+        assistantResponse?: string
+    ): Promise<string> => {
+        try {
+            const response = await axios.post(
+                `${API_BASE_URL}/api/chat/title`,
+                {
+                    message: userMessage,
+                    assistant_response: assistantResponse,
+                    max_length: 30,
+                },
+                { timeout: 5000 }
+            );
+
+            if (response.data?.data?.title) {
+                return response.data.data.title;
+            }
+        } catch (error) {
+            errorLogger.warn('대화 제목 자동 생성 실패, 기본 제목 사용', {
+                component: 'ChatGPTInterface',
+                action: 'generateConversationTitle',
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+
+        // 폴백: 첫 30자 사용
+        return userMessage.substring(0, 30) || '새 대화';
+    }, []);
+
     // 대화 저장 헬퍼 함수
     const saveConversationsToStorage = useCallback((conversationsToSave: Conversation[]) => {
         try {
@@ -428,7 +611,7 @@ const ChatGPTInterface: React.FC = () => {
         };
 
         if (!currentConversation) {
-            setConversations([conversation, ...conversations]);
+            setConversations((prev) => [conversation, ...prev]);
             setCurrentConversation(conversation);
         }
 
@@ -440,60 +623,208 @@ const ChatGPTInterface: React.FC = () => {
             updatedAt: new Date(),
         };
         setCurrentConversation(updatedConversation);
-        setConversations(
-            conversations.map((c) => (c.id === conversation.id ? updatedConversation : c))
-        );
+        setConversations((prev) => {
+            const idx = prev.findIndex((c) => c.id === conversation.id);
+            if (idx >= 0) {
+                return prev.map((c) => (c.id === conversation.id ? updatedConversation : c));
+            }
+            return [updatedConversation, ...prev];
+        });
 
         setInput('');
         setIsLoading(true);
+        setResponseStartTime(Date.now());
+        setLastResponseTime(null);
 
         try {
-            // 백엔드 API 호출 (재시도 로직 포함)
-            const response = await apiCallWithRetry(
-                () => axios.post(
-                    `${API_BASE_URL}/api/chat`,
-                    {
-                        message: trimmedInput,
+            const shouldStream = useStreaming && isStreamingSupported();
+
+            if (shouldStream) {
+                setIsStreaming(true);
+
+                // AbortController 생성
+                const abortController = new AbortController();
+                abortControllerRef.current = abortController;
+
+                const assistantId = `msg-${Date.now() + 1}`;
+                const assistantMessage: Message = {
+                    id: assistantId,
+                    role: 'assistant',
+                    content: '',
+                    timestamp: new Date(),
+                };
+
+                const initialMessages = [...updatedMessages, assistantMessage];
+                const initialConversation = {
+                    ...updatedConversation,
+                    messages: initialMessages,
+                    updatedAt: new Date(),
+                };
+
+                setCurrentConversation(initialConversation);
+                setConversations((prev) => {
+                    const idx = prev.findIndex((c) => c.id === conversation.id);
+                    if (idx >= 0) {
+                        return prev.map((c) => (c.id === conversation.id ? initialConversation : c));
+                    }
+                    return [initialConversation, ...prev];
+                });
+
+                let accumulatedText = '';
+
+                await streamChatMessage(trimmedInput, conversation.id, {
+                    signal: abortController.signal,
+                    requestBody: {
                         quality: 'enhanced',
                         conversation_id: conversation.id,
-                        context: currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : undefined,
+                        context: currentProject
+                            ? { projectId: currentProject.id, projectName: currentProject.name }
+                            : undefined,
                     },
-                    {
-                        timeout: 30000,
-                        headers: {
-                            'Content-Type': 'application/json',
+                    onChunk: (chunk: string) => {
+                        accumulatedText += chunk;
+                        // 너무 잦은 상태 업데이트를 막기 위해 rAF로 배치 업데이트
+                        if (streamingRafRef.current) {
+                            cancelAnimationFrame(streamingRafRef.current);
+                        }
+                        streamingRafRef.current = requestAnimationFrame(() => {
+                            setCurrentConversation((prev) => {
+                                if (!prev || prev.id !== conversation.id) return prev;
+                                return {
+                                    ...prev,
+                                    updatedAt: new Date(),
+                                    messages: prev.messages.map((m) =>
+                                        m.id === assistantId ? { ...m, content: accumulatedText } : m
+                                    ),
+                                };
+                            });
+                        });
+                    },
+                    onComplete: async (fullText: string) => {
+                        setIsStreaming(false);
+                        abortControllerRef.current = null;
+                        if (streamingRafRef.current) {
+                            cancelAnimationFrame(streamingRafRef.current);
+                            streamingRafRef.current = null;
+                        }
+                        const finalMessages = initialMessages.map((m) =>
+                            m.id === assistantId ? { ...m, content: fullText } : m
+                        );
+
+                        // 새 대화인 경우 제목 자동 생성
+                        let newTitle = initialConversation.title;
+                        if (initialConversation.title === '새 대화' && finalMessages.length > 0) {
+                            newTitle = await generateConversationTitle(trimmedInput, fullText);
+                        }
+
+                        const finalConversation = {
+                            ...initialConversation,
+                            messages: finalMessages,
+                            updatedAt: new Date(),
+                            title: newTitle,
+                        };
+
+                        setCurrentConversation(finalConversation);
+                        setConversations((prev) => {
+                            const idx = prev.findIndex((c) => c.id === conversation.id);
+                            const next =
+                                idx >= 0
+                                    ? prev.map((c) => (c.id === conversation.id ? finalConversation : c))
+                                    : [finalConversation, ...prev];
+                            saveConversationsToStorage(next);
+                            return next;
+                        });
+                    },
+                    onError: (error: Error) => {
+                        setIsStreaming(false);
+                        abortControllerRef.current = null;
+                        if (streamingRafRef.current) {
+                            cancelAnimationFrame(streamingRafRef.current);
+                            streamingRafRef.current = null;
+                        }
+                        const errorContent = getErrorMessage(error);
+                        const finalMessages = initialMessages.map((m) =>
+                            m.id === assistantId
+                                ? {
+                                    ...m,
+                                    content: `❌ **오류 발생**\n\n${errorContent}\n\n다시 시도해주시거나 다른 질문을 해주세요.`,
+                                }
+                                : m
+                        );
+                        const finalConversation = {
+                            ...initialConversation,
+                            messages: finalMessages,
+                            updatedAt: new Date(),
+                        };
+
+                        setCurrentConversation(finalConversation);
+                        setConversations((prev) => {
+                            const idx = prev.findIndex((c) => c.id === conversation.id);
+                            if (idx >= 0) {
+                                return prev.map((c) => (c.id === conversation.id ? finalConversation : c));
+                            }
+                            return [finalConversation, ...prev];
+                        });
+                    },
+                });
+            } else {
+                setIsStreaming(false);
+                // 백엔드 API 호출 (재시도 로직 포함)
+                const response = await apiCallWithRetry(
+                    () => axios.post(
+                        `${API_BASE_URL}/api/chat`,
+                        {
+                            message: trimmedInput,
+                            quality: 'enhanced',
+                            conversation_id: conversation.id,
+                            context: currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : undefined,
                         },
-                    }
-                ),
-                3,
-                1000
-            );
+                        {
+                            timeout: 30000,
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    ),
+                    3,
+                    1000
+                );
 
-            // 응답 처리
-            const responseContent = extractResponseContent(response);
-            const assistantMessage: Message = {
-                id: `msg-${Date.now() + 1}`,
-                role: 'assistant',
-                content: responseContent,
-                timestamp: new Date(),
-            };
+                // 응답 처리
+                const responseContent = extractResponseContent(response);
+                const assistantMessage: Message = {
+                    id: `msg-${Date.now() + 1}`,
+                    role: 'assistant',
+                    content: responseContent,
+                    timestamp: new Date(),
+                };
 
-            const finalMessages = [...updatedMessages, assistantMessage];
-            const finalConversation = {
-                ...updatedConversation,
-                messages: finalMessages,
-                updatedAt: new Date(),
-                title: updatedConversation.title === '새 대화' && finalMessages.length > 0
-                    ? trimmedInput.substring(0, 30) || '새 대화'
-                    : updatedConversation.title,
-            };
+                const finalMessages = [...updatedMessages, assistantMessage];
 
-            setCurrentConversation(finalConversation);
-            const updatedConversations = conversations.map((c) => (c.id === conversation.id ? finalConversation : c));
-            setConversations(updatedConversations);
+                // 새 대화인 경우 제목 자동 생성
+                let newTitle = updatedConversation.title;
+                if (updatedConversation.title === '새 대화' && finalMessages.length > 0) {
+                    newTitle = await generateConversationTitle(trimmedInput, responseContent);
+                }
 
-            // 로컬 스토리지에 저장
-            saveConversationsToStorage(updatedConversations);
+                const finalConversation = {
+                    ...updatedConversation,
+                    messages: finalMessages,
+                    updatedAt: new Date(),
+                    title: newTitle,
+                };
+
+                setCurrentConversation(finalConversation);
+                setConversations((prev) => {
+                    const idx = prev.findIndex((c) => c.id === conversation.id);
+                    const next =
+                        idx >= 0
+                            ? prev.map((c) => (c.id === conversation.id ? finalConversation : c))
+                            : [finalConversation, ...prev];
+                    saveConversationsToStorage(next);
+                    return next;
+                });
+            }
         } catch (error) {
             errorLogger.error('메시지 전송 오류', error instanceof Error ? error : new Error(String(error)), {
                 component: 'ChatGPTInterface',
@@ -520,46 +851,224 @@ const ChatGPTInterface: React.FC = () => {
                 conversations.map((c) => (c.id === conversation.id ? finalConversation : c))
             );
         } finally {
+            setIsStreaming(false);
             setIsLoading(false);
+            // 응답 시간 계산
+            setLastResponseTime(prev => {
+                const startTime = responseStartTime;
+                if (startTime) {
+                    return Date.now() - startTime;
+                }
+                return prev;
+            });
+            setResponseStartTime(null);
         }
-    }, [input, isLoading, currentConversation, conversations, currentProject, apiCallWithRetry, validateInput, extractResponseContent, getErrorMessage, saveConversationsToStorage]);
+    }, [
+        input,
+        isLoading,
+        currentConversation,
+        conversations,
+        currentProject,
+        apiCallWithRetry,
+        validateInput,
+        extractResponseContent,
+        getErrorMessage,
+        saveConversationsToStorage,
+        useStreaming,
+        generateConversationTitle,
+        responseStartTime,
+    ]);
+
+    // 스트리밍 취소 (useCallback으로 메모이제이션)
+    const cancelStreaming = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+            setIsStreaming(false);
+            setIsLoading(false);
+            if (streamingRafRef.current) {
+                cancelAnimationFrame(streamingRafRef.current);
+                streamingRafRef.current = null;
+            }
+        }
+    }, []);
 
     // Enter 키 처리 (useCallback으로 메모이제이션)
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
+        } else if (e.key === 'Escape' && isStreaming) {
+            e.preventDefault();
+            cancelStreaming();
         }
-    }, [sendMessage]);
+    }, [sendMessage, isStreaming, cancelStreaming]);
 
-    // 대화 삭제 (useCallback으로 메모이제이션)
-    const deleteConversation = useCallback((id: string, e: React.MouseEvent) => {
+    // 대화 삭제 요청 (모달 열기)
+    const requestDeleteConversation = useCallback((conversation: Conversation, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (globalThis.window?.confirm('이 대화를 삭제하시겠습니까?')) {
-            setConversations((prev) => {
-                const updated = prev.filter((c) => c.id !== id);
-                // 로컬 스토리지에 저장
-                try {
-                    const toSave = updated.map((conv) => ({
-                        ...conv,
-                        createdAt: conv.createdAt.toISOString(),
-                        updatedAt: conv.updatedAt.toISOString(),
-                        messages: conv.messages.map((msg) => ({
-                            ...msg,
-                            timestamp: msg.timestamp.toISOString(),
-                        })),
-                    }));
-                    localStorage.setItem('chatgpt-conversations', JSON.stringify(toSave));
-                } catch (error) {
-                    errorLogger.error('대화 삭제 저장 실패', error instanceof Error ? error : new Error(String(error)), {
-                        component: 'ChatGPTInterface',
-                        action: 'deleteConversation',
-                    });
-                }
-                return updated;
-            });
+        setDeleteConfirmConversation(conversation);
+    }, []);
 
-            setCurrentConversation((prev) => (prev?.id === id ? null : prev));
+    // 대화 삭제 확정
+    const confirmDeleteConversation = useCallback(() => {
+        if (!deleteConfirmConversation) return;
+
+        const id = deleteConfirmConversation.id;
+        setConversations((prev) => {
+            const updated = prev.filter((c) => c.id !== id);
+            // 로컬 스토리지에 저장
+            try {
+                const toSave = updated.map((conv) => ({
+                    ...conv,
+                    createdAt: conv.createdAt.toISOString(),
+                    updatedAt: conv.updatedAt.toISOString(),
+                    messages: conv.messages.map((msg) => ({
+                        ...msg,
+                        timestamp: msg.timestamp.toISOString(),
+                    })),
+                }));
+                localStorage.setItem('chatgpt-conversations', JSON.stringify(toSave));
+            } catch (error) {
+                errorLogger.error('대화 삭제 저장 실패', error instanceof Error ? error : new Error(String(error)), {
+                    component: 'ChatGPTInterface',
+                    action: 'deleteConversation',
+                });
+            }
+            return updated;
+        });
+
+        setCurrentConversation((prev) => (prev?.id === id ? null : prev));
+        setDeleteConfirmConversation(null);
+    }, [deleteConfirmConversation]);
+
+    // 대화 삭제 취소
+    const cancelDeleteConversation = useCallback(() => {
+        setDeleteConfirmConversation(null);
+    }, []);
+
+    // 대화 복제
+    const duplicateConversation = useCallback((conversation: Conversation) => {
+        const newConversation: Conversation = {
+            id: `conv-${Date.now()}`,
+            title: `${conversation.title} (복사본)`,
+            messages: conversation.messages.map((msg) => ({
+                ...msg,
+                id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                timestamp: new Date(msg.timestamp),
+            })),
+            projectId: conversation.projectId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            pinned: false,
+        };
+
+        setConversations((prev) => [newConversation, ...prev]);
+        setCurrentConversation(newConversation);
+    }, []);
+
+    // 검색어 하이라이트 함수
+    const highlightSearchText = useCallback((text: string, query: string): React.ReactNode => {
+        if (!query.trim()) return text;
+
+        const lowerText = text.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        const index = lowerText.indexOf(lowerQuery);
+
+        if (index === -1) return text;
+
+        const before = text.substring(0, index);
+        const match = text.substring(index, index + query.length);
+        const after = text.substring(index + query.length);
+
+        return (
+            <>
+                {before}
+                <mark style={{
+                    backgroundColor: '#fbbf24',
+                    color: '#1a1a1a',
+                    padding: '0 2px',
+                    borderRadius: '2px',
+                }}>{match}</mark>
+                {after}
+            </>
+        );
+    }, []);
+
+    // 대화 이름 편집 시작
+    const startEditingConversationTitle = useCallback((conversationId: string, currentTitle: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingConversationId(conversationId);
+        setEditingConversationTitle(currentTitle);
+    }, []);
+
+    // 대화 이름 편집 취소
+    const cancelEditingConversationTitle = useCallback(() => {
+        setEditingConversationId(null);
+        setEditingConversationTitle('');
+    }, []);
+
+    // 대화 이름 저장
+    const saveConversationTitle = useCallback((conversationId: string) => {
+        const newTitle = editingConversationTitle.trim();
+        if (!newTitle) {
+            cancelEditingConversationTitle();
+            return;
+        }
+
+        setConversations(prev => {
+            const updated = prev.map(conv =>
+                conv.id === conversationId
+                    ? { ...conv, title: newTitle, updatedAt: new Date() }
+                    : conv
+            );
+            // 로컬 스토리지에 저장
+            try {
+                const toSave = updated.map((conv) => ({
+                    ...conv,
+                    createdAt: conv.createdAt.toISOString(),
+                    updatedAt: conv.updatedAt.toISOString(),
+                    messages: conv.messages.map((msg) => ({
+                        ...msg,
+                        timestamp: msg.timestamp.toISOString(),
+                    })),
+                }));
+                localStorage.setItem('chatgpt-conversations', JSON.stringify(toSave));
+            } catch (error) {
+                errorLogger.error('대화 제목 저장 실패', error instanceof Error ? error : new Error(String(error)), {
+                    component: 'ChatGPTInterface',
+                    action: 'saveConversationTitle',
+                });
+            }
+            return updated;
+        });
+
+        // 현재 대화도 업데이트
+        setCurrentConversation(prev =>
+            prev?.id === conversationId
+                ? { ...prev, title: newTitle, updatedAt: new Date() }
+                : prev
+        );
+
+        cancelEditingConversationTitle();
+    }, [editingConversationTitle, cancelEditingConversationTitle]);
+
+    // 상대적 시간 포맷 (오늘, 어제, 날짜)
+    const formatRelativeTime = useCallback((date: Date): string => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+        const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+        if (targetDate.getTime() === today.getTime()) {
+            return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        } else if (targetDate.getTime() === yesterday.getTime()) {
+            return '어제';
+        } else if (now.getTime() - date.getTime() < 7 * 24 * 60 * 60 * 1000) {
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            return `${days[date.getDay()]}요일`;
+        } else {
+            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
         }
     }, []);
 
@@ -578,6 +1087,958 @@ const ChatGPTInterface: React.FC = () => {
         }
     }, []);
 
+    // 메시지 북마크 토글
+    const toggleBookmark = useCallback((messageId: string) => {
+        setCurrentConversation((prev) => {
+            if (!prev) return prev;
+            const updated = {
+                ...prev,
+                messages: prev.messages.map((m) =>
+                    m.id === messageId ? { ...m, bookmarked: !m.bookmarked } : m
+                ),
+            };
+            // 로컬 스토리지에도 저장
+            setConversations((prevConvs) =>
+                prevConvs.map((c) => (c.id === prev.id ? updated : c))
+            );
+            return updated;
+        });
+    }, []);
+
+    // 메시지 반응 (좋아요/싫어요)
+    const setMessageReaction = useCallback((messageId: string, reaction: MessageReaction) => {
+        setCurrentConversation((prev) => {
+            if (!prev) return prev;
+            const updated = {
+                ...prev,
+                messages: prev.messages.map((m) =>
+                    m.id === messageId
+                        ? { ...m, reaction: m.reaction === reaction ? null : reaction }
+                        : m
+                ),
+            };
+            setConversations((prevConvs) =>
+                prevConvs.map((c) => (c.id === prev.id ? updated : c))
+            );
+            return updated;
+        });
+    }, []);
+
+    // 개별 메시지 삭제
+    const deleteMessage = useCallback((messageId: string) => {
+        if (!window.confirm('이 메시지를 삭제하시겠습니까?')) return;
+
+        setCurrentConversation((prev) => {
+            if (!prev) return prev;
+            const updated = {
+                ...prev,
+                messages: prev.messages.filter((m) => m.id !== messageId),
+                updatedAt: new Date(),
+            };
+            setConversations((prevConvs) =>
+                prevConvs.map((c) => (c.id === prev.id ? updated : c))
+            );
+            return updated;
+        });
+    }, []);
+
+    // 메시지 접기/펼치기 토글
+    const toggleMessageCollapse = useCallback((messageId: string) => {
+        setCollapsedMessages(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(messageId)) {
+                newSet.delete(messageId);
+            } else {
+                newSet.add(messageId);
+            }
+            return newSet;
+        });
+    }, []);
+
+    // 긴 메시지 여부 확인 (500자 이상 또는 15줄 이상)
+    const isLongMessage = useCallback((content: string) => {
+        return content.length > 500 || content.split('\n').length > 15;
+    }, []);
+
+    // 현재 대화 메시지 전체 삭제
+    const clearCurrentConversation = useCallback(() => {
+        if (!currentConversation) return;
+        if (!window.confirm('현재 대화의 모든 메시지를 삭제하시겠습니까?\n대화 자체는 유지됩니다.')) return;
+
+        const updated = {
+            ...currentConversation,
+            messages: [],
+            updatedAt: new Date(),
+        };
+        setCurrentConversation(updated);
+        setConversations(prev => prev.map(c => c.id === currentConversation.id ? updated : c));
+        setCollapsedMessages(new Set());
+    }, [currentConversation]);
+
+    // 대화 고정/해제
+    const togglePinConversation = useCallback((conversationId: string) => {
+        setConversations((prev) =>
+            prev.map((c) =>
+                c.id === conversationId ? { ...c, pinned: !c.pinned } : c
+            )
+        );
+        // 현재 대화도 업데이트
+        setCurrentConversation((prev) => {
+            if (prev && prev.id === conversationId) {
+                return { ...prev, pinned: !prev.pinned };
+            }
+            return prev;
+        });
+    }, []);
+
+    // 테마 전환
+    const toggleTheme = useCallback(() => {
+        setTheme((prev) => {
+            const next = prev === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('chatgpt-theme', next);
+            return next;
+        });
+    }, []);
+
+    // 시스템 테마 변경 감지
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+        const handleChange = (e: MediaQueryListEvent) => {
+            const savedTheme = localStorage.getItem('chatgpt-theme');
+            if (!savedTheme) {
+                setTheme(e.matches ? 'light' : 'dark');
+            }
+        };
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, []);
+
+    // 네트워크 상태 감지
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    // 스토리지 사용량 계산
+    useEffect(() => {
+        const calculateStorageUsage = () => {
+            try {
+                let totalSize = 0;
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key) {
+                        const value = localStorage.getItem(key) || '';
+                        totalSize += (key.length + value.length) * 2; // UTF-16 인코딩
+                    }
+                }
+                // localStorage 일반적 제한: 5MB
+                setStorageUsage({
+                    used: totalSize,
+                    total: 5 * 1024 * 1024,
+                });
+            } catch {
+                setStorageUsage(null);
+            }
+        };
+
+        calculateStorageUsage();
+        // 대화가 변경될 때마다 재계산
+    }, [conversations]);
+
+    // 테마 스타일 변수
+    const themeStyles = useMemo(() => {
+        if (theme === 'light') {
+            return {
+                bgPrimary: '#ffffff',
+                bgSecondary: '#f7f7f8',
+                bgTertiary: '#ececec',
+                textPrimary: '#1a1a1a',
+                textSecondary: '#666666',
+                borderColor: 'rgba(0, 0, 0, 0.1)',
+                inputBg: '#f0f0f0',
+                messageBgUser: '#e3f2fd',
+                messageBgAssistant: '#f5f5f5',
+                accentColor: '#2563eb',
+            };
+        }
+        return {
+            bgPrimary: '#343541',
+            bgSecondary: '#202123',
+            bgTertiary: '#2a2b32',
+            textPrimary: '#ececf1',
+            textSecondary: '#8e8ea0',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            inputBg: '#40414f',
+            messageBgUser: '#343541',
+            messageBgAssistant: '#444654',
+            accentColor: '#19c37d',
+        };
+    }, [theme]);
+
+    // 북마크된 메시지 필터링
+    const bookmarkedMessages = useMemo(() => {
+        if (!currentConversation) return [];
+        return currentConversation.messages.filter((m) => m.bookmarked);
+    }, [currentConversation]);
+
+    // 대화 내 검색 결과
+    const messageSearchResults = useMemo(() => {
+        if (!currentConversation || !messageSearchQuery.trim()) return [];
+        const query = messageSearchQuery.toLowerCase();
+        return currentConversation.messages
+            .map((m, index) => ({ message: m, index }))
+            .filter(({ message }) => message.content.toLowerCase().includes(query));
+    }, [currentConversation, messageSearchQuery]);
+
+    // 대화 통계
+    const conversationStats = useMemo(() => {
+        if (!currentConversation) return null;
+        const messages = currentConversation.messages;
+        const userMessages = messages.filter(m => m.role === 'user');
+        const assistantMessages = messages.filter(m => m.role === 'assistant');
+        const totalChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+        const estimatedTokens = Math.ceil(totalChars / 4);
+        return {
+            total: messages.length,
+            user: userMessages.length,
+            assistant: assistantMessages.length,
+            chars: totalChars,
+            tokens: estimatedTokens,
+        };
+    }, [currentConversation]);
+
+    // 검색 결과 탐색
+    const navigateMessageSearch = useCallback((direction: 'prev' | 'next') => {
+        if (messageSearchResults.length === 0) return;
+        setMessageSearchIndex((prev) => {
+            if (direction === 'next') {
+                return (prev + 1) % messageSearchResults.length;
+            } else {
+                return (prev - 1 + messageSearchResults.length) % messageSearchResults.length;
+            }
+        });
+    }, [messageSearchResults.length]);
+
+    // 검색 결과로 스크롤
+    useEffect(() => {
+        if (messageSearchResults.length > 0 && messageSearchQuery.trim()) {
+            const targetMessage = messageSearchResults[messageSearchIndex];
+            const element = document.getElementById(`message-${targetMessage.message.id}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.style.animation = 'highlight-pulse 1s ease-out';
+                setTimeout(() => {
+                    element.style.animation = '';
+                }, 1000);
+            }
+        }
+    }, [messageSearchIndex, messageSearchResults, messageSearchQuery]);
+
+    // 빠른 후속 질문 제안 생성
+    const generateQuickSuggestions = useCallback((lastAssistantMessage: string, lastUserMessage: string) => {
+        const suggestions: string[] = [];
+        const msgLower = lastAssistantMessage.toLowerCase();
+        const userMsgLower = lastUserMessage.toLowerCase();
+
+        // 단계별 설명이 있으면 "더 자세히" 제안
+        if (msgLower.includes('단계') || msgLower.includes('방법')) {
+            suggestions.push('더 자세히 설명해줘');
+            suggestions.push('예시를 들어줘');
+        }
+
+        // 장단점이 있으면 대안 제안
+        if (msgLower.includes('장점') || msgLower.includes('단점')) {
+            suggestions.push('대안이 있을까?');
+            suggestions.push('어떤 경우에 추천해?');
+        }
+
+        // 비교 내용이 있으면 추천 제안
+        if (msgLower.includes('비교') || msgLower.includes('vs')) {
+            suggestions.push('어떤 걸 추천해?');
+            suggestions.push('내 상황에 맞는 건?');
+        }
+
+        // 기본 후속 질문
+        if (suggestions.length === 0) {
+            suggestions.push('더 알려줘');
+            suggestions.push('요약해줘');
+        }
+
+        // 사용자 질문 기반 후속 제안
+        if (userMsgLower.includes('어떻게')) {
+            suggestions.push('주의할 점은?');
+        }
+        if (userMsgLower.includes('추천')) {
+            suggestions.push('다른 옵션은?');
+        }
+
+        // 최대 3개로 제한
+        setQuickSuggestions(suggestions.slice(0, 3));
+    }, []);
+
+    // TTS: 메시지 음성 읽기
+    const speakMessage = useCallback((messageId: string, content: string) => {
+        // 이미 읽고 있는 중이면 중지
+        if (speakingMessageId === messageId) {
+            window.speechSynthesis.cancel();
+            setSpeakingMessageId(null);
+            speechSynthRef.current = null;
+            return;
+        }
+
+        // 다른 메시지 읽고 있으면 중지
+        if (speakingMessageId) {
+            window.speechSynthesis.cancel();
+        }
+
+        // 마크다운/코드 블록 제거
+        const cleanText = content
+            .replace(/```[\s\S]*?```/g, '코드 블록')
+            .replace(/`[^`]+`/g, '')
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .replace(/#{1,6}\s/g, '')
+            .replace(/\*{1,2}([^*]+)\*{1,2}/g, '$1')
+            .replace(/_{1,2}([^_]+)_{1,2}/g, '$1')
+            .replace(/~~([^~]+)~~/g, '$1')
+            .replace(/>\s/g, '')
+            .replace(/[-*+]\s/g, '')
+            .replace(/\d+\.\s/g, '')
+            .trim();
+
+        if (!cleanText) return;
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        // 한국어 음성 찾기
+        const voices = window.speechSynthesis.getVoices();
+        const koreanVoice = voices.find(v => v.lang.includes('ko'));
+        if (koreanVoice) {
+            utterance.voice = koreanVoice;
+        }
+
+        utterance.onend = () => {
+            setSpeakingMessageId(null);
+            speechSynthRef.current = null;
+        };
+
+        utterance.onerror = () => {
+            setSpeakingMessageId(null);
+            speechSynthRef.current = null;
+        };
+
+        speechSynthRef.current = utterance;
+        setSpeakingMessageId(messageId);
+        window.speechSynthesis.speak(utterance);
+    }, [speakingMessageId]);
+
+    // TTS 정리
+    useEffect(() => {
+        return () => {
+            window.speechSynthesis.cancel();
+        };
+    }, []);
+
+    // 타임스탬프 표시 토글
+    const toggleTimestamps = useCallback(() => {
+        setShowTimestamps(prev => {
+            const newValue = !prev;
+            localStorage.setItem('chatgpt-show-timestamps', String(newValue));
+            return newValue;
+        });
+    }, []);
+
+    // 대화 메시지가 업데이트될 때 빠른 제안 생성
+    useEffect(() => {
+        if (!currentConversation || currentConversation.messages.length < 2) {
+            setQuickSuggestions([]);
+            return;
+        }
+
+        const messages = currentConversation.messages;
+        const lastMessage = messages[messages.length - 1];
+        const secondLastMessage = messages[messages.length - 2];
+
+        // 마지막 메시지가 AI 응답이고 로딩 중이 아닐 때만 제안 생성
+        if (lastMessage?.role === 'assistant' && secondLastMessage?.role === 'user' && !isLoading && !isStreaming) {
+            generateQuickSuggestions(lastMessage.content, secondLastMessage.content);
+        } else {
+            setQuickSuggestions([]);
+        }
+    }, [currentConversation?.messages, isLoading, isStreaming, generateQuickSuggestions]);
+
+    // 대화 내보내기 (Markdown 또는 JSON)
+    const exportConversation = useCallback((format: 'markdown' | 'json' = 'markdown') => {
+        if (!currentConversation || currentConversation.messages.length === 0) {
+            alert('내보낼 대화가 없습니다.');
+            return;
+        }
+
+        let content: string;
+        let filename: string;
+        let mimeType: string;
+
+        if (format === 'markdown') {
+            const lines: string[] = [
+                `# ${currentConversation.title}`,
+                '',
+                `> 생성일: ${currentConversation.createdAt.toLocaleString('ko-KR')}`,
+                `> 메시지 수: ${currentConversation.messages.length}`,
+                '',
+                '---',
+                '',
+            ];
+
+            currentConversation.messages.forEach((msg) => {
+                const role = msg.role === 'user' ? '👤 **사용자**' : '🤖 **AI**';
+                const time = msg.timestamp.toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+                lines.push(`### ${role} (${time})`);
+                lines.push('');
+                lines.push(msg.content);
+                lines.push('');
+                lines.push('---');
+                lines.push('');
+            });
+
+            content = lines.join('\n');
+            filename = `${currentConversation.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.md`;
+            mimeType = 'text/markdown';
+        } else {
+            const exportData = {
+                id: currentConversation.id,
+                title: currentConversation.title,
+                createdAt: currentConversation.createdAt.toISOString(),
+                updatedAt: currentConversation.updatedAt.toISOString(),
+                messages: currentConversation.messages.map((msg) => ({
+                    id: msg.id,
+                    role: msg.role,
+                    content: msg.content,
+                    timestamp: msg.timestamp.toISOString(),
+                })),
+            };
+            content = JSON.stringify(exportData, null, 2);
+            filename = `${currentConversation.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.json`;
+            mimeType = 'application/json';
+        }
+
+        // 파일 다운로드
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
+    }, [currentConversation]);
+
+    // 대화 가져오기 (JSON 파일)
+    const importConversation = useCallback(() => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json';
+        fileInput.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+
+                // 데이터 유효성 검사
+                if (!data.title || !data.messages || !Array.isArray(data.messages)) {
+                    alert('잘못된 대화 파일 형식입니다.');
+                    return;
+                }
+
+                // 새 대화 생성
+                const newConversation: Conversation = {
+                    id: `conv-${Date.now()}`,
+                    title: data.title || '가져온 대화',
+                    messages: data.messages.map((msg: { id?: string; role: string; content: string; timestamp?: string; bookmarked?: boolean }) => ({
+                        id: msg.id || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        role: msg.role as 'user' | 'assistant',
+                        content: msg.content,
+                        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+                        bookmarked: msg.bookmarked || false,
+                    })),
+                    projectId: currentProject?.id,
+                    createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+                    updatedAt: new Date(),
+                    pinned: false,
+                };
+
+                setConversations((prev) => [newConversation, ...prev]);
+                setCurrentConversation(newConversation);
+
+                setShowCopyToast(true);
+                setTimeout(() => setShowCopyToast(false), 2000);
+            } catch (error) {
+                errorLogger.error('대화 가져오기 실패', error instanceof Error ? error : new Error(String(error)), {
+                    component: 'ChatGPTInterface',
+                    action: 'importConversation',
+                });
+                alert('대화 파일을 읽는 중 오류가 발생했습니다.');
+            }
+        };
+        fileInput.click();
+    }, [currentProject]);
+
+    // 메시지 재생성 (마지막 AI 응답을 다시 생성)
+    const regenerateMessage = useCallback(async (messageId: string) => {
+        if (!currentConversation || isLoading || isStreaming) return;
+
+        // 해당 메시지의 인덱스 찾기
+        const messageIndex = currentConversation.messages.findIndex(m => m.id === messageId);
+        if (messageIndex === -1) return;
+
+        const targetMessage = currentConversation.messages[messageIndex];
+        if (targetMessage.role !== 'assistant') return;
+
+        // 바로 이전 사용자 메시지 찾기
+        let userMessageIndex = messageIndex - 1;
+        while (userMessageIndex >= 0 && currentConversation.messages[userMessageIndex].role !== 'user') {
+            userMessageIndex--;
+        }
+        if (userMessageIndex < 0) return;
+
+        const userMessage = currentConversation.messages[userMessageIndex];
+
+        // 해당 메시지까지의 히스토리만 유지 (재생성할 메시지 제거)
+        const messagesBeforeRegeneration = currentConversation.messages.slice(0, messageIndex);
+
+        // 대화 상태 업데이트
+        const updatedConversation = {
+            ...currentConversation,
+            messages: messagesBeforeRegeneration,
+            updatedAt: new Date(),
+        };
+        setCurrentConversation(updatedConversation);
+        setConversations(prev => prev.map(c => c.id === currentConversation.id ? updatedConversation : c));
+
+        // 입력창에 원래 질문 설정하고 전송
+        setInput(userMessage.content);
+
+        // 약간의 딜레이 후 메시지 전송 (상태 업데이트 후)
+        setTimeout(() => {
+            // input이 설정된 후 sendMessage 호출을 위해 직접 API 호출
+            const trimmedInput = userMessage.content.trim();
+            if (!trimmedInput) return;
+
+            setInput('');
+            setIsLoading(true);
+
+            const shouldStream = useStreaming && isStreamingSupported();
+            const conversation = updatedConversation;
+
+            if (shouldStream) {
+                setIsStreaming(true);
+                const abortController = new AbortController();
+                abortControllerRef.current = abortController;
+
+                const assistantId = `msg-${Date.now() + 1}`;
+                const assistantMessage: Message = {
+                    id: assistantId,
+                    role: 'assistant',
+                    content: '',
+                    timestamp: new Date(),
+                };
+
+                const initialMessages = [...messagesBeforeRegeneration, assistantMessage];
+                const initialConversation = {
+                    ...conversation,
+                    messages: initialMessages,
+                    updatedAt: new Date(),
+                };
+
+                setCurrentConversation(initialConversation);
+                setConversations(prev => prev.map(c => c.id === conversation.id ? initialConversation : c));
+
+                let accumulatedText = '';
+
+                streamChatMessage(trimmedInput, conversation.id, {
+                    signal: abortController.signal,
+                    requestBody: {
+                        quality: 'enhanced',
+                        conversation_id: conversation.id,
+                        context: currentProject
+                            ? { projectId: currentProject.id, projectName: currentProject.name }
+                            : undefined,
+                    },
+                    onChunk: (chunk: string) => {
+                        accumulatedText += chunk;
+                        if (streamingRafRef.current) {
+                            cancelAnimationFrame(streamingRafRef.current);
+                        }
+                        streamingRafRef.current = requestAnimationFrame(() => {
+                            setCurrentConversation((prev) => {
+                                if (!prev || prev.id !== conversation.id) return prev;
+                                return {
+                                    ...prev,
+                                    updatedAt: new Date(),
+                                    messages: prev.messages.map((m) =>
+                                        m.id === assistantId ? { ...m, content: accumulatedText } : m
+                                    ),
+                                };
+                            });
+                        });
+                    },
+                    onComplete: (fullText: string) => {
+                        setIsStreaming(false);
+                        setIsLoading(false);
+                        abortControllerRef.current = null;
+                        if (streamingRafRef.current) {
+                            cancelAnimationFrame(streamingRafRef.current);
+                            streamingRafRef.current = null;
+                        }
+                        const finalMessages = initialMessages.map((m) =>
+                            m.id === assistantId ? { ...m, content: fullText } : m
+                        );
+                        const finalConversation = {
+                            ...initialConversation,
+                            messages: finalMessages,
+                            updatedAt: new Date(),
+                        };
+                        setCurrentConversation(finalConversation);
+                        setConversations((prev) => {
+                            const next = prev.map((c) => (c.id === conversation.id ? finalConversation : c));
+                            saveConversationsToStorage(next);
+                            return next;
+                        });
+                    },
+                    onError: (error: Error) => {
+                        setIsStreaming(false);
+                        setIsLoading(false);
+                        abortControllerRef.current = null;
+                        const errorContent = getErrorMessage(error);
+                        const finalMessages = initialMessages.map((m) =>
+                            m.id === assistantId
+                                ? { ...m, content: `❌ **재생성 오류**\n\n${errorContent}` }
+                                : m
+                        );
+                        const finalConversation = {
+                            ...initialConversation,
+                            messages: finalMessages,
+                            updatedAt: new Date(),
+                        };
+                        setCurrentConversation(finalConversation);
+                        setConversations(prev => prev.map(c => c.id === conversation.id ? finalConversation : c));
+                    },
+                });
+            } else {
+                // 비스트리밍 모드
+                axios.post(
+                    `${API_BASE_URL}/api/chat`,
+                    {
+                        message: trimmedInput,
+                        quality: 'enhanced',
+                        conversation_id: conversation.id,
+                        context: currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : undefined,
+                    },
+                    { timeout: 30000 }
+                ).then(response => {
+                    const responseContent = extractResponseContent(response);
+                    const assistantMessage: Message = {
+                        id: `msg-${Date.now() + 1}`,
+                        role: 'assistant',
+                        content: responseContent,
+                        timestamp: new Date(),
+                    };
+                    const finalMessages = [...messagesBeforeRegeneration, assistantMessage];
+                    const finalConversation = {
+                        ...conversation,
+                        messages: finalMessages,
+                        updatedAt: new Date(),
+                    };
+                    setCurrentConversation(finalConversation);
+                    setConversations((prev) => {
+                        const next = prev.map((c) => (c.id === conversation.id ? finalConversation : c));
+                        saveConversationsToStorage(next);
+                        return next;
+                    });
+                }).catch(error => {
+                    const errorContent = getErrorMessage(error);
+                    const errorMessage: Message = {
+                        id: `msg-${Date.now() + 1}`,
+                        role: 'assistant',
+                        content: `❌ **재생성 오류**\n\n${errorContent}`,
+                        timestamp: new Date(),
+                    };
+                    const finalMessages = [...messagesBeforeRegeneration, errorMessage];
+                    const finalConversation = {
+                        ...conversation,
+                        messages: finalMessages,
+                        updatedAt: new Date(),
+                    };
+                    setCurrentConversation(finalConversation);
+                    setConversations(prev => prev.map(c => c.id === conversation.id ? finalConversation : c));
+                }).finally(() => {
+                    setIsLoading(false);
+                });
+            }
+        }, 50);
+    }, [
+        currentConversation,
+        isLoading,
+        isStreaming,
+        useStreaming,
+        currentProject,
+        getErrorMessage,
+        extractResponseContent,
+        saveConversationsToStorage,
+    ]);
+
+    // 메시지 편집 시작
+    const startEditingMessage = useCallback((messageId: string, content: string) => {
+        if (isLoading || isStreaming) return;
+        setEditingMessageId(messageId);
+        setEditingContent(content);
+    }, [isLoading, isStreaming]);
+
+    // 메시지 편집 취소
+    const cancelEditingMessage = useCallback(() => {
+        setEditingMessageId(null);
+        setEditingContent('');
+    }, []);
+
+    // 메시지 편집 저장 및 재전송
+    const saveEditedMessage = useCallback(async (messageId: string) => {
+        if (!currentConversation || isLoading || isStreaming) return;
+
+        const trimmedContent = editingContent.trim();
+        if (!trimmedContent) {
+            cancelEditingMessage();
+            return;
+        }
+
+        // 편집한 메시지의 인덱스 찾기
+        const messageIndex = currentConversation.messages.findIndex(m => m.id === messageId);
+        if (messageIndex === -1) {
+            cancelEditingMessage();
+            return;
+        }
+
+        const targetMessage = currentConversation.messages[messageIndex];
+        if (targetMessage.role !== 'user') {
+            cancelEditingMessage();
+            return;
+        }
+
+        // 편집한 메시지까지만 유지 (이후 메시지 제거)
+        const messagesUntilEdited = currentConversation.messages.slice(0, messageIndex);
+        const editedUserMessage: Message = {
+            ...targetMessage,
+            content: trimmedContent,
+            timestamp: new Date(),
+        };
+
+        const updatedConversation = {
+            ...currentConversation,
+            messages: [...messagesUntilEdited, editedUserMessage],
+            updatedAt: new Date(),
+        };
+
+        setCurrentConversation(updatedConversation);
+        setConversations(prev => prev.map(c => c.id === currentConversation.id ? updatedConversation : c));
+        cancelEditingMessage();
+
+        // 새 응답 생성
+        setIsLoading(true);
+        const conversation = updatedConversation;
+
+        const shouldStream = useStreaming && isStreamingSupported();
+
+        if (shouldStream) {
+            setIsStreaming(true);
+            const abortController = new AbortController();
+            abortControllerRef.current = abortController;
+
+            const assistantId = `msg-${Date.now() + 1}`;
+            const assistantMessage: Message = {
+                id: assistantId,
+                role: 'assistant',
+                content: '',
+                timestamp: new Date(),
+            };
+
+            const initialMessages = [...updatedConversation.messages, assistantMessage];
+            const initialConversation = {
+                ...conversation,
+                messages: initialMessages,
+                updatedAt: new Date(),
+            };
+
+            setCurrentConversation(initialConversation);
+            setConversations(prev => prev.map(c => c.id === conversation.id ? initialConversation : c));
+
+            let accumulatedText = '';
+
+            // 대화 히스토리 구성 (최근 10개 메시지)
+            const conversationHistory = updatedConversation.messages.slice(-10).map(m => ({
+                role: m.role,
+                content: m.content,
+            }));
+
+            streamChatMessage(trimmedContent, conversation.id, {
+                signal: abortController.signal,
+                requestBody: {
+                    quality: 'enhanced',
+                    conversation_id: conversation.id,
+                    context: {
+                        ...(currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : {}),
+                        conversation_history: conversationHistory,
+                    },
+                    // 응답 스타일 및 다양성 옵션
+                    response_style: responseStyle,
+                    perspective: perspective,
+                    max_tokens: responseStyle === 'comprehensive' ? 8192 : 4096,
+                    handle_multiple_questions: true,
+                    diversity: true,
+                    temperature: 0.8,
+                },
+                onChunk: (chunk: string) => {
+                    accumulatedText += chunk;
+                    if (streamingRafRef.current) {
+                        cancelAnimationFrame(streamingRafRef.current);
+                    }
+                    streamingRafRef.current = requestAnimationFrame(() => {
+                        setCurrentConversation((prev) => {
+                            if (!prev || prev.id !== conversation.id) return prev;
+                            return {
+                                ...prev,
+                                updatedAt: new Date(),
+                                messages: prev.messages.map((m) =>
+                                    m.id === assistantId ? { ...m, content: accumulatedText } : m
+                                ),
+                            };
+                        });
+                    });
+                },
+                onComplete: (fullText: string) => {
+                    setIsStreaming(false);
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                    if (streamingRafRef.current) {
+                        cancelAnimationFrame(streamingRafRef.current);
+                        streamingRafRef.current = null;
+                    }
+                    const finalMessages = initialMessages.map((m) =>
+                        m.id === assistantId ? { ...m, content: fullText } : m
+                    );
+                    const finalConversation = {
+                        ...initialConversation,
+                        messages: finalMessages,
+                        updatedAt: new Date(),
+                    };
+                    setCurrentConversation(finalConversation);
+                    setConversations((prev) => {
+                        const next = prev.map((c) => (c.id === conversation.id ? finalConversation : c));
+                        saveConversationsToStorage(next);
+                        return next;
+                    });
+                },
+                onError: (error: Error) => {
+                    setIsStreaming(false);
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                    const errorContent = getErrorMessage(error);
+                    const finalMessages = initialMessages.map((m) =>
+                        m.id === assistantId
+                            ? { ...m, content: `❌ **오류 발생**\n\n${errorContent}` }
+                            : m
+                    );
+                    const finalConversation = {
+                        ...initialConversation,
+                        messages: finalMessages,
+                        updatedAt: new Date(),
+                    };
+                    setCurrentConversation(finalConversation);
+                    setConversations(prev => prev.map(c => c.id === conversation.id ? finalConversation : c));
+                },
+            });
+        } else {
+            // 비스트리밍 모드
+            axios.post(
+                `${API_BASE_URL}/api/chat`,
+                {
+                    message: trimmedContent,
+                    quality: 'enhanced',
+                    conversation_id: conversation.id,
+                    context: currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : undefined,
+                },
+                { timeout: 30000 }
+            ).then(response => {
+                const responseContent = extractResponseContent(response);
+                const assistantMessage: Message = {
+                    id: `msg-${Date.now() + 1}`,
+                    role: 'assistant',
+                    content: responseContent,
+                    timestamp: new Date(),
+                };
+                const finalMessages = [...updatedConversation.messages, assistantMessage];
+                const finalConversation = {
+                    ...conversation,
+                    messages: finalMessages,
+                    updatedAt: new Date(),
+                };
+                setCurrentConversation(finalConversation);
+                setConversations((prev) => {
+                    const next = prev.map((c) => (c.id === conversation.id ? finalConversation : c));
+                    saveConversationsToStorage(next);
+                    return next;
+                });
+            }).catch(error => {
+                const errorContent = getErrorMessage(error);
+                const errorMessage: Message = {
+                    id: `msg-${Date.now() + 1}`,
+                    role: 'assistant',
+                    content: `❌ **오류 발생**\n\n${errorContent}`,
+                    timestamp: new Date(),
+                };
+                const finalMessages = [...updatedConversation.messages, errorMessage];
+                const finalConversation = {
+                    ...conversation,
+                    messages: finalMessages,
+                    updatedAt: new Date(),
+                };
+                setCurrentConversation(finalConversation);
+                setConversations(prev => prev.map(c => c.id === conversation.id ? finalConversation : c));
+            }).finally(() => {
+                setIsLoading(false);
+            });
+        }
+    }, [
+        currentConversation,
+        editingContent,
+        isLoading,
+        isStreaming,
+        useStreaming,
+        currentProject,
+        getErrorMessage,
+        extractResponseContent,
+        saveConversationsToStorage,
+        cancelEditingMessage,
+        responseStyle,
+        perspective,
+    ]);
+
     // 대화 검색 필터링
     const filteredConversations = useMemo(() => {
         let filtered = currentProject
@@ -592,8 +2053,93 @@ const ChatGPTInterface: React.FC = () => {
             );
         }
 
-        return filtered;
-    }, [conversations, currentProject, searchQuery]);
+        // 고정된 대화를 상단에, 그 다음 정렬 옵션에 따라 정렬
+        return [...filtered].sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+
+            switch (sortOption) {
+                case 'name':
+                    return a.title.localeCompare(b.title, 'ko');
+                case 'messages':
+                    return b.messages.length - a.messages.length;
+                case 'recent':
+                default:
+                    return b.updatedAt.getTime() - a.updatedAt.getTime();
+            }
+        });
+    }, [conversations, currentProject, searchQuery, sortOption]);
+
+    // 전역 키보드 단축키
+    useEffect(() => {
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            // 모달이 열려 있거나 편집 중이면 무시
+            if (showProjectModal || editingMessageId) return;
+
+            const isInputFocused = document.activeElement?.tagName === 'INPUT' ||
+                document.activeElement?.tagName === 'TEXTAREA';
+
+            // Ctrl/Cmd + N: 새 대화
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                startNewConversation();
+                return;
+            }
+
+            // Ctrl/Cmd + /: 사이드바 토글
+            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                e.preventDefault();
+                setSidebarOpen(prev => !prev);
+                return;
+            }
+
+            // Ctrl/Cmd + E: 대화 내보내기
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e' && currentConversation) {
+                e.preventDefault();
+                exportConversation('markdown');
+                return;
+            }
+
+            // Ctrl/Cmd + F: 대화 내 검색
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f' && currentConversation) {
+                e.preventDefault();
+                setShowMessageSearch(prev => !prev);
+                return;
+            }
+
+            // Escape: 스트리밍 취소 또는 검색 닫기
+            if (e.key === 'Escape') {
+                if (showMessageSearch) {
+                    setShowMessageSearch(false);
+                    setMessageSearchQuery('');
+                    setMessageSearchIndex(0);
+                    return;
+                }
+                if (isStreaming) {
+                    e.preventDefault();
+                    cancelStreaming();
+                    return;
+                }
+            }
+
+            // /: 입력창 포커스 (입력 중이 아닐 때)
+            if (e.key === '/' && !isInputFocused) {
+                e.preventDefault();
+                inputRef.current?.focus();
+                return;
+            }
+
+            // ?: 키보드 단축키 도움말
+            if (e.key === '?' && !isInputFocused) {
+                e.preventDefault();
+                setShowShortcutsHelp(prev => !prev);
+                return;
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, [showProjectModal, editingMessageId, isStreaming, currentConversation, startNewConversation, exportConversation, cancelStreaming, showMessageSearch]);
 
     // 입력창 자동 높이 조절
     useEffect(() => {
@@ -605,25 +2151,44 @@ const ChatGPTInterface: React.FC = () => {
 
     return (
         <div
-            className="chatgpt-interface"
+            className={`chatgpt-interface ${theme}`}
             style={{
                 minHeight: '100vh',
                 display: 'flex',
-                backgroundColor: '#343541',
-                color: '#ececf1',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                backgroundColor: themeStyles.bgPrimary,
+                color: themeStyles.textPrimary,
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                transition: 'background-color 0.3s, color 0.3s',
             }}
         >
             {/* 사이드바 */}
-            <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+            <div
+                className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}
+                style={{
+                    backgroundColor: themeStyles.bgSecondary,
+                    borderColor: themeStyles.borderColor,
+                    transition: 'background-color 0.3s',
+                }}
+            >
                 <div className="sidebar-header">
-                    <button className="new-chat-btn" onClick={startNewConversation}>
+                    <button className="new-chat-btn" onClick={startNewConversation} style={{ color: themeStyles.textPrimary }}>
                         <span>+</span> 새 대화
+                    </button>
+                    <button
+                        className="import-btn"
+                        onClick={importConversation}
+                        style={{ marginLeft: '8px', padding: '8px 10px', fontSize: '14px', background: 'transparent', border: `1px solid ${themeStyles.borderColor}`, borderRadius: '6px', color: themeStyles.textPrimary, cursor: 'pointer' }}
+                        title="JSON 파일에서 대화 가져오기"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ verticalAlign: 'middle' }}>
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
+                        </svg>
                     </button>
                     <button
                         className="new-project-btn"
                         onClick={() => setShowProjectModal(true)}
-                        style={{ marginLeft: '8px', padding: '8px 12px', fontSize: '14px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#ececf1', cursor: 'pointer' }}
+                        style={{ marginLeft: '4px', padding: '8px 12px', fontSize: '14px', background: 'transparent', border: `1px solid ${themeStyles.borderColor}`, borderRadius: '6px', color: themeStyles.textPrimary, cursor: 'pointer' }}
                     >
                         📁 프로젝트
                     </button>
@@ -654,6 +2219,50 @@ const ChatGPTInterface: React.FC = () => {
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M3 4h14M3 10h14M3 16h14" stroke="currentColor" strokeWidth="2" />
                         </svg>
+                    </button>
+                </div>
+
+                {/* 정렬 옵션 */}
+                <div style={{
+                    padding: '8px 10px',
+                    borderBottom: `1px solid ${themeStyles.borderColor}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                }}>
+                    <span style={{ fontSize: '11px', color: themeStyles.textSecondary }}>정렬:</span>
+                    <select
+                        value={sortOption}
+                        onChange={(e) => setSortOption(e.target.value as SortOption)}
+                        style={{
+                            flex: 1,
+                            padding: '4px 8px',
+                            fontSize: '12px',
+                            background: themeStyles.bgPrimary,
+                            border: `1px solid ${themeStyles.borderColor}`,
+                            borderRadius: '4px',
+                            color: themeStyles.textPrimary,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <option value="recent">최신순</option>
+                        <option value="name">이름순</option>
+                        <option value="messages">메시지 수</option>
+                    </select>
+                    <button
+                        onClick={() => setShowShortcutsHelp(true)}
+                        style={{
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            background: 'transparent',
+                            border: `1px solid ${themeStyles.borderColor}`,
+                            borderRadius: '4px',
+                            color: themeStyles.textSecondary,
+                            cursor: 'pointer',
+                        }}
+                        title="키보드 단축키 (? 키)"
+                    >
+                        ⌨️
                     </button>
                 </div>
 
@@ -723,45 +2332,300 @@ const ChatGPTInterface: React.FC = () => {
                             );
                         }
 
-                        return filteredConversations.map((conversation) => (
-                            <button
-                                key={conversation.id}
-                                type="button"
-                                className={`conversation-item ${currentConversation?.id === conversation.id ? 'active' : ''
-                                    }`}
-                                onClick={() => selectConversation(conversation)}
-                                aria-label={`대화 선택: ${conversation.title}`}
-                            >
-                                <div className="conversation-content">
-                                    <div className="conversation-title">{conversation.title}</div>
-                                    <div className="conversation-preview">
-                                        {conversation.messages.length > 0
-                                            ? conversation.messages.at(-1)?.content.substring(0, 50) ?? '빈 대화'
-                                            : '빈 대화'}
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    className="delete-btn"
-                                    onClick={(e) => deleteConversation(conversation.id, e)}
-                                    aria-label="대화 삭제"
+                        return filteredConversations.map((conversation) => {
+                            const isActive = currentConversation?.id === conversation.id;
+                            const lastMessage = isActive
+                                ? currentConversation?.messages?.at(-1)
+                                : conversation.messages.at(-1);
+                            const previewText = lastMessage?.content
+                                ? lastMessage.content.substring(0, 50)
+                                : '빈 대화';
+                            const isEditing = editingConversationId === conversation.id;
+
+                            return (
+                                <div
+                                    key={conversation.id}
+                                    className={`conversation-item ${currentConversation?.id === conversation.id ? 'active' : ''}`}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                                 >
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" />
-                                    </svg>
-                                </button>
-                            </button>
-                        ));
+                                    {isEditing ? (
+                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <input
+                                                type="text"
+                                                value={editingConversationTitle}
+                                                onChange={(e) => setEditingConversationTitle(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        saveConversationTitle(conversation.id);
+                                                    } else if (e.key === 'Escape') {
+                                                        cancelEditingConversationTitle();
+                                                    }
+                                                }}
+                                                onBlur={() => saveConversationTitle(conversation.id)}
+                                                autoFocus
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '4px 8px',
+                                                    fontSize: '14px',
+                                                    background: 'rgba(255,255,255,0.1)',
+                                                    border: '1px solid rgba(255,255,255,0.3)',
+                                                    borderRadius: '4px',
+                                                    color: '#ececf1',
+                                                    outline: 'none',
+                                                }}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="conversation-content"
+                                            onClick={() => selectConversation(conversation)}
+                                            onDoubleClick={(e) => startEditingConversationTitle(conversation.id, conversation.title, e)}
+                                            aria-label={`대화 선택: ${conversation.title}`}
+                                            title="더블클릭하여 이름 편집"
+                                            style={{
+                                                flex: 1,
+                                                textAlign: 'left',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'inherit',
+                                                cursor: 'pointer',
+                                                padding: 0,
+                                            }}
+                                        >
+                                            <div className="conversation-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                {conversation.pinned && (
+                                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="#fbbf24" style={{ flexShrink: 0 }}>
+                                                        <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z" />
+                                                    </svg>
+                                                )}
+                                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {highlightSearchText(conversation.title, searchQuery)}
+                                                </span>
+                                                <span style={{ fontSize: '11px', color: '#888', flexShrink: 0 }}>
+                                                    {formatRelativeTime(conversation.updatedAt)}
+                                                </span>
+                                            </div>
+                                            <div className="conversation-preview" style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                            }}>
+                                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {highlightSearchText(previewText, searchQuery)}
+                                                </span>
+                                                {conversation.messages.length > 0 && (
+                                                    <span style={{
+                                                        fontSize: '10px',
+                                                        padding: '2px 6px',
+                                                        background: 'rgba(255,255,255,0.1)',
+                                                        borderRadius: '10px',
+                                                        color: '#888',
+                                                        flexShrink: 0,
+                                                    }}>
+                                                        💬 {conversation.messages.length}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    )}
+
+                                    {!isEditing && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                className="pin-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    togglePinConversation(conversation.id);
+                                                }}
+                                                aria-label={conversation.pinned ? '고정 해제' : '대화 고정'}
+                                                title={conversation.pinned ? '고정 해제' : '상단에 고정'}
+                                                style={{
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    padding: '4px',
+                                                    color: conversation.pinned ? '#fbbf24' : 'inherit',
+                                                    opacity: conversation.pinned ? 1 : 0.6,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                }}
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                                    <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="edit-title-btn"
+                                                onClick={(e) => startEditingConversationTitle(conversation.id, conversation.title, e)}
+                                                aria-label="대화 이름 편집"
+                                                title="이름 편집"
+                                                style={{
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    padding: '4px',
+                                                    color: 'inherit',
+                                                    opacity: 0.6,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                }}
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5L13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="duplicate-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    duplicateConversation(conversation);
+                                                }}
+                                                aria-label="대화 복제"
+                                                title="대화 복제"
+                                                style={{
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    padding: '4px',
+                                                    color: 'inherit',
+                                                    opacity: 0.6,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                }}
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                                    <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="delete-btn"
+                                                onClick={(e) => requestDeleteConversation(conversation, e)}
+                                                aria-label="대화 삭제"
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" />
+                                                </svg>
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        });
                     })()}
+                </div>
+
+                {/* 테마 전환 버튼 */}
+                <div style={{
+                    padding: '12px',
+                    borderTop: `1px solid ${themeStyles.borderColor}`,
+                    marginTop: 'auto',
+                }}>
+                    <button
+                        onClick={toggleTheme}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            background: 'transparent',
+                            border: `1px solid ${themeStyles.borderColor}`,
+                            borderRadius: '6px',
+                            color: themeStyles.textPrimary,
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                        }}
+                        title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+                    >
+                        {theme === 'dark' ? (
+                            <>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                라이트 모드
+                            </>
+                        ) : (
+                            <>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                다크 모드
+                            </>
+                        )}
+                    </button>
+                    
+                    {/* 상태 표시 영역 */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: '8px',
+                        padding: '8px',
+                        fontSize: '11px',
+                        color: themeStyles.textSecondary,
+                        background: themeStyles.bgPrimary,
+                        borderRadius: '6px',
+                    }}>
+                        {/* 네트워크 상태 */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                        }}>
+                            <div style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: isOnline ? '#22c55e' : '#ef4444',
+                            }} />
+                            <span>{isOnline ? '온라인' : '오프라인'}</span>
+                        </div>
+                        
+                        {/* 스토리지 사용량 */}
+                        {storageUsage && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                            }} title={`${(storageUsage.used / 1024).toFixed(1)}KB / ${(storageUsage.total / 1024 / 1024).toFixed(0)}MB`}>
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z" />
+                                </svg>
+                                <span>{((storageUsage.used / storageUsage.total) * 100).toFixed(1)}%</span>
+                                <div style={{
+                                    width: '40px',
+                                    height: '4px',
+                                    background: themeStyles.borderColor,
+                                    borderRadius: '2px',
+                                    overflow: 'hidden',
+                                }}>
+                                    <div style={{
+                                        width: `${(storageUsage.used / storageUsage.total) * 100}%`,
+                                        height: '100%',
+                                        background: (storageUsage.used / storageUsage.total) > 0.8 ? '#ef4444' : '#3b82f6',
+                                        transition: 'width 0.3s',
+                                    }} />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* 메인 채팅 영역 */}
-            <div className="main-content">
+            <div className="main-content" style={{ backgroundColor: themeStyles.bgPrimary, transition: 'background-color 0.3s' }}>
                 {viewMode === 'notebook' && currentProject ? (
                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <h2 style={{ margin: 0, color: '#ececf1' }}>📓 노트북 LLM - {currentProject.name}</h2>
+                        <div style={{ padding: '16px', borderBottom: `1px solid ${themeStyles.borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <h2 style={{ margin: 0, color: themeStyles.textPrimary }}>📓 노트북 LLM - {currentProject.name}</h2>
                             <button
                                 onClick={() => setViewMode('chat')}
                                 style={{
@@ -799,7 +2663,306 @@ const ChatGPTInterface: React.FC = () => {
                     </div>
                 ) : currentConversation ? (
                     <>
-                        <div className="messages-container" role="log" aria-label="대화 메시지 목록" aria-live="polite" aria-atomic="false">
+                        {/* 대화 헤더 (제목 + 내보내기) */}
+                        <div style={{
+                            padding: '12px 16px',
+                            borderBottom: '1px solid rgba(255,255,255,0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'rgba(0,0,0,0.2)',
+                        }}>
+                            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 500, color: '#ececf1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
+                                {currentConversation.title}
+                            </h3>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    onClick={() => exportConversation('markdown')}
+                                    disabled={currentConversation.messages.length === 0}
+                                    style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        background: 'transparent',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        color: currentConversation.messages.length > 0 ? '#ececf1' : '#666',
+                                        cursor: currentConversation.messages.length > 0 ? 'pointer' : 'not-allowed',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                    }}
+                                    title="Markdown으로 내보내기 (Ctrl+E)"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+                                    </svg>
+                                    내보내기
+                                </button>
+                                <button
+                                    onClick={() => exportConversation('json')}
+                                    disabled={currentConversation.messages.length === 0}
+                                    style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        background: 'transparent',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        color: currentConversation.messages.length > 0 ? '#ececf1' : '#666',
+                                        cursor: currentConversation.messages.length > 0 ? 'pointer' : 'not-allowed',
+                                    }}
+                                    title="JSON으로 내보내기"
+                                >
+                                    JSON
+                                </button>
+                                <button
+                                    onClick={() => setShowMessageSearch(prev => !prev)}
+                                    style={{
+                                        padding: '6px 10px',
+                                        fontSize: '12px',
+                                        background: showMessageSearch ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                        border: showMessageSearch ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        color: '#ececf1',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                    }}
+                                    title="대화 내 검색 (Ctrl+F)"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                                    </svg>
+                                </button>
+                                {/* 타임스탬프 토글 */}
+                                <button
+                                    onClick={toggleTimestamps}
+                                    style={{
+                                        padding: '6px',
+                                        background: showTimestamps ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
+                                        border: showTimestamps ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        color: '#ececf1',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                    }}
+                                    title={showTimestamps ? '시간 숨기기' : '시간 표시'}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" />
+                                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" />
+                                    </svg>
+                                </button>
+                                {/* 자동 스크롤 토글 */}
+                                <button
+                                    onClick={() => setAutoScroll(prev => !prev)}
+                                    style={{
+                                        padding: '6px',
+                                        background: autoScroll ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
+                                        border: autoScroll ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        color: '#ececf1',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                    }}
+                                    title={autoScroll ? '자동 스크롤 끄기' : '자동 스크롤 켜기'}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" />
+                                    </svg>
+                                </button>
+                                {/* 대화 내용 전체 삭제 */}
+                                {currentConversation && currentConversation.messages.length > 0 && (
+                                    <button
+                                        onClick={clearCurrentConversation}
+                                        style={{
+                                            padding: '6px',
+                                            background: 'transparent',
+                                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                                            borderRadius: '4px',
+                                            color: '#ef4444',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            opacity: 0.8,
+                                        }}
+                                        title="대화 내용 전체 삭제"
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                                            <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {bookmarkedMessages.length > 0 && (
+                                    <span style={{
+                                        padding: '4px 8px',
+                                        fontSize: '11px',
+                                        background: 'rgba(251, 191, 36, 0.2)',
+                                        borderRadius: '4px',
+                                        color: '#fbbf24',
+                                    }}>
+                                        북마크 {bookmarkedMessages.length}
+                                    </span>
+                                )}
+                                {/* 대화 통계 */}
+                                {conversationStats && conversationStats.total > 0 && (
+                                    <span style={{
+                                        padding: '4px 8px',
+                                        fontSize: '11px',
+                                        background: 'rgba(59, 130, 246, 0.15)',
+                                        borderRadius: '4px',
+                                        color: '#93c5fd',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                    }}>
+                                        <span title={`사용자: ${conversationStats.user}, AI: ${conversationStats.assistant}`}>
+                                            💬 {conversationStats.total}
+                                        </span>
+                                        <span style={{ opacity: 0.5 }}>|</span>
+                                        <span title={`총 ${conversationStats.chars.toLocaleString()}자`}>
+                                            ~{conversationStats.tokens.toLocaleString()} 토큰
+                                        </span>
+                                    </span>
+                                )}
+                                {/* 마지막 응답 시간 */}
+                                {lastResponseTime && !isLoading && (
+                                    <span style={{
+                                        padding: '4px 8px',
+                                        fontSize: '11px',
+                                        background: 'rgba(34, 197, 94, 0.15)',
+                                        borderRadius: '4px',
+                                        color: '#86efac',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                    }}>
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" />
+                                            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" />
+                                        </svg>
+                                        {lastResponseTime < 1000
+                                            ? `${lastResponseTime}ms`
+                                            : `${(lastResponseTime / 1000).toFixed(1)}초`}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 대화 내 검색 바 */}
+                        {showMessageSearch && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 16px',
+                                background: 'rgba(0,0,0,0.3)',
+                                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                            }}>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="#888">
+                                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    value={messageSearchQuery}
+                                    onChange={(e) => {
+                                        setMessageSearchQuery(e.target.value);
+                                        setMessageSearchIndex(0);
+                                    }}
+                                    placeholder="대화에서 검색..."
+                                    autoFocus
+                                    style={{
+                                        flex: 1,
+                                        padding: '6px 10px',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        color: '#ececf1',
+                                        fontSize: '13px',
+                                        outline: 'none',
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            navigateMessageSearch('next');
+                                        } else if (e.key === 'Escape') {
+                                            setShowMessageSearch(false);
+                                            setMessageSearchQuery('');
+                                        }
+                                    }}
+                                />
+                                {messageSearchQuery && (
+                                    <span style={{ fontSize: '12px', color: '#888' }}>
+                                        {messageSearchResults.length > 0
+                                            ? `${messageSearchIndex + 1} / ${messageSearchResults.length}`
+                                            : '결과 없음'}
+                                    </span>
+                                )}
+                                <button
+                                    onClick={() => navigateMessageSearch('prev')}
+                                    disabled={messageSearchResults.length === 0}
+                                    style={{
+                                        padding: '4px 8px',
+                                        background: 'transparent',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        color: messageSearchResults.length > 0 ? '#ececf1' : '#666',
+                                        cursor: messageSearchResults.length > 0 ? 'pointer' : 'not-allowed',
+                                    }}
+                                    title="이전 결과"
+                                >
+                                    ↑
+                                </button>
+                                <button
+                                    onClick={() => navigateMessageSearch('next')}
+                                    disabled={messageSearchResults.length === 0}
+                                    style={{
+                                        padding: '4px 8px',
+                                        background: 'transparent',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        color: messageSearchResults.length > 0 ? '#ececf1' : '#666',
+                                        cursor: messageSearchResults.length > 0 ? 'pointer' : 'not-allowed',
+                                    }}
+                                    title="다음 결과"
+                                >
+                                    ↓
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowMessageSearch(false);
+                                        setMessageSearchQuery('');
+                                    }}
+                                    style={{
+                                        padding: '4px 8px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#888',
+                                        cursor: 'pointer',
+                                        fontSize: '16px',
+                                    }}
+                                    title="검색 닫기 (Esc)"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
+
+                        <div
+                            className="messages-container"
+                            role="log"
+                            aria-label="대화 메시지 목록"
+                            aria-live="polite"
+                            aria-atomic="false"
+                            ref={messagesContainerRef}
+                            onScroll={handleMessagesScroll}
+                        >
                             {currentConversation.messages.length === 0 ? (
                                 <div className="empty-state">
                                     <output>
@@ -811,55 +2974,460 @@ const ChatGPTInterface: React.FC = () => {
                                 currentConversation.messages.map((message) => (
                                     <article
                                         key={message.id}
-                                        className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
-                                        aria-label={`${message.role === 'user' ? '사용자' : 'AI'} 메시지`}
+                                        id={`message-${message.id}`}
+                                        className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}${message.bookmarked ? ' bookmarked' : ''}`}
+                                        aria-label={`${message.role === 'user' ? '사용자' : 'AI'} 메시지${message.bookmarked ? ' (북마크됨)' : ''}`}
+                                        style={{
+                                            borderLeft: message.bookmarked ? '3px solid #fbbf24' : undefined,
+                                        }}
                                     >
                                         <div className="message-avatar" aria-hidden="true">
                                             {message.role === 'user' ? '👤' : '🤖'}
                                         </div>
                                         <div className="message-content">
                                             <div className="message-text" role="text">
-                                                {message.role === 'assistant' ? (
-                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                        {message.content}
-                                                    </ReactMarkdown>
+                                                {editingMessageId === message.id ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <textarea
+                                                            value={editingContent}
+                                                            onChange={(e) => setEditingContent(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                                    e.preventDefault();
+                                                                    saveEditedMessage(message.id);
+                                                                } else if (e.key === 'Escape') {
+                                                                    cancelEditingMessage();
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                width: '100%',
+                                                                minHeight: '80px',
+                                                                padding: '12px',
+                                                                borderRadius: '8px',
+                                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                                background: 'rgba(255,255,255,0.1)',
+                                                                color: '#ececf1',
+                                                                fontSize: '14px',
+                                                                resize: 'vertical',
+                                                                fontFamily: 'inherit',
+                                                            }}
+                                                            autoFocus
+                                                        />
+                                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                            <button
+                                                                onClick={cancelEditingMessage}
+                                                                style={{
+                                                                    padding: '6px 12px',
+                                                                    borderRadius: '6px',
+                                                                    border: '1px solid rgba(255,255,255,0.2)',
+                                                                    background: 'transparent',
+                                                                    color: '#ececf1',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '13px',
+                                                                }}
+                                                            >
+                                                                취소
+                                                            </button>
+                                                            <button
+                                                                onClick={() => saveEditedMessage(message.id)}
+                                                                disabled={!editingContent.trim()}
+                                                                style={{
+                                                                    padding: '6px 12px',
+                                                                    borderRadius: '6px',
+                                                                    border: 'none',
+                                                                    background: editingContent.trim() ? '#19c37d' : '#555',
+                                                                    color: 'white',
+                                                                    cursor: editingContent.trim() ? 'pointer' : 'not-allowed',
+                                                                    fontSize: '13px',
+                                                                }}
+                                                            >
+                                                                저장 및 전송
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : message.role === 'assistant' ? (
+                                                    <>
+                                                        <div style={{
+                                                            maxHeight: collapsedMessages.has(message.id) ? '150px' : 'none',
+                                                            overflow: collapsedMessages.has(message.id) ? 'hidden' : 'visible',
+                                                            position: 'relative',
+                                                        }}>
+                                                            <ReactMarkdown
+                                                                remarkPlugins={[remarkGfm]}
+                                                                components={{
+                                                                    code: ({ className, children, ...props }) => {
+                                                                        const isInline = !className;
+                                                                        if (isInline) {
+                                                                            return (
+                                                                                <code
+                                                                                    style={{
+                                                                                        backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                                                                        padding: '2px 6px',
+                                                                                        borderRadius: '4px',
+                                                                                        fontSize: '0.9em',
+                                                                                    }}
+                                                                                    {...props}
+                                                                                >
+                                                                                    {children}
+                                                                                </code>
+                                                                            );
+                                                                        }
+                                                                        return (
+                                                                            <CodeBlock className={className} theme={theme}>
+                                                                                {children}
+                                                                            </CodeBlock>
+                                                                        );
+                                                                    },
+                                                                    pre: ({ children }) => <>{children}</>,
+                                                                } as Components}
+                                                            >
+                                                                {message.content}
+                                                            </ReactMarkdown>
+                                                            {collapsedMessages.has(message.id) && (
+                                                                <div style={{
+                                                                    position: 'absolute',
+                                                                    bottom: 0,
+                                                                    left: 0,
+                                                                    right: 0,
+                                                                    height: '60px',
+                                                                    background: `linear-gradient(transparent, ${theme === 'dark' ? '#2f2f2f' : '#f7f7f8'})`,
+                                                                    pointerEvents: 'none',
+                                                                }} />
+                                                            )}
+                                                        </div>
+                                                        {isLongMessage(message.content) && (
+                                                            <button
+                                                                onClick={() => toggleMessageCollapse(message.id)}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px',
+                                                                    marginTop: '8px',
+                                                                    padding: '4px 10px',
+                                                                    background: 'transparent',
+                                                                    border: `1px solid ${themeStyles.borderColor}`,
+                                                                    borderRadius: '4px',
+                                                                    color: themeStyles.textSecondary,
+                                                                    fontSize: '12px',
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                            >
+                                                                {collapsedMessages.has(message.id) ? (
+                                                                    <>
+                                                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                                                            <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
+                                                                        </svg>
+                                                                        펼치기
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                                                            <path fillRule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z" />
+                                                                        </svg>
+                                                                        접기
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </>
                                                 ) : (
                                                     message.content
                                                 )}
                                             </div>
-                                            <fieldset className="message-actions" aria-label="메시지 작업" style={{ border: 'none', padding: 0, margin: 0 }}>
-                                                <button
-                                                    className="copy-btn"
-                                                    onClick={() => copyMessage(message.content)}
-                                                    aria-label={`${message.role === 'user' ? '사용자' : 'AI'} 메시지 복사`}
-                                                    title="메시지 복사 (Ctrl+C)"
-                                                    type="button"
-                                                >
-                                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                                                        <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z" />
-                                                    </svg>
-                                                </button>
-                                                <div className="message-timestamp" aria-label={`메시지 전송 시간: ${message.timestamp.toLocaleString('ko-KR')}`}>
-                                                    <time dateTime={message.timestamp.toISOString()}>
-                                                        {message.timestamp.toLocaleTimeString('ko-KR', {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit',
-                                                        })}
-                                                    </time>
-                                                </div>
-                                            </fieldset>
+                                            {editingMessageId !== message.id && (
+                                                <fieldset className="message-actions" aria-label="메시지 작업" style={{ border: 'none', padding: 0, margin: 0 }}>
+                                                    <button
+                                                        className="copy-btn"
+                                                        onClick={() => copyMessage(message.content)}
+                                                        aria-label={`${message.role === 'user' ? '사용자' : 'AI'} 메시지 복사`}
+                                                        title="메시지 복사"
+                                                        type="button"
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                            <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z" />
+                                                        </svg>
+                                                    </button>
+                                                    {message.role === 'user' && !isLoading && !isStreaming && (
+                                                        <button
+                                                            className="edit-btn"
+                                                            onClick={() => startEditingMessage(message.id, message.content)}
+                                                            aria-label="메시지 편집"
+                                                            title="메시지 편집"
+                                                            type="button"
+                                                            style={{
+                                                                background: 'transparent',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                padding: '4px',
+                                                                color: 'inherit',
+                                                                opacity: 0.7,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                            }}
+                                                        >
+                                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5L13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175l-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
+                                                    {message.role === 'assistant' && !isLoading && !isStreaming && (
+                                                        <button
+                                                            className="regenerate-btn"
+                                                            onClick={() => regenerateMessage(message.id)}
+                                                            aria-label="응답 재생성"
+                                                            title="응답 재생성"
+                                                            type="button"
+                                                            style={{
+                                                                background: 'transparent',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                padding: '4px',
+                                                                color: 'inherit',
+                                                                opacity: 0.7,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                            }}
+                                                        >
+                                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                                <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z" />
+                                                                <path fillRule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
+                                                    {message.role === 'assistant' && (
+                                                        <>
+                                                            <button
+                                                                className="reaction-btn like-btn"
+                                                                onClick={() => setMessageReaction(message.id, 'like')}
+                                                                aria-label="좋아요"
+                                                                title="좋은 응답"
+                                                                type="button"
+                                                                style={{
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    padding: '4px',
+                                                                    color: message.reaction === 'like' ? '#22c55e' : 'inherit',
+                                                                    opacity: message.reaction === 'like' ? 1 : 0.7,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                }}
+                                                            >
+                                                                <svg width="16" height="16" viewBox="0 0 16 16" fill={message.reaction === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                                                                    <path d="M8.864.046C7.908-.193 7.02.53 6.956 1.466c-.072 1.051-.23 2.016-.428 2.59-.125.36-.479 1.013-1.04 1.639-.557.623-1.282 1.178-2.131 1.41C2.685 7.288 2 7.87 2 8.72v4.001c0 .845.682 1.464 1.448 1.545 1.07.114 1.564.415 2.068.723l.048.03c.272.165.578.348.97.484.397.136.861.217 1.466.217h3.5c.937 0 1.599-.477 1.934-1.064a1.86 1.86 0 0 0 .254-.912c0-.152-.023-.312-.077-.464.201-.263.38-.578.488-.901.11-.33.172-.762.004-1.149.069-.13.12-.269.159-.403.077-.27.113-.568.113-.857 0-.288-.036-.585-.113-.856a2.144 2.144 0 0 0-.138-.362 1.9 1.9 0 0 0 .234-1.734c-.206-.592-.682-1.1-1.2-1.272-.847-.282-1.803-.276-2.516-.211a9.84 9.84 0 0 0-.443.05 9.365 9.365 0 0 0-.062-4.509A1.38 1.38 0 0 0 9.125.111L8.864.046z" />
+                                                                </svg>
+                                                            </button>
+                                                            <button
+                                                                className="reaction-btn dislike-btn"
+                                                                onClick={() => setMessageReaction(message.id, 'dislike')}
+                                                                aria-label="싫어요"
+                                                                title="개선이 필요한 응답"
+                                                                type="button"
+                                                                style={{
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    padding: '4px',
+                                                                    color: message.reaction === 'dislike' ? '#ef4444' : 'inherit',
+                                                                    opacity: message.reaction === 'dislike' ? 1 : 0.7,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                }}
+                                                            >
+                                                                <svg width="16" height="16" viewBox="0 0 16 16" fill={message.reaction === 'dislike' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                                                                    <path d="M8.864 15.674c-.956.24-1.843-.484-1.908-1.42-.072-1.05-.23-2.015-.428-2.59-.125-.36-.479-1.012-1.04-1.638-.557-.624-1.282-1.179-2.131-1.41C2.685 8.432 2 7.85 2 7V3c0-.845.682-1.464 1.448-1.546 1.07-.113 1.564-.415 2.068-.723l.048-.029c.272-.166.578-.349.97-.484C6.931.082 7.395 0 8 0h3.5c.937 0 1.599.478 1.934 1.064.164.287.254.607.254.913 0 .152-.023.312-.077.464.201.262.38.577.488.9.11.33.172.762.004 1.15.069.13.12.268.159.403.077.27.113.567.113.856 0 .289-.036.586-.113.856-.035.12-.076.237-.138.362a1.9 1.9 0 0 1 .234 1.734c-.206.592-.682 1.1-1.2 1.272-.847.283-1.803.276-2.516.211a9.877 9.877 0 0 1-.443-.05 9.364 9.364 0 0 1-.062 4.509c-.138.508-.55.848-1.012.964l-.261.065z" />
+                                                                </svg>
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    <button
+                                                        className="bookmark-btn"
+                                                        onClick={() => toggleBookmark(message.id)}
+                                                        aria-label={message.bookmarked ? '북마크 해제' : '북마크'}
+                                                        title={message.bookmarked ? '북마크 해제' : '북마크'}
+                                                        type="button"
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            padding: '4px',
+                                                            color: message.bookmarked ? '#fbbf24' : 'inherit',
+                                                            opacity: message.bookmarked ? 1 : 0.7,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill={message.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                                                            <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2z" />
+                                                        </svg>
+                                                    </button>
+                                                    {/* TTS 버튼 */}
+                                                    <button
+                                                        className="tts-btn"
+                                                        onClick={() => speakMessage(message.id, message.content)}
+                                                        aria-label={speakingMessageId === message.id ? '읽기 중지' : '음성으로 읽기'}
+                                                        title={speakingMessageId === message.id ? '읽기 중지' : '음성으로 읽기'}
+                                                        type="button"
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            padding: '4px',
+                                                            color: speakingMessageId === message.id ? '#3b82f6' : 'inherit',
+                                                            opacity: speakingMessageId === message.id ? 1 : 0.7,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        {speakingMessageId === message.id ? (
+                                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                                <path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z" />
+                                                                <path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.025 8a5.483 5.483 0 0 1-1.61 3.89l.706.706z" />
+                                                                <path d="M8.707 11.182A4.486 4.486 0 0 0 10.025 8a4.486 4.486 0 0 0-1.318-3.182L8 5.525A3.489 3.489 0 0 1 9.025 8 3.49 3.49 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                    {/* 메시지 복사 버튼 */}
+                                                    <button
+                                                        className="copy-message-btn"
+                                                        onClick={async () => {
+                                                            try {
+                                                                await navigator.clipboard.writeText(message.content);
+                                                                setShowCopyToast(true);
+                                                                setTimeout(() => setShowCopyToast(false), 2000);
+                                                            } catch {
+                                                                // 복사 실패 시 무시
+                                                            }
+                                                        }}
+                                                        aria-label="메시지 복사"
+                                                        title="메시지 복사"
+                                                        type="button"
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            padding: '4px',
+                                                            color: 'inherit',
+                                                            opacity: 0.7,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                            <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z" />
+                                                        </svg>
+                                                    </button>
+                                                    {/* 메시지 삭제 버튼 */}
+                                                    <button
+                                                        className="delete-message-btn"
+                                                        onClick={() => deleteMessage(message.id)}
+                                                        aria-label="메시지 삭제"
+                                                        title="메시지 삭제"
+                                                        type="button"
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            padding: '4px',
+                                                            color: 'inherit',
+                                                            opacity: 0.7,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                                                            <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                                                        </svg>
+                                                    </button>
+                                                    {showTimestamps && (
+                                                        <div className="message-timestamp" aria-label={`메시지 전송 시간: ${message.timestamp.toLocaleString('ko-KR')}`}>
+                                                            <time dateTime={message.timestamp.toISOString()}>
+                                                                {message.timestamp.toLocaleTimeString('ko-KR', {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                })}
+                                                            </time>
+                                                        </div>
+                                                    )}
+                                                </fieldset>
+                                            )}
                                         </div>
                                     </article>
                                 ))
                             )}
-                            {isLoading && (
+                            {isLoading && !isStreaming && (
                                 <div className="message assistant-message" aria-live="polite" aria-busy="true">
                                     <div className="message-avatar" aria-hidden="true">🤖</div>
                                     <div className="message-content">
                                         <output>
-                                            <div className="loading-indicator">
-                                                <div className="loading-spinner" aria-hidden="true"></div>
-                                                <span>AI가 응답을 생성하고 있습니다...</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                {/* 스켈레톤 라인들 */}
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '8px',
+                                                }}>
+                                                    <div style={{
+                                                        height: '16px',
+                                                        width: '85%',
+                                                        background: `linear-gradient(90deg, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 25%, ${theme === 'dark' ? '#4a4a4a' : '#f0f0f0'} 50%, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 75%)`,
+                                                        backgroundSize: '200% 100%',
+                                                        animation: 'shimmer 1.5s infinite',
+                                                        borderRadius: '4px',
+                                                    }} />
+                                                    <div style={{
+                                                        height: '16px',
+                                                        width: '70%',
+                                                        background: `linear-gradient(90deg, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 25%, ${theme === 'dark' ? '#4a4a4a' : '#f0f0f0'} 50%, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 75%)`,
+                                                        backgroundSize: '200% 100%',
+                                                        animation: 'shimmer 1.5s infinite 0.1s',
+                                                        borderRadius: '4px',
+                                                    }} />
+                                                    <div style={{
+                                                        height: '16px',
+                                                        width: '60%',
+                                                        background: `linear-gradient(90deg, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 25%, ${theme === 'dark' ? '#4a4a4a' : '#f0f0f0'} 50%, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 75%)`,
+                                                        backgroundSize: '200% 100%',
+                                                        animation: 'shimmer 1.5s infinite 0.2s',
+                                                        borderRadius: '4px',
+                                                    }} />
+                                                </div>
+                                                {/* 로딩 텍스트 */}
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    fontSize: '13px',
+                                                    color: themeStyles.textSecondary,
+                                                }}>
+                                                    <div style={{
+                                                        width: '16px',
+                                                        height: '16px',
+                                                        border: `2px solid ${theme === 'dark' ? '#555' : '#ccc'}`,
+                                                        borderTopColor: '#3b82f6',
+                                                        borderRadius: '50%',
+                                                        animation: 'spin 1s linear infinite',
+                                                    }} />
+                                                    <span>AI가 응답을 생성하고 있습니다...</span>
+                                                    {responseStartTime && (
+                                                        <span style={{ opacity: 0.7 }}>
+                                                            ({Math.floor((Date.now() - responseStartTime) / 1000)}초)
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </output>
                                     </div>
@@ -882,19 +3450,275 @@ const ChatGPTInterface: React.FC = () => {
                                 zIndex: 10000,
                                 animation: 'slideIn 0.3s ease-out',
                             }}>
-                                ✅ 메시지가 복사되었습니다
+                                ✅ 복사되었습니다
+                            </div>
+                        )}
+
+                        {/* 키보드 단축키 도움말 모달 */}
+                        {showShortcutsHelp && (
+                            <div
+                                className="shortcuts-modal-overlay"
+                                style={{
+                                    position: 'fixed',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    background: 'rgba(0,0,0,0.7)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    zIndex: 10001,
+                                }}
+                                onClick={() => setShowShortcutsHelp(false)}
+                            >
+                                <div
+                                    className="shortcuts-modal"
+                                    style={{
+                                        background: themeStyles.bgSecondary,
+                                        borderRadius: '12px',
+                                        padding: '24px',
+                                        maxWidth: '500px',
+                                        width: '90%',
+                                        maxHeight: '80vh',
+                                        overflow: 'auto',
+                                        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                        <h2 style={{ margin: 0, fontSize: '18px', color: themeStyles.textPrimary }}>⌨️ 키보드 단축키</h2>
+                                        <button
+                                            onClick={() => setShowShortcutsHelp(false)}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: themeStyles.textSecondary,
+                                                cursor: 'pointer',
+                                                fontSize: '20px',
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {[
+                                            { keys: 'Ctrl/⌘ + N', desc: '새 대화 시작' },
+                                            { keys: 'Ctrl/⌘ + F', desc: '대화 내 검색' },
+                                            { keys: 'Ctrl/⌘ + E', desc: '대화 내보내기' },
+                                            { keys: '/', desc: '입력창 포커스' },
+                                            { keys: '?', desc: '이 도움말 열기' },
+                                            { keys: 'Enter', desc: '메시지 전송' },
+                                            { keys: 'Shift + Enter', desc: '줄바꿈' },
+                                            { keys: 'Escape', desc: '검색 닫기 / 스트리밍 중지' },
+                                        ].map((shortcut, idx) => (
+                                            <div
+                                                key={idx}
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    padding: '8px 12px',
+                                                    background: themeStyles.bgPrimary,
+                                                    borderRadius: '6px',
+                                                }}
+                                            >
+                                                <span style={{ color: themeStyles.textPrimary }}>{shortcut.desc}</span>
+                                                <kbd style={{
+                                                    padding: '4px 8px',
+                                                    background: themeStyles.bgSecondary,
+                                                    border: `1px solid ${themeStyles.borderColor}`,
+                                                    borderRadius: '4px',
+                                                    fontSize: '12px',
+                                                    fontFamily: 'monospace',
+                                                    color: themeStyles.textSecondary,
+                                                }}>
+                                                    {shortcut.keys}
+                                                </kbd>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{ marginTop: '16px', fontSize: '12px', color: themeStyles.textSecondary, textAlign: 'center' }}>
+                                        ESC 또는 바깥 클릭으로 닫기
+                                    </div>
+                                </div>
                             </div>
                         )}
 
                         {/* 입력 영역 */}
                         <section className="input-container" aria-label="메시지 입력 영역">
+                            {/* 응답 스타일 선택 버튼 */}
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 12px',
+                                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                            }}>
+                                <button
+                                    onClick={() => setShowStyleOptions(!showStyleOptions)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '6px 12px',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        borderRadius: '6px',
+                                        color: '#ececf1',
+                                        fontSize: '12px',
+                                        cursor: 'pointer',
+                                    }}
+                                    title="응답 스타일 선택"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M2.5 1a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 .75.434l5.5-3.143a.5.5 0 0 1 .5 0l5.5 3.143A.5.5 0 0 0 14 14.5v-13a.5.5 0 0 0-.5-.5h-11z" />
+                                    </svg>
+                                    {responseStyle === 'concise' && '간결한'}
+                                    {responseStyle === 'balanced' && '균형잡힌'}
+                                    {responseStyle === 'detailed' && '상세한'}
+                                    {responseStyle === 'comprehensive' && '종합적인'}
+                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style={{ transform: showStyleOptions ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                                        <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
+                                    </svg>
+                                </button>
+                                {perspective && (
+                                    <span style={{
+                                        padding: '4px 8px',
+                                        background: 'rgba(59, 130, 246, 0.2)',
+                                        borderRadius: '4px',
+                                        fontSize: '11px',
+                                        color: '#93c5fd',
+                                    }}>
+                                        {perspective === 'practical' && '실용적'}
+                                        {perspective === 'theoretical' && '이론적'}
+                                        {perspective === 'creative' && '창의적'}
+                                        {perspective === 'critical' && '비판적'}
+                                        {perspective === 'empathetic' && '공감적'}
+                                        <button
+                                            onClick={() => setPerspective(null)}
+                                            style={{ marginLeft: '4px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0 }}
+                                        >×</button>
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* 스타일 옵션 드롭다운 */}
+                            {showStyleOptions && (
+                                <div style={{
+                                    padding: '12px',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                }}>
+                                    <div style={{ marginBottom: '12px' }}>
+                                        <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px' }}>응답 길이</div>
+                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                            {(['concise', 'balanced', 'detailed', 'comprehensive'] as const).map((style) => (
+                                                <button
+                                                    key={style}
+                                                    onClick={() => { setResponseStyle(style); }}
+                                                    style={{
+                                                        padding: '6px 12px',
+                                                        background: responseStyle === style ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.05)',
+                                                        border: responseStyle === style ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)',
+                                                        borderRadius: '4px',
+                                                        color: responseStyle === style ? '#93c5fd' : '#ececf1',
+                                                        fontSize: '12px',
+                                                        cursor: 'pointer',
+                                                    }}
+                                                >
+                                                    {style === 'concise' && '간결'}
+                                                    {style === 'balanced' && '균형'}
+                                                    {style === 'detailed' && '상세'}
+                                                    {style === 'comprehensive' && '종합'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px' }}>응답 관점 (선택사항)</div>
+                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                            {(['practical', 'theoretical', 'creative', 'critical', 'empathetic'] as const).map((p) => (
+                                                <button
+                                                    key={p}
+                                                    onClick={() => setPerspective(perspective === p ? null : p)}
+                                                    style={{
+                                                        padding: '6px 10px',
+                                                        background: perspective === p ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.05)',
+                                                        border: perspective === p ? '1px solid #22c55e' : '1px solid rgba(255,255,255,0.1)',
+                                                        borderRadius: '4px',
+                                                        color: perspective === p ? '#86efac' : '#ececf1',
+                                                        fontSize: '11px',
+                                                        cursor: 'pointer',
+                                                    }}
+                                                >
+                                                    {p === 'practical' && '실용적'}
+                                                    {p === 'theoretical' && '이론적'}
+                                                    {p === 'creative' && '창의적'}
+                                                    {p === 'critical' && '비판적'}
+                                                    {p === 'empathetic' && '공감적'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 빠른 후속 질문 제안 */}
+                            {quickSuggestions.length > 0 && !input.trim() && (
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '8px',
+                                    padding: '8px 12px',
+                                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                    flexWrap: 'wrap',
+                                }}>
+                                    <span style={{ fontSize: '11px', color: '#888', display: 'flex', alignItems: 'center' }}>
+                                        빠른 질문:
+                                    </span>
+                                    {quickSuggestions.map((suggestion, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                setInput(suggestion);
+                                                inputRef.current?.focus();
+                                            }}
+                                            style={{
+                                                padding: '4px 10px',
+                                                fontSize: '12px',
+                                                background: 'rgba(59, 130, 246, 0.1)',
+                                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                borderRadius: '12px',
+                                                color: '#93c5fd',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                                            }}
+                                        >
+                                            {suggestion}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="input-wrapper">
                                 <textarea
                                     ref={inputRef}
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    onChange={(e) => {
+                                        setInput(e.target.value);
+                                        // 자동 높이 조절
+                                        const textarea = e.target;
+                                        textarea.style.height = 'auto';
+                                        textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+                                    }}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
+                                    placeholder="메시지를 입력하세요... (여러 질문도 한번에 보내세요)"
                                     rows={1}
                                     disabled={isLoading}
                                     className="message-input"
@@ -902,68 +3726,262 @@ const ChatGPTInterface: React.FC = () => {
                                     aria-describedby="input-hint"
                                     aria-invalid={input.length > 10000}
                                     aria-required="true"
+                                    style={{
+                                        minHeight: '44px',
+                                        maxHeight: '200px',
+                                        resize: 'none',
+                                        overflow: 'auto',
+                                    }}
                                 />
-                                <button
-                                    className="send-button"
-                                    onClick={sendMessage}
-                                    disabled={!input.trim() || isLoading}
-                                    aria-label="메시지 전송"
-                                    aria-disabled={!input.trim() || isLoading}
-                                    title={isLoading ? '응답 생성 중...' : '메시지 전송 (Enter)'}
-                                >
-                                    {isLoading ? (
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner">
-                                            <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566">
-                                                <animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" />
-                                            </circle>
-                                        </svg>
-                                    ) : (
+                                {isStreaming ? (
+                                    <button
+                                        className="send-button cancel-button"
+                                        onClick={cancelStreaming}
+                                        aria-label="스트리밍 중지"
+                                        title="스트리밍 중지 (Esc)"
+                                        style={{ background: '#ef4444' }}
+                                    >
                                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path d="M2 10l16-8-8 16-2-6-6-2z" />
+                                            <rect x="4" y="4" width="12" height="12" rx="2" />
                                         </svg>
-                                    )}
-                                </button>
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="send-button"
+                                        onClick={sendMessage}
+                                        disabled={!input.trim() || isLoading}
+                                        aria-label="메시지 전송"
+                                        aria-disabled={!input.trim() || isLoading}
+                                        title={isLoading ? '응답 생성 중...' : '메시지 전송 (Enter)'}
+                                    >
+                                        {isLoading ? (
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner">
+                                                <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566">
+                                                    <animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" />
+                                                </circle>
+                                            </svg>
+                                        ) : (
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path d="M2 10l16-8-8 16-2-6-6-2z" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                )}
                             </div>
-                            <div className="input-footer">
+                            <div className="input-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                                 <span id="input-hint" className="input-hint" aria-live="polite">
                                     {isLoading ? '응답 생성 중...' : input.length > 10000 ? `메시지가 너무 깁니다 (${input.length}/10,000자)` : 'Enter로 전송, Shift+Enter로 줄바꿈'}
                                 </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                    {/* 글자 수 / 토큰 예상치 */}
+                                    {input.length > 0 && (
+                                        <span style={{
+                                            fontSize: '11px',
+                                            color: input.length > 8000 ? '#ef4444' : input.length > 5000 ? '#f59e0b' : themeStyles.textSecondary,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                        }}>
+                                            <span>{input.length.toLocaleString()}자</span>
+                                            <span style={{ opacity: 0.5 }}>|</span>
+                                            <span>~{Math.ceil(input.length / 4).toLocaleString()} 토큰</span>
+                                        </span>
+                                    )}
+                                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={useStreaming}
+                                            onChange={(e) => setUseStreaming(e.target.checked)}
+                                            disabled={isLoading || isStreaming || !isStreamingSupported()}
+                                        />
+                                        <span style={{ fontSize: '12px', opacity: 0.85 }}>
+                                            스트리밍{isStreamingSupported() ? '' : ' (미지원)'}
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
                         </section>
                     </>
                 ) : (
-                    <div className="welcome-screen">
-                        <div className="welcome-content">
-                            <h1>CORBU AI</h1>
-                            <p>어떤 도움이 필요하신가요?</p>
-                            <div className="suggestions">
-                                <button
-                                    className="suggestion-btn"
-                                    onClick={() => {
-                                        setInput('안녕하세요!');
-                                        inputRef.current?.focus();
-                                    }}
-                                >
-                                    안녕하세요!
-                                </button>
-                                <button
-                                    className="suggestion-btn"
-                                    onClick={() => {
-                                        setInput('오늘 날씨는 어때요?');
-                                        inputRef.current?.focus();
-                                    }}
-                                >
-                                    오늘 날씨는 어때요?
-                                </button>
-                                <button
-                                    className="suggestion-btn"
-                                    onClick={() => {
-                                        setInput('코딩을 배우고 싶어요');
-                                        inputRef.current?.focus();
-                                    }}
-                                >
-                                    코딩을 배우고 싶어요
-                                </button>
+                    <div className="welcome-screen" style={{ background: themeStyles.bgPrimary }}>
+                        <div className="welcome-content" style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                                <div style={{
+                                    fontSize: '48px',
+                                    marginBottom: '16px',
+                                }}>
+                                    🤖
+                                </div>
+                                <h1 style={{
+                                    fontSize: '28px',
+                                    fontWeight: '600',
+                                    color: themeStyles.textPrimary,
+                                    marginBottom: '8px',
+                                }}>
+                                    CORBU AI
+                                </h1>
+                                <p style={{
+                                    fontSize: '16px',
+                                    color: themeStyles.textSecondary,
+                                }}>
+                                    무엇이든 물어보세요. 다양한 질문에 답변해 드립니다.
+                                </p>
+                            </div>
+
+                            {/* 카테고리별 예시 질문 */}
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                gap: '16px',
+                                marginBottom: '32px',
+                            }}>
+                                {/* 일반 대화 */}
+                                <div style={{
+                                    background: themeStyles.bgSecondary,
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    border: `1px solid ${themeStyles.borderColor}`,
+                                }}>
+                                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>💬</div>
+                                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: themeStyles.textPrimary, marginBottom: '12px' }}>
+                                        일반 대화
+                                    </h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {['안녕하세요!', '오늘 기분이 어때요?', '재미있는 이야기 해줘'].map((text) => (
+                                            <button
+                                                key={text}
+                                                onClick={() => { setInput(text); inputRef.current?.focus(); }}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    background: 'transparent',
+                                                    border: `1px solid ${themeStyles.borderColor}`,
+                                                    borderRadius: '8px',
+                                                    color: themeStyles.textSecondary,
+                                                    fontSize: '13px',
+                                                    textAlign: 'left',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                }}
+                                            >
+                                                {text}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 학습/정보 */}
+                                <div style={{
+                                    background: themeStyles.bgSecondary,
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    border: `1px solid ${themeStyles.borderColor}`,
+                                }}>
+                                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>📚</div>
+                                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: themeStyles.textPrimary, marginBottom: '12px' }}>
+                                        학습/정보
+                                    </h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {['Python 기초 알려줘', 'React와 Vue 비교해줘', '머신러닝이란?'].map((text) => (
+                                            <button
+                                                key={text}
+                                                onClick={() => { setInput(text); inputRef.current?.focus(); }}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    background: 'transparent',
+                                                    border: `1px solid ${themeStyles.borderColor}`,
+                                                    borderRadius: '8px',
+                                                    color: themeStyles.textSecondary,
+                                                    fontSize: '13px',
+                                                    textAlign: 'left',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                }}
+                                            >
+                                                {text}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 창작/글쓰기 */}
+                                <div style={{
+                                    background: themeStyles.bgSecondary,
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    border: `1px solid ${themeStyles.borderColor}`,
+                                }}>
+                                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>✍️</div>
+                                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: themeStyles.textPrimary, marginBottom: '12px' }}>
+                                        창작/글쓰기
+                                    </h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {['이메일 작성 도와줘', '블로그 글 아이디어', '짧은 시 한편 써줘'].map((text) => (
+                                            <button
+                                                key={text}
+                                                onClick={() => { setInput(text); inputRef.current?.focus(); }}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    background: 'transparent',
+                                                    border: `1px solid ${themeStyles.borderColor}`,
+                                                    borderRadius: '8px',
+                                                    color: themeStyles.textSecondary,
+                                                    fontSize: '13px',
+                                                    textAlign: 'left',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                }}
+                                            >
+                                                {text}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 분석/조언 */}
+                                <div style={{
+                                    background: themeStyles.bgSecondary,
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    border: `1px solid ${themeStyles.borderColor}`,
+                                }}>
+                                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>🔍</div>
+                                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: themeStyles.textPrimary, marginBottom: '12px' }}>
+                                        분석/조언
+                                    </h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {['코드 리뷰해줘', '이력서 피드백', '사업 아이디어 분석'].map((text) => (
+                                            <button
+                                                key={text}
+                                                onClick={() => { setInput(text); inputRef.current?.focus(); }}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    background: 'transparent',
+                                                    border: `1px solid ${themeStyles.borderColor}`,
+                                                    borderRadius: '8px',
+                                                    color: themeStyles.textSecondary,
+                                                    fontSize: '13px',
+                                                    textAlign: 'left',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                }}
+                                            >
+                                                {text}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 단축키 힌트 */}
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: '24px',
+                                fontSize: '12px',
+                                color: themeStyles.textSecondary,
+                            }}>
+                                <span><kbd style={{ padding: '2px 6px', background: themeStyles.bgSecondary, borderRadius: '4px', marginRight: '4px' }}>/</kbd> 입력창 포커스</span>
+                                <span><kbd style={{ padding: '2px 6px', background: themeStyles.bgSecondary, borderRadius: '4px', marginRight: '4px' }}>?</kbd> 단축키 보기</span>
                             </div>
                         </div>
                         <section className="input-container" aria-label="메시지 입력 영역">
@@ -1047,6 +4065,104 @@ const ChatGPTInterface: React.FC = () => {
                                 }}
                             >
                                 생성
+                            </button>
+                        </div>
+                    </div>
+                </dialog>
+            )}
+
+            {/* 대화 삭제 확인 모달 */}
+            {deleteConfirmConversation && (
+                <dialog
+                    className="modal-overlay"
+                    open
+                    aria-modal="true"
+                    aria-label="대화 삭제 확인 모달"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            cancelDeleteConversation();
+                        }
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                            cancelDeleteConversation();
+                        }
+                    }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        zIndex: 1000,
+                        border: 'none',
+                    }}
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: '#2d2d30',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            maxWidth: '400px',
+                            width: '90%',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                        }}
+                    >
+                        <h2 style={{ margin: '0 0 16px', color: '#ececf1', fontSize: '18px', fontWeight: 600 }}>
+                            대화 삭제
+                        </h2>
+                        <p style={{ margin: '0 0 8px', color: '#b4b4b4', fontSize: '14px', lineHeight: 1.5 }}>
+                            다음 대화를 삭제하시겠습니까?
+                        </p>
+                        <p style={{
+                            margin: '0 0 20px',
+                            color: '#ececf1',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            padding: '12px',
+                            background: 'rgba(255,255,255,0.05)',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}>
+                            "{deleteConfirmConversation.title}"
+                        </p>
+                        <p style={{ margin: '0 0 20px', color: '#f87171', fontSize: '12px' }}>
+                            이 작업은 되돌릴 수 없습니다.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={cancelDeleteConversation}
+                                style={{
+                                    padding: '10px 20px',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    borderRadius: '6px',
+                                    background: 'transparent',
+                                    color: '#ececf1',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                }}
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={confirmDeleteConversation}
+                                style={{
+                                    padding: '10px 20px',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                삭제
                             </button>
                         </div>
                     </div>

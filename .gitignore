@@ -1,15 +1,33 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.js
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Python virtualenvs
+.venv/
+venv/
+ENV/
 
 # testing
 /coverage
 
 # production
 /build
+/dist
+build/
+dist/
+frontend/build/
+corbu-ai/**/build/
 
 # misc
 .DS_Store
@@ -17,10 +35,26 @@
 .env.development.local
 .env.test.local
 .env.production.local
+.env
+.env.*
 
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# logs / runtime artifacts
+*.log
+*.pid
+*.db
+*.sqlite
+*.sqlite3
+.cache/
+*.tsbuildinfo
+.frontend_pid
+.market_pid
+.unified_conversation_server.pid
+.pids/
+logs/
 
 # Playwright
 /test-results/

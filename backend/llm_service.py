@@ -31,8 +31,9 @@ class LLMService:
     """LLM 서비스 클래스"""
 
     def __init__(self):
-        self.provider = os.getenv("LLM_PROVIDER", "openai").lower()
-        self.model = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
+        # 환경변수에서 provider 결정 (없으면 자동 감지)
+        env_provider = os.getenv("LLM_PROVIDER", "").lower()
+        self.model = os.getenv("LLM_MODEL", "qwen3:4b")  # 기본 모델을 Ollama로 변경
         self.knowledge_base = self._load_knowledge_base()
         self.conversation_history: Dict[str, List[Dict]] = {}
         
@@ -44,6 +45,22 @@ class LLMService:
                 logger.info("✅ 노트북 LLM 통합 초기화 완료")
             except Exception as e:
                 logger.warning(f"⚠️ 노트북 LLM 초기화 실패: {e}")
+        
+        # Provider 결정 로직 (우선순위: 환경변수 > 노트북LLM/Ollama > OpenAI > Anthropic > fallback)
+        if env_provider:
+            self.provider = env_provider
+        elif self.notebook_llm:
+            self.provider = "notebook"
+            logger.info("✅ 노트북 LLM/Ollama를 기본 provider로 사용")
+        elif OPENAI_API_KEY:
+            self.provider = "openai"
+            logger.info("✅ OpenAI를 기본 provider로 사용")
+        elif ANTHROPIC_API_KEY:
+            self.provider = "anthropic"
+            logger.info("✅ Anthropic을 기본 provider로 사용")
+        else:
+            self.provider = "fallback"
+            logger.warning("⚠️ LLM provider 미설정, 폴백 모드로 작동")
 
     def _load_knowledge_base(self) -> Dict[str, Any]:
         """기본 지식 베이스 로드"""

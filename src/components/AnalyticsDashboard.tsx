@@ -19,7 +19,7 @@ import {
     Psychology,
     Speed,
     CheckCircle,
-    Error,
+    Error as ErrorIcon,
     Analytics,
     Timeline
 } from '@mui/icons-material';
@@ -35,11 +35,10 @@ const toError = (err: unknown): Error => {
     }
     // Error 생성자를 명시적으로 사용
     try {
-        const ErrorConstructor = globalThis.Error || Error;
-        return new ErrorConstructor(String(err)) as Error;
+        return new Error(String(err));
     } catch {
         // 최후의 수단
-        return new Error(String(err));
+        return new Error('Unknown error');
     }
 };
 
@@ -229,7 +228,7 @@ const AnalyticsDashboard: React.FC = () => {
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <Error color="error" />
+                                <ErrorIcon color="error" />
                                 <Typography variant="h6">실패 요청</Typography>
                             </Box>
                             <Typography variant="h4" color="error.main">

@@ -296,7 +296,7 @@ const PWAInstallPrompt: React.FC = () => {
             업데이트 후 페이지가 자동으로 새로고침됩니다.
           </Alert>
         </DialogContent>
-        <DialogActions component="fieldset" sx={{ border: 'none', p: 0 }} aria-label="업데이트 액션">
+        <DialogActions sx={{ border: 'none', p: 0 }} aria-label="업데이트 액션">
           <Button 
             onClick={() => setShowUpdateDialog(false)}
             aria-label="업데이트 다이얼로그 닫기"

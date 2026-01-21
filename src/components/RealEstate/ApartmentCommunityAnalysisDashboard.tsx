@@ -521,7 +521,7 @@ const ApartmentCommunityAnalysisDashboard: React.FC<{ apartmentId?: string }> = 
                                 </CardContent>
                             </Card>
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <Card>
                                 <CardContent>
                                     <Typography variant="h6" gutterBottom>

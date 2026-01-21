@@ -63,20 +63,30 @@ globalThis.TextDecoder = class {
 class MockReadableStream {
   private readonly chunks: Uint8Array[];
   private readonly controller: ReadableStreamDefaultController<Uint8Array> | null = null;
+  private readonly delayMs: number;
+  public cancelled = false;
 
-  constructor(chunks: string[]) {
+  constructor(chunks: string[], delayMs = 0) {
     this.chunks = chunks.map(chunk => new TextEncoder().encode(chunk));
+    this.delayMs = delayMs;
   }
 
   getReader() {
     let index = 0;
+    const self = this;
     return {
       read: async () => {
-        if (index >= this.chunks.length) {
+        if (self.delayMs > 0) {
+          await new Promise(resolve => setTimeout(resolve, self.delayMs));
+        }
+        if (index >= self.chunks.length) {
           return { done: true, value: undefined };
         }
-        const chunk = this.chunks[index++];
+        const chunk = self.chunks[index++];
         return { done: false, value: chunk };
+      },
+      cancel: () => {
+        self.cancelled = true;
       },
     };
   }
@@ -99,11 +109,13 @@ describe('streamingClient', () => {
       const mockChunks = [
         'data: {"text":"Hello","done":false}\n\n',
         'data: {"text":" World","done":false}\n\n',
-        'data: {"text":"!","done":true}\n\n',
+        'data: {"text":"!","done":true,"fullContent":"Hello World!"}\n\n',
       ];
 
       (globalThis.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
+        status: 200,
+        statusText: 'OK',
         body: new MockReadableStream(mockChunks) as any,
       });
 
@@ -140,7 +152,7 @@ describe('streamingClient', () => {
       await expect(
         streamChatMessage('test', 'session123', { onError })
       ).rejects.toThrow('Something went wrong');
-      
+
       expect(onError).toHaveBeenCalled();
       expect((onError.mock.calls[0][0] as Error).message).toBe('Something went wrong');
     });
@@ -159,9 +171,36 @@ describe('streamingClient', () => {
       expect(errorReportingService.reportError).toHaveBeenCalled();
     });
 
+    it('404이면 /api/unified/chat/stream 으로 폴백해야 함', async () => {
+      const mockChunks = [
+        'data: {"content":"Hello","done":false}\n\n',
+        'data: {"content":" World","done":false}\n\n',
+        'data: {"content":"","done":true,"fullContent":"Hello World!"}\n\n',
+      ];
+
+      (globalThis.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          body: new MockReadableStream(mockChunks) as any,
+        });
+
+      const result = await streamChatMessage('test', 'session123');
+      expect(result).toBe('Hello World!');
+      expect((globalThis.fetch as jest.Mock).mock.calls.length).toBe(2);
+    });
+
     it('response body가 null이면 에러를 던져야 함', async () => {
       (globalThis.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
+        status: 200,
+        statusText: 'OK',
         body: null,
       });
 
@@ -211,6 +250,71 @@ describe('streamingClient', () => {
       // 실제로는 파싱 오류가 발생하지 않을 수 있음 (라인이 data:로 시작하지 않으면 무시됨)
 
       consoleWarnSpy.mockRestore();
+    });
+
+    it('AbortController로 스트리밍을 취소할 수 있어야 함', async () => {
+      const mockChunks = [
+        'data: {"text":"Hello","done":false}\n\n',
+        'data: {"text":" World","done":false}\n\n',
+        'data: {"text":"!","done":true,"fullContent":"Hello World!"}\n\n',
+      ];
+
+      const mockStream = new MockReadableStream(mockChunks, 50);
+
+      (globalThis.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        body: mockStream as any,
+      });
+
+      const abortController = new AbortController();
+      const onChunk = jest.fn();
+      const onComplete = jest.fn();
+
+      // 첫 번째 청크 후 취소
+      setTimeout(() => {
+        abortController.abort();
+      }, 60);
+
+      const result = await streamChatMessage('test', 'session123', {
+        signal: abortController.signal,
+        onChunk,
+        onComplete,
+      });
+
+      // 취소 시 지금까지 받은 텍스트를 반환
+      expect(typeof result).toBe('string');
+      // onComplete는 취소 시에도 호출됨
+      expect(onComplete).toHaveBeenCalled();
+    });
+
+    it('취소된 요청은 에러를 보고하지 않아야 함', async () => {
+      const abortController = new AbortController();
+      abortController.abort(); // 즉시 취소
+
+      const mockChunks = [
+        'data: {"text":"Hello","done":true}\n\n',
+      ];
+
+      (globalThis.fetch as jest.Mock).mockRejectedValueOnce(
+        Object.assign(new Error('Aborted'), { name: 'AbortError' })
+      );
+
+      const onError = jest.fn();
+      const onComplete = jest.fn();
+
+      const result = await streamChatMessage('test', 'session123', {
+        signal: abortController.signal,
+        onError,
+        onComplete,
+      });
+
+      // AbortError는 onError를 호출하지 않고 onComplete를 호출
+      expect(onError).not.toHaveBeenCalled();
+      expect(onComplete).toHaveBeenCalled();
+      // errorReportingService.reportError도 호출되지 않음
+      expect(errorReportingService.reportError).not.toHaveBeenCalled();
     });
   });
 });

@@ -797,3 +797,41 @@
     background: rgba(25, 195, 125, 0.1) !important;
     border-color: rgba(25, 195, 125, 0.3) !important;
 }
+
+/* 검색 결과 하이라이트 애니메이션 */
+@keyframes highlight-pulse {
+    0% {
+        background-color: rgba(59, 130, 246, 0.3);
+    }
+    50% {
+        background-color: rgba(59, 130, 246, 0.5);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* 스켈레톤 로딩 애니메이션 */
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* 스피너 애니메이션 */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* 북마크된 메시지 스타일 */
+.message.bookmarked {
+    background: rgba(251, 191, 36, 0.05);
+}

@@ -786,7 +786,8 @@ const AdvancedSecurityPanel: React.FC = () => {
                             <Select
                                 value={policyFilter.enabled === undefined ? '' : policyFilter.enabled ? 'enabled' : 'disabled'}
                                 onChange={(e) => {
-                                    const enabled = e.target.value === '' ? undefined : e.target.value === 'enabled';
+                                    const val = e.target.value as string;
+                                    const enabled = val === '' ? undefined : val === 'enabled';
                                     handlePolicyFilterChange(policyFilter.type, enabled, policyFilter.search);
                                 }}
                                 label="상태"
