@@ -34,6 +34,35 @@ CORS(app)
 app.config["SECRET_KEY"] = "corbu-ai-integrated-secret-key-2024"
 
 
+# 유틸리티 함수
+def create_error_response(error: str, status_code: int = 500) -> Tuple[Response, int]:
+    """표준화된 에러 응답 생성"""
+    return (
+        jsonify(
+            {
+                "success": False,
+                "error": error,
+                "timestamp": datetime.now().isoformat(),
+            }
+        ),
+        status_code,
+    )
+
+
+def create_success_response(data: Dict[str, Any], status_code: int = 200) -> Tuple[Response, int]:
+    """표준화된 성공 응답 생성"""
+    return (
+        jsonify(
+            {
+                "success": True,
+                "data": data,
+                "timestamp": datetime.now().isoformat(),
+            }
+        ),
+        status_code,
+    )
+
+
 class SimpleIntegratedAI:
     """간단한 통합 AI 엔진"""
 
