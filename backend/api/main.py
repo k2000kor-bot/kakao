@@ -36,16 +36,18 @@ app.config["SECRET_KEY"] = "corbu-ai-integrated-secret-key-2024"
 
 
 # 유틸리티 함수
-def create_error_response(error: str, status_code: int = 500) -> Tuple[Response, int]:
+def create_error_response(
+    error: str, status_code: int = 500, message: Optional[str] = None
+) -> Tuple[Response, int]:
     """표준화된 에러 응답 생성"""
+    error_data = {
+        "success": False,
+        "error": error,
+        "message": message or error,
+        "timestamp": datetime.now().isoformat(),
+    }
     return (
-        jsonify(
-            {
-                "success": False,
-                "error": error,
-                "timestamp": datetime.now().isoformat(),
-            }
-        ),
+        jsonify(error_data),
         status_code,
     )
 
@@ -848,6 +850,8 @@ def generate_story():
 
 
 @app.route("/api/integrated/creative/poem", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def generate_poem():
     """창작 시 생성"""
     try:
@@ -908,13 +912,15 @@ def generate_poem():
         return jsonify(result)
 
     except Exception as e:
-        logger.error(f"시 생성 오류: {e}")
-        return jsonify(
-            {"success": False, "error": str(e), "timestamp": datetime.now().isoformat()}
-        ), 500
+        logger.error(f"시 생성 오류: {e}", exc_info=True)
+        return create_error_response(
+            "시 생성 실패", message=f"시 생성 중 오류가 발생했습니다: {str(e)}"
+        )
 
 
 @app.route("/api/integrated/creative/essay", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def generate_essay():
     """창작 에세이 생성"""
     try:
@@ -995,6 +1001,8 @@ def generate_essay():
 
 
 @app.route("/api/integrated/creative/analyze", methods=["POST"])
+@validate_json_request(required_fields=["text"])
+@monitor_performance
 def analyze_writing():
     """글쓰기 분석"""
     try:
@@ -1080,6 +1088,8 @@ def analyze_writing():
 
 
 @app.route("/api/integrated/persuasion/construction", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def generate_construction_persuasion():
     """건설사 설득 콘텐츠 생성"""
     try:
@@ -1190,6 +1200,8 @@ def generate_construction_persuasion():
 
 
 @app.route("/api/integrated/persuasion/contractor", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def generate_contractor_persuasion():
     """시공사 긍정 콘텐츠 생성"""
     try:
@@ -1300,6 +1312,8 @@ def generate_contractor_persuasion():
 
 
 @app.route("/api/integrated/persuasion/analyze", methods=["POST"])
+@validate_json_request(required_fields=["content"])
+@monitor_performance
 def analyze_persuasion_content():
     """설득 콘텐츠 분석"""
     try:
@@ -1616,6 +1630,8 @@ def generate_social_media_content():
 
 
 @app.route("/api/integrated/marketing/email", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def generate_email_marketing():
     """이메일 마케팅 콘텐츠 생성"""
     try:
@@ -1776,6 +1792,8 @@ def generate_email_marketing():
 
 
 @app.route("/api/integrated/marketing/analyze", methods=["POST"])
+@validate_json_request(required_fields=["content"])
+@monitor_performance
 def analyze_marketing_content():
     """마케팅 콘텐츠 분석"""
     try:
@@ -2177,6 +2195,8 @@ def generate_predictions():
 
 
 @app.route("/api/integrated/analytics/insights", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def generate_insights():
     """인사이트 생성"""
     try:
@@ -2314,6 +2334,8 @@ def generate_insights():
 
 
 @app.route("/api/integrated/ai/optimize", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def optimize_ai_model():
     """AI 모델 최적화"""
     try:
@@ -2445,6 +2467,8 @@ def optimize_ai_model():
 
 
 @app.route("/api/integrated/ai/benchmark", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def benchmark_ai_models():
     """AI 모델 벤치마크"""
     try:
@@ -2571,6 +2595,8 @@ def benchmark_ai_models():
 
 
 @app.route("/api/integrated/ai/feedback", methods=["POST"])
+@validate_json_request(required_fields=["feedback_type"])
+@monitor_performance
 def process_ai_feedback():
     """AI 피드백 처리 및 학습"""
     try:
@@ -2642,10 +2668,11 @@ def process_ai_feedback():
         return jsonify(result)
 
     except Exception as e:
-        logger.error(f"AI 피드백 처리 오류: {e}")
-        return jsonify(
-            {"success": False, "error": str(e), "timestamp": datetime.now().isoformat()}
-        ), 500
+        logger.error(f"AI 피드백 처리 오류: {e}", exc_info=True)
+        return create_error_response(
+            "AI 피드백 처리 실패",
+            message=f"피드백 처리 중 오류가 발생했습니다: {str(e)}"
+        )
 
 
 if __name__ == "__main__":
