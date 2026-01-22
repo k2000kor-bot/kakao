@@ -148,8 +148,15 @@ class SimpleIntegratedAI:
             "last_updated": datetime.now().isoformat(),
         }
 
-    def analyze_message(self, message: str) -> dict:
-        """메시지 종합 분석"""
+    def analyze_message(self, message: str) -> Dict[str, Any]:
+        """메시지 종합 분석
+        
+        Args:
+            message: 분석할 메시지 텍스트
+            
+        Returns:
+            분석 결과 딕셔너리 (success, response, analysis, timestamp)
+        """
         try:
             start_time = time.time()
 
