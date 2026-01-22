@@ -772,6 +772,8 @@ def get_logs():
 
 
 @app.route("/api/integrated/creative/story", methods=["POST"])
+@validate_json_request()
+@monitor_performance
 def generate_story():
     """창작 스토리 생성"""
     try:
@@ -827,28 +829,22 @@ def generate_story():
 
         story_content = story_templates.get(genre, story_templates["romance"]).strip()
 
-        result = {
-            "success": True,
-            "data": {
-                "type": "story",
-                "genre": genre,
-                "theme": theme,
-                "length": length,
-                "content": story_content,
-                "word_count": len(story_content.split()),
-                "created_at": datetime.now().isoformat(),
-            },
-            "timestamp": datetime.now().isoformat(),
+        story_data = {
+            "type": "story",
+            "genre": genre,
+            "theme": theme,
+            "length": length,
+            "content": story_content,
+            "word_count": len(story_content.split()),
+            "created_at": datetime.now().isoformat(),
         }
 
         logger.info(f"📖 {genre} 장르의 스토리가 생성되었습니다.")
-        return jsonify(result)
+        return create_success_response(story_data)
 
     except Exception as e:
-        logger.error(f"스토리 생성 오류: {e}")
-        return jsonify(
-            {"success": False, "error": str(e), "timestamp": datetime.now().isoformat()}
-        ), 500
+        logger.error(f"스토리 생성 오류: {e}", exc_info=True)
+        return create_error_response(f"스토리 생성 실패: {str(e)}", 500)
 
 
 @app.route("/api/integrated/creative/poem", methods=["POST"])
