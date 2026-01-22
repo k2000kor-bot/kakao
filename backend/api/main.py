@@ -150,10 +150,10 @@ class SimpleIntegratedAI:
 
     def analyze_message(self, message: str) -> Dict[str, Any]:
         """메시지 종합 분석
-        
+
         Args:
             message: 분석할 메시지 텍스트
-            
+
         Returns:
             분석 결과 딕셔너리 (success, response, analysis, timestamp)
         """
@@ -198,10 +198,10 @@ class SimpleIntegratedAI:
 
     def _analyze_emotion(self, text: str) -> Dict[str, Any]:
         """고급 감정 분석
-        
+
         Args:
             text: 분석할 텍스트
-            
+
         Returns:
             감정 분석 결과 (sentiment, confidence)
         """
@@ -329,10 +329,10 @@ class SimpleIntegratedAI:
 
     def _extract_keywords(self, text: str) -> List[str]:
         """키워드 추출
-        
+
         Args:
             text: 키워드를 추출할 텍스트
-            
+
         Returns:
             추출된 키워드 리스트 (최대 10개)
         """
@@ -344,10 +344,10 @@ class SimpleIntegratedAI:
 
     def _analyze_intent(self, text: str) -> Dict[str, Any]:
         """고급 의도 분석
-        
+
         Args:
             text: 의도를 분석할 텍스트
-            
+
         Returns:
             의도 분석 결과 (type, confidence)
         """
@@ -467,12 +467,12 @@ class SimpleIntegratedAI:
         self, message: str, emotion: Dict[str, Any], intent: Dict[str, Any]
     ) -> str:
         """고급 응답 생성
-        
+
         Args:
             message: 원본 메시지
             emotion: 감정 분석 결과
             intent: 의도 분석 결과
-            
+
         Returns:
             생성된 응답 텍스트
         """
@@ -618,7 +618,7 @@ class SimpleIntegratedAI:
 
     def _update_metrics(self, response_time: float, success: bool) -> None:
         """성능 메트릭 업데이트
-        
+
         Args:
             response_time: 응답 시간 (초)
             success: 요청 성공 여부
@@ -642,7 +642,7 @@ class SimpleIntegratedAI:
 
     def get_system_status(self) -> Dict[str, Any]:
         """시스템 상태 조회
-        
+
         Returns:
             시스템 상태 정보 (metrics, health 등)
         """
