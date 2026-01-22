@@ -92,7 +92,8 @@ class ApiService {
     // 요청 인터셉터
     this.api.interceptors.request.use(
       (config) => {
-        // 로딩 상태 설정
+        // 요청 시작 시간 기록
+        (config as any).startTime = performance.now();
         console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
@@ -105,11 +106,37 @@ class ApiService {
     // 응답 인터셉터
     this.api.interceptors.response.use(
       (response: AxiosResponse<ApiResponse>) => {
-        console.log(`API Response: ${response.status} ${response.config.url}`);
+        // 응답 시간 계산 및 로깅
+        const startTime = (response.config as any).startTime;
+        if (startTime) {
+          const responseTime = performance.now() - startTime;
+          console.log(
+            `API Response: ${response.status} ${response.config.url} (${responseTime.toFixed(2)}ms)`
+          );
+          
+          // 느린 응답 경고 (1초 이상)
+          if (responseTime > 1000) {
+            console.warn(
+              `⚠️ 느린 API 응답: ${response.config.url} (${responseTime.toFixed(2)}ms)`
+            );
+          }
+        } else {
+          console.log(`API Response: ${response.status} ${response.config.url}`);
+        }
         return response;
       },
       (error) => {
-        console.error('API Response Error:', error);
+        // 에러 발생 시에도 응답 시간 기록
+        const startTime = (error.config as any)?.startTime;
+        if (startTime) {
+          const responseTime = performance.now() - startTime;
+          console.error(
+            `API Response Error: ${error.config?.url} (${responseTime.toFixed(2)}ms)`,
+            error
+          );
+        } else {
+          console.error('API Response Error:', error);
+        }
         return Promise.reject(error);
       }
     );

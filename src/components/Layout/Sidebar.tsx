@@ -5,6 +5,7 @@ import { fetchProjects, setCurrentProject } from '../../store/slices/projectsSli
 import { fetchSessions, setCurrentSession, createSession } from '../../store/slices/sessionsSlice';
 import { errorLogger } from '../../utils/errorLogger';
 import { API_BASE_URL } from '../../config/api';
+import ErrorBoundary from '../ErrorBoundary';
 import {
     Menu,
     Search,
@@ -49,7 +50,7 @@ const AIModels: AIModel[] = [
     { id: 'chat', name: '챗', icon: Bot, color: 'text-orange-600', description: '대화형 AI' },
 ];
 
-const Sidebar: React.FC = () => {
+const SidebarContent: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { projects, currentProject, loading: projectsLoading, error: projectsError } = useSelector((state: RootState) => state.projects);
     const { sessions, currentSession, loading: sessionsLoading } = useSelector((state: RootState) => state.sessions);
@@ -538,6 +539,22 @@ const Sidebar: React.FC = () => {
                 )}
             </AnimatePresence>
         </div>
+    );
+};
+
+// ErrorBoundary로 감싼 Sidebar 컴포넌트
+const Sidebar: React.FC = () => {
+    return (
+        <ErrorBoundary
+            onError={(error, errorInfo) => {
+                errorLogger.error('Sidebar Error', error, {
+                    component: 'Sidebar',
+                    componentStack: errorInfo.componentStack,
+                });
+            }}
+        >
+            <SidebarContent />
+        </ErrorBoundary>
     );
 };
 
