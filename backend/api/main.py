@@ -722,6 +722,7 @@ def get_analytics():
 
 
 @app.route("/api/integrated/logs", methods=["GET"])
+@monitor_performance
 def get_logs():
     """시스템 로그 조회"""
     try:
@@ -764,19 +765,10 @@ def get_logs():
             },
         ]
 
-        return jsonify(
-            {
-                "success": True,
-                "logs": logs,
-                "total_count": len(logs),
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
+        return create_success_response({"logs": logs, "total_count": len(logs)})
     except Exception as e:
-        logger.error(f"로그 조회 오류: {e}")
-        return jsonify(
-            {"success": False, "error": str(e), "timestamp": datetime.now().isoformat()}
-        ), 500
+        logger.error(f"로그 조회 오류: {e}", exc_info=True)
+        return create_error_response(f"로그 조회 실패: {str(e)}", 500)
 
 
 @app.route("/api/integrated/creative/story", methods=["POST"])
