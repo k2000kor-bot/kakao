@@ -14,6 +14,7 @@ from typing import List, Dict, Any, Optional, Tuple
 
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
+from functools import wraps
 
 # 로깅 설정
 logging.basicConfig(
@@ -63,6 +64,68 @@ def create_success_response(
         ),
         status_code,
     )
+
+
+def validate_json_request(required_fields: List[str] = None):
+    """JSON 요청 검증 데코레이터"""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                data = request.get_json()
+                if not data:
+                    return create_error_response("요청 본문이 필요합니다.", 400)
+
+                if required_fields:
+                    missing_fields = [
+                        field for field in required_fields if field not in data
+                    ]
+                    if missing_fields:
+                        return create_error_response(
+                            f"필수 필드가 누락되었습니다: {', '.join(missing_fields)}",
+                            400,
+                        )
+
+                return func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"요청 검증 오류: {e}", exc_info=True)
+                return create_error_response(f"요청 검증 실패: {str(e)}", 400)
+
+        return wrapper
+
+    return decorator
+
+
+def monitor_performance(func):
+    """성능 모니터링 데코레이터"""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        try:
+            result = func(*args, **kwargs)
+            response_time = time.time() - start_time
+
+            # 성능 로깅
+            logger.info(f"API {func.__name__} 실행 시간: {response_time:.3f}초")
+
+            # 응답 시간이 너무 길면 경고
+            if response_time > 5.0:
+                logger.warning(
+                    f"⚠️ {func.__name__} 응답 시간이 느립니다: {response_time:.3f}초"
+                )
+
+            return result
+        except Exception as e:
+            response_time = time.time() - start_time
+            logger.error(
+                f"❌ {func.__name__} 실행 실패 (소요 시간: {response_time:.3f}초): {e}",
+                exc_info=True,
+            )
+            raise
+
+    return wrapper
 
 
 class SimpleIntegratedAI:
@@ -543,16 +606,16 @@ ai_engine = SimpleIntegratedAI()
 
 # API 엔드포인트들
 @app.route("/api/integrated/analyze", methods=["POST"])
+@validate_json_request(required_fields=["message"])
+@monitor_performance
 def analyze_message():
     """통합 메시지 분석"""
     try:
         data = request.get_json()
-        if not data:
-            return create_error_response("요청 본문이 필요합니다.", 400)
+        message = data.get("message", "").strip()
 
-        message = data.get("message", "")
         if not message:
-            return create_error_response("메시지가 필요합니다.", 400)
+            return create_error_response("메시지가 비어있습니다.", 400)
 
         result = ai_engine.analyze_message(message)
         if result.get("success"):
