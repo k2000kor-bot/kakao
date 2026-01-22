@@ -2671,7 +2671,7 @@ def process_ai_feedback():
         logger.error(f"AI 피드백 처리 오류: {e}", exc_info=True)
         return create_error_response(
             "AI 피드백 처리 실패",
-            message=f"피드백 처리 중 오류가 발생했습니다: {str(e)}"
+            message=f"피드백 처리 중 오류가 발생했습니다: {str(e)}",
         )
 
 
