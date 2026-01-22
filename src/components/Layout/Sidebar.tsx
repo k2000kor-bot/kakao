@@ -167,6 +167,8 @@ const Sidebar: React.FC = () => {
                 component: 'Sidebar',
                 action: 'handleCreateSession',
             });
+            // 에러 발생 시 사용자에게 알림
+            alert('새 채팅 생성에 실패했습니다. 다시 시도해주세요.');
         }
     }, [dispatch, currentProject]);
 
