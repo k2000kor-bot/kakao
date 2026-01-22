@@ -67,19 +67,36 @@ const Sidebar: React.FC = () => {
         dispatch(fetchProjects());
     }, [dispatch]);
 
-    // 세션 로드
+    // 모든 프로젝트의 세션 로드 (최근 채팅용)
     useEffect(() => {
-        if (currentProject) {
-            dispatch(fetchSessions(currentProject.id));
-        }
-    }, [currentProject, dispatch]);
+        const loadAllSessions = async () => {
+            if (projects.length === 0) return;
 
-    // 최근 채팅 로드
-    useEffect(() => {
-        const loadRecentChats = async () => {
             try {
-                // 모든 세션에서 최근 업데이트된 세션 가져오기
-                const allSessions = sessions
+                // 모든 프로젝트의 세션을 병렬로 로드
+                const sessionPromises = projects.map(async (project) => {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/projects/${project.id}/sessions`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            return data.data || [];
+                        }
+                        return [];
+                    } catch (error) {
+                        errorLogger.error(
+                            `프로젝트 ${project.id} 세션 로드 실패`,
+                            error instanceof Error ? error : new Error(String(error)),
+                            { component: 'Sidebar', action: 'loadAllSessions', projectId: project.id }
+                        );
+                        return [];
+                    }
+                });
+
+                const allSessionsArrays = await Promise.all(sessionPromises);
+                const allSessions = allSessionsArrays.flat();
+
+                // 최근 업데이트된 세션 정렬
+                const recentSessions = allSessions
                     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                     .slice(0, 5)
                     .map(session => ({
@@ -87,19 +104,25 @@ const Sidebar: React.FC = () => {
                         name: session.name,
                         timestamp: session.updatedAt,
                     }));
-                setRecentChats(allSessions);
+
+                setRecentChats(recentSessions);
             } catch (error) {
-                errorLogger.error('최근 채팅 로드 실패', error instanceof Error ? error : new Error(String(error)), {
+                errorLogger.error('전체 세션 로드 실패', error instanceof Error ? error : new Error(String(error)), {
                     component: 'Sidebar',
-                    action: 'loadRecentChats',
+                    action: 'loadAllSessions',
                 });
             }
         };
 
-        if (sessions.length > 0) {
-            loadRecentChats();
+        loadAllSessions();
+    }, [projects]);
+
+    // 현재 프로젝트의 세션 로드
+    useEffect(() => {
+        if (currentProject) {
+            dispatch(fetchSessions(currentProject.id));
         }
-    }, [sessions]);
+    }, [currentProject, dispatch]);
 
     // 프로젝트 클릭 핸들러
     const handleProjectClick = useCallback((projectId: string) => {
@@ -177,6 +200,8 @@ const Sidebar: React.FC = () => {
                 component: 'Sidebar',
                 action: 'handleCreateProject',
             });
+            // 에러 발생 시 사용자에게 알림
+            alert('프로젝트 생성에 실패했습니다. 다시 시도해주세요.');
         }
     }, [dispatch, newProjectName]);
 
