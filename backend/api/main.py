@@ -131,12 +131,16 @@ def monitor_performance(func):
 
 
 class SimpleIntegratedAI:
-    """간단한 통합 AI 엔진"""
+    """간단한 통합 AI 엔진
 
-    def __init__(self):
-        self.conversation_history = []
-        self.analysis_cache = {}
-        self.system_metrics = {
+    메시지 분석, 감정 분석, 의도 분석, 응답 생성 기능을 제공합니다.
+    """
+
+    def __init__(self) -> None:
+        """AI 엔진 초기화"""
+        self.conversation_history: List[Dict[str, Any]] = []
+        self.analysis_cache: Dict[str, Any] = {}
+        self.system_metrics: Dict[str, Any] = {
             "total_requests": 0,
             "successful_requests": 0,
             "failed_requests": 0,
@@ -185,8 +189,15 @@ class SimpleIntegratedAI:
                 "timestamp": datetime.now().isoformat(),
             }
 
-    def _analyze_emotion(self, text: str) -> dict:
-        """고급 감정 분석"""
+    def _analyze_emotion(self, text: str) -> Dict[str, Any]:
+        """고급 감정 분석
+        
+        Args:
+            text: 분석할 텍스트
+            
+        Returns:
+            감정 분석 결과 (sentiment, confidence)
+        """
         # 확장된 감정 단어 사전
         positive_words = [
             "좋다",
@@ -310,15 +321,29 @@ class SimpleIntegratedAI:
         }
 
     def _extract_keywords(self, text: str) -> List[str]:
-        """키워드 추출"""
+        """키워드 추출
+        
+        Args:
+            text: 키워드를 추출할 텍스트
+            
+        Returns:
+            추출된 키워드 리스트 (최대 10개)
+        """
         # 간단한 키워드 추출 (실제로는 더 정교한 NLP 라이브러리 사용)
         words = text.split()
         # 2글자 이상의 단어만 키워드로 간주
         keywords = [word for word in words if len(word) >= 2]
         return keywords[:10]  # 상위 10개만 반환
 
-    def _analyze_intent(self, text: str) -> dict:
-        """고급 의도 분석"""
+    def _analyze_intent(self, text: str) -> Dict[str, Any]:
+        """고급 의도 분석
+        
+        Args:
+            text: 의도를 분석할 텍스트
+            
+        Returns:
+            의도 분석 결과 (type, confidence)
+        """
         text_lower = text.lower()
 
         # 의도별 키워드 패턴
@@ -431,8 +456,19 @@ class SimpleIntegratedAI:
         # 기본값
         return {"type": "general", "confidence": 0.5}
 
-    def _generate_response(self, message: str, emotion: dict, intent: dict) -> str:
-        """고급 응답 생성"""
+    def _generate_response(
+        self, message: str, emotion: Dict[str, Any], intent: Dict[str, Any]
+    ) -> str:
+        """고급 응답 생성
+        
+        Args:
+            message: 원본 메시지
+            emotion: 감정 분석 결과
+            intent: 의도 분석 결과
+            
+        Returns:
+            생성된 응답 텍스트
+        """
         # 의도별 응답 템플릿 (감정별로 구분)
         response_templates = {
             "greeting": {
@@ -573,8 +609,13 @@ class SimpleIntegratedAI:
 
         return random.choice(responses)
 
-    def _update_metrics(self, response_time: float, success: bool):
-        """성능 메트릭 업데이트"""
+    def _update_metrics(self, response_time: float, success: bool) -> None:
+        """성능 메트릭 업데이트
+        
+        Args:
+            response_time: 응답 시간 (초)
+            success: 요청 성공 여부
+        """
         self.system_metrics["total_requests"] += 1
         if success:
             self.system_metrics["successful_requests"] += 1
@@ -592,8 +633,12 @@ class SimpleIntegratedAI:
 
         self.system_metrics["last_updated"] = datetime.now().isoformat()
 
-    def get_system_status(self) -> dict:
-        """시스템 상태 조회"""
+    def get_system_status(self) -> Dict[str, Any]:
+        """시스템 상태 조회
+        
+        Returns:
+            시스템 상태 정보 (metrics, health 등)
+        """
         return {
             "status": "healthy",
             "version": "1.0.0",
