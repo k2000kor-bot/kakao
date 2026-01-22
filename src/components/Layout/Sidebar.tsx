@@ -300,11 +300,10 @@ const Sidebar: React.FC = () => {
                                 <button
                                     key={model.id}
                                     onClick={() => handleModelSelect(model.id)}
-                                    className={`w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-lg transition-colors ${
-                                        selectedModel === model.id
+                                    className={`w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-lg transition-colors ${selectedModel === model.id
                                             ? 'bg-blue-50 text-blue-700'
                                             : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
+                                        }`}
                                     title={model.description}
                                     aria-label={`${model.name} 모델 선택`}
                                 >
@@ -348,11 +347,10 @@ const Sidebar: React.FC = () => {
                                     <div key={project.id}>
                                         <button
                                             onClick={() => handleProjectClick(project.id)}
-                                            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${
-                                                currentProject?.id === project.id
+                                            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${currentProject?.id === project.id
                                                     ? 'bg-blue-50 text-blue-700'
                                                     : 'text-gray-700 hover:bg-gray-100'
-                                            }`}
+                                                }`}
                                             aria-label={`${project.name} 프로젝트 선택`}
                                         >
                                             <div className="flex items-center space-x-2 min-w-0">
@@ -364,9 +362,8 @@ const Sidebar: React.FC = () => {
                                             {!isCollapsed && (
                                                 <ChevronDown
                                                     size={14}
-                                                    className={`transition-transform flex-shrink-0 ${
-                                                        expandedProjects.has(project.id) ? 'rotate-180' : ''
-                                                    }`}
+                                                    className={`transition-transform flex-shrink-0 ${expandedProjects.has(project.id) ? 'rotate-180' : ''
+                                                        }`}
                                                 />
                                             )}
                                         </button>
@@ -389,11 +386,10 @@ const Sidebar: React.FC = () => {
                                                             <button
                                                                 key={session.id}
                                                                 onClick={() => handleSessionClick(session.id)}
-                                                                className={`w-full flex items-center space-x-2 px-3 py-1.5 text-sm rounded transition-colors ${
-                                                                    currentSession?.id === session.id
+                                                                className={`w-full flex items-center space-x-2 px-3 py-1.5 text-sm rounded transition-colors ${currentSession?.id === session.id
                                                                         ? 'bg-blue-100 text-blue-700'
                                                                         : 'text-gray-600 hover:bg-gray-100'
-                                                                }`}
+                                                                    }`}
                                                                 aria-label={`${session.name} 세션 선택`}
                                                             >
                                                                 <MessageSquare size={14} className="flex-shrink-0" />
