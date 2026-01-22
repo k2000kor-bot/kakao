@@ -665,6 +665,7 @@ def get_metrics():
 
 
 @app.route("/api/integrated/analytics", methods=["GET"])
+@monitor_performance
 def get_analytics():
     """분석 대시보드 데이터 조회"""
     try:
@@ -714,18 +715,10 @@ def get_analytics():
             ],
         }
 
-        return jsonify(
-            {
-                "success": True,
-                "data": analytics_data,
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
+        return create_success_response(analytics_data)
     except Exception as e:
-        logger.error(f"분석 데이터 조회 오류: {e}")
-        return jsonify(
-            {"success": False, "error": str(e), "timestamp": datetime.now().isoformat()}
-        ), 500
+        logger.error(f"분석 데이터 조회 오류: {e}", exc_info=True)
+        return create_error_response(f"분석 데이터 조회 실패: {str(e)}", 500)
 
 
 @app.route("/api/integrated/logs", methods=["GET"])
