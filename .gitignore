@@ -56,6 +56,12 @@ yarn-error.log*
 .pids/
 logs/
 
+# project data
+project_data/
+uploads/
+backend/uploads/
+backend/project_data/
+
 # Playwright
 /test-results/
 /playwright-report/

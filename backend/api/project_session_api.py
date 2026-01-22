@@ -9,8 +9,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, ConfigDict
+from fastapi import APIRouter, HTTPException, Depends, status
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -216,10 +216,18 @@ async def get_projects() -> Dict[str, Any]:
             "success": True,
             "data": projects,
             "count": len(projects),
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
-        logger.error(f"프로젝트 조회 실패: {e}")
-        raise HTTPException(status_code=500, detail=f"프로젝트 조회 실패: {str(e)}")
+        logger.error(f"프로젝트 조회 실패: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "프로젝트 조회 실패",
+                "message": "프로젝트 목록을 불러오는 중 오류가 발생했습니다.",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
 
 @router.post("/projects", summary="새 프로젝트 생성")
@@ -251,14 +259,29 @@ async def create_project(project: ProjectCreate) -> Dict[str, Any]:
             return {
                 "success": True,
                 "data": project_data,
+                "timestamp": datetime.now().isoformat(),
             }
         else:
-            raise HTTPException(status_code=500, detail="프로젝트 저장 실패")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "error": "프로젝트 저장 실패",
+                    "message": "프로젝트를 저장하는 중 오류가 발생했습니다.",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"프로젝트 생성 실패: {e}")
-        raise HTTPException(status_code=500, detail=f"프로젝트 생성 실패: {str(e)}")
+        logger.error(f"프로젝트 생성 실패: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "프로젝트 생성 실패",
+                "message": f"프로젝트 생성 중 오류가 발생했습니다: {str(e)}",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
 
 @router.get("/projects/{project_id}", summary="특정 프로젝트 조회")
@@ -267,17 +290,32 @@ async def get_project(project_id: str) -> Dict[str, Any]:
     try:
         project_data = load_project(project_id)
         if not project_data:
-            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "프로젝트를 찾을 수 없습니다",
+                    "message": f"ID '{project_id}'에 해당하는 프로젝트가 존재하지 않습니다.",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         return {
             "success": True,
             "data": project_data,
+            "timestamp": datetime.now().isoformat(),
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"프로젝트 조회 실패: {e}")
-        raise HTTPException(status_code=500, detail=f"프로젝트 조회 실패: {str(e)}")
+        logger.error(f"프로젝트 조회 실패: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "프로젝트 조회 실패",
+                "message": "프로젝트 정보를 불러오는 중 오류가 발생했습니다.",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
 
 @router.put("/projects/{project_id}", summary="프로젝트 업데이트")
@@ -288,7 +326,14 @@ async def update_project(
     try:
         project_data = load_project(project_id)
         if not project_data:
-            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "프로젝트를 찾을 수 없습니다",
+                    "message": f"ID '{project_id}'에 해당하는 프로젝트가 존재하지 않습니다.",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         # 업데이트 적용
         project_data.update(updates)
@@ -298,14 +343,29 @@ async def update_project(
             return {
                 "success": True,
                 "data": project_data,
+                "timestamp": datetime.now().isoformat(),
             }
         else:
-            raise HTTPException(status_code=500, detail="프로젝트 저장 실패")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "error": "프로젝트 저장 실패",
+                    "message": "프로젝트를 저장하는 중 오류가 발생했습니다.",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"프로젝트 업데이트 실패: {e}")
-        raise HTTPException(status_code=500, detail=f"프로젝트 업데이트 실패: {str(e)}")
+        logger.error(f"프로젝트 업데이트 실패: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "프로젝트 업데이트 실패",
+                "message": "프로젝트를 업데이트하는 중 오류가 발생했습니다.",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
 
 @router.delete("/projects/{project_id}", summary="프로젝트 삭제")
@@ -314,7 +374,14 @@ async def delete_project(project_id: str) -> Dict[str, Any]:
     try:
         project_file = get_project_file(project_id)
         if not project_file.exists():
-            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "프로젝트를 찾을 수 없습니다",
+                    "message": f"ID '{project_id}'에 해당하는 프로젝트가 존재하지 않습니다.",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         project_file.unlink()
         logger.info(f"프로젝트 삭제 성공: {project_id}")
@@ -322,12 +389,20 @@ async def delete_project(project_id: str) -> Dict[str, Any]:
         return {
             "success": True,
             "message": "프로젝트가 삭제되었습니다",
+            "timestamp": datetime.now().isoformat(),
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"프로젝트 삭제 실패: {e}")
-        raise HTTPException(status_code=500, detail=f"프로젝트 삭제 실패: {str(e)}")
+        logger.error(f"프로젝트 삭제 실패: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "프로젝트 삭제 실패",
+                "message": "프로젝트를 삭제하는 중 오류가 발생했습니다.",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
 
 # 세션 API 엔드포인트
