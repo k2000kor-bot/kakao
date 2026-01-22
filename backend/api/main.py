@@ -49,7 +49,9 @@ def create_error_response(error: str, status_code: int = 500) -> Tuple[Response,
     )
 
 
-def create_success_response(data: Dict[str, Any], status_code: int = 200) -> Tuple[Response, int]:
+def create_success_response(
+    data: Dict[str, Any], status_code: int = 200
+) -> Tuple[Response, int]:
     """표준화된 성공 응답 생성"""
     return (
         jsonify(
@@ -545,25 +547,22 @@ def analyze_message():
     """통합 메시지 분석"""
     try:
         data = request.get_json()
-        message = data.get("message", "")
+        if not data:
+            return create_error_response("요청 본문이 필요합니다.", 400)
 
+        message = data.get("message", "")
         if not message:
-            return jsonify(
-                {
-                    "success": False,
-                    "error": "메시지가 필요합니다.",
-                    "timestamp": datetime.now().isoformat(),
-                }
-            ), 400
+            return create_error_response("메시지가 필요합니다.", 400)
 
         result = ai_engine.analyze_message(message)
-        return jsonify(result)
+        if result.get("success"):
+            return create_success_response(result)
+        else:
+            return create_error_response(result.get("error", "분석 실패"), 500)
 
     except Exception as e:
-        logger.error(f"통합 분석 API 오류: {e}")
-        return jsonify(
-            {"success": False, "error": str(e), "timestamp": datetime.now().isoformat()}
-        ), 500
+        logger.error(f"통합 분석 API 오류: {e}", exc_info=True)
+        return create_error_response(f"서버 오류: {str(e)}", 500)
 
 
 @app.route("/api/integrated/status", methods=["GET"])
