@@ -629,47 +629,39 @@ def analyze_message():
 
 
 @app.route("/api/integrated/status", methods=["GET"])
+@monitor_performance
 def get_integrated_status():
     """통합 시스템 상태 조회"""
     try:
         status = ai_engine.get_system_status()
-        return jsonify(status)
+        return create_success_response(status)
     except Exception as e:
-        logger.error(f"상태 조회 오류: {e}")
-        return jsonify(
-            {"success": False, "error": str(e), "timestamp": datetime.now().isoformat()}
-        ), 500
+        logger.error(f"상태 조회 오류: {e}", exc_info=True)
+        return create_error_response(f"상태 조회 실패: {str(e)}", 500)
 
 
 @app.route("/api/integrated/health", methods=["GET"])
+@monitor_performance
 def health_check():
     """헬스 체크"""
-    return jsonify(
+    return create_success_response(
         {
             "status": "healthy",
             "service": "CORBU AI 통합 API",
-            "timestamp": datetime.now().isoformat(),
         }
     )
 
 
 @app.route("/api/integrated/metrics", methods=["GET"])
+@monitor_performance
 def get_metrics():
     """성능 메트릭 조회"""
     try:
         metrics = ai_engine.system_metrics
-        return jsonify(
-            {
-                "success": True,
-                "metrics": metrics,
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
+        return create_success_response({"metrics": metrics})
     except Exception as e:
-        logger.error(f"메트릭 조회 오류: {e}")
-        return jsonify(
-            {"success": False, "error": str(e), "timestamp": datetime.now().isoformat()}
-        ), 500
+        logger.error(f"메트릭 조회 오류: {e}", exc_info=True)
+        return create_error_response(f"메트릭 조회 실패: {str(e)}", 500)
 
 
 @app.route("/api/integrated/analytics", methods=["GET"])
