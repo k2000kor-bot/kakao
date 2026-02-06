@@ -2,10 +2,10 @@
  * notebookLLMStreamingService 서비스 테스트
  * 노트북 LLM 스트리밍 서비스 테스트
  */
+/* eslint-disable jest/no-conditional-expect */
 
 import notebookLLMStreamingService from '../notebookLLMStreamingService';
 import notebookLLMService from '../notebookLLMService';
-import { errorLogger } from '../../utils/errorLogger';
 
 // TextEncoder/TextDecoder 모킹
 global.TextEncoder = global.TextEncoder || require('util').TextEncoder;
@@ -140,7 +140,7 @@ describe('notebookLLMStreamingService', () => {
       const onError = jest.fn();
 
       await expect(
-        NotebookLLMStreamingService.getInstance().streamDefaultNotebook(
+        notebookLLMStreamingService.streamDefaultNotebook(
           '테스트 프롬프트',
           {},
           {},
@@ -160,7 +160,7 @@ describe('notebookLLMStreamingService', () => {
       const onError = jest.fn();
 
       await expect(
-        NotebookLLMStreamingService.getInstance().streamDefaultNotebook(
+        notebookLLMStreamingService.streamDefaultNotebook(
           '테스트 프롬프트',
           {},
           {},
@@ -178,7 +178,7 @@ describe('notebookLLMStreamingService', () => {
         body: mockStream,
       });
 
-      await NotebookLLMStreamingService.getInstance().streamDefaultNotebook(
+      await notebookLLMStreamingService.streamDefaultNotebook(
         '테스트 프롬프트',
         { key: 'value' },
         { modelType: 'llama3.1:8b' }
@@ -205,7 +205,7 @@ describe('notebookLLMStreamingService', () => {
       const onChunk = jest.fn();
       const onComplete = jest.fn();
 
-      await NotebookLLMStreamingService.getInstance().streamDefaultNotebook(
+      await notebookLLMStreamingService.streamDefaultNotebook(
         '테스트',
         {},
         {},
@@ -246,7 +246,7 @@ describe('notebookLLMStreamingService', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v7/notebook-llm/project/project-123/stream'),
+        expect.stringContaining('/api/projects/project-123/notebook-llm/stream'),
         expect.objectContaining({
           method: 'POST',
         })
@@ -281,7 +281,7 @@ describe('notebookLLMStreamingService', () => {
       const onError = jest.fn();
 
       await expect(
-        NotebookLLMStreamingService.getInstance().streamProjectNotebook(
+        notebookLLMStreamingService.streamProjectNotebook(
           'project-123',
           '테스트',
           {},
@@ -341,7 +341,7 @@ describe('notebookLLMStreamingService', () => {
       });
       const onComplete = jest.fn();
 
-      await NotebookLLMStreamingService.getInstance().streamDefaultNotebook(
+      await notebookLLMStreamingService.streamDefaultNotebook(
         '시공사 선정 기준은 무엇인가요?',
         {
           project: '개포우성7차 재개발',
@@ -365,8 +365,6 @@ describe('notebookLLMStreamingService', () => {
         ok: true,
         body: mockStream,
       });
-
-      const onComplete = jest.fn();
 
       await notebookLLMStreamingService.streamProjectNotebook(
         'project-123',

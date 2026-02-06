@@ -38,7 +38,10 @@ export const DOMAIN_KNOWLEDGE_BASE: Record<string, DomainKnowledge> = {
       '조합설립',
       '관리처분계획',
       '분양',
-      '이주대책'
+      '이주대책',
+      '감정평가',
+      '감정평가사',
+      '시가산정'
     ],
     procedures: [
       '정비구역 지정',
@@ -69,7 +72,8 @@ export const DOMAIN_KNOWLEDGE_BASE: Record<string, DomainKnowledge> = {
       '부가가치세',
       '세액공제',
       '세액감면',
-      '양도소득공제'
+      '양도소득공제',
+      '세무사'
     ],
     calculations: [
       '양도소득세 = (양도가액 - 취득가액 - 필요경비) × 세율',
@@ -96,7 +100,9 @@ export const DOMAIN_KNOWLEDGE_BASE: Record<string, DomainKnowledge> = {
       '임대차',
       '계약',
       '불법행위',
-      '손해배상'
+      '손해배상',
+      '변호사',
+      '법무사'
     ],
     procedures: [
       '계약서 작성',
@@ -121,7 +127,8 @@ export const DOMAIN_KNOWLEDGE_BASE: Record<string, DomainKnowledge> = {
       '전세자금대출',
       '부동산펀드',
       '리츠(REITs)',
-      '부동산투자회사'
+      '부동산투자회사',
+      '회계사'
     ],
     policies: [
       '주택담보대출 규제',
@@ -188,7 +195,9 @@ export const DOMAIN_KNOWLEDGE_BASE: Record<string, DomainKnowledge> = {
       '계약해제',
       '하자담보책임',
       '부당이득',
-      '명의신탁'
+      '명의신탁',
+      '변호사',
+      '법무사'
     ],
     cases: [
       '신의성실의 원칙',
@@ -208,7 +217,9 @@ export const DOMAIN_KNOWLEDGE_BASE: Record<string, DomainKnowledge> = {
       '중개계약',
       '중개대상물 확인·설명의무',
       '중개보수',
-      '손해배상책임'
+      '손해배상책임',
+      '부동산중개사',
+      '공인중개사'
     ],
     procedures: [
       '중개의뢰',
@@ -1229,11 +1240,10 @@ export class NotebookLLMService {
   private readonly retryDelay: number = 1000;
 
   constructor() {
-    // 환경 변수 우선, 없으면 기본값 사용
-    // REACT_APP_NOTEBOOK_LLM_URL이 있으면 사용, 없으면 REACT_APP_API_URL 사용
+    // 환경 변수 우선, 없으면 메인 백엔드(8000) 사용 (프로젝트 노트북 LLM은 동일 서버)
     this.baseUrl = process.env.REACT_APP_NOTEBOOK_LLM_URL
       || process.env.REACT_APP_API_URL
-      || 'http://localhost:8001';
+      || 'http://localhost:8000';
   }
 
   public static getInstance(): NotebookLLMService {
@@ -1345,12 +1355,12 @@ export class NotebookLLMService {
   }
 
   /**
-   * 프로젝트별 노트북 LLM 상태 확인
+   * 프로젝트별 노트북 LLM 상태 확인 (백엔드 /api/projects/{id}/notebook-llm/status)
    */
   async getProjectNotebookStatus(projectId: string): Promise<NotebookLLMStatus> {
     try {
       const response = await this.fetchWithRetry(
-        `${this.baseUrl}/api/v7/notebook-llm/project/${projectId}/status`,
+        `${this.baseUrl}/api/projects/${projectId}/notebook-llm/status`,
         {
           method: 'GET',
           headers: {
@@ -1364,7 +1374,8 @@ export class NotebookLLMService {
         throw new Error(`프로젝트 노트북 상태 조회 실패: ${response.statusText}`);
       }
 
-      return await response.json();
+      const json = await response.json();
+      return (json.data != null ? json.data : json) as NotebookLLMStatus;
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
       errorLogger.error('프로젝트 노트북 상태 조회 실패', errorObj, {
@@ -1465,7 +1476,7 @@ export class NotebookLLMService {
 
     try {
       const response = await this.fetchWithRetry(
-        `${this.baseUrl}/api/v7/notebook-llm/project/${projectId}/generate`,
+        `${this.baseUrl}/api/projects/${projectId}/notebook-llm/generate`,
         {
           method: 'POST',
           headers: {
@@ -1484,14 +1495,15 @@ export class NotebookLLMService {
         let errorMessage = `프로젝트 노트북 응답 생성 실패: ${response.statusText}`;
         try {
           const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          errorMessage = (errorData.detail?.message ?? errorData.detail?.error ?? errorData.message ?? errorData.error) || errorMessage;
         } catch {
           errorMessage = errorText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      return await response.json();
+      const json = await response.json();
+      return (json.data != null ? json.data : json) as NotebookLLMResponse;
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
       errorLogger.error('프로젝트 노트북 LLM 응답 생성 실패', errorObj, {

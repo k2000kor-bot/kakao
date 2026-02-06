@@ -1,6 +1,35 @@
 /**
  * NotebookLLMService 테스트
  */
+/* eslint-disable jest/no-conditional-expect */
+
+import {
+  NotebookLLMService,
+  notebookLLMService,
+  NotebookLLMConfig,
+  NotebookLLMResponse,
+  NotebookLLMStatus,
+  searchDomainKnowledge,
+  getDomainDetail,
+  getDomainStatistics,
+  getTermDefinition,
+  getDomainFAQs,
+  getDomainExamples,
+  getDomainRelationGraph,
+  getDomainPromptTemplates,
+  generateDomainInsights,
+  validateDomainKnowledge,
+  recordDomainUsage,
+  getDomainUsageStats,
+  addKnowledgeHistory,
+  getKnowledgeHistory,
+  setExpertModeConfig,
+  getExpertModeConfig,
+  buildExpertContext,
+  detectRelevantDomains,
+  buildIntelligentContext,
+} from '../notebookLLMService';
+import { errorReportingService } from '../errorReportingService';
 
 // fetch 모킹
 global.fetch = jest.fn();
@@ -42,15 +71,6 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
   configurable: true,
 });
-
-import {
-  NotebookLLMService,
-  notebookLLMService,
-  NotebookLLMConfig,
-  NotebookLLMResponse,
-  NotebookLLMStatus,
-} from '../notebookLLMService';
-import { errorReportingService } from '../errorReportingService';
 
 describe('NotebookLLMService', () => {
   let service: NotebookLLMService;
@@ -155,7 +175,7 @@ describe('NotebookLLMService', () => {
 
       expect(status).toEqual(mockStatus);
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining(`/api/v7/notebook-llm/project/${projectId}/status`),
+        expect.stringContaining(`/api/projects/${projectId}/notebook-llm/status`),
         expect.objectContaining({
           method: 'GET',
         })
@@ -309,7 +329,7 @@ describe('NotebookLLMService', () => {
 
       expect(response).toEqual(mockResponse);
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining(`/api/v7/notebook-llm/project/${projectId}/generate`),
+        expect.stringContaining(`/api/projects/${projectId}/notebook-llm/generate`),
         expect.objectContaining({
           method: 'POST',
         })
@@ -515,6 +535,294 @@ describe('NotebookLLMService', () => {
 
       await expect(service.generateWithDefaultNotebook(prompt)).rejects.toThrow();
       expect(errorReportingService.reportError).toHaveBeenCalled();
+    });
+  });
+
+  describe('searchDomainKnowledge', () => {
+    it('쿼리와 일치하는 도메인 지식을 반환해야 함', () => {
+      const results = searchDomainKnowledge('재개발');
+      expect(results.length).toBeGreaterThan(0);
+      const hasMatch = results.some(r => r.matches.length > 0);
+      expect(hasMatch).toBe(true);
+      const match = results.find(r => r.matches.some(m => m.content.includes('재개발')));
+      expect(match).toBeDefined();
+      expect(match!.domain).toBeDefined();
+      expect(match!.totalMatches).toBeGreaterThan(0);
+    });
+
+    it('일치하는 내용이 없으면 빈 매치 배열을 가진 결과를 반환할 수 있음', () => {
+      const results = searchDomainKnowledge('xyznonexistent123');
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('domainFilter가 주어지면 해당 도메인만 검색해야 함', () => {
+      const results = searchDomainKnowledge('재개발', ['도시정비']);
+      expect(results.length).toBeLessThanOrEqual(1);
+      if (results.length > 0) {
+        expect(results[0].domain).toBe('도시정비');
+      }
+    });
+  });
+
+  describe('getDomainDetail', () => {
+    it('존재하는 도메인 키로 상세 정보를 반환해야 함', () => {
+      const detail = getDomainDetail('도시정비');
+      expect(detail).not.toBeNull();
+      expect(detail!.domain).toBe('도시정비');
+      expect(detail!.summary).toContain('도시정비');
+      expect(Array.isArray(detail!.laws)).toBe(true);
+      expect(Array.isArray(detail!.concepts)).toBe(true);
+      expect(detail!.laws).toContain('도시 및 주거환경정비법');
+      expect(detail!.concepts).toContain('재개발');
+    });
+
+    it('존재하지 않는 도메인 키는 null을 반환해야 함', () => {
+      expect(getDomainDetail('nonexistent')).toBeNull();
+    });
+  });
+
+  describe('getDomainStatistics', () => {
+    it('전체 도메인 통계를 반환해야 함', () => {
+      const stats = getDomainStatistics();
+      expect(stats.totalDomains).toBeGreaterThan(0);
+      expect(stats.totalLaws).toBeGreaterThanOrEqual(0);
+      expect(stats.totalConcepts).toBeGreaterThan(0);
+      expect(Array.isArray(stats.domainBreakdown)).toBe(true);
+      expect(stats.domainBreakdown.length).toBe(stats.totalDomains);
+    });
+  });
+
+  describe('getTermDefinition', () => {
+    it('용어로 정의 목록을 반환해야 함', () => {
+      const results = getTermDefinition('재개발');
+      expect(Array.isArray(results)).toBe(true);
+      if (results.length > 0) {
+        expect(results[0]).toHaveProperty('term');
+        expect(results[0]).toHaveProperty('domain');
+        expect(results[0]).toHaveProperty('definition');
+      }
+    });
+
+    it('일치하는 용어가 없으면 빈 배열을 반환해야 함', () => {
+      const results = getTermDefinition('xyznonexistent123');
+      expect(results).toEqual([]);
+    });
+  });
+
+  describe('getDomainFAQs', () => {
+    it('존재하는 도메인의 FAQ 배열을 반환해야 함', () => {
+      const faqs = getDomainFAQs('도시정비');
+      expect(Array.isArray(faqs)).toBe(true);
+    });
+
+    it('존재하지 않는 도메인은 빈 배열을 반환해야 함', () => {
+      expect(getDomainFAQs('nonexistent')).toEqual([]);
+    });
+  });
+
+  describe('getDomainExamples', () => {
+    it('존재하는 도메인의 예시 배열을 반환해야 함', () => {
+      const examples = getDomainExamples('도시정비');
+      expect(Array.isArray(examples)).toBe(true);
+    });
+
+    it('존재하지 않는 도메인은 빈 배열을 반환해야 함', () => {
+      expect(getDomainExamples('nonexistent')).toEqual([]);
+    });
+  });
+
+  describe('getDomainRelationGraph', () => {
+    it('노드와 링크를 가진 관계 그래프를 반환해야 함', () => {
+      const graph = getDomainRelationGraph();
+      expect(graph).toHaveProperty('nodes');
+      expect(graph).toHaveProperty('links');
+      expect(Array.isArray(graph.nodes)).toBe(true);
+      expect(Array.isArray(graph.links)).toBe(true);
+      expect(graph.nodes.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('getDomainPromptTemplates', () => {
+    it('존재하는 도메인의 프롬프트 템플릿 배열을 반환해야 함', () => {
+      const templates = getDomainPromptTemplates('도시정비');
+      expect(Array.isArray(templates)).toBe(true);
+      if (templates.length > 0) {
+        expect(templates[0]).toHaveProperty('id');
+        expect(templates[0]).toHaveProperty('template');
+      }
+    });
+
+    it('존재하지 않는 도메인은 빈 배열을 반환해야 함', () => {
+      expect(getDomainPromptTemplates('nonexistent')).toEqual([]);
+    });
+  });
+
+  describe('generateDomainInsights', () => {
+    it('선택된 도메인 조합에 따라 인사이트를 반환해야 함', () => {
+      const insights = generateDomainInsights(['도시정비', '세무']);
+      expect(Array.isArray(insights)).toBe(true);
+      expect(insights.length).toBeGreaterThan(0);
+      expect(insights[0]).toHaveProperty('type');
+      expect(insights[0]).toHaveProperty('title');
+      expect(insights[0]).toHaveProperty('relatedDomains');
+    });
+
+    it('관련 없는 도메인만 있으면 빈 배열을 반환할 수 있음', () => {
+      const insights = generateDomainInsights(['도시정비']);
+      expect(Array.isArray(insights)).toBe(true);
+    });
+  });
+
+  describe('validateDomainKnowledge', () => {
+    it('존재하는 도메인의 품질 정보를 반환해야 함', () => {
+      const quality = validateDomainKnowledge('도시정비');
+      expect(quality.domain).toBe('도시정비');
+      expect(typeof quality.completeness).toBe('number');
+      expect(typeof quality.accuracy).toBe('number');
+      expect(Array.isArray(quality.issues)).toBe(true);
+    });
+
+    it('존재하지 않는 도메인은 이슈를 포함한 품질 정보를 반환해야 함', () => {
+      const quality = validateDomainKnowledge('nonexistent');
+      expect(quality.domain).toBe('nonexistent');
+      expect(quality.completeness).toBe(0);
+      expect(quality.issues).toContain('도메인을 찾을 수 없습니다');
+    });
+  });
+
+  describe('recordDomainUsage and getDomainUsageStats', () => {
+    it('recordDomainUsage 후 getDomainUsageStats로 해당 도메인 통계를 조회할 수 있어야 함', () => {
+      recordDomainUsage('도시정비', true);
+      const stats = getDomainUsageStats('도시정비');
+      expect(Array.isArray(stats)).toBe(true);
+      if (stats.length > 0) {
+        expect(stats[0].domain).toBe('도시정비');
+        expect(stats[0].usageCount).toBeGreaterThanOrEqual(1);
+      }
+    });
+
+    it('getDomainUsageStats()는 전체 통계 배열을 반환해야 함', () => {
+      const stats = getDomainUsageStats();
+      expect(Array.isArray(stats)).toBe(true);
+    });
+
+    it('존재하지 않는 도메인 통계는 빈 배열을 반환해야 함', () => {
+      const stats = getDomainUsageStats('nonexistent-domain-xyz');
+      expect(stats).toEqual([]);
+    });
+  });
+
+  describe('addKnowledgeHistory and getKnowledgeHistory', () => {
+    it('addKnowledgeHistory 후 getKnowledgeHistory로 해당 도메인 히스토리를 조회할 수 있어야 함', () => {
+      addKnowledgeHistory('도시정비', 'added', '테스트 추가');
+      const history = getKnowledgeHistory('도시정비');
+      expect(Array.isArray(history)).toBe(true);
+      const added = history.find(h => h.details === '테스트 추가');
+      if (added) {
+        expect(added.action).toBe('added');
+        expect(added.domain).toBe('도시정비');
+      }
+    });
+
+    it('getKnowledgeHistory()는 전체 히스토리 배열을 반환해야 함', () => {
+      const history = getKnowledgeHistory();
+      expect(Array.isArray(history)).toBe(true);
+    });
+  });
+
+  describe('setExpertModeConfig and getExpertModeConfig', () => {
+    it('setExpertModeConfig로 설정 후 getExpertModeConfig로 조회할 수 있어야 함', () => {
+      const config = {
+        domain: '도시정비',
+        enabled: true,
+        depth: 'expert' as const,
+        includeCaseStudies: true,
+        includeCalculations: true,
+        includeLatestPolicies: true,
+      };
+      setExpertModeConfig(config);
+      const retrieved = getExpertModeConfig('도시정비');
+      expect(retrieved).not.toBeNull();
+      expect(retrieved?.domain).toBe('도시정비');
+      expect(retrieved?.enabled).toBe(true);
+      expect(retrieved?.depth).toBe('expert');
+    });
+
+    it('존재하지 않는 도메인은 null을 반환해야 함', () => {
+      expect(getExpertModeConfig('nonexistent-xyz')).toBeNull();
+    });
+  });
+
+  describe('buildExpertContext', () => {
+    it('전문가 설정이 있으면 컨텍스트 문자열을 반환해야 함', () => {
+      setExpertModeConfig({
+        domain: '도시정비',
+        enabled: true,
+        depth: 'expert',
+        includeCaseStudies: true,
+        includeCalculations: true,
+        includeLatestPolicies: true,
+      });
+      const context = buildExpertContext('재건축 조합 설립', ['도시정비'], [
+        {
+          domain: '도시정비',
+          enabled: true,
+          depth: 'expert',
+          includeCaseStudies: true,
+          includeCalculations: true,
+          includeLatestPolicies: true,
+        },
+      ]);
+      expect(typeof context).toBe('string');
+      expect(context.length).toBeGreaterThan(0);
+      expect(context).toContain('도메인 전문 지식');
+    });
+
+    it('enabled false인 설정은 컨텍스트에 전문가 모드 정보를 덜 포함할 수 있음', () => {
+      const context = buildExpertContext('질문', ['도시정비'], [
+        {
+          domain: '도시정비',
+          enabled: false,
+          depth: 'basic',
+          includeCaseStudies: false,
+          includeCalculations: false,
+          includeLatestPolicies: false,
+        },
+      ]);
+      expect(typeof context).toBe('string');
+    });
+  });
+
+  describe('detectRelevantDomains', () => {
+    it('프롬프트에 법령/개념 키워드가 있으면 해당 도메인을 추천해야 함', () => {
+      const recommendations = detectRelevantDomains('도시정비법 재건축 조합 설립');
+      expect(Array.isArray(recommendations)).toBe(true);
+      const hasCity = recommendations.some(r => r.domain === '도시정비');
+      expect(hasCity).toBe(true);
+      if (recommendations.length > 0) {
+        expect(recommendations[0]).toHaveProperty('domain');
+        expect(recommendations[0]).toHaveProperty('confidence');
+        expect(recommendations[0]).toHaveProperty('reason');
+        expect(recommendations[0]).toHaveProperty('relevantConcepts');
+      }
+    });
+
+    it('관련 키워드가 없으면 빈 배열 또는 낮은 신뢰도만 반환할 수 있음', () => {
+      const recommendations = detectRelevantDomains('날씨가 좋네요');
+      expect(Array.isArray(recommendations)).toBe(true);
+    });
+  });
+
+  describe('buildIntelligentContext', () => {
+    it('선택 도메인과 프롬프트 기반으로 컨텍스트 문자열을 반환해야 함', () => {
+      const context = buildIntelligentContext('재건축 단지', ['도시정비'], true);
+      expect(typeof context).toBe('string');
+      expect(context).toContain('도메인 전문 지식');
+    });
+
+    it('includeRelated false여도 컨텍스트를 반환해야 함', () => {
+      const context = buildIntelligentContext('질문', ['세무'], false);
+      expect(typeof context).toBe('string');
     });
   });
 });

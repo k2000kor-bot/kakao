@@ -23,7 +23,7 @@ export interface NotebookLLMResponse {
   confidence: number;
   tokensUsed: number;
   mode: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -64,7 +64,7 @@ class NotebookLLMStreamingService {
    */
   async streamDefaultNotebook(
     prompt: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     config?: Partial<NotebookLLMConfig>,
     options?: StreamingOptions
   ): Promise<void> {
@@ -176,7 +176,7 @@ class NotebookLLMStreamingService {
   async streamProjectNotebook(
     projectId: string,
     prompt: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     config?: Partial<NotebookLLMConfig>,
     options?: StreamingOptions
   ): Promise<void> {
@@ -186,7 +186,7 @@ class NotebookLLMStreamingService {
       const projectConfig = notebookLLMService.getProjectNotebookConfig(projectId) || notebookLLMService.loadDefaultConfig();
       const finalConfig = { ...projectConfig, ...config, projectId };
 
-      const response = await fetch(`${this.baseUrl}/api/v7/notebook-llm/project/${projectId}/stream`, {
+      const response = await fetch(`${this.baseUrl}/api/projects/${projectId}/notebook-llm/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -238,10 +238,12 @@ class NotebookLLMStreamingService {
 
           try {
             const data = JSON.parse(line);
-            
-            if (data.content) {
+            if (data.error) {
+              onError?.(new Error(data.error));
+              return;
+            }
+            if (data.content !== undefined) {
               fullContent += data.content;
-              
               if (fullContent.length >= chunkSize) {
                 onChunk?.({
                   content: fullContent,
@@ -254,7 +256,6 @@ class NotebookLLMStreamingService {
                 });
               }
             }
-
             if (data.done) {
               onChunk?.({
                 content: fullContent,
