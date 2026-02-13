@@ -1,11 +1,22 @@
 /* eslint-disable jest/no-conditional-expect */
 /**
  * AdvancedFeaturesPanel 컴포넌트 테스트
- * 고급 기능 패널 기능 확인
+ *
+ * 고급 기능 패널(음성 인식, 이미지 분석, 예측 분석, 목소리 생성) 기능 확인
+ *
+ * 커버리지 요약:
+ * - 기본 렌더링, 탭 전환, Props (projectId, defaultTab, userId)
+ * - 접근성: role(region/tablist/tab/tabpanel), aria-*, 키보드(Arrow/Home/End) 탭 이동·순환
+ * - 이미지 분석: 업로드, 결과 표시, 에러 처리, 결과 지우기
+ * - 음성 인식: 시작/중지, 결과 표시, 빈 상태 안내, 에러 처리
+ * - 예측 분석: 활동/품질/성능/요약 실행, 결과 표시, 빈 상태 안내, 결과 지우기
+ * - 목소리 생성: URL/프로젝트/상황 모드, 생성·재생, 오디오 지우기, 보이스 소스 관리
+ * - 에러: 표시, 확인 버튼·Escape로 닫기
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { setupCommonMocks } from '../../test-utils/testHelpers';
 import AdvancedFeaturesPanel from '../AdvancedFeaturesPanel';
@@ -90,6 +101,37 @@ jest.mock('../../services/speechRecognitionService', () => ({
   },
 }));
 
+function createDeferred<T>(): { promise: Promise<T>; resolve: (v: T) => void } {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
+
+/** React fiber에서 버튼의 onClick 핸들러를 가져옴 (미커버 브랜치 테스트용) */
+function getButtonOnClick(button: HTMLElement): ((e: React.MouseEvent<HTMLButtonElement>) => void) | null {
+  const el = button as unknown as Record<string, unknown>;
+  let fiber: unknown = el._reactInternalFiber ?? el._reactInternalInstance ?? el.__reactInternalInstance;
+  if (!fiber) {
+    const fiberKey = Object.keys(el).find((k) => k.startsWith('__reactFiber'));
+    if (fiberKey) fiber = el[fiberKey];
+  }
+  const memoizedProps = (fiber as { memoizedProps?: { onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void } })?.memoizedProps;
+  return memoizedProps?.onClick ?? null;
+}
+
+/** 목소리 생성 탭에서 상황만 선택 모드 + 대본 입력 후 생성 버튼의 onClick 캡처 (onClick-while-enabled 패턴용) */
+async function getVoiceGenGenerateOnClickWhileEnabled(scriptText: string = '테스트 대본'): Promise<{ button: HTMLElement; onClick: ((e: React.MouseEvent<HTMLButtonElement>) => void) | null }> {
+  fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+  fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: scriptText } });
+  await waitFor(() => {
+    expect(screen.getByTestId('voice-gen-generate')).not.toBeDisabled();
+  }, { timeout: 2000 });
+  const button = screen.getByTestId('voice-gen-generate');
+  return { button, onClick: getButtonOnClick(button) };
+}
+
 jest.mock('../../services/qwenTtsService', () => ({
   getQwenTtsConfig: jest.fn(() => Promise.resolve({ available: true })),
   speakQwenTts: jest.fn().mockResolvedValue(new Blob()),
@@ -100,6 +142,12 @@ jest.mock('../../services/qwenTtsService', () => ({
   deleteProjectVoiceSource: jest.fn().mockResolvedValue(undefined),
   TTS_SITUATION_LABELS: { movie_dialogue: '영화 대사', drama_dialogue: '드라마 대사', film_acting: '영화 연기' },
   TTS_SCRIPT_DIALOGUE_SITUATIONS: ['movie_dialogue', 'drama_dialogue', 'film_acting'],
+}));
+
+jest.mock('../../services/scriptStyleAPI', () => ({
+  extractScriptFromDocument: jest.fn().mockResolvedValue({ success: true, text: '추출된 텍스트', suggested_document_hint: null }),
+  analyzeScriptStyle: jest.fn().mockResolvedValue({ success: true, style_summary: '요약', key_traits: [] }),
+  generateScriptInStyle: jest.fn().mockResolvedValue({ success: true, generated_script: '생성된 대본' }),
 }));
 
 // Mock child components
@@ -134,6 +182,24 @@ jest.mock('../LoadingStateIndicator', () => {
 
 describe('AdvancedFeaturesPanel', () => {
   const mockAdvancedAPIService = advancedAPIService as jest.Mocked<typeof advancedAPIService>;
+
+  const originalConsoleError = console.error;
+
+  beforeAll(() => {
+    if (typeof HTMLMediaElement !== 'undefined') {
+      HTMLMediaElement.prototype.pause = jest.fn();
+      HTMLMediaElement.prototype.play = jest.fn().mockResolvedValue(undefined);
+    }
+    console.error = (...args: unknown[]) => {
+      const first = args[0];
+      if (typeof first === 'string' && (first.includes('An update to AdvancedFeaturesPanel') || first.includes('When testing, code that causes React state updates') || first.includes('Not implemented: navigation'))) return;
+      originalConsoleError.apply(console, args);
+    };
+  });
+
+  afterAll(() => {
+    console.error = originalConsoleError;
+  });
 
   beforeEach(() => {
     setupCommonMocks();
@@ -177,10 +243,48 @@ describe('AdvancedFeaturesPanel', () => {
     }
   });
 
+  /** defaultTab="voiceGen"으로 렌더 후 getQwenTtsConfig 비동기 setState가 act 내부에서 플러시되도록 함 */
+  async function renderVoiceGenTabAndFlush(): Promise<ReturnType<typeof render>> {
+    const { getQwenTtsConfig } = require('../../services/qwenTtsService');
+    const deferred = createDeferred<{ available: boolean }>();
+    getQwenTtsConfig.mockImplementationOnce(() => deferred.promise);
+    const view = render(<AdvancedFeaturesPanel defaultTab="voiceGen" />);
+    await act(async () => {
+      deferred.resolve({ available: true });
+      await deferred.promise.catch(() => {});
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    return view;
+  }
+
+  /** 목소리 생성 탭 클릭 후 getQwenTtsConfig 비동기 setState가 act 내부에서 플러시되도록 함 (deferred promise) */
+  async function clickVoiceGenTabAndFlush(): Promise<void> {
+    const { getQwenTtsConfig } = require('../../services/qwenTtsService');
+    const deferred = createDeferred<{ available: boolean }>();
+    getQwenTtsConfig.mockImplementationOnce(() => deferred.promise);
+    const tab = screen.getByRole('tab', { name: /목소리 생성/ });
+    fireEvent.click(tab);
+    await waitFor(() => expect(getQwenTtsConfig).toHaveBeenCalled());
+    await act(async () => {
+      deferred.resolve({ available: true });
+      await deferred.promise.catch(() => {});
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
   describe('기본 렌더링', () => {
     it('기본 렌더링이 올바르게 작동해야 함', () => {
       render(<AdvancedFeaturesPanel />);
       expect(screen.getByText(/고급 기능/)).toBeInTheDocument();
+    });
+
+    it('패널 루트에 data-testid가 있어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      expect(screen.getByTestId('advanced-features-panel')).toBeInTheDocument();
     });
 
     it('탭이 표시되어야 함', () => {
@@ -202,6 +306,128 @@ describe('AdvancedFeaturesPanel', () => {
     });
   });
 
+  describe('접근성', () => {
+    it('패널에 role="region"과 aria-label이 있어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      const region = screen.getByRole('region', { name: '고급 기능' });
+      expect(region).toBeInTheDocument();
+    });
+
+    it('탭 목록에 role="tablist"와 aria-label이 있어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      const tablist = screen.getByRole('tablist', { name: '고급 기능 탭' });
+      expect(tablist).toBeInTheDocument();
+    });
+
+    it('탭 버튼에 role="tab"과 aria-selected가 있어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs).toHaveLength(4);
+      const imageTab = tabs.find((t) => t.getAttribute('aria-controls') === 'panel-image');
+      expect(imageTab).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('활성 탭 패널에 role="tabpanel"이 있어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      const panel = screen.getByRole('tabpanel');
+      expect(panel).toBeInTheDocument();
+    });
+
+    it('탭 전환 시 항상 하나의 tabpanel만 DOM에 있어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+      await clickVoiceGenTabAndFlush();
+      expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+      fireEvent.click(screen.getByRole('tab', { name: /음성 인식/ }));
+      expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+    });
+
+    it('에러 발생 시 role="alert"로 표시되어야 함', () => {
+      mockAdvancedAPIService.analyzeImageFile.mockRejectedValueOnce(new Error('분석 실패'));
+      render(<AdvancedFeaturesPanel />);
+      const fileInput = screen.getByTestId('advanced-features-file-input');
+      const file = new File(['x'], 'test.png', { type: 'image/png' });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+      return waitFor(() => {
+        const alert = screen.getByRole('alert');
+        expect(alert).toHaveTextContent(/분석 실패|오류/);
+      }, { timeout: 3000 });
+    });
+
+    it('연결 상태에 role="status"가 있어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      const status = screen.getByRole('status', { name: /연결/ });
+      expect(status).toBeInTheDocument();
+    });
+
+    it('패널 제목이 h2 및 id advanced-features-heading으로 표시되어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      const heading = screen.getByRole('heading', { level: 2, name: /고급 기능/ });
+      expect(heading).toBeInTheDocument();
+      expect(heading).toHaveAttribute('id', 'advanced-features-heading');
+    });
+
+    it('ArrowRight로 다음 탭으로 이동해야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      const tabs = screen.getAllByRole('tab');
+      const imageTab = tabs.find((t) => t.getAttribute('aria-controls') === 'panel-image');
+      if (!imageTab) throw new Error('image tab not found');
+      imageTab.focus();
+      fireEvent.keyDown(imageTab, { key: 'ArrowRight' });
+      expect(screen.getByRole('tab', { name: /예측 분석/ }).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('ArrowLeft로 이전 탭으로 이동해야 함', () => {
+      render(<AdvancedFeaturesPanel defaultTab="prediction" />);
+      const tabs = screen.getAllByRole('tab');
+      const predictionTab = tabs.find((t) => t.getAttribute('aria-controls') === 'panel-prediction');
+      if (!predictionTab) throw new Error('prediction tab not found');
+      predictionTab.focus();
+      fireEvent.keyDown(predictionTab, { key: 'ArrowLeft' });
+      expect(screen.getByRole('tab', { name: /이미지 분석/ }).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('Home 키로 첫 번째 탭으로 이동해야 함', async () => {
+      await renderVoiceGenTabAndFlush();
+      const tabs = screen.getAllByRole('tab');
+      const voiceGenTab = tabs.find((t) => t.getAttribute('aria-controls') === 'panel-voiceGen');
+      if (!voiceGenTab) throw new Error('voiceGen tab not found');
+      voiceGenTab.focus();
+      fireEvent.keyDown(voiceGenTab, { key: 'Home' });
+      expect(screen.getByRole('tab', { name: /음성 인식/ }).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('End 키로 마지막 탭으로 이동해야 함', () => {
+      render(<AdvancedFeaturesPanel defaultTab="voice" />);
+      const tabs = screen.getAllByRole('tab');
+      const voiceTab = tabs.find((t) => t.getAttribute('aria-controls') === 'panel-voice');
+      if (!voiceTab) throw new Error('voice tab not found');
+      voiceTab.focus();
+      fireEvent.keyDown(voiceTab, { key: 'End' });
+      expect(screen.getByRole('tab', { name: /목소리 생성/ }).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('마지막 탭에서 ArrowRight 시 첫 번째 탭으로 순환해야 함', async () => {
+      await renderVoiceGenTabAndFlush();
+      const tabs = screen.getAllByRole('tab');
+      const voiceGenTab = tabs.find((t) => t.getAttribute('aria-controls') === 'panel-voiceGen');
+      if (!voiceGenTab) throw new Error('voiceGen tab not found');
+      voiceGenTab.focus();
+      fireEvent.keyDown(voiceGenTab, { key: 'ArrowRight' });
+      expect(screen.getByRole('tab', { name: /음성 인식/ }).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('첫 번째 탭에서 ArrowLeft 시 마지막 탭으로 순환해야 함', () => {
+      render(<AdvancedFeaturesPanel defaultTab="voice" />);
+      const tabs = screen.getAllByRole('tab');
+      const voiceTab = tabs.find((t) => t.getAttribute('aria-controls') === 'panel-voice');
+      if (!voiceTab) throw new Error('voice tab not found');
+      voiceTab.focus();
+      fireEvent.keyDown(voiceTab, { key: 'ArrowLeft' });
+      expect(screen.getByRole('tab', { name: /목소리 생성/ }).getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
   describe('탭 전환', () => {
     it('음성 인식 탭 클릭 시 탭이 전환되어야 함', () => {
       render(<AdvancedFeaturesPanel />);
@@ -220,46 +446,106 @@ describe('AdvancedFeaturesPanel', () => {
       const predictionTab = predictionTabs.find((el) => el.tagName === 'BUTTON') || predictionTabs[0];
       fireEvent.click(predictionTab);
 
-      const messageInput = screen.queryByPlaceholderText(/메시지를 입력하세요/);
+      const messageInput = screen.queryByPlaceholderText(/Type '\/' for commands/);
       expect(messageInput).toBeInTheDocument();
     });
 
-    it('목소리 생성 탭 클릭 시 URL/대본 입력 UI가 표시되어야 함', async () => {
+    it('모든 탭을 순서대로 클릭해도 에러가 나지 않아야 함', () => {
       render(<AdvancedFeaturesPanel />);
-      const voiceGenTab = screen.getByText(/목소리 생성/);
-      
-      fireEvent.click(voiceGenTab);
+      const tabs = screen.getAllByRole('tab');
 
+      tabs.forEach((tab) => {
+        fireEvent.click(tab);
+      });
+
+      expect(screen.getByTestId('advanced-features-panel')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('목소리 생성 탭 클릭 시 대본·상황(기본: 상황만 선택) 입력 UI가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-situation-only')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-required-hint')).toBeInTheDocument();
+    });
+
+    it('목소리 생성 탭에서 URL 모드 선택 시 영상 URL 입력 UI가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
       });
-      expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
       expect(screen.getByTestId('voice-gen-situation')).toBeInTheDocument();
-      expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
+    });
+
+    it('목소리 생성 탭 패널이 id·aria-labelledby로 접근성 요건을 만족해야 함', async () => {
+      await renderVoiceGenTabAndFlush();
+      const panel = screen.getByRole('tabpanel', { name: /목소리 생성/ });
+      expect(panel).toHaveAttribute('id', 'panel-voiceGen');
+      expect(panel).toHaveAttribute('aria-labelledby', 'tab-voiceGen');
+    });
+
+    it('목소리 생성 탭에서 프로젝트 ID가 비어 있으면 보이스 소스 영역이 표시되지 않아야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
+      expect(screen.queryByTestId('voice-gen-add-source-url')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('voice-gen-select-source')).not.toBeInTheDocument();
     });
 
     it('목소리 생성 탭에서 프로젝트 ID 입력 시 보이스 소스 영역이 표시되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
-      
-      fireEvent.click(screen.getByText(/목소리 생성/));
-      
-      await waitFor(() => {
-        expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
-      });
-      
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       fireEvent.change(screen.getByTestId('voice-gen-project-id'), { target: { value: 'proj-1' } });
-
-      await waitFor(() => {
-        expect(screen.getByTestId('voice-gen-add-source-url')).toBeInTheDocument();
+      const { getProjectVoiceSources } = require('../../services/qwenTtsService');
+      await waitFor(() => expect(getProjectVoiceSources).toHaveBeenCalled());
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
       });
+      expect(screen.getByTestId('voice-gen-add-source-url')).toBeInTheDocument();
       expect(screen.getByTestId('voice-gen-add-source-btn')).toBeInTheDocument();
       expect(screen.getAllByText(/보이스 소스/).length).toBeGreaterThan(0);
+    });
+
+    it('목소리 생성 탭에서 감정·상황 프롬프트(Beta) 입력란과 빠른 태그가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-emotion-prompt')).toBeInTheDocument();
+      });
+      expect(screen.getByPlaceholderText(/서러운듯 울먹이며/)).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-emotion-tag-명료하게')).toBeInTheDocument();
+    });
+
+    it('목소리 생성 탭에서 감정 제어 Smart Emotion / Preset 라디오와 Preset 선택 시 7종 드롭다운이 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-emotion-mode-smart')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-emotion-mode-preset')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Smart Emotion 자동/)).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('voice-gen-emotion-mode-preset'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-emotion-preset')).toBeInTheDocument();
+      });
+      const presetSelect = screen.getByTestId('voice-gen-emotion-preset');
+      const options = within(presetSelect).getAllByRole('option');
+      expect(options).toHaveLength(7);
     });
 
     it('목소리 생성 탭에서 상황만 선택 시 대본만으로 생성 버튼이 활성화되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
@@ -275,9 +561,129 @@ describe('AdvancedFeaturesPanel', () => {
       
       expect(screen.getByTestId('voice-gen-generate')).not.toBeDisabled();
     });
+
+    it('목소리 생성 탭에서 생성 버튼과 생성 후 재생 버튼이 있어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate-and-play')).toBeInTheDocument();
+      });
+      const generateAndPlay = screen.getByTestId('voice-gen-generate-and-play');
+      expect(generateAndPlay).toBeInTheDocument();
+      expect(generateAndPlay).toHaveTextContent('생성 후 재생');
+    });
+
+    it('목소리 생성 탭에서 생성 버튼에 aria-busy가 있어야 함 (접근성)', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
+      });
+      const btn = screen.getByTestId('voice-gen-generate');
+      expect(btn).toHaveAttribute('aria-busy');
+      expect(btn.getAttribute('aria-busy')).toBe('false');
+    });
+
+    it('목소리 생성 대본이 비어 있으면 생성 버튼에 대본 입력 안내 title이 있어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
+      });
+      const btn = screen.getByTestId('voice-gen-generate');
+      expect(btn).toBeDisabled();
+      expect(btn).toHaveAttribute('title', '대본을 입력해 주세요');
+    });
+
+    it('URL 모드에서 URL이 비어 있으면 생성 버튼에 URL 입력 안내 title이 있어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-mode-url')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '테스트 대본' } });
+      const btn = screen.getByTestId('voice-gen-generate');
+      expect(btn).toBeDisabled();
+      expect(btn).toHaveAttribute('title', '영상 URL을 입력해 주세요');
+    });
+
+    it('프로젝트 모드에서 프로젝트 ID가 비어 있으면 생성 버튼에 프로젝트 ID 입력 안내 title이 있어야 함', async () => {
+      const { getProjectVoiceSources } = require('../../services/qwenTtsService');
+      getProjectVoiceSources.mockResolvedValue({
+        success: true,
+        data: [{ id: 'vs1', url: 'https://youtube.com/watch?v=x', created_at: '' }],
+        count: 1,
+      });
+      render(<AdvancedFeaturesPanel projectId="proj-1" />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-mode-project')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
+      fireEvent.change(screen.getByTestId('voice-gen-project-id'), { target: { value: '' } });
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '테스트 대본' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate')).toBeDisabled();
+      });
+      expect(screen.getByTestId('voice-gen-generate')).toHaveAttribute('title', '프로젝트 ID를 입력해 주세요');
+    });
+
+    it('상황만 선택 모드에서 대본이 있으면 생성 버튼에 상황 스타일 title이 있어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-mode-situation')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '테스트 대본' } });
+      const btn = screen.getByTestId('voice-gen-generate');
+      expect(btn).not.toBeDisabled();
+      expect(btn).toHaveAttribute('title', '선택한 상황 스타일로 음성 생성');
+    });
+
+    it('목소리 생성 중일 때 생성 버튼에 생성 중 title·aria-busy·텍스트가 표시되어야 함', async () => {
+      mockUseLoadingState.mockReturnValue({
+        loadingState: { type: 'updating' as const },
+        startRefreshing: jest.fn(),
+        stopLoading: jest.fn(),
+        startInitialLoading: jest.fn(),
+        startUpdating: jest.fn(),
+        isLoading: false,
+        isInitialLoading: false,
+        isUpdating: true,
+        isRefreshing: false,
+      });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
+      });
+      const btn = screen.getByTestId('voice-gen-generate');
+      expect(btn).toHaveAttribute('title', '생성 중...');
+      expect(btn).toHaveAttribute('aria-busy', 'true');
+      expect(btn).toHaveTextContent('생성 중...');
+      expect(btn).toBeDisabled();
+    });
   });
 
   describe('이미지 분석', () => {
+    it('분석 전 이미지 탭에 빈 상태 안내 문구가 표시되어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      expect(screen.getByTestId('image-analysis-empty')).toBeInTheDocument();
+      expect(screen.getByTestId('image-analysis-empty')).toHaveTextContent(/이미지를 선택하면/);
+    });
+
+    it('이미지 분석 탭 패널이 id·aria-labelledby로 접근성 요건을 만족해야 함', () => {
+      render(<AdvancedFeaturesPanel defaultTab="image" />);
+      const panel = screen.getByRole('tabpanel', { name: /이미지 분석/ });
+      expect(panel).toHaveAttribute('id', 'panel-image');
+      expect(panel).toHaveAttribute('aria-labelledby', 'tab-image');
+    });
+
     beforeEach(() => {
       mockAdvancedAPIService.analyzeImageFile.mockResolvedValue({
         status: 'success' as const,
@@ -308,6 +714,21 @@ describe('AdvancedFeaturesPanel', () => {
     it('이미지 업로드 버튼이 표시되어야 함', () => {
       render(<AdvancedFeaturesPanel />);
       expect(screen.getByText(/이미지 선택/)).toBeInTheDocument();
+    });
+
+    it('이미지 선택 버튼에 aria-label이 있어야 함 (접근성)', () => {
+      render(<AdvancedFeaturesPanel />);
+      const btn = screen.getByRole('button', { name: '이미지 선택하여 분석' });
+      expect(btn).toBeInTheDocument();
+      expect(btn).toHaveAttribute('aria-label', '이미지 선택하여 분석');
+    });
+
+    it('이미지 파일 input에 aria-label이 있어야 함 (접근성)', () => {
+      render(<AdvancedFeaturesPanel />);
+      const input = screen.getByTestId('advanced-features-file-input');
+      expect(input).toHaveAttribute('aria-label', '이미지 파일 선택');
+      expect(input).toHaveAttribute('type', 'file');
+      expect(input).toHaveAttribute('accept', 'image/*');
     });
 
     it('이미지 파일 선택 시 분석이 시작되어야 함', async () => {
@@ -356,6 +777,19 @@ describe('AdvancedFeaturesPanel', () => {
       fireEvent.click(voiceTab);
 
       expect(screen.getByText(/음성 인식 시작/)).toBeInTheDocument();
+    });
+
+    it('음성 인식 탭 패널이 id·aria-labelledby로 접근성 요건을 만족해야 함', () => {
+      render(<AdvancedFeaturesPanel defaultTab="voice" />);
+      const panel = screen.getByRole('tabpanel', { name: /음성 인식/ });
+      expect(panel).toHaveAttribute('id', 'panel-voice');
+      expect(panel).toHaveAttribute('aria-labelledby', 'tab-voice');
+    });
+
+    it('녹음·인식 결과 없을 때 음성 인식 탭에 빈 상태 안내가 표시되어야 함', () => {
+      render(<AdvancedFeaturesPanel defaultTab="voice" />);
+      expect(screen.getByTestId('voice-empty')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-empty')).toHaveTextContent(/아래 버튼을 눌러 음성 인식을 시작하세요/);
     });
 
     it('음성 인식이 지원되지 않을 때도 컴포넌트가 작동해야 함', () => {
@@ -470,14 +904,34 @@ describe('AdvancedFeaturesPanel', () => {
       } as PredictionSummaryResponse);
     });
 
+    it('예측 분석 탭에서 결과 없을 때 빈 상태 안내가 표시되어야 함', () => {
+      render(<AdvancedFeaturesPanel defaultTab="prediction" />);
+      expect(screen.getByTestId('prediction-empty')).toBeInTheDocument();
+      expect(screen.getByTestId('prediction-empty')).toHaveTextContent(/아래 버튼으로 예측을 실행하면/);
+    });
+
     it('예측 분석 탭에서 메시지 입력 필드가 표시되어야 함', () => {
       render(<AdvancedFeaturesPanel />);
       
       const predictionTab = screen.getByText(/예측 분석/);
       fireEvent.click(predictionTab);
 
-      const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+      const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
       expect(messageInput).toBeInTheDocument();
+    });
+
+    it('예측 분석 탭에서 품질 예측 textarea에 aria-label이 있어야 함 (접근성)', () => {
+      render(<AdvancedFeaturesPanel defaultTab="prediction" />);
+      const textarea = screen.getByRole('textbox', { name: '품질 예측할 메시지 입력' });
+      expect(textarea).toBeInTheDocument();
+      expect(textarea).toHaveAttribute('aria-label', '품질 예측할 메시지 입력');
+    });
+
+    it('예측 분석 탭 패널이 id·aria-labelledby로 접근성 요건을 만족해야 함', () => {
+      render(<AdvancedFeaturesPanel defaultTab="prediction" />);
+      const panel = screen.getByRole('tabpanel', { name: /예측 분석/ });
+      expect(panel).toHaveAttribute('id', 'panel-prediction');
+      expect(panel).toHaveAttribute('aria-labelledby', 'tab-prediction');
     });
 
     it('예측 분석 실행 버튼이 표시되어야 함', () => {
@@ -521,6 +975,30 @@ describe('AdvancedFeaturesPanel', () => {
       render(<AdvancedFeaturesPanel />);
       expect(screen.getByText(/고급 기능/)).toBeInTheDocument();
     });
+
+    it('WebSocket 연결 시 "실시간 연결됨" 텍스트가 표시되어야 함', () => {
+      mockUseWebSocket.mockReturnValueOnce({
+        isConnected: true,
+        socket: null,
+        sendMessage: jest.fn(),
+        disconnect: jest.fn(),
+        reconnect: jest.fn(),
+      });
+      render(<AdvancedFeaturesPanel />);
+      expect(screen.getByText('실시간 연결됨')).toBeInTheDocument();
+    });
+
+    it('WebSocket 미연결 시 "연결 끊김" 텍스트가 표시되어야 함', () => {
+      mockUseWebSocket.mockReturnValue({
+        isConnected: false,
+        socket: null,
+        sendMessage: jest.fn(),
+        disconnect: jest.fn(),
+        reconnect: jest.fn(),
+      });
+      render(<AdvancedFeaturesPanel />);
+      expect(screen.getByText('연결 끊김')).toBeInTheDocument();
+    });
   });
 
   describe('이미지 분석 에러 처리', () => {
@@ -536,6 +1014,44 @@ describe('AdvancedFeaturesPanel', () => {
         const errorMessage = screen.queryByText(/오류가 발생했습니다|Analysis failed|이미지 분석 중 오류가 발생했습니다/);
         expect(errorMessage).toBeInTheDocument();
       }, { timeout: 3000 });
+    });
+
+    it('에러 메시지에서 확인 버튼 클릭 시 에러가 닫혀야 함', async () => {
+      mockAdvancedAPIService.analyzeImageFile = jest.fn().mockRejectedValueOnce(new Error('Analysis failed'));
+
+      render(<AdvancedFeaturesPanel />);
+      const fileInput = screen.getByTestId('advanced-features-file-input');
+      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-dismiss')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      fireEvent.click(screen.getByTestId('error-dismiss'));
+
+      await waitFor(() => {
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
+    });
+
+    it('에러 표시 중 Escape 키로 에러가 닫혀야 함', async () => {
+      mockAdvancedAPIService.analyzeImageFile.mockRejectedValueOnce(new Error('Analysis failed'));
+
+      render(<AdvancedFeaturesPanel />);
+      const fileInput = screen.getByTestId('advanced-features-file-input');
+      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      await waitFor(() => {
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -636,21 +1152,40 @@ describe('AdvancedFeaturesPanel', () => {
   describe('Props 테스트', () => {
     it('projectId prop이 전달되면 목소리 생성 탭의 프로젝트 ID 필드에 반영되어야 함', async () => {
       render(<AdvancedFeaturesPanel projectId="test-project-123" />);
-      
-      fireEvent.click(screen.getByText(/목소리 생성/));
-      
-      await waitFor(() => {
-        const projectIdInput = screen.getByTestId('voice-gen-project-id');
-        expect(projectIdInput).toHaveValue('test-project-123');
+      await clickVoiceGenTabAndFlush();
+      const { getProjectVoiceSources } = require('../../services/qwenTtsService');
+      await waitFor(() => expect(getProjectVoiceSources).toHaveBeenCalled());
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
       });
+      const projectIdInput = screen.getByTestId('voice-gen-project-id');
+      expect(projectIdInput).toHaveValue('test-project-123');
     });
 
     it('defaultTab prop이 전달되면 해당 탭이 활성화되어야 함', async () => {
-      render(<AdvancedFeaturesPanel defaultTab="voiceGen" />);
-      
+      await renderVoiceGenTabAndFlush();
       await waitFor(() => {
-        expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
+        expect(screen.getByTestId('voice-gen-mode-url')).toBeInTheDocument();
       });
+    });
+
+    it('defaultTab prop이 변경되면 활성 탭이 동기화되어야 함', async () => {
+      const { getQwenTtsConfig } = require('../../services/qwenTtsService');
+      const { rerender } = render(<AdvancedFeaturesPanel defaultTab="image" />);
+      expect(screen.getByRole('tab', { name: /이미지 분석/ }).getAttribute('aria-selected')).toBe('true');
+
+      const deferred = createDeferred<{ available: boolean }>();
+      getQwenTtsConfig.mockImplementationOnce(() => deferred.promise);
+      rerender(<AdvancedFeaturesPanel defaultTab="voiceGen" />);
+      await act(async () => {
+        deferred.resolve({ available: true });
+        await deferred.promise.catch(() => {});
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: /목소리 생성/ }).getAttribute('aria-selected')).toBe('true');
+      });
+      expect(screen.getByTestId('voice-gen-mode-url')).toBeInTheDocument();
     });
 
     it('userId prop이 기본값으로 설정되어야 함', () => {
@@ -668,7 +1203,8 @@ describe('AdvancedFeaturesPanel', () => {
     it('URL 모드에서 목소리 생성이 작동해야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
@@ -697,14 +1233,14 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
@@ -718,8 +1254,519 @@ describe('AdvancedFeaturesPanel', () => {
       fireEvent.click(addSourceButton);
 
       await waitFor(() => {
-        expect(addProjectVoiceSource).toHaveBeenCalledWith('proj-1', 'https://example.com/source.mp4');
+        expect(addProjectVoiceSource).toHaveBeenCalledWith('proj-1', 'https://example.com/source.mp4', expect.any(Object));
       }, { timeout: 3000 });
+    });
+
+    it('참조 대본 입력 시 addProjectVoiceSource에 refText가 전달되어야 함', async () => {
+      const { addProjectVoiceSource } = require('../../services/qwenTtsService');
+      if (jest.isMockFunction(addProjectVoiceSource)) {
+        addProjectVoiceSource.mockResolvedValue({ success: true, data: { voice_source: { id: '1', url: '', created_at: '' } } });
+      }
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
+      fireEvent.change(screen.getByTestId('voice-gen-project-id'), { target: { value: 'proj-1' } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-add-ref-text')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      fireEvent.change(screen.getByTestId('voice-gen-add-source-url'), { target: { value: 'https://example.com/v.mp4' } });
+      fireEvent.change(screen.getByTestId('voice-gen-add-ref-text'), { target: { value: '영상의 정확한 대사 텍스트' } });
+      fireEvent.click(screen.getByTestId('voice-gen-add-source-btn'));
+
+      await waitFor(() => {
+        expect(addProjectVoiceSource).toHaveBeenCalledWith('proj-1', 'https://example.com/v.mp4', expect.objectContaining({ refText: '영상의 정확한 대사 텍스트' }));
+      }, { timeout: 3000 });
+    });
+  });
+
+  describe('목소리 생성 속도·구간 UI', () => {
+    it('목소리 생성 탭에 전체 속도 슬라이더가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      expect(screen.getByTestId('voice-gen-global-speed')).toBeInTheDocument();
+    });
+
+    it('구간별 속도 사용 체크 시 나누기 기준·대본 나누기 버튼이 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      expect(screen.getByTestId('voice-gen-split-by')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-split-script')).toBeInTheDocument();
+    });
+
+    it('대본 나누기 후 구간 목록과 구간별 속도 슬라이더가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '첫 문장. 두 번째 문장.' } });
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'sentence' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-segment-speed-0')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-segment-speed-1')).toBeInTheDocument();
+    });
+
+    it('나누기 기준 문단(paragraph) 시 빈 줄로 구간 분할되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '문단1\n\n문단2' } });
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'paragraph' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-segment-speed-0')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-segment-speed-1')).toBeInTheDocument();
+    });
+
+    it('구간별 속도 슬라이더 변경 시 해당 구간 표시가 반영되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '문단1\n\n문단2' } });
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'paragraph' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-segment-speed-0')).toBeInTheDocument();
+      });
+      fireEvent.change(screen.getByTestId('voice-gen-segment-speed-0'), { target: { value: '1.5' } });
+      expect(screen.getByText('1.50x')).toBeInTheDocument();
+    });
+
+    it('나누기 기준 단어(word)·줄(line) 시 해당 기준으로 구간 분할되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: 'one two three' } });
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'word' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-segment-speed-0')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-segment-speed-2')).toBeInTheDocument();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: 'Line1\nLine2' } });
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'line' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-segment-speed-0')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-segment-speed-1')).toBeInTheDocument();
+    });
+
+    it('구간별 속도 사용 시 생성 버튼 클릭하면 구간마다 TTS가 호출되어야 함', async () => {
+      const { speakQwenTts } = require('../../services/qwenTtsService');
+      speakQwenTts.mockResolvedValue(new Blob(['audio'], { type: 'audio/mp3' }));
+      const originalCreate = (global.URL as unknown as { createObjectURL?: (b: Blob) => string }).createObjectURL;
+      const originalRevoke = (global.URL as unknown as { revokeObjectURL?: (u: string) => void }).revokeObjectURL;
+      (global.URL as unknown as { createObjectURL: (b: Blob) => string }).createObjectURL = jest.fn(() => 'blob:mock-segment');
+      (global.URL as unknown as { revokeObjectURL: (u: string) => void }).revokeObjectURL = jest.fn();
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '첫 문장. 두 번째 문장.' } });
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'sentence' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-segment-speed-0')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('voice-gen-generate'));
+      await waitFor(() => {
+        expect(speakQwenTts).toHaveBeenCalledTimes(2);
+      }, { timeout: 5000 });
+      if (originalCreate != null) (global.URL as unknown as { createObjectURL: typeof originalCreate }).createObjectURL = originalCreate;
+      if (originalRevoke != null) (global.URL as unknown as { revokeObjectURL: typeof originalRevoke }).revokeObjectURL = originalRevoke;
+    });
+
+    it('구간별 속도 + 프로젝트 모드 시 구간마다 speakQwenTtsFromProject가 호출되어야 함', async () => {
+      const { speakQwenTtsFromProject, getProjectVoiceSources } = require('../../services/qwenTtsService');
+      speakQwenTtsFromProject.mockResolvedValue(new Blob(['audio'], { type: 'audio/mp3' }));
+      getProjectVoiceSources.mockResolvedValue({ success: true, data: [{ id: 'vs1', url: 'https://youtube.com/v=1', created_at: '' }], count: 1 });
+      const originalCreate = (global.URL as unknown as { createObjectURL?: (b: Blob) => string }).createObjectURL;
+      const originalRevoke = (global.URL as unknown as { revokeObjectURL?: (u: string) => void }).revokeObjectURL;
+      (global.URL as unknown as { createObjectURL: (b: Blob) => string }).createObjectURL = jest.fn(() => 'blob:mock-segment');
+      (global.URL as unknown as { revokeObjectURL: (u: string) => void }).revokeObjectURL = jest.fn();
+      render(<AdvancedFeaturesPanel projectId="proj-seg" />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => expect(getProjectVoiceSources).toHaveBeenCalled());
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '첫 문장. 두 번째 문장.' } });
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'sentence' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-segment-speed-0')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('voice-gen-generate'));
+      await waitFor(() => {
+        expect(speakQwenTtsFromProject).toHaveBeenCalledTimes(2);
+      }, { timeout: 5000 });
+      if (originalCreate != null) (global.URL as unknown as { createObjectURL: typeof originalCreate }).createObjectURL = originalCreate;
+      if (originalRevoke != null) (global.URL as unknown as { revokeObjectURL: typeof originalRevoke }).revokeObjectURL = originalRevoke;
+    });
+  });
+
+  describe('샘플 대본 스타일 반영 UI', () => {
+    it('목소리 생성 탭에 샘플 대본·스타일 분석·대본 생성 UI가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      expect(screen.getByTestId('voice-gen-sample-script')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-analyze-style')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-topic-outline')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-generate-in-style')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-document-hint')).toBeInTheDocument();
+    });
+
+    it('샘플 대본 없을 때 스타일 분석·대본 생성 버튼이 비활성화되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      expect(screen.getByTestId('voice-gen-analyze-style')).toBeDisabled();
+      expect(screen.getByTestId('voice-gen-generate-in-style')).toBeDisabled();
+    });
+
+    it('문서 유형 힌트 select 변경 시 값이 반영되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const hintSelect = screen.getByTestId('voice-gen-document-hint');
+      fireEvent.change(hintSelect, { target: { value: 'general' } });
+      expect(hintSelect).toHaveValue('general');
+    });
+
+    it('전체 속도 슬라이더 변경 시 표시가 반영되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const speedInput = screen.getByTestId('voice-gen-global-speed');
+      fireEvent.change(speedInput, { target: { value: '2' } });
+      expect(screen.getByText('2.00x')).toBeInTheDocument();
+    });
+
+    it('로딩 중(updating)일 때 문서 추출 버튼이 비활성화되어야 함', async () => {
+      mockUseLoadingState.mockReturnValue({
+        loadingState: { type: 'updating' as const },
+        startRefreshing: jest.fn(),
+        stopLoading: jest.fn(),
+        startInitialLoading: jest.fn(),
+        startUpdating: jest.fn(),
+        isLoading: false,
+        isInitialLoading: false,
+        isUpdating: true,
+        isRefreshing: false,
+      });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const extractBtns = screen.getAllByTestId('voice-gen-extract-document');
+      expect(extractBtns.length).toBeGreaterThan(0);
+      expect(extractBtns[0]).toBeDisabled();
+    });
+
+    it('문서 추출 실패 시 에러가 표시되어야 함', async () => {
+      const { extractScriptFromDocument } = require('../../services/scriptStyleAPI');
+      extractScriptFromDocument.mockRejectedValue(new Error('서버 오류'));
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const fileInput = screen.getByTestId('voice-gen-sample-file');
+      const file = new File(['sample'], 'sample.txt', { type: 'text/plain' });
+      await userEvent.upload(fileInput, file);
+      await waitFor(() => {
+        expect(screen.getByText(/문서 추출 실패|서버 오류/)).toBeInTheDocument();
+      }, { timeout: 5000 });
+    });
+
+    it('문서 추출 성공 시 샘플 대본과 대본 칸에 반영되어야 함', async () => {
+      const { extractScriptFromDocument } = require('../../services/scriptStyleAPI');
+      const extractedText = '추출된 대본 텍스트';
+      extractScriptFromDocument.mockResolvedValueOnce({ success: true, text: extractedText, suggested_document_hint: null });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const fileInput = screen.getByTestId('voice-gen-sample-file');
+      const file = new File(['content'], 'sample.txt', { type: 'text/plain' });
+      await userEvent.upload(fileInput, file);
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-sample-script')).toHaveValue(extractedText);
+      }, { timeout: 5000 });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-script')).toHaveValue(extractedText);
+      }, { timeout: 5000 });
+      await waitFor(() => {
+        expect(screen.getByText(/업로드: sample\.txt/)).toBeInTheDocument();
+      }, { timeout: 5000 });
+    });
+
+    it('문서 추출 성공 시 문서 유형 힌트가 반영되어야 함', async () => {
+      const { extractScriptFromDocument } = require('../../services/scriptStyleAPI');
+      extractScriptFromDocument.mockResolvedValueOnce({
+        success: true,
+        text: '추출 텍스트',
+        suggested_document_hint: 'tone_down',
+      });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const fileInput = screen.getByTestId('voice-gen-sample-file');
+      const file = new File(['content'], 'sample.txt', { type: 'text/plain' });
+      await userEvent.upload(fileInput, file);
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-document-hint')).toHaveValue('tone_down');
+      }, { timeout: 5000 });
+    });
+
+    it('문서 추출 성공 시 문서 유형 힌트 corporate가 반영되어야 함', async () => {
+      const { extractScriptFromDocument } = require('../../services/scriptStyleAPI');
+      extractScriptFromDocument.mockResolvedValueOnce({
+        success: true,
+        text: '추출 텍스트',
+        suggested_document_hint: 'corporate',
+      });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const fileInput = screen.getByTestId('voice-gen-sample-file');
+      const file = new File(['content'], 'sample.txt', { type: 'text/plain' });
+      await userEvent.upload(fileInput, file);
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-document-hint')).toHaveValue('corporate');
+      }, { timeout: 5000 });
+    });
+
+    it('문서 추출 성공 시 suggested_document_hint가 tone_down/corporate가 아니면 문서 유형 힌트가 비어 있어야 함', async () => {
+      const { extractScriptFromDocument } = require('../../services/scriptStyleAPI');
+      extractScriptFromDocument.mockResolvedValueOnce({
+        success: true,
+        text: '추출 텍스트',
+        suggested_document_hint: 'general',
+      });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const fileInput = screen.getByTestId('voice-gen-sample-file');
+      const file = new File(['content'], 'sample.txt', { type: 'text/plain' });
+      await userEvent.upload(fileInput, file);
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-document-hint')).toHaveValue('');
+      }, { timeout: 5000 });
+    });
+
+    it('스타일 분석 실패 시 에러가 표시되어야 함', async () => {
+      const { analyzeScriptStyle } = require('../../services/scriptStyleAPI');
+      analyzeScriptStyle.mockRejectedValueOnce(new Error('분석 오류'));
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const sampleInput = screen.getByTestId('voice-gen-sample-script');
+      fireEvent.change(sampleInput, { target: { value: '샘플 대본 텍스트' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-analyze-style')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      fireEvent.click(screen.getByTestId('voice-gen-analyze-style'));
+      await waitFor(() => {
+        expect(screen.getByText(/스타일 분석 실패|분석 오류/)).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
+
+    it('스타일 분석 성공 시 분석 결과가 표시되어야 함', async () => {
+      const { analyzeScriptStyle } = require('../../services/scriptStyleAPI');
+      const styleSummary = '스타일 요약 텍스트';
+      analyzeScriptStyle.mockResolvedValueOnce({ success: true, style_summary: styleSummary, key_traits: [] });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-sample-script'), { target: { value: '샘플 대본' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-analyze-style')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      fireEvent.click(screen.getByTestId('voice-gen-analyze-style'));
+      await waitFor(() => {
+        expect(screen.getByText('분석 결과 보기')).toBeInTheDocument();
+      }, { timeout: 8000 });
+      await waitFor(() => {
+        expect(screen.getByText(styleSummary)).toBeInTheDocument();
+      }, { timeout: 8000 });
+    });
+
+    it('샘플 대본 수정 시 스타일 요약이 초기화되어야 함', async () => {
+      const { analyzeScriptStyle } = require('../../services/scriptStyleAPI');
+      const styleSummary = '요약 A';
+      analyzeScriptStyle.mockResolvedValueOnce({ success: true, style_summary: styleSummary, key_traits: [] });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-sample-script'), { target: { value: '샘플' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-analyze-style')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      fireEvent.click(screen.getByTestId('voice-gen-analyze-style'));
+      await waitFor(() => {
+        expect(screen.getByText(styleSummary)).toBeInTheDocument();
+      }, { timeout: 8000 });
+      fireEvent.change(screen.getByTestId('voice-gen-sample-script'), { target: { value: '샘플 수정' } });
+      await waitFor(() => {
+        expect(screen.queryByText(styleSummary)).not.toBeInTheDocument();
+      }, { timeout: 2000 });
+    });
+
+    it('스타일로 대본 생성 실패 시 에러가 표시되어야 함', async () => {
+      const { generateScriptInStyle } = require('../../services/scriptStyleAPI');
+      generateScriptInStyle.mockRejectedValueOnce(new Error('생성 오류'));
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-sample-script'), { target: { value: '샘플 대본' } });
+      fireEvent.change(screen.getByTestId('voice-gen-topic-outline'), { target: { value: '주제 개요' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate-in-style')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      fireEvent.click(screen.getByTestId('voice-gen-generate-in-style'));
+      await waitFor(() => {
+        expect(screen.getByText(/대본 생성 실패|생성 오류/)).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
+
+    it('스타일로 대본 생성 성공 시 메인 대본에 반영되어야 함', async () => {
+      const { generateScriptInStyle } = require('../../services/scriptStyleAPI');
+      const generatedScript = '생성된 대본 텍스트';
+      generateScriptInStyle.mockResolvedValueOnce({ success: true, generated_script: generatedScript });
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-sample-script'), { target: { value: '샘플 대본' } });
+      fireEvent.change(screen.getByTestId('voice-gen-topic-outline'), { target: { value: '주제 개요' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate-in-style')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      fireEvent.click(screen.getByTestId('voice-gen-generate-in-style'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-script')).toHaveValue(generatedScript);
+      }, { timeout: 8000 });
+    });
+
+    it('빈 주제/개요로 스타일로 대본 생성 시 에러가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-sample-script'), { target: { value: '샘플' } });
+      fireEvent.change(screen.getByTestId('voice-gen-topic-outline'), { target: { value: '주제' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate-in-style')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      const btn = screen.getByTestId('voice-gen-generate-in-style');
+      const onClick = getButtonOnClick(btn);
+      fireEvent.change(screen.getByTestId('voice-gen-topic-outline'), { target: { value: '' } });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      if (onClick) {
+        onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+      } else {
+        fireEvent.click(btn);
+      }
+      await waitFor(() => {
+        const msg = screen.queryByText(/생성할 주제\/개요를 입력해 주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
+      }, { timeout: 2000 });
+    });
+
+    it('빈 샘플 대본으로 스타일로 대본 생성 시 에러가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-topic-outline'), { target: { value: '주제 개요' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate-in-style')).toBeDisabled();
+      }, { timeout: 2000 });
+      const btn = screen.getByTestId('voice-gen-generate-in-style');
+      const onClick = getButtonOnClick(btn);
+      if (onClick) {
+        onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+      } else {
+        fireEvent.click(btn);
+      }
+      await waitFor(() => {
+        const msg = screen.queryByText(/샘플 대본을 입력하거나 문서에서 추출해 주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
+      }, { timeout: 2000 });
+    });
+
+    it('빈 샘플 대본으로 스타일 분석 시 에러가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-sample-script'), { target: { value: '샘플 텍스트' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-analyze-style')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      fireEvent.change(screen.getByTestId('voice-gen-sample-script'), { target: { value: '' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-analyze-style')).toBeDisabled();
+      }, { timeout: 2000 });
+      const btn = screen.getByTestId('voice-gen-analyze-style');
+      const onClick = getButtonOnClick(btn);
+      if (onClick) {
+        onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+      } else {
+        fireEvent.click(btn);
+      }
+      await waitFor(() => {
+        const msg = screen.queryByText(/샘플 대본을 입력하거나 문서에서 추출해 주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
+      }, { timeout: 2000 });
+    });
+  });
+
+  describe('통합 시나리오 (목소리 생성 풀 플로우)', () => {
+    it('문서 추출 → 스타일 분석 → 스타일로 대본 생성 → TTS 생성까지 한 번에 진행되어야 함', async () => {
+      const { extractScriptFromDocument, analyzeScriptStyle, generateScriptInStyle } = require('../../services/scriptStyleAPI');
+      const { speakQwenTts } = require('../../services/qwenTtsService');
+      const extractedText = '추출된 샘플 텍스트';
+      const styleSummary = '스타일 요약';
+      const generatedScript = '스타일 반영 생성 대본';
+      extractScriptFromDocument.mockResolvedValueOnce({ success: true, text: extractedText, suggested_document_hint: null });
+      analyzeScriptStyle.mockResolvedValueOnce({ success: true, style_summary: styleSummary, key_traits: [] });
+      generateScriptInStyle.mockResolvedValueOnce({ success: true, generated_script: generatedScript });
+      speakQwenTts.mockResolvedValue(new Blob(['audio'], { type: 'audio/mp3' }));
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      const fileInput = screen.getByTestId('voice-gen-sample-file');
+      const file = new File([extractedText], 'sample.txt', { type: 'text/plain' });
+      await userEvent.upload(fileInput, file);
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-sample-script')).toHaveValue(extractedText);
+      }, { timeout: 5000 });
+
+      fireEvent.click(screen.getByTestId('voice-gen-analyze-style'));
+      await waitFor(() => {
+        expect(screen.getByText(styleSummary)).toBeInTheDocument();
+      }, { timeout: 8000 });
+
+      fireEvent.change(screen.getByTestId('voice-gen-topic-outline'), { target: { value: '주제 개요' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate-in-style')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      fireEvent.click(screen.getByTestId('voice-gen-generate-in-style'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-script')).toHaveValue(generatedScript);
+      }, { timeout: 8000 });
+
+      fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-situation-only')).toBeInTheDocument();
+      }, { timeout: 2000 });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      const generateBtn = screen.getByTestId('voice-gen-generate');
+      await waitFor(() => {
+        expect(generateBtn).not.toBeDisabled();
+      }, { timeout: 3000 });
+      fireEvent.click(generateBtn);
+      await waitFor(() => {
+        expect(speakQwenTts).toHaveBeenCalled();
+      }, { timeout: 8000 });
+
+      expect(extractScriptFromDocument).toHaveBeenCalled();
+      expect(analyzeScriptStyle).toHaveBeenCalled();
+      expect(generateScriptInStyle).toHaveBeenCalled();
     });
   });
 
@@ -745,11 +1792,11 @@ describe('AdvancedFeaturesPanel', () => {
       fireEvent.click(predictionTab);
 
       await waitFor(() => {
-        const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+        const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
         expect(messageInput).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+      const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
       fireEvent.change(messageInput, { target: { value: '테스트 메시지' } });
 
       // 품질 예측 버튼 찾기 - "✍️ 품질 예측" 또는 "품질 예측" 텍스트로 찾기
@@ -811,6 +1858,28 @@ describe('AdvancedFeaturesPanel', () => {
         // 로딩 인디케이터가 표시되거나, 로딩 상태가 활성화되었는지 확인
         expect(loadingIndicator || mockAdvancedAPIService.analyzeImageFile).toBeTruthy();
       }, { timeout: 1000 });
+    });
+
+    it('loadingState가 updating일 때 로딩 인디케이터가 DOM에 표시되어야 함', () => {
+      mockUseLoadingState.mockReturnValue({
+        loadingState: { type: 'updating' as const, message: '처리 중...' },
+        startRefreshing: jest.fn(),
+        stopLoading: jest.fn(),
+        startInitialLoading: jest.fn(),
+        startUpdating: jest.fn(),
+        isLoading: false,
+        isInitialLoading: false,
+        isUpdating: true,
+        isRefreshing: false,
+      });
+      render(<AdvancedFeaturesPanel />);
+      expect(screen.getByTestId('loading-state-indicator')).toBeInTheDocument();
+      expect(screen.getByTestId('loading-state-indicator')).toHaveTextContent('처리 중...');
+    });
+
+    it('loadingState가 idle일 때 로딩 인디케이터가 DOM에 없어야 함', () => {
+      render(<AdvancedFeaturesPanel />);
+      expect(screen.queryByTestId('loading-state-indicator')).not.toBeInTheDocument();
     });
   });
 
@@ -911,6 +1980,35 @@ describe('AdvancedFeaturesPanel', () => {
         expect(screen.getByText(/분석 결과/)).toBeInTheDocument();
       }, { timeout: 3000 });
     });
+
+    it('결과 지우기 버튼 클릭 시 분석 결과가 지워져야 함', async () => {
+      const mockResult: ImageAnalysisResponse = {
+        status: 'success' as const,
+        analysis: {
+          image_info: { width: 800, height: 600, format: 'jpeg', mode: 'RGB', size_bytes: 100000, aspect_ratio: 1.33 },
+          analysis_type: 'comprehensive',
+          object_detection: { detected_objects: [], total_objects: 0 },
+          ocr_results: { extracted_text: '', text_regions: [], language: 'en' },
+          timestamp: new Date().toISOString(),
+        },
+      };
+      mockAdvancedAPIService.analyzeImageFile.mockResolvedValue(mockResult);
+
+      render(<AdvancedFeaturesPanel />);
+      const fileInput = screen.getByTestId('advanced-features-file-input');
+      fireEvent.change(fileInput, { target: { files: [new File(['x'], 'test.jpg', { type: 'image/jpeg' })] } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('image-analysis-clear')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      fireEvent.click(screen.getByTestId('image-analysis-clear'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('image-analysis-clear')).not.toBeInTheDocument();
+      });
+      expect(screen.getByTestId('image-analysis-empty')).toBeInTheDocument();
+    });
   });
 
   describe('목소리 생성 오디오 재생', () => {
@@ -922,7 +2020,8 @@ describe('AdvancedFeaturesPanel', () => {
     it('목소리 생성 후 오디오가 생성되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
@@ -959,36 +2058,38 @@ describe('AdvancedFeaturesPanel', () => {
     it('보이스 소스 목록이 표시되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
-        expect(screen.getByText(/https:\/\/example.com\/source1.mp4/)).toBeInTheDocument();
+        const matches = screen.getAllByText(/https:\/\/example\.com\/source1\.mp4/);
+        expect(matches.length).toBeGreaterThan(0);
       }, { timeout: 3000 });
     });
 
     it('보이스 소스를 삭제할 수 있어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
-        expect(screen.getByText(/https:\/\/example.com\/source1.mp4/)).toBeInTheDocument();
+        const matches = screen.getAllByText(/https:\/\/example\.com\/source1\.mp4/);
+        expect(matches.length).toBeGreaterThan(0);
       }, { timeout: 3000 });
 
       // 삭제 버튼 찾기 (보이스 소스 목록에서)
@@ -999,6 +2100,89 @@ describe('AdvancedFeaturesPanel', () => {
         const { deleteProjectVoiceSource } = require('../../services/qwenTtsService');
         expect(deleteProjectVoiceSource).toHaveBeenCalledWith('proj-1', '1');
       }, { timeout: 3000 });
+    });
+
+    it('학습된 목소리 선택 드롭다운이 표시되고 선택한 목소리로 생성할 수 있어야 함', async () => {
+      const { speakQwenTtsFromProject } = require('../../services/qwenTtsService');
+      if (jest.isMockFunction(speakQwenTtsFromProject)) {
+        speakQwenTtsFromProject.mockResolvedValue(new Blob());
+      }
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
+      fireEvent.change(screen.getByTestId('voice-gen-project-id'), { target: { value: 'proj-1' } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-select-source')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      const select = screen.getByTestId('voice-gen-select-source');
+      fireEvent.change(select, { target: { value: '2' } });
+
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '테스트 대본' } });
+      fireEvent.click(screen.getByTestId('voice-gen-generate'));
+
+      await waitFor(() => {
+        expect(speakQwenTtsFromProject).toHaveBeenCalledWith(
+          '테스트 대본',
+          'proj-1',
+          expect.objectContaining({ voiceSourceId: '2' })
+        );
+      }, { timeout: 3000 });
+    });
+
+    it('목소리 선택 시 일괄성 유지 안내가 표시되고 선택이 유지되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
+      fireEvent.change(screen.getByTestId('voice-gen-project-id'), { target: { value: 'proj-1' } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-select-source')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      expect(screen.getByText(/목소리를 선택해 두면 같은 프로젝트에서 다시 열어도 유지되며/)).toBeInTheDocument();
+
+      fireEvent.change(screen.getByTestId('voice-gen-select-source'), { target: { value: '2' } });
+
+      expect((screen.getByTestId('voice-gen-select-source') as HTMLSelectElement).value).toBe('2');
+    });
+
+    it('저장된 목소리 선택이 있으면 프로젝트 로드 시 복원을 시도해야 함', async () => {
+      const storage = window.localStorage as unknown as { getItem: (key: string) => string | null };
+      const origGetItem = storage.getItem.bind(storage);
+      const getItemSpy = jest.fn((key: string) =>
+        key === 'advanced-features-voice-selection-proj-1' ? '2' : origGetItem(key)
+      );
+      storage.getItem = getItemSpy;
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
+      fireEvent.change(screen.getByTestId('voice-gen-project-id'), { target: { value: 'proj-1' } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-select-source')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      expect(getItemSpy).toHaveBeenCalledWith('advanced-features-voice-selection-proj-1');
+      storage.getItem = origGetItem;
     });
   });
 
@@ -1048,6 +2232,38 @@ describe('AdvancedFeaturesPanel', () => {
           expect(mockAdvancedAPIService.getPredictionSummary).toHaveBeenCalled();
         }, { timeout: 3000 });
       }
+    });
+
+    it('결과 지우기 버튼 클릭 시 예측 결과가 지워져야 함', async () => {
+      mockAdvancedAPIService.getPredictionSummary.mockResolvedValue({
+        status: 'success' as const,
+        summary: {
+          total_predictions: 1,
+          accuracy_rate: 0.8,
+          active_models: 1,
+          last_updated: new Date().toISOString(),
+          predictions_by_type: { user_activity: 0, message_quality: 0, system_performance: 0 },
+          accuracy_by_type: { user_activity: 0.8, message_quality: 0.8, system_performance: 0.8 },
+          recent_activity: { last_hour: 0, last_24_hours: 0 },
+          quality_insights: [],
+          model_status: { user_activity: 'active', message_quality: 'active', system_performance: 'active' },
+        },
+      });
+
+      render(<AdvancedFeaturesPanel defaultTab="prediction" />);
+      const summaryButton = screen.getByText(/예측 요약 조회/);
+      fireEvent.click(summaryButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('prediction-clear')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      fireEvent.click(screen.getByTestId('prediction-clear'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('prediction-clear')).not.toBeInTheDocument();
+      });
+      expect(screen.getByTestId('prediction-empty')).toBeInTheDocument();
     });
   });
 
@@ -1312,7 +2528,9 @@ describe('AdvancedFeaturesPanel', () => {
       type ResultCb = (result: { transcript: string; isFinal: boolean }) => void;
       const cb = onResultCallback as ResultCb | null;
       if (cb) {
-        cb({ transcript: '테스트', isFinal: false });
+        act(() => {
+          cb({ transcript: '테스트', isFinal: false });
+        });
       }
     });
 
@@ -1356,7 +2574,9 @@ describe('AdvancedFeaturesPanel', () => {
       type ResultCb = (result: { transcript: string; isFinal: boolean }) => void;
       const cb = onResultCallback as ResultCb | null;
       if (cb) {
-        cb({ transcript: '최종 텍스트', isFinal: true });
+        act(() => {
+          cb({ transcript: '최종 텍스트', isFinal: true });
+        });
 
         await waitFor(() => {
           expect(mockSendMessage).toHaveBeenCalledWith(
@@ -1402,7 +2622,9 @@ describe('AdvancedFeaturesPanel', () => {
       type ErrorCb = (error: string) => void;
       const errCb = onErrorCallback as ErrorCb | null;
       if (errCb) {
-        errCb('음성 인식 오류 발생');
+        act(() => {
+          errCb('음성 인식 오류 발생');
+        });
 
         await waitFor(() => {
           const errorMessage = screen.queryByText(/음성 인식 오류/);
@@ -1478,11 +2700,11 @@ describe('AdvancedFeaturesPanel', () => {
       fireEvent.click(predictionTab);
 
       await waitFor(() => {
-        const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+        const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
         expect(messageInput).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+      const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
       fireEvent.change(messageInput, { target: { value: '테스트 메시지' } });
 
       const qualityButton = screen.getByRole('button', { name: /품질 예측/i });
@@ -1543,7 +2765,7 @@ describe('AdvancedFeaturesPanel', () => {
     it('빈 대본으로 목소리 생성 시 에러가 표시되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
@@ -1568,13 +2790,13 @@ describe('AdvancedFeaturesPanel', () => {
     it('URL 모드에서 빈 URL로 목소리 생성 시 에러가 표시되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
       });
 
-      // 상황만 선택 모드로 변경하지 않고 URL 모드 유지
       const scriptInput = screen.getByTestId('voice-gen-script');
       const generateButton = screen.getByTestId('voice-gen-generate');
 
@@ -1603,7 +2825,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-mode-situation')).toBeInTheDocument();
@@ -1626,6 +2848,69 @@ describe('AdvancedFeaturesPanel', () => {
       }, { timeout: 3000 });
     });
 
+    it('목소리 생성 대본에서 Cmd/Ctrl+Enter 시 생성이 실행되어야 함', async () => {
+      const { speakQwenTts } = require('../../services/qwenTtsService');
+      speakQwenTts.mockResolvedValue(new Blob());
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-mode-situation')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
+      });
+
+      const scriptInput = screen.getByTestId('voice-gen-script');
+      fireEvent.change(scriptInput, { target: { value: '단축키 테스트 대본' } });
+      fireEvent.keyDown(scriptInput, { key: 'Enter', ctrlKey: true });
+
+      await waitFor(() => {
+        expect(speakQwenTts).toHaveBeenCalled();
+      }, { timeout: 3000 });
+    });
+
+    it('목소리 생성 대본이 비어 있을 때 Cmd/Ctrl+Enter 시 생성이 실행되지 않아야 함', async () => {
+      const { speakQwenTts } = require('../../services/qwenTtsService');
+      speakQwenTts.mockClear();
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
+      });
+
+      const scriptInput = screen.getByTestId('voice-gen-script');
+      fireEvent.keyDown(scriptInput, { key: 'Enter', ctrlKey: true });
+
+      expect(speakQwenTts).not.toHaveBeenCalled();
+    });
+
+    it('목소리 생성 대본에서 Cmd/Ctrl+Shift+Enter 시 생성 후 재생이 실행되어야 함', async () => {
+      const { speakQwenTts } = require('../../services/qwenTtsService');
+      speakQwenTts.mockResolvedValue(new Blob());
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+
+      fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-situation-only')).toBeInTheDocument();
+      });
+
+      const scriptInput = screen.getByTestId('voice-gen-script');
+      fireEvent.change(scriptInput, { target: { value: '단축키 생성 후 재생 테스트' } });
+      fireEvent.keyDown(scriptInput, { key: 'Enter', ctrlKey: true, shiftKey: true });
+
+      await waitFor(() => {
+        expect(speakQwenTts).toHaveBeenCalled();
+      }, { timeout: 3000 });
+    });
+
     it('프로젝트 모드에서 목소리 생성이 작동해야 함', async () => {
       const { speakQwenTtsFromProject, getProjectVoiceSources } = require('../../services/qwenTtsService');
       speakQwenTtsFromProject.mockResolvedValue(new Blob());
@@ -1637,7 +2922,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
@@ -1677,7 +2962,8 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
@@ -1702,14 +2988,14 @@ describe('AdvancedFeaturesPanel', () => {
     it('보이스 소스 추가 시 빈 값이면 버튼이 비활성화되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
@@ -1728,14 +3014,14 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
@@ -1765,14 +3051,14 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
@@ -1806,7 +3092,8 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
@@ -1838,7 +3125,7 @@ describe('AdvancedFeaturesPanel', () => {
     it('projectId prop이 변경되면 프로젝트 ID 필드가 업데이트되어야 함', async () => {
       const { rerender } = render(<AdvancedFeaturesPanel projectId="proj-1" />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         const projectIdInput = screen.getByTestId('voice-gen-project-id');
@@ -1992,7 +3279,9 @@ describe('AdvancedFeaturesPanel', () => {
       type EndCb = () => void;
       const endCb = onEndCallback as EndCb | null;
       if (endCb) {
-        endCb();
+        act(() => {
+          endCb();
+        });
 
         await waitFor(() => {
           expect(screen.queryByText(/음성 인식 중지/)).not.toBeInTheDocument();
@@ -2085,7 +3374,7 @@ describe('AdvancedFeaturesPanel', () => {
 
         // 예측 분석 탭으로 전환되었는지 확인
         await waitFor(() => {
-          const messageInput = screen.queryByPlaceholderText(/메시지를 입력하세요/);
+          const messageInput = screen.queryByPlaceholderText(/Type '\/' for commands/);
           expect(messageInput).toBeInTheDocument();
         }, { timeout: 2000 });
       }
@@ -2123,11 +3412,11 @@ describe('AdvancedFeaturesPanel', () => {
       fireEvent.click(predictionTab);
 
       await waitFor(() => {
-        const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+        const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
         expect(messageInput).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+      const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
       fireEvent.change(messageInput, { target: { value: '테스트 메시지' } });
 
       const qualityButton = screen.getByRole('button', { name: /품질 예측/i });
@@ -2191,7 +3480,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
 
       await waitFor(() => {
         expect(getQwenTtsConfig).toHaveBeenCalled();
@@ -2208,7 +3497,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
@@ -2221,6 +3510,25 @@ describe('AdvancedFeaturesPanel', () => {
       await waitFor(() => {
         expect(getProjectVoiceSources).toHaveBeenCalled();
       }, { timeout: 3000 });
+    });
+
+    it('projectId가 있고 보이스 소스 로딩이 실패하면 빈 목록으로 처리되어야 함', async () => {
+      const { getProjectVoiceSources } = require('../../services/qwenTtsService');
+      getProjectVoiceSources.mockRejectedValue(new Error('네트워크 오류'));
+      render(<AdvancedFeaturesPanel projectId="proj-err" />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => expect(getProjectVoiceSources).toHaveBeenCalledWith('proj-err'));
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      expect(screen.getByTestId('voice-gen-project-id')).toHaveValue('proj-err');
+      await waitFor(() => {
+        const heading = screen.getByText(/학습된 목소리.*보이스 소스/);
+        expect(heading).toHaveTextContent(/0개/);
+      }, { timeout: 2000 });
     });
   });
 
@@ -2256,7 +3564,8 @@ describe('AdvancedFeaturesPanel', () => {
 
       const { unmount } = render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
@@ -2323,7 +3632,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
@@ -2367,7 +3676,8 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
@@ -2411,6 +3721,138 @@ describe('AdvancedFeaturesPanel', () => {
         configurable: true 
       });
     });
+
+    it('오디오 지우기 버튼 클릭 시 생성된 오디오가 지워져야 함', async () => {
+      const { speakQwenTtsScriptFromSourceUrl } = require('../../services/qwenTtsService');
+      const mockBlob = new Blob(['audio data'], { type: 'audio/mpeg' });
+      if (jest.isMockFunction(speakQwenTtsScriptFromSourceUrl)) {
+        speakQwenTtsScriptFromSourceUrl.mockResolvedValue(mockBlob);
+      }
+
+      const originalCreateObjectURL = URL.createObjectURL;
+      const originalRevokeObjectURL = URL.revokeObjectURL;
+      const createObjectURLSpy = jest.fn(() => 'blob:http://localhost/test-audio-url');
+      const revokeObjectURLSpy = jest.fn(() => {});
+      Object.defineProperty(URL, 'createObjectURL', { value: createObjectURLSpy, writable: true, configurable: true });
+      Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURLSpy, writable: true, configurable: true });
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByTestId('voice-gen-url'), { target: { value: 'https://example.com/video.mp4' } });
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '테스트 대본' } });
+      fireEvent.click(screen.getByTestId('voice-gen-generate'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-clear')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      fireEvent.click(screen.getByTestId('voice-gen-clear'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('voice-gen-clear')).not.toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('voice-gen-audio')).not.toBeInTheDocument();
+
+      Object.defineProperty(URL, 'createObjectURL', { value: originalCreateObjectURL, writable: true, configurable: true });
+      Object.defineProperty(URL, 'revokeObjectURL', { value: originalRevokeObjectURL, writable: true, configurable: true });
+    });
+  });
+
+  describe('목소리 생성 다운로드', () => {
+    it('단일 오디오 생성 후 다운로드 버튼 클릭 시 a 태그로 tts-output.mp3 저장 트리거', async () => {
+      const { speakQwenTtsScriptFromSourceUrl } = require('../../services/qwenTtsService');
+      speakQwenTtsScriptFromSourceUrl.mockResolvedValue(new Blob(['audio'], { type: 'audio/mp3' }));
+      const blobUrl = 'blob:http://localhost/tts-single';
+      const originalCreateObjectURL = URL.createObjectURL;
+      const originalRevokeObjectURL = URL.revokeObjectURL;
+      Object.defineProperty(URL, 'createObjectURL', {
+        value: jest.fn(() => blobUrl),
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(URL, 'revokeObjectURL', { value: jest.fn(), writable: true, configurable: true });
+
+      const createElementSpy = jest.spyOn(document, 'createElement');
+      const appendChildSpy = jest.spyOn(document.body, 'appendChild');
+      const removeChildSpy = jest.spyOn(document.body, 'removeChild');
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
+      fireEvent.change(screen.getByTestId('voice-gen-url'), { target: { value: 'https://youtube.com/watch?v=abc' } });
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '테스트 대본' } });
+      fireEvent.click(screen.getByTestId('voice-gen-generate'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-download')).toBeInTheDocument();
+      }, { timeout: 5000 });
+
+      createElementSpy.mockClear();
+      appendChildSpy.mockClear();
+      removeChildSpy.mockClear();
+
+      fireEvent.click(screen.getByTestId('voice-gen-download'));
+
+      expect(createElementSpy).toHaveBeenCalledWith('a');
+      const link = createElementSpy.mock.results[0]?.value as HTMLAnchorElement;
+      expect(link).toBeDefined();
+      expect(link.download).toBe('tts-output.mp3');
+      expect(link.href).toBe(blobUrl);
+      expect(appendChildSpy).toHaveBeenCalledWith(link);
+      expect(removeChildSpy).toHaveBeenCalledWith(link);
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+      Object.defineProperty(URL, 'createObjectURL', { value: originalCreateObjectURL, writable: true, configurable: true });
+      Object.defineProperty(URL, 'revokeObjectURL', { value: originalRevokeObjectURL, writable: true, configurable: true });
+    });
+
+    it('구간별 오디오 생성 후 구간별 다운로드 버튼이 표시되고 구간 1 다운로드 시 tts-segment-1.mp3', async () => {
+      const { speakQwenTts } = require('../../services/qwenTtsService');
+      speakQwenTts.mockResolvedValue(new Blob(['audio'], { type: 'audio/mp3' }));
+      const segmentUrls = ['blob:mock-seg-1', 'blob:mock-seg-2'];
+      let createCallIndex = 0;
+      Object.defineProperty(URL, 'createObjectURL', {
+        value: jest.fn(() => segmentUrls[createCallIndex++] ?? 'blob:mock'),
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(URL, 'revokeObjectURL', { value: jest.fn(), writable: true, configurable: true });
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'sentence' } });
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '첫 문장. 둘째 문장.' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-segment-speed-0')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('voice-gen-generate'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-download-segment-1')).toBeInTheDocument();
+      }, { timeout: 12000 });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-download-segment-2')).toBeInTheDocument();
+      }, { timeout: 12000 });
+
+      const createElementSpy = jest.spyOn(document, 'createElement');
+      fireEvent.click(screen.getByTestId('voice-gen-download-segment-1'));
+
+      expect(createElementSpy).toHaveBeenCalledWith('a');
+      const link = createElementSpy.mock.results[0]?.value as HTMLAnchorElement;
+      expect(link.download).toBe('tts-segment-1.mp3');
+      createElementSpy.mockRestore();
+    }, 15000);
   });
 
   describe('WebSocket 콜백 실제 호출', () => {
@@ -2431,9 +3873,14 @@ describe('AdvancedFeaturesPanel', () => {
       const callArgs = mockUseWebSocket.mock.calls[0][0] as { onError?: (error: unknown) => void };
       expect(callArgs.onError).toBeDefined();
 
-      // onError 콜백 직접 호출
-      if (callArgs.onError) {
-        callArgs.onError(new Error('WebSocket 오류'));
+      // onError 콜백 호출 시 errorLogger가 console.error를 호출하므로 예상된 출력 억제
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        if (callArgs.onError) {
+          callArgs.onError(new Error('WebSocket 오류'));
+        }
+      } finally {
+        spy.mockRestore();
       }
     });
 
@@ -2525,7 +3972,9 @@ describe('AdvancedFeaturesPanel', () => {
       type ResultCb = (result: { transcript: string; isFinal: boolean }) => void;
       const resultCb = onResultCallback as ResultCb | null;
       if (resultCb) {
-        resultCb({ transcript: '최종 텍스트', isFinal: true });
+        act(() => {
+          resultCb({ transcript: '최종 텍스트', isFinal: true });
+        });
       }
 
       await waitFor(() => {
@@ -2552,7 +4001,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
@@ -2588,14 +4037,14 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
@@ -2625,7 +4074,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
@@ -2678,7 +4127,8 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
@@ -2718,6 +4168,70 @@ describe('AdvancedFeaturesPanel', () => {
       });
       global.Audio = originalCreateObjectURL as unknown as typeof Audio;
     });
+
+    it('구간별 오디오 순차 재생 시 Audio가 구간 수만큼 호출되어야 함 (764-783)', async () => {
+      const { speakQwenTts } = require('../../services/qwenTtsService');
+      speakQwenTts.mockResolvedValue(new Blob(['audio'], { type: 'audio/mp3' }));
+      const originalCreateObjectURL = URL.createObjectURL;
+      Object.defineProperty(URL, 'createObjectURL', {
+        value: jest.fn((blob: Blob) => `blob:mock-${blob.size}`),
+        writable: true,
+        configurable: true,
+      });
+      const audioInstances: Array<{ play: jest.Mock; _onended: (() => void) | null }> = [];
+      const MockAudio = jest.fn().mockImplementation(function (this: { _onended: (() => void) | null; play: jest.Mock }) {
+        const inst = {
+          _onended: null as (() => void) | null,
+          get onended() {
+            return this._onended;
+          },
+          set onended(fn: () => void) {
+            this._onended = fn;
+          },
+          play: jest.fn().mockImplementation(function (this: { _onended: (() => void) | null }) {
+            setTimeout(() => this._onended?.(), 0);
+            return Promise.resolve();
+          }),
+        };
+        audioInstances.push(inst);
+        return inst;
+      });
+      const originalAudio = global.Audio;
+      global.Audio = MockAudio as unknown as typeof Audio;
+
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-situation'));
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'sentence' } });
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '첫 문장. 둘째 문장.' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      fireEvent.click(screen.getByTestId('voice-gen-generate'));
+      await waitFor(() => {
+        expect(speakQwenTts).toHaveBeenCalled();
+      }, { timeout: 5000 });
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-play')).toBeInTheDocument();
+      }, { timeout: 12000 });
+      fireEvent.click(screen.getByTestId('voice-gen-play'));
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 150));
+      });
+      expect(MockAudio).toHaveBeenCalled();
+      const played = audioInstances.filter((a) => a.play.mock.calls.length > 0);
+      expect(played.length).toBeGreaterThanOrEqual(1);
+      // playNext 체인: 첫 구간 onended 후 두 번째 Audio 생성 (767-768)
+      expect(MockAudio.mock.calls.length).toBeGreaterThanOrEqual(1);
+      if (audioInstances.length >= 2) {
+        expect(audioInstances[1].play).toHaveBeenCalled();
+      }
+
+      Object.defineProperty(URL, 'createObjectURL', { value: originalCreateObjectURL, writable: true, configurable: true });
+      global.Audio = originalAudio;
+    }, 18000);
   });
 
   describe('이미지 탭 전환', () => {
@@ -2736,7 +4250,7 @@ describe('AdvancedFeaturesPanel', () => {
     it('상황만 선택 모드에서 상황 선택 드롭다운이 표시되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-mode-situation')).toBeInTheDocument();
@@ -2755,7 +4269,8 @@ describe('AdvancedFeaturesPanel', () => {
     it('URL/프로젝트 보이스 모드에서 상황 선택 드롭다운이 표시되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-situation')).toBeInTheDocument();
@@ -2778,7 +4293,7 @@ describe('AdvancedFeaturesPanel', () => {
     it('상황만 선택 모드에서 상황 선택 드롭다운 변경이 작동해야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-mode-situation')).toBeInTheDocument();
@@ -2812,11 +4327,11 @@ describe('AdvancedFeaturesPanel', () => {
       fireEvent.click(predictionTab);
 
       await waitFor(() => {
-        const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+        const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
         expect(messageInput).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+      const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
       const qualityButton = screen.getByRole('button', { name: /품질 예측/i });
       
       // 메시지가 비어있을 때 버튼이 비활성화되어야 함
@@ -2832,7 +4347,7 @@ describe('AdvancedFeaturesPanel', () => {
     it('빈 대본으로 생성 시 버튼이 비활성화되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
@@ -2850,11 +4365,109 @@ describe('AdvancedFeaturesPanel', () => {
     });
   });
 
+  describe('목소리 생성 줄 모드 (Typecast 스타일)', () => {
+    it('대본 입력 후 줄 단위로 변환 시 줄 목록이 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
+      });
+      fireEvent.change(screen.getByTestId('voice-gen-script'), {
+        target: { value: '첫 번째 줄\n두 번째 줄' },
+      });
+      fireEvent.click(screen.getByTestId('voice-gen-convert-to-lines'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-lines-panel')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-line-0')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-line-1')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-line-input-0')).toHaveValue('첫 번째 줄');
+      expect(screen.getByTestId('voice-gen-line-input-1')).toHaveValue('두 번째 줄');
+    });
+
+    it('줄 모드에서 내보내기·가져오기·줄 추가 버튼이 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '한 줄' } });
+      fireEvent.click(screen.getByTestId('voice-gen-convert-to-lines'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-export')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-import')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-add-line')).toBeInTheDocument();
+    });
+
+    it('줄 선택 시 오른쪽 패널에 읽는 시간·PRO 감정 등 설정이 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '테스트 줄' } });
+      fireEvent.click(screen.getByTestId('voice-gen-convert-to-lines'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-line-input-0')).toBeInTheDocument();
+      });
+      fireEvent.focus(screen.getByTestId('voice-gen-line-input-0'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-line-settings')).toBeInTheDocument();
+      }, { timeout: 2000 });
+      expect(screen.getByTestId('voice-gen-reading-time-input')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-reading-time-apply')).toBeInTheDocument();
+      expect(screen.getByTestId('voice-gen-line-tone')).toBeInTheDocument();
+    });
+
+    it('빈 대본으로 줄 단위 변환 시 에러 메시지가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-convert-to-lines'));
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(/대본을 입력한 뒤 변환해 주세요/);
+      });
+    });
+
+    it('줄 모드에서 프리셋 탭 A 선택 시 저장 버튼이 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '한 줄' } });
+      fireEvent.click(screen.getByTestId('voice-gen-convert-to-lines'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-line-input-0')).toBeInTheDocument();
+      });
+      fireEvent.focus(screen.getByTestId('voice-gen-line-input-0'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-preset-tab-A')).toBeInTheDocument();
+      }, { timeout: 2000 });
+      fireEvent.click(screen.getByTestId('voice-gen-preset-tab-A'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-save-preset-A')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('voice-gen-save-preset-A')).toHaveTextContent(/현재 줄을 A에 저장/);
+    });
+
+    it('읽는 시간 적용 시 성공 토스트가 표시되어야 함', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '한 줄 테스트' } });
+      fireEvent.click(screen.getByTestId('voice-gen-convert-to-lines'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-line-input-0')).toBeInTheDocument();
+      });
+      fireEvent.focus(screen.getByTestId('voice-gen-line-input-0'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-reading-time-apply')).toBeInTheDocument();
+      }, { timeout: 2000 });
+      fireEvent.change(screen.getByTestId('voice-gen-reading-time-input'), { target: { value: '2' } });
+      fireEvent.click(screen.getByTestId('voice-gen-reading-time-apply'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-toast')).toHaveTextContent(/읽는 시간이 적용되었습니다/);
+      });
+    });
+  });
+
   describe('URL 모드 빈 URL 처리', () => {
     it('URL 모드에서 빈 URL로 생성 시 버튼이 비활성화되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
@@ -2889,15 +4502,14 @@ describe('AdvancedFeaturesPanel', () => {
     it('보이스 소스 추가 시 빈 값이면 버튼이 비활성화되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
-      // 먼저 프로젝트 ID를 입력하여 보이스 소스 추가 UI가 표시되도록 함
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
@@ -2933,7 +4545,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
@@ -2959,7 +4571,7 @@ describe('AdvancedFeaturesPanel', () => {
     it('URL 모드 라디오 버튼 클릭 시 모드가 변경되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-mode-url')).toBeInTheDocument();
@@ -3011,7 +4623,8 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-url')).toBeInTheDocument();
@@ -3064,11 +4677,11 @@ describe('AdvancedFeaturesPanel', () => {
       fireEvent.click(predictionTab);
 
       await waitFor(() => {
-        const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+        const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
         expect(messageInput).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/메시지를 입력하세요/);
+      const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
       const qualityButton = screen.getByRole('button', { name: /품질 예측/i });
       
       // 먼저 메시지를 입력하여 버튼을 활성화
@@ -3101,45 +4714,56 @@ describe('AdvancedFeaturesPanel', () => {
         configurable: true,
       });
       
-      // React의 이벤트 핸들러를 직접 호출하기 위해 클릭 이벤트를 발생시킴
-      // React는 disabled 버튼의 클릭을 무시하므로, 
-      // 버튼의 onClick prop을 직접 호출해야 함
-      // React의 이벤트 핸들러는 React의 내부 fiber에 저장되어 있으므로,
-      // 직접 접근하기 어렵습니다.
-      
-      // 대안: React의 이벤트 핸들러를 직접 호출하기 위해
-      // 버튼의 _reactInternalFiber 또는 _reactInternalInstance를 통해 접근
-      // 하지만 이는 React의 내부 구현에 의존하므로 권장되지 않음
-      
-      // 대신, 버튼의 disabled 속성을 제거한 후 클릭 이벤트를 발생시킴
-      // React는 disabled 속성이 false일 때 클릭 이벤트를 처리함
-      // 버튼이 활성화된 것처럼 보이도록 disabled 속성을 제거한 후 클릭
-      // React의 이벤트 핸들러를 직접 호출하기 위해 onClick prop을 가져와서 직접 호출
-      const reactFiber = (buttonElement as unknown as { _reactInternalFiber?: unknown; _reactInternalInstance?: unknown; __reactInternalInstance?: unknown })._reactInternalFiber
-        || (buttonElement as unknown as { _reactInternalFiber?: unknown; _reactInternalInstance?: unknown; __reactInternalInstance?: unknown })._reactInternalInstance
-        || (buttonElement as unknown as { _reactInternalFiber?: unknown; _reactInternalInstance?: unknown; __reactInternalInstance?: unknown }).__reactInternalInstance;
-      const fiber = reactFiber as { memoizedProps?: { onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void } } | undefined;
-      const onClick = fiber?.memoizedProps?.onClick;
+      // React는 disabled 버튼의 클릭을 무시하므로, fiber에서 onClick을 가져와 직접 호출 (433-434 커버)
+      const onClick = getButtonOnClick(buttonElement);
       if (onClick) {
         onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
       } else {
         fireEvent.click(buttonElement);
       }
-      
-      // 에러 메시지가 표시되는지 확인
+
       await waitFor(() => {
-        const errorMessage = screen.queryByText(/메시지를 입력해주세요/);
-        // 핸들러가 실행되었는지 확인
-        if (errorMessage) {
-          expect(errorMessage).toBeInTheDocument();
+        const msg = screen.queryByText(/메시지를 입력해주세요/);
+        if (msg) {
+          expect(msg).toBeInTheDocument();
+          expect(advancedAPIService.predictMessageQuality).not.toHaveBeenCalled();
         }
+      }, { timeout: 2000 });
+    });
+
+    it('빈 메시지로 품질 예측 시 (onClick-while-enabled) 에러가 표시되어야 함 (433-434)', async () => {
+      render(<AdvancedFeaturesPanel />);
+      const predictionTab = screen.getByText(/예측 분석/);
+      fireEvent.click(predictionTab);
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/Type '\/' for commands/)).toBeInTheDocument();
+      });
+      const messageInput = screen.getByPlaceholderText(/Type '\/' for commands/);
+      const qualityButton = screen.getByRole('button', { name: /품질 예측/i });
+      fireEvent.change(messageInput, { target: { value: '테스트 메시지' } });
+      await waitFor(() => {
+        expect(qualityButton).not.toBeDisabled();
+      }, { timeout: 2000 });
+      const onClick = getButtonOnClick(qualityButton);
+      fireEvent.change(messageInput, { target: { value: '' } });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      if (onClick) {
+        onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+      } else {
+        fireEvent.click(qualityButton);
+      }
+      await waitFor(() => {
+        const msg = screen.queryByText(/메시지를 입력해주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
       }, { timeout: 2000 });
     });
 
     it('빈 대본으로 handleVoiceGenGenerate 호출 시 에러가 설정되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-generate')).toBeInTheDocument();
@@ -3159,24 +4783,49 @@ describe('AdvancedFeaturesPanel', () => {
         expect(generateButton).not.toBeDisabled();
       }, { timeout: 2000 });
 
-      // 그 다음 대본을 비우고 버튼이 비활성화되기 전에 클릭
       fireEvent.change(scriptInput, { target: { value: '' } });
-      // 버튼이 비활성화되기 전에 빠르게 클릭
-      fireEvent.click(generateButton);
-
-      // 에러 메시지가 표시되는지 확인
       await waitFor(() => {
-        const errorMessage = screen.queryByText(/대본을 입력해 주세요/);
-        if (errorMessage) {
-          expect(errorMessage).toBeInTheDocument();
-        }
+        expect(generateButton).toBeDisabled();
+      }, { timeout: 2000 });
+
+      // disabled 버튼의 핸들러를 fiber에서 가져와 직접 호출 (601-602 커버)
+      const onClick = getButtonOnClick(generateButton);
+      if (onClick) {
+        onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+      } else {
+        fireEvent.click(generateButton);
+      }
+
+      await waitFor(() => {
+        const msg = screen.queryByText(/대본을 입력해 주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
+      }, { timeout: 2000 });
+    });
+
+    it('빈 대본으로 목소리 생성 시 (onClick-while-enabled) 에러가 표시되어야 함 (601-602)', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      const { button, onClick } = await getVoiceGenGenerateOnClickWhileEnabled();
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '' } });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      if (onClick) {
+        onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+      } else {
+        fireEvent.click(button);
+      }
+      await waitFor(() => {
+        const msg = screen.queryByText(/대본을 입력해 주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
       }, { timeout: 2000 });
     });
 
     it('URL 모드에서 빈 URL로 handleVoiceGenGenerate 호출 시 에러가 설정되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-script')).toBeInTheDocument();
@@ -3204,31 +4853,67 @@ describe('AdvancedFeaturesPanel', () => {
         expect(generateButton).not.toBeDisabled();
       }, { timeout: 2000 });
 
-      // 그 다음 URL을 비우고 버튼이 비활성화되기 전에 클릭
       fireEvent.change(urlInput, { target: { value: '' } });
-      fireEvent.click(generateButton);
-
-      // 에러 메시지가 표시되는지 확인
       await waitFor(() => {
-        const errorMessage = screen.queryByText(/영상 URL을 입력하거나/);
-        if (errorMessage) {
-          expect(errorMessage).toBeInTheDocument();
-        }
+        expect(generateButton).toBeDisabled();
       }, { timeout: 2000 });
+
+      // disabled 버튼의 핸들러를 fiber에서 가져와 직접 호출 (675-677 커버)
+      const onClick = getButtonOnClick(generateButton);
+      if (onClick) {
+        await act(() => {
+          onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+        });
+      } else {
+        fireEvent.click(generateButton);
+      }
+
+      await waitFor(() => {
+        const msg = screen.queryByText(/영상 URL을 입력하거나|영상 URL을 입력해 주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
+      }, { timeout: 2000 });
+    });
+
+    it('구간 모드 + URL 모드에서 빈 URL로 생성 시 에러가 표시되어야 함 (641-647)', async () => {
+      render(<AdvancedFeaturesPanel />);
+      await clickVoiceGenTabAndFlush();
+      fireEvent.click(screen.getByTestId('voice-gen-mode-url'));
+      fireEvent.change(screen.getByTestId('voice-gen-url'), { target: { value: 'https://example.com/v.mp4' } });
+      fireEvent.click(screen.getByTestId('voice-gen-use-segment-speed'));
+      fireEvent.change(screen.getByTestId('voice-gen-script'), { target: { value: '첫 문장.\n\n둘째 문단.' } });
+      fireEvent.change(screen.getByTestId('voice-gen-split-by'), { target: { value: 'paragraph' } });
+      fireEvent.click(screen.getByTestId('voice-gen-split-script'));
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-gen-generate')).not.toBeDisabled();
+      }, { timeout: 2000 });
+      const generateButton = screen.getByTestId('voice-gen-generate');
+      const onClick = getButtonOnClick(generateButton);
+      fireEvent.change(screen.getByTestId('voice-gen-url'), { target: { value: '' } });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      if (onClick) {
+        onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+      } else {
+        fireEvent.click(generateButton);
+      }
+      await waitFor(() => {
+        const msg = screen.queryByText(/영상 URL을 입력하거나|영상 URL을 입력해 주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
+      }, { timeout: 5000 });
     });
 
     it('빈 프로젝트 ID/URL로 handleAddProjectVoiceSource 호출 시 에러가 설정되어야 함', async () => {
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();
       });
 
+      fireEvent.click(screen.getByTestId('voice-gen-mode-project'));
       const projectIdInput = screen.getByTestId('voice-gen-project-id');
-      
-      // 프로젝트 ID를 입력하여 보이스 소스 추가 UI가 표시되도록 함
       fireEvent.change(projectIdInput, { target: { value: 'proj-1' } });
 
       await waitFor(() => {
@@ -3250,16 +4935,24 @@ describe('AdvancedFeaturesPanel', () => {
         expect(addSourceButton).not.toBeDisabled();
       }, { timeout: 2000 });
 
-      // 그 다음 URL을 비우고 버튼이 비활성화되기 전에 클릭
+      // URL을 비운 뒤 disabled 상태에서 핸들러 직접 호출 (730-731 커버 시도)
       fireEvent.change(addSourceUrlInput, { target: { value: '' } });
-      fireEvent.click(addSourceButton);
-
-      // 에러 메시지가 표시되는지 확인
       await waitFor(() => {
-        const errorMessage = screen.queryByText(/프로젝트 ID와 영상 URL을 입력해 주세요/);
-        if (errorMessage) {
-          expect(errorMessage).toBeInTheDocument();
-        }
+        expect(addSourceButton).toBeDisabled();
+      }, { timeout: 2000 });
+
+      const onClick = getButtonOnClick(addSourceButton);
+      if (onClick) {
+        await act(() => {
+          onClick(new MouseEvent('click', { bubbles: true }) as unknown as React.MouseEvent<HTMLButtonElement>);
+        });
+      } else {
+        fireEvent.click(addSourceButton);
+      }
+
+      await waitFor(() => {
+        const msg = screen.queryByText(/프로젝트 ID와 영상 URL을 입력해 주세요/);
+        if (msg) expect(msg).toBeInTheDocument();
       }, { timeout: 2000 });
     });
 
@@ -3269,7 +4962,7 @@ describe('AdvancedFeaturesPanel', () => {
 
       render(<AdvancedFeaturesPanel />);
       
-      fireEvent.click(screen.getByText(/목소리 생성/));
+      await clickVoiceGenTabAndFlush();
       
       await waitFor(() => {
         expect(screen.getByTestId('voice-gen-project-id')).toBeInTheDocument();

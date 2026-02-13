@@ -52,10 +52,10 @@ CORBU AI 시스템이 완전히 구축되었고 모든 기능이 정상 작동�
 - ✅ 기능 테스트
 
 ### 6. Figma 디자인 적용 ✅
-- ✅ 입력창 placeholder "Type '/' for commands" (Figma 기준)
+- ✅ 입력창 placeholder "Type '/' for commands" (ChatGPTInterface, SimpleChatView, UltimateChatGPTInterface, AdvancedFeaturesPanel)
 - ✅ 캡빌리티 칩 colored background (Photo edition·Video·Photo·Code·Audio)
 - ✅ theme 토큰 전환: 사이드바(`--sidebar-dark-*`), 모달(`--modal-overlay`), 그림자(`--shadow-*`)
-- ✅ 디자인 참조 이미지 `public/design-ref/` (conversation, ai-thinking, feature-suggestions, audio, edit-text, export)
+- ✅ 디자인 참조 `public/design-ref/` (갤러리 index + PNG: conversation, ai-thinking, feature-suggestions, audio, edit-text, export)
 
 ---
 
