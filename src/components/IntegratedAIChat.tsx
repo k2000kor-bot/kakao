@@ -14,6 +14,7 @@ import {
 import { Send, Psychology, Analytics, Speed } from '@mui/icons-material';
 import { integratedAPIService, IntegratedAnalysisResponse } from '../services/integratedAPIService';
 import { errorLogger } from '../utils/errorLogger';
+import { getSentimentColor } from '../styles/themeColors';
 import SystemStatus from './SystemStatus';
 import QuickActions from './QuickActions';
 import SystemHealthMonitor from './SystemHealthMonitor';
@@ -132,24 +133,6 @@ const IntegratedAIChat: React.FC = () => {
         setTimeout(() => {
             handleSendMessage();
         }, 100);
-    };
-
-    const getSentimentColor = (sentiment: string) => {
-        switch (sentiment) {
-            case '긍정': return '#4caf50';
-            case '부정': return '#f44336';
-            default: return '#2196f3';
-        }
-    };
-
-    const getIntentColor = (intent: string) => {
-        switch (intent) {
-            case 'question': return '#ff9800';
-            case 'request': return '#9c27b0';
-            case 'gratitude': return '#4caf50';
-            case 'greeting': return '#2196f3';
-            default: return '#607d8b';
-        }
     };
 
     return (
@@ -300,8 +283,8 @@ const IntegratedAIChat: React.FC = () => {
                         <Card
                             sx={{
                                 maxWidth: '70%',
-                                bgcolor: message.isUser ? 'primary.main' : 'grey.100',
-                                color: message.isUser ? 'white' : 'text.primary'
+                                bgcolor: message.isUser ? 'var(--accent-info)' : 'var(--bg-tertiary)',
+                                color: message.isUser ? 'white' : 'var(--text-primary)'
                             }}
                         >
                             <CardContent sx={{ pb: 1 }}>
@@ -320,7 +303,7 @@ const IntegratedAIChat: React.FC = () => {
                                                 size="small"
                                                 sx={{
                                                     bgcolor: getSentimentColor(message.analysis.emotion.sentiment),
-                                                    color: 'white',
+                                                    color: 'var(--on-accent)',
                                                     fontSize: '0.7rem'
                                                 }}
                                             />
@@ -328,8 +311,8 @@ const IntegratedAIChat: React.FC = () => {
                                                 label={`의도: ${message.analysis.intent.type}`}
                                                 size="small"
                                                 sx={{
-                                                    bgcolor: getIntentColor(message.analysis.intent.type),
-                                                    color: 'white',
+                                                    bgcolor: getSentimentColor(message.analysis.intent.type),
+                                                    color: 'var(--on-accent)',
                                                     fontSize: '0.7rem'
                                                 }}
                                             />
@@ -356,7 +339,7 @@ const IntegratedAIChat: React.FC = () => {
 
                 {isLoading && (
                     <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
-                        <Card sx={{ bgcolor: 'grey.100' }}>
+                        <Card sx={{ bgcolor: 'var(--bg-tertiary)' }}>
                             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <CircularProgress size={20} />
                                 <Typography variant="body2">AI가 분석 중입니다...</Typography>
@@ -375,19 +358,22 @@ const IntegratedAIChat: React.FC = () => {
                         fullWidth
                         multiline
                         maxRows={4}
-                        placeholder="메시지를 입력하세요..."
+                        placeholder="Type '/' for commands"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
                         disabled={isLoading}
                         variant="outlined"
                         size="small"
+                        inputProps={{ 'aria-label': '메시지 입력' }}
                     />
                     <Button
+                        type="button"
                         variant="contained"
                         onClick={handleSendMessage}
                         disabled={!inputMessage.trim() || isLoading}
                         sx={{ minWidth: 'auto', px: 2 }}
+                        aria-label="메시지 전송"
                     >
                         <Send />
                     </Button>

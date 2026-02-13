@@ -7,7 +7,6 @@ import {
     Grid,
     Card,
     CardContent,
-    CardActions,
     Button,
     Chip,
     LinearProgress,
@@ -16,7 +15,6 @@ import {
     IconButton,
     Tooltip,
     Badge,
-    Avatar,
     Divider,
     List,
     ListItem,
@@ -35,9 +33,7 @@ import {
 } from '@mui/material';
 import {
     Chat as ChatIcon,
-    Analytics as AnalyticsIcon,
     Security as SecurityIcon,
-    Speed as SpeedIcon,
     Psychology as PsychologyIcon,
     DataUsage as DataIcon,
     Settings as SettingsIcon,
@@ -46,23 +42,10 @@ import {
     PlayArrow as PlayIcon,
     Pause as PauseIcon,
     Stop as StopIcon,
-    CheckCircle as CheckIcon,
-    Error as ErrorIcon,
-    Warning as WarningIcon,
-    Info as InfoIcon
+    CheckCircle as CheckIcon
 } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
-import { errorLogger } from '../utils/errorLogger';
-
-// Helper function to safely convert unknown error types to Error objects
-const toError = (err: unknown): Error => {
-    if (err instanceof Error) {
-        return err as Error;
-    }
-    // Error 생성자를 명시적으로 사용
-    const ErrorConstructor = globalThis.Error;
-    return new ErrorConstructor(String(err)) as Error;
-};
+import { motion } from 'framer-motion';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 통합된 인터페이스 타입 정의
 interface SystemStatus {
@@ -70,7 +53,7 @@ interface SystemStatus {
     systems: {
         [key: string]: {
             status: string;
-            [key: string]: any;
+            [key: string]: unknown;
         };
     };
     active_connections: number;
@@ -84,11 +67,11 @@ interface ChatMessage {
     response: string;
     timestamp: string;
     analysis?: {
-        emotion: any;
-        data_insights: any;
-        quality: any;
-        performance: any;
-        security: any;
+        emotion?: { sentiment?: string; confidence?: number };
+        data_insights: unknown;
+        quality: unknown;
+        performance: unknown;
+        security: unknown;
     };
 }
 
@@ -116,7 +99,8 @@ const IntegratedMasterInterface: React.FC = () => {
     const [currentMessage, setCurrentMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
-    const [notifications, setNotifications] = useState<any[]>([]);
+    interface AppNotification { type?: string; message?: string }
+    const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [settings, setSettings] = useState({
         autoRefresh: true,
         notifications: true,
@@ -239,7 +223,7 @@ const IntegratedMasterInterface: React.FC = () => {
 
                 // 알림 추가
                 if (settings.notifications) {
-                    setNotifications(prev => [...prev, {
+                    setNotifications((prev: AppNotification[]) => [...prev, {
                         id: Date.now().toString(),
                         type: 'success',
                         message: '메시지가 성공적으로 처리되었습니다.',
@@ -252,7 +236,7 @@ const IntegratedMasterInterface: React.FC = () => {
                 component: 'IntegratedMasterInterface',
                 action: 'sendMessage',
             });
-            setNotifications(prev => [...prev, {
+            setNotifications((prev: AppNotification[]) => [...prev, {
                 id: Date.now().toString(),
                 type: 'error',
                 message: '메시지 전송에 실패했습니다.',
@@ -264,7 +248,8 @@ const IntegratedMasterInterface: React.FC = () => {
     };
 
     // 시스템 상태 카드 컴포넌트
-    const SystemStatusCard: React.FC<{ title: string; status: any; icon: React.ReactNode }> = ({ title, status, icon }) => (
+    type SystemStatusItem = { status: string; accuracy?: number; pass_rate?: number; security_score?: number };
+    const SystemStatusCard: React.FC<{ title: string; status: SystemStatusItem; icon: React.ReactNode }> = ({ title, status, icon }) => (
         <Card sx={{ height: '100%' }}>
             <CardContent>
                 <Box display="flex" alignItems="center" mb={2}>
@@ -433,7 +418,7 @@ const IntegratedMasterInterface: React.FC = () => {
                                         rows={4}
                                         value={currentMessage}
                                         onChange={(e) => setCurrentMessage(e.target.value)}
-                                        placeholder="메시지를 입력하세요..."
+                                        placeholder="Type '/' for commands"
                                         sx={{ mb: 2 }}
                                     />
                                     <Button
