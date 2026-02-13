@@ -51,6 +51,12 @@ CORBU AI 시스템이 완전히 구축되었고 모든 기능이 정상 작동�
 - ✅ 통합 테스트
 - ✅ 기능 테스트
 
+### 6. Figma 디자인 적용 ✅
+- ✅ 입력창 placeholder "Type '/' for commands" (Figma 기준)
+- ✅ 캡빌리티 칩 colored background (Photo edition·Video·Photo·Code·Audio)
+- ✅ theme 토큰 전환: 사이드바(`--sidebar-dark-*`), 모달(`--modal-overlay`), 그림자(`--shadow-*`)
+- ✅ 디자인 참조 이미지 `public/design-ref/` (conversation, ai-thinking, feature-suggestions, audio, edit-text, export)
+
 ---
 
 ## 📊 최종 통계
@@ -68,8 +74,11 @@ CORBU AI 시스템이 완전히 구축되었고 모든 기능이 정상 작동�
 ### 실행 방법
 
 ```bash
-# 1. 의존성 설치
-cd backend && pip install -r requirements.txt
+# 1. 의존성 설치 (한 번에)
+./setup.sh
+
+# 또는 수동 설치
+cd backend && python3 -m venv venv && source venv/bin/activate && pip install -r requirements-core.txt
 cd .. && npm install
 
 # 2. 시스템 실행
@@ -79,8 +88,8 @@ cd .. && npm install
 ### 접속 주소
 
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:5001
-- **API 문서**: http://localhost:5001/docs
+- **백엔드 API (5001)**: http://localhost:5001/docs
+- **통합 API (5002)**: http://localhost:5002/api/docs
 
 ---
 
@@ -98,13 +107,18 @@ cd .. && npm install
 ## 📚 빠른 참조
 
 ### 시작하기
+- [빠른 참조](./QUICK_REFERENCE.md) - 명령어·접속 주소 한눈에
 - [빠른 시작](./START_HERE.md)
 - [5분 안에 시작하기](./QUICK_START.md)
 - [사용 가이드](./USAGE_GUIDE.md)
+- [플러그인 설치](./PLUGINS_SETUP.md) - OCR, yt-dlp, Ollama 등
 
 ### 기능
 - [긴 글 생성 기능](./LONG_FORM_WRITING_FEATURE.md)
 - [API 엔드포인트 요약](./API_ENDPOINTS_SUMMARY.md)
+
+### 디자인
+- [CORBU AI UI Kit (Figma)](./docs/BRAINWAVE-UI.md) - theme 토큰·디자인 참조·적용 가이드
 
 ### 시스템
 - [시스템 상태](./SYSTEM_STATUS.md)

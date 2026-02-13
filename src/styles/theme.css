@@ -1,1 +1,331 @@
-/* Theme styles */
+/**
+ * Brainwave AI UI Kit — 디자인 토큰 및 라이트/다크 테마
+ * Figma: https://www.figma.com/design/9ZrEa3dcS8zb0O6Nr5lT8m/Brainwave-AI-UI-Kit?node-id=323-168775&m=dev
+ * 기준: Primary #0084FF(accent-info), Neutral 팔레트, Inter 폰트. node 7-3·323-168775 디자인 일치.
+ */
+
+/* ---------- 기본(라이트) 테마 — Figma Neutral/01~04 ---------- */
+:root {
+  /* 배경 (Figma Neutral/01, 02, 03) */
+  --bg-primary: #FEFEFE;
+  --bg-secondary: #F3F5F7;
+  --bg-tertiary: #E8ECEF;
+  --bg-hover: rgba(0, 0, 0, 0.06);
+  --bg-active: rgba(0, 0, 0, 0.1);
+  --bg-overlay: rgba(0, 0, 0, 0.45);
+  --overlay-panel: rgba(255, 255, 255, 0.85);
+
+  /* 텍스트 (Figma Neutral/04, 07) */
+  --text-primary: #141718;
+  --text-secondary: #6C7275;
+  --text-tertiary: #6C7275;
+  --text-disabled: #6C7275;
+
+  /* 테두리 */
+  --border-color: rgba(0, 0, 0, 0.1);
+  --border-hover: rgba(0, 0, 0, 0.2);
+
+  /* 강조 — Figma Primary/01 #0084FF, Primary/02 #3FDD78, Accents/01~04 */
+  --accent-primary: #3FDD78;
+  --accent-hover: #35c968;
+  --accent-success-hover: #35c968;
+  --accent-secondary: #8E55EA;
+  --accent-secondary-hover: #7b45d4;
+  --accent-success: #3FDD78;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-error-hover: #dc2626;
+  --color-error: var(--accent-error);
+  --accent-info: #0084FF;
+  --accent-info-hover: #0066cc;
+  --accent-orange: #D84C10;
+  --accent-blue-alt: #3E90F0;
+  --accent-info-muted: rgba(0, 132, 255, 0.15);
+  --accent-info-border: rgba(0, 132, 255, 0.35);
+  --accent-secondary-muted: rgba(168, 85, 247, 0.2);
+  --accent-secondary-border: rgba(168, 85, 247, 0.5);
+  --accent-warning-muted: rgba(245, 158, 11, 0.2);
+  --accent-warning-subtle: rgba(245, 158, 11, 0.06);
+  --accent-success-muted: rgba(34, 197, 94, 0.15);
+  --accent-error-muted: rgba(239, 68, 68, 0.15);
+  --accent-error-border: rgba(239, 68, 68, 0.4);
+  --accent-primary-glow: rgba(0, 132, 255, 0.2);
+  --on-accent: #ffffff;
+
+  /* 포커스(접근성) */
+  --focus-ring: 2px solid var(--accent-info);
+  --focus-ring-offset: 2px;
+
+  /* 레이아웃 (Figma node 7-3, 무제 폴더 디자인 기준) */
+  --layout-sidebar-width: 260px;
+  --layout-sidebar-width-sm: 240px;
+  --layout-right-sidebar-width: 320px;
+  --layout-main-padding: 0;
+
+  /* 좌측 사이드바 다크 테마 (Figma Brainwave — 항상 다크) */
+  --sidebar-dark-bg: #1A1B23;
+  --sidebar-dark-text: #ffffff;
+  --sidebar-dark-text-muted: rgba(255, 255, 255, 0.7);
+  --sidebar-dark-active-bg: #6C5CE7;
+  --sidebar-dark-active-text: #ffffff;
+  --sidebar-dark-border: rgba(255, 255, 255, 0.08);
+  --sidebar-dark-border-strong: rgba(255, 255, 255, 0.2);
+  --sidebar-dark-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-dark-hover-strong: rgba(255, 255, 255, 0.15);
+  --sidebar-dark-input-bg: rgba(255, 255, 255, 0.1);
+  --sidebar-dark-bg-subtle: rgba(255, 255, 255, 0.08);
+  --sidebar-dark-bg-ghost: rgba(255, 255, 255, 0.04);
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  /* Figma Primary Blue (Share, New chat 등) */
+  --accent-info-figma: #3478F6;
+  --accent-info-figma-hover: #2a6ae8;
+
+  /* 반응형 브레이크포인트 (Brainwave 모바일/태블릿) */
+  --breakpoint-sm: 480px;
+  --breakpoint-mobile: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-tablet-sm: 900px;
+  --breakpoint-tablet: 960px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  /* 접근성 — 터치 타겟 (WCAG 2.5.5) */
+  --touch-target-min: 44px;
+  --touch-target: 48px;
+
+  /* 아이콘/요소 크기 (spacing 호환) */
+  --icon-size-sm: 16px;
+  --icon-size-md: 20px;
+  --icon-size-lg: 32px;
+  --icon-size-xl: 40px;
+  --icon-size-2xs: 8px;
+
+  /* 그리드/레이아웃 */
+  --grid-min-xs-sm: 150px;
+  --grid-min-xs: 120px;
+  --grid-min-sm: 200px;
+  --grid-min-md: 250px;
+  --grid-min-lg: 280px;
+
+  /* 콘텐츠 최대 너비 */
+  --content-max-2xs: 360px;
+  --content-max-dialog-sm: 380px;
+  --content-max-xs: 480px;
+  --content-max-sm: 520px;
+  --content-max-md: 600px;
+  --content-max-lg: 800px;
+  --content-max-xl: 1200px;
+  --content-max-form: 700px;
+  --content-max-dashboard: 1400px;
+  --content-min-input: 400px;
+
+  /* 폼 레이블 */
+  --label-min-width: 100px;
+
+  /* 테두리 두께 */
+  --border-width: 1px;
+  --border-width-md: 2px;
+  --border-width-lg: 3px;
+  --border-width-xl: 4px;
+
+  /* 버튼/드롭다운 최소 너비 */
+  --button-min: 52px;
+  --dropdown-min: 140px;
+
+  /* 패널/모달 크기 */
+  --panel-width: 400px;
+  --panel-sidebar-width: 350px;
+  --modal-width: 500px;
+  --modal-height: 600px;
+
+  /* 스크롤바 */
+  --scrollbar-width: 6px;
+
+  /* 세로 높이 (입력/영역) */
+  --content-height-xs: 60px;
+  --content-height-sm: 72px;
+  --content-height-input: 80px;
+  --content-height-md: 100px;
+  --content-max-height-sm: 150px;
+  --content-max-height-md: 200px;
+  --content-max-height-lg: 300px;
+  --content-max-height-xl: 400px;
+  --content-max-height-2xl: 600px;
+
+  /* 간격 */
+  --spacing-2xs: 6px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  --spacing-4xl: 40px;
+
+  /* 모서리 (Brainwave UI Kit) */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  /* 프로그레스/쉬머 */
+  --progress-shimmer: rgba(255, 255, 255, 0.3);
+
+  /* 그림자 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.15);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.2);
+
+  /* 타이포 (Figma Inter 12/14/16/18/24, line-height 20/24/36) */
+  --font-family-base: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 36px;
+  --font-size-4xl: 48px;
+  --line-height-none: 1;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
+  --line-height-loose: 1.8;
+  --line-height-figma-20: 20px;
+  --line-height-figma-24: 24px;
+  --line-height-figma-36: 36px;
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-wide: 0.05em;
+  --letter-spacing-subtle: 0.5px;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* 전환 */
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* 애니메이션 duration */
+  --animation-duration-fast: 0.8s;
+  --animation-duration-base: 1s;
+  --animation-duration-slow: 1.5s;
+  --animation-duration-typing: 1.4s;
+  --animation-duration-pulse: 2s;
+
+  /* transform 오프셋 (hover lift 등) */
+  --transform-lift-xs: -1px;
+  --transform-lift-sm: -2px;
+
+  /* 쉬머 애니메이션 (LoadingSkeleton, LazyImage) */
+  --shimmer-size: 200px;
+  --shimmer-step: 40px;
+
+  /* transform 오프셋 (hover lift 등) */
+  --transform-lift-xs: -1px;
+  --transform-lift-sm: -2px;
+
+  /* 스크린리더 전용 (접근성) */
+  --sr-only-size: 1px;
+  --sr-only-offset: -1px;
+
+  /* 블러 (backdrop-filter) */
+  --blur-sm: 2px;
+  --blur-md: 4px;
+  --blur-lg: 10px;
+
+  /* 타이포 */
+  --letter-spacing-subtle: 0.5px;
+
+  /* 레이어 */
+  --z-base: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-panel: 1000;
+  --z-modal-backdrop: 2000;
+  --z-modal: 2001;
+  --z-settings: 2500;
+  --z-toast: 10000;
+  --z-popover: 10001;
+
+  /* 코드 블록 (Brainwave 동일성) */
+  --code-block-bg: #f5f5f5;
+  --code-block-header: #e8e8e8;
+  --code-block-text: #333;
+  --code-muted: #666;
+  /* 메시지 버블 내 인라인/블록 코드 배경 */
+  --message-code-bg: rgba(0, 0, 0, 0.06);
+  --message-code-inline-bg: rgba(0, 0, 0, 0.05);
+}
+
+/* ---------- 다크 테마 — Figma Neutral/05, 06, 07 ---------- */
+.dark-mode {
+  --bg-primary: #232627;
+  --bg-secondary: #141718;
+  --bg-tertiary: #343839;
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --bg-active: rgba(255, 255, 255, 0.15);
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --overlay-panel: rgba(20, 23, 24, 0.9);
+
+  --text-primary: #FEFEFE;
+  --text-secondary: #6C7275;
+  --text-tertiary: #6C7275;
+  --text-disabled: #6C7275;
+
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
+
+  --accent-primary: #3FDD78;
+  --accent-hover: #35c968;
+  --accent-success-hover: #35c968;
+  --accent-secondary: #8E55EA;
+  --accent-secondary-hover: #9d6cf5;
+  --accent-success: #3FDD78;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-error-hover: #dc2626;
+  --color-error: var(--accent-error);
+  --accent-info: #0084FF;
+  --accent-info-hover: #0066cc;
+  --accent-info-muted: rgba(0, 132, 255, 0.2);
+  --accent-info-border: rgba(0, 132, 255, 0.45);
+  --accent-orange: #D84C10;
+  --accent-blue-alt: #3E90F0;
+  --accent-secondary-muted: rgba(168, 85, 247, 0.2);
+  --accent-secondary-border: rgba(168, 85, 247, 0.5);
+  --accent-warning-muted: rgba(251, 191, 36, 0.2);
+  --accent-warning-subtle: rgba(251, 191, 36, 0.05);
+  --accent-success-muted: rgba(34, 197, 94, 0.15);
+  --accent-error-muted: rgba(239, 68, 68, 0.15);
+  --accent-error-border: rgba(239, 68, 68, 0.4);
+  --accent-primary-glow: rgba(0, 132, 255, 0.25);
+  --on-accent: #ffffff;
+
+  --focus-ring: 2px solid var(--accent-info);
+  --focus-ring-offset: 2px;
+
+  --progress-shimmer: rgba(255, 255, 255, 0.3);
+
+  /* 다크 테마 그림자 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* 코드 블록 다크 */
+  --code-block-bg: #1e1e1e;
+  --code-block-header: #2d2d2d;
+  --code-block-text: #e0e0e0;
+  --code-muted: #888;
+  --message-code-bg: rgba(0, 0, 0, 0.3);
+  --message-code-inline-bg: rgba(0, 0, 0, 0.2);
+}

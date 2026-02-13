@@ -4,13 +4,35 @@ import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { projectService } from '../services/projectService';
 import NotebookLLM from './NotebookLLM';
+import ProjectEditModal from './ProjectManagement/ProjectEditModal';
+import ProjectShareDialog from './ProjectShareDialog';
 import { errorLogger } from '../utils/errorLogger';
 import { API_BASE_URL } from '../config/api';
 import { isStreamingSupported, streamChatMessage } from '../utils/streamingClient';
+import { rehypeHighlightSearch } from '../utils/rehypeHighlightSearch';
 import './ChatGPTInterface.css';
 
+function getSelectedSourceIds(projectId: string): string[] | null {
+  try {
+    const raw = localStorage.getItem(`notebook-selected-sources-${projectId}`);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function buildChatContext(project: { id: string; name: string } | null, extra?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!project) return extra ?? undefined;
+  const ctx: Record<string, unknown> = { projectId: project.id, projectName: project.name, ...extra };
+  const ids = getSelectedSourceIds(project.id);
+  if (ids !== null) ctx.source_ids = ids;
+  return ctx;
+}
+
 // 코드 블록 복사 버튼 컴포넌트
-const CodeBlock: React.FC<{ children: React.ReactNode; className?: string; theme: 'dark' | 'light' }> = ({ children, className, theme }) => {
+const CodeBlock: React.FC<{ children: React.ReactNode; className?: string; theme: 'dark' | 'light' }> = ({ children, className }) => {
     const [copied, setCopied] = useState(false);
     const language = className?.replace('language-', '') || '';
     const codeContent = String(children).replace(/\n$/, '');
@@ -29,22 +51,24 @@ const CodeBlock: React.FC<{ children: React.ReactNode; className?: string; theme
         <div style={{
             position: 'relative',
             margin: '12px 0',
-            borderRadius: '8px',
+            borderRadius: 'var(--radius-lg)',
             overflow: 'hidden',
-            backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f5f5f5',
+            backgroundColor: 'var(--code-block-bg)',
         }}>
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: '8px 12px',
-                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#e8e8e8',
-                fontSize: '12px',
-                color: theme === 'dark' ? '#888' : '#666',
+                padding: 'var(--spacing-sm) var(--spacing-md)',
+                backgroundColor: 'var(--code-block-header)',
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--code-muted)',
             }}>
                 <span>{language || 'code'}</span>
                 <button
+                    type="button"
                     onClick={handleCopy}
+                    aria-label="코드 복사"
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -52,7 +76,7 @@ const CodeBlock: React.FC<{ children: React.ReactNode; className?: string; theme
                         padding: '4px 8px',
                         background: 'transparent',
                         border: 'none',
-                        color: copied ? '#22c55e' : (theme === 'dark' ? '#888' : '#666'),
+                        color: copied ? 'var(--accent-success)' : 'var(--code-muted)',
                         cursor: 'pointer',
                         fontSize: '12px',
                         borderRadius: '4px',
@@ -84,7 +108,7 @@ const CodeBlock: React.FC<{ children: React.ReactNode; className?: string; theme
                 fontSize: '13px',
                 lineHeight: '1.5',
             }}>
-                <code className={className} style={{ color: theme === 'dark' ? '#e0e0e0' : '#333' }}>
+                <code className={className} style={{ color: 'var(--code-block-text)' }}>
                     {children}
                 </code>
             </pre>
@@ -109,6 +133,7 @@ interface Project {
     description?: string;
     createdAt: Date;
     updatedAt: Date;
+    source_count?: number;
 }
 
 interface Conversation {
@@ -130,15 +155,33 @@ const ChatGPTInterface: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [showProjectModal, setShowProjectModal] = useState(false);
+    const [showProjectEditModal, setShowProjectEditModal] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
+    const [projectListTab, setProjectListTab] = useState<'all' | 'recommended'>('all');
+    const [projectSearchQuery, setProjectSearchQuery] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [showCopyToast, setShowCopyToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('복사되었습니다');
     const [viewMode, setViewMode] = useState<'chat' | 'notebook'>('chat');
     const [useStreaming, setUseStreaming] = useState<boolean>(true);
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const [editingContent, setEditingContent] = useState<string>('');
     const [deleteConfirmConversation, setDeleteConfirmConversation] = useState<Conversation | null>(null);
+    const [deleteConfirmProject, setDeleteConfirmProject] = useState<Project | null>(null);
+    const [deleteConfirmMessageId, setDeleteConfirmMessageId] = useState<string | null>(null);
+    const [showClearMessagesConfirm, setShowClearMessagesConfirm] = useState(false);
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+    const [showScrollToTop, setShowScrollToTop] = useState(false);
+    const [showProModal, setShowProModal] = useState(false);
+
+    useEffect(() => {
+        if (!showProModal) return;
+        const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowProModal(false); };
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [showProModal]);
     const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
     const [editingConversationTitle, setEditingConversationTitle] = useState<string>('');
     // 응답 스타일 설정
@@ -147,6 +190,8 @@ const ChatGPTInterface: React.FC = () => {
     const [showStyleOptions, setShowStyleOptions] = useState<boolean>(false);
     // 빠른 제안
     const [quickSuggestions, setQuickSuggestions] = useState<string[]>([]);
+    // 소스 기반 추천 질문 (NotebookLM, 채팅 웰컴용)
+    const [suggestedQuestionsFromSource, setSuggestedQuestionsFromSource] = useState<string[]>([]);
     // 대화 내 검색
     const [messageSearchQuery, setMessageSearchQuery] = useState<string>('');
     const [showMessageSearch, setShowMessageSearch] = useState<boolean>(false);
@@ -166,11 +211,15 @@ const ChatGPTInterface: React.FC = () => {
     const [showTimestamps, setShowTimestamps] = useState<boolean>(() => {
         return localStorage.getItem('chatgpt-show-timestamps') === 'true';
     });
+    const [importingConversation, setImportingConversation] = useState(false);
     // 키보드 단축키 도움말
     const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
     // 대화 정렬
     type SortOption = 'recent' | 'name' | 'messages';
     const [sortOption, setSortOption] = useState<SortOption>('recent');
+    // 프로젝트 정렬
+    type ProjectSortOption = 'recent' | 'name' | 'sources';
+    const [projectSortOption, setProjectSortOption] = useState<ProjectSortOption>('recent');
     // 자동 스크롤 설정
     const [autoScroll, setAutoScroll] = useState<boolean>(true);
     // 메시지 접기 상태
@@ -178,6 +227,7 @@ const ChatGPTInterface: React.FC = () => {
     // 응답 시간 측정
     const [responseStartTime, setResponseStartTime] = useState<number | null>(null);
     const [lastResponseTime, setLastResponseTime] = useState<number | null>(null);
+    const [streamingElapsedSec, setStreamingElapsedSec] = useState(0);
     // 네트워크 상태
     const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
     // 스토리지 사용량
@@ -189,10 +239,50 @@ const ChatGPTInterface: React.FC = () => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const isNearBottomRef = useRef<boolean>(true);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const inputHistoryRef = useRef<string[]>([]);
+    const inputHistoryIndexRef = useRef<number>(-1);
+    const shortcutsCloseRef = useRef<HTMLButtonElement>(null);
+    const prevFocusRef = useRef<HTMLElement | null>(null);
+
+    const refreshProjects = useCallback(async () => {
+        try {
+            const loadedProjects = await projectService.getProjects();
+            const projectsWithDates: Project[] = loadedProjects
+                .filter((p) => p?.id && p?.name)
+                .map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    description: p.description || '',
+                    createdAt: p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt),
+                    updatedAt: p.updatedAt instanceof Date ? p.updatedAt : new Date(p.updatedAt),
+                    source_count: typeof (p as Project).source_count === 'number' ? (p as Project).source_count : undefined,
+                }));
+            setProjects(projectsWithDates);
+        } catch {
+            // 폴백 시에는 기존 projects 유지
+        }
+    }, []);
+
+    const sortedProjects = useMemo(() => {
+        const copy = [...projects];
+        if (projectSortOption === 'recent') {
+            copy.sort((a, b) => (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0));
+        } else if (projectSortOption === 'name') {
+            copy.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+        } else if (projectSortOption === 'sources') {
+            copy.sort((a, b) => (b.source_count ?? 0) - (a.source_count ?? 0));
+        }
+        return copy;
+    }, [projects, projectSortOption]);
+
+    const filteredProjects = useMemo(() => {
+        if (!projectSearchQuery.trim()) return sortedProjects;
+        const q = projectSearchQuery.toLowerCase().trim();
+        return sortedProjects.filter((p) => p.name.toLowerCase().includes(q));
+    }, [sortedProjects, projectSearchQuery]);
 
     // 로컬 스토리지에서 프로젝트와 대화 불러오기
     useEffect(() => {
-        // 프로젝트 불러오기 (백엔드 API 또는 로컬 스토리지)
         const loadProjects = async () => {
             try {
                 const loadedProjects = await projectService.getProjects();
@@ -202,8 +292,9 @@ const ChatGPTInterface: React.FC = () => {
                         id: p.id,
                         name: p.name,
                         description: p.description || '',
-                        createdAt: p.createdAt,
-                        updatedAt: p.updatedAt,
+                        createdAt: p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt),
+                        updatedAt: p.updatedAt instanceof Date ? p.updatedAt : new Date(p.updatedAt),
+                        source_count: typeof (p as Project).source_count === 'number' ? (p as Project).source_count : undefined,
                     }));
                 setProjects(projectsWithDates);
                 if (projectsWithDates.length > 0 && !currentProject) {
@@ -316,12 +407,18 @@ const ChatGPTInterface: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior });
     }, []);
 
+    const scrollToTop = useCallback((behavior: ScrollBehavior = 'smooth') => {
+        messagesContainerRef.current?.scrollTo({ top: 0, behavior });
+    }, []);
+
     const handleMessagesScroll = useCallback(() => {
         const el = messagesContainerRef.current;
         if (!el) return;
         const threshold = 120; // px
         const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
         isNearBottomRef.current = distanceToBottom <= threshold;
+        setShowScrollToBottom(distanceToBottom > threshold);
+        setShowScrollToTop(el.scrollTop > threshold);
     }, []);
 
     useEffect(() => {
@@ -331,10 +428,36 @@ const ChatGPTInterface: React.FC = () => {
         }
     }, [currentConversation?.messages, isStreaming, scrollToBottom, autoScroll]);
 
+    // 대화 전환 시 스크롤 버튼 상태 동기화
+    useEffect(() => {
+        const el = messagesContainerRef.current;
+        if (!el || !currentConversation?.messages.length) {
+            setShowScrollToBottom(false);
+            setShowScrollToTop(false);
+            return;
+        }
+        const threshold = 120;
+        const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        setShowScrollToBottom(distanceToBottom > threshold);
+        setShowScrollToTop(el.scrollTop > threshold);
+    }, [currentConversation?.id, currentConversation?.messages.length]);
+
+    useEffect(() => {
+        if (!isStreaming || !responseStartTime) {
+            if (!isStreaming) setStreamingElapsedSec(0);
+            return;
+        }
+        const tick = () => setStreamingElapsedSec(Math.floor((Date.now() - responseStartTime) / 1000));
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [isStreaming, responseStartTime]);
+
     // 새 프로젝트 생성 (백엔드 API 사용)
     // 프로젝트 생성 (useCallback으로 메모이제이션)
     const createNewProject = useCallback(async () => {
-        if (!newProjectName.trim()) return;
+        const name = newProjectName.trim();
+        if (!name || name.length < 2) return;
 
         try {
             const createdProject = await projectService.createProject({
@@ -360,6 +483,9 @@ const ChatGPTInterface: React.FC = () => {
             setCurrentProject(newProject);
             setNewProjectName('');
             setShowProjectModal(false);
+            setToastMessage('프로젝트가 생성되었습니다');
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 2000);
         } catch (error) {
             errorLogger.error('프로젝트 생성 실패', error instanceof Error ? error : new Error(String(error)), {
                 component: 'ChatGPTInterface',
@@ -377,8 +503,63 @@ const ChatGPTInterface: React.FC = () => {
             setCurrentProject(newProject);
             setNewProjectName('');
             setShowProjectModal(false);
+            setToastMessage('프로젝트가 생성되었습니다');
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 2000);
         }
     }, [newProjectName]);
+
+    const RECOMMENDED_TEMPLATES = [
+        { name: '학습 노트', desc: '강의·책 내용 정리', icon: '📚' },
+        { name: '연구 노트', desc: '문헌·자료 연구', icon: '🔬' },
+        { name: '업무 노트', desc: '회의록·업무 정리', icon: '📋' },
+    ];
+
+    const createFromTemplate = useCallback(async (templateName: string, templateDesc: string) => {
+        try {
+            const createdProject = await projectService.createProject({
+                name: templateName,
+                description: templateDesc,
+                files: [],
+                instructions: '',
+                tags: [],
+                isActive: true,
+                type: 'conversation',
+                status: 'active',
+            });
+            const newProject: Project = {
+                id: createdProject.id,
+                name: createdProject.name,
+                description: createdProject.description || '',
+                createdAt: createdProject.createdAt,
+                updatedAt: createdProject.updatedAt,
+            };
+            setProjects((prev) => [...prev, newProject]);
+            setCurrentProject(newProject);
+            setProjectListTab('all');
+            setToastMessage('프로젝트가 생성되었습니다');
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 2000);
+        } catch (error) {
+            errorLogger.error('템플릿 프로젝트 생성 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'ChatGPTInterface',
+                action: 'createFromTemplate',
+            });
+            const newProject: Project = {
+                id: `project-${Date.now()}`,
+                name: templateName,
+                description: templateDesc,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            setProjects((prev) => [...prev, newProject]);
+            setCurrentProject(newProject);
+            setProjectListTab('all');
+            setToastMessage('프로젝트가 생성되었습니다');
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 2000);
+        }
+    }, []);
 
     // 프로젝트 선택 (useCallback으로 메모이제이션)
     const selectProject = useCallback((project: Project) => {
@@ -424,11 +605,11 @@ const ChatGPTInterface: React.FC = () => {
 
     // API 재시도 헬퍼 함수
     const apiCallWithRetry = useCallback(async (
-        apiCall: () => Promise<any>,
+        apiCall: () => Promise<unknown>,
         maxRetries: number = 3,
         retryDelay: number = 1000
-    ): Promise<any> => {
-        let lastError: any;
+    ): Promise<unknown> => {
+        let lastError: unknown;
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -487,12 +668,15 @@ const ChatGPTInterface: React.FC = () => {
     }, []);
 
     // 응답 내용 추출 헬퍼 함수
-    const extractResponseContent = useCallback((response: any): string => {
-        if (!response?.data) {
+    const extractResponseContent = useCallback((response: unknown): string => {
+        const r = response as { data?: unknown } | null | undefined;
+        if (!r?.data) {
             return '응답을 생성할 수 없습니다.';
         }
-        const data = response.data;
-        return data.response || data.message || (typeof data === 'string' ? data : data.data?.response) || '응답을 생성할 수 없습니다.';
+        const data = r.data as Record<string, unknown> | string;
+        if (typeof data === 'string') return data;
+        const d = data as Record<string, unknown>;
+        return (d.response as string) || (d.message as string) || ((d.data as Record<string, unknown>)?.response as string) || '응답을 생성할 수 없습니다.';
     }, []);
 
     // 에러 메시지 생성 헬퍼 함수
@@ -578,22 +762,31 @@ const ChatGPTInterface: React.FC = () => {
     }, []);
 
     // 메시지 전송 (useCallback으로 메모이제이션, 리팩토링됨)
-    const sendMessage = useCallback(async () => {
-        // 입력 검증
-        if (isLoading) {
-            return;
-        }
+    // overrideText: 추천 질문 클릭 등으로 즉시 전송할 때 사용
+    const sendMessage = useCallback(async (overrideText?: string) => {
+        if (isLoading || !isOnline) return;
 
-        const validationResult = validateInput(input);
+        const textToSend = (overrideText ?? input).trim();
+        const validationResult = validateInput(textToSend);
         if (validationResult === null) {
             return;
         }
         if (typeof validationResult === 'string') {
-            alert(validationResult);
+            setToastMessage(validationResult);
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 3000);
             return;
         }
 
         const trimmedInput: string = validationResult;
+
+        // 입력 히스토리에 추가 (중복 방지, 최대 50개)
+        const hist = inputHistoryRef.current;
+        if (hist[0] !== trimmedInput) {
+            inputHistoryRef.current = [trimmedInput, ...hist].slice(0, 50);
+        }
+        inputHistoryIndexRef.current = -1;
+
         const userMessage: Message = {
             id: `msg-${Date.now()}`,
             role: 'user',
@@ -677,9 +870,7 @@ const ChatGPTInterface: React.FC = () => {
                     requestBody: {
                         quality: 'enhanced',
                         conversation_id: conversation.id,
-                        context: currentProject
-                            ? { projectId: currentProject.id, projectName: currentProject.name }
-                            : undefined,
+                        context: buildChatContext(currentProject ?? null),
                     },
                     onChunk: (chunk: string) => {
                         accumulatedText += chunk;
@@ -777,7 +968,7 @@ const ChatGPTInterface: React.FC = () => {
                             message: trimmedInput,
                             quality: 'enhanced',
                             conversation_id: conversation.id,
-                            context: currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : undefined,
+                            context: buildChatContext(currentProject ?? null),
                         },
                         {
                             timeout: 30000,
@@ -866,6 +1057,7 @@ const ChatGPTInterface: React.FC = () => {
     }, [
         input,
         isLoading,
+        isOnline,
         currentConversation,
         conversations,
         currentProject,
@@ -893,7 +1085,8 @@ const ChatGPTInterface: React.FC = () => {
         }
     }, []);
 
-    // Enter 키 처리 (useCallback으로 메모이제이션)
+    // Enter 키 처리 (Enter 또는 Cmd/Ctrl+Enter로 전송, Shift+Enter는 줄바꿈)
+    // ArrowUp/ArrowDown: 입력 히스토리 탐색 (이번 세션에서 전송한 메시지)
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -901,6 +1094,30 @@ const ChatGPTInterface: React.FC = () => {
         } else if (e.key === 'Escape' && isStreaming) {
             e.preventDefault();
             cancelStreaming();
+        } else if (e.key === 'ArrowUp' && inputHistoryRef.current.length > 0) {
+            const hist = inputHistoryRef.current;
+            let idx = inputHistoryIndexRef.current;
+            if (idx < hist.length - 1) {
+                idx += 1;
+                inputHistoryIndexRef.current = idx;
+                setInput(hist[idx]);
+                e.preventDefault();
+            } else if (idx === -1) {
+                inputHistoryIndexRef.current = 0;
+                setInput(hist[0]);
+                e.preventDefault();
+            }
+        } else if (e.key === 'ArrowDown' && inputHistoryIndexRef.current >= 0) {
+            const idx = inputHistoryIndexRef.current;
+            if (idx > 0) {
+                inputHistoryIndexRef.current = idx - 1;
+                setInput(inputHistoryRef.current[inputHistoryIndexRef.current]);
+                e.preventDefault();
+            } else {
+                inputHistoryIndexRef.current = -1;
+                setInput('');
+                e.preventDefault();
+            }
         }
     }, [sendMessage, isStreaming, cancelStreaming]);
 
@@ -940,11 +1157,57 @@ const ChatGPTInterface: React.FC = () => {
 
         setCurrentConversation((prev) => (prev?.id === id ? null : prev));
         setDeleteConfirmConversation(null);
+        setToastMessage('대화가 삭제되었습니다');
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
     }, [deleteConfirmConversation]);
 
     // 대화 삭제 취소
     const cancelDeleteConversation = useCallback(() => {
         setDeleteConfirmConversation(null);
+    }, []);
+
+    // 프로젝트 삭제 요청 (모달 열기)
+    const requestDeleteProject = useCallback((project: Project, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setDeleteConfirmProject(project);
+    }, []);
+
+    // 프로젝트 삭제 확정
+    const confirmDeleteProject = useCallback(async () => {
+        if (!deleteConfirmProject) return;
+        const id = deleteConfirmProject.id;
+        const name = deleteConfirmProject.name;
+        setDeleteConfirmProject(null);
+
+        try {
+            const ok = await projectService.deleteProject(id);
+            if (ok) {
+                setProjects((prev) => prev.filter((p) => p.id !== id));
+                if (currentProject?.id === id) {
+                    const remaining = projects.filter((p) => p.id !== id);
+                    setCurrentProject(remaining[0] ?? null);
+                    setCurrentConversation(null);
+                }
+                setConversations((prev) => prev.filter((c) => c.projectId !== id));
+                setToastMessage('프로젝트가 삭제되었습니다');
+                setShowCopyToast(true);
+                setTimeout(() => setShowCopyToast(false), 2000);
+            }
+        } catch (error) {
+            errorLogger.error('프로젝트 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
+                component: 'ChatGPTInterface',
+                action: 'deleteProject',
+            });
+            setToastMessage(`"${name}" 삭제에 실패했습니다.`);
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 3000);
+        }
+    }, [deleteConfirmProject, currentProject, projects]);
+
+    // 프로젝트 삭제 취소
+    const cancelDeleteProject = useCallback(() => {
+        setDeleteConfirmProject(null);
     }, []);
 
     // 대화 복제
@@ -965,6 +1228,9 @@ const ChatGPTInterface: React.FC = () => {
 
         setConversations((prev) => [newConversation, ...prev]);
         setCurrentConversation(newConversation);
+        setToastMessage('대화가 복제되었습니다');
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
     }, []);
 
     // 검색어 하이라이트 함수
@@ -985,8 +1251,8 @@ const ChatGPTInterface: React.FC = () => {
             <>
                 {before}
                 <mark style={{
-                    backgroundColor: '#fbbf24',
-                    color: '#1a1a1a',
+                    backgroundColor: 'var(--accent-warning)',
+                    color: 'var(--text-primary)',
                     padding: '0 2px',
                     borderRadius: '2px',
                 }}>{match}</mark>
@@ -1011,7 +1277,7 @@ const ChatGPTInterface: React.FC = () => {
     // 대화 이름 저장
     const saveConversationTitle = useCallback((conversationId: string) => {
         const newTitle = editingConversationTitle.trim();
-        if (!newTitle) {
+        if (!newTitle || newTitle.length < 2) {
             cancelEditingConversationTitle();
             return;
         }
@@ -1051,6 +1317,9 @@ const ChatGPTInterface: React.FC = () => {
         );
 
         cancelEditingConversationTitle();
+        setToastMessage('제목이 저장되었습니다');
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
     }, [editingConversationTitle, cancelEditingConversationTitle]);
 
     // 상대적 시간 포맷 (오늘, 어제, 날짜)
@@ -1076,6 +1345,7 @@ const ChatGPTInterface: React.FC = () => {
     const copyMessage = useCallback(async (text: string) => {
         try {
             await navigator.clipboard.writeText(text);
+            setToastMessage('복사되었습니다');
             setShowCopyToast(true);
             setTimeout(() => setShowCopyToast(false), 2000);
         } catch (error) {
@@ -1083,7 +1353,9 @@ const ChatGPTInterface: React.FC = () => {
                 component: 'ChatGPTInterface',
                 action: 'copyMessage',
             });
-            alert('복사에 실패했습니다.');
+            setToastMessage('복사에 실패했습니다.');
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 2500);
         }
     }, []);
 
@@ -1091,16 +1363,20 @@ const ChatGPTInterface: React.FC = () => {
     const toggleBookmark = useCallback((messageId: string) => {
         setCurrentConversation((prev) => {
             if (!prev) return prev;
+            const msg = prev.messages.find((m) => m.id === messageId);
+            const willBeBookmarked = !msg?.bookmarked;
             const updated = {
                 ...prev,
                 messages: prev.messages.map((m) =>
                     m.id === messageId ? { ...m, bookmarked: !m.bookmarked } : m
                 ),
             };
-            // 로컬 스토리지에도 저장
             setConversations((prevConvs) =>
                 prevConvs.map((c) => (c.id === prev.id ? updated : c))
             );
+            setToastMessage(willBeBookmarked ? '북마크에 추가되었습니다' : '북마크가 해제되었습니다');
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 2000);
             return updated;
         });
     }, []);
@@ -1124,9 +1400,16 @@ const ChatGPTInterface: React.FC = () => {
         });
     }, []);
 
-    // 개별 메시지 삭제
-    const deleteMessage = useCallback((messageId: string) => {
-        if (!window.confirm('이 메시지를 삭제하시겠습니까?')) return;
+    // 개별 메시지 삭제 요청 (확인 모달 열기)
+    const requestDeleteMessage = useCallback((messageId: string) => {
+        setDeleteConfirmMessageId(messageId);
+    }, []);
+
+    // 개별 메시지 삭제 확정
+    const confirmDeleteMessage = useCallback(() => {
+        const messageId = deleteConfirmMessageId;
+        setDeleteConfirmMessageId(null);
+        if (!messageId) return;
 
         setCurrentConversation((prev) => {
             if (!prev) return prev;
@@ -1140,7 +1423,10 @@ const ChatGPTInterface: React.FC = () => {
             );
             return updated;
         });
-    }, []);
+        setToastMessage('메시지가 삭제되었습니다');
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
+    }, [deleteConfirmMessageId]);
 
     // 메시지 접기/펼치기 토글
     const toggleMessageCollapse = useCallback((messageId: string) => {
@@ -1160,10 +1446,16 @@ const ChatGPTInterface: React.FC = () => {
         return content.length > 500 || content.split('\n').length > 15;
     }, []);
 
-    // 현재 대화 메시지 전체 삭제
-    const clearCurrentConversation = useCallback(() => {
+    // 현재 대화 메시지 전체 삭제 요청 (확인 모달 열기)
+    const requestClearMessages = useCallback(() => {
         if (!currentConversation) return;
-        if (!window.confirm('현재 대화의 모든 메시지를 삭제하시겠습니까?\n대화 자체는 유지됩니다.')) return;
+        setShowClearMessagesConfirm(true);
+    }, [currentConversation]);
+
+    // 현재 대화 메시지 전체 삭제 확정
+    const confirmClearMessages = useCallback(() => {
+        setShowClearMessagesConfirm(false);
+        if (!currentConversation) return;
 
         const updated = {
             ...currentConversation,
@@ -1173,23 +1465,30 @@ const ChatGPTInterface: React.FC = () => {
         setCurrentConversation(updated);
         setConversations(prev => prev.map(c => c.id === currentConversation.id ? updated : c));
         setCollapsedMessages(new Set());
+        setToastMessage('메시지가 모두 삭제되었습니다');
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
     }, [currentConversation]);
 
     // 대화 고정/해제
     const togglePinConversation = useCallback((conversationId: string) => {
+        const conv = conversations.find((c) => c.id === conversationId);
+        const willBePinned = conv ? !conv.pinned : false;
         setConversations((prev) =>
             prev.map((c) =>
                 c.id === conversationId ? { ...c, pinned: !c.pinned } : c
             )
         );
-        // 현재 대화도 업데이트
         setCurrentConversation((prev) => {
             if (prev && prev.id === conversationId) {
                 return { ...prev, pinned: !prev.pinned };
             }
             return prev;
         });
-    }, []);
+        setToastMessage(willBePinned ? '대화가 상단에 고정되었습니다' : '고정이 해제되었습니다');
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
+    }, [conversations]);
 
     // 테마 전환
     const toggleTheme = useCallback(() => {
@@ -1253,35 +1552,19 @@ const ChatGPTInterface: React.FC = () => {
         // 대화가 변경될 때마다 재계산
     }, [conversations]);
 
-    // 테마 스타일 변수
-    const themeStyles = useMemo(() => {
-        if (theme === 'light') {
-            return {
-                bgPrimary: '#ffffff',
-                bgSecondary: '#f7f7f8',
-                bgTertiary: '#ececec',
-                textPrimary: '#1a1a1a',
-                textSecondary: '#666666',
-                borderColor: 'rgba(0, 0, 0, 0.1)',
-                inputBg: '#f0f0f0',
-                messageBgUser: '#e3f2fd',
-                messageBgAssistant: '#f5f5f5',
-                accentColor: '#2563eb',
-            };
-        }
-        return {
-            bgPrimary: '#343541',
-            bgSecondary: '#202123',
-            bgTertiary: '#2a2b32',
-            textPrimary: '#ececf1',
-            textSecondary: '#8e8ea0',
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-            inputBg: '#40414f',
-            messageBgUser: '#343541',
-            messageBgAssistant: '#444654',
-            accentColor: '#19c37d',
-        };
-    }, [theme]);
+    /* CORBU AI UI Kit — theme.css 변수 사용 (Figma node 323-168775, 7-3) */
+    const themeStyles = useMemo(() => ({
+        bgPrimary: 'var(--bg-primary)',
+        bgSecondary: 'var(--bg-secondary)',
+        bgTertiary: 'var(--bg-tertiary)',
+        textPrimary: 'var(--text-primary)',
+        textSecondary: 'var(--text-secondary)',
+        borderColor: 'var(--border-color)',
+        inputBg: 'var(--bg-tertiary)',
+        messageBgUser: 'var(--accent-info-muted)',
+        messageBgAssistant: 'var(--bg-secondary)',
+        accentColor: 'var(--accent-info)',
+    }), []);
 
     // 북마크된 메시지 필터링
     const bookmarkedMessages = useMemo(() => {
@@ -1326,6 +1609,23 @@ const ChatGPTInterface: React.FC = () => {
             }
         });
     }, [messageSearchResults.length]);
+
+    // 검색어 하이라이트 (플레인 텍스트)
+    const highlightTextForPlainText = useCallback((text: string): React.ReactNode => {
+        if (!messageSearchQuery.trim() || !text) return text;
+        const query = messageSearchQuery.trim();
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escaped})`, 'gi');
+        const parts = text.split(regex);
+        return parts.map((part, i) => {
+            const testRegex = new RegExp(`^${escaped}$`, 'i');
+            return testRegex.test(part) ? (
+                <mark key={i} className="search-highlight">{part}</mark>
+            ) : (
+                <React.Fragment key={i}>{part}</React.Fragment>
+            );
+        });
+    }, [messageSearchQuery]);
 
     // 검색 결과로 스크롤
     useEffect(() => {
@@ -1475,12 +1775,45 @@ const ChatGPTInterface: React.FC = () => {
         } else {
             setQuickSuggestions([]);
         }
+    // currentConversation intentionally omitted to avoid re-running on ref identity change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentConversation?.messages, isLoading, isStreaming, generateQuickSuggestions]);
 
-    // 대화 내보내기 (Markdown 또는 JSON)
-    const exportConversation = useCallback((format: 'markdown' | 'json' = 'markdown') => {
+    // 소스 기반 추천 질문 로드 (프로젝트 채팅 빈 대화 시)
+    useEffect(() => {
+        if (
+            !currentProject ||
+            !currentConversation ||
+            currentConversation.projectId !== currentProject.id ||
+            currentConversation.messages.length > 0
+        ) {
+            setSuggestedQuestionsFromSource([]);
+            return;
+        }
+        let cancelled = false;
+        projectService
+            .getNotebookSuggestedQuestions(currentProject.id)
+            .then((questions) => {
+                if (!cancelled && questions && questions.length > 0) {
+                    setSuggestedQuestionsFromSource(questions.slice(0, 5));
+                } else {
+                    setSuggestedQuestionsFromSource([]);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setSuggestedQuestionsFromSource([]);
+            });
+        return () => { cancelled = true; };
+    // currentProject/currentConversation 제외: 객체 참조 변경 시 불필요한 재요청 방지
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentProject?.id, currentConversation?.id, currentConversation?.projectId, currentConversation?.messages?.length]);
+
+    // 대화 내보내기 (Markdown, JSON, 또는 클립보드 복사)
+    const exportConversation = useCallback((format: 'markdown' | 'json' | 'html' | 'clipboard' = 'markdown') => {
         if (!currentConversation || currentConversation.messages.length === 0) {
-            alert('내보낼 대화가 없습니다.');
+            setToastMessage('내보낼 대화가 없습니다.');
+            setShowCopyToast(true);
+            setTimeout(() => setShowCopyToast(false), 2500);
             return;
         }
 
@@ -1488,7 +1821,7 @@ const ChatGPTInterface: React.FC = () => {
         let filename: string;
         let mimeType: string;
 
-        if (format === 'markdown') {
+        if (format === 'markdown' || format === 'clipboard') {
             const lines: string[] = [
                 `# ${currentConversation.title}`,
                 '',
@@ -1516,6 +1849,30 @@ const ChatGPTInterface: React.FC = () => {
             content = lines.join('\n');
             filename = `${currentConversation.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.md`;
             mimeType = 'text/markdown';
+
+            if (format === 'clipboard') {
+                navigator.clipboard.writeText(content).then(() => {
+                    setToastMessage('복사되었습니다');
+                    setShowCopyToast(true);
+                    setTimeout(() => setShowCopyToast(false), 2000);
+                }).catch(() => {
+                    setToastMessage('클립보드에 복사에 실패했습니다.');
+                    setShowCopyToast(true);
+                    setTimeout(() => setShowCopyToast(false), 2500);
+                });
+                return;
+            }
+        } else if (format === 'html') {
+            const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const msgsHtml = currentConversation.messages.map((msg) => {
+                const role = msg.role === 'user' ? '사용자' : 'AI';
+                const time = msg.timestamp.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                const css = msg.role === 'user' ? 'background:#f0f0f0;margin-left:20%;border-radius:12px 12px 4px 12px' : 'background:#e8f4fd;margin-right:20%;border-radius:12px 12px 12px 4px';
+                return `<div style="margin:12px 0"><div style="font-size:11px;color:#666;margin-bottom:4px">${escapeHtml(role)} · ${escapeHtml(time)}</div><div style="padding:12px 16px;${css}">${escapeHtml(msg.content).replace(/\n/g, '<br/>')}</div></div>`;
+            }).join('');
+            content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(currentConversation.title)}</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;line-height:1.6;color:#333}h1{font-size:1.25rem;margin-bottom:8px}.meta{font-size:12px;color:#666;margin-bottom:24px}</style></head><body><h1>${escapeHtml(currentConversation.title)}</h1><div class="meta">${currentConversation.createdAt.toLocaleString('ko-KR')} · ${currentConversation.messages.length}개 메시지</div><hr/>${msgsHtml}</body></html>`;
+            filename = `${currentConversation.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.html`;
+            mimeType = 'text/html';
         } else {
             const exportData = {
                 id: currentConversation.id,
@@ -1545,42 +1902,108 @@ const ChatGPTInterface: React.FC = () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
+        setToastMessage('다운로드되었습니다');
         setShowCopyToast(true);
         setTimeout(() => setShowCopyToast(false), 2000);
     }, [currentConversation]);
 
-    // 대화 가져오기 (JSON 파일)
+    // 대화 가져오기 (JSON, Markdown 또는 HTML 파일)
     const importConversation = useCallback(() => {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
-        fileInput.accept = '.json';
+        fileInput.accept = '.json,.md,.html';
         fileInput.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (!file) return;
 
+            setImportingConversation(true);
             try {
                 const text = await file.text();
-                const data = JSON.parse(text);
+                const name = file.name.toLowerCase();
+                const ext = name.endsWith('.json') ? 'json' : name.endsWith('.html') ? 'html' : 'md';
 
-                // 데이터 유효성 검사
+                let title: string;
+                let messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+
+                if (ext === 'json') {
+                    const data = JSON.parse(text);
                 if (!data.title || !data.messages || !Array.isArray(data.messages)) {
-                    alert('잘못된 대화 파일 형식입니다.');
-                    return;
+                    setToastMessage('잘못된 대화 파일 형식입니다.');
+                    setShowCopyToast(true);
+                    setTimeout(() => setShowCopyToast(false), 3000);
+                        return;
+                    }
+                    title = data.title || '가져온 대화';
+                    messages = data.messages.map((msg: { role: string; content: string }) => ({
+                        role: (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
+                        content: String(msg.content ?? ''),
+                    }));
+                } else if (ext === 'md') {
+                    // Markdown 파싱 (내보내기 형식: ### 👤 **사용자** / ### 🤖 **AI**)
+                    const firstLine = text.split('\n')[0]?.trim() || '';
+                    title = firstLine.startsWith('# ') ? firstLine.slice(2).trim() || '가져온 대화' : '가져온 대화';
+                    const msgBlocks = text.split(/^### /m).filter(Boolean);
+                    messages = [];
+                    for (const block of msgBlocks) {
+                        const firstNewline = block.indexOf('\n');
+                        const header = firstNewline >= 0 ? block.slice(0, firstNewline) : block;
+                        const content = firstNewline >= 0 ? block.slice(firstNewline).replace(/^---\s*$/gm, '').trim() : '';
+                        const hasRole = header.includes('사용자') || header.includes('👤') || header.includes('AI') || header.includes('🤖');
+                        if (!hasRole) continue; // 메타 블록 스킵
+                        const isUser = header.includes('사용자') || header.includes('👤');
+                        messages.push({ role: isUser ? 'user' : 'assistant', content: content || header });
+                    }
+                    if (messages.length === 0) {
+                        setToastMessage('Markdown 파일에서 대화 내용을 찾을 수 없습니다.');
+                        setShowCopyToast(true);
+                        setTimeout(() => setShowCopyToast(false), 3000);
+                        return;
+                    }
+                } else {
+                    // HTML 파싱 (내보내기 형식 호환)
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(text, 'text/html');
+                    title = doc.querySelector('h1')?.textContent?.trim() || doc.querySelector('title')?.textContent?.trim() || '가져온 대화';
+                    messages = [];
+                    for (const child of Array.from(doc.body.children)) {
+                        if (child.tagName !== 'DIV') continue;
+                        const innerDivs = child.querySelectorAll(':scope > div');
+                        if (innerDivs.length >= 2) {
+                            const roleText = innerDivs[0].textContent || '';
+                            const content = (innerDivs[1].innerHTML || '')
+                                .replace(/<br\s*\/?>/gi, '\n')
+                                .replace(/<[^>]+>/g, '')
+                                .replace(/&nbsp;/g, ' ')
+                                .replace(/&amp;/g, '&')
+                                .replace(/&lt;/g, '<')
+                                .replace(/&gt;/g, '>')
+                                .replace(/&quot;/g, '"')
+                                .trim();
+                            if (!roleText.includes('사용자') && !roleText.includes('AI')) continue;
+                            const isUser = roleText.includes('사용자');
+                            messages.push({ role: isUser ? 'user' : 'assistant', content });
+                        }
+                    }
+                    if (messages.length === 0) {
+                        setToastMessage('HTML 파일에서 대화 내용을 찾을 수 없습니다.');
+                        setShowCopyToast(true);
+                        setTimeout(() => setShowCopyToast(false), 3000);
+                        return;
+                    }
                 }
 
-                // 새 대화 생성
                 const newConversation: Conversation = {
                     id: `conv-${Date.now()}`,
-                    title: data.title || '가져온 대화',
-                    messages: data.messages.map((msg: { id?: string; role: string; content: string; timestamp?: string; bookmarked?: boolean }) => ({
-                        id: msg.id || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                        role: msg.role as 'user' | 'assistant',
+                    title,
+                    messages: messages.map((msg, i) => ({
+                        id: `msg-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+                        role: msg.role,
                         content: msg.content,
-                        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-                        bookmarked: msg.bookmarked || false,
+                        timestamp: new Date(),
+                        bookmarked: false,
                     })),
                     projectId: currentProject?.id,
-                    createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+                    createdAt: new Date(),
                     updatedAt: new Date(),
                     pinned: false,
                 };
@@ -1588,6 +2011,7 @@ const ChatGPTInterface: React.FC = () => {
                 setConversations((prev) => [newConversation, ...prev]);
                 setCurrentConversation(newConversation);
 
+                setToastMessage('대화를 가져왔습니다');
                 setShowCopyToast(true);
                 setTimeout(() => setShowCopyToast(false), 2000);
             } catch (error) {
@@ -1595,7 +2019,11 @@ const ChatGPTInterface: React.FC = () => {
                     component: 'ChatGPTInterface',
                     action: 'importConversation',
                 });
-                alert('대화 파일을 읽는 중 오류가 발생했습니다.');
+                setToastMessage('대화 파일을 읽는 중 오류가 발생했습니다.');
+                setShowCopyToast(true);
+                setTimeout(() => setShowCopyToast(false), 3000);
+            } finally {
+                setImportingConversation(false);
             }
         };
         fileInput.click();
@@ -1678,9 +2106,7 @@ const ChatGPTInterface: React.FC = () => {
                     requestBody: {
                         quality: 'enhanced',
                         conversation_id: conversation.id,
-                        context: currentProject
-                            ? { projectId: currentProject.id, projectName: currentProject.name }
-                            : undefined,
+                        context: buildChatContext(currentProject ?? null),
                     },
                     onChunk: (chunk: string) => {
                         accumulatedText += chunk;
@@ -1750,7 +2176,7 @@ const ChatGPTInterface: React.FC = () => {
                         message: trimmedInput,
                         quality: 'enhanced',
                         conversation_id: conversation.id,
-                        context: currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : undefined,
+                        context: buildChatContext(currentProject ?? null),
                     },
                     { timeout: 30000 }
                 ).then(response => {
@@ -1901,10 +2327,7 @@ const ChatGPTInterface: React.FC = () => {
                 requestBody: {
                     quality: 'enhanced',
                     conversation_id: conversation.id,
-                    context: {
-                        ...(currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : {}),
-                        conversation_history: conversationHistory,
-                    },
+                    context: buildChatContext(currentProject ?? null, { conversation_history: conversationHistory }),
                     // 응답 스타일 및 다양성 옵션
                     response_style: responseStyle,
                     perspective: perspective,
@@ -1981,7 +2404,7 @@ const ChatGPTInterface: React.FC = () => {
                     message: trimmedContent,
                     quality: 'enhanced',
                     conversation_id: conversation.id,
-                    context: currentProject ? { projectId: currentProject.id, projectName: currentProject.name } : undefined,
+                    context: buildChatContext(currentProject ?? null),
                 },
                 { timeout: 30000 }
             ).then(response => {
@@ -2073,8 +2496,10 @@ const ChatGPTInterface: React.FC = () => {
     // 전역 키보드 단축키
     useEffect(() => {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
-            // 모달이 열려 있거나 편집 중이면 무시
-            if (showProjectModal || editingMessageId) return;
+            // 모달이 열려 있거나 편집 중이면 무시 (Escape는 별도 처리)
+            const modalOpen = showProjectModal || showProjectEditModal || showProModal || editingMessageId || deleteConfirmConversation ||
+                deleteConfirmProject || deleteConfirmMessageId || showClearMessagesConfirm || showShareModal || showShortcutsHelp;
+            if (modalOpen && e.key !== 'Escape') return;
 
             const isInputFocused = document.activeElement?.tagName === 'INPUT' ||
                 document.activeElement?.tagName === 'TEXTAREA';
@@ -2100,6 +2525,20 @@ const ChatGPTInterface: React.FC = () => {
                 return;
             }
 
+            // Ctrl/Cmd + Shift + D: 대화 복제
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D' && currentConversation && currentConversation.messages.length > 0) {
+                e.preventDefault();
+                duplicateConversation(currentConversation);
+                return;
+            }
+
+            // Ctrl/Cmd + Shift + I: 대화 가져오기 (가져오는 중에는 무시)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I' && !importingConversation) {
+                e.preventDefault();
+                importConversation();
+                return;
+            }
+
             // Ctrl/Cmd + F: 대화 내 검색
             if ((e.ctrlKey || e.metaKey) && e.key === 'f' && currentConversation) {
                 e.preventDefault();
@@ -2107,8 +2546,12 @@ const ChatGPTInterface: React.FC = () => {
                 return;
             }
 
-            // Escape: 스트리밍 취소 또는 검색 닫기
+            // Escape: 스트리밍 취소, 검색·단축키 도움말 닫기
             if (e.key === 'Escape') {
+                if (showShortcutsHelp) {
+                    setShowShortcutsHelp(false);
+                    return;
+                }
                 if (showMessageSearch) {
                     setShowMessageSearch(false);
                     setMessageSearchQuery('');
@@ -2122,8 +2565,8 @@ const ChatGPTInterface: React.FC = () => {
                 }
             }
 
-            // /: 입력창 포커스 (입력 중이 아닐 때)
-            if (e.key === '/' && !isInputFocused) {
+            // / 또는 Ctrl/Cmd + L: 입력창 포커스 (입력 중이 아닐 때)
+            if ((e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key === 'l')) && !isInputFocused) {
                 e.preventDefault();
                 inputRef.current?.focus();
                 return;
@@ -2139,7 +2582,31 @@ const ChatGPTInterface: React.FC = () => {
 
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-    }, [showProjectModal, editingMessageId, isStreaming, currentConversation, startNewConversation, exportConversation, cancelStreaming, showMessageSearch]);
+    }, [showProjectModal, showProjectEditModal, showProModal, editingMessageId, isStreaming, currentConversation, startNewConversation, exportConversation, duplicateConversation, importConversation, cancelStreaming, showMessageSearch, showShortcutsHelp, importingConversation, deleteConfirmConversation, deleteConfirmProject, deleteConfirmMessageId, showClearMessagesConfirm, showShareModal]);
+
+    // 단축키 도움말 모달 포커스 관리
+    useEffect(() => {
+        if (showShortcutsHelp) {
+            prevFocusRef.current = document.activeElement as HTMLElement | null;
+            const t = setTimeout(() => shortcutsCloseRef.current?.focus(), 50);
+            return () => clearTimeout(t);
+        } else if (prevFocusRef.current) {
+            prevFocusRef.current.focus();
+            prevFocusRef.current = null;
+        }
+    }, [showShortcutsHelp]);
+
+    // 문서 제목 동적 업데이트
+    useEffect(() => {
+        if (viewMode === 'notebook' && currentProject) {
+            document.title = `${currentProject.name} - CORBU AI`;
+        } else if (viewMode === 'chat' && currentConversation?.title) {
+            document.title = `${currentConversation.title} - CORBU AI`;
+        } else {
+            document.title = 'CORBU AI';
+        }
+        return () => { document.title = 'CORBU AI'; };
+    }, [viewMode, currentProject, currentConversation]);
 
     // 입력창 자동 높이 조절
     useEffect(() => {
@@ -2161,9 +2628,39 @@ const ChatGPTInterface: React.FC = () => {
                 transition: 'background-color 0.3s, color 0.3s',
             }}
         >
+            {/* 스킵 링크: 키보드 사용자·스크린 리더용 */}
+            <a
+                href="#chat-main-content"
+                className="skip-to-main"
+                style={{
+                    position: 'absolute',
+                    left: -9999,
+                    zIndex: 99999,
+                    padding: '12px 20px',
+                    background: 'var(--accent-info)',
+                    color: 'var(--on-accent)',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                }}
+                onFocus={(e) => {
+                    e.currentTarget.style.left = '12px';
+                    e.currentTarget.style.top = '12px';
+                }}
+                onBlur={(e) => {
+                    e.currentTarget.style.left = '-9999px';
+                    e.currentTarget.style.top = '';
+                }}
+            >
+                본문으로 건너뛰기
+            </a>
             {/* 사이드바 */}
             <div
                 className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}
+                data-testid="sidebar"
+                role="navigation"
+                aria-label="프로젝트 및 대화 목록"
                 style={{
                     backgroundColor: themeStyles.bgSecondary,
                     borderColor: themeStyles.borderColor,
@@ -2171,50 +2668,111 @@ const ChatGPTInterface: React.FC = () => {
                 }}
             >
                 <div className="sidebar-header">
-                    <button className="new-chat-btn" onClick={startNewConversation} style={{ color: themeStyles.textPrimary }}>
+                    <button
+                        type="button"
+                        className="new-chat-btn"
+                        onClick={startNewConversation}
+                        style={{ color: themeStyles.textPrimary }}
+                        title="새 대화 (Ctrl+N)"
+                        aria-label="새 대화 시작 (Ctrl+N)"
+                    >
                         <span>+</span> 새 대화
                     </button>
                     <button
+                        type="button"
                         className="import-btn"
                         onClick={importConversation}
-                        style={{ marginLeft: '8px', padding: '8px 10px', fontSize: '14px', background: 'transparent', border: `1px solid ${themeStyles.borderColor}`, borderRadius: '6px', color: themeStyles.textPrimary, cursor: 'pointer' }}
-                        title="JSON 파일에서 대화 가져오기"
+                        disabled={importingConversation}
+                        aria-label="대화 가져오기 (Ctrl+Shift+I)"
+                        style={{ marginLeft: '8px', padding: '8px 10px', fontSize: '14px', background: 'transparent', border: `1px solid ${themeStyles.borderColor}`, borderRadius: '6px', color: themeStyles.textPrimary, cursor: importingConversation ? 'wait' : 'pointer', opacity: importingConversation ? 0.7 : 1 }}
+                        title="JSON, Markdown 또는 HTML 파일에서 대화 가져오기 (Ctrl+Shift+I)"
                     >
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ verticalAlign: 'middle' }}>
-                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
-                            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
-                        </svg>
+                        {importingConversation ? (
+                            <span style={{ fontSize: '12px' }}>가져오는 중…</span>
+                        ) : (
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ verticalAlign: 'middle' }}>
+                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                                <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
+                            </svg>
+                        )}
                     </button>
                     <button
+                        type="button"
                         className="new-project-btn"
                         onClick={() => setShowProjectModal(true)}
+                        aria-label="새 프로젝트 만들기"
                         style={{ marginLeft: '4px', padding: '8px 12px', fontSize: '14px', background: 'transparent', border: `1px solid ${themeStyles.borderColor}`, borderRadius: '6px', color: themeStyles.textPrimary, cursor: 'pointer' }}
+                        title="새 프로젝트 만들기"
                     >
                         📁 프로젝트
                     </button>
                     {currentProject && (
-                        <button
-                            className="notebook-toggle-btn"
-                            onClick={() => setViewMode(viewMode === 'chat' ? 'notebook' : 'chat')}
-                            style={{
-                                marginLeft: '8px',
-                                padding: '8px 12px',
-                                fontSize: '14px',
-                                background: viewMode === 'notebook' ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                borderRadius: '6px',
-                                color: '#ececf1',
-                                cursor: 'pointer'
-                            }}
-                            title={viewMode === 'chat' ? '노트북 LLM 보기' : '채팅 보기'}
-                        >
-                            {viewMode === 'chat' ? '📓 노트북' : '💬 채팅'}
-                        </button>
+                        <>
+                            <button
+                                type="button"
+                                className="notebook-settings-btn"
+                                onClick={() => setShowProjectEditModal(true)}
+                                style={{
+                                    marginLeft: '4px',
+                                    padding: '8px 10px',
+                                    fontSize: '14px',
+                                    background: 'transparent',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
+                                    borderRadius: '6px',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer'
+                                }}
+                                title="노트북 설정"
+                                aria-label="노트북 설정"
+                            >
+                                ⚙️
+                            </button>
+                            <button
+                                type="button"
+                                className="notebook-share-btn"
+                                onClick={() => setShowShareModal(true)}
+                                style={{
+                                    marginLeft: '4px',
+                                    padding: '8px 10px',
+                                    fontSize: '14px',
+                                    background: 'transparent',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
+                                    borderRadius: '6px',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer'
+                                }}
+                                title="노트북 공유"
+                                aria-label="노트북 공유"
+                            >
+                                🔗
+                            </button>
+                    <button
+                        type="button"
+                        className="notebook-toggle-btn"
+                        onClick={() => setViewMode(viewMode === 'chat' ? 'notebook' : 'chat')}
+                        aria-label={viewMode === 'chat' ? '노트북 LLM 보기' : '채팅 보기'}
+                                style={{
+                                    marginLeft: '4px',
+                                    padding: '8px 12px',
+                                    fontSize: '14px',
+                                    background: viewMode === 'notebook' ? 'var(--accent-info-border)' : 'transparent',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
+                                    borderRadius: '6px',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer'
+                                }}
+                                title={viewMode === 'chat' ? '노트북 LLM 보기' : '채팅 보기'}
+                            >
+                                {viewMode === 'chat' ? '📓 노트북' : '💬 채팅'}
+                            </button>
+                        </>
                     )}
                     <button
+                        type="button"
                         className="sidebar-toggle"
                         onClick={() => setSidebarOpen(!sidebarOpen)}
                         aria-label="사이드바 토글"
+                        title={sidebarOpen ? '사이드바 접기 (Ctrl+/)' : '사이드바 펼치기 (Ctrl+/)'}
                     >
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M3 4h14M3 10h14M3 16h14" stroke="currentColor" strokeWidth="2" />
@@ -2234,6 +2792,7 @@ const ChatGPTInterface: React.FC = () => {
                     <select
                         value={sortOption}
                         onChange={(e) => setSortOption(e.target.value as SortOption)}
+                        aria-label="대화 정렬"
                         style={{
                             flex: 1,
                             padding: '4px 8px',
@@ -2250,7 +2809,9 @@ const ChatGPTInterface: React.FC = () => {
                         <option value="messages">메시지 수</option>
                     </select>
                     <button
+                        type="button"
                         onClick={() => setShowShortcutsHelp(true)}
+                        aria-label="키보드 단축키 도움말 열기"
                         style={{
                             padding: '4px 8px',
                             fontSize: '11px',
@@ -2266,56 +2827,221 @@ const ChatGPTInterface: React.FC = () => {
                     </button>
                 </div>
 
-                {/* 프로젝트 목록 */}
-                {projects.length > 0 && (
-                    <div className="projects-section" style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#999' }}>
-                            프로젝트
+                {/* 프로젝트 목록 (전체/추천 탭) */}
+                <div className="projects-section" style={{ padding: '10px', borderBottom: '1px solid var(--sidebar-dark-border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                            <div style={{ display: 'flex', gap: '4px' }} role="tablist" aria-label="노트북 탭">
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={projectListTab === 'all'}
+                                    onClick={() => setProjectListTab('all')}
+                                    style={{
+                                        padding: '4px 10px',
+                                        fontSize: '12px',
+                                        fontWeight: projectListTab === 'all' ? 'bold' : 'normal',
+                                        background: projectListTab === 'all' ? 'var(--sidebar-dark-hover-strong)' : 'transparent',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        color: 'var(--text-primary)',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    전체
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={projectListTab === 'recommended'}
+                                    onClick={() => setProjectListTab('recommended')}
+                                    style={{
+                                        padding: '4px 10px',
+                                        fontSize: '12px',
+                                        fontWeight: projectListTab === 'recommended' ? 'bold' : 'normal',
+                                        background: projectListTab === 'recommended' ? 'var(--sidebar-dark-hover-strong)' : 'transparent',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        color: 'var(--text-primary)',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    추천
+                                </button>
+                            </div>
+                            {projectListTab === 'all' && projects.length > 1 && (
+                                <select
+                                    value={projectSortOption}
+                                    onChange={(e) => setProjectSortOption(e.target.value as ProjectSortOption)}
+                                    style={{ fontSize: '11px', padding: '2px 6px', background: 'var(--sidebar-dark-input-bg)', border: '1px solid var(--sidebar-dark-border-strong)', borderRadius: '4px', color: 'var(--text-primary)' }}
+                                    aria-label="프로젝트 정렬"
+                                >
+                                    <option value="recent">최신순</option>
+                                    <option value="name">이름순</option>
+                                    <option value="sources">소스순</option>
+                                </select>
+                            )}
                         </div>
-                        {projects.map((project) => (
-                            <button
-                                key={project.id}
-                                type="button"
-                                className={`project-item ${currentProject?.id === project.id ? 'active' : ''}`}
-                                onClick={() => selectProject(project)}
+                        {projectListTab === 'all' && projects.length > 0 && (
+                            <input
+                                type="text"
+                                placeholder="노트북 검색..."
+                                value={projectSearchQuery}
+                                onChange={(e) => setProjectSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%',
-                                    padding: '8px 12px',
-                                    textAlign: 'left',
-                                    border: 'none',
-                                    background: currentProject?.id === project.id ? 'rgba(255,255,255,0.15)' : 'transparent',
-                                    color: '#ececf1',
-                                    cursor: 'pointer',
+                                    padding: '6px 10px',
+                                    marginBottom: 8,
+                                    background: 'var(--sidebar-dark-hover)',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
+                                    borderRadius: '6px',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '12px',
+                                }}
+                                aria-label="노트북 검색"
+                            />
+                        )}
+                        {projectListTab === 'all' && filteredProjects.map((project) => (
+                            <div
+                                key={project.id}
+                                className={`project-item-wrapper ${currentProject?.id === project.id ? 'active' : ''}`}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    marginBottom: 4,
+                                    padding: '4px 4px 4px 12px',
                                     borderRadius: '4px',
-                                    marginBottom: '4px',
-                                    fontSize: '14px'
+                                    background: currentProject?.id === project.id ? 'var(--sidebar-dark-hover-strong)' : 'transparent',
                                 }}
                             >
-                                📁 {project.name}
-                            </button>
+                                <button
+                                    type="button"
+                                    className="project-item"
+                                    onClick={() => selectProject(project)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '4px 0',
+                                        textAlign: 'left',
+                                        border: 'none',
+                                        background: 'transparent',
+                                        color: 'var(--text-primary)',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                    }}
+                                >
+                                    <span>📁 {project.name}</span>
+                                    {typeof project.source_count === 'number' && (
+                                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginLeft: '6px' }}>
+                                            소스 {project.source_count}개
+                                        </span>
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => requestDeleteProject(project, e)}
+                                    aria-label={`${project.name} 삭제`}
+                                    title="프로젝트 삭제"
+                                    style={{
+                                        padding: 4,
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderRadius: 4,
+                                        color: 'var(--text-tertiary)',
+                                        cursor: 'pointer',
+                                        opacity: 0.6,
+                                        flexShrink: 0,
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.opacity = '1';
+                                        e.currentTarget.style.color = 'var(--accent-error)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.opacity = '0.6';
+                                        e.currentTarget.style.color = 'var(--text-tertiary)';
+                                    }}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                                        <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                                    </svg>
+                                </button>
+                            </div>
                         ))}
+                        {projectListTab === 'recommended' && (
+                            <div className="recommended-templates" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {RECOMMENDED_TEMPLATES.map((t) => (
+                                    <button
+                                        key={t.name}
+                                        type="button"
+                                        className="recommended-template-card"
+                                        onClick={() => createFromTemplate(t.name, t.desc)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 12px',
+                                            textAlign: 'left',
+                                            border: '1px solid var(--sidebar-dark-border-strong)',
+                                            borderRadius: '6px',
+                                            background: 'var(--sidebar-dark-hover)',
+                                            color: 'var(--text-primary)',
+                                            cursor: 'pointer',
+                                            fontSize: '13px',
+                                        }}
+                                        title={`"${t.name}" 템플릿으로 노트북 생성`}
+                                    >
+                                        <span style={{ marginRight: '8px' }}>{t.icon}</span>
+                                        <strong>{t.name}</strong>
+                                        <span style={{ marginLeft: '6px', fontSize: '12px', color: 'var(--text-tertiary)' }}>{t.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {projectListTab === 'all' && projects.length === 0 && (
+                            <div style={{ padding: '16px', fontSize: '13px', color: 'var(--text-tertiary)', textAlign: 'center' }} role="status" aria-live="polite">
+                                <p style={{ margin: '0 0 8px 0' }}>프로젝트가 없습니다</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowProjectModal(true)}
+                                    style={{
+                                        padding: '6px 14px',
+                                        background: 'var(--accent-primary)',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: 'var(--on-accent)',
+                                        fontSize: '12px',
+                                        cursor: 'pointer',
+                                    }}
+                                    aria-label="새 프로젝트 만들기"
+                                >
+                                    프로젝트 만들기
+                                </button>
+                            </div>
+                        )}
+                        {projectListTab === 'all' && projects.length > 0 && filteredProjects.length === 0 && (
+                            <div style={{ padding: '12px', fontSize: '13px', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                                검색 결과가 없습니다.
+                            </div>
+                        )}
                     </div>
-                )}
 
                 {/* 검색 영역 */}
                 {conversations.length > 0 && (
-                    <div className="search-container" role="search" style={{ padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div className="search-container" role="search" style={{ padding: '8px', borderBottom: '1px solid var(--sidebar-dark-border)' }}>
                         <input
-                            type="text"
+                            type="search"
                             placeholder="대화 검색..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            aria-label="대화 검색"
+                            aria-describedby="search-hint"
                             style={{
                                 width: '100%',
                                 padding: '8px 12px',
-                                background: 'rgba(255,255,255,0.1)',
-                                border: '1px solid rgba(255,255,255,0.2)',
+                                background: 'var(--sidebar-dark-input-bg)',
+                                border: '1px solid var(--sidebar-dark-border-strong)',
                                 borderRadius: '6px',
-                                color: '#ececf1',
+                                color: 'var(--text-primary)',
                                 fontSize: '14px',
                             }}
-                            aria-label="대화 검색"
-                            aria-describedby="search-hint"
                         />
                         <span id="search-hint" className="sr-only">대화 제목이나 내용으로 검색할 수 있습니다</span>
                     </div>
@@ -2324,10 +3050,30 @@ const ChatGPTInterface: React.FC = () => {
                 <div className="conversations-list">
                     {(() => {
                         if (filteredConversations.length === 0) {
+                            const hasSearch = searchQuery.trim().length > 0;
                             return (
-                                <div className="empty-conversations">
-                                    <p>대화가 없습니다</p>
-                                    <p className="hint">새 대화를 시작해보세요</p>
+                                <div className="empty-conversations" role="status" aria-live="polite">
+                                    <p>{hasSearch ? '검색 결과가 없습니다' : '대화가 없습니다'}</p>
+                                    <p className="hint">{hasSearch ? '다른 검색어를 입력해보세요' : '새 대화를 시작해보세요'}</p>
+                                    {!hasSearch && (
+                                        <button
+                                            type="button"
+                                            onClick={startNewConversation}
+                                            style={{
+                                                marginTop: '10px',
+                                                padding: '8px 16px',
+                                                background: 'var(--accent-primary)',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                color: 'var(--on-accent)',
+                                                fontSize: '13px',
+                                                cursor: 'pointer',
+                                            }}
+                                            aria-label="새 대화 시작 (Ctrl+N)"
+                                        >
+                                            새 대화 시작
+                                        </button>
+                                    )}
                                 </div>
                             );
                         }
@@ -2354,8 +3100,9 @@ const ChatGPTInterface: React.FC = () => {
                                                 type="text"
                                                 value={editingConversationTitle}
                                                 onChange={(e) => setEditingConversationTitle(e.target.value)}
+                                                placeholder="대화 제목 (2자 이상)"
                                                 onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
+                                                    if (e.key === 'Enter' && editingConversationTitle.trim().length >= 2) {
                                                         e.preventDefault();
                                                         saveConversationTitle(conversation.id);
                                                     } else if (e.key === 'Escape') {
@@ -2368,10 +3115,10 @@ const ChatGPTInterface: React.FC = () => {
                                                     width: '100%',
                                                     padding: '4px 8px',
                                                     fontSize: '14px',
-                                                    background: 'rgba(255,255,255,0.1)',
-                                                    border: '1px solid rgba(255,255,255,0.3)',
+                                                    background: 'var(--sidebar-dark-input-bg)',
+                                                    border: '1px solid var(--sidebar-dark-border-strong)',
                                                     borderRadius: '4px',
-                                                    color: '#ececf1',
+                                                    color: 'var(--text-primary)',
                                                     outline: 'none',
                                                 }}
                                             />
@@ -2396,14 +3143,14 @@ const ChatGPTInterface: React.FC = () => {
                                         >
                                             <div className="conversation-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 {conversation.pinned && (
-                                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="#fbbf24" style={{ flexShrink: 0 }}>
+                                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="var(--accent-warning)" style={{ flexShrink: 0 }}>
                                                         <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z" />
                                                     </svg>
                                                 )}
                                                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                     {highlightSearchText(conversation.title, searchQuery)}
                                                 </span>
-                                                <span style={{ fontSize: '11px', color: '#888', flexShrink: 0 }}>
+                                                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', flexShrink: 0 }}>
                                                     {formatRelativeTime(conversation.updatedAt)}
                                                 </span>
                                             </div>
@@ -2419,9 +3166,9 @@ const ChatGPTInterface: React.FC = () => {
                                                     <span style={{
                                                         fontSize: '10px',
                                                         padding: '2px 6px',
-                                                        background: 'rgba(255,255,255,0.1)',
+                                                        background: 'var(--sidebar-dark-input-bg)',
                                                         borderRadius: '10px',
-                                                        color: '#888',
+                                                        color: 'var(--text-secondary)',
                                                         flexShrink: 0,
                                                     }}>
                                                         💬 {conversation.messages.length}
@@ -2447,7 +3194,7 @@ const ChatGPTInterface: React.FC = () => {
                                                     border: 'none',
                                                     cursor: 'pointer',
                                                     padding: '4px',
-                                                    color: conversation.pinned ? '#fbbf24' : 'inherit',
+                                                    color: conversation.pinned ? 'var(--accent-warning)' : 'inherit',
                                                     opacity: conversation.pinned ? 1 : 0.6,
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -2486,7 +3233,7 @@ const ChatGPTInterface: React.FC = () => {
                                                     duplicateConversation(conversation);
                                                 }}
                                                 aria-label="대화 복제"
-                                                title="대화 복제"
+                                                title="대화 복제 (Ctrl+Shift+D)"
                                                 style={{
                                                     background: 'transparent',
                                                     border: 'none',
@@ -2527,7 +3274,10 @@ const ChatGPTInterface: React.FC = () => {
                     marginTop: 'auto',
                 }}>
                     <button
+                        type="button"
                         onClick={toggleTheme}
+                        aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+                        title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
                         style={{
                             width: '100%',
                             padding: '10px',
@@ -2543,7 +3293,6 @@ const ChatGPTInterface: React.FC = () => {
                             fontSize: '14px',
                             transition: 'all 0.2s',
                         }}
-                        title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
                     >
                         {theme === 'dark' ? (
                             <>
@@ -2584,11 +3333,34 @@ const ChatGPTInterface: React.FC = () => {
                                 width: '8px',
                                 height: '8px',
                                 borderRadius: '50%',
-                                background: isOnline ? '#22c55e' : '#ef4444',
+                                background: isOnline ? 'var(--accent-success)' : 'var(--accent-error)',
                             }} />
                             <span>{isOnline ? '온라인' : '오프라인'}</span>
                         </div>
                         
+                        {/* PRO/프로필 스텁 (Phase 5) */}
+                        <button
+                            type="button"
+                            onClick={() => setShowProModal(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                background: 'var(--accent-warning-muted)',
+                                color: 'var(--accent-warning)',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                border: 'none',
+                                cursor: 'pointer',
+                            }}
+                            title="PRO 구독 (준비 중)"
+                            aria-label="PRO 구독 정보"
+                        >
+                            PRO
+                        </button>
+
                         {/* 스토리지 사용량 */}
                         {storageUsage && (
                             <div style={{
@@ -2610,7 +3382,7 @@ const ChatGPTInterface: React.FC = () => {
                                     <div style={{
                                         width: `${(storageUsage.used / storageUsage.total) * 100}%`,
                                         height: '100%',
-                                        background: (storageUsage.used / storageUsage.total) > 0.8 ? '#ef4444' : '#3b82f6',
+                                        background: (storageUsage.used / storageUsage.total) > 0.8 ? 'var(--accent-error)' : 'var(--accent-info)',
                                         transition: 'width 0.3s',
                                     }} />
                                 </div>
@@ -2621,19 +3393,42 @@ const ChatGPTInterface: React.FC = () => {
             </div>
 
             {/* 메인 채팅 영역 */}
-            <div className="main-content" style={{ backgroundColor: themeStyles.bgPrimary, transition: 'background-color 0.3s' }}>
+            <main id="chat-main-content" className="main-content" tabIndex={-1} role="main" aria-label="채팅 대화 영역" style={{ backgroundColor: themeStyles.bgPrimary, transition: 'background-color 0.3s' }}>
+                {!isOnline && (
+                    <div
+                        role="alert"
+                        style={{
+                            padding: '10px 16px',
+                            background: 'var(--accent-error-muted, rgba(220, 53, 69, 0.15))',
+                            borderBottom: '1px solid var(--accent-error-border, rgba(220, 53, 69, 0.3))',
+                            color: 'var(--accent-error, #dc3545)',
+                            fontSize: 14,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                        }}
+                    >
+                        <span>⚠️</span>
+                        <span>오프라인 상태입니다. 연결이 복구되면 메시지 전송이 가능합니다.</span>
+                    </div>
+                )}
                 {viewMode === 'notebook' && currentProject ? (
                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ padding: '16px', borderBottom: `1px solid ${themeStyles.borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ padding: '16px', borderBottom: `1px solid ${themeStyles.borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                             <h2 style={{ margin: 0, color: themeStyles.textPrimary }}>📓 노트북 LLM - {currentProject.name}</h2>
+                            <span style={{ fontSize: '12px', color: themeStyles.textSecondary }}>
+                                소스는 ⚙️ 설정에서 가이드라인으로 추가할 수 있습니다
+                            </span>
                             <button
+                                type="button"
                                 onClick={() => setViewMode('chat')}
+                                aria-label="채팅으로 이동"
                                 style={{
                                     padding: '8px 16px',
                                     background: 'transparent',
-                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
                                     borderRadius: '6px',
-                                    color: '#ececf1',
+                                    color: 'var(--text-primary)',
                                     cursor: 'pointer',
                                     fontSize: '14px'
                                 }}
@@ -2644,6 +3439,7 @@ const ChatGPTInterface: React.FC = () => {
                         <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
                             <NotebookLLM
                                 projectId={currentProject.id}
+                                onSourcesChanged={refreshProjects}
                                 onResponseComplete={(response) => {
                                     errorLogger.info('노트북 LLM 응답 완료', {
                                         component: 'ChatGPTInterface',
@@ -2651,6 +3447,9 @@ const ChatGPTInterface: React.FC = () => {
                                         responseLength: response?.content?.length || 0,
                                         modelUsed: response?.modelUsed,
                                     });
+                                    setToastMessage('응답 생성이 완료되었습니다');
+                                    setShowCopyToast(true);
+                                    setTimeout(() => setShowCopyToast(false), 2500);
                                 }}
                                 onError={(error) => {
                                     errorLogger.error('노트북 LLM 오류', error instanceof Error ? error : new Error(String(error)), {
@@ -2663,35 +3462,55 @@ const ChatGPTInterface: React.FC = () => {
                     </div>
                 ) : currentConversation ? (
                     <>
-                        {/* 대화 헤더 (제목 + 내보내기) */}
-                        <div style={{
-                            padding: '12px 16px',
-                            borderBottom: '1px solid rgba(255,255,255,0.1)',
+                        {/* 대화 헤더 (Figma: 제목 + 별·북마크·Share) */}
+                        <div className="brainwave-chat-header" style={{
+                            padding: 'var(--spacing-md) var(--spacing-lg)',
+                            borderBottom: 'var(--border-width) solid var(--border-color)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            background: 'rgba(0,0,0,0.2)',
+                            background: 'var(--bg-primary)',
                         }}>
-                            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 500, color: '#ececf1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
+                            <h3 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
                                 {currentConversation.title}
                             </h3>
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
                                 <button
+                                    type="button"
+                                    onClick={() => setShowShareModal(true)}
+                                    aria-label="공유"
+                                    style={{
+                                        padding: 'var(--spacing-sm) var(--spacing-lg)',
+                                        fontSize: 'var(--font-size-sm)',
+                                        background: 'var(--accent-info-figma)',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-md)',
+                                        color: 'var(--on-accent)',
+                                        cursor: 'pointer',
+                                        fontWeight: 'var(--font-weight-medium)',
+                                    }}
+                                    title="대화 공유"
+                                >
+                                    Share
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => exportConversation('markdown')}
                                     disabled={currentConversation.messages.length === 0}
+                                    aria-label="Markdown으로 내보내기"
                                     style={{
                                         padding: '6px 12px',
                                         fontSize: '12px',
                                         background: 'transparent',
-                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
                                         borderRadius: '4px',
-                                        color: currentConversation.messages.length > 0 ? '#ececf1' : '#666',
+                                        color: currentConversation.messages.length > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
                                         cursor: currentConversation.messages.length > 0 ? 'pointer' : 'not-allowed',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '4px',
                                     }}
-                                    title="Markdown으로 내보내기 (Ctrl+E)"
+                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 내보내기 가능' : 'Markdown으로 내보내기 (Ctrl+E)'}
                                 >
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                                         <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
@@ -2700,36 +3519,113 @@ const ChatGPTInterface: React.FC = () => {
                                     내보내기
                                 </button>
                                 <button
-                                    onClick={() => exportConversation('json')}
+                                    type="button"
+                                    onClick={() => exportConversation('clipboard')}
                                     disabled={currentConversation.messages.length === 0}
+                                    aria-label="클립보드에 복사"
                                     style={{
                                         padding: '6px 12px',
                                         fontSize: '12px',
                                         background: 'transparent',
-                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
                                         borderRadius: '4px',
-                                        color: currentConversation.messages.length > 0 ? '#ececf1' : '#666',
+                                        color: currentConversation.messages.length > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
                                         cursor: currentConversation.messages.length > 0 ? 'pointer' : 'not-allowed',
                                     }}
-                                    title="JSON으로 내보내기"
+                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 복사 가능' : '마크다운을 클립보드에 복사'}
+                                >
+                                    복사
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => exportConversation('json')}
+                                    disabled={currentConversation.messages.length === 0}
+                                    aria-label="JSON으로 내보내기"
+                                    style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        background: 'transparent',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
+                                        borderRadius: '4px',
+                                        color: currentConversation.messages.length > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                        cursor: currentConversation.messages.length > 0 ? 'pointer' : 'not-allowed',
+                                    }}
+                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 내보내기 가능' : 'JSON으로 내보내기'}
                                 >
                                     JSON
                                 </button>
                                 <button
+                                    type="button"
+                                    onClick={() => exportConversation('html')}
+                                    disabled={currentConversation.messages.length === 0}
+                                    aria-label="HTML로 내보내기"
+                                    style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        background: 'transparent',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
+                                        borderRadius: '4px',
+                                        color: currentConversation.messages.length > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                        cursor: currentConversation.messages.length > 0 ? 'pointer' : 'not-allowed',
+                                    }}
+                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 내보내기 가능' : 'HTML로 내보내기'}
+                                >
+                                    HTML
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={importConversation}
+                                    disabled={importingConversation}
+                                    aria-label="대화 가져오기 (Ctrl+Shift+I)"
+                                    style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        background: 'transparent',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
+                                        borderRadius: '4px',
+                                        color: 'var(--text-primary)',
+                                        cursor: importingConversation ? 'wait' : 'pointer',
+                                        opacity: importingConversation ? 0.7 : 1,
+                                    }}
+                                    title="JSON, Markdown 또는 HTML 파일에서 대화 가져오기 (Ctrl+Shift+I)"
+                                >
+                                    {importingConversation ? '가져오는 중…' : '가져오기'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => currentConversation && duplicateConversation(currentConversation)}
+                                    disabled={currentConversation.messages.length === 0}
+                                    aria-label="대화 복제"
+                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 복제 가능' : '현재 대화 복제 (Ctrl+Shift+D)'}
+                                    style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        background: 'transparent',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
+                                        borderRadius: '4px',
+                                        color: currentConversation.messages.length > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                        cursor: currentConversation.messages.length > 0 ? 'pointer' : 'not-allowed',
+                                    }}
+                                >
+                                    복제
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => setShowMessageSearch(prev => !prev)}
+                                    aria-label="대화 내 검색 (Ctrl+F)"
+                                    title="대화 내 검색 (Ctrl+F)"
                                     style={{
                                         padding: '6px 10px',
                                         fontSize: '12px',
-                                        background: showMessageSearch ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                                        border: showMessageSearch ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)',
+                                        background: showMessageSearch ? 'var(--accent-info-muted)' : 'transparent',
+                                        border: showMessageSearch ? '1px solid var(--accent-info)' : '1px solid var(--border-color)',
                                         borderRadius: '4px',
-                                        color: '#ececf1',
+                                        color: 'var(--text-primary)',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '4px',
                                     }}
-                                    title="대화 내 검색 (Ctrl+F)"
                                 >
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                                         <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
@@ -2737,19 +3633,21 @@ const ChatGPTInterface: React.FC = () => {
                                 </button>
                                 {/* 타임스탬프 토글 */}
                                 <button
+                                    type="button"
                                     onClick={toggleTimestamps}
+                                    aria-label={showTimestamps ? '시간 숨기기' : '시간 표시'}
+                                    title={showTimestamps ? '시간 숨기기' : '시간 표시'}
                                     style={{
                                         padding: '6px',
-                                        background: showTimestamps ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
-                                        border: showTimestamps ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)',
+                                        background: showTimestamps ? 'var(--accent-info-border)' : 'transparent',
+                                        border: showTimestamps ? '1px solid var(--accent-info)' : '1px solid var(--border-color)',
                                         borderRadius: '4px',
-                                        color: '#ececf1',
+                                        color: 'var(--text-primary)',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '4px',
                                     }}
-                                    title={showTimestamps ? '시간 숨기기' : '시간 표시'}
                                 >
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                                         <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" />
@@ -2758,19 +3656,21 @@ const ChatGPTInterface: React.FC = () => {
                                 </button>
                                 {/* 자동 스크롤 토글 */}
                                 <button
+                                    type="button"
                                     onClick={() => setAutoScroll(prev => !prev)}
+                                    aria-label={autoScroll ? '자동 스크롤 끄기' : '자동 스크롤 켜기'}
+                                    title={autoScroll ? '자동 스크롤 끄기' : '자동 스크롤 켜기'}
                                     style={{
                                         padding: '6px',
-                                        background: autoScroll ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
-                                        border: autoScroll ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)',
+                                        background: autoScroll ? 'var(--accent-info-border)' : 'transparent',
+                                        border: autoScroll ? '1px solid var(--accent-info)' : '1px solid var(--border-color)',
                                         borderRadius: '4px',
-                                        color: '#ececf1',
+                                        color: 'var(--text-primary)',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '4px',
                                     }}
-                                    title={autoScroll ? '자동 스크롤 끄기' : '자동 스크롤 켜기'}
                                 >
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                                         <path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" />
@@ -2779,13 +3679,15 @@ const ChatGPTInterface: React.FC = () => {
                                 {/* 대화 내용 전체 삭제 */}
                                 {currentConversation && currentConversation.messages.length > 0 && (
                                     <button
-                                        onClick={clearCurrentConversation}
+                                        type="button"
+                                        onClick={requestClearMessages}
+                                        aria-label="대화 내용 전체 삭제"
                                         style={{
                                             padding: '6px',
                                             background: 'transparent',
-                                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                                            border: '1px solid var(--accent-error-border)',
                                             borderRadius: '4px',
-                                            color: '#ef4444',
+                                            color: 'var(--accent-error)',
                                             cursor: 'pointer',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -2804,9 +3706,9 @@ const ChatGPTInterface: React.FC = () => {
                                     <span style={{
                                         padding: '4px 8px',
                                         fontSize: '11px',
-                                        background: 'rgba(251, 191, 36, 0.2)',
+                                        background: 'var(--accent-warning-muted)',
                                         borderRadius: '4px',
-                                        color: '#fbbf24',
+                                        color: 'var(--accent-warning)',
                                     }}>
                                         북마크 {bookmarkedMessages.length}
                                     </span>
@@ -2816,9 +3718,9 @@ const ChatGPTInterface: React.FC = () => {
                                     <span style={{
                                         padding: '4px 8px',
                                         fontSize: '11px',
-                                        background: 'rgba(59, 130, 246, 0.15)',
+                                        background: 'var(--accent-info-muted)',
                                         borderRadius: '4px',
-                                        color: '#93c5fd',
+                                        color: 'var(--accent-info)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '8px',
@@ -2837,9 +3739,9 @@ const ChatGPTInterface: React.FC = () => {
                                     <span style={{
                                         padding: '4px 8px',
                                         fontSize: '11px',
-                                        background: 'rgba(34, 197, 94, 0.15)',
+                                        background: 'var(--accent-success-muted)',
                                         borderRadius: '4px',
-                                        color: '#86efac',
+                                        color: 'var(--accent-primary)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '4px',
@@ -2863,28 +3765,29 @@ const ChatGPTInterface: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '8px',
                                 padding: '8px 16px',
-                                background: 'rgba(0,0,0,0.3)',
-                                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                background: 'var(--bg-overlay)',
+                                borderBottom: '1px solid var(--sidebar-dark-border)',
                             }}>
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="#888">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--text-secondary)">
                                     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                                 </svg>
                                 <input
-                                    type="text"
+                                    type="search"
                                     value={messageSearchQuery}
                                     onChange={(e) => {
                                         setMessageSearchQuery(e.target.value);
                                         setMessageSearchIndex(0);
                                     }}
                                     placeholder="대화에서 검색..."
+                                    aria-label="대화 내 검색"
                                     autoFocus
                                     style={{
                                         flex: 1,
                                         padding: '6px 10px',
-                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
                                         borderRadius: '4px',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        color: '#ececf1',
+                                        background: 'var(--sidebar-dark-hover)',
+                                        color: 'var(--text-primary)',
                                         fontSize: '13px',
                                         outline: 'none',
                                     }}
@@ -2898,56 +3801,62 @@ const ChatGPTInterface: React.FC = () => {
                                     }}
                                 />
                                 {messageSearchQuery && (
-                                    <span style={{ fontSize: '12px', color: '#888' }}>
+                                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                                         {messageSearchResults.length > 0
                                             ? `${messageSearchIndex + 1} / ${messageSearchResults.length}`
                                             : '결과 없음'}
                                     </span>
                                 )}
                                 <button
+                                    type="button"
                                     onClick={() => navigateMessageSearch('prev')}
                                     disabled={messageSearchResults.length === 0}
+                                    aria-label="이전 검색 결과"
+                                    title="이전 결과"
                                     style={{
                                         padding: '4px 8px',
                                         background: 'transparent',
-                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
                                         borderRadius: '4px',
-                                        color: messageSearchResults.length > 0 ? '#ececf1' : '#666',
+                                        color: messageSearchResults.length > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
                                         cursor: messageSearchResults.length > 0 ? 'pointer' : 'not-allowed',
                                     }}
-                                    title="이전 결과"
                                 >
                                     ↑
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => navigateMessageSearch('next')}
                                     disabled={messageSearchResults.length === 0}
+                                    aria-label="다음 검색 결과"
+                                    title="다음 결과"
                                     style={{
                                         padding: '4px 8px',
                                         background: 'transparent',
-                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
                                         borderRadius: '4px',
-                                        color: messageSearchResults.length > 0 ? '#ececf1' : '#666',
+                                        color: messageSearchResults.length > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
                                         cursor: messageSearchResults.length > 0 ? 'pointer' : 'not-allowed',
                                     }}
-                                    title="다음 결과"
                                 >
                                     ↓
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => {
                                         setShowMessageSearch(false);
                                         setMessageSearchQuery('');
                                     }}
+                                    aria-label="검색 닫기 (Esc)"
+                                    title="검색 닫기 (Esc)"
                                     style={{
                                         padding: '4px 8px',
                                         background: 'transparent',
                                         border: 'none',
-                                        color: '#888',
+                                        color: 'var(--text-secondary)',
                                         cursor: 'pointer',
                                         fontSize: '16px',
                                     }}
-                                    title="검색 닫기 (Esc)"
                                 >
                                     ×
                                 </button>
@@ -2965,10 +3874,33 @@ const ChatGPTInterface: React.FC = () => {
                             data-testid="messages-container"
                         >
                             {currentConversation.messages.length === 0 ? (
-                                <div className="empty-state">
+                                <div className="empty-state" data-testid="empty-state">
                                     <output>
                                         <h2>새 대화를 시작하세요</h2>
-                                        <p>아래 입력창에 메시지를 입력하여 대화를 시작할 수 있습니다.</p>
+                                        <p>
+                                            {suggestedQuestionsFromSource.length > 0
+                                              ? '아래 추천 질문을 클릭하거나 직접 입력하세요. Enter로 전송, Shift+Enter로 줄바꿈.'
+                                              : '입력창에 메시지를 입력하여 대화를 시작하세요. Enter로 전송, Shift+Enter로 줄바꿈.'}
+                                        </p>
+                                        {suggestedQuestionsFromSource.length > 0 && (
+                                            <div className="empty-state-suggested-questions" role="region" aria-label="추천 질문" data-testid="suggested-questions-from-source">
+                                                <p className="suggested-questions-label">💡 소스 기반 추천 질문</p>
+                                                <div className="suggested-questions-grid">
+                                                    {suggestedQuestionsFromSource.map((q, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            type="button"
+                                                            className="suggested-question-chip"
+                                                            onClick={() => sendMessage(q)}
+                                                            data-testid={`suggested-question-${idx}`}
+                                                            aria-label={`추천 질문 전송: ${q}`}
+                                                        >
+                                                            {q}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </output>
                                 </div>
                             ) : (
@@ -2979,15 +3911,19 @@ const ChatGPTInterface: React.FC = () => {
                                         className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}${message.bookmarked ? ' bookmarked' : ''}`}
                                         aria-label={`${message.role === 'user' ? '사용자' : 'AI'} 메시지${message.bookmarked ? ' (북마크됨)' : ''}`}
                                         style={{
-                                            borderLeft: message.bookmarked ? '3px solid #fbbf24' : undefined,
+                                            borderLeft: message.bookmarked ? '3px solid var(--accent-warning)' : undefined,
                                         }}
                                         data-testid={`message-${message.role}${isStreaming && message.role === 'assistant' && index === currentConversation.messages.length - 1 ? '-streaming' : ''}`}
                                     >
                                         <div className="message-avatar" aria-hidden="true">
-                                            {message.role === 'user' ? '👤' : '🤖'}
+                                            {message.role === 'user' ? (
+                                                <span style={{ fontSize: '1.2em' }}>👤</span>
+                                            ) : (
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent-info-figma)" aria-hidden="true"><path d="M12 2a10 10 0 0 1 7.38 16.75 1 1 0 0 1-1.5-.75 8 8 0 1 0-11.76 0 1 1 0 0 1-1.5.75A10 10 0 0 1 12 2z"/></svg>
+                                            )}
                                         </div>
                                         <div className="message-content">
-                                            <div className="message-text" role="text">
+                                            <div className="message-text">
                                                 {editingMessageId === message.id ? (
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <textarea
@@ -3006,9 +3942,9 @@ const ChatGPTInterface: React.FC = () => {
                                                                 minHeight: '80px',
                                                                 padding: '12px',
                                                                 borderRadius: '8px',
-                                                                border: '1px solid rgba(255,255,255,0.2)',
-                                                                background: 'rgba(255,255,255,0.1)',
-                                                                color: '#ececf1',
+                                                                border: '1px solid var(--sidebar-dark-border-strong)',
+                                                                background: 'var(--sidebar-dark-input-bg)',
+                                                                color: 'var(--text-primary)',
                                                                 fontSize: '14px',
                                                                 resize: 'vertical',
                                                                 fontFamily: 'inherit',
@@ -3017,13 +3953,15 @@ const ChatGPTInterface: React.FC = () => {
                                                         />
                                                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                             <button
+                                                                type="button"
                                                                 onClick={cancelEditingMessage}
+                                                                aria-label="편집 취소"
                                                                 style={{
                                                                     padding: '6px 12px',
                                                                     borderRadius: '6px',
-                                                                    border: '1px solid rgba(255,255,255,0.2)',
+                                                                    border: '1px solid var(--sidebar-dark-border-strong)',
                                                                     background: 'transparent',
-                                                                    color: '#ececf1',
+                                                                    color: 'var(--text-primary)',
                                                                     cursor: 'pointer',
                                                                     fontSize: '13px',
                                                                 }}
@@ -3031,14 +3969,16 @@ const ChatGPTInterface: React.FC = () => {
                                                                 취소
                                                             </button>
                                                             <button
+                                                                type="button"
                                                                 onClick={() => saveEditedMessage(message.id)}
                                                                 disabled={!editingContent.trim()}
+                                                                aria-label="편집 저장"
                                                                 style={{
                                                                     padding: '6px 12px',
                                                                     borderRadius: '6px',
                                                                     border: 'none',
-                                                                    background: editingContent.trim() ? '#19c37d' : '#555',
-                                                                    color: 'white',
+                                                                    background: editingContent.trim() ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                                                    color: 'var(--on-accent)',
                                                                     cursor: editingContent.trim() ? 'pointer' : 'not-allowed',
                                                                     fontSize: '13px',
                                                                 }}
@@ -3056,6 +3996,7 @@ const ChatGPTInterface: React.FC = () => {
                                                         }}>
                                                             <ReactMarkdown
                                                                 remarkPlugins={[remarkGfm]}
+                                                                rehypePlugins={messageSearchQuery.trim() ? [[rehypeHighlightSearch, { searchTerm: messageSearchQuery }]] : []}
                                                                 components={{
                                                                     code: ({ className, children, ...props }) => {
                                                                         const isInline = !className;
@@ -3063,7 +4004,7 @@ const ChatGPTInterface: React.FC = () => {
                                                                             return (
                                                                                 <code
                                                                                     style={{
-                                                                                        backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                                                                        backgroundColor: theme === 'dark' ? 'var(--sidebar-dark-input-bg)' : 'var(--bg-active)',
                                                                                         padding: '2px 6px',
                                                                                         borderRadius: '4px',
                                                                                         fontSize: '0.9em',
@@ -3092,14 +4033,16 @@ const ChatGPTInterface: React.FC = () => {
                                                                     left: 0,
                                                                     right: 0,
                                                                     height: '60px',
-                                                                    background: `linear-gradient(transparent, ${theme === 'dark' ? '#2f2f2f' : '#f7f7f8'})`,
+                                                                    background: `linear-gradient(transparent, var(--bg-secondary))`,
                                                                     pointerEvents: 'none',
                                                                 }} />
                                                             )}
                                                         </div>
                                                         {isLongMessage(message.content) && (
                                                             <button
+                                                                type="button"
                                                                 onClick={() => toggleMessageCollapse(message.id)}
+                                                                aria-label={collapsedMessages.has(message.id) ? '메시지 펼치기' : '메시지 접기'}
                                                                 style={{
                                                                     display: 'flex',
                                                                     alignItems: 'center',
@@ -3132,6 +4075,8 @@ const ChatGPTInterface: React.FC = () => {
                                                             </button>
                                                         )}
                                                     </>
+                                                ) : messageSearchQuery.trim() ? (
+                                                    highlightTextForPlainText(message.content)
                                                 ) : (
                                                     message.content
                                                 )}
@@ -3139,11 +4084,11 @@ const ChatGPTInterface: React.FC = () => {
                                             {editingMessageId !== message.id && (
                                                 <fieldset className="message-actions" aria-label="메시지 작업" style={{ border: 'none', padding: 0, margin: 0 }}>
                                                     <button
+                                                        type="button"
                                                         className="copy-btn"
                                                         onClick={() => copyMessage(message.content)}
                                                         aria-label={`${message.role === 'user' ? '사용자' : 'AI'} 메시지 복사`}
                                                         title="메시지 복사"
-                                                        type="button"
                                                     >
                                                         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                                                             <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z" />
@@ -3151,11 +4096,11 @@ const ChatGPTInterface: React.FC = () => {
                                                     </button>
                                                     {message.role === 'user' && !isLoading && !isStreaming && (
                                                         <button
+                                                            type="button"
                                                             className="edit-btn"
                                                             onClick={() => startEditingMessage(message.id, message.content)}
                                                             aria-label="메시지 편집"
                                                             title="메시지 편집"
-                                                            type="button"
                                                             style={{
                                                                 background: 'transparent',
                                                                 border: 'none',
@@ -3175,11 +4120,11 @@ const ChatGPTInterface: React.FC = () => {
                                                     )}
                                                     {message.role === 'assistant' && !isLoading && !isStreaming && (
                                                         <button
+                                                            type="button"
                                                             className="regenerate-btn"
                                                             onClick={() => regenerateMessage(message.id)}
-                                                            aria-label="응답 재생성"
-                                                            title="응답 재생성"
-                                                            type="button"
+                                                            aria-label={message.content.startsWith('❌') ? '재시도' : '응답 재생성'}
+                                                            title={message.content.startsWith('❌') ? '재시도' : '응답 재생성'}
                                                             style={{
                                                                 background: 'transparent',
                                                                 border: 'none',
@@ -3201,17 +4146,17 @@ const ChatGPTInterface: React.FC = () => {
                                                     {message.role === 'assistant' && (
                                                         <>
                                                             <button
+                                                                type="button"
                                                                 className="reaction-btn like-btn"
                                                                 onClick={() => setMessageReaction(message.id, 'like')}
                                                                 aria-label="좋아요"
                                                                 title="좋은 응답"
-                                                                type="button"
                                                                 style={{
                                                                     background: 'transparent',
                                                                     border: 'none',
                                                                     cursor: 'pointer',
                                                                     padding: '4px',
-                                                                    color: message.reaction === 'like' ? '#22c55e' : 'inherit',
+                                                                    color: message.reaction === 'like' ? 'var(--accent-success)' : 'inherit',
                                                                     opacity: message.reaction === 'like' ? 1 : 0.7,
                                                                     display: 'flex',
                                                                     alignItems: 'center',
@@ -3223,17 +4168,17 @@ const ChatGPTInterface: React.FC = () => {
                                                                 </svg>
                                                             </button>
                                                             <button
+                                                                type="button"
                                                                 className="reaction-btn dislike-btn"
                                                                 onClick={() => setMessageReaction(message.id, 'dislike')}
                                                                 aria-label="싫어요"
                                                                 title="개선이 필요한 응답"
-                                                                type="button"
                                                                 style={{
                                                                     background: 'transparent',
                                                                     border: 'none',
                                                                     cursor: 'pointer',
                                                                     padding: '4px',
-                                                                    color: message.reaction === 'dislike' ? '#ef4444' : 'inherit',
+                                                                    color: message.reaction === 'dislike' ? 'var(--accent-error)' : 'inherit',
                                                                     opacity: message.reaction === 'dislike' ? 1 : 0.7,
                                                                     display: 'flex',
                                                                     alignItems: 'center',
@@ -3247,17 +4192,17 @@ const ChatGPTInterface: React.FC = () => {
                                                         </>
                                                     )}
                                                     <button
+                                                        type="button"
                                                         className="bookmark-btn"
                                                         onClick={() => toggleBookmark(message.id)}
                                                         aria-label={message.bookmarked ? '북마크 해제' : '북마크'}
                                                         title={message.bookmarked ? '북마크 해제' : '북마크'}
-                                                        type="button"
                                                         style={{
                                                             background: 'transparent',
                                                             border: 'none',
                                                             cursor: 'pointer',
                                                             padding: '4px',
-                                                            color: message.bookmarked ? '#fbbf24' : 'inherit',
+                                                            color: message.bookmarked ? 'var(--accent-warning)' : 'inherit',
                                                             opacity: message.bookmarked ? 1 : 0.7,
                                                             display: 'flex',
                                                             alignItems: 'center',
@@ -3270,17 +4215,17 @@ const ChatGPTInterface: React.FC = () => {
                                                     </button>
                                                     {/* TTS 버튼 */}
                                                     <button
+                                                        type="button"
                                                         className="tts-btn"
                                                         onClick={() => speakMessage(message.id, message.content)}
                                                         aria-label={speakingMessageId === message.id ? '읽기 중지' : '음성으로 읽기'}
                                                         title={speakingMessageId === message.id ? '읽기 중지' : '음성으로 읽기'}
-                                                        type="button"
                                                         style={{
                                                             background: 'transparent',
                                                             border: 'none',
                                                             cursor: 'pointer',
                                                             padding: '4px',
-                                                            color: speakingMessageId === message.id ? '#3b82f6' : 'inherit',
+                                                            color: speakingMessageId === message.id ? 'var(--accent-info)' : 'inherit',
                                                             opacity: speakingMessageId === message.id ? 1 : 0.7,
                                                             display: 'flex',
                                                             alignItems: 'center',
@@ -3301,19 +4246,20 @@ const ChatGPTInterface: React.FC = () => {
                                                     </button>
                                                     {/* 메시지 복사 버튼 */}
                                                     <button
+                                                        type="button"
                                                         className="copy-message-btn"
+                                                        aria-label="메시지 복사"
                                                         onClick={async () => {
                                                             try {
                                                                 await navigator.clipboard.writeText(message.content);
+                                                                setToastMessage('복사되었습니다');
                                                                 setShowCopyToast(true);
                                                                 setTimeout(() => setShowCopyToast(false), 2000);
                                                             } catch {
                                                                 // 복사 실패 시 무시
                                                             }
                                                         }}
-                                                        aria-label="메시지 복사"
                                                         title="메시지 복사"
-                                                        type="button"
                                                         style={{
                                                             background: 'transparent',
                                                             border: 'none',
@@ -3332,11 +4278,11 @@ const ChatGPTInterface: React.FC = () => {
                                                     </button>
                                                     {/* 메시지 삭제 버튼 */}
                                                     <button
+                                                        type="button"
                                                         className="delete-message-btn"
-                                                        onClick={() => deleteMessage(message.id)}
+                                                        onClick={() => requestDeleteMessage(message.id)}
                                                         aria-label="메시지 삭제"
                                                         title="메시지 삭제"
-                                                        type="button"
                                                         style={{
                                                             background: 'transparent',
                                                             border: 'none',
@@ -3370,9 +4316,73 @@ const ChatGPTInterface: React.FC = () => {
                                     </article>
                                 ))
                             )}
+                            {showScrollToTop && currentConversation.messages.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => scrollToTop('smooth')}
+                                    aria-label="맨 위로 스크롤"
+                                    title="맨 위로"
+                                    style={{
+                                        position: 'absolute',
+                                        top: 16,
+                                        right: 16,
+                                        padding: '8px 12px',
+                                        background: 'var(--accent-primary)',
+                                        color: 'var(--on-accent)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        boxShadow: 'var(--shadow-card)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        zIndex: 10,
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                        <path fillRule="evenodd" d="M8 13a.5.5 0 0 1-.5-.5V4.707L4.354 7.854a.5.5 0 1 1-.708-.708l4-4a.5.5 0 0 1 .708 0l4 4a.5.5 0 0 1-.708.708L8.5 4.707V12.5a.5.5 0 0 1-.5.5z" />
+                                    </svg>
+                                    맨 위로
+                                </button>
+                            )}
+                            {showScrollToBottom && currentConversation.messages.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => scrollToBottom('smooth')}
+                                    aria-label="맨 아래로 스크롤"
+                                    title="맨 아래로"
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: 16,
+                                        right: 16,
+                                        padding: '8px 12px',
+                                        background: 'var(--accent-primary)',
+                                        color: 'var(--on-accent)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        boxShadow: 'var(--shadow-card)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        zIndex: 10,
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                        <path fillRule="evenodd" d="M8 3a.5.5 0 0 1 .5.5v8.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 1 1 .708-.708L7.5 12.293V3.5A.5.5 0 0 1 8 3z" />
+                                    </svg>
+                                    맨 아래로
+                                </button>
+                            )}
                             {isLoading && !isStreaming && (
                                 <div className="message assistant-message" aria-live="polite" aria-busy="true" data-testid="loading-indicator">
-                                    <div className="message-avatar" aria-hidden="true">🤖</div>
+                                    <div className="message-avatar" aria-hidden="true">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent-info-figma)" aria-hidden="true"><path d="M12 2a10 10 0 0 1 7.38 16.75 1 1 0 0 1-1.5-.75 8 8 0 1 0-11.76 0 1 1 0 0 1-1.5.75A10 10 0 0 1 12 2z"/></svg>
+                                    </div>
                                     <div className="message-content">
                                         <output>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -3385,7 +4395,7 @@ const ChatGPTInterface: React.FC = () => {
                                                     <div style={{
                                                         height: '16px',
                                                         width: '85%',
-                                                        background: `linear-gradient(90deg, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 25%, ${theme === 'dark' ? '#4a4a4a' : '#f0f0f0'} 50%, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 75%)`,
+                                                        background: `linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%)`,
                                                         backgroundSize: '200% 100%',
                                                         animation: 'shimmer 1.5s infinite',
                                                         borderRadius: '4px',
@@ -3393,7 +4403,7 @@ const ChatGPTInterface: React.FC = () => {
                                                     <div style={{
                                                         height: '16px',
                                                         width: '70%',
-                                                        background: `linear-gradient(90deg, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 25%, ${theme === 'dark' ? '#4a4a4a' : '#f0f0f0'} 50%, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 75%)`,
+                                                        background: `linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%)`,
                                                         backgroundSize: '200% 100%',
                                                         animation: 'shimmer 1.5s infinite 0.1s',
                                                         borderRadius: '4px',
@@ -3401,7 +4411,7 @@ const ChatGPTInterface: React.FC = () => {
                                                     <div style={{
                                                         height: '16px',
                                                         width: '60%',
-                                                        background: `linear-gradient(90deg, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 25%, ${theme === 'dark' ? '#4a4a4a' : '#f0f0f0'} 50%, ${theme === 'dark' ? '#3a3a3a' : '#e0e0e0'} 75%)`,
+                                                        background: `linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%)`,
                                                         backgroundSize: '200% 100%',
                                                         animation: 'shimmer 1.5s infinite 0.2s',
                                                         borderRadius: '4px',
@@ -3418,8 +4428,8 @@ const ChatGPTInterface: React.FC = () => {
                                                     <div style={{
                                                         width: '16px',
                                                         height: '16px',
-                                                        border: `2px solid ${theme === 'dark' ? '#555' : '#ccc'}`,
-                                                        borderTopColor: '#3b82f6',
+                                                        border: '2px solid var(--border-color)',
+                                                        borderTopColor: 'var(--accent-info)',
                                                         borderRadius: '50%',
                                                         animation: 'spin 1s linear infinite',
                                                     }} />
@@ -3438,24 +4448,6 @@ const ChatGPTInterface: React.FC = () => {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* 복사 토스트 알림 */}
-                        {showCopyToast && (
-                            <div className="toast-notification" style={{
-                                position: 'fixed',
-                                bottom: '20px',
-                                right: '20px',
-                                background: '#19c37d',
-                                color: 'white',
-                                padding: '12px 20px',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                                zIndex: 10000,
-                                animation: 'slideIn 0.3s ease-out',
-                            }}>
-                                ✅ 복사되었습니다
-                            </div>
-                        )}
-
                         {/* 키보드 단축키 도움말 모달 */}
                         {showShortcutsHelp && (
                             <div
@@ -3466,16 +4458,20 @@ const ChatGPTInterface: React.FC = () => {
                                     left: 0,
                                     right: 0,
                                     bottom: 0,
-                                    background: 'rgba(0,0,0,0.7)',
+                                    background: 'var(--modal-overlay)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     zIndex: 10001,
                                 }}
                                 onClick={() => setShowShortcutsHelp(false)}
+                                role="presentation"
                             >
                                 <div
                                     className="shortcuts-modal"
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-labelledby="shortcuts-modal-title"
                                     style={{
                                         background: themeStyles.bgSecondary,
                                         borderRadius: '12px',
@@ -3484,14 +4480,17 @@ const ChatGPTInterface: React.FC = () => {
                                         width: '90%',
                                         maxHeight: '80vh',
                                         overflow: 'auto',
-                                        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                                        boxShadow: 'var(--shadow-modal)',
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                        <h2 style={{ margin: 0, fontSize: '18px', color: themeStyles.textPrimary }}>⌨️ 키보드 단축키</h2>
+                                        <h2 id="shortcuts-modal-title" style={{ margin: 0, fontSize: '18px', color: themeStyles.textPrimary }}>⌨️ 키보드 단축키</h2>
                                         <button
+                                            ref={shortcutsCloseRef}
+                                            type="button"
                                             onClick={() => setShowShortcutsHelp(false)}
+                                            aria-label="단축키 도움말 닫기"
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -3506,13 +4505,17 @@ const ChatGPTInterface: React.FC = () => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                         {[
                                             { keys: 'Ctrl/⌘ + N', desc: '새 대화 시작' },
+                                            { keys: 'Ctrl/⌘ + /', desc: '사이드바 토글' },
                                             { keys: 'Ctrl/⌘ + F', desc: '대화 내 검색' },
                                             { keys: 'Ctrl/⌘ + E', desc: '대화 내보내기' },
-                                            { keys: '/', desc: '입력창 포커스' },
+                                            { keys: 'Ctrl/⌘ + Shift + D', desc: '대화 복제' },
+                                            { keys: 'Ctrl/⌘ + Shift + I', desc: '대화 가져오기' },
+                                            { keys: '/ 또는 Ctrl/⌘ + L', desc: '입력창 포커스' },
                                             { keys: '?', desc: '이 도움말 열기' },
                                             { keys: 'Enter', desc: '메시지 전송' },
                                             { keys: 'Shift + Enter', desc: '줄바꿈' },
-                                            { keys: 'Escape', desc: '검색 닫기 / 스트리밍 중지' },
+                                            { keys: '↑ / ↓', desc: '입력 히스토리 탐색' },
+                                            { keys: 'Escape', desc: '단축키·검색 닫기 / 스트리밍 중지' },
                                         ].map((shortcut, idx) => (
                                             <div
                                                 key={idx}
@@ -3555,23 +4558,25 @@ const ChatGPTInterface: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '8px',
                                 padding: '8px 12px',
-                                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                borderBottom: '1px solid var(--sidebar-dark-border)',
                             }}>
                                 <button
+                                    type="button"
                                     onClick={() => setShowStyleOptions(!showStyleOptions)}
+                                    aria-label={`응답 스타일: ${responseStyle === 'concise' ? '간결한' : responseStyle === 'balanced' ? '균형잡힌' : responseStyle === 'detailed' ? '상세한' : '종합적인'}`}
+                                    title="응답 스타일 선택"
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '6px',
                                         padding: '6px 12px',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        background: 'var(--sidebar-dark-hover)',
+                                        border: '1px solid var(--sidebar-dark-border-strong)',
                                         borderRadius: '6px',
-                                        color: '#ececf1',
+                                        color: 'var(--text-primary)',
                                         fontSize: '12px',
                                         cursor: 'pointer',
                                     }}
-                                    title="응답 스타일 선택"
                                 >
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                                         <path d="M2.5 1a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 .75.434l5.5-3.143a.5.5 0 0 1 .5 0l5.5 3.143A.5.5 0 0 0 14 14.5v-13a.5.5 0 0 0-.5-.5h-11z" />
@@ -3587,10 +4592,10 @@ const ChatGPTInterface: React.FC = () => {
                                 {perspective && (
                                     <span style={{
                                         padding: '4px 8px',
-                                        background: 'rgba(59, 130, 246, 0.2)',
+                                        background: 'var(--accent-info-muted)',
                                         borderRadius: '4px',
                                         fontSize: '11px',
-                                        color: '#93c5fd',
+                                        color: 'var(--accent-info)',
                                     }}>
                                         {perspective === 'practical' && '실용적'}
                                         {perspective === 'theoretical' && '이론적'}
@@ -3598,7 +4603,9 @@ const ChatGPTInterface: React.FC = () => {
                                         {perspective === 'critical' && '비판적'}
                                         {perspective === 'empathetic' && '공감적'}
                                         <button
+                                            type="button"
                                             onClick={() => setPerspective(null)}
+                                            aria-label="관점 선택 해제"
                                             style={{ marginLeft: '4px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0 }}
                                         >×</button>
                                     </span>
@@ -3609,22 +4616,25 @@ const ChatGPTInterface: React.FC = () => {
                             {showStyleOptions && (
                                 <div style={{
                                     padding: '12px',
-                                    background: 'rgba(0,0,0,0.3)',
-                                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                    background: 'var(--bg-overlay)',
+                                    borderBottom: '1px solid var(--sidebar-dark-border)',
                                 }}>
                                     <div style={{ marginBottom: '12px' }}>
-                                        <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px' }}>응답 길이</div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '6px' }}>응답 길이</div>
                                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                             {(['concise', 'balanced', 'detailed', 'comprehensive'] as const).map((style) => (
                                                 <button
                                                     key={style}
+                                                    type="button"
                                                     onClick={() => { setResponseStyle(style); }}
+                                                    aria-label={`${style === 'concise' ? '간결' : style === 'balanced' ? '균형' : style === 'detailed' ? '상세' : '종합'} 스타일 선택`}
+                                                    aria-pressed={responseStyle === style}
                                                     style={{
                                                         padding: '6px 12px',
-                                                        background: responseStyle === style ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.05)',
-                                                        border: responseStyle === style ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)',
-                                                        borderRadius: '4px',
-                                                        color: responseStyle === style ? '#93c5fd' : '#ececf1',
+                                                        background: responseStyle === style ? 'var(--accent-info-muted)' : 'var(--bg-hover)',
+                                                        border: responseStyle === style ? '1px solid var(--accent-info)' : '1px solid var(--border-color)',
+                                                        borderRadius: 'var(--radius-sm)',
+                                                        color: responseStyle === style ? 'var(--accent-info)' : 'var(--text-primary)',
                                                         fontSize: '12px',
                                                         cursor: 'pointer',
                                                     }}
@@ -3638,18 +4648,21 @@ const ChatGPTInterface: React.FC = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px' }}>응답 관점 (선택사항)</div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '6px' }}>응답 관점 (선택사항)</div>
                                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                             {(['practical', 'theoretical', 'creative', 'critical', 'empathetic'] as const).map((p) => (
                                                 <button
                                                     key={p}
+                                                    type="button"
                                                     onClick={() => setPerspective(perspective === p ? null : p)}
+                                                    aria-label={`${p === 'practical' ? '실용적' : p === 'theoretical' ? '이론적' : p === 'creative' ? '창의적' : p === 'critical' ? '비판적' : '공감적'} 관점 선택`}
+                                                    aria-pressed={perspective === p}
                                                     style={{
                                                         padding: '6px 10px',
-                                                        background: perspective === p ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.05)',
-                                                        border: perspective === p ? '1px solid #22c55e' : '1px solid rgba(255,255,255,0.1)',
-                                                        borderRadius: '4px',
-                                                        color: perspective === p ? '#86efac' : '#ececf1',
+                                                        background: perspective === p ? 'var(--accent-success-muted)' : 'var(--bg-hover)',
+                                                        border: perspective === p ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                                                        borderRadius: 'var(--radius-sm)',
+                                                        color: perspective === p ? 'var(--accent-primary)' : 'var(--text-primary)',
                                                         fontSize: '11px',
                                                         cursor: 'pointer',
                                                     }}
@@ -3672,34 +4685,33 @@ const ChatGPTInterface: React.FC = () => {
                                     display: 'flex',
                                     gap: '8px',
                                     padding: '8px 12px',
-                                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                    borderBottom: '1px solid var(--sidebar-dark-border)',
                                     flexWrap: 'wrap',
                                 }}>
-                                    <span style={{ fontSize: '11px', color: '#888', display: 'flex', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
                                         빠른 질문:
                                     </span>
                                     {quickSuggestions.map((suggestion, idx) => (
                                         <button
                                             key={idx}
-                                            onClick={() => {
-                                                setInput(suggestion);
-                                                inputRef.current?.focus();
-                                            }}
+                                            type="button"
+                                            onClick={() => sendMessage(suggestion)}
+                                            aria-label={`빠른 질문 전송: ${suggestion}`}
                                             style={{
                                                 padding: '4px 10px',
                                                 fontSize: '12px',
-                                                background: 'rgba(59, 130, 246, 0.1)',
-                                                border: '1px solid rgba(59, 130, 246, 0.3)',
-                                                borderRadius: '12px',
-                                                color: '#93c5fd',
+                                                background: 'var(--accent-info-muted)',
+                                                border: '1px solid var(--accent-info-border)',
+                                                borderRadius: 'var(--radius-xl)',
+                                                color: 'var(--accent-info)',
                                                 cursor: 'pointer',
                                                 transition: 'all 0.2s',
                                             }}
                                             onMouseEnter={(e) => {
-                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
+                                                e.currentTarget.style.background = 'var(--accent-info-border)';
                                             }}
                                             onMouseLeave={(e) => {
-                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                                                e.currentTarget.style.background = 'var(--accent-info-muted)';
                                             }}
                                         >
                                             {suggestion}
@@ -3712,7 +4724,9 @@ const ChatGPTInterface: React.FC = () => {
                                 <textarea
                                     ref={inputRef}
                                     value={input}
+                                    maxLength={10000}
                                     onChange={(e) => {
+                                        inputHistoryIndexRef.current = -1;
                                         setInput(e.target.value);
                                         // 자동 높이 조절
                                         const textarea = e.target;
@@ -3720,11 +4734,12 @@ const ChatGPTInterface: React.FC = () => {
                                         textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
                                     }}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="메시지를 입력하세요... (여러 질문도 한번에 보내세요)"
+                                    placeholder="Type '/' for commands"
                                     rows={1}
-                                    disabled={isLoading}
+                                    disabled={isLoading || !isOnline}
                                     className="message-input"
-                                    aria-label="메시지 입력창"
+                                    data-testid="chat-input"
+                                    aria-label="메시지 입력창 (최대 10,000자)"
                                     aria-describedby="input-hint"
                                     aria-invalid={input.length > 10000}
                                     aria-required="true"
@@ -3737,11 +4752,12 @@ const ChatGPTInterface: React.FC = () => {
                                 />
                                 {isStreaming ? (
                                     <button
+                                        type="button"
                                         className="send-button cancel-button"
                                         onClick={cancelStreaming}
                                         aria-label="스트리밍 중지"
-                                        title="스트리밍 중지 (Esc)"
-                                        style={{ background: '#ef4444' }}
+                                        title={`스트리밍 중지 (Esc) · ${streamingElapsedSec}초`}
+                                        style={{ background: 'var(--accent-error)' }}
                                     >
                                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <rect x="4" y="4" width="12" height="12" rx="2" />
@@ -3749,12 +4765,14 @@ const ChatGPTInterface: React.FC = () => {
                                     </button>
                                 ) : (
                                     <button
+                                        type="button"
                                         className="send-button"
-                                        onClick={sendMessage}
-                                        disabled={!input.trim() || isLoading}
+                                        onClick={() => sendMessage()}
+                                        disabled={!input.trim() || isLoading || !isOnline}
                                         aria-label="메시지 전송"
-                                        aria-disabled={!input.trim() || isLoading}
-                                        title={isLoading ? '응답 생성 중...' : '메시지 전송 (Enter)'}
+                                        aria-disabled={!input.trim() || isLoading || !isOnline}
+                                        title={!isOnline ? '오프라인 상태입니다' : isLoading ? '응답 생성 중...' : '메시지 전송 (Enter)'}
+                                        data-testid="send-button"
                                     >
                                         {isLoading ? (
                                             <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner">
@@ -3772,14 +4790,14 @@ const ChatGPTInterface: React.FC = () => {
                             </div>
                             <div className="input-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                                 <span id="input-hint" className="input-hint" aria-live="polite">
-                                    {isLoading ? '응답 생성 중...' : input.length > 10000 ? `메시지가 너무 깁니다 (${input.length}/10,000자)` : 'Enter로 전송, Shift+Enter로 줄바꿈'}
+                                    {!isOnline ? '오프라인 — 연결 후 전송 가능' : isStreaming ? `스트리밍 중... (${streamingElapsedSec}초) — Esc로 중지` : isLoading ? '응답 생성 중...' : input.length > 10000 ? `메시지가 너무 깁니다 (${input.length}/10,000자)` : input.length >= 9000 ? `거의 최대치입니다 (${input.length}/10,000자)` : 'Enter로 전송, Shift+Enter로 줄바꿈'}
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                     {/* 글자 수 / 토큰 예상치 */}
                                     {input.length > 0 && (
                                         <span style={{
                                             fontSize: '11px',
-                                            color: input.length > 8000 ? '#ef4444' : input.length > 5000 ? '#f59e0b' : themeStyles.textSecondary,
+                                            color: input.length >= 9000 ? 'var(--accent-error)' : input.length > 5000 ? 'var(--accent-warning)' : themeStyles.textSecondary,
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '8px',
@@ -3789,12 +4807,13 @@ const ChatGPTInterface: React.FC = () => {
                                             <span>~{Math.ceil(input.length / 4).toLocaleString()} 토큰</span>
                                         </span>
                                     )}
-                                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }} title={isLoading || isStreaming ? '응답 생성 중에는 변경할 수 없습니다' : !isStreamingSupported() ? '스트리밍 미지원' : undefined}>
                                         <input
                                             type="checkbox"
                                             checked={useStreaming}
                                             onChange={(e) => setUseStreaming(e.target.checked)}
                                             disabled={isLoading || isStreaming || !isStreamingSupported()}
+                                            aria-label="스트리밍 활성화"
                                         />
                                         <span style={{ fontSize: '12px', opacity: 0.85 }}>
                                             스트리밍{isStreamingSupported() ? '' : ' (미지원)'}
@@ -3805,9 +4824,9 @@ const ChatGPTInterface: React.FC = () => {
                         </section>
                     </>
                 ) : (
-                    <div className="welcome-screen" style={{ background: themeStyles.bgPrimary }}>
+                    <div className="welcome-screen brainwave-welcome" style={{ background: themeStyles.bgPrimary }}>
                         <div className="welcome-content" style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px' }}>
-                            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                                 <div style={{
                                     fontSize: '48px',
                                     marginBottom: '16px',
@@ -3825,10 +4844,82 @@ const ChatGPTInterface: React.FC = () => {
                                 <p style={{
                                     fontSize: '16px',
                                     color: themeStyles.textSecondary,
+                                    marginBottom: '24px',
                                 }}>
-                                    무엇이든 물어보세요. 다양한 질문에 답변해 드립니다.
+                                    I&apos;m CORBU AI - a versatile and powerful tool for users seeking to enhance their experience with ChatGPT.
                                 </p>
+                                <div className="brainwave-capability-chips" style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: 'var(--spacing-sm)',
+                                    justifyContent: 'center',
+                                    marginTop: 'var(--spacing-lg)',
+                                }}>
+                                    {[
+                                        { label: 'Photo edition', icon: '📷', bg: 'var(--accent-secondary-muted)', hoverBg: 'var(--accent-secondary)', border: 'var(--accent-secondary)' },
+                                        { label: 'Video generation', icon: '▶️', bg: 'var(--accent-warning-muted)', hoverBg: 'var(--accent-orange)', border: 'var(--accent-orange)' },
+                                        { label: 'Photo generation', icon: '🖼️', bg: 'var(--accent-info-muted)', hoverBg: 'var(--accent-info-figma)', border: 'var(--accent-info-figma)' },
+                                        { label: 'Code generation', icon: '💻', bg: 'var(--accent-success-muted)', hoverBg: 'var(--accent-success)', border: 'var(--accent-success)' },
+                                        { label: 'Audio generation', icon: '🎵', bg: 'var(--accent-warning-muted)', hoverBg: 'var(--accent-orange)', border: 'var(--accent-orange)' },
+                                    ].map(({ label, icon, bg, hoverBg, border }) => (
+                                        <button
+                                            key={label}
+                                            type="button"
+                                            onClick={() => sendMessage(`Show me ${label.toLowerCase()}`)}
+                                            className="brainwave-capability-chip"
+                                            style={{ background: bg, borderColor: border }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = hoverBg;
+                                                e.currentTarget.style.borderColor = border;
+                                                e.currentTarget.style.color = 'var(--on-accent)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = bg;
+                                                e.currentTarget.style.borderColor = border;
+                                                e.currentTarget.style.color = 'var(--text-primary)';
+                                            }}
+                                            aria-label={`${label} 시작`}
+                                        >
+                                            <span>{icon}</span>
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
+                                {!currentProject && (
+                                    <div style={{
+                                        marginTop: '20px',
+                                        padding: '12px 20px',
+                                        background: 'var(--accent-info-muted)',
+                                        border: '1px solid var(--accent-info-border)',
+                                        borderRadius: 'var(--radius-xl)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        flexWrap: 'wrap',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <span style={{ fontSize: '14px', color: themeStyles.textPrimary }}>
+                                            📁 프로젝트를 선택하거나 새로 만들면 소스 기반 답변을 받을 수 있어요
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowProjectModal(true)}
+                                            style={{
+                                                padding: '6px 14px',
+                                                background: 'var(--accent-info)',
+                                                border: 'none',
+                                                borderRadius: '8px',
+                                                color: '#fff',
+                                                fontSize: '13px',
+                                                cursor: 'pointer',
+                                                fontWeight: 500,
+                                            }}
+                                        >
+                                            프로젝트 만들기
+                                        </button>
+                                    </div>
+                                )}
 
                             {/* 카테고리별 예시 질문 */}
                             <div style={{
@@ -3852,7 +4943,9 @@ const ChatGPTInterface: React.FC = () => {
                                         {['안녕하세요!', '오늘 기분이 어때요?', '재미있는 이야기 해줘'].map((text) => (
                                             <button
                                                 key={text}
-                                                onClick={() => { setInput(text); inputRef.current?.focus(); }}
+                                                type="button"
+                                                onClick={() => sendMessage(text)}
+                                                aria-label={`예시 질문 전송: ${text}`}
                                                 style={{
                                                     padding: '8px 12px',
                                                     background: 'transparent',
@@ -3886,7 +4979,9 @@ const ChatGPTInterface: React.FC = () => {
                                         {['Python 기초 알려줘', 'React와 Vue 비교해줘', '머신러닝이란?'].map((text) => (
                                             <button
                                                 key={text}
-                                                onClick={() => { setInput(text); inputRef.current?.focus(); }}
+                                                type="button"
+                                                onClick={() => sendMessage(text)}
+                                                aria-label={`예시 질문 전송: ${text}`}
                                                 style={{
                                                     padding: '8px 12px',
                                                     background: 'transparent',
@@ -3920,7 +5015,9 @@ const ChatGPTInterface: React.FC = () => {
                                         {['이메일 작성 도와줘', '블로그 글 아이디어', '짧은 시 한편 써줘'].map((text) => (
                                             <button
                                                 key={text}
-                                                onClick={() => { setInput(text); inputRef.current?.focus(); }}
+                                                type="button"
+                                                onClick={() => sendMessage(text)}
+                                                aria-label={`예시 질문 전송: ${text}`}
                                                 style={{
                                                     padding: '8px 12px',
                                                     background: 'transparent',
@@ -3954,7 +5051,9 @@ const ChatGPTInterface: React.FC = () => {
                                         {['코드 리뷰해줘', '이력서 피드백', '사업 아이디어 분석'].map((text) => (
                                             <button
                                                 key={text}
-                                                onClick={() => { setInput(text); inputRef.current?.focus(); }}
+                                                type="button"
+                                                onClick={() => sendMessage(text)}
+                                                aria-label={`예시 질문 전송: ${text}`}
                                                 style={{
                                                     padding: '8px 12px',
                                                     background: 'transparent',
@@ -3987,22 +5086,47 @@ const ChatGPTInterface: React.FC = () => {
                             </div>
                         </div>
                         <section className="input-container" aria-label="메시지 입력 영역" data-testid="input-container">
-                            <div className="input-wrapper">
+                            <div className="input-wrapper brainwave-input">
+                                <button
+                                    type="button"
+                                    className="input-icon-btn"
+                                    onClick={() => inputRef.current?.focus()}
+                                    aria-label="첨부 또는 명령어 (/ 입력)"
+                                    title="첨부 또는 명령어"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                                </button>
                                 <textarea
                                     ref={inputRef}
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    onChange={(e) => {
+                                        inputHistoryIndexRef.current = -1;
+                                        setInput(e.target.value);
+                                    }}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="메시지를 입력하세요..."
+                                    placeholder="Type '/' for commands"
                                     rows={1}
                                     className="message-input"
                                     data-testid="chat-input"
+                                    aria-label="메시지 입력 (Enter로 전송, ↑↓ 이전 입력)"
                                 />
                                 <button
+                                    type="button"
+                                    className="input-icon-btn"
+                                    aria-label="음성 입력"
+                                    title="음성 입력"
+                                    style={{ opacity: 0.6 }}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/><path d="M8 23h8"/></svg>
+                                </button>
+                                <button
+                                    type="button"
                                     className="send-button"
-                                    onClick={sendMessage}
-                                    disabled={!input.trim() || isLoading}
+                                    onClick={() => sendMessage()}
+                                    disabled={!input.trim() || isLoading || !isOnline}
                                     data-testid="send-button"
+                                    title={!isOnline ? '오프라인 상태입니다' : '메시지 전송 (Enter)'}
+                                    aria-label={!isOnline ? '오프라인 상태입니다' : '메시지 전송'}
                                 >
                                     <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M2 10l16-8-8 16-2-6-6-2z" />
@@ -4012,7 +5136,96 @@ const ChatGPTInterface: React.FC = () => {
                         </section>
                     </div>
                 )}
-            </div>
+            </main>
+
+            {/* 노트북 설정 모달 (Phase 4) */}
+            <ProjectEditModal
+                isOpen={showProjectEditModal}
+                onClose={() => setShowProjectEditModal(false)}
+                projectId={currentProject?.id ?? null}
+                currentProject={currentProject ? { id: currentProject.id, name: currentProject.name, description: currentProject.description, tags: [] } : null}
+                onSaved={(updated) => {
+                    setProjects((prev) => prev.map((p) => (p.id === updated.id ? { ...p, name: updated.name, description: updated.description || '' } : p)));
+                    if (currentProject?.id === updated.id) {
+                        setCurrentProject((prev) => (prev ? { ...prev, name: updated.name, description: updated.description || '' } : null));
+                    }
+                    setToastMessage('설정이 저장되었습니다');
+                    setShowCopyToast(true);
+                    setTimeout(() => setShowCopyToast(false), 2000);
+                }}
+            />
+
+            {/* 노트북 공유 모달 (Phase 4) */}
+            {currentProject && (
+                <ProjectShareDialog
+                    open={showShareModal}
+                    onClose={() => setShowShareModal(false)}
+                    projectId={currentProject.id}
+                    projectName={currentProject.name}
+                />
+            )}
+
+            {/* PRO 구독 안내 모달 */}
+            {showProModal && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'var(--modal-overlay)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                    }}
+                    onClick={() => setShowProModal(false)}
+                    role="presentation"
+                >
+                    <div
+                        style={{
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            maxWidth: '400px',
+                            width: '90%',
+                            boxShadow: 'var(--shadow-modal)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="pro-modal-title"
+                    >
+                        <h2 id="pro-modal-title" style={{ margin: '0 0 16px', fontSize: 18, color: 'var(--text-primary)' }}>
+                            ⭐ PRO 구독
+                        </h2>
+                        <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                            PRO 구독 시 제공될 예정 기능입니다.
+                        </p>
+                        <ul style={{ margin: '0 0 20px', paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+                            <li>고급 모델 접근 (GPT-4, Claude 등)</li>
+                            <li>무제한 노트북·소스</li>
+                            <li>우선 지원</li>
+                        </ul>
+                        <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>준비 중입니다.</p>
+                        <button
+                            type="button"
+                            onClick={() => setShowProModal(false)}
+                            aria-label="PRO 모달 닫기"
+                            style={{
+                                marginTop: 20,
+                                padding: '10px 20px',
+                                background: 'var(--accent-primary)',
+                                border: 'none',
+                                borderRadius: 8,
+                                color: 'var(--on-accent)',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                            }}
+                        >
+                            확인
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* 프로젝트 생성 모달 */}
             {showProjectModal && (
@@ -4038,37 +5251,309 @@ const ChatGPTInterface: React.FC = () => {
                             type="text"
                             value={newProjectName}
                             onChange={(e) => setNewProjectName(e.target.value)}
-                            placeholder="프로젝트 이름을 입력하세요"
+                            placeholder="프로젝트 이름 (2자 이상)"
+                            aria-label="프로젝트 이름"
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === 'Enter' && newProjectName.trim().length >= 2) {
                                     createNewProject();
+                                } else if (e.key === 'Escape') {
+                                    setShowProjectModal(false);
+                                    setNewProjectName('');
                                 }
                             }}
                             autoFocus
                         />
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
                             <button
+                                type="button"
                                 onClick={() => {
                                     setShowProjectModal(false);
                                     setNewProjectName('');
                                 }}
-                                style={{ padding: '8px 16px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', background: 'transparent', color: '#ececf1', cursor: 'pointer' }}
+                                aria-label="프로젝트 생성 취소"
+                                style={{ padding: '8px 16px', border: '1px solid var(--sidebar-dark-border-strong)', borderRadius: '4px', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}
                             >
                                 취소
                             </button>
                             <button
+                                type="button"
                                 onClick={createNewProject}
-                                disabled={!newProjectName.trim()}
+                                disabled={newProjectName.trim().length < 2}
+                                aria-label="프로젝트 생성"
+                                title={newProjectName.trim().length < 2 ? '프로젝트 이름을 2자 이상 입력하세요' : undefined}
                                 style={{
                                     padding: '8px 16px',
                                     border: 'none',
                                     borderRadius: '4px',
-                                    background: newProjectName.trim() ? '#19c37d' : '#555',
-                                    color: 'white',
-                                    cursor: newProjectName.trim() ? 'pointer' : 'not-allowed'
+                                    background: newProjectName.trim().length >= 2 ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                    color: 'var(--on-accent)',
+                                    cursor: newProjectName.trim().length >= 2 ? 'pointer' : 'not-allowed'
                                 }}
                             >
                                 생성
+                            </button>
+                        </div>
+                    </div>
+                </dialog>
+            )}
+
+            {/* 프로젝트 삭제 확인 모달 */}
+            {deleteConfirmProject && (
+                <dialog
+                    className="modal-overlay"
+                    open
+                    aria-modal="true"
+                    aria-label="프로젝트 삭제 확인 모달"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) cancelDeleteProject();
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') cancelDeleteProject();
+                    }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'var(--modal-overlay)',
+                        zIndex: 1000,
+                        border: 'none',
+                    }}
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            maxWidth: '400px',
+                            width: '90%',
+                            boxShadow: 'var(--shadow-modal)',
+                        }}
+                    >
+                        <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: '18px', fontWeight: 600 }}>
+                            프로젝트 삭제
+                        </h2>
+                        <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
+                            다음 프로젝트(노트북)를 삭제하시겠습니까?
+                        </p>
+                        <p style={{
+                            margin: '0 0 20px',
+                            color: 'var(--text-primary)',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            padding: '12px',
+                            background: 'var(--sidebar-dark-hover)',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}>
+                            📁 {deleteConfirmProject.name}
+                        </p>
+                        <p style={{ margin: '0 0 20px', color: 'var(--accent-error)', fontSize: '12px' }}>
+                            관련 대화와 소스도 함께 삭제되며 되돌릴 수 없습니다.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button
+                                type="button"
+                                onClick={cancelDeleteProject}
+                                aria-label="프로젝트 삭제 취소"
+                                style={{
+                                    padding: '10px 20px',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
+                                    borderRadius: '6px',
+                                    background: 'transparent',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                }}
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDeleteProject}
+                                aria-label="프로젝트 삭제 확인"
+                                style={{
+                                    padding: '10px 20px',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    background: 'var(--accent-error)',
+                                    color: 'var(--on-accent)',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                삭제
+                            </button>
+                        </div>
+                    </div>
+                </dialog>
+            )}
+
+            {/* 메시지 삭제 확인 모달 */}
+            {deleteConfirmMessageId && (
+                <dialog
+                    className="modal-overlay"
+                    open
+                    aria-modal="true"
+                    aria-label="메시지 삭제 확인"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setDeleteConfirmMessageId(null);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') setDeleteConfirmMessageId(null);
+                    }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'var(--modal-overlay)',
+                        zIndex: 1000,
+                        border: 'none',
+                    }}
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            maxWidth: '400px',
+                            width: '90%',
+                            boxShadow: 'var(--shadow-modal)',
+                        }}
+                    >
+                        <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: '18px', fontWeight: 600 }}>
+                            메시지 삭제
+                        </h2>
+                        <p style={{ margin: '0 0 20px', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
+                            이 메시지를 삭제하시겠습니까?
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button
+                                type="button"
+                                onClick={() => setDeleteConfirmMessageId(null)}
+                                aria-label="메시지 삭제 취소"
+                                style={{
+                                    padding: '10px 20px',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
+                                    borderRadius: '6px',
+                                    background: 'transparent',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                }}
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDeleteMessage}
+                                aria-label="메시지 삭제 확인"
+                                style={{
+                                    padding: '10px 20px',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    background: 'var(--accent-error)',
+                                    color: 'var(--on-accent)',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                삭제
+                            </button>
+                        </div>
+                    </div>
+                </dialog>
+            )}
+
+            {/* 메시지 전체 삭제 확인 모달 */}
+            {showClearMessagesConfirm && (
+                <dialog
+                    className="modal-overlay"
+                    open
+                    aria-modal="true"
+                    aria-label="메시지 전체 삭제 확인"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setShowClearMessagesConfirm(false);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') setShowClearMessagesConfirm(false);
+                    }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'var(--modal-overlay)',
+                        zIndex: 1000,
+                        border: 'none',
+                    }}
+                >
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            maxWidth: '400px',
+                            width: '90%',
+                            boxShadow: 'var(--shadow-modal)',
+                        }}
+                    >
+                        <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: '18px', fontWeight: 600 }}>
+                            메시지 전체 삭제
+                        </h2>
+                        <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
+                            현재 대화의 모든 메시지를 삭제하시겠습니까?
+                        </p>
+                        <p style={{ margin: '0 0 20px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                            대화 자체는 유지됩니다.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowClearMessagesConfirm(false)}
+                                aria-label="전체 삭제 취소"
+                                style={{
+                                    padding: '10px 20px',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
+                                    borderRadius: '6px',
+                                    background: 'transparent',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                }}
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmClearMessages}
+                                aria-label="메시지 전체 삭제 확인"
+                                style={{
+                                    padding: '10px 20px',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    background: 'var(--accent-error)',
+                                    color: 'var(--on-accent)',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                삭제
                             </button>
                         </div>
                     </div>
@@ -4098,7 +5583,7 @@ const ChatGPTInterface: React.FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        backgroundColor: 'var(--modal-overlay)',
                         zIndex: 1000,
                         border: 'none',
                     }}
@@ -4107,27 +5592,27 @@ const ChatGPTInterface: React.FC = () => {
                         className="modal-content"
                         onClick={(e) => e.stopPropagation()}
                         style={{
-                            background: '#2d2d30',
+                            background: 'var(--bg-tertiary)',
                             borderRadius: '12px',
                             padding: '24px',
                             maxWidth: '400px',
                             width: '90%',
-                            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                            boxShadow: 'var(--shadow-modal)',
                         }}
                     >
-                        <h2 style={{ margin: '0 0 16px', color: '#ececf1', fontSize: '18px', fontWeight: 600 }}>
+                        <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: '18px', fontWeight: 600 }}>
                             대화 삭제
                         </h2>
-                        <p style={{ margin: '0 0 8px', color: '#b4b4b4', fontSize: '14px', lineHeight: 1.5 }}>
+                        <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
                             다음 대화를 삭제하시겠습니까?
                         </p>
                         <p style={{
                             margin: '0 0 20px',
-                            color: '#ececf1',
+                            color: 'var(--text-primary)',
                             fontSize: '14px',
                             fontWeight: 500,
                             padding: '12px',
-                            background: 'rgba(255,255,255,0.05)',
+                            background: 'var(--sidebar-dark-hover)',
                             borderRadius: '8px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -4135,18 +5620,20 @@ const ChatGPTInterface: React.FC = () => {
                         }}>
                             "{deleteConfirmConversation.title}"
                         </p>
-                        <p style={{ margin: '0 0 20px', color: '#f87171', fontSize: '12px' }}>
+                        <p style={{ margin: '0 0 20px', color: 'var(--accent-error)', fontSize: '12px' }}>
                             이 작업은 되돌릴 수 없습니다.
                         </p>
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                             <button
+                                type="button"
                                 onClick={cancelDeleteConversation}
+                                aria-label="대화 삭제 취소"
                                 style={{
                                     padding: '10px 20px',
-                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    border: '1px solid var(--sidebar-dark-border-strong)',
                                     borderRadius: '6px',
                                     background: 'transparent',
-                                    color: '#ececf1',
+                                    color: 'var(--text-primary)',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                 }}
@@ -4154,13 +5641,15 @@ const ChatGPTInterface: React.FC = () => {
                                 취소
                             </button>
                             <button
+                                type="button"
                                 onClick={confirmDeleteConversation}
+                                aria-label="대화 삭제 확인"
                                 style={{
                                     padding: '10px 20px',
                                     border: 'none',
                                     borderRadius: '6px',
-                                    background: '#ef4444',
-                                    color: 'white',
+                                    background: 'var(--accent-error)',
+                                    color: 'var(--on-accent)',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                     fontWeight: 500,
@@ -4171,6 +5660,31 @@ const ChatGPTInterface: React.FC = () => {
                         </div>
                     </div>
                 </dialog>
+            )}
+
+            {/* 공통 토스트 알림 (채팅 복사·노트북 응답 완료 등) */}
+            {showCopyToast && (
+                <div
+                    className="toast-notification"
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    aria-label={toastMessage}
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        background: 'var(--accent-primary)',
+                        color: 'var(--on-accent)',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        boxShadow: 'var(--shadow-dropdown)',
+                        zIndex: 10000,
+                        animation: 'slideIn 0.3s ease-out',
+                    }}
+                >
+                    ✅ {toastMessage}
+                </div>
             )}
         </div>
     );

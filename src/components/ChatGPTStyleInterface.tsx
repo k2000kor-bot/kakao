@@ -21,15 +21,11 @@ import {
     Grid,
     Paper,
     Avatar,
-    Divider,
     InputAdornment,
-    Menu,
-    MenuItem,
     FormControl,
     FormControlLabel,
     Radio,
-    RadioGroup,
-    FormLabel
+    RadioGroup
 } from '@mui/material';
 import {
     Add,
@@ -42,15 +38,6 @@ import {
     Mic,
     AttachFile as Paperclip,
     Add as Plus,
-    Image,
-    Code,
-    Language as Globe,
-    Storage as HardDrive,
-    Cloud,
-    Share,
-    Archive,
-    Delete,
-    Edit,
     Settings,
     Lightbulb,
     EmojiEmotions,
@@ -58,15 +45,7 @@ import {
     School,
     Create,
     Favorite,
-    Flight,
-    Chat,
-    LibraryBooks,
-    QrCode,
-    PlayArrow,
-    GridView,
-    Person,
-    ExpandMore,
-    ExpandLess
+    Flight
 } from '@mui/icons-material';
 
 interface Project {
@@ -100,11 +79,11 @@ interface ChatMessage {
 }
 
 const PROJECT_CATEGORIES = [
-    { id: 'investment', label: '투자', icon: AttachMoney, color: '#4CAF50' },
-    { id: 'homework', label: '숙제', icon: School, color: '#2196F3' },
-    { id: 'writing', label: '글쓰기', icon: Create, color: '#9C27B0' },
-    { id: 'health', label: '건강', icon: Favorite, color: '#F44336' },
-    { id: 'travel', label: '여행', icon: Flight, color: '#FF9800' },
+    { id: 'investment', label: '투자', icon: AttachMoney, color: 'var(--accent-success)' },
+    { id: 'homework', label: '숙제', icon: School, color: 'var(--accent-info)' },
+    { id: 'writing', label: '글쓰기', icon: Create, color: 'var(--accent-secondary)' },
+    { id: 'health', label: '건강', icon: Favorite, color: 'var(--accent-error)' },
+    { id: 'travel', label: '여행', icon: Flight, color: 'var(--accent-warning)' },
 ];
 
 export const ChatGPTStyleInterface: React.FC = () => {
@@ -117,7 +96,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
 
     // UI 상태
     const [showProjectCreation, setShowProjectCreation] = useState(false);
-    const [showFileManager, setShowFileManager] = useState(false);
+    const [_showFileManager, setShowFileManager] = useState(false);
     const [showSessionList, setShowSessionList] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -132,6 +111,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
     // 초기 데이터 로드
     useEffect(() => {
         loadProjects();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // 프로젝트 로드
@@ -178,7 +158,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
     };
 
     // 프로젝트 데이터 로드
-    const loadProjectData = async (projectId: string) => {
+    const loadProjectData = async (_projectId: string) => {
         const mockSessions: ProjectSession[] = [
             {
                 id: '1',
@@ -267,7 +247,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
     };
 
     // 세션 메시지 로드
-    const loadSessionMessages = async (sessionId: string) => {
+    const loadSessionMessages = async (_sessionId: string) => {
         const mockMessages: ChatMessage[] = [
             {
                 id: '1',
@@ -386,7 +366,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
     };
 
     return (
-        <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#f5f5f5' }}>
+        <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'var(--bg-secondary)' }}>
             {/* 사이드바 */}
             <Box sx={{ width: 320, bgcolor: 'white', borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
                 {/* 헤더 */}
@@ -400,7 +380,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                             size="small"
                             startIcon={<Add />}
                             onClick={() => setShowProjectCreation(true)}
-                            sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
+                            sx={{ bgcolor: 'var(--accent-info)', '&:hover': { bgcolor: 'var(--accent-hover)' } }}
                         >
                             새 프로젝트
                         </Button>
@@ -432,8 +412,8 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                 mb: 1,
                                 cursor: 'pointer',
                                 border: currentProject?.id === project.id ? 2 : 1,
-                                borderColor: currentProject?.id === project.id ? '#1976d2' : 'divider',
-                                bgcolor: currentProject?.id === project.id ? '#e3f2fd' : 'white',
+                                borderColor: currentProject?.id === project.id ? 'var(--accent-info)' : 'divider',
+                                bgcolor: currentProject?.id === project.id ? 'var(--accent-info-muted)' : 'var(--bg-primary)',
                                 '&:hover': { boxShadow: 2 }
                             }}
                             onClick={() => {
@@ -510,7 +490,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                         size="small"
                                         startIcon={<Add />}
                                         onClick={handleCreateNewSession}
-                                        sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
+                                        sx={{ bgcolor: 'var(--accent-info)', '&:hover': { bgcolor: 'var(--accent-hover)' } }}
                                     >
                                         새 채팅
                                     </Button>
@@ -532,7 +512,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                         </Box>
 
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#4caf50' }} />
+                                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--accent-success)' }} />
                                             <Typography variant="caption" color="text.secondary">
                                                 연결됨
                                             </Typography>
@@ -541,7 +521,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                 </Box>
 
                                 {/* 메시지 목록 */}
-                                <Box sx={{ flex: 1, overflow: 'auto', p: 2, bgcolor: '#fafafa' }}>
+                                <Box sx={{ flex: 1, overflow: 'auto', p: 2, bgcolor: 'var(--bg-secondary)' }}>
                                     {messages.map((message) => (
                                         <Box
                                             key={message.id}
@@ -555,7 +535,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                                 sx={{
                                                     p: 2,
                                                     maxWidth: '70%',
-                                                    bgcolor: message.role === 'user' ? '#1976d2' : 'white',
+                                                    bgcolor: message.role === 'user' ? 'var(--accent-info)' : 'var(--bg-primary)',
                                                     color: message.role === 'user' ? 'white' : 'text.primary',
                                                     boxShadow: 1
                                                 }}
@@ -582,9 +562,9 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                             <Paper sx={{ p: 2, bgcolor: 'white', boxShadow: 1 }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                     <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                        <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'grey.400', animation: 'bounce 1s infinite' }} />
-                                                        <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'grey.400', animation: 'bounce 1s infinite 0.1s' }} />
-                                                        <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'grey.400', animation: 'bounce 1s infinite 0.2s' }} />
+                                                        <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'var(--text-tertiary)', animation: 'bounce 1s infinite' }} />
+                                                        <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'var(--text-tertiary)', animation: 'bounce 1s infinite 0.1s' }} />
+                                                        <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'var(--text-tertiary)', animation: 'bounce 1s infinite 0.2s' }} />
                                                     </Box>
                                                     <Typography variant="caption" color="text.secondary">
                                                         답변을 생성하고 있습니다...
@@ -631,7 +611,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                             variant="contained"
                                             onClick={handleSendMessage}
                                             disabled={!inputValue.trim() || isTyping}
-                                            sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
+                                            sx={{ bgcolor: 'var(--accent-info)', '&:hover': { bgcolor: 'var(--accent-hover)' } }}
                                         >
                                             <Send />
                                         </Button>
@@ -641,7 +621,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                         ) : (
                             <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Box sx={{ textAlign: 'center' }}>
-                                    <MessageSquare sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                                    <MessageSquare sx={{ fontSize: 64, color: 'var(--text-tertiary)', mb: 2 }} />
                                     <Typography variant="h6" sx={{ mb: 1 }}>
                                         채팅을 시작하세요
                                     </Typography>
@@ -652,7 +632,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                         variant="contained"
                                         startIcon={<Add />}
                                         onClick={handleCreateNewSession}
-                                        sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
+                                        sx={{ bgcolor: 'var(--accent-info)', '&:hover': { bgcolor: 'var(--accent-hover)' } }}
                                     >
                                         새 채팅 시작
                                     </Button>
@@ -663,7 +643,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                 ) : (
                     <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Box sx={{ textAlign: 'center' }}>
-                            <Folder sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                            <Folder sx={{ fontSize: 64, color: 'var(--text-tertiary)', mb: 2 }} />
                             <Typography variant="h6" sx={{ mb: 1 }}>
                                 프로젝트를 선택하세요
                             </Typography>
@@ -674,7 +654,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                 variant="contained"
                                 startIcon={<Add />}
                                 onClick={() => setShowProjectCreation(true)}
-                                sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
+                                sx={{ bgcolor: 'var(--accent-info)', '&:hover': { bgcolor: 'var(--accent-hover)' } }}
                             >
                                 새 프로젝트 만들기
                             </Button>
@@ -703,7 +683,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                         {/* 프로젝트 이름 입력 */}
                         <Box sx={{ mb: 3 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <Avatar sx={{ bgcolor: '#9c27b0', width: 32, height: 32 }}>
+                                <Avatar sx={{ bgcolor: 'var(--accent-secondary)', width: 32, height: 32 }}>
                                     <EmojiEmotions />
                                 </Avatar>
                                 <TextField
@@ -736,7 +716,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                                     bgcolor: isSelected ? category.color : 'transparent',
                                                     color: isSelected ? 'white' : 'text.primary',
                                                     '&:hover': {
-                                                        bgcolor: isSelected ? category.color : 'grey.100'
+                                                        bgcolor: isSelected ? category.color : 'var(--bg-tertiary)'
                                                     }
                                                 }}
                                             >
@@ -792,7 +772,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                     </RadioGroup>
                                 </FormControl>
 
-                                <Box sx={{ mt: 2, p: 2, bgcolor: '#fff3e0', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ mt: 2, p: 2, bgcolor: 'var(--accent-warning-muted)', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Lightbulb color="warning" />
                                     <Typography variant="caption" color="warning.dark">
                                         이 설정은 이후에 변경할 수 없습니다.
@@ -802,7 +782,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                         )}
 
                         {/* 프로젝트 설명 */}
-                        <Paper sx={{ p: 2, bgcolor: '#f5f5f5' }}>
+                        <Paper sx={{ p: 2, bgcolor: 'var(--bg-secondary)' }}>
                             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                                 <Lightbulb color="warning" />
                                 <Typography variant="body2">
@@ -822,7 +802,7 @@ export const ChatGPTStyleInterface: React.FC = () => {
                         variant="contained"
                         onClick={handleCreateProject}
                         disabled={!projectName.trim()}
-                        sx={{ bgcolor: '#424242', '&:hover': { bgcolor: '#303030' } }}
+                        sx={{ bgcolor: 'var(--bg-tertiary)', '&:hover': { bgcolor: 'var(--bg-hover)' } }}
                     >
                         프로젝트 만들기
                     </Button>
@@ -850,8 +830,8 @@ export const ChatGPTStyleInterface: React.FC = () => {
                                     borderColor: 'divider',
                                     borderRadius: 1,
                                     mb: 1,
-                                    bgcolor: session.isActive ? '#e3f2fd' : 'white',
-                                    '&:hover': { bgcolor: session.isActive ? '#e3f2fd' : 'grey.50' }
+                                    bgcolor: session.isActive ? 'var(--accent-info-muted)' : 'var(--bg-primary)',
+                                    '&:hover': { bgcolor: session.isActive ? 'var(--accent-info-muted)' : 'var(--bg-secondary)' }
                                 }}
                             >
                                 <ListItemIcon>
