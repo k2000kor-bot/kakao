@@ -123,7 +123,7 @@
 | `edit-text.png` | 무제 폴더/Edit text (텍스트 편집 UI) |
 | `export.png` | 무제 폴더/Export (Export 모달) |
 
-해상도: 1440px 기준. 디자인 확인 시 `/design-ref/conversation.png` 등으로 접근 가능.
+해상도: 1440px 기준. 디자인 확인 시 `/design-ref/` (index) 또는 `/design-ref/conversation.png` 등으로 접근 가능.
 
 ---
 

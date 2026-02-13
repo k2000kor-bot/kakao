@@ -1,14 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { errorLogger } from '../utils/errorLogger';
 import {
-  Send, Plus, Settings, Search, Mic, ChevronDown, ChevronRight, ExternalLink, FileText,
-  Github, Folder, Globe, Calendar, Mail, PenTool, Code, TrendingUp, Hammer, Pencil,
-  Star, Check, Upload, MessageSquare, FolderPlus, FileUp, BookOpen, Users, BarChart3,
-  Zap, Brain, Cpu, Clock, Eye, Download, Share2, Volume2, VolumeX, Maximize2, Minimize2,
-  RotateCcw, Save, Trash2, Edit3, Copy, Share, Bookmark, MoreHorizontal, Filter, Grid,
-  List, Sun, Moon, Monitor, Smartphone, Tablet, Calculator, Shield, Target, Megaphone,
-  Gavel, Presentation, Image, Video, Archive, X, Sparkles, Home, Edit, ArrowRight,
-  ChevronUp, Paperclip, ThumbsUp, ThumbsDown, Grid3X3, Menu, Bot, User, Sparkles as SparklesIcon
+  Send, Plus, Settings, Mic, FileText,
+  Folder, Upload, MessageSquare, BookOpen, BarChart3,
+  Zap, Brain,
+  Sun, Moon, Image, Video, X, Edit, Menu, Bot, User
 } from 'lucide-react';
 
 interface Message {
@@ -21,7 +17,7 @@ interface Message {
     processingTime?: number;
     confidence?: number;
     tokens?: number;
-    analysis?: any;
+    analysis?: unknown;
   };
 }
 
@@ -55,7 +51,7 @@ const UltimateChatGPTInterface: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
-  const [selectedModel, setSelectedModel] = useState('corbu-ai-ultimate');
+  const [selectedModel, setSelectedModel] = useState('brainwave-ultimate');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [showSidebar, setShowSidebar] = useState(true);
 
@@ -66,7 +62,7 @@ const UltimateChatGPTInterface: React.FC = () => {
   // UI 상태
   const [showFilePanel, setShowFilePanel] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [_showKeyboardShortcuts, _setShowKeyboardShortcuts] = useState(false);
 
   // refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -75,10 +71,10 @@ const UltimateChatGPTInterface: React.FC = () => {
 
   // 모델 설정
   const models = [
-    { id: 'corbu-ai-ultimate', name: 'CORBU AI Ultimate', description: '궁극의 통합 AI 모델' },
-    { id: 'corbu-ai-quantum', name: 'CORBU AI Quantum', description: '양자 컴퓨팅 기반 AI' },
-    { id: 'corbu-ai-advanced', name: 'CORBU AI Advanced', description: '고급 분석 AI' },
-    { id: 'corbu-ai-standard', name: 'CORBU AI Standard', description: '표준 AI 모델' }
+    { id: 'brainwave-ultimate', name: 'CORBU AI Ultimate', description: '궁극의 통합 AI 모델' },
+    { id: 'brainwave-quantum', name: 'CORBU AI Quantum', description: '양자 컴퓨팅 기반 AI' },
+    { id: 'brainwave-advanced', name: 'CORBU AI Advanced', description: '고급 분석 AI' },
+    { id: 'brainwave-standard', name: 'CORBU AI Standard', description: '표준 AI 모델' }
   ];
 
   // 자동 스크롤
@@ -109,6 +105,7 @@ const UltimateChatGPTInterface: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- saveConversation/createNewProject 안정적 참조
   }, []);
 
   // 메시지 전송
@@ -377,18 +374,18 @@ const UltimateChatGPTInterface: React.FC = () => {
     }
   };
 
-  // 파일 드래그 앤 드롭
-  const handleDragOver = (e: React.DragEvent) => {
+  // 파일 드래그 앤 드롭 (향후 onDragOver 등에 연결 시 사용)
+  const _handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const _handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const _handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     const files = Array.from(e.dataTransfer.files);
@@ -521,8 +518,8 @@ const UltimateChatGPTInterface: React.FC = () => {
     localStorage.setItem('corbu_ai_conversation', JSON.stringify(conversationData));
   };
 
-  // 파일 크기 포맷팅
-  const formatFileSize = (bytes: number): string => {
+  // 파일 크기 포맷팅 (향후 UI 표시 시 사용)
+  const _formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -530,43 +527,49 @@ const UltimateChatGPTInterface: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // 파일 아이콘
-  const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf')) return <FileText className="w-4 h-4 text-red-500" />;
-    if (fileType.includes('image')) return <Image className="w-4 h-4 text-green-500" />;
-    if (fileType.includes('video')) return <Video className="w-4 h-4 text-blue-500" />;
-    return <FileText className="w-4 h-4 text-gray-500" />;
+  // 파일 아이콘 (향후 파일 목록 UI에 사용)
+  const _getFileIcon = (fileType: string) => {
+    if (fileType.includes('pdf')) return <FileText className="w-4 h-4 bw-text-error" />;
+    if (fileType.includes('image')) return <Image className="w-4 h-4 bw-text-success" />;
+    if (fileType.includes('video')) return <Video className="w-4 h-4 bw-text-info" />;
+    return <FileText className="w-4 h-4 bw-text-muted" />;
   };
 
+  const layoutBg = { background: 'var(--bg-primary)' };
+  const layoutBorder = { borderColor: 'var(--border-color)' };
+  const sidebarBg = { background: 'var(--bg-secondary)' };
+
   return (
-    <div className={`h-screen flex bg-white ${theme === 'dark' ? 'dark bg-gray-900' : ''}`}>
+    <div className={`h-screen flex ${theme === 'dark' ? 'dark-mode' : ''}`} style={layoutBg}>
       {/* 사이드바 */}
       {showSidebar && (
-        <div className="w-64 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <div className="w-64 flex flex-col border-r" style={{ ...sidebarBg, ...layoutBorder }}>
           {/* 헤더 */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b" style={layoutBorder}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-info)' }}>
                   <Bot className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">CORBU AI</h1>
+                <h1 className="text-lg font-bold bw-text-primary">CORBU AI</h1>
               </div>
               <button
                 onClick={() => setShowSidebar(false)}
-                className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="bw-btn-ghost p-1.5 rounded-md"
                 title="사이드바 닫기"
+                type="button"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 bw-text-muted" />
               </button>
             </div>
           </div>
 
           {/* 새 채팅 버튼 */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b" style={layoutBorder}>
             <button
               onClick={createNewProject}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              className="bw-btn-primary w-full flex items-center justify-center space-x-2"
+              type="button"
             >
               <Plus className="w-4 h-4" />
               <span className="font-medium">새 채팅</span>
@@ -578,7 +581,7 @@ const UltimateChatGPTInterface: React.FC = () => {
             <div className="space-y-1">
               {/* AI 모델 선택 */}
               <div className="mb-4">
-                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">
+                <div className="text-xs font-medium bw-text-muted mb-2 px-2">
                   AI 모델
                 </div>
                 <div className="space-y-1">
@@ -587,12 +590,13 @@ const UltimateChatGPTInterface: React.FC = () => {
                       key={model.id}
                       onClick={() => setSelectedModel(model.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedModel === model.id
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? 'bw-btn-primary'
+                        : 'bw-btn-ghost bw-text-primary'
                         }`}
+                      type="button"
                     >
                       <div className="font-medium">{model.name}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div className="text-xs bw-text-muted truncate">
                         {model.description}
                       </div>
                     </button>
@@ -602,18 +606,18 @@ const UltimateChatGPTInterface: React.FC = () => {
 
               {/* 채팅 히스토리 */}
               <div className="mb-4">
-                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">
+                <div className="text-xs font-medium bw-text-muted mb-2 px-2">
                   최근 대화
                 </div>
                 <div className="space-y-1">
                   {messages.length > 0 ? (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 px-2">
+                    <div className="text-xs bw-text-muted mb-2 px-2">
                       오늘
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <MessageSquare className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">새 채팅을 시작하세요</p>
+                    <div className="bw-empty py-8">
+                      <MessageSquare className="w-8 h-8 bw-empty-icon mx-auto mb-2" />
+                      <p>새 채팅을 시작하세요</p>
                     </div>
                   )}
                 </div>
@@ -621,36 +625,24 @@ const UltimateChatGPTInterface: React.FC = () => {
 
               {/* 빠른 액세스 */}
               <div className="mb-4">
-                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">
+                <div className="text-xs font-medium bw-text-muted mb-2 px-2">
                   빠른 액세스
                 </div>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => setInputValue('감정 분석을 해주세요')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Brain className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('감정 분석을 해주세요')} className="w-full text-left px-3 py-2 rounded-lg text-sm bw-btn-ghost bw-text-primary flex items-center space-x-2" aria-label="감정 분석 예시 질문 사용">
+                    <Brain className="w-4 h-4" aria-hidden="true" />
                     <span>감정 분석</span>
                   </button>
-                  <button
-                    onClick={() => setInputValue('데이터를 분석해주세요')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                  >
-                    <BarChart3 className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('데이터를 분석해주세요')} className="w-full text-left px-3 py-2 rounded-lg text-sm bw-btn-ghost bw-text-primary flex items-center space-x-2" aria-label="데이터 분석 예시 질문 사용">
+                    <BarChart3 className="w-4 h-4" aria-hidden="true" />
                     <span>데이터 분석</span>
                   </button>
-                  <button
-                    onClick={() => setInputValue('프로젝트를 관리해주세요')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Folder className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('프로젝트를 관리해주세요')} className="w-full text-left px-3 py-2 rounded-lg text-sm bw-btn-ghost bw-text-primary flex items-center space-x-2" aria-label="프로젝트 관리 예시 질문 사용">
+                    <Folder className="w-4 h-4" aria-hidden="true" />
                     <span>프로젝트 관리</span>
                   </button>
-                  <button
-                    onClick={() => setInputValue('AI 기능을 알려주세요')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Zap className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('AI 기능을 알려주세요')} className="w-full text-left px-3 py-2 rounded-lg text-sm bw-btn-ghost bw-text-primary flex items-center space-x-2" aria-label="AI 기능 예시 질문 사용">
+                    <Zap className="w-4 h-4" aria-hidden="true" />
                     <span>AI 기능</span>
                   </button>
                 </div>
@@ -658,36 +650,24 @@ const UltimateChatGPTInterface: React.FC = () => {
 
               {/* 고급 기능 */}
               <div className="mb-4">
-                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">
+                <div className="text-xs font-medium bw-text-muted mb-2 px-2">
                   고급 기능
                 </div>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => setInputValue('세뇌 콘텐츠를 생성해주세요')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Brain className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('세뇌 콘텐츠를 생성해주세요')} className="w-full text-left px-3 py-2 rounded-lg text-sm bw-btn-ghost bw-text-primary flex items-center space-x-2" aria-label="조작 콘텐츠 생성 예시 질문 사용">
+                    <Brain className="w-4 h-4" aria-hidden="true" />
                     <span>조작 콘텐츠 생성</span>
                   </button>
-                  <button
-                    onClick={() => setInputValue('가스라이팅 댓글을 생성해주세요')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                  >
-                    <MessageSquare className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('가스라이팅 댓글을 생성해주세요')} className="w-full text-left px-3 py-2 rounded-lg text-sm bw-btn-ghost bw-text-primary flex items-center space-x-2" aria-label="가스라이팅 생성 예시 질문 사용">
+                    <MessageSquare className="w-4 h-4" aria-hidden="true" />
                     <span>가스라이팅 생성</span>
                   </button>
-                  <button
-                    onClick={() => setInputValue('한국어 분석을 해주세요')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                  >
-                    <BookOpen className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('한국어 분석을 해주세요')} className="w-full text-left px-3 py-2 rounded-lg text-sm bw-btn-ghost bw-text-primary flex items-center space-x-2" aria-label="한국어 분석 예시 질문 사용">
+                    <BookOpen className="w-4 h-4" aria-hidden="true" />
                     <span>한국어 분석</span>
                   </button>
-                  <button
-                    onClick={() => setInputValue('글쓰기 스타일을 분석해주세요')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Edit className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('글쓰기 스타일을 분석해주세요')} className="w-full text-left px-3 py-2 rounded-lg text-sm bw-btn-ghost bw-text-primary flex items-center space-x-2" aria-label="글쓰기 스타일 분석 예시 질문 사용">
+                    <Edit className="w-4 h-4" aria-hidden="true" />
                     <span>글쓰기 스타일</span>
                   </button>
                 </div>
@@ -696,23 +676,15 @@ const UltimateChatGPTInterface: React.FC = () => {
           </div>
 
           {/* 하단 설정 */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-t" style={layoutBorder}>
             <div className="flex items-center justify-between">
-              <button
-                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title="테마 변경"
-              >
-                {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              <button type="button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="bw-btn-ghost p-2 rounded-lg" title="테마 변경" aria-label={theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}>
+                {theme === 'light' ? <Moon className="w-4 h-4 bw-text-muted" aria-hidden="true" /> : <Sun className="w-4 h-4 bw-text-muted" aria-hidden="true" />}
               </button>
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title="설정"
-              >
-                <Settings className="w-4 h-4" />
+              <button type="button" onClick={() => setShowSettings(!showSettings)} className="bw-btn-ghost p-2 rounded-lg" title="설정" aria-label={showSettings ? '설정 패널 닫기' : '설정 열기'}>
+                <Settings className="w-4 h-4 bw-text-muted" aria-hidden="true" />
               </button>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="text-xs bw-text-muted">
                 CORBU AI v2.0
               </div>
             </div>
@@ -721,29 +693,21 @@ const UltimateChatGPTInterface: React.FC = () => {
       )}
 
       {/* 메인 콘텐츠 */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
+      <div className="flex-1 flex flex-col" style={layoutBg}>
         {/* 상단 헤더 */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="border-b px-4 py-3" style={{ ...sidebarBg, ...layoutBorder }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {!showSidebar && (
-                <button
-                  onClick={() => setShowSidebar(true)}
-                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  title="사이드바 열기"
-                >
-                  <Menu className="w-5 h-5" />
+                <button type="button" onClick={() => setShowSidebar(true)} className="bw-btn-ghost p-2 rounded-lg" title="사이드바 열기" aria-label="사이드바 열기">
+                  <Menu className="w-5 h-5 bw-text-muted" aria-hidden="true" />
                 </button>
               )}
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">CORBU AI</h2>
+              <h2 className="text-lg font-semibold bw-text-primary">CORBU AI</h2>
             </div>
             <div className="flex items-center space-x-1">
-              <button
-                onClick={() => setShowFilePanel(!showFilePanel)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                title="파일 패널"
-              >
-                <Folder className="w-5 h-5" />
+              <button type="button" onClick={() => setShowFilePanel(!showFilePanel)} className="bw-btn-ghost p-2 rounded-lg" title="파일 패널" aria-label={showFilePanel ? '파일 패널 닫기' : '파일 패널 열기'}>
+                <Folder className="w-5 h-5 bw-text-muted" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -754,70 +718,70 @@ const UltimateChatGPTInterface: React.FC = () => {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <div className="text-center max-w-2xl">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'var(--accent-info)' }}>
                   <Bot className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">안녕하세요. CORBU AI</h1>
-                <p className="text-gray-600 dark:text-gray-400 mb-8">무엇을 도와드릴까요?</p>
+                <h1 className="bw-heading-1 mb-2">안녕하세요. CORBU AI</h1>
+                <p className="bw-text-secondary mb-8">무엇을 도와드릴까요?</p>
 
                 {/* 제안 프롬프트 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
                   <button
                     onClick={() => setInputValue('감정 분석을 해주세요')}
-                    className="p-4 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="bw-card-secondary p-4 text-left rounded-lg transition-colors hover:opacity-90"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                        <Brain className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--accent-info-muted)' }}>
+                        <Brain className="w-4 h-4 bw-text-info" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">감정 분석</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">텍스트의 감정을 분석해드립니다</p>
+                        <h3 className="font-medium bw-text-primary">감정 분석</h3>
+                        <p className="text-sm bw-text-secondary">텍스트의 감정을 분석해드립니다</p>
                       </div>
                     </div>
                   </button>
 
                   <button
                     onClick={() => setInputValue('데이터를 분석해주세요')}
-                    className="p-4 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="bw-card-secondary p-4 text-left rounded-lg transition-colors hover:opacity-90"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--accent-success-muted)' }}>
+                        <BarChart3 className="w-4 h-4 bw-text-success" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">데이터 분석</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">복잡한 데이터를 분석합니다</p>
+                        <h3 className="font-medium bw-text-primary">데이터 분석</h3>
+                        <p className="text-sm bw-text-secondary">복잡한 데이터를 분석합니다</p>
                       </div>
                     </div>
                   </button>
 
                   <button
                     onClick={() => setInputValue('프로젝트를 관리해주세요')}
-                    className="p-4 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="bw-card-secondary p-4 text-left rounded-lg transition-colors hover:opacity-90"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                        <Folder className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--accent-secondary-muted)' }}>
+                        <Folder className="w-4 h-4" style={{ color: 'var(--accent-secondary)' }} />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">프로젝트 관리</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">작업을 체계적으로 관리합니다</p>
+                        <h3 className="font-medium bw-text-primary">프로젝트 관리</h3>
+                        <p className="text-sm bw-text-secondary">작업을 체계적으로 관리합니다</p>
                       </div>
                     </div>
                   </button>
 
                   <button
                     onClick={() => setInputValue('AI 기능을 알려주세요')}
-                    className="p-4 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="bw-card-secondary p-4 text-left rounded-lg transition-colors hover:opacity-90"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                        <Zap className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--accent-warning-muted)' }}>
+                        <Zap className="w-4 h-4 bw-text-warning" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">AI 기능</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">다양한 AI 기능을 소개합니다</p>
+                        <h3 className="font-medium bw-text-primary">AI 기능</h3>
+                        <p className="text-sm bw-text-secondary">다양한 AI 기능을 소개합니다</p>
                       </div>
                     </div>
                   </button>
@@ -832,10 +796,10 @@ const UltimateChatGPTInterface: React.FC = () => {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div className={`flex items-start space-x-3 max-w-3xl ${message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                      }`}>
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={message.role === 'user' ? { background: 'var(--accent-info)', color: 'white' } : { background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                    >
                       {message.role === 'user' ? (
                         <User className="w-4 h-4" />
                       ) : (
@@ -844,15 +808,16 @@ const UltimateChatGPTInterface: React.FC = () => {
                     </div>
                     <div className={`flex-1 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                       <div className={`inline-block p-4 rounded-2xl ${message.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                        }`}>
+                        ? 'text-white'
+                        : 'bw-card-secondary bw-text-primary'
+                        }`}
+                        style={message.role === 'user' ? { background: 'var(--accent-info)' } : undefined}>
                         <div className="prose prose-sm max-w-none dark:prose-invert">
                           {message.content.split('\n').map((line, index) => {
                             // 마크다운 헤더 처리
                             if (line.startsWith('## ')) {
                               return (
-                                <h2 key={index} className={`text-lg font-bold mt-4 mb-2 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-white'
+                                <h2 key={index} className={`text-lg font-bold mt-4 mb-2 ${message.role === 'user' ? 'text-white' : 'bw-text-primary'
                                   }`}>
                                   {line.replace('## ', '')}
                                 </h2>
@@ -860,7 +825,7 @@ const UltimateChatGPTInterface: React.FC = () => {
                             }
                             if (line.startsWith('### ')) {
                               return (
-                                <h3 key={index} className={`text-base font-semibold mt-3 mb-2 ${message.role === 'user' ? 'text-white' : 'text-gray-800 dark:text-gray-200'
+                                <h3 key={index} className={`text-base font-semibold mt-3 mb-2 ${message.role === 'user' ? 'text-white' : 'bw-text-primary'
                                   }`}>
                                   {line.replace('### ', '')}
                                 </h3>
@@ -891,16 +856,16 @@ const UltimateChatGPTInterface: React.FC = () => {
                             }
                             // 구분선 처리
                             if (line.startsWith('---')) {
-                              return <hr key={index} className={`my-4 ${message.role === 'user' ? 'border-blue-400' : 'border-gray-300 dark:border-gray-600'
-                                }`} />;
+                              return <hr key={index} className="my-4" style={{ borderColor: message.role === 'user' ? 'var(--accent-info)' : 'var(--border-color)' }} />;
                             }
                             // 코드 블록 처리
                             if (line.startsWith('`') && line.endsWith('`')) {
                               return (
                                 <code key={index} className={`px-2 py-1 rounded text-sm font-mono ${message.role === 'user'
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                                  }`}>
+                                  ? 'text-white'
+                                  : 'bw-card-secondary bw-text-primary'
+                                  }`}
+                                  style={message.role === 'user' ? { background: 'var(--accent-info)' } : undefined}>
                                   {line.replace(/`/g, '')}
                                 </code>
                               );
@@ -920,18 +885,20 @@ const UltimateChatGPTInterface: React.FC = () => {
                       </div>
                       {message.metadata && (
                         <div className={`text-xs mt-2 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-                          <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-                            <span>{message.metadata.model}</span>
-                            <span>•</span>
-                            <span>{message.metadata.processingTime}ms</span>
-                            {message.metadata.analysis && (
-                              <>
-                                <span>•</span>
-                                <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
-                                  {message.metadata.analysis.emotion?.sentiment || '중립'}
-                                </span>
-                              </>
-                            )}
+                          <div className="flex items-center space-x-2 bw-text-muted">
+                            <>
+                              <span>{String((message.metadata as { model?: unknown }).model ?? '')}</span>
+                              <span>•</span>
+                              <span>{Number((message.metadata as { processingTime?: unknown }).processingTime ?? 0)}ms</span>
+                              {(message.metadata as { analysis?: { emotion?: { sentiment?: string } } }).analysis?.emotion && (
+                                <>
+                                  <span>•</span>
+                                  <span className="bw-badge px-2 py-1 rounded text-xs bw-text-info" style={{ background: 'var(--accent-info-muted)' }}>
+                                    {(message.metadata as { analysis?: { emotion?: { sentiment?: string } } }).analysis?.emotion?.sentiment || '중립'}
+                                  </span>
+                                </>
+                              )}
+                            </>
                           </div>
                         </div>
                       )}
@@ -943,14 +910,14 @@ const UltimateChatGPTInterface: React.FC = () => {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bw-card-secondary">
+                      <Bot className="w-4 h-4 bw-text-muted" />
                     </div>
-                    <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-2xl">
+                    <div className="bw-card-secondary p-4 rounded-2xl">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 rounded-full animate-bounce bw-text-muted" style={{ backgroundColor: 'var(--text-tertiary)' }}></div>
+                        <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--text-tertiary)', animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--text-tertiary)', animationDelay: '0.2s' }}></div>
                       </div>
                     </div>
                   </div>
@@ -963,16 +930,16 @@ const UltimateChatGPTInterface: React.FC = () => {
         </div>
 
         {/* 입력 영역 */}
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="border-t rounded-2xl" style={{ ...layoutBorder, ...layoutBg }}>
           <div className="max-w-4xl mx-auto px-4 py-4">
             {/* 파일 드래그 앤 드롭 영역 */}
             {isDragOver && (
-              <div className="mb-4 border-2 border-dashed border-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-8 text-center">
-                <Upload className="w-12 h-12 mx-auto text-blue-500 mb-4" />
-                <p className="text-lg font-medium text-blue-700 dark:text-blue-300 mb-2">
+              <div className="mb-4 border-2 border-dashed rounded-lg p-8 text-center bw-card-secondary" style={{ borderColor: 'var(--accent-info)' }}>
+                <Upload className="w-12 h-12 mx-auto bw-text-info mb-4" />
+                <p className="text-lg font-medium bw-text-info mb-2">
                   파일을 여기에 놓으세요
                 </p>
-                <p className="text-sm text-blue-600 dark:text-blue-400">
+                <p className="text-sm bw-text-info">
                   문서, 이미지, 코드 파일 등을 업로드할 수 있습니다
                 </p>
               </div>
@@ -982,15 +949,15 @@ const UltimateChatGPTInterface: React.FC = () => {
             {Object.keys(uploadProgress).length > 0 && (
               <div className="mb-4 space-y-2">
                 {Object.entries(uploadProgress).map(([fileId, progress]) => (
-                  <div key={fileId} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <div key={fileId} className="bw-card rounded-lg p-3">
                     <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-700 dark:text-gray-300">업로드 중...</span>
-                      <span className="text-gray-500 dark:text-gray-400">{Math.round(progress)}%</span>
+                      <span className="bw-text-primary">업로드 중...</span>
+                      <span className="bw-text-muted">{Math.round(progress)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="w-full bw-progress-bar rounded-full h-2">
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${progress}%` }}
+                        className="bw-progress-fill h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%`, background: 'var(--accent-info)' }}
                       />
                     </div>
                   </div>
@@ -1002,12 +969,8 @@ const UltimateChatGPTInterface: React.FC = () => {
             <div className="relative">
               <div className="flex items-end space-x-3">
                 {/* 파일 첨부 버튼 */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  title="파일 첨부"
-                >
-                  <Plus className="w-5 h-5" />
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="bw-btn-ghost p-3 rounded-lg" title="파일 첨부" aria-label="파일 첨부">
+                  <Plus className="w-5 h-5 bw-text-muted" aria-hidden="true" />
                 </button>
 
                 {/* 입력 필드 */}
@@ -1022,8 +985,9 @@ const UltimateChatGPTInterface: React.FC = () => {
                         handleSendMessage();
                       }
                     }}
-                    className="w-full p-4 pr-12 border border-gray-300 dark:border-gray-600 rounded-2xl resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="CORBU AI에게 무엇이든 물어보세요..."
+                    className="bw-input w-full p-4 pr-12 rounded-2xl resize-none"
+                    placeholder="Type '/' for commands"
+                    aria-label="메시지 입력 (Enter로 전송)"
                     rows={1}
                     style={{
                       minHeight: '52px',
@@ -1034,13 +998,15 @@ const UltimateChatGPTInterface: React.FC = () => {
 
                   {/* 전송 버튼 */}
                   <button
+                    type="button"
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim() || isLoading}
                     className={`absolute right-2 bottom-2 p-2 rounded-xl transition-all duration-200 ${inputValue.trim() && !isLoading
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      ? 'bw-btn-primary text-white shadow-lg'
+                      : 'bw-btn-secondary cursor-not-allowed bw-text-muted'
                       }`}
                     title="메시지 전송"
+                    aria-label="메시지 전송"
                   >
                     {isLoading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1051,41 +1017,29 @@ const UltimateChatGPTInterface: React.FC = () => {
                 </div>
 
                 {/* 음성 입력 버튼 */}
-                <button
-                  className="p-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  title="음성 입력"
-                >
-                  <Mic className="w-5 h-5" />
+                <button type="button" className="bw-btn-ghost p-3 rounded-lg" title="음성 입력" aria-label="음성 입력">
+                  <Mic className="w-5 h-5 bw-text-muted" aria-hidden="true" />
                 </button>
               </div>
 
               {/* 하단 기능 버튼들 */}
               <div className="flex items-center justify-between mt-3 px-3">
                 <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => setInputValue('감정 분석을 해주세요')}
-                    className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <Brain className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('감정 분석을 해주세요')} className="bw-btn-ghost flex items-center space-x-2 px-3 py-2 text-sm bw-text-secondary rounded-lg" aria-label="감정 분석 예시 질문 사용">
+                    <Brain className="w-4 h-4" aria-hidden="true" />
                     <span>감정 분석</span>
                   </button>
-                  <button
-                    onClick={() => setInputValue('데이터를 분석해주세요')}
-                    className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <BarChart3 className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('데이터를 분석해주세요')} className="bw-btn-ghost flex items-center space-x-2 px-3 py-2 text-sm bw-text-secondary rounded-lg" aria-label="데이터 분석 예시 질문 사용">
+                    <BarChart3 className="w-4 h-4" aria-hidden="true" />
                     <span>데이터 분석</span>
                   </button>
-                  <button
-                    onClick={() => setInputValue('프로젝트를 관리해주세요')}
-                    className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <Folder className="w-4 h-4" />
+                  <button type="button" onClick={() => setInputValue('프로젝트를 관리해주세요')} className="bw-btn-ghost flex items-center space-x-2 px-3 py-2 text-sm bw-text-secondary rounded-lg" aria-label="프로젝트 관리 예시 질문 사용">
+                    <Folder className="w-4 h-4" aria-hidden="true" />
                     <span>프로젝트 관리</span>
                   </button>
                 </div>
 
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs bw-text-muted">
                   Enter로 전송, Shift+Enter로 줄바꿈
                 </div>
               </div>

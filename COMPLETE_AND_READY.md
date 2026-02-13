@@ -113,12 +113,12 @@ cd .. && npm install
 - [사용 가이드](./USAGE_GUIDE.md)
 - [플러그인 설치](./PLUGINS_SETUP.md) - OCR, yt-dlp, Ollama 등
 
+### 디자인
+- [CORBU AI UI Kit (Figma)](./docs/BRAINWAVE-UI.md) - theme 토큰·디자인 참조·적용 가이드
+
 ### 기능
 - [긴 글 생성 기능](./LONG_FORM_WRITING_FEATURE.md)
 - [API 엔드포인트 요약](./API_ENDPOINTS_SUMMARY.md)
-
-### 디자인
-- [CORBU AI UI Kit (Figma)](./docs/BRAINWAVE-UI.md) - theme 토큰·디자인 참조·적용 가이드
 
 ### 시스템
 - [시스템 상태](./SYSTEM_STATUS.md)
@@ -165,4 +165,3 @@ cd .. && npm install
 **모든 기능이 정상 작동합니다!** ✅
 
 **즉시 사용 가능합니다!** 🚀
-
