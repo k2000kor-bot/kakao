@@ -2,7 +2,7 @@
 
 import { errorLogger } from '../utils/errorLogger';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 
 // ===== 기본 인터페이스 =====
 export interface APIResponse<T = unknown> {
@@ -1237,10 +1237,10 @@ class UnifiedAPIService {
       errorMessage = String(error);
     }
     
-    const enhancedError = new Error(errorMessage);
-    (enhancedError as any).type = errorType;
-    (enhancedError as any).originalError = error;
-    
+    const enhancedError = new Error(errorMessage) as Error & { type?: string; originalError?: unknown };
+    enhancedError.type = errorType;
+    enhancedError.originalError = error;
+
     throw enhancedError;
   }
 

@@ -8,8 +8,6 @@ import {
     Chip,
     IconButton,
     Tooltip,
-    Alert,
-    Snackbar,
     Fab,
     Dialog,
     DialogTitle,
@@ -22,17 +20,14 @@ import {
     ListItemIcon,
     Divider,
     Paper,
-    Avatar,
-    Badge
+    Avatar
 } from '@mui/material';
 import {
     Dashboard as DashboardIcon,
     Speed as SpeedIcon,
     Security as SecurityIcon,
     Psychology as PsychologyIcon,
-    Person as PersonIcon,
     Refresh as RefreshIcon,
-    Notifications as NotificationsIcon,
     Settings as SettingsIcon,
     TrendingUp as TrendingUpIcon,
     Memory as MemoryIcon,
@@ -43,7 +38,7 @@ import {
     Error as ErrorIcon,
     Info as InfoIcon
 } from '@mui/icons-material';
-import { performanceApi, aiEngineApi, securityApi, userExperienceApi } from '../services/apiService';
+import { performanceApi } from '../services/apiService';
 import { websocketService, SystemMetrics as WSSystemMetrics, SecurityAlert, AIEngineStatus, PerformanceOptimization } from '../services/websocketService';
 import { notificationService } from '../services/notificationService';
 import NotificationCenter from './NotificationCenter';
@@ -113,7 +108,7 @@ const IntegratedDashboard: React.FC = () => {
                 // 시스템 메트릭 수집
                 const metricsResult = await performanceApi.getMetrics();
                 if (metricsResult.success && metricsResult.data) {
-                    const data = metricsResult.data as any;
+                    const data = metricsResult.data as Record<string, number | undefined>;
                     setMetrics({
                         cpu: data.cpu || 0,
                         memory: data.memory || 0,
@@ -125,7 +120,7 @@ const IntegratedDashboard: React.FC = () => {
                 }
 
                 // 시스템 상태 확인
-                const healthResponse = await fetch('http://localhost:8000/api/health');
+                const healthResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/health`);
                 const healthData = await healthResponse.json();
                 if (healthData.success) {
                     setSystemStatus({
@@ -253,7 +248,7 @@ const IntegratedDashboard: React.FC = () => {
         };
     }, []);
 
-    const getStatusColor = useCallback((status: string) => {
+    const getStatusColor = useCallback((status: string): 'success' | 'warning' | 'error' | 'default' => {
         switch (status) {
             case 'healthy': return 'success';
             case 'warning': return 'warning';
@@ -321,7 +316,7 @@ const IntegratedDashboard: React.FC = () => {
                     <Chip
                         icon={getStatusIcon(status)}
                         label={status.toUpperCase()}
-                        color={getStatusColor(status) as any}
+                        color={getStatusColor(status)}
                         size="small"
                         aria-label={`상태: ${status}`}
                     />

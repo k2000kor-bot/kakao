@@ -25,7 +25,7 @@ export interface UnifiedMessageResponse {
 }
 
 class UnifiedMessageService {
-    private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+    private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5002';
     private baseUrls = {
         ai: `${this.baseUrl}/api`,
         guidance: `${this.baseUrl}/api`,
@@ -368,7 +368,7 @@ class UnifiedMessageService {
         const { type, content } = request;
 
         const fallbackMessages = {
-            chat: `안녕하세요! "${content}"에 대해 이야기해보겠습니다. CORBU.AI가 도와드릴게요!\n\n현재 오프라인 모드로 작동 중입니다. 백엔드 서버 연결 후 더 정확한 응답을 받을 수 있습니다.\n\n사용 가능한 기능:\n• 분석: "분석" 키워드 포함\n• 가이드: "가이드" 키워드 포함\n• 프로젝트: "프로젝트" 키워드 포함\n• 파일: "파일" 키워드 포함\n• 시스템: "시스템" 키워드 포함`,
+            chat: `안녕하세요! "${content}"에 대해 이야기해보겠습니다. CORBU AI가 도와드릴게요!\n\n현재 오프라인 모드로 작동 중입니다. 백엔드 서버 연결 후 더 정확한 응답을 받을 수 있습니다.\n\n사용 가능한 기능:\n• 분석: "분석" 키워드 포함\n• 가이드: "가이드" 키워드 포함\n• 프로젝트: "프로젝트" 키워드 포함\n• 파일: "파일" 키워드 포함\n• 시스템: "시스템" 키워드 포함`,
             analysis: `📊 분석 결과 (오프라인 모드):\n"${content}"에 대한 기본 분석을 제공합니다.\n\n• 키워드: ${content.split(' ').slice(0, 5).join(', ')}\n• 길이: ${content.length}자\n• 감정: 중립적\n• 의도: 정보 요청\n• 복잡도: ${content.length > 50 ? '높음' : '보통'}\n\n백엔드 서버 연결 후 더 정확한 분석을 받을 수 있습니다.`,
             guidance: `💡 메시지 가이드 (오프라인 모드):\n"${content}"에 대한 기본 가이드를 제공합니다.\n\n권장 사항:\n• 톤: 정중하고 명확한 톤 사용\n• 구조: 인사 → 내용 → 마무리\n• 길이: 상황에 맞는 적절한 길이\n• 키워드: 핵심 내용 강조\n\n예시 응답:\n"안녕하세요. 말씀하신 내용을 잘 이해했습니다. [구체적인 답변]. 추가 문의사항이 있으시면 언제든 연락주세요."\n\n백엔드 서버 연결 후 더 상세한 가이드를 받을 수 있습니다.`,
             project: `📁 프로젝트 정보 (오프라인 모드):\n"${content}"에 대한 기본 프로젝트 정보를 제공합니다.\n\n사용 가능한 프로젝트:\n• 개포우성7차 - 재개발 프로젝트\n• 잠실우성 - 개발 프로젝트\n• 기타 프로젝트들\n\n프로젝트별 상세 정보:\n• 파일 목록\n• 진행 상황\n• 관련 문서\n• 팀 구성\n\n백엔드 서버 연결 후 더 자세한 프로젝트 정보를 받을 수 있습니다.`,
@@ -432,4 +432,5 @@ class UnifiedMessageService {
     }
 }
 
-export default new UnifiedMessageService(); 
+const unifiedMessageService = new UnifiedMessageService();
+export default unifiedMessageService; 

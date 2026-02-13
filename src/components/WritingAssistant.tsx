@@ -19,6 +19,7 @@ import WritingEditor from './WritingEditor';
 import WritingQualityPanel from './WritingQualityPanel';
 import WritingStatisticsDashboard from './WritingStatisticsDashboard';
 import { errorLogger } from '../utils/errorLogger';
+import { showToast } from '../utils/toast';
 import WritingTemplatePreview from './WritingTemplatePreview';
 import WritingAISuggestions from './WritingAISuggestions';
 import writingExporter, { WritingMetadata } from '../utils/writingExport';
@@ -107,7 +108,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
     const missingFields = requiredFields.filter((f) => !formValues[f.name]?.trim());
 
     if (missingFields.length > 0) {
-      alert(`다음 필드를 입력해주세요: ${missingFields.map((f) => f.label).join(', ')}`);
+      showToast(`다음 필드를 입력해주세요: ${missingFields.map((f) => f.label).join(', ')}`);
       return;
     }
 
@@ -127,7 +128,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
       );
       
       // 백엔드 API 호출
-      const response = await fetch('http://localhost:8000/api/v7/chat', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/v7/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -167,16 +168,18 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || '생성 실패');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       errorLogger.error('글쓰기 생성 오류', error instanceof Error ? error : new Error(String(error)), {
         component: 'WritingAssistant',
         action: 'generateContent',
         template: selectedTemplate?.id,
       });
-      alert(`글쓰기 생성 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+      showToast(`글쓰기 생성 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
     } finally {
       setLoading(false);
     }
+  // customWritingType, selectedStyle, selectedTone 의존성 의도적 제외 (콜백 안정화)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTemplate, formValues, onGenerate]);
 
     return (
@@ -221,7 +224,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
         ) : (
           <>
         {/* 카테고리 및 템플릿 선택 */}
-        <aside className="writing-sidebar" role="complementary" aria-label="템플릿 선택 사이드바">
+        <aside className="writing-sidebar" aria-label="템플릿 선택 사이드바">
                     <div className="category-filter" role="region" aria-labelledby="category-heading">
                         <h3 id="category-heading">카테고리</h3>
                         <div className="category-buttons" role="group" aria-label="카테고리 필터">
@@ -244,7 +247,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
 
                     <div className="template-list" role="region" aria-labelledby="template-heading">
                         <h3 id="template-heading">템플릿 ({filteredTemplates.length}개)</h3>
-                        <ul className="templates" role="list" aria-label="템플릿 목록">
+                        <ul className="templates" aria-label="템플릿 목록">
               {filteredTemplates.map((template) => (
                 <li
                   key={template.id}
@@ -314,6 +317,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                       value={selectedTone}
                       onChange={(e) => setSelectedTone(e.target.value as WritingTone | '')}
                       className="tone-select"
+                      aria-label="어투 선택"
                     >
                       <option value="">템플릿 기본값</option>
                       <option value="formal">격식있는</option>
@@ -345,6 +349,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                       value={selectedStyle}
                       onChange={(e) => setSelectedStyle(e.target.value as WritingStyle | '')}
                       className="style-select"
+                      aria-label="글 종류 선택"
                     >
                       <option value="">템플릿 기본값</option>
                       <option value="essay">수필</option>
@@ -413,7 +418,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                                             <textarea
                                                 value={formValues[field.name] || ''}
                                                 onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                                                placeholder={field.placeholder || `请输入${field.label}`}
+                                                placeholder={field.placeholder || `${field.label}을(를) 입력하세요`}
                                                 rows={4}
                                                 required={field.required}
                                             />
@@ -422,6 +427,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                                                 value={formValues[field.name] || ''}
                                                 onChange={(e) => handleFieldChange(field.name, e.target.value)}
                                                 required={field.required}
+                                                aria-label={field.label}
                                             >
                                                 <option value="">선택하세요</option>
                                                 {field.options?.map((option) => (
@@ -435,7 +441,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                                                 type={field.type}
                                                 value={formValues[field.name] || ''}
                                                 onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                                                placeholder={field.placeholder || `请输入${field.label}`}
+                                                placeholder={field.placeholder || `${field.label}을(를) 입력하세요`}
                                                 required={field.required}
                                             />
                                         )}
@@ -465,9 +471,9 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                           onClick={async () => {
                             const success = await writingExporter.copyToClipboard(generatedContent);
                             if (success) {
-                              alert('클립보드에 복사되었습니다!');
+                              showToast('클립보드에 복사되었습니다!', 'success');
                             } else {
-                              alert('복사에 실패했습니다.');
+                              showToast('복사에 실패했습니다.');
                             }
                           }}
                           aria-label="생성된 글을 클립보드에 복사"
@@ -524,7 +530,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                       onImprove={async (type) => {
                         // 개선 요청
                         try {
-                          const response = await fetch('http://localhost:8000/api/v7/chat', {
+                          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/v7/chat`, {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
@@ -562,7 +568,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                     template={selectedTemplate?.title}
                     onApply={async (suggestion) => {
                       try {
-                        const response = await fetch('http://localhost:8000/api/v7/chat', {
+                        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/v7/chat`, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
@@ -592,7 +598,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({ onGenerate }) => {
                     content={generatedContent}
                     onImprove={async (suggestion) => {
                       try {
-                        const response = await fetch('http://localhost:8000/api/v7/chat', {
+                        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/v7/chat`, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',

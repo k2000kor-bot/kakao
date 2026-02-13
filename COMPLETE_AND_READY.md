@@ -91,6 +91,8 @@ cd .. && npm install
 - **백엔드 API (5001)**: http://localhost:5001/docs
 - **통합 API (5002)**: http://localhost:5002/api/docs
 
+> 모든 API 호출은 5002 포트(통합 API)로 통일됨. `config/api.ts`의 API_BASE_URL 사용.
+
 ---
 
 ## 🎯 주요 기능

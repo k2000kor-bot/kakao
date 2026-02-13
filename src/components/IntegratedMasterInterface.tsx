@@ -46,6 +46,7 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { errorLogger, toError } from '../utils/errorLogger';
+import { API_BASE_URL, WS_BASE_URL } from '../config/api';
 
 // 통합된 인터페이스 타입 정의
 interface SystemStatus {
@@ -113,7 +114,7 @@ const IntegratedMasterInterface: React.FC = () => {
     // WebSocket 연결 설정
     useEffect(() => {
         if (settings.realTimeUpdates) {
-            const ws = new WebSocket('ws://localhost:8000/ws?client_id=master_interface');
+            const ws = new WebSocket(`${WS_BASE_URL.replace(/^http/, 'ws')}/ws?client_id=master_interface`);
 
             ws.onopen = () => {
                 errorLogger.info('WebSocket 연결됨', { component: 'IntegratedMasterInterface', action: 'websocketConnect' });
@@ -145,7 +146,7 @@ const IntegratedMasterInterface: React.FC = () => {
     // 시스템 상태 조회
     const fetchSystemStatus = useCallback(async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/status');
+            const response = await fetch(`${API_BASE_URL}/api/status`);
             const data = await response.json();
             setSystemStatus(data);
         } catch (error) {
@@ -160,7 +161,7 @@ const IntegratedMasterInterface: React.FC = () => {
     // 분석 데이터 조회
     const fetchAnalytics = useCallback(async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/analytics');
+            const response = await fetch(`${API_BASE_URL}/api/analytics`);
             const data = await response.json();
             if (data.success) {
                 setAnalytics(data.data);
@@ -197,7 +198,7 @@ const IntegratedMasterInterface: React.FC = () => {
 
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/api/chat', {
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

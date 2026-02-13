@@ -1,7 +1,8 @@
 import { ChatSession, Message, ChatList } from '../types/chat';
+import { errorLogger } from '../utils/errorLogger';
 
 class ChatSessionService {
-  private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5002';
   private localStorageKey = 'corbu_chat_sessions';
 
   // 채팅 세션 생성
@@ -23,7 +24,7 @@ class ChatSessionService {
       messages: [
         {
           id: this.generateId(),
-          content: '안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?',
+          content: '안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?',
           sender: 'ai',
           timestamp: new Date().toISOString(),
           isUser: false,
@@ -42,7 +43,7 @@ class ChatSessionService {
       isPersistent: true,
       isActive: true,
       messageCount: 1,
-      lastMessage: '안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?',
+      lastMessage: '안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?',
       participants: ['user', 'ai'],
       tags: [],
       metadata: {
@@ -64,7 +65,7 @@ class ChatSessionService {
       const sessions = this.getSessionsFromLocal();
       return sessions.find(session => session.id === sessionId) || null;
     } catch (error) {
-      console.error('채팅 세션 로드 오류:', error);
+      errorLogger.error('채팅 세션 로드 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ChatSessionService', action: 'loadChatSession', sessionId });
       return null;
     }
   }
@@ -79,7 +80,7 @@ class ChatSessionService {
         lastUpdated: new Date().toISOString()
       };
     } catch (error) {
-      console.error('채팅 세션 목록 로드 오류:', error);
+      errorLogger.error('채팅 세션 목록 로드 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ChatSessionService', action: 'loadAllChatSessions' });
       return {
         sessions: [],
         totalSessions: 0,
@@ -111,7 +112,7 @@ class ChatSessionService {
 
       return sessions[sessionIndex];
     } catch (error) {
-      console.error('메시지 추가 오류:', error);
+      errorLogger.error('메시지 추가 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ChatSessionService', action: 'addMessage', sessionId });
       return null;
     }
   }
@@ -125,7 +126,7 @@ class ChatSessionService {
       localStorage.setItem(this.localStorageKey, JSON.stringify(filteredSessions));
       return true;
     } catch (error) {
-      console.error('채팅 세션 삭제 오류:', error);
+      errorLogger.error('채팅 세션 삭제 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ChatSessionService', action: 'deleteChatSession', sessionId });
       return false;
     }
   }
@@ -144,7 +145,7 @@ class ChatSessionService {
       localStorage.setItem(this.localStorageKey, JSON.stringify(sessions));
       return true;
     } catch (error) {
-      console.error('채팅 제목 업데이트 오류:', error);
+      errorLogger.error('채팅 제목 업데이트 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ChatSessionService', action: 'updateChatTitle', sessionId });
       return false;
     }
   }
@@ -155,7 +156,7 @@ class ChatSessionService {
       const sessions = this.getSessionsFromLocal();
       return sessions.filter(session => session.projectId === projectId);
     } catch (error) {
-      console.error('프로젝트 채팅 세션 조회 오류:', error);
+      errorLogger.error('프로젝트 채팅 세션 조회 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ChatSessionService', action: 'getProjectChatSessions', projectId });
       return [];
     }
   }
@@ -166,7 +167,7 @@ class ChatSessionService {
       const stored = localStorage.getItem(this.localStorageKey);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('로컬 스토리지 읽기 오류:', error);
+      errorLogger.error('로컬 스토리지 읽기 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ChatSessionService', action: 'getSessionsFromLocal' });
       return [];
     }
   }
@@ -178,7 +179,7 @@ class ChatSessionService {
       sessions.push(session);
       localStorage.setItem(this.localStorageKey, JSON.stringify(sessions));
     } catch (error) {
-      console.error('로컬 스토리지 저장 오류:', error);
+      errorLogger.error('로컬 스토리지 저장 오류', error instanceof Error ? error : new Error(String(error)), { component: 'ChatSessionService', action: 'saveSessionToLocal' });
     }
   }
 

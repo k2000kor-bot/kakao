@@ -228,7 +228,7 @@ describe('IntegratedMasterInterface', () => {
       fireEvent.click(sendButton);
 
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/chat', {
+        expect(global.fetch).toHaveBeenCalledWith('http://localhost:5002/api/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -297,7 +297,7 @@ describe('IntegratedMasterInterface', () => {
       fireEvent.click(refreshButton);
 
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/status');
+        expect(global.fetch).toHaveBeenCalledWith('http://localhost:5002/api/status');
       });
     });
 
@@ -329,7 +329,7 @@ describe('IntegratedMasterInterface', () => {
       renderWithTheme(<IntegratedMasterInterface />);
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:8000/api/status');
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:5002/api/status');
       });
 
       const refreshButton = screen.getByLabelText(/시스템 상태 새로고침/i);
@@ -461,7 +461,7 @@ describe('IntegratedMasterInterface', () => {
 
       // 초기 로드 시 분석 데이터 조회
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/analytics');
+        expect(global.fetch).toHaveBeenCalledWith('http://localhost:5002/api/analytics');
       });
     });
 

@@ -125,7 +125,7 @@ const UltimateChatGPTInterface: React.FC = () => {
 
     try {
       // 통합 API 호출
-      const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -443,7 +443,7 @@ const UltimateChatGPTInterface: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8000/api/upload', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5002'}/api/upload`, {
         method: 'POST',
         body: formData
       });
