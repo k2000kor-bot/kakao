@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // AI 협업 워크플로우 인터페이스 정의
 export interface CollaborationWorkflow {
@@ -120,7 +121,7 @@ export interface AutomationTrigger {
 export interface AutomationAction {
     actionId: string;
     type: 'notification' | 'assignment' | 'escalation' | 'optimization' | 'integration';
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     enabled: boolean;
 }
 
@@ -365,7 +366,7 @@ export interface WorkflowMetrics {
     optimizationOpportunities: number;
 }
 
-class AICollaborationWorkflowSystem {
+export class AICollaborationWorkflowSystem {
     private workflows: Map<string, CollaborationWorkflow> = new Map();
     private isRunning: boolean = false;
     private metrics: WorkflowMetrics = {
@@ -380,12 +381,18 @@ class AICollaborationWorkflowSystem {
     };
 
     constructor() {
-        console.log('🤖 AI 기반 협업 워크플로우 자동화 시스템 초기화 중...');
+        errorLogger.info('AI 기반 협업 워크플로우 자동화 시스템 초기화 중', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'constructor',
+        });
     }
 
     public start(): void {
         if (this.isRunning) {
-            console.log('⚠️ AI 기반 협업 워크플로우 자동화 시스템이 이미 실행 중입니다.');
+            errorLogger.warn('AI 기반 협업 워크플로우 자동화 시스템이 이미 실행 중입니다', {
+                component: 'aiCollaborationWorkflowSystem',
+                action: 'start',
+            });
             return;
         }
 
@@ -394,32 +401,68 @@ class AICollaborationWorkflowSystem {
         this.createInitialWorkflows();
         this.startMetricsUpdate();
 
-        console.log('✅ AI 기반 협업 워크플로우 자동화 시스템이 시작되었습니다.');
+        errorLogger.info('AI 기반 협업 워크플로우 자동화 시스템이 시작되었습니다', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'start',
+        });
         realTimeAIAlertSystem.sendAlert('info', 'AI 기반 협업 워크플로우 자동화 시스템이 시작되었습니다.');
     }
 
     public stop(): void {
         if (!this.isRunning) {
-            console.log('⚠️ AI 기반 협업 워크플로우 자동화 시스템이 실행 중이 아닙니다.');
+            errorLogger.warn('AI 기반 협업 워크플로우 자동화 시스템이 실행 중이 아닙니다', {
+                component: 'aiCollaborationWorkflowSystem',
+                action: 'stop',
+            });
             return;
         }
 
         this.isRunning = false;
         this.cleanupData();
 
-        console.log('🛑 AI 기반 협업 워크플로우 자동화 시스템이 중지되었습니다.');
+        errorLogger.info('AI 기반 협업 워크플로우 자동화 시스템이 중지되었습니다', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'stop',
+        });
         realTimeAIAlertSystem.sendAlert('info', 'AI 기반 협업 워크플로우 자동화 시스템이 중지되었습니다.');
     }
 
     private initializeSystem(): void {
-        console.log('🔧 워크플로우 자동화 시스템 초기화 중...');
+        errorLogger.info('워크플로우 자동화 시스템 초기화 중', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'initializeSystem',
+        });
 
-        console.log('🧠 AI 작업 할당 엔진 초기화 완료');
-        console.log('📅 스마트 스케줄링 시스템 초기화 완료');
-        console.log('🔍 병목 감지 엔진 초기화 완료');
-        console.log('🎯 품질 최적화 시스템 초기화 완료');
-        console.log('📊 성능 예측 모델 초기화 완료');
-        console.log('🔄 적응형 라우팅 시스템 초기화 완료');
+        errorLogger.info('AI 작업 할당 엔진 초기화 완료', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'initializeSystem',
+            subsystem: 'aiTaskAssignmentEngine',
+        });
+        errorLogger.info('스마트 스케줄링 시스템 초기화 완료', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'initializeSystem',
+            subsystem: 'smartSchedulingSystem',
+        });
+        errorLogger.info('병목 감지 엔진 초기화 완료', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'initializeSystem',
+            subsystem: 'bottleneckDetectionEngine',
+        });
+        errorLogger.info('품질 최적화 시스템 초기화 완료', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'initializeSystem',
+            subsystem: 'qualityOptimizationSystem',
+        });
+        errorLogger.info('성능 예측 모델 초기화 완료', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'initializeSystem',
+            subsystem: 'performancePredictionModel',
+        });
+        errorLogger.info('적응형 라우팅 시스템 초기화 완료', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'initializeSystem',
+            subsystem: 'adaptiveRoutingSystem',
+        });
     }
 
     private createInitialWorkflows(): void {
@@ -711,7 +754,11 @@ class AICollaborationWorkflowSystem {
 
         this.workflows.set(workflow1.workflowId, workflow1);
         this.analyzeWorkflow(workflow1.workflowId);
-        console.log('📋 초기 AI 협업 워크플로우 생성 완료');
+        errorLogger.info('초기 AI 협업 워크플로우 생성 완료', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'createInitialWorkflows',
+            workflowId: workflow1.workflowId,
+        });
     }
 
     public addWorkflow(workflow: Omit<CollaborationWorkflow, 'workflowId' | 'analytics'>): CollaborationWorkflow {
@@ -765,7 +812,11 @@ class AICollaborationWorkflowSystem {
         this.analyzeWorkflow(workflowId);
         this.updateWorkflowMetrics(workflowId);
 
-        console.log(`🤖 새로운 워크플로우 추가: ${workflowId}`);
+        errorLogger.info('새로운 워크플로우 추가', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'addWorkflow',
+            workflowId,
+        });
         return fullWorkflow;
     }
 
@@ -779,7 +830,7 @@ class AICollaborationWorkflowSystem {
         const task = stage.tasks.find(t => t.taskId === taskId);
         if (!task) return;
 
-        task.status = status as any;
+        task.status = status as 'pending' | 'completed' | 'blocked' | 'cancelled' | 'in-progress';
         if (status === 'completed') {
             task.endTime = Date.now();
         }
@@ -984,7 +1035,7 @@ class AICollaborationWorkflowSystem {
         });
     }
 
-    private findBestParticipant(workflow: CollaborationWorkflow, task: WorkflowTask): string | null {
+    private findBestParticipant(workflow: CollaborationWorkflow, _task: WorkflowTask): string | null {
         const availableParticipants = workflow.participants.filter(p =>
             p.availability.status === 'available'
         );
@@ -993,7 +1044,7 @@ class AICollaborationWorkflowSystem {
 
         // 성과 점수를 기반으로 최적 참가자 선택
         return availableParticipants.reduce((best, current) =>
-            (current.performance as any).overallScore > (best.performance as any).overallScore ? current : best
+            ((current.performance as { overallScore?: number }).overallScore ?? 0) > ((best.performance as { overallScore?: number }).overallScore ?? 0) ? current : best
         ).participantId;
     }
 
@@ -1107,14 +1158,17 @@ class AICollaborationWorkflowSystem {
                 insight => now - insight.timestamp < maxAge
             );
             workflow.analytics.predictions = workflow.analytics.predictions.filter(
-                prediction => now - (prediction as any).timestamp < maxAge
+                prediction => now - ((prediction as { timestamp?: number }).timestamp ?? 0) < maxAge
             );
         });
     }
 
     private cleanupData(): void {
         this.workflows.clear();
-        console.log('🧹 워크플로우 데이터 정리 완료');
+        errorLogger.info('워크플로우 데이터 정리 완료', {
+            component: 'aiCollaborationWorkflowSystem',
+            action: 'cleanupData',
+        });
     }
 
     public getWorkflows(): CollaborationWorkflow[] {

@@ -64,7 +64,7 @@ import personalizedLearningExperienceService from '../services/personalizedLearn
 import advancedQuestionUnderstandingEngine from '../services/advancedQuestionUnderstandingEngine';
 import integratedAIService from '../services/integratedAIService';
 
-// 고급 채팅 인터페이스 스타일
+// 고급 대화 인터페이스 스타일
 const ChatContainer = styled(Paper)(({ theme }) => ({
     height: '80vh',
     display: 'flex',
@@ -246,7 +246,7 @@ const AdvancedChatInterface: React.FC<AdvancedChatInterfaceProps> = ({
     useEffect(() => {
         const initialMessage: ChatMessage = {
             id: '1',
-            content: '안녕하세요! 저는 CORBU AI입니다. 업무 효율성을 높이기 위해 무엇을 도와드릴까요? 🤖\n\n💡 **빠른 시작 옵션:**\n• 프로젝트 분석\n• 리스크 평가\n• 의사결정 지원\n• 보고서 생성\n• 회의 요약',
+            content: '안녕하세요! 저는 CORBU.AI입니다. 업무 효율성을 높이기 위해 무엇을 도와드릴까요? 🤖\n\n💡 **빠른 시작 옵션:**\n• 프로젝트 분석\n• 리스크 평가\n• 의사결정 지원\n• 보고서 생성\n• 회의 요약',
             isAI: true,
             timestamp: new Date(),
             metadata: {
@@ -390,7 +390,7 @@ const AdvancedChatInterface: React.FC<AdvancedChatInterfaceProps> = ({
     return (
         <Container maxWidth="lg" sx={{ height: '100vh', py: 2 }}>
             <ChatContainer>
-                {/* 채팅 헤더 */}
+                {/* 대화 헤더 */}
                 <ChatHeader>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
@@ -398,7 +398,7 @@ const AdvancedChatInterface: React.FC<AdvancedChatInterfaceProps> = ({
                         </Avatar>
                         <Box>
                             <Typography variant="h6" fontWeight="bold">
-                                CORBU AI 비즈니스 어시스턴트
+                                CORBU.AI 비즈니스 어시스턴트
                             </Typography>
                             <Typography variant="caption" sx={{ opacity: 0.8 }}>
                                 업무 효율성 향상을 위한 AI 도우미

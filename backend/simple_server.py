@@ -3,12 +3,16 @@
 간단한 카카오 AI API 서버
 """
 
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import logging
 from datetime import datetime
+
+from cors_config import get_cors_allow_origins
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +23,7 @@ app = FastAPI(title="간단한 카카오 AI API 서버")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -70,4 +74,6 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+
+    _sp = int(os.environ.get("SIMPLE_SERVER_PORT", os.environ.get("PORT", "8000")))
+    uvicorn.run(app, host="0.0.0.0", port=_sp) 

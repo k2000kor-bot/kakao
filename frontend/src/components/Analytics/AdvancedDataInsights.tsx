@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     BarChart,
     LineChart,
@@ -6,60 +6,18 @@ import {
     TrendingDown,
     Activity,
     Target,
-    Users,
     FileText,
-    MessageSquare,
-    Calendar,
     Filter,
-    Search,
     Download,
     RefreshCw,
-    Settings,
     Eye,
-    EyeOff,
     MoreVertical,
-    ChevronDown,
-    ChevronRight,
-    Plus,
-    Minus,
     Zap,
     Lightbulb,
     AlertTriangle,
     CheckCircle,
     XCircle,
-    Clock,
-    Star,
-    Award,
-    Trophy,
-    TrendingUp as TrendingUpIcon,
-    TrendingDown as TrendingDownIcon,
-    Activity as ActivityIcon,
-    Locate as TargetIcon,
-    Users as UsersIcon,
-    FileText as FileTextIcon,
-    MessageSquare as MessageSquareIcon,
-    Calendar as CalendarIcon,
-    Filter as FilterIcon,
-    Search as SearchIcon,
-    Download as DownloadIcon,
-    RefreshCw as RefreshCwIcon,
-    Settings as SettingsIcon,
-    Eye as EyeIcon,
-    EyeOff as EyeOffIcon,
-    MoreVertical as MoreVerticalIcon,
-    ChevronDown as ChevronDownIcon,
-    ChevronRight as ChevronRightIcon,
-    Plus as PlusIcon,
-    Minus as MinusIcon,
-    Zap as ZapIcon,
-    Lightbulb as LightbulbIcon,
-    AlertTriangle as AlertTriangleIcon,
-    CheckCircle as CheckCircleIcon,
-    XCircle as XCircleIcon,
-    Clock as ClockIcon,
-    Star as StarIcon,
-    Award as AwardIcon,
-    Trophy as TrophyIcon
+    Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -102,8 +60,8 @@ interface ChartData {
     type: 'line' | 'bar' | 'pie' | 'area';
     title: string;
     description: string;
-    data: any[];
-    config: any;
+    data: unknown[];
+    config: Record<string, unknown>;
     lastUpdated: Date;
 }
 
@@ -111,24 +69,24 @@ interface AdvancedDataInsightsProps {
     onInsightAction?: (insightId: string, actionId: string) => void;
     onMetricUpdate?: (metricId: string, updates: Partial<DataMetric>) => void;
     onChartExport?: (chartId: string, format: string) => void;
-    onFilterChange?: (filters: any) => void;
+    onFilterChange?: (filters: unknown) => void;
 }
 
 const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
     onInsightAction,
-    onMetricUpdate,
+    onMetricUpdate: _onMetricUpdate,
     onChartExport,
-    onFilterChange
+    onFilterChange: _onFilterChange
 }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'insights' | 'charts' | 'reports'>('overview');
-    const [selectedMetric, setSelectedMetric] = useState<DataMetric | null>(null);
-    const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null);
+    const [_selectedMetric, setSelectedMetric] = useState<DataMetric | null>(null);
+    const [_selectedInsight, _setSelectedInsight] = useState<Insight | null>(null);
     const [timeRange, setTimeRange] = useState<string>('7d');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [_viewMode, _setViewMode] = useState<'grid' | 'list'>('grid');
     const [showFilters, setShowFilters] = useState(false);
 
     // 데이터 메트릭 시뮬레이션
-    const [metrics, setMetrics] = useState<DataMetric[]>([
+    const [metrics, _setMetrics] = useState<DataMetric[]>([
         {
             id: '1',
             name: '활성 사용자',
@@ -215,7 +173,7 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
         }
     ]);
 
-    const [insights, setInsights] = useState<Insight[]>([
+    const [insights, _setInsights] = useState<Insight[]>([
         {
             id: '1',
             title: '사용자 참여도 증가 추세',
@@ -266,7 +224,7 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
         }
     ]);
 
-    const [charts, setCharts] = useState<ChartData[]>([
+    const [charts, _setCharts] = useState<ChartData[]>([
         {
             id: '1',
             type: 'line',
@@ -301,45 +259,47 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
         }
     ]);
 
-    const getStatusColor = (status: string) => {
+    const getStatusStyle = (status: string): React.CSSProperties => {
         switch (status) {
-            case 'excellent': return 'text-green-600 bg-green-100';
-            case 'good': return 'text-blue-600 bg-blue-100';
-            case 'warning': return 'text-yellow-600 bg-yellow-100';
-            case 'critical': return 'text-red-600 bg-red-100';
-            default: return 'text-gray-600 bg-gray-100';
+            case 'excellent': return { color: 'var(--accent-success)', background: 'var(--accent-success-muted)' };
+            case 'good': return { color: 'var(--accent-info)', background: 'var(--accent-info-muted)' };
+            case 'warning': return { color: 'var(--accent-warning)', background: 'var(--accent-warning-muted)' };
+            case 'critical': return { color: 'var(--accent-error)', background: 'var(--accent-error-muted)' };
+            default: return { color: 'var(--text-secondary)', background: 'var(--bg-tertiary)' };
         }
     };
 
     const getStatusIcon = (status: string) => {
+        const cls = status === 'excellent' ? 'bw-text-success' : status === 'good' ? 'bw-text-info' : status === 'warning' ? 'bw-text-warning' : status === 'critical' ? 'bw-text-error' : 'bw-text-muted';
         switch (status) {
-            case 'excellent': return <Trophy className="h-4 w-4" />;
-            case 'good': return <CheckCircle className="h-4 w-4" />;
-            case 'warning': return <AlertTriangle className="h-4 w-4" />;
-            case 'critical': return <XCircle className="h-4 w-4" />;
-            default: return <Activity className="h-4 w-4" />;
+            case 'excellent': return <Trophy className={`h-4 w-4 ${cls}`} />;
+            case 'good': return <CheckCircle className={`h-4 w-4 ${cls}`} />;
+            case 'warning': return <AlertTriangle className={`h-4 w-4 ${cls}`} />;
+            case 'critical': return <XCircle className={`h-4 w-4 ${cls}`} />;
+            default: return <Activity className={`h-4 w-4 ${cls}`} />;
         }
     };
 
-    const getInsightTypeColor = (type: string) => {
+    const getInsightTypeStyle = (type: string): React.CSSProperties => {
         switch (type) {
-            case 'opportunity': return 'text-green-600 bg-green-100';
-            case 'risk': return 'text-red-600 bg-red-100';
-            case 'trend': return 'text-blue-600 bg-blue-100';
-            case 'anomaly': return 'text-orange-600 bg-orange-100';
-            case 'recommendation': return 'text-purple-600 bg-purple-100';
-            default: return 'text-gray-600 bg-gray-100';
+            case 'opportunity': return { color: 'var(--accent-success)', background: 'var(--accent-success-muted)' };
+            case 'risk': return { color: 'var(--accent-error)', background: 'var(--accent-error-muted)' };
+            case 'trend': return { color: 'var(--accent-info)', background: 'var(--accent-info-muted)' };
+            case 'anomaly': return { color: 'var(--accent-orange)', background: 'var(--accent-warning-muted)' };
+            case 'recommendation': return { color: 'var(--accent-secondary)', background: 'var(--accent-secondary-muted)' };
+            default: return { color: 'var(--text-secondary)', background: 'var(--bg-tertiary)' };
         }
     };
 
     const getInsightTypeIcon = (type: string) => {
+        const cls = type === 'opportunity' ? 'bw-text-success' : type === 'risk' ? 'bw-text-error' : type === 'trend' ? 'bw-text-info' : type === 'anomaly' ? 'bw-text-warning' : type === 'recommendation' ? 'bw-text-info' : 'bw-text-muted';
         switch (type) {
-            case 'opportunity': return <TrendingUp className="h-4 w-4" />;
-            case 'risk': return <AlertTriangle className="h-4 w-4" />;
-            case 'trend': return <Activity className="h-4 w-4" />;
-            case 'anomaly': return <Zap className="h-4 w-4" />;
-            case 'recommendation': return <Lightbulb className="h-4 w-4" />;
-            default: return <Activity className="h-4 w-4" />;
+            case 'opportunity': return <TrendingUp className={`h-4 w-4 ${cls}`} />;
+            case 'risk': return <AlertTriangle className={`h-4 w-4 ${cls}`} />;
+            case 'trend': return <Activity className={`h-4 w-4 ${cls}`} />;
+            case 'anomaly': return <Zap className={`h-4 w-4 ${cls}`} />;
+            case 'recommendation': return <Lightbulb className={`h-4 w-4 ${cls}`} />;
+            default: return <Activity className={`h-4 w-4 ${cls}`} />;
         }
     };
 
@@ -365,21 +325,21 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
         { id: 'insights', name: '인사이트', icon: Lightbulb },
         { id: 'charts', name: '차트', icon: LineChart },
         { id: 'reports', name: '보고서', icon: FileText }
-    ];
+    ] as const;
 
     return (
         <div className="space-y-6">
             {/* 헤더 */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">고급 데이터 분석</h2>
-                    <p className="text-gray-600 mt-1">데이터 기반 인사이트로 의사결정을 지원합니다</p>
+                    <h2 className="bw-heading-1 mb-1">고급 데이터 분석</h2>
+                    <p className="bw-text-secondary mt-1">데이터 기반 인사이트로 의사결정을 지원합니다</p>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-3">
                     <select
                         value={timeRange}
                         onChange={(e) => setTimeRange(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="bw-input"
                     >
                         <option value="1d">오늘</option>
                         <option value="7d">7일</option>
@@ -388,14 +348,14 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
                     </select>
                     <button
                         onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="bw-btn-secondary flex items-center gap-2"
                     >
                         <Filter className="h-4 w-4" />
                         <span>필터</span>
                     </button>
                     <button
                         onClick={() => {/* 데이터 새로고침 */ }}
-                        className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        className="bw-btn-primary flex items-center gap-2"
                     >
                         <RefreshCw className="h-4 w-4" />
                         <span>새로고침</span>
@@ -404,18 +364,20 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
             </div>
 
             {/* 탭 네비게이션 */}
-            <div className="border-b border-gray-200">
+            <div className="border-b" style={{ borderColor: 'var(--border-color)' }}>
                 <nav className="flex space-x-8">
                     {tabs.map((tab) => {
                         const IconComponent = tab.icon;
+                        const isActive = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                                    ? 'border-purple-500 text-purple-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${isActive
+                                    ? 'bw-text-info'
+                                    : 'bw-text-muted border-transparent'
                                     }`}
+                                style={isActive ? { borderBottomColor: 'var(--accent-info)' } : undefined}
                             >
                                 <IconComponent className="h-4 w-4" />
                                 <span>{tab.name}</span>
@@ -442,53 +404,55 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
                                     key={metric.id}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                                    className="bw-card p-6"
                                 >
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center space-x-2">
                                             {getStatusIcon(metric.status)}
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(metric.status)}`}>
+                                            <span className="bw-badge px-2 py-1 text-xs font-medium rounded-full" style={getStatusStyle(metric.status)}>
                                                 {metric.category}
                                             </span>
                                         </div>
-                                        <button className="p-1 hover:bg-gray-100 rounded">
-                                            <MoreVertical className="h-4 w-4 text-gray-500" />
+                                        <button className="bw-btn-ghost p-1 rounded" type="button">
+                                            <MoreVertical className="h-4 w-4 bw-text-muted" />
                                         </button>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-600">{metric.name}</p>
+                                        <p className="text-sm font-medium bw-text-secondary">{metric.name}</p>
                                         <div className="flex items-end space-x-2 mt-2">
-                                            <p className="text-2xl font-bold text-gray-900">
+                                            <p className="text-2xl font-bold bw-text-primary">
                                                 {formatNumber(metric.value)}
                                             </p>
-                                            <p className="text-sm text-gray-500">{metric.unit}</p>
+                                            <p className="text-sm bw-text-muted">{metric.unit}</p>
                                         </div>
                                         <div className="flex items-center space-x-2 mt-2">
-                                            <span className={`text-sm font-medium ${metric.changeType === 'increase' ? 'text-green-600' :
-                                                metric.changeType === 'decrease' ? 'text-red-600' : 'text-gray-600'
+                                            <span className={`text-sm font-medium ${metric.changeType === 'increase' ? 'bw-text-success' :
+                                                metric.changeType === 'decrease' ? 'bw-text-error' : 'bw-text-muted'
                                                 }`}>
                                                 {metric.changeType === 'increase' ? '+' : ''}{metric.change}%
                                             </span>
                                             {metric.changeType === 'increase' ? (
-                                                <TrendingUp className="h-4 w-4 text-green-600" />
+                                                <TrendingUp className="h-4 w-4 bw-text-success" />
                                             ) : metric.changeType === 'decrease' ? (
-                                                <TrendingDown className="h-4 w-4 text-red-600" />
+                                                <TrendingDown className="h-4 w-4 bw-text-error" />
                                             ) : (
-                                                <Activity className="h-4 w-4 text-gray-600" />
+                                                <Activity className="h-4 w-4 bw-text-muted" />
                                             )}
                                         </div>
                                         {metric.target && (
                                             <div className="mt-3">
-                                                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                                <div className="flex justify-between text-xs bw-text-muted mb-1">
                                                     <span>목표: {metric.target}{metric.unit}</span>
                                                     <span>{Math.round((metric.value / metric.target) * 100)}%</span>
                                                 </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                <div className="w-full bw-progress-bar rounded-full h-2">
                                                     <div
-                                                        className={`h-2 rounded-full transition-all duration-300 ${metric.value >= metric.target ? 'bg-green-600' :
-                                                            metric.value >= metric.target * 0.8 ? 'bg-yellow-600' : 'bg-red-600'
-                                                            }`}
-                                                        style={{ width: `${Math.min((metric.value / metric.target) * 100, 100)}%` }}
+                                                        className="bw-progress-fill h-2 rounded-full transition-all duration-300"
+                                                        style={{
+                                                            width: `${Math.min((metric.value / metric.target) * 100, 100)}%`,
+                                                            backgroundColor: metric.value >= metric.target ? 'var(--accent-success)' :
+                                                                metric.value >= metric.target * 0.8 ? 'var(--accent-warning)' : 'var(--accent-error)'
+                                                        }}
                                                     />
                                                 </div>
                                             </div>
@@ -499,29 +463,29 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
                         </div>
 
                         {/* 최신 인사이트 */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-900">최신 인사이트</h3>
+                        <div className="bw-card">
+                            <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                                <h3 className="bw-heading-2 mb-0">최신 인사이트</h3>
                             </div>
-                            <div className="divide-y divide-gray-200">
+                            <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
                                 {insights.slice(0, 3).map((insight) => (
-                                    <div key={insight.id} className="p-6 hover:bg-gray-50 transition-colors">
+                                    <div key={insight.id} className="p-6 bw-card-secondary transition-colors">
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-start space-x-3">
-                                                <div className={`p-2 rounded-lg ${getInsightTypeColor(insight.type)}`}>
+                                                <div className="p-2 rounded-lg" style={getInsightTypeStyle(insight.type)}>
                                                     {getInsightTypeIcon(insight.type)}
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-medium text-gray-900">{insight.title}</h4>
-                                                    <p className="text-sm text-gray-600 mt-1">{insight.description}</p>
+                                                    <h4 className="font-medium bw-text-primary">{insight.title}</h4>
+                                                    <p className="text-sm bw-text-secondary mt-1">{insight.description}</p>
                                                     <div className="flex items-center space-x-4 mt-2">
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getInsightTypeColor(insight.type)}`}>
+                                                        <span className="bw-badge px-2 py-1 text-xs font-medium rounded-full" style={getInsightTypeStyle(insight.type)}>
                                                             {insight.type === 'opportunity' ? '기회' :
                                                                 insight.type === 'risk' ? '위험' :
                                                                     insight.type === 'trend' ? '트렌드' :
                                                                         insight.type === 'anomaly' ? '이상' : '권장사항'}
                                                         </span>
-                                                        <span className="text-xs text-gray-500">
+                                                        <span className="text-xs bw-text-muted">
                                                             영향도: {insight.impact}% • 신뢰도: {insight.confidence}%
                                                         </span>
                                                     </div>
@@ -532,10 +496,7 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
                                                     <button
                                                         key={action.id}
                                                         onClick={() => onInsightAction?.(insight.id, action.id)}
-                                                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${action.type === 'primary'
-                                                            ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                            }`}
+                                                        className={action.type === 'primary' ? 'bw-btn-primary text-xs py-1 px-3' : 'bw-btn-secondary text-xs py-1 px-3'}
                                                     >
                                                         {action.label}
                                                     </button>
@@ -557,49 +518,50 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
                         exit={{ opacity: 0, x: -20 }}
                         className="space-y-6"
                     >
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-900">상세 메트릭</h3>
+                        <div className="bw-card">
+                            <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                                <h3 className="bw-heading-2 mb-0">상세 메트릭</h3>
                             </div>
-                            <div className="divide-y divide-gray-200">
+                            <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
                                 {metrics.map((metric) => (
-                                    <div key={metric.id} className="p-6 hover:bg-gray-50 transition-colors">
+                                    <div key={metric.id} className="p-6 bw-card-secondary transition-colors">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-4">
-                                                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                    <Target className="h-6 w-6 text-purple-600" />
+                                                <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--accent-info-muted)' }}>
+                                                    <Target className="h-6 w-6 bw-text-info" />
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-medium text-gray-900">{metric.name}</h4>
-                                                    <p className="text-sm text-gray-600">{metric.description}</p>
-                                                    <p className="text-xs text-gray-500">
+                                                <div className="min-w-0">
+                                                    <h4 className="font-medium bw-text-primary">{metric.name}</h4>
+                                                    <p className="text-sm bw-text-secondary">{metric.description}</p>
+                                                    <p className="text-xs bw-text-muted">
                                                         마지막 업데이트: {formatDate(metric.lastUpdated)}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-4">
                                                 <div className="text-center">
-                                                    <p className="text-2xl font-bold text-gray-900">
+                                                    <p className="text-2xl font-bold bw-text-primary">
                                                         {formatNumber(metric.value)}
                                                     </p>
-                                                    <p className="text-sm text-gray-500">{metric.unit}</p>
+                                                    <p className="text-sm bw-text-muted">{metric.unit}</p>
                                                 </div>
                                                 <div className="text-center">
-                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(metric.status)}`}>
+                                                    <span className="bw-badge px-2 py-1 text-xs font-medium rounded-full" style={getStatusStyle(metric.status)}>
                                                         {metric.status === 'excellent' ? '우수' :
                                                             metric.status === 'good' ? '양호' :
                                                                 metric.status === 'warning' ? '경고' : '위험'}
                                                     </span>
-                                                    <p className="text-xs text-gray-500 mt-1">
+                                                    <p className="text-xs bw-text-muted mt-1">
                                                         {metric.changeType === 'increase' ? '+' : ''}{metric.change}%
                                                     </p>
                                                 </div>
                                                 <button
                                                     onClick={() => setSelectedMetric(metric)}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    className="bw-btn-ghost p-2 rounded-lg"
                                                     title="상세 보기"
+                                                    type="button"
                                                 >
-                                                    <Eye className="h-4 w-4 text-gray-500" />
+                                                    <Eye className="h-4 w-4 bw-text-muted" />
                                                 </button>
                                             </div>
                                         </div>
@@ -618,54 +580,45 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
                         exit={{ opacity: 0, x: -20 }}
                         className="space-y-6"
                     >
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-900">AI 인사이트</h3>
+                        <div className="bw-card">
+                            <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                                <h3 className="bw-heading-2 mb-0">AI 인사이트</h3>
                             </div>
-                            <div className="divide-y divide-gray-200">
+                            <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
                                 {insights.map((insight) => (
-                                    <div key={insight.id} className="p-6 hover:bg-gray-50 transition-colors">
+                                    <div key={insight.id} className="p-6 bw-card-secondary transition-colors">
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-start space-x-4">
-                                                <div className={`p-3 rounded-lg ${getInsightTypeColor(insight.type)}`}>
+                                                <div className="p-3 rounded-lg shrink-0" style={getInsightTypeStyle(insight.type)}>
                                                     {getInsightTypeIcon(insight.type)}
                                                 </div>
-                                                <div className="flex-1">
+                                                <div className="flex-1 min-w-0">
                                                     <div className="flex items-center space-x-2 mb-2">
-                                                        <h4 className="font-medium text-gray-900">{insight.title}</h4>
+                                                        <h4 className="font-medium bw-text-primary">{insight.title}</h4>
                                                         {!insight.isRead && (
-                                                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: 'var(--accent-info)' }} />
                                                         )}
                                                     </div>
-                                                    <p className="text-sm text-gray-600 mb-3">{insight.description}</p>
-                                                    <div className="flex items-center space-x-4">
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getInsightTypeColor(insight.type)}`}>
+                                                    <p className="text-sm bw-text-secondary mb-3">{insight.description}</p>
+                                                    <div className="flex items-center space-x-4 flex-wrap gap-y-1">
+                                                        <span className="bw-badge px-2 py-1 text-xs font-medium rounded-full" style={getInsightTypeStyle(insight.type)}>
                                                             {insight.type === 'opportunity' ? '기회' :
                                                                 insight.type === 'risk' ? '위험' :
                                                                     insight.type === 'trend' ? '트렌드' :
                                                                         insight.type === 'anomaly' ? '이상' : '권장사항'}
                                                         </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            영향도: {insight.impact}%
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            신뢰도: {insight.confidence}%
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            {formatDate(insight.createdAt)}
-                                                        </span>
+                                                        <span className="text-xs bw-text-muted">영향도: {insight.impact}%</span>
+                                                        <span className="text-xs bw-text-muted">신뢰도: {insight.confidence}%</span>
+                                                        <span className="text-xs bw-text-muted">{formatDate(insight.createdAt)}</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col space-y-2">
+                                            <div className="flex flex-col space-y-2 shrink-0">
                                                 {insight.actions.map((action) => (
                                                     <button
                                                         key={action.id}
                                                         onClick={() => onInsightAction?.(insight.id, action.id)}
-                                                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${action.type === 'primary'
-                                                            ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                            }`}
+                                                        className={action.type === 'primary' ? 'bw-btn-primary text-sm px-4 py-2' : 'bw-btn-secondary text-sm px-4 py-2'}
                                                     >
                                                         {action.label}
                                                     </button>
@@ -689,37 +642,39 @@ const AdvancedDataInsights: React.FC<AdvancedDataInsightsProps> = ({
                     >
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {charts.map((chart) => (
-                                <div key={chart.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                                    <div className="p-6 border-b border-gray-200">
+                                <div key={chart.id} className="bw-card">
+                                    <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
                                         <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-gray-900">{chart.title}</h3>
-                                                <p className="text-sm text-gray-600">{chart.description}</p>
+                                            <div className="min-w-0">
+                                                <h3 className="bw-heading-2 mb-0">{chart.title}</h3>
+                                                <p className="text-sm bw-text-secondary">{chart.description}</p>
                                             </div>
-                                            <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2 shrink-0">
                                                 <button
                                                     onClick={() => onChartExport?.(chart.id, 'png')}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    className="bw-btn-ghost p-2 rounded-lg"
                                                     title="PNG 내보내기"
+                                                    type="button"
                                                 >
-                                                    <Download className="h-4 w-4 text-gray-500" />
+                                                    <Download className="h-4 w-4 bw-text-muted" />
                                                 </button>
                                                 <button
                                                     onClick={() => onChartExport?.(chart.id, 'csv')}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    className="bw-btn-ghost p-2 rounded-lg"
                                                     title="CSV 내보내기"
+                                                    type="button"
                                                 >
-                                                    <FileText className="h-4 w-4 text-gray-500" />
+                                                    <FileText className="h-4 w-4 bw-text-muted" />
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="p-6">
-                                        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                                        <div className="h-64 rounded-lg flex items-center justify-center bw-card-secondary">
                                             <div className="text-center">
-                                                <BarChart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                                                <p className="text-gray-500">차트 시각화</p>
-                                                <p className="text-sm text-gray-400">
+                                                <BarChart className="h-12 w-12 bw-text-muted mx-auto mb-2" />
+                                                <p className="bw-text-muted">차트 시각화</p>
+                                                <p className="text-sm bw-text-muted">
                                                     {chart.data.length}개 데이터 포인트
                                                 </p>
                                             </div>

@@ -12,7 +12,7 @@ import sqlite3
 import uuid
 
 # FastAPI 앱 생성
-app = FastAPI(title="CORBU AI 통합 대화 API", version="1.0.0")
+app = FastAPI(title="CORBU.AI 통합 대화 API", version="1.0.0")
 
 # CORS 설정
 app.add_middleware(
@@ -242,7 +242,7 @@ class CommandHandlers:
     async def handle_help(args: List[str]) -> str:
         """도움말 명령어 처리"""
         if not args:
-            help_text = "🤖 CORBU AI 사용 가능한 명령어:\n\n"
+            help_text = "🤖 CORBU.AI 사용 가능한 명령어:\n\n"
             help_text += "**/upload** - 파일을 업로드합니다\n   사용법: /upload [파일명]\n\n"
             help_text += "**/analyze** - 파일을 분석합니다\n   사용법: /analyze [파일명]\n\n"
             help_text += "**/project** - 프로젝트를 관리합니다\n   사용법: /project [create|list|open] [프로젝트명]\n\n"
@@ -288,7 +288,7 @@ command_handlers = {
 async def root():
     """루트 엔드포인트"""
     return {
-        "message": "CORBU AI 통합 대화 API",
+        "message": "CORBU.AI 통합 대화 API",
         "version": "1.0.0",
         "status": "running",
         "available_commands": system_status.available_commands
@@ -580,4 +580,5 @@ async def get_projects():
         raise HTTPException(status_code=500, detail=f"프로젝트 목록 조회 중 오류: {str(e)}")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+    _port = int(os.environ.get("UNIFIED_CONV_PORT", os.environ.get("PORT", "8001")))
+    uvicorn.run(app, host="0.0.0.0", port=_port)

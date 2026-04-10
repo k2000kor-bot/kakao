@@ -3,6 +3,11 @@
  * 모바일 디바이스 최적화 및 Progressive Web App 기능 제공
  */
 
+import { CHART_COLORS_HEX } from '../styles/themeColors';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { IMAGE_CDN_QUERY_HEIGHT, IMAGE_CDN_QUERY_QUALITY, IMAGE_CDN_QUERY_WIDTH } from '../utils/imageOptimizer';
+import { MOBILE_OPTIMIZATION_SETTINGS_STORAGE_KEY } from './mobileOptimizationStorageKeys';
+
 export interface DeviceInfo {
   type: 'mobile' | 'tablet' | 'desktop';
   os: 'ios' | 'android' | 'windows' | 'macos' | 'linux' | 'unknown';
@@ -111,7 +116,15 @@ export class MobileOptimizationService {
       orientation
     };
 
-    console.log('디바이스 정보:', this.deviceInfo);
+    errorLogger.info('디바이스 정보', {
+      component: 'mobileOptimizationService',
+      action: 'initializeDeviceInfo',
+      deviceType: this.deviceInfo.type,
+      os: this.deviceInfo.os,
+      browser: this.deviceInfo.browser,
+      screenSize: this.deviceInfo.screenSize,
+      touchSupport: this.deviceInfo.touchSupport,
+    });
   }
 
   /**
@@ -119,10 +132,10 @@ export class MobileOptimizationService {
    */
   private initializePWAConfig(): void {
     this.pwaConfig = {
-      name: 'CORBU AI',
-      shortName: 'CORBU',
+      name: 'CORBU.AI',
+      shortName: 'CORBU.AI',
       description: '지능형 AI 분석 플랫폼',
-      themeColor: '#8B5CF6',
+      themeColor: CHART_COLORS_HEX[4],
       backgroundColor: '#FFFFFF',
       display: 'standalone',
       startUrl: '/',
@@ -203,7 +216,11 @@ export class MobileOptimizationService {
     if ('serviceWorker' in navigator) {
       try {
         this.serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js');
-        console.log('Service Worker 등록 성공:', this.serviceWorkerRegistration);
+        errorLogger.info('Service Worker 등록 성공', {
+          component: 'mobileOptimizationService',
+          action: 'initializeServiceWorker',
+          scope: this.serviceWorkerRegistration.scope,
+        });
         
         // 업데이트 확인
         this.serviceWorkerRegistration.addEventListener('updatefound', () => {
@@ -217,7 +234,11 @@ export class MobileOptimizationService {
           }
         });
       } catch (error) {
-        console.error('Service Worker 등록 실패:', error);
+        const err = toError(error);
+        errorLogger.error('Service Worker 등록 실패', err, {
+          component: 'mobileOptimizationService',
+          action: 'initializeServiceWorker',
+        });
       }
     }
   }
@@ -338,7 +359,10 @@ export class MobileOptimizationService {
    */
   private handleSwipeRight(): void {
     // 사이드바 열기 또는 이전 페이지로 이동
-    console.log('오른쪽 스와이프');
+    errorLogger.info('오른쪽 스와이프', {
+      component: 'mobileOptimizationService',
+      action: 'handleSwipeRight',
+    });
     this.showNotification('이전 페이지로 이동', 'info');
   }
 
@@ -347,7 +371,10 @@ export class MobileOptimizationService {
    */
   private handleSwipeLeft(): void {
     // 사이드바 닫기 또는 다음 페이지로 이동
-    console.log('왼쪽 스와이프');
+    errorLogger.info('왼쪽 스와이프', {
+      component: 'mobileOptimizationService',
+      action: 'handleSwipeLeft',
+    });
     this.showNotification('다음 페이지로 이동', 'info');
   }
 
@@ -356,14 +383,22 @@ export class MobileOptimizationService {
    */
   private handleTap(x: number, y: number): void {
     // 탭 위치에 따른 특별한 처리
-    console.log('탭 감지:', x, y);
+    errorLogger.info('탭 감지', {
+      component: 'mobileOptimizationService',
+      action: 'handleTap',
+      x,
+      y,
+    });
   }
 
   /**
    * Pull to Refresh 처리
    */
   private handlePullToRefresh(): void {
-    console.log('Pull to Refresh 실행');
+    errorLogger.info('Pull to Refresh 실행', {
+      component: 'mobileOptimizationService',
+      action: 'handlePullToRefresh',
+    });
     this.showNotification('새로고침 중...', 'info');
     
     // 페이지 새로고침 또는 데이터 동기화
@@ -400,7 +435,11 @@ export class MobileOptimizationService {
    */
   private handleOrientationChange(): void {
     // 방향 변경에 따른 UI 조정
-    console.log('방향 변경:', this.deviceInfo?.orientation);
+    errorLogger.info('방향 변경', {
+      component: 'mobileOptimizationService',
+      action: 'handleOrientationChange',
+      orientation: this.deviceInfo?.orientation,
+    });
   }
 
   /**
@@ -408,21 +447,23 @@ export class MobileOptimizationService {
    */
   private async syncOfflineData(): Promise<void> {
     // 오프라인 중에 저장된 데이터를 서버와 동기화
-    console.log('오프라인 데이터 동기화 중...');
+    errorLogger.info('오프라인 데이터 동기화 중', {
+      component: 'mobileOptimizationService',
+      action: 'syncOfflineData',
+    });
   }
 
   /**
    * 알림 표시
    */
   private showNotification(message: string, type: 'success' | 'warning' | 'error' | 'info'): void {
-    // 토스트 알림 표시
+    const bgColor = type === 'success' ? 'var(--accent-success)' : type === 'warning' ? 'var(--accent-warning)' : type === 'error' ? 'var(--accent-error)' : 'var(--accent-info)';
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-      type === 'success' ? 'bg-green-500 text-white' :
-      type === 'warning' ? 'bg-yellow-500 text-white' :
-      type === 'error' ? 'bg-red-500 text-white' :
-      'bg-blue-500 text-white'
-    }`;
+    Object.assign(notification.style, {
+      position: 'fixed', top: '1rem', right: '1rem', padding: '1rem',
+      borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 'var(--z-toast)',
+      background: bgColor, color: 'var(--on-accent)',
+    });
     notification.textContent = message;
     
     document.body.appendChild(notification);
@@ -437,11 +478,15 @@ export class MobileOptimizationService {
    */
   private showUpdateNotification(): void {
     const notification = document.createElement('div');
-    notification.className = 'fixed bottom-4 left-4 right-4 p-4 bg-blue-500 text-white rounded-lg shadow-lg z-50';
+    Object.assign(notification.style, {
+      position: 'fixed', bottom: '1rem', left: '1rem', right: '1rem', padding: '1rem',
+      background: 'var(--accent-info)', color: 'var(--on-accent)',
+      borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 'var(--z-toast)',
+    });
     notification.innerHTML = `
-      <div class="flex items-center justify-between">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
         <span>새로운 업데이트가 있습니다!</span>
-        <button onclick="window.location.reload()" class="ml-4 px-3 py-1 bg-white text-blue-500 rounded">
+        <button onclick="window.location.reload()" style="margin-left:1rem;padding:0.25rem 0.75rem;background:var(--on-accent);color:var(--accent-info);border:none;border-radius:var(--radius-md);cursor:pointer;">
           업데이트
         </button>
       </div>
@@ -455,14 +500,17 @@ export class MobileOptimizationService {
    */
   async showInstallPrompt(): Promise<void> {
     if ('beforeinstallprompt' in window) {
-      const promptEvent = (window as any).deferredPrompt;
-      if (promptEvent) {
+      const promptEvent = (window as Window & { deferredPrompt?: unknown }).deferredPrompt as { prompt?: () => void; userChoice?: Promise<{ outcome: string }> } | undefined;
+      if (promptEvent?.prompt && promptEvent?.userChoice) {
         promptEvent.prompt();
         const result = await promptEvent.userChoice;
         if (result.outcome === 'accepted') {
-          console.log('PWA 설치 승인됨');
+          errorLogger.info('PWA 설치 승인됨', {
+            component: 'mobileOptimizationService',
+            action: 'showInstallPrompt',
+          });
         }
-        (window as any).deferredPrompt = null;
+        (window as Window & { deferredPrompt?: unknown }).deferredPrompt = null;
       }
     }
   }
@@ -514,19 +562,23 @@ export class MobileOptimizationService {
    * 설정 저장
    */
   private saveOptimizationSettings(): void {
-    localStorage.setItem('mobileOptimizationSettings', JSON.stringify(this.optimizationSettings));
+    localStorage.setItem(MOBILE_OPTIMIZATION_SETTINGS_STORAGE_KEY, JSON.stringify(this.optimizationSettings));
   }
 
   /**
    * 설정 로드
    */
   private loadOptimizationSettings(): void {
-    const saved = localStorage.getItem('mobileOptimizationSettings');
+    const saved = localStorage.getItem(MOBILE_OPTIMIZATION_SETTINGS_STORAGE_KEY);
     if (saved) {
       try {
         this.optimizationSettings = { ...this.optimizationSettings, ...JSON.parse(saved) };
       } catch (error) {
-        console.error('설정 로드 실패:', error);
+        const err = toError(error);
+        errorLogger.error('설정 로드 실패', err, {
+          component: 'mobileOptimizationService',
+          action: 'loadOptimizationSettings',
+        });
       }
     }
   }
@@ -541,7 +593,7 @@ export class MobileOptimizationService {
       const optimizedHeight = Math.round(height * pixelRatio);
       
       // 실제로는 이미지 리사이징 서비스 사용
-      return `${url}?w=${optimizedWidth}&h=${optimizedHeight}&q=80`;
+      return `${url}?${IMAGE_CDN_QUERY_WIDTH}=${optimizedWidth}&${IMAGE_CDN_QUERY_HEIGHT}=${optimizedHeight}&${IMAGE_CDN_QUERY_QUALITY}=80`;
     }
     return url;
   }
@@ -576,7 +628,10 @@ export class MobileOptimizationService {
   enableOfflineMode(): void {
     if (this.optimizationSettings.enableOfflineMode) {
       // 오프라인 모드 활성화 로직
-      console.log('오프라인 모드 활성화');
+      errorLogger.info('오프라인 모드 활성화', {
+        component: 'mobileOptimizationService',
+        action: 'enableOfflineMode',
+      });
     }
   }
 
@@ -591,6 +646,8 @@ export class MobileOptimizationService {
     window.removeEventListener('resize', () => {});
   }
 }
+
+export { MOBILE_OPTIMIZATION_SETTINGS_STORAGE_KEY } from './mobileOptimizationStorageKeys';
 
 // 싱글톤 인스턴스
 export const mobileOptimizationService = new MobileOptimizationService();

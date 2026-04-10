@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# CORBU AI 시스템 종료 스크립트
+# CORBU.AI 시스템 종료 스크립트
 
-echo "🛑 CORBU AI 시스템 종료 중..."
+echo "🛑 CORBU.AI 시스템 종료 중..."
 echo "=" * 50
 
 # 색상 정의
@@ -79,6 +79,7 @@ fi
 print_status "관련 프로세스 정리 중..."
 
 # Python 프로세스 종료
+pkill -f "main_server.py" 2>/dev/null
 pkill -f "advanced_api_server.py" 2>/dev/null
 pkill -f "system_monitor.py" 2>/dev/null
 
@@ -89,9 +90,18 @@ pkill -f "npm start" 2>/dev/null
 # 포트 사용 확인 및 정리
 print_status "포트 사용 확인 중..."
 
-# 포트 8000 (백엔드) 확인
+BACKEND_PORT="${BACKEND_PORT:-5002}"
+
+# 통합 백엔드 (main_server / app.py)
+if lsof -ti:"$BACKEND_PORT" > /dev/null 2>&1; then
+    print_warning "포트 $BACKEND_PORT (통합 백엔드)가 여전히 사용 중입니다."
+    lsof -ti:"$BACKEND_PORT" | xargs kill -9 2>/dev/null
+    print_success "포트 $BACKEND_PORT 정리 완료"
+fi
+
+# 레거시 unified_message_system 등
 if lsof -ti:8000 > /dev/null 2>&1; then
-    print_warning "포트 8000이 여전히 사용 중입니다."
+    print_warning "포트 8000(레거시 백엔드)이 여전히 사용 중입니다."
     lsof -ti:8000 | xargs kill -9 2>/dev/null
     print_success "포트 8000 정리 완료"
 fi
@@ -102,8 +112,8 @@ if lsof -ti:3000 > /dev/null 2>&1; then
     lsof -ti:3000 | xargs kill -9 2>/dev/null
     print_success "포트 3000 정리 완료"
 fi
-    
-    # 임시 파일 정리
+
+# 임시 파일 정리
 print_status "임시 파일 정리 중..."
 rm -f .backend_pid .frontend_pid .monitor_pid 2>/dev/null
 rm -f test_*.txt test_*.pdf test_*.docx test_*.xlsx 2>/dev/null
@@ -111,9 +121,10 @@ rm -f test_*.txt test_*.pdf test_*.docx test_*.xlsx 2>/dev/null
 print_success "시스템 종료 완료!"
 echo ""
 echo "📋 종료된 서비스:"
-echo "   • 백엔드 서버 (포트 8000)"
+echo "   • 통합 백엔드 (포트 ${BACKEND_PORT:-5002}, 레거시 8000)"
 echo "   • 프론트엔드 서버 (포트 3000)"
 echo "   • 시스템 모니터링"
 echo ""
-echo "💡 다시 시작하려면: ./start_system.sh"
-    echo ""
+echo "💡 CORBU 통합 다시 시작: npm run restart:backend"
+echo "   레거시: ./start_system.sh"
+echo ""

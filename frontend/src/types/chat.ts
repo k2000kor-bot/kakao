@@ -1,3 +1,5 @@
+import type { PipelineMessageExtras } from '../utils/chatInputUtils';
+
 export interface Message {
   id: string;
   content: string;
@@ -23,10 +25,12 @@ export interface Message {
   sentiment?: 'positive' | 'negative' | 'neutral';
   urgency?: 'low' | 'medium' | 'high';
   metadata?: MessageMetadata;
+  /** Q→A·merge 시나리오 상속 등 — `EnhancedResponseProcessor`·통합 API 경로 */
+  pipelineExtras?: PipelineMessageExtras | null;
   // AI 응답 관련 필드들
   aiResponse?: {
     type: 'conversation' | 'summary' | 'analysis' | 'form' | 'chart' | 'table' | 'list' | 'code' | 'image' | 'creative' | 'technical' | 'business';
-    data?: any;
+    data?: Record<string, unknown>;
     confidence?: number;
     processingTime?: number;
     model?: string;
@@ -55,7 +59,7 @@ export interface Message {
   // 분석 응답
   analysis?: {
     type: 'sentiment' | 'trend' | 'comparison' | 'prediction';
-    data?: any;
+    data?: Record<string, unknown>;
     insights?: string[];
   };
   // 폼 응답
@@ -74,8 +78,8 @@ export interface Message {
   // 차트/시각화 응답
   chart?: {
     type: 'bar' | 'line' | 'pie' | 'scatter' | 'heatmap';
-    data?: any;
-    config?: any;
+    data?: Record<string, unknown>;
+    config?: Record<string, unknown>;
   };
   // 테이블 응답
   table?: {
@@ -106,7 +110,7 @@ export interface Message {
   };
 }
 
-// 채팅 세션 타입 추가
+// 대화 세션 타입 추가
 export interface ChatSession {
   id: string;
   title: string;
@@ -119,13 +123,13 @@ export interface ChatSession {
   lastMessage?: string;
   participants: string[];
   tags: string[];
-  type?: 'general' | 'file_chat' | 'guideline_chat' | 'persistent_chat'; // 채팅 타입 추가
-  parentChatId?: string; // 부모 채팅 ID
-  childChatIds?: string[]; // 하위 채팅 ID들
+  type?: 'general' | 'file_chat' | 'guideline_chat' | 'persistent_chat'; // 대화 타입(백엔드 값은 기존 접미사 유지)
+  parentChatId?: string; // 부모 대화 ID
+  childChatIds?: string[]; // 하위 대화 ID들
   status: 'active' | 'archived' | 'deleted'; // 세션 상태
   lastActivity: string; // 마지막 활동 시간
   totalMessages: number; // 전체 메시지 수
-  isPersistent: boolean; // 지속적 채팅 여부
+  isPersistent: boolean; // 지속적 대화 여부
   metadata?: {
     totalTokens?: number;
     averageResponseTime?: number;
@@ -136,7 +140,7 @@ export interface ChatSession {
   };
 }
 
-// 채팅 리스트 관리 타입
+// 대화(세션) 목록 관리 타입
 export interface ChatList {
   sessions: ChatSession[];
   activeSessionId?: string;
@@ -221,6 +225,19 @@ export interface ChatData {
 }
 
 // AI 응답 타입 추가
+/**
+ * 대화 UI용 AI 응답 타입
+ * 
+ * 주의: 다른 파일에도 AIResponse 타입이 정의되어 있습니다:
+ * - src/types/ai.ts: AI 엔진 분석 결과 포함 (sentiment, intent, context)
+ * - src/types/conversation.ts: 대화 분석용 (strategy, quality, feedback)
+ * - src/services/integratedAIService.ts: 통합 AI 서비스용 (자체 정의)
+ * - src/services/externalAIService.ts: 외부 AI 서비스용 (provider, cost)
+ * - src/services/aiService.ts: AI 서비스용 (quality 객체)
+ * 
+ * 이 타입은 대화 인터페이스에서 다양한 응답 타입(text, chart, code 등)과
+ * UI 제안(suggestions, actions)을 포함하는 응답에 사용됩니다.
+ */
 export interface AIResponse {
   id: string;
   content: string;
@@ -230,7 +247,7 @@ export interface AIResponse {
   metadata?: {
     suggestions?: string[];
     actions?: string[];
-    data?: any;
+    data?: Record<string, unknown>;
     usedSystems?: string[];
     learningScore?: number;
   };

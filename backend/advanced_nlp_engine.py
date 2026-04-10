@@ -889,7 +889,7 @@ if __name__ == "__main__":
     nlp_engine = AdvancedNLPEngine(use_gpu=True)
     
     # 테스트 텍스트
-    test_text = "개포우성 재개발 프로젝트의 투자 가치를 분석해주세요. 주민들의 반응도 함께 고려해서 종합적으로 평가해주시면 감사하겠습니다."
+    test_text = "샘플 재개발 프로젝트의 투자 가치를 분석해주세요. 주민들의 반응도 함께 고려해서 종합적으로 평가해주시면 감사하겠습니다."
     
     # 고급 의미 분석 실행
     result = nlp_engine.advanced_semantic_analysis(test_text)

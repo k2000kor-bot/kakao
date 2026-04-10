@@ -1,4 +1,5 @@
 import { Message, ChatContext } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface LocalAIRequest {
     type: 'chat' | 'analysis' | 'guidance' | 'project' | 'file' | 'system';
@@ -23,42 +24,43 @@ export interface LocalAIResponse {
     };
 }
 
-class LocalAIService {
+export class LocalAIService {
+    /** 로컬 데모용 — 실제 사업장·현장 고유명은 넣지 않음 */
     private projectData = {
-        '개포우성7차': {
-            name: '개포우성7차',
-            description: '개포우성7차 재개발 프로젝트',
+        '샘플 프로젝트 A': {
+            name: '샘플 프로젝트 A',
+            description: '데모용 재개발·정비 프로젝트',
             status: '진행 중',
             files: [
-                '[인증]행복한소유☆개포우성7차.txt',
-                '개포우성7차_대화요약.pdf',
-                '시공사_평가자료.xlsx'
+                '대화요약_sample.txt',
+                '회의록_요약.pdf',
+                '평가자료.xlsx'
             ],
-            guidelines: '시공사 홍보 문제 관련 지침',
+            guidelines: '이해관계·일정·비용 리스크 점검 지침',
             progress: '75%',
             team: ['프로젝트 매니저', '기술팀', '법무팀']
         },
-        '잠실우성': {
-            name: '잠실우성',
-            description: '잠실우성 개발 프로젝트',
+        '샘플 프로젝트 B': {
+            name: '샘플 프로젝트 B',
+            description: '데모용 계획·예산 프로젝트',
             status: '계획 단계',
             files: [
-                '잠실우성_기본계획서.pdf',
-                '잠실우성_예산안.xlsx'
+                '기본계획서.pdf',
+                '예산안.xlsx'
             ],
-            guidelines: '개발 계획 및 예산 관리',
+            guidelines: '계획 및 예산 관리',
             progress: '25%',
             team: ['기획팀', '예산팀']
         }
     };
 
     private fileData = [
-        { name: '[인증]행복한소유☆개포우성7차.txt', size: '50KB', type: 'text', category: '인증서류' },
-        { name: '개포우성7차_대화요약.pdf', size: '120KB', type: 'pdf', category: '요약문서' },
-        { name: '시공사_평가자료.xlsx', size: '85KB', type: 'excel', category: '평가자료' },
+        { name: '대화요약_sample.txt', size: '50KB', type: 'text', category: '인증서류' },
+        { name: '회의록_요약.pdf', size: '120KB', type: 'pdf', category: '요약문서' },
+        { name: '평가자료.xlsx', size: '85KB', type: 'excel', category: '평가자료' },
         { name: '프로젝트_진행상황.docx', size: '200KB', type: 'word', category: '진행보고' },
-        { name: '잠실우성_기본계획서.pdf', size: '300KB', type: 'pdf', category: '계획서' },
-        { name: '잠실우성_예산안.xlsx', size: '150KB', type: 'excel', category: '예산자료' }
+        { name: '기본계획서.pdf', size: '300KB', type: 'pdf', category: '계획서' },
+        { name: '예산안.xlsx', size: '150KB', type: 'excel', category: '예산자료' }
     ];
 
     async processMessage(request: LocalAIRequest): Promise<LocalAIResponse> {
@@ -100,7 +102,13 @@ class LocalAIService {
 
             return response;
         } catch (error) {
-            console.error('로컬 AI 서비스 오류:', error);
+            const err = toError(error);
+            errorLogger.error('로컬 AI 서비스 오류', err, {
+                component: 'localAIService',
+                action: 'processMessage',
+                requestType: request.type,
+                contentPreview: request.content,
+            });
             return this.createFallbackResponse(request);
         }
     }
@@ -111,15 +119,15 @@ class LocalAIService {
         let responseText = '';
 
         if (content.includes('안녕') || content.includes('hello')) {
-            responseText = `안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?\n\n사용 가능한 기능:\n• 분석: "분석" 키워드 포함\n• 가이드: "가이드" 키워드 포함\n• 프로젝트: "프로젝트" 키워드 포함\n• 파일: "파일" 키워드 포함\n• 시스템: "시스템" 키워드 포함\n\n빠른 시작:\n• "이 대화를 분석해줘"\n• "메시지 가이드를 만들어줘"\n• "개포우성7차 프로젝트 정보"\n• "업로드된 파일 목록"\n• "시스템 상태 확인"`;
+            responseText = `안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?\n\n질문·요구·요청을 문장으로 말씀하시면 맥락에 맞게 연결됩니다.\n보조 예시(키워드):\n• 분석 · 가이드 · 프로젝트 · 파일 · 시스템\n\n빠른 시작:\n• "이 대화를 분석해줘"\n• "메시지 가이드를 만들어줘"\n• "○○ 프로젝트 일정 알려줘" (프로젝트명은 실제 등록명 사용)\n• "업로드된 파일 목록"\n• "시스템 상태 확인"`;
         } else if (content.includes('도움말') || content.includes('help')) {
-            responseText = `🤖 CORBU AI 도움말:\n\n사용 가능한 기능:\n• 분석: "분석" 또는 "analyze" 포함\n• 가이드: "가이드" 또는 "guidance" 포함\n• 프로젝트: "프로젝트" 또는 "project" 포함\n• 파일: "파일" 또는 "file" 포함\n• 시스템: "시스템" 또는 "상태" 포함\n\n예시:\n• "이 대화를 분석해줘"\n• "메시지 가이드를 만들어줘"\n• "개포우성7차 프로젝트 정보"\n• "업로드된 파일 목록"\n• "시스템 상태 확인"\n\n특별 기능:\n• 빠른 액션 버튼으로 즉시 실행\n• 자동 모드로 모든 기능 테스트\n• 실시간 대화형 인터페이스`;
+            responseText = `🤖 CORBU.AI 도움말:\n\n질문·요구·요청을 자연스럽게 입력하거나, 아래 키워드를 섞어 쓸 수 있습니다.\n• 분석 / analyze · 가이드 / guidance · 프로젝트 / project · 파일 / file · 시스템 / 상태\n\n예시:\n• "이 대화를 분석해줘"\n• "요약과 다음 액션 정리해줘"\n• "선택한 프로젝트 진행 상황 알려줘"\n• "업로드된 파일 목록"\n\n특별 기능:\n• 빠른 액션 버튼 · 자동 모드 · 실시간 대화`;
         } else if (content.includes('테스트') || content.includes('test')) {
-            responseText = `🧪 시스템 테스트 모드:\n\n모든 기능이 정상적으로 작동하고 있습니다!\n\n테스트 완료 항목:\n✅ 채팅 기능\n✅ 분석 기능\n✅ 가이드 기능\n✅ 프로젝트 기능\n✅ 파일 기능\n✅ 시스템 기능\n✅ 빠른 액션\n✅ 자동 모드\n\n모든 기능이 완벽하게 통합되어 있습니다.`;
+            responseText = `🧪 시스템 테스트 모드:\n\n모든 기능이 정상적으로 작동하고 있습니다!\n\n테스트 완료 항목:\n✅ 대화 기능\n✅ 분석 기능\n✅ 가이드 기능\n✅ 프로젝트 기능\n✅ 파일 기능\n✅ 시스템 기능\n✅ 빠른 액션\n✅ 자동 모드\n\n모든 기능이 완벽하게 통합되어 있습니다.`;
         } else if (content.includes('상태') || content.includes('status')) {
-            responseText = `📊 시스템 상태:\n\n현재 상태:\n• 프론트엔드: 정상 동작 ✅\n• 로컬 AI 엔진: 활성화 ✅\n• 데이터베이스: 로컬 캐시 ✅\n• 메모리 사용량: 45%\n• 응답 시간: 평균 50ms\n\n사용 가능한 서비스:\n• 채팅: 실시간 대화\n• 분석: 텍스트 분석\n• 가이드: 메시지 가이드\n• 프로젝트: 프로젝트 관리\n• 파일: 파일 관리\n• 시스템: 상태 모니터링\n\n모든 기능이 로컬에서 실시간으로 작동하고 있습니다.`;
+            responseText = `📊 시스템 상태:\n\n현재 상태:\n• 프론트엔드: 정상 동작 ✅\n• 로컬 AI 엔진: 활성화 ✅\n• 데이터베이스: 로컬 캐시 ✅\n• 메모리 사용량: 45%\n• 응답 시간: 평균 50ms\n\n사용 가능한 서비스:\n• 대화: 실시간 메시지\n• 분석: 텍스트 분석\n• 가이드: 메시지 가이드\n• 프로젝트: 프로젝트 관리\n• 파일: 파일 관리\n• 시스템: 상태 모니터링\n\n모든 기능이 로컬에서 실시간으로 작동하고 있습니다.`;
         } else {
-            responseText = `안녕하세요! "${request.content}"에 대해 이야기해보겠습니다. CORBU.AI가 도와드릴게요!\n\n현재 로컬 모드로 작동 중입니다. 모든 기능이 즉시 사용 가능합니다.\n\n사용 가능한 기능:\n• 분석: "분석" 키워드 포함\n• 가이드: "가이드" 키워드 포함\n• 프로젝트: "프로젝트" 키워드 포함\n• 파일: "파일" 키워드 포함\n• 시스템: "시스템" 키워드 포함\n\n특별 기능:\n• 빠른 액션 버튼으로 즉시 실행\n• 자동 모드로 모든 기능 테스트\n• 실시간 대화형 인터페이스`;
+            responseText = `안녕하세요! "${request.content}"에 대해 이야기해보겠습니다. CORBU.AI가 도와드릴게요!\n\n현재 로컬 모드입니다. 질문·요구·요청을 그대로 입력하면 됩니다.\n필요 시 "분석", "가이드", "프로젝트", "파일", "시스템" 등 키워드를 넣어도 됩니다.\n\n특별 기능: 빠른 액션 · 자동 모드 · 실시간 대화`;
         }
 
         return {
@@ -145,7 +153,7 @@ class LocalAIService {
         const startTime = Date.now();
         const content = request.content;
         const words = content.split(' ');
-        const keywords = words.slice(0, 5).join(', ');
+        const keywords = words.join(', ');
         const complexity = content.length > 50 ? '높음' : '보통';
         const sentiment = this.analyzeSentiment(content);
         const intent = this.analyzeIntent(content);
@@ -212,7 +220,7 @@ class LocalAIService {
         }
 
         if (!projectInfo) {
-            projectInfo = `📁 프로젝트 정보 (로컬 모드):\n\n사용 가능한 프로젝트:\n${Object.keys(this.projectData).map(name => `• ${name}`).join('\n')}\n\n특정 프로젝트에 대한 정보를 원하시면 프로젝트명을 포함해서 질문해주세요.\n\n예시:\n• "개포우성7차 프로젝트 정보"\n• "잠실우성 프로젝트 상태"\n\n이 정보는 로컬 데이터베이스에서 실시간으로 조회되었습니다.`;
+            projectInfo = `📁 프로젝트 정보 (로컬 모드):\n\n데모 프로젝트:\n${Object.keys(this.projectData).map(name => `• ${name}`).join('\n')}\n\n실제 환경에서는 등록된 프로젝트명을 넣어 질문·요청하세요.\n\n예시:\n• "샘플 프로젝트 A 진행률"\n• "샘플 프로젝트 B 관련 파일"\n\n이 정보는 로컬 데모 데이터입니다.`;
         }
 
         return {
@@ -275,9 +283,9 @@ class LocalAIService {
         };
     }
 
-    private async handleSystemMessage(request: LocalAIRequest): Promise<LocalAIResponse> {
+    private async handleSystemMessage(_request: LocalAIRequest): Promise<LocalAIResponse> {
         const startTime = Date.now();
-        const systemInfo = `⚙️ 시스템 상태 (로컬 모드):\n\n현재 상태:\n• 프론트엔드: 정상 동작 ✅\n• 백엔드: 로컬 모드 🔄\n• AI 엔진: 로컬 AI 활성화\n• 데이터베이스: 로컬 캐시\n• 메모리 사용량: 45%\n• 응답 시간: 평균 50ms\n\n시스템 기능:\n• 실시간 모니터링\n• 성능 최적화\n• 오류 로깅\n• 자동 복구\n• 로컬 AI 처리\n\n사용 가능한 서비스:\n• 채팅: 실시간 대화\n• 분석: 텍스트 분석\n• 가이드: 메시지 가이드\n• 프로젝트: 프로젝트 관리\n• 파일: 파일 관리\n• 시스템: 상태 모니터링\n\n모든 기능이 로컬에서 실시간으로 작동하고 있습니다.`;
+        const systemInfo = `⚙️ 시스템 상태 (로컬 모드):\n\n현재 상태:\n• 프론트엔드: 정상 동작 ✅\n• 백엔드: 로컬 모드 🔄\n• AI 엔진: 로컬 AI 활성화\n• 데이터베이스: 로컬 캐시\n• 메모리 사용량: 45%\n• 응답 시간: 평균 50ms\n\n시스템 기능:\n• 실시간 모니터링\n• 성능 최적화\n• 오류 로깅\n• 자동 복구\n• 로컬 AI 처리\n\n사용 가능한 서비스:\n• 대화: 실시간 메시지\n• 분석: 텍스트 분석\n• 가이드: 메시지 가이드\n• 프로젝트: 프로젝트 관리\n• 파일: 파일 관리\n• 시스템: 상태 모니터링\n\n모든 기능이 로컬에서 실시간으로 작동하고 있습니다.`;
 
         return {
             success: true,
@@ -298,7 +306,7 @@ class LocalAIService {
         };
     }
 
-    private createFallbackResponse(request: LocalAIRequest): LocalAIResponse {
+    private createFallbackResponse(_request: LocalAIRequest): LocalAIResponse {
         const startTime = Date.now();
         return {
             success: false,
@@ -321,7 +329,7 @@ class LocalAIService {
 
     // 대화형 명령 처리
     async processConversationCommand(text: string): Promise<LocalAIResponse> {
-        const startTime = Date.now();
+        const _startTime = Date.now();
         const lowerText = text.toLowerCase();
 
         if (lowerText.includes('분석') || lowerText.includes('analyze')) {
@@ -364,7 +372,7 @@ class LocalAIService {
             });
         }
 
-        // 기본 채팅 처리
+        // 기본 대화 처리
         return this.processMessage({
             type: 'chat',
             content: text,
@@ -431,4 +439,5 @@ class LocalAIService {
     }
 }
 
-export default new LocalAIService(); 
+export const localAIService = new LocalAIService();
+export default localAIService; 

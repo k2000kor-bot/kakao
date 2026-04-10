@@ -1,4 +1,18 @@
-import { advancedTextProcessor, TextProcessingRequest, WritingStyle, PoliticalTendency, MessageFormat } from './advancedTextProcessor';
+import { advancedTextProcessor, TextProcessingRequest, WritingStyle, PoliticalTendency, MessageFormat, ProcessedText } from './advancedTextProcessor';
+import { errorLogger } from '../utils/errorLogger';
+import { API_BASE_URL, API_QUERY_PARAM_CONVERSATION_ID, DEMO_MOCK_UPLOAD_BASE_URL } from '../config/api';
+import { sendChatMessage as sendUnifiedChatMessage } from './unifiedAPI';
+import {
+  coerceTrimmedString,
+  extractPipelineMessageExtrasFromChatResponse,
+  hasPipelineExtras,
+  type PipelineMessageExtras,
+} from '../utils/chatInputUtils';
+import {
+    normalizeChatTurnsForApiMerge,
+    type ChatTurn,
+    type MergeApiChatContextPayloadOptions,
+} from './modernChatContextBuilder';
 
 export interface ChatMessage {
     id: string;
@@ -28,9 +42,11 @@ export interface ChatResponse {
         confidence: number;
         textProcessing?: {
             stages?: string[];
-            alternatives?: any;
+            alternatives?: Record<string, unknown>;
         };
     };
+    /** 통합 대화 API `rawResponse`에서 추출한 파이프라인 부가 메타 */
+    pipelineExtras?: PipelineMessageExtras;
 }
 
 export interface FileUploadResponse {
@@ -43,21 +59,80 @@ export interface FileUploadResponse {
     error?: string;
 }
 
-class ChatService {
-    private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8001';
+export type ChatServiceSendOptions = {
+    /** Q→A·Genspark 통합 context에 넣을 이전 턴 (ModernChat 등과 동일 계약) */
+    conversationHistory?: ChatTurn[];
+    /** 미지정 시 `conversationHistory` 턴으로 `scenarioInheritMergeOptionsFromMessages` 유도 · `context` 내 히스토리는 merge embedded */
+    mergeApiChatContextOptions?: MergeApiChatContextPayloadOptions;
+};
 
-    async sendMessage(message: string, files?: File[]): Promise<ChatResponse> {
+export class ChatService {
+    private baseUrl = API_BASE_URL;
+
+    /**
+     * 통합 대화: `unifiedAPI.sendChatMessage`(내부 `getChatPostUrlsForConfigBase`·`CHAT_POST_PATH` 폴백).
+     * API 실패 시 `generateAIResponse` 폴백.
+     */
+    async sendMessage(
+        message: string,
+        files?: File[],
+        conversationId?: string,
+        context?: Record<string, unknown>,
+        options?: ChatServiceSendOptions
+    ): Promise<ChatResponse> {
         try {
             // 텍스트 처리 요청인지 확인
             if (this.isTextProcessingRequest(message)) {
                 return await this.handleTextProcessingRequest(message);
             }
 
-            // 일반 채팅 응답
+            // 백엔드 API를 통한 대화 응답
+            try {
+                const optHist = options?.conversationHistory;
+                const rawHist = Array.isArray(optHist) ? optHist : [];
+                const history = normalizeChatTurnsForApiMerge(rawHist);
+                /** quality·Genspark URL 보강·파이프라인 병합은 `unifiedAPI` → `buildUnifiedApiChatRequestBody`의 단일 merge에서 수행 */
+                const unifiedRes = await sendUnifiedChatMessage({
+                    message,
+                    context: context ?? {},
+                    ...(history.length > 0 ? { conversation_history: history } : {}),
+                    ...(options?.mergeApiChatContextOptions
+                        ? { mergeApiChatContextOptions: options.mergeApiChatContextOptions }
+                        : {}),
+                    ...(conversationId != null && conversationId !== ''
+                        ? { [API_QUERY_PARAM_CONVERSATION_ID]: conversationId }
+                        : {}),
+                });
+
+                if (unifiedRes.success && unifiedRes.message?.content) {
+                    const pipelineExtrasRaw = extractPipelineMessageExtrasFromChatResponse(
+                        unifiedRes.rawResponse !== undefined ? unifiedRes.rawResponse : unifiedRes
+                    );
+                    const pipelineExtras = hasPipelineExtras(pipelineExtrasRaw)
+                        ? pipelineExtrasRaw
+                        : undefined;
+                    return {
+                        message: unifiedRes.message.content,
+                        files: [],
+                        metadata: {
+                            model: 'unified-api',
+                            tokens: 0,
+                            processingTime: 0,
+                            confidence: 0.8,
+                        },
+                        ...(pipelineExtras ? { pipelineExtras } : {}),
+                    };
+                }
+                throw new Error(unifiedRes.error || '대화 API 응답 없음');
+            } catch (apiError) {
+                errorLogger.warn('백엔드 API 호출 실패, 폴백 응답 사용', { component: 'chatService', action: 'sendMessage', error: apiError instanceof Error ? apiError : new Error(String(apiError)) });
+            }
+
+            // 폴백: 일반 대화 응답
             const response = await this.generateAIResponse(message, files);
             return response;
         } catch (error) {
-            console.error('Error sending message:', error);
+            errorLogger.error('메시지 전송 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'sendMessage' });
             throw new Error('메시지 전송에 실패했습니다. 다시 시도해 주세요.');
         }
     }
@@ -221,7 +296,7 @@ class ChatService {
             text = text.replace(regex, '');
         });
 
-        return text.trim() || '텍스트 처리 요청이지만 원본 텍스트가 명시되지 않았습니다.';
+        return coerceTrimmedString(text, '') || '텍스트 처리 요청이지만 원본 텍스트가 명시되지 않았습니다.';
     }
 
     private extractRequirements(message: string): string[] {
@@ -255,12 +330,12 @@ class ChatService {
     private extractKeywords(message: string): string[] {
         const keywordMatch = message.match(/키워드[:\s]*([^,]+)/i);
         if (keywordMatch) {
-            return keywordMatch[1].split(',').map(k => k.trim());
+            return keywordMatch[1].split(',').map((k) => coerceTrimmedString(k, ''));
         }
         return [];
     }
 
-    private formatProcessedTextResponse(processedText: any): string {
+    private formatProcessedTextResponse(processedText: ProcessedText): string {
         let response = `📝 **고급 텍스트 가공 완료**\n\n`;
 
         response += `**최종 결과:**\n${processedText.finalContent}\n\n`;
@@ -274,15 +349,16 @@ class ChatService {
         response += `• 감정: ${processedText.metadata.sentiment}\n\n`;
 
         response += `🔄 **처리 단계:**\n`;
-        processedText.stages.forEach((stage: any, index: number) => {
+        processedText.stages.forEach((stage, index: number) => {
             response += `${index + 1}. ${stage.description} (${stage.processingTime}ms)\n`;
         });
 
         response += `\n📋 **대안 버전:**\n`;
-        response += `• 간단 버전: ${processedText.alternatives.brief.substring(0, 100)}...\n`;
-        response += `• 상세 버전: ${processedText.alternatives.detailed.substring(0, 100)}...\n`;
-        response += `• 기술 버전: ${processedText.alternatives.technical.substring(0, 100)}...\n`;
-        response += `• 친근 버전: ${processedText.alternatives.casual.substring(0, 100)}...\n`;
+        const alt = processedText.alternatives;
+        response += `• 간단 버전: ${alt.brief}\n`;
+        response += `• 상세 버전: ${alt.detailed}\n`;
+        response += `• 기술 버전: ${alt.technical}\n`;
+        response += `• 친근 버전: ${alt.casual}\n`;
 
         return response;
     }
@@ -306,10 +382,10 @@ class ChatService {
             };
         }
 
-        // 프로젝트 관련 질문
-        if (lowerMessage.includes('프로젝트') || lowerMessage.includes('개포우성')) {
+        // 프로젝트 관련 질문·요청 (특정 사업장명 없이 일반 안내)
+        if (lowerMessage.includes('프로젝트') || lowerMessage.includes('project')) {
             return {
-                message: `개포우성7차 프로젝트에 대해 질문하셨네요!\n\n현재 프로젝트 상태:\n• 진행률: 75%\n• 주요 마일스톤: 설계 검토 완료\n• 다음 단계: 시공 계획 수립\n\n어떤 세부사항을 알고 싶으신가요?\n\n- 프로젝트 일정\n- 예산 현황\n- 기술 사양\n- 이해관계자 정보`,
+                message: `프로젝트 관련 질문·요청으로 이해했습니다.\n\n예시로 볼 수 있는 항목(데모):\n• 진행 단계·일정\n• 주요 마일스톤\n• 다음 액션\n\n실제 데이터는 백엔드 연결 후 선택한 프로젝트 기준으로 답변됩니다.\n궁금한 세부 항목을 문장으로 이어서 말씀해 주세요.`,
                 files: [],
                 metadata: {
                     model: 'gpt-4o',
@@ -323,7 +399,7 @@ class ChatService {
         // 요약 요청
         if (lowerMessage.includes('요약') || lowerMessage.includes('정리')) {
             return {
-                message: `요약 요청을 받았습니다.\n\n📋 **주요 포인트**\n• 현재 진행 중인 작업: 대화형 AI 인터페이스 개발\n• 핵심 기능: 실시간 채팅, 파일 업로드, 음성 인식\n• 기술 스택: React, TypeScript, Web Speech API\n\n🎯 **다음 단계**\n• 백엔드 API 연동\n• 데이터베이스 구축\n• 사용자 인증 시스템\n\n더 구체적인 요약이 필요하시면 말씀해 주세요!`,
+                message: `요약 요청을 받았습니다.\n\n📋 **주요 포인트**\n• 현재 진행 중인 작업: 대화형 AI 인터페이스 개발\n• 핵심 기능: 실시간 대화, 파일 업로드, 음성 인식\n• 기술 스택: React, TypeScript, Web Speech API\n\n🎯 **다음 단계**\n• 백엔드 API 연동\n• 데이터베이스 구축\n• 사용자 인증 시스템\n\n더 구체적인 요약이 필요하시면 말씀해 주세요!`,
                 files: [],
                 metadata: {
                     model: 'gpt-4o',
@@ -336,7 +412,7 @@ class ChatService {
 
         // 일반적인 대화
         return {
-            message: `안녕하세요! CORBU AI입니다. 🤖
+            message: `안녕하세요! CORBU.AI입니다. 🤖
 
 현재 다음과 같은 기능들을 사용하실 수 있습니다:
 
@@ -382,10 +458,10 @@ class ChatService {
                 fileName: file.name,
                 fileSize: file.size,
                 fileType: file.type,
-                url: `https://example.com/uploads/${file.name}`
+                url: `${DEMO_MOCK_UPLOAD_BASE_URL}/${encodeURIComponent(file.name)}`
             };
         } catch (error) {
-            console.error('Error uploading file:', error);
+            errorLogger.error('파일 업로드 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'uploadFile' });
             return {
                 success: false,
                 fileId: '',
@@ -397,15 +473,15 @@ class ChatService {
         }
     }
 
-    async getChatHistory(chatId: string): Promise<ChatMessage[]> {
+    async getChatHistory(_chatId: string): Promise<ChatMessage[]> {
         try {
-            // 채팅 히스토리 시뮬레이션
+            // 대화 히스토리 시뮬레이션
             await new Promise(resolve => setTimeout(resolve, 500));
 
             return [
                 {
                     id: '1',
-                    content: '안녕하세요! CORBU AI입니다.',
+                    content: '안녕하세요! CORBU.AI입니다.',
                     isUser: false,
                     timestamp: new Date(Date.now() - 3600000),
                     metadata: {
@@ -416,29 +492,29 @@ class ChatService {
                 }
             ];
         } catch (error) {
-            console.error('Error fetching chat history:', error);
+            errorLogger.error('대화 히스토리 조회 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'getChatHistory' });
             return [];
         }
     }
 
     async createNewChat(): Promise<string> {
         try {
-            // 새 채팅 생성 시뮬레이션
+            // 새 대화 생성 시뮬레이션
             await new Promise(resolve => setTimeout(resolve, 300));
             return `chat_${Date.now()}`;
         } catch (error) {
-            console.error('Error creating new chat:', error);
-            throw new Error('새 채팅 생성에 실패했습니다.');
+            errorLogger.error('새 대화 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'createNewChat' });
+            throw new Error('새 대화 생성에 실패했습니다.');
         }
     }
 
-    async saveChatMessage(chatId: string, message: ChatMessage): Promise<boolean> {
+    async saveChatMessage(_chatId: string, _message: ChatMessage): Promise<boolean> {
         try {
             // 메시지 저장 시뮬레이션
             await new Promise(resolve => setTimeout(resolve, 200));
             return true;
         } catch (error) {
-            console.error('Error saving message:', error);
+            errorLogger.error('메시지 저장 실패', error instanceof Error ? error : new Error(String(error)), { component: 'chatService', action: 'saveChatMessage' });
             return false;
         }
     }

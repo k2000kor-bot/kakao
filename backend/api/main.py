@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 """
-CORBU AI 간단한 통합 API 서버 v1.0
+CORBU.AI 간단한 통합 API 서버 v1.0
 - 의존성 문제를 해결한 간단한 버전
 - 핵심 기능만 포함
 - Flask 기반으로 기존 app.py와 통합
 """
 
+import asyncio
+import base64
 import logging
+import os
+import tempfile
 import time
 import random
+import uuid
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from functools import wraps
+from werkzeug.exceptions import RequestEntityTooLarge
 
 # 로깅 설정
 logging.basicConfig(
@@ -33,19 +39,57 @@ CORS(app)
 
 # 설정
 app.config["SECRET_KEY"] = "corbu-ai-integrated-secret-key-2024"
+# 요청 본문 최대 크기 (16MB). 초과 시 413 반환
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+APP_START_TIME = time.time()
+INTENT_ANALYZE_MAX_MESSAGE_LENGTH = 10_000
+CHAT_MAX_MESSAGE_LENGTH = 10_000
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_entity_too_large(_e):
+    """요청 본문이 MAX_CONTENT_LENGTH 초과 시 413 JSON 응답."""
+    return (
+        jsonify({
+            "success": False,
+            "error": "요청 본문이 너무 큽니다.",
+            "detail": "최대 16MB까지 허용됩니다.",
+            "timestamp": datetime.now().isoformat(),
+        }),
+        413,
+    )
 
 
 # 유틸리티 함수
+def validate_message_length(
+    message: str,
+    max_length: int,
+    field_name: str = "메시지",
+) -> Optional[Tuple[Response, int]]:
+    """메시지 길이 검증. 초과 시 (error_response, 400) 반환, 아니면 None."""
+    if not message or not message.strip():
+        return create_error_response(f"{field_name}가 비어있습니다.", 400)
+    if len(message) > max_length:
+        return create_error_response(
+            f"{field_name}가 너무 깁니다. 최대 {max_length}자까지 허용됩니다.",
+            400,
+        )
+    return None
+
+
 def create_error_response(
     error: str, status_code: int = 500, message: Optional[str] = None
 ) -> Tuple[Response, int]:
-    """표준화된 에러 응답 생성"""
+    """표준화된 에러 응답 생성. 요청 추적용 request_id 포함 (헤더 X-Request-Id와 동일)."""
     error_data = {
         "success": False,
         "error": error,
         "message": message or error,
         "timestamp": datetime.now().isoformat(),
     }
+    rid = getattr(request, "request_id", None)
+    if rid is not None:
+        error_data["request_id"] = rid
     return (
         jsonify(error_data),
         status_code,
@@ -55,17 +99,35 @@ def create_error_response(
 def create_success_response(
     data: Dict[str, Any], status_code: int = 200
 ) -> Tuple[Response, int]:
-    """표준화된 성공 응답 생성"""
+    """표준화된 성공 응답 생성. 요청 추적용 request_id 포함 (헤더 X-Request-Id와 동일)."""
+    body = {
+        "success": True,
+        "data": data,
+        "timestamp": datetime.now().isoformat(),
+    }
+    rid = getattr(request, "request_id", None)
+    if rid is not None:
+        body["request_id"] = rid
     return (
-        jsonify(
-            {
-                "success": True,
-                "data": data,
-                "timestamp": datetime.now().isoformat(),
-            }
-        ),
+        jsonify(body),
         status_code,
     )
+
+
+def attach_context_ui_modes_to_payload(
+    context: Optional[Dict[str, Any]], payload: Dict[str, Any]
+) -> None:
+    """요청 context의 answer_mode/response_style을 payload 최상위 및 payload['data']에 에코 (in-place)."""
+    if not context or not isinstance(payload, dict):
+        return
+    for key in ("answer_mode", "response_style"):
+        raw = context.get(key)
+        if isinstance(raw, str) and raw.strip():
+            s = raw.strip()
+            payload[key] = s
+            inner = payload.get("data")
+            if isinstance(inner, dict):
+                inner[key] = s
 
 
 def validate_json_request(required_fields: List[str] = None):
@@ -90,6 +152,8 @@ def validate_json_request(required_fields: List[str] = None):
                         )
 
                 return func(*args, **kwargs)
+            except RequestEntityTooLarge:
+                raise
             except Exception as e:
                 logger.error(f"요청 검증 오류: {e}", exc_info=True)
                 return create_error_response(f"요청 검증 실패: {str(e)}", 400)
@@ -130,6 +194,29 @@ def monitor_performance(func):
     return wrapper
 
 
+@app.before_request
+def before_request_log():
+    """요청 전 로깅: method, path, request_id (디버깅·추적용)."""
+    import uuid
+    request_id = getattr(request, "request_id", None) or str(uuid.uuid4())[:8]
+    setattr(request, "request_id", request_id)
+    request.start_time = time.time()
+    logger.debug("요청 시작 %s %s [%s]", request.method, request.path, request_id)
+
+
+@app.after_request
+def after_request_headers(response):
+    """응답 헤더 추가: X-Request-Id, X-Response-Time (모니터링·추적용)."""
+    request_id = getattr(request, "request_id", None)
+    if request_id:
+        response.headers["X-Request-Id"] = request_id
+    start = getattr(request, "start_time", None)
+    if start is not None:
+        elapsed = round((time.time() - start) * 1000)
+        response.headers["X-Response-Time-Ms"] = str(elapsed)
+    return response
+
+
 class SimpleIntegratedAI:
     """간단한 통합 AI 엔진
 
@@ -147,20 +234,78 @@ class SimpleIntegratedAI:
             "average_response_time": 0.0,
             "last_updated": datetime.now().isoformat(),
         }
+        # Intelligent Response Engine 초기화 (선택적 사용)
+        self.intelligent_engine = None
+        try:
+            from api.intelligent_response_engine import get_intelligent_engine
 
-    def analyze_message(self, message: str) -> Dict[str, Any]:
-        """메시지 종합 분석
+            self.intelligent_engine = get_intelligent_engine()
+            logger.info("✅ Intelligent Response Engine 로드 성공")
+        except Exception as e:
+            logger.warning(f"⚠️ Intelligent Response Engine 로드 실패: {e}")
+
+    def analyze_message(
+        self, message: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """메시지 종합 분석. context(질문·요구 등)를 반영해 결과물 생성.
 
         Args:
             message: 분석할 메시지 텍스트
+            context: 프론트 전달 컨텍스트 (parsed_input, answer_quality_instruction 등)
 
         Returns:
             분석 결과 딕셔너리 (success, response, analysis, timestamp)
         """
         try:
             start_time = time.time()
+            context = context if isinstance(context, dict) else {}
 
-            # 감정 분석
+            # 대화 파일 첨부 시: 첨부 내용 + 사용자 질문/요구를 하나의 메시지로 합쳐서 생성답변에 반영
+            effective_message = message
+            if context.get("conversation_file_content"):
+                file_content = context.get("conversation_file_content") or ""
+                effective_message = (
+                    "[첨부된 대화 내용]\n"
+                    + file_content
+                    + "\n\n[사용자 질문 및 요구]\n"
+                    + (message or "")
+                )
+
+            # 프로젝트(노트북) 선택 시: 노트북 소스 컨텍스트 로드 → 딥시크 등 LLM이 노트북 LLM처럼 소스 기반 답변
+            project_id = context.get("project_id") or context.get("projectId")
+            if project_id:
+                try:
+                    from api.project_session_api import load_project_notebook_context_filtered
+
+                    source_ids = context.get("source_ids")
+                    if source_ids is not None and not isinstance(source_ids, list):
+                        source_ids = None
+                    project_context_text = load_project_notebook_context_filtered(
+                        project_id, source_ids=source_ids
+                    )
+                    if project_context_text and project_context_text.strip():
+                        parts = [project_context_text.strip()]
+                        bylaws = context.get("bylaws_base_knowledge")
+                        if isinstance(bylaws, str) and bylaws.strip():
+                            parts.append(bylaws.strip())
+                        context["projectKnowledge"] = "\n\n".join(parts)
+                        logger.info(
+                            "프로젝트 노트북 컨텍스트 적용(노트북 LLM 스타일): project_id=%s, source_ids=%s",
+                            project_id,
+                            len(source_ids) if source_ids else "전체",
+                        )
+                    project_instructions = context.get("project_instructions")
+                    if isinstance(project_instructions, str) and project_instructions.strip():
+                        existing = (context.get("projectKnowledge") or "").strip()
+                        context["projectKnowledge"] = (
+                            (existing + "\n\n프로젝트 지침:\n" + project_instructions.strip())
+                            if existing
+                            else ("프로젝트 지침:\n" + project_instructions.strip())
+                        )
+                except Exception as e:
+                    logger.warning("프로젝트 노트북 컨텍스트 로드 실패(무시하고 진행): %s", e)
+
+            # 감정 분석 (원본 메시지 기준)
             emotion_analysis = self._analyze_emotion(message)
 
             # 키워드 추출
@@ -169,8 +314,90 @@ class SimpleIntegratedAI:
             # 의도 분석
             intent = self._analyze_intent(message)
 
-            # 응답 생성
-            response = self._generate_response(message, emotion_analysis, intent)
+            # 응답 생성: 질문·답변 시 항상 딥시크 등 LLM에 연결해 답변 생성 (프로젝트 있으면 노트북 소스 반영)
+            response = None
+            try:
+                from api.unified_chat_api import generate_chat_response
+
+                def _run_generate():
+                    try:
+                        return asyncio.run(
+                            generate_chat_response(effective_message, "enhanced", context)
+                        )
+                    except RuntimeError as e:
+                        if "running event loop" in str(e):
+                            loop = asyncio.get_event_loop()
+                            return loop.run_until_complete(
+                                generate_chat_response(effective_message, "enhanced", context)
+                            )
+                        raise
+
+                response = _run_generate()
+                if response and len((response or "").strip()) > 0:
+                    logger.info(
+                        "딥시크(노트북 LLM) 경로로 응답 생성: %d자%s",
+                        len(response.strip()),
+                        f", project_id={project_id}" if project_id else "",
+                    )
+            except Exception as e:
+                logger.warning("딥시크(노트북 LLM) 경로 실패, 기본 엔진 사용: %s", e)
+
+            # Intelligent Response Engine 시도 (딥시크 경로가 없거나 실패한 경우)
+            if not response and self.intelligent_engine:
+                try:
+                    intelligent_response = self.intelligent_engine.generate_response(
+                        query=effective_message,
+                        context=context,
+                        conversation_history=self.conversation_history[-5:]
+                        if self.conversation_history
+                        else None,
+                    )
+                    if intelligent_response and len(intelligent_response.strip()) > 100:
+                        response = intelligent_response
+                        logger.info(
+                            f"✅ Intelligent Response Engine 사용: {len(response)}자"
+                        )
+                except Exception as e:
+                    logger.warning(
+                        f"⚠️ Intelligent Response Engine 실패, 기본 엔진 사용: {e}"
+                    )
+
+            # 질문·요구가 있으면 결과물 형식으로 생성 (context.parsed_input 또는 메시지 구조 감지)
+            # 1) 질문·요구 전용 프롬프트로 LLM 재시도 → 2) 실패 시 템플릿 결과물 반환
+            if not response and self._has_question_requirements(message, context):
+                prompt_for_question = self._build_question_requirement_prompt(effective_message, context)
+                if prompt_for_question:
+                    try:
+                        from api.unified_chat_api import generate_chat_response
+
+                        def _run_q():
+                            try:
+                                return asyncio.run(
+                                    generate_chat_response(prompt_for_question, "enhanced", context)
+                                )
+                            except RuntimeError as ex:
+                                if "running event loop" in str(ex):
+                                    loop = asyncio.get_event_loop()
+                                    return loop.run_until_complete(
+                                        generate_chat_response(prompt_for_question, "enhanced", context)
+                                    )
+                                raise
+
+                        response = _run_q()
+                        if response and len((response or "").strip()) > 0:
+                            logger.info("질문·요구 전용 프롬프트로 LLM 응답 생성: %d자", len(response.strip()))
+                    except Exception as e:
+                        logger.warning("질문·요구 LLM 재시도 실패, 템플릿 결과물 사용: %s", e)
+                if not response:
+                    response = self._generate_result_from_question_requirements(
+                        effective_message, context, emotion_analysis, intent
+                    )
+
+            # 기본 응답 생성 (Intelligent Engine이 실패하거나 없는 경우)
+            if not response:
+                response = self._generate_response(
+                    effective_message, emotion_analysis, intent
+                )
 
             # 성능 메트릭 업데이트
             response_time = time.time() - start_time
@@ -463,6 +690,134 @@ class SimpleIntegratedAI:
         # 기본값
         return {"type": "general", "confidence": 0.5}
 
+    def analyze_intent_only(self, message: str) -> Dict[str, Any]:
+        """의도·키워드만 분석 (API용). 메시지 분석 없이 intent + keywords만 반환.
+        공유 모듈 api.intent_analysis 사용 (FastAPI와 동일 로직).
+        """
+        try:
+            from api.intent_analysis import analyze_intent_only as shared_analyze
+            return shared_analyze(message)
+        except ImportError:
+            intent = self._analyze_intent(message)
+            keywords = self._extract_keywords(message)
+            return {"intent": intent, "keywords": keywords}
+
+    def _has_question_requirements(
+        self, message: str, context: Dict[str, Any]
+    ) -> bool:
+        """질문·요구가 포함된 입력인지 여부 (결과물 생성 대상)."""
+        parsed = context.get("parsed_input")
+        if isinstance(parsed, dict) and (
+            parsed.get("question") or parsed.get("requirements")
+        ):
+            return True
+        msg_lower = (message or "").lower().strip()
+        if len(msg_lower) < 15:
+            return False
+        if "질문" in message and "요구" in message:
+            return True
+        if "질문:" in message or "요구사항:" in message or "요구:" in message:
+            return True
+        # 질문·요구 표현 확대: 알려줘, 설명해줘, 써줘, 작성해줘 등
+        question_requirement_keywords = [
+            "알려줘", "알려주세요", "설명해줘", "설명해주세요",
+            "써줘", "쓰여줘", "작성해줘", "작성해주세요", "만들어줘",
+            "?", "궁금", "뭐야", "무엇", "어떻게", "왜"
+        ]
+        if any(kw in msg_lower for kw in question_requirement_keywords):
+            return True
+        return False
+
+    def _build_question_requirement_prompt(
+        self, message: str, context: Dict[str, Any]
+    ) -> Optional[str]:
+        """질문·요구가 있을 때 LLM에 넘길 명시적 프롬프트 문자열. 없으면 None."""
+        parsed = context.get("parsed_input") or {}
+        if not isinstance(parsed, dict):
+            return None
+        question = parsed.get("question") if isinstance(parsed.get("question"), str) else None
+        requirements = parsed.get("requirements") if isinstance(parsed.get("requirements"), str) else None
+        if not question and not requirements:
+            return None
+        parts = [
+            "다음 질문에 대해 구체적으로 답변하고, 요구사항이 있으면 반영한 결과물을 작성해 주세요.",
+            "",
+            "사용자 메시지:",
+            (message or "").strip() or "(없음)",
+        ]
+        if question:
+            parts.extend(["", "질문:", question.strip()])
+        if requirements:
+            parts.extend(["", "요구사항:", requirements.strip()])
+        return "\n".join(parts)
+
+    def _generate_result_from_question_requirements(
+        self,
+        message: str,
+        context: Dict[str, Any],
+        emotion: Dict[str, Any],
+        intent: Dict[str, Any],
+    ) -> str:
+        """질문·요구가 있을 때 결과물 형식으로 답변 생성 (LLM 실패 시 템플릿)."""
+        parsed = context.get("parsed_input") or {}
+        question = (
+            parsed.get("question")
+            if isinstance(parsed.get("question"), str)
+            else None
+        )
+        requirements = (
+            parsed.get("requirements")
+            if isinstance(parsed.get("requirements"), str)
+            else None
+        )
+        quality_instruction = context.get("answer_quality_instruction") or (
+            "답변은 질문의 핵심에 맞게 정확히 하고, 요구한 형식·길이를 반영합니다. "
+            "글 생성 시에는 서론·본론·결론과 논리적 흐름, 가독성을 갖춥니다."
+        )
+
+        lines = ["## 질문에 대한 답변", ""]
+        if question:
+            lines.append(f"**질문:** {question.strip()}")
+            lines.append("")
+        intro_phrases = [
+            "입력하신 질문을 반영하여 답변을 정리했습니다. 핵심 요약을 먼저 드리고, 필요한 경우 근거와 실행 가능한 다음 단계를 포함했습니다.",
+            "질문 내용을 바탕으로 결과물을 구성했습니다. 요약·근거·다음 단계 순으로 정리했습니다.",
+            "요청하신 질문과 요구를 반영해 결과를 정리했습니다. 핵심 요약과 실행 항목을 포함했습니다.",
+        ]
+        lines.append(random.choice(intro_phrases))
+        lines.append("")
+        lines.append("- **요약:** 질문의 핵심에 대한 답변을 3줄 이내로 제시합니다.")
+        lines.append("- **근거:** 출처나 근거가 있으면 명시합니다.")
+        lines.append("- **다음 단계:** 실행 가능한 액션 1개 이상을 제안합니다.")
+        lines.append("")
+
+        if requirements:
+            lines.append("## 요구사항 반영")
+            lines.append("")
+            lines.append(f"**요구사항:** {requirements.strip()}")
+            lines.append("")
+            req_phrases = [
+                "위 요구사항(결과물 형식, 필수 포함 항목, 톤/길이 등)에 맞춰 생성 결과를 구성했습니다.",
+                "요구사항에 따라 결과물 형식과 필수 항목을 반영했습니다.",
+                "입력하신 요구사항을 반영해 결과물을 구성했습니다.",
+            ]
+            lines.append(random.choice(req_phrases))
+            lines.append("")
+
+        if quality_instruction:
+            lines.append("---")
+            lines.append("")
+            lines.append(quality_instruction)
+            lines.append("")
+
+        closing_phrases = [
+            "추가로 구체적인 내용이 필요하시면 질문과 요구사항을 더 적어 주시면 됩니다.",
+            "더 세부적인 결과가 필요하시면 질문과 요구를 추가로 입력해 주세요.",
+            "다른 형식이나 항목이 필요하시면 요구사항을 보완해 주시면 반영하겠습니다.",
+        ]
+        lines.append(random.choice(closing_phrases))
+        return "\n".join(lines)
+
     def _generate_response(
         self, message: str, emotion: Dict[str, Any], intent: Dict[str, Any]
     ) -> str:
@@ -480,19 +835,21 @@ class SimpleIntegratedAI:
         response_templates = {
             "greeting": {
                 "긍정": [
-                    "안녕하세요! 기분이 좋으시네요! CORBU AI가 더욱 기쁘게 도와드리겠습니다! 😊",
+                    "안녕하세요! 기분이 좋으시네요! CORBU.AI가 더욱 기쁘게 도와드리겠습니다! 😊",
                     "반갑습니다! 좋은 하루 보내고 계시는군요! 무엇을 도와드릴까요? ✨",
                     "안녕하세요! 긍정적인 에너지가 느껴지네요! 기꺼이 도와드리겠습니다! 🌟",
                 ],
                 "부정": [
-                    "안녕하세요... 힘든 하루이신 것 같네요. CORBU AI가 도와드릴게요. 😔",
+                    "안녕하세요... 힘든 하루이신 것 같네요. CORBU.AI가 도와드릴게요. 😔",
                     "반갑습니다. 마음이 무겁으시군요. 제가 도와드릴 수 있는 것이 있다면 말씀해주세요. 🤗",
                     "안녕하세요. 어려운 시간이시군요. 함께 해결해보아요. 💪",
                 ],
                 "중립": [
-                    "안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?",
+                    "안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?",
                     "반갑습니다! 어떤 도움이 필요하신가요?",
                     "안녕하세요! 기쁘게 도와드리겠습니다.",
+                    "안녕하세요. 질문이나 요청이 있으시면 편하게 말씀해 주세요.",
+                    "반가워요. 궁금한 점이나 하고 싶은 말이 있으면 알려 주세요.",
                 ],
             },
             "question": {
@@ -510,6 +867,9 @@ class SimpleIntegratedAI:
                     "좋은 질문이네요! 자세히 설명해드리겠습니다.",
                     "궁금한 점이 있으시군요. 도와드릴게요!",
                     "질문해주셔서 감사합니다. 답변드리겠습니다.",
+                    "그 질문에 대해 정리해서 답변드릴게요.",
+                    "알려주신 내용을 바탕으로 설명드리겠습니다.",
+                    "핵심만 짚어서 답변드리겠습니다.",
                 ],
             },
             "request": {
@@ -595,6 +955,10 @@ class SimpleIntegratedAI:
                     "흥미로운 말씀이네요! 더 자세히 알려주세요.",
                     "그렇군요! 더 이야기해주세요.",
                     "좋은 이야기입니다! 계속 들어보고 싶어요.",
+                    "말씀해 주신 내용을 반영해서 답변드릴게요.",
+                    "요청하신 관점에서 정리해 보겠습니다.",
+                    "여러 각도로 생각해 본 뒤 답변드리겠습니다.",
+                    "도움이 되도록 핵심만 짚어서 말씀드릴게요.",
                 ],
             },
         }
@@ -658,6 +1022,23 @@ class SimpleIntegratedAI:
 ai_engine = SimpleIntegratedAI()
 
 
+@app.route("/", methods=["GET"])
+def root():
+    """루트 경로: 서비스 정보 및 API 문서 링크 반환."""
+    return create_success_response({
+        "service": "CORBU.AI 통합 API",
+        "version": "1.0.0",
+        "docs": "/api/integrated/health",
+        "message": "API 사용: GET /api/integrated/health, POST /api/chat, POST /api/intent/analyze 등",
+    })
+
+
+@app.route("/favicon.ico", methods=["GET"])
+def favicon():
+    """favicon 요청 시 204 No Content 반환 (404 방지)."""
+    return "", 204
+
+
 # API 엔드포인트들
 @app.route("/api/integrated/analyze", methods=["POST"])
 @validate_json_request(required_fields=["message"])
@@ -682,6 +1063,1795 @@ def analyze_message():
         return create_error_response(f"서버 오류: {str(e)}", 500)
 
 
+@app.route("/api/intent/analyze", methods=["POST"])
+@validate_json_request(required_fields=["message"])
+@monitor_performance
+def intent_analyze():
+    """의도·키워드 분석 전용 API. 메시지의 의도(type, confidence)와 키워드 리스트 반환."""
+    try:
+        data = request.get_json()
+        message = (data.get("message") or "").strip()
+        err = validate_message_length(
+            message, INTENT_ANALYZE_MAX_MESSAGE_LENGTH, "메시지"
+        )
+        if err:
+            return err
+        result = ai_engine.analyze_intent_only(message)
+        return create_success_response(result)
+    except Exception as e:
+        logger.error(f"의도 분석 API 오류: {e}", exc_info=True)
+        return create_error_response(f"서버 오류: {str(e)}", 500)
+
+
+@app.route("/api/status", methods=["GET"])
+def api_status():
+    """기능별 사용 가능 여부 (프론트 UI·배너용)."""
+    tts_base = os.environ.get("QWEN_TTS_BASE_URL", "").rstrip("/")
+    tts_configured = bool(tts_base)
+    try:
+        psa = _project_api()
+        projects_available = psa is not None
+    except Exception:
+        projects_available = False
+    return create_success_response({
+        "ok": True,
+        "tts": {
+            "speech": tts_configured,
+            "speech_from_source": False,
+            "speech_from_project": False,
+            "message": "Qwen3-TTS 사용 가능" if tts_configured else "QWEN_TTS_BASE_URL 설정 후 TTS 사용 가능",
+        },
+        "projects": projects_available,
+        "uptime_seconds": round(time.time() - APP_START_TIME, 2),
+    })
+
+
+@app.route("/api", methods=["GET"])
+def api_index():
+    """API 진입점. 사용 가능한 주요 엔드포인트 안내."""
+    return create_success_response({
+        "service": "CORBU.AI 통합 API",
+        "version": "1.0",
+        "endpoints": {
+            "health": "/api/health",
+            "status": "/api/status",
+            "chat": "/api/chat",
+            "projects": "/api/projects",
+            "real_estate_transactions": "/api/real-estate/transactions",
+            "real_estate_registry_changes": "/api/real-estate/registry-changes",
+            "tts_config": "/api/tts/config",
+            "tts_speech": "/api/tts/speech",
+            "tts_script_style_extract": "/api/tts/script-style/extract-document",
+            "tts_script_style_analyze": "/api/tts/script-style/analyze",
+            "tts_script_style_generate": "/api/tts/script-style/generate",
+        },
+        "docs": "/api/docs",
+        "openapi_json": "/api/openapi.json",
+    })
+
+
+def _get_openapi_spec() -> Dict[str, Any]:
+    """OpenAPI 3.0 스펙 (문서화용)."""
+    return {
+        "openapi": "3.0.3",
+        "info": {
+            "title": "CORBU.AI 통합 API",
+            "version": "1.0",
+            "description": "헬스·상태·대화·프로젝트·TTS·script-style API",
+        },
+        "servers": [{"url": "/", "description": "현재 호스트"}],
+        "paths": {
+            "/api/health": {
+                "get": {
+                    "summary": "헬스 체크",
+                    "responses": {"200": {"description": "healthy, uptime_seconds"}},
+                }
+            },
+            "/api/status": {
+                "get": {
+                    "summary": "기능 상태",
+                    "responses": {"200": {"description": "tts_speech, projects, uptime_seconds"}},
+                }
+            },
+            "/api/chat": {
+                "post": {
+                    "summary": "대화",
+                    "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"message": {"type": "string"}}}}}},
+                    "responses": {"200": {"description": "응답 메시지"}},
+                }
+            },
+            "/api/projects": {
+                "get": {"summary": "프로젝트 목록", "responses": {"200": {"description": "프로젝트 배열"}}},
+                "post": {"summary": "프로젝트 생성", "responses": {"200": {"description": "생성된 프로젝트"}}},
+            },
+            "/api/projects/{project_id}": {
+                "get": {"summary": "프로젝트 조회", "responses": {"200": {"description": "프로젝트 객체"}, "404": {"description": "찾을 수 없음"}}},
+                "put": {"summary": "프로젝트 수정", "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"name": {"type": "string"}, "description": {"type": "string"}}}}}}, "responses": {"200": {"description": "수정된 프로젝트"}, "404": {"description": "찾을 수 없음"}}},
+                "delete": {"summary": "프로젝트 삭제", "responses": {"200": {"description": "삭제 완료"}, "404": {"description": "찾을 수 없음"}}},
+            },
+            "/api/real-estate/transactions": {
+                "get": {
+                    "summary": "부동산 실거래 정보 조회",
+                    "parameters": [
+                        {"name": "sido", "in": "query", "schema": {"type": "string"}},
+                        {"name": "sigungu", "in": "query", "schema": {"type": "string"}},
+                        {"name": "dong", "in": "query", "schema": {"type": "string"}},
+                        {"name": "startDate", "in": "query", "schema": {"type": "string"}},
+                        {"name": "endDate", "in": "query", "schema": {"type": "string"}},
+                    ],
+                    "responses": {"200": {"description": "transactions 배열 (RealEstateDataPanel 연동)"}},
+                }
+            },
+            "/api/real-estate/registry-changes": {
+                "get": {
+                    "summary": "부동산 등기 변경 정보 조회",
+                    "parameters": [
+                        {"name": "sido", "in": "query", "schema": {"type": "string"}},
+                        {"name": "sigungu", "in": "query", "schema": {"type": "string"}},
+                        {"name": "dong", "in": "query", "schema": {"type": "string"}},
+                        {"name": "changeType", "in": "query", "schema": {"type": "string"}},
+                        {"name": "startDate", "in": "query", "schema": {"type": "string"}},
+                        {"name": "endDate", "in": "query", "schema": {"type": "string"}},
+                    ],
+                    "responses": {"200": {"description": "changes 배열 (RealEstateDataPanel 연동)"}},
+                }
+            },
+            "/api/tts/config": {"get": {"summary": "TTS 설정", "responses": {"200": {"description": "voices, base_url 등"}}}},
+            "/api/tts/speech": {
+                "post": {
+                    "summary": "TTS 음성 생성",
+                    "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"text": {"type": "string"}, "voice_id": {"type": "string"}}}}}},
+                    "responses": {"200": {"description": "오디오 바이너리 또는 base64"}},
+                }
+            },
+            "/api/tts/script-style/extract-document": {
+                "post": {
+                    "summary": "문서에서 텍스트 추출 (docx/txt)",
+                    "requestBody": {"content": {"multipart/form-data": {"schema": {"type": "object", "properties": {"file": {"type": "string", "format": "binary"}}}}}},
+                    "responses": {"200": {"description": "text, suggested_document_hint"}},
+                }
+            },
+            "/api/tts/script-style/analyze": {
+                "post": {
+                    "summary": "대본 스타일 분석",
+                    "requestBody": {"content": {"application/json": {"schema": {"type": "object", "required": ["sample_script"], "properties": {"sample_script": {"type": "string"}}}}}},
+                    "responses": {"200": {"description": "style_summary, key_traits"}},
+                }
+            },
+            "/api/tts/script-style/generate": {
+                "post": {
+                    "summary": "스타일 유지 대본 생성",
+                    "requestBody": {"content": {"application/json": {"schema": {"type": "object", "required": ["sample_script", "topic_or_outline"], "properties": {"sample_script": {"type": "string"}, "topic_or_outline": {"type": "string"}}}}}},
+                    "responses": {"200": {"description": "generated_script"}},
+                }
+            },
+            "/api/tts/situations": {
+                "get": {
+                    "summary": "TTS 상황별 프리셋 (나레이션·뉴스·드라마 대사 등)",
+                    "responses": {"200": {"description": "situations 배열 (id, label, instructions_preview)"}},
+                }
+            },
+        },
+    }
+
+
+@app.route("/api/openapi.json", methods=["GET"])
+def api_openapi_json():
+    """OpenAPI 3.0 스펙 JSON (Swagger UI 등에서 사용)."""
+    return jsonify(_get_openapi_spec())
+
+
+@app.route("/api/docs", methods=["GET"])
+def api_docs():
+    """Swagger UI 문서 페이지 (OpenAPI 스펙 로드)."""
+    html = """<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>CORBU.AI API 문서</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = function() {
+      window.ui = SwaggerUIBundle({
+        url: "/api/openapi.json",
+        dom_id: "#swagger-ui",
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: "BaseLayout"
+      });
+    };
+  </script>
+</body>
+</html>"""
+    return Response(html, mimetype="text/html")
+
+
+@app.route("/api/health", methods=["GET"])
+@monitor_performance
+def api_health():
+    """간단 헬스 체크 (로드밸런서·모니터링용). status, version, uptime_seconds 반환."""
+    uptime_seconds = round(time.time() - APP_START_TIME, 2)
+    return create_success_response(
+        {
+            "status": "healthy",
+            "service": "CORBU.AI 통합 API",
+            "version": "1.0",
+            "uptime_seconds": uptime_seconds,
+        }
+    )
+
+
+# ---------- 대화 업로드 및 대화 관계도 ----------
+@app.route("/api/conversations/upload", methods=["POST"])
+def api_conversations_upload():
+    """대화 내용 업로드. 파일(file) 또는 본문(text)으로 전달. 업로드 후 대화 관계도 데이터 생성 가능."""
+    try:
+        from api.conversation_graph import save_upload
+    except ImportError:
+        return create_error_response("대화 업로드 모듈을 불러올 수 없습니다.", 503)
+    f = request.files.get("file")
+    if f and f.filename:
+        try:
+            raw = f.read()
+            if isinstance(raw, bytes):
+                content = raw.decode("utf-8", errors="replace")
+            else:
+                content = str(raw)
+        except Exception as e:
+            return create_error_response(f"파일 읽기 실패: {e}", 400)
+        name = request.form.get("name") or f.filename
+        filename = f.filename
+    else:
+        data = request.get_json(silent=True) or {}
+        content = data.get("text") or request.form.get("text") or ""
+        if not content.strip():
+            return create_error_response("파일 또는 text(대화 내용)이 필요합니다.", 400)
+        name = data.get("name") or request.form.get("name") or "대화"
+        filename = data.get("filename") or "pasted.txt"
+    try:
+        result = save_upload(name=name, filename=filename, content=content)
+        return create_success_response({"data": result})
+    except Exception as e:
+        logger.exception("대화 업로드 실패")
+        return create_error_response(f"저장 실패: {e}", 500)
+
+
+@app.route("/api/conversations", methods=["GET"])
+def api_conversations_list():
+    """업로드된 대화 목록 (id, name, filename, uploaded_at, message_count)."""
+    try:
+        from api.conversation_graph import list_uploads
+    except ImportError:
+        return create_error_response("대화 모듈을 불러올 수 없습니다.", 503)
+    try:
+        items = list_uploads()
+        return create_success_response({"data": items})
+    except Exception as e:
+        logger.exception("대화 목록 조회 실패")
+        return create_error_response(str(e), 500)
+
+
+@app.route("/api/conversations/<upload_id>/relationship-graph", methods=["GET"])
+def api_conversations_relationship_graph(upload_id):
+    """대화 관계도: 노드(참여자), 엣지(연속 발화 흐름). 쿼리: start_date, end_date (ISO 날짜, 선택)."""
+    try:
+        from api.conversation_graph import get_relationship_graph
+    except ImportError:
+        return create_error_response("대화 관계도 모듈을 불러올 수 없습니다.", 503)
+    start_date = request.args.get("start_date", "").strip() or None
+    end_date = request.args.get("end_date", "").strip() or None
+    try:
+        graph = get_relationship_graph(upload_id, start_date=start_date, end_date=end_date)
+        if graph.get("error"):
+            return create_error_response(graph["error"], 404)
+        return create_success_response({"data": graph})
+    except Exception as e:
+        logger.exception("대화 관계도 조회 실패")
+        return create_error_response(str(e), 500)
+
+
+@app.route("/api/real-estate/transactions", methods=["GET"])
+def api_real_estate_transactions():
+    """부동산 실거래 정보 조회 (NotebookLLM RealEstateDataPanel 연동).
+    실제 국토교통부 API 연동 전 샘플 데이터 반환."""
+    try:
+        sido = request.args.get("sido", "").strip()
+        sigungu = request.args.get("sigungu", "").strip()
+        dong = request.args.get("dong", "").strip()
+        transaction_type = request.args.get("transactionType", "").strip()
+        property_type = request.args.get("propertyType", "").strip()
+        # 데모용 샘플 데이터 (형식: RealEstateTransaction)
+        base = [
+            {
+                "id": "api-1",
+                "transactionType": "매매",
+                "propertyType": "아파트",
+                "address": {"sido": "서울특별시", "sigungu": "강남구", "dong": "역삼동", "jibun": "123-45"},
+                "price": {"amount": 125000, "unit": "만원"},
+                "area": {"exclusive": 84.5, "public": 12.3},
+                "transactionDate": "2024-12-15",
+                "floor": {"current": 12, "total": 25},
+                "buildYear": 2015,
+            },
+            {
+                "id": "api-2",
+                "transactionType": "전세",
+                "propertyType": "아파트",
+                "address": {"sido": "서울특별시", "sigungu": "서초구", "dong": "반포동", "jibun": "78-12"},
+                "price": {"amount": 85000, "unit": "만원"},
+                "area": {"exclusive": 102.3, "public": 18.2},
+                "transactionDate": "2024-12-10",
+                "floor": {"current": 8, "total": 20},
+                "buildYear": 2010,
+            },
+            {
+                "id": "api-3",
+                "transactionType": "매매",
+                "propertyType": "오피스텔",
+                "address": {"sido": "서울특별시", "sigungu": "송파구", "dong": "잠실동", "jibun": "200-1"},
+                "price": {"amount": 52000, "unit": "만원"},
+                "area": {"exclusive": 45.2, "public": 8.1},
+                "transactionDate": "2024-12-08",
+                "floor": {"current": 15, "total": 30},
+                "buildYear": 2018,
+            },
+            {
+                "id": "api-4",
+                "transactionType": "월세",
+                "propertyType": "아파트",
+                "address": {"sido": "서울특별시", "sigungu": "마포구", "dong": "연남동", "jibun": "567-8"},
+                "price": {"amount": 5000, "unit": "만원"},
+                "area": {"exclusive": 59.8, "public": 10.5},
+                "transactionDate": "2024-12-05",
+                "floor": {"current": 5, "total": 12},
+                "buildYear": 2005,
+            },
+            {
+                "id": "api-5",
+                "transactionType": "매매",
+                "propertyType": "아파트",
+                "address": {"sido": "서울특별시", "sigungu": "강남구", "dong": "삼성동", "jibun": "88-22"},
+                "price": {"amount": 198000, "unit": "만원"},
+                "area": {"exclusive": 132.1, "public": 22.4},
+                "transactionDate": "2024-12-01",
+                "floor": {"current": 18, "total": 28},
+                "buildYear": 2012,
+            },
+        ]
+        # 지역·거래유형·매물유형 필터
+        filtered = base
+        if sido:
+            filtered = [t for t in filtered if (t["address"].get("sido") or "").find(sido) >= 0]
+        if sigungu:
+            filtered = [t for t in filtered if (t["address"].get("sigungu") or "").find(sigungu) >= 0]
+        if dong:
+            filtered = [t for t in filtered if (t["address"].get("dong") or "").find(dong) >= 0]
+        if transaction_type:
+            filtered = [t for t in filtered if t.get("transactionType") == transaction_type]
+        if property_type:
+            filtered = [t for t in filtered if t.get("propertyType") == property_type]
+        return create_success_response({"transactions": filtered})
+    except Exception as e:
+        logger.error("실거래 API 오류: %s", e, exc_info=True)
+        return create_error_response("실거래 정보 조회 실패", 500)
+
+
+@app.route("/api/real-estate/registry-changes", methods=["GET"])
+def api_real_estate_registry_changes():
+    """부동산 등기 변경 정보 조회 (NotebookLLM RealEstateDataPanel 연동).
+    실제 등기소 API 연동 전 샘플 데이터 반환."""
+    try:
+        sido = request.args.get("sido", "").strip()
+        sigungu = request.args.get("sigungu", "").strip()
+        dong = request.args.get("dong", "").strip()
+        change_type = request.args.get("changeType", "").strip()
+        base = [
+            {
+                "id": "reg-1",
+                "changeType": "소유권이전",
+                "propertyAddress": {"sido": "서울특별시", "sigungu": "강남구", "dong": "역삼동", "jibun": "123-45"},
+                "changeDate": "2024-12-15",
+                "previousOwner": {"name": "김○○", "share": "1/1"},
+                "newOwner": {"name": "이○○", "share": "1/1"},
+            },
+            {
+                "id": "reg-2",
+                "changeType": "저당권설정",
+                "propertyAddress": {"sido": "서울특별시", "sigungu": "서초구", "dong": "반포동", "jibun": "78-12"},
+                "changeDate": "2024-12-10",
+                "mortgageInfo": {"creditor": "○○은행", "amount": 500000000, "maturityDate": "2034-12-31"},
+            },
+            {
+                "id": "reg-3",
+                "changeType": "전세권설정",
+                "propertyAddress": {"sido": "서울특별시", "sigungu": "송파구", "dong": "잠실동", "jibun": "200-1"},
+                "changeDate": "2024-12-08",
+                "leaseInfo": {"lessee": "박○○", "deposit": 300000000, "period": "2024.12~2026.12"},
+            },
+        ]
+        filtered = base
+        if sido:
+            filtered = [c for c in filtered if (c["propertyAddress"].get("sido") or "").find(sido) >= 0]
+        if sigungu:
+            filtered = [c for c in filtered if (c["propertyAddress"].get("sigungu") or "").find(sigungu) >= 0]
+        if dong:
+            filtered = [c for c in filtered if (c["propertyAddress"].get("dong") or "").find(dong) >= 0]
+        if change_type:
+            filtered = [c for c in filtered if c.get("changeType") == change_type]
+        return create_success_response({"changes": filtered})
+    except Exception as e:
+        logger.error("등기 변경 API 오류: %s", e, exc_info=True)
+        return create_error_response("등기 변경 정보 조회 실패", 500)
+
+
+# ----- 프로젝트·노트북 LLM·TTS API (프론트 연동) -----
+def _project_api():
+    """프로젝트/노트북 API 모듈 (lazy import)."""
+    try:
+        from api import project_session_api
+        return project_session_api
+    except Exception as e:
+        logger.warning("project_session_api 미로드: %s", e)
+        return None
+
+
+@app.route("/api/projects", methods=["GET"])
+def api_projects_list():
+    """모든 프로젝트 조회 (노트북 LLM·사이드바)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    try:
+        projects = psa.load_all_projects()
+        for p in projects:
+            p["source_count"] = psa.get_project_source_count(p.get("id", ""))
+        return create_success_response({"data": projects, "count": len(projects)})
+    except Exception as e:
+        logger.error("프로젝트 목록 조회 오류: %s", e, exc_info=True)
+        return create_error_response("프로젝트 목록 조회 실패", 500)
+
+
+@app.route("/api/projects", methods=["POST"])
+@validate_json_request()
+def api_projects_create():
+    """새 프로젝트 생성 (노트북 LLM 학습용)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    try:
+        data = request.get_json() or {}
+        name = (data.get("name") or "").strip() or "새 프로젝트"
+        description = (data.get("description") or "").strip()
+        tags = data.get("tags") or []
+        initial_guidelines = data.get("initial_guidelines") or []
+        project_id = f"proj_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{hash(name) % 10000:04d}"
+        now = datetime.now().isoformat()
+        project_data = {
+            "id": project_id,
+            "name": name,
+            "description": description,
+            "tags": tags,
+            "initial_guidelines": initial_guidelines,
+            "status": "active",
+            "messageCount": 0,
+            "userId": "default",
+            "createdAt": now,
+            "updatedAt": now,
+            "settings": {"aiModel": "chat", "temperature": 0.8, "maxTokens": 4096},
+        }
+        if psa.save_project(project_data):
+            psa.save_project_notebook_context(
+                project_id=project_id, name=name, description=description,
+                tags=tags, initial_guidelines=initial_guidelines,
+            )
+            return create_success_response({"data": project_data})
+        return create_error_response("프로젝트 저장 실패", 500)
+    except Exception as e:
+        logger.error("프로젝트 생성 오류: %s", e, exc_info=True)
+        return create_error_response("프로젝트 생성 실패", 500)
+
+
+@app.route("/api/projects/<project_id>", methods=["GET"])
+def api_project_get(project_id):
+    """특정 프로젝트 조회."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    project_data = psa.load_project(project_id)
+    if not project_data:
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    return create_success_response({"data": project_data})
+
+
+@app.route("/api/projects/<project_id>", methods=["PUT"])
+@validate_json_request()
+def api_project_update(project_id):
+    """프로젝트 업데이트."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    project_data = psa.load_project(project_id)
+    if not project_data:
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    updates = request.get_json() or {}
+    project_data.update(updates)
+    project_data["updatedAt"] = datetime.now().isoformat()
+    if psa.save_project(project_data):
+        if any(k in updates for k in ("name", "description", "tags", "initial_guidelines")):
+            psa.save_project_notebook_context(
+                project_id=project_id,
+                name=project_data.get("name", ""),
+                description=project_data.get("description", ""),
+                tags=project_data.get("tags"),
+                initial_guidelines=project_data.get("initial_guidelines"),
+            )
+        return create_success_response({"data": project_data})
+    return create_error_response("프로젝트 저장 실패", 500)
+
+
+def _infer_file_type(filename):
+    """파일 확장자로 타입 추론 (document|image|code|other)."""
+    ext = (filename or "").split(".")[-1].lower() if "." in (filename or "") else ""
+    if ext in ("pdf", "doc", "docx", "txt", "md", "xlsx", "xls", "ppt", "pptx"):
+        return "document"
+    if ext in ("png", "jpg", "jpeg", "gif", "webp", "svg"):
+        return "image"
+    if ext in ("js", "ts", "tsx", "jsx", "py", "json", "html", "css", "scss"):
+        return "code"
+    return "other"
+
+
+@app.route("/api/projects/<project_id>/files", methods=["POST"])
+def api_project_files_upload(project_id):
+    """프로젝트 참고 파일 업로드 (메타데이터만 저장, 바이너리는 저장하지 않음)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    project_data = psa.load_project(project_id)
+    if not project_data:
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    f = request.files.get("file")
+    if not f or f.filename in (None, ""):
+        return create_error_response("파일이 없거나 파일명이 없습니다.", 400)
+    try:
+        f.seek(0, 2)
+        size = f.tell()
+        f.seek(0)
+    except (OSError, AttributeError):
+        size = 0
+    file_id = str(uuid.uuid4())
+    name = f.filename or "unnamed"
+    file_type = _infer_file_type(name)
+    now = datetime.now().isoformat()
+    entry = {
+        "id": file_id,
+        "name": name,
+        "type": file_type,
+        "size": size,
+        "uploadedAt": now,
+    }
+    files = project_data.get("files")
+    if not isinstance(files, list):
+        files = []
+    files = list(files) + [entry]
+    project_data["files"] = files
+    project_data["updatedAt"] = now
+    if psa.save_project(project_data):
+        return create_success_response({"data": {"file": entry}})
+    return create_error_response("프로젝트 저장 실패", 500)
+
+
+@app.route("/api/projects/<project_id>", methods=["DELETE"])
+def api_project_delete(project_id):
+    """프로젝트 삭제."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    try:
+        pf = psa.get_project_file(project_id)
+        if not pf.exists():
+            return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+        pf.unlink()
+        kf = psa.get_project_knowledge_file(project_id)
+        if kf.exists():
+            try:
+                kf.unlink()
+            except OSError:
+                pass
+        return create_success_response({"deleted": project_id})
+    except Exception as e:
+        logger.error("프로젝트 삭제 오류: %s", e, exc_info=True)
+        return create_error_response("프로젝트 삭제 실패", 500)
+
+
+@app.route("/api/projects/<project_id>/notebook-context", methods=["GET"])
+def api_notebook_context(project_id):
+    """노트북 LLM 컨텍스트·소스 개수 조회."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    data = psa.load_project_notebook_data(project_id)
+    if data is None:
+        return create_success_response({
+            "data": {"context": "", "has_context": False, "source_count": 0}
+        })
+    context_text = data.get("context_text") or ""
+    source_count = psa.get_project_source_count(project_id)
+    sources = data.get("sources")
+    return create_success_response({
+        "data": {
+            "context": context_text,
+            "has_context": bool(context_text.strip()),
+            "source_count": source_count,
+            "sources": sources if isinstance(sources, list) else None,
+        }
+    })
+
+
+@app.route("/api/projects/<project_id>/notebook-sources", methods=["GET"])
+def api_notebook_sources_list(project_id):
+    """노트북 소스 목록 (일반 소스 + 보이스 소스)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    data = psa.load_project_notebook_data(project_id)
+    if not data:
+        return create_success_response({"data": [], "count": 0})
+    sources = list(data.get("sources") or [])
+    voice_sources = list(data.get("voice_sources") or [])
+    return create_success_response({"data": sources + voice_sources, "count": len(sources) + len(voice_sources)})
+
+
+@app.route("/api/projects/<project_id>/notebook-sources", methods=["POST"])
+@validate_json_request()
+def api_notebook_sources_add(project_id):
+    """노트북 소스 추가 (제목·내용·타입)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    data = request.get_json() or {}
+    title = (data.get("title") or "제목 없음").strip()
+    content = (data.get("content") or "").strip()
+    stype = (data.get("type") or "text").strip().lower()
+    new_source = psa.add_project_notebook_source(project_id, title=title, content=content, source_type=stype)
+    if not new_source:
+        return create_error_response("소스 추가 실패", 500)
+    return create_success_response({
+        "data": {"source": new_source, "source_count": psa.get_project_source_count(project_id)}
+    })
+
+
+@app.route("/api/projects/<project_id>/notebook-sources/<source_id>", methods=["DELETE"])
+def api_notebook_sources_delete(project_id, source_id):
+    """노트북 소스 삭제."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    ok = psa.delete_project_notebook_source(project_id, source_id)
+    if not ok:
+        return create_error_response("소스 삭제 실패 또는 소스 없음", 404)
+    return create_success_response({"data": {"source_count": psa.get_project_source_count(project_id)}})
+
+
+@app.route("/api/projects/<project_id>/sessions", methods=["GET"])
+def api_projects_sessions(project_id):
+    """프로젝트 세션 목록 (CORBU.AI 대화·사이드바)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    try:
+        sessions = psa.load_all_sessions(project_id)
+        return create_success_response({"data": sessions, "count": len(sessions)})
+    except Exception as e:
+        logger.error("세션 목록 조회 오류: %s", e, exc_info=True)
+        return create_error_response("세션 목록 조회 실패", 500)
+
+
+@app.route("/api/projects/<project_id>/voice-sources", methods=["GET"])
+def api_voice_sources_list(project_id):
+    """프로젝트 보이스 소스 목록 (목소리 생성·노트북 LLM)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    sources = psa.get_project_voice_sources(project_id)
+    return create_success_response({"success": True, "data": sources, "count": len(sources)})
+
+
+@app.route("/api/projects/<project_id>/voice-sources", methods=["POST"])
+@validate_json_request()
+def api_voice_sources_add(project_id):
+    """프로젝트에 보이스 소스(YouTube/TikTok URL) 추가."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    data = request.get_json() or {}
+    url = (data.get("url") or "").strip()
+    ref_text = (data.get("ref_text") or "").strip() or None
+    name = (data.get("name") or "").strip() or None
+    reference_url = (data.get("reference_url") or "").strip() or None
+    start_seconds = data.get("start_seconds")
+    end_seconds = data.get("end_seconds")
+    if start_seconds is not None:
+        try:
+            start_seconds = float(start_seconds)
+        except (TypeError, ValueError):
+            start_seconds = None
+    if end_seconds is not None:
+        try:
+            end_seconds = float(end_seconds)
+        except (TypeError, ValueError):
+            end_seconds = None
+    if not url:
+        return create_error_response("url이 필요합니다.", 400)
+    new_source = psa.add_project_voice_source(
+        project_id, url, ref_text,
+        name=name, reference_url=reference_url,
+        start_seconds=start_seconds, end_seconds=end_seconds,
+    )
+    if not new_source:
+        return create_error_response("보이스 소스 추가 실패", 500)
+    return create_success_response({"success": True, "data": new_source})
+
+
+@app.route("/api/projects/<project_id>/voice-sources/<source_id>", methods=["DELETE"])
+def api_voice_sources_delete(project_id, source_id):
+    """프로젝트 보이스 소스 삭제."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    ok = psa.delete_project_voice_source(project_id, source_id)
+    if not ok:
+        return create_error_response("보이스 소스 삭제 실패 또는 소스 없음", 404)
+    return create_success_response({"success": True, "data": {"deleted": source_id}})
+
+
+@app.route("/api/projects/<project_id>/notebook-studio/generate", methods=["POST"])
+@validate_json_request()
+def api_notebook_studio_generate(project_id):
+    """노트북 스튜디오 출력 생성 (보고서/퀴즈/요약 등)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    data = request.get_json() or {}
+    out_type = (data.get("type") or "summary").strip().lower()
+    context = psa.load_project_notebook_context(project_id) or ""
+    content = f"# {out_type}\n\n(프로젝트 컨텍스트 기반 생성)\n\n{context}" if context else f"# {out_type}\n\n(소스를 추가한 뒤 다시 시도해 주세요.)"
+    try:
+        entry = psa.append_project_studio_output(project_id, out_type, content)
+        return create_success_response({"success": True, "data": entry})
+    except Exception as e:
+        logger.error("스튜디오 생성 오류: %s", e, exc_info=True)
+        return create_error_response("스튜디오 생성 실패", 500)
+
+
+@app.route("/api/projects/<project_id>/notebook-studio/outputs", methods=["GET"])
+def api_notebook_studio_outputs_list(project_id):
+    """노트북 스튜디오 출력 목록."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    outputs = psa.load_project_studio_outputs(project_id)
+    return create_success_response({"success": True, "data": outputs, "count": len(outputs)})
+
+
+@app.route("/api/projects/<project_id>/notebook-studio/outputs/<output_id>", methods=["GET"])
+def api_notebook_studio_output(project_id, output_id):
+    """노트북 스튜디오 출력 단건 조회."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    outputs = psa.load_project_studio_outputs(project_id)
+    for o in outputs:
+        if o.get("id") == output_id:
+            return create_success_response({"success": True, "data": o})
+    return create_error_response("출력을 찾을 수 없습니다.", 404)
+
+
+@app.route("/api/projects/<project_id>/notebook-suggested-questions", methods=["GET"])
+def api_notebook_suggested_questions(project_id):
+    """노트북 LLM 추천 질문 (프로젝트 컨텍스트 기반)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    context = psa.load_project_notebook_context(project_id) or ""
+    questions = [
+        "이 프로젝트의 핵심 내용을 요약해 주세요.",
+        "주요 개념이나 키워드를 알려주세요.",
+        "이 자료를 바탕으로 질문할 만한 것을 제안해 주세요.",
+    ]
+    if len(context) > 200:
+        questions.append("위 내용에서 가장 중요한 부분을 짧게 정리해 주세요.")
+    return create_success_response({"success": True, "data": questions})
+
+
+@app.route("/api/projects/<project_id>/notebook-sources/from-url", methods=["POST"])
+@validate_json_request()
+def api_notebook_sources_from_url(project_id):
+    """URL에서 본문 추출 후 노트북 소스로 추가."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    data = request.get_json() or {}
+    url = (data.get("url") or "").strip()
+    if not url:
+        return create_error_response("url이 필요합니다.", 400)
+    try:
+        fetch_fn = getattr(psa, "_fetch_url_and_extract_text", None)
+        if not fetch_fn:
+            return create_error_response("URL 소스 추가 기능을 사용할 수 없습니다.", 503)
+        title, content = fetch_fn(url)
+        new_source = psa.add_project_notebook_source(project_id, title, content, "text")
+        if not new_source:
+            return create_error_response("소스 추가 실패", 500)
+        return create_success_response({"success": True, "data": {"source": new_source, "source_count": psa.get_project_source_count(project_id)}})
+    except Exception as e:
+        logger.warning("from-url 소스 추가 오류: %s", e)
+        return create_error_response("URL에서 텍스트 추출 또는 소스 추가 실패: " + str(e), 500)
+
+
+@app.route("/api/projects/<project_id>/notebook-sources/from-youtube-url", methods=["POST"])
+@validate_json_request()
+def api_notebook_sources_from_youtube_url(project_id):
+    """YouTube 영상 URL 하나를 자막 추출해 노트북 지식 소스로 추가."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    data = request.get_json() or {}
+    url = (data.get("url") or "").strip()
+    if not url:
+        return create_error_response("url이 필요합니다.", 400)
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    try:
+        extract_id = getattr(psa, "_extract_youtube_video_id", None)
+        transcript_fn = getattr(psa, "_get_youtube_transcript", None)
+        title_fn = getattr(psa, "_get_youtube_video_title", None)
+        if not extract_id or not transcript_fn:
+            return create_error_response("YouTube 소스 추가 기능을 사용할 수 없습니다.", 503)
+        video_id = extract_id(url)
+        if not video_id:
+            return create_error_response("유효한 YouTube URL이 아닙니다. youtube.com/watch?v=... 또는 youtu.be/... 형식으로 입력해주세요.", 400)
+        content = transcript_fn(video_id)
+        if not (content or "").strip():
+            return create_error_response("해당 영상에서 자막을 추출할 수 없습니다. 자막이 있는 영상인지 확인하거나, pip install youtube-transcript-api", 400)
+        title = title_fn(video_id) if title_fn else f"YouTube 영상 ({video_id})"
+        new_source = psa.add_project_notebook_source(project_id, title, content.strip(), "youtube")
+        if not new_source:
+            return create_error_response("소스 추가 실패", 500)
+        return create_success_response({"success": True, "data": {"source": new_source, "source_count": psa.get_project_source_count(project_id)}})
+    except Exception as e:
+        logger.warning("from-youtube-url 소스 추가 오류: %s", e)
+        return create_error_response("YouTube 자막 추출 또는 소스 추가 실패: " + str(e), 500)
+
+
+@app.route("/api/projects/<project_id>/notebook-sources/from-youtube-search", methods=["POST"])
+@validate_json_request()
+def api_notebook_sources_from_youtube_search(project_id):
+    """YouTube 검색 후 첫 영상 자막을 노트북 소스로 추가 (선택)."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    data = request.get_json() or {}
+    query = (data.get("query") or "").strip()
+    if not query:
+        return create_error_response("query가 필요합니다.", 400)
+    try:
+        search_fn = getattr(psa, "_youtube_search_videos", None)
+        transcript_fn = getattr(psa, "_get_youtube_transcript", None)
+        if not search_fn:
+            return create_success_response({"success": True, "data": {"sources": [], "message": "YouTube 검색 미지원"}})
+        videos = search_fn(query, max_videos=3)
+        added = []
+        for v in videos[:1]:
+            vid = v.get("id") or (v.get("url") or "").split("watch?v=")[-1].split("&")[0]
+            if not vid:
+                continue
+            content = transcript_fn(vid) if transcript_fn else ""
+            title = v.get("title", "YouTube")[:200]
+            if content:
+                src = psa.add_project_notebook_source(project_id, title, content, "text")
+                if src:
+                    added.append(src)
+        return create_success_response({"success": True, "data": {"sources": added, "source_count": psa.get_project_source_count(project_id)}})
+    except Exception as e:
+        logger.warning("from-youtube-search 오류: %s", e)
+        return create_error_response("YouTube 검색 또는 소스 추가 실패: " + str(e), 500)
+
+
+@app.route("/api/projects/<project_id>/notebook-sources/from-file", methods=["POST"])
+def api_notebook_sources_from_file(project_id):
+    """업로드 파일(PDF·워드·TXT·이미지)에서 텍스트 추출 후 노트북 소스(학습 자료)로 추가."""
+    psa = _project_api()
+    if not psa:
+        return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+    if not psa.load_project(project_id):
+        return create_error_response("프로젝트를 찾을 수 없습니다.", 404)
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return create_error_response("file 업로드가 필요합니다.", 400)
+    try:
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix="_" + (f.filename or "file")) as tmp:
+            f.save(tmp.name)
+            path = __import__("pathlib").Path(tmp.name)
+        try:
+            extract_fn = getattr(psa, "_extract_text_from_upload", None)
+            if not extract_fn:
+                return create_error_response("파일 소스 추가 기능을 사용할 수 없습니다.", 503)
+            title, content = extract_fn(path, f.filename or "file")
+            stype = "pdf" if (f.filename or "").lower().endswith(".pdf") else ("doc" if (f.filename or "").lower().endswith((".docx", ".doc")) else "text")
+            new_source = psa.add_project_notebook_source(project_id, title, content, stype)
+            if not new_source:
+                return create_error_response("소스 추가 실패", 500)
+            return create_success_response({"success": True, "data": {"source": new_source, "source_count": psa.get_project_source_count(project_id)}})
+        finally:
+            try:
+                path.unlink(missing_ok=True)
+            except Exception:
+                pass
+    except ValueError as e:
+        return create_error_response(str(e), 400)
+    except Exception as e:
+        logger.warning("from-file 소스 추가 오류: %s", e)
+        return create_error_response("파일 처리 또는 소스 추가 실패: " + str(e), 500)
+
+
+# TTS (목소리 생성) API — 설정·보이스 목록·음성 생성
+@app.route("/api/tts/config", methods=["GET"])
+def api_tts_config():
+    """TTS 사용 가능 여부 및 설정."""
+    base_url = os.environ.get("QWEN_TTS_BASE_URL", "").rstrip("/")
+    available = bool(base_url)
+    return create_success_response({
+        "success": True,
+        "available": available,
+        "base_url_configured": available,
+        "message": "Qwen3-TTS 사용 가능" if available else "QWEN_TTS_BASE_URL를 설정해 주세요.",
+    })
+
+
+@app.route("/api/tts/voices", methods=["GET"])
+def api_tts_voices():
+    """TTS 보이스 목록 (Qwen TTS 서버에서 조회, 실패 시 빈 목록)."""
+    try:
+        import requests as req
+        base = os.environ.get("QWEN_TTS_BASE_URL", "").rstrip("/")
+        if not base:
+            return create_success_response({"success": True, "voices": [], "message": "TTS 미설정"})
+        r = req.get(f"{base}/v1/audio/voices", timeout=10)
+        if r.status_code != 200:
+            return create_success_response({"success": True, "voices": [], "message": r.text[:200]})
+        data = r.json()
+        voices = data if isinstance(data, list) else data.get("data", data)
+        return create_success_response({"success": True, "voices": voices or []})
+    except Exception as e:
+        logger.warning("TTS voices 조회 오류: %s", e)
+        return create_success_response({"success": True, "voices": [], "message": str(e)})
+
+
+def _extract_text_from_docx_bytes(data: bytes) -> str:
+    """docx 파일 바이트에서 텍스트 추출. python-docx 미설치 시 ValueError."""
+    try:
+        import docx as docx_module  # type: ignore
+    except ImportError as e:
+        logger.warning("python-docx 미설치: %s", e)
+        raise ValueError(
+            "docx 파일 추출을 위해 python-docx가 필요합니다. pip install python-docx 를 실행해 주세요."
+        ) from e
+    try:
+        import io
+        doc = docx_module.Document(io.BytesIO(data))
+        return "\n".join(p.text for p in doc.paragraphs if p.text).strip()
+    except Exception as e:
+        logger.warning("docx 텍스트 추출 실패: %s", e)
+        return ""
+
+
+def _suggest_document_hint_from_filename(filename: str) -> str:
+    """파일명 기반 문서 유형 힌트 (톤다운·기업 등)."""
+    if not filename:
+        return ""
+    f = filename.lower()
+    if "톤다운" in filename or "보도" in filename or "tone" in f or "press" in f:
+        return "tone_down"
+    if "기업" in filename or "pr" in f or "corporate" in f:
+        return "corporate"
+    return ""
+
+
+def _extract_dialogue_only(text: str) -> str:
+    """대본에서 대화(말하는 부분)만 추출. 지문·괄호 안 설명 제거, '이름: 대사'는 대사만 반환 (목소리 생성용)."""
+    import re
+    lines = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        # 괄호만 있는 줄(지문, 연출) 제거: (울며), (한숨), [장면], 등
+        if (line.startswith("(") and line.endswith(")")) or (line.startswith("[") and line.endswith("]")):
+            continue
+        if re.match(r"^[(\[]", line) and re.search(r"[)\]]\s*$", line):
+            continue
+        # "캐릭터명: 대사" 형식이면 대사 부분만 (목소리로 읽을 텍스트)
+        if ":" in line:
+            idx = line.find(":")
+            after = line[idx + 1:].strip()
+            if after:
+                lines.append(after)
+            continue
+        lines.append(line)
+    result = "\n".join(lines).strip()
+    return result if result else text
+
+
+@app.route("/api/tts/script-style/extract-document", methods=["POST"])
+def api_tts_script_style_extract_document():
+    """워드(docx) 또는 텍스트 파일에서 대본 텍스트 추출 (샘플 대본·음성 생성용). 대화만 추출한 dialogue_only 반환."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"success": False, "error": "파일이 없습니다.", "detail": "파일이 없습니다."}), 400
+    ext = (f.filename or "").rsplit(".", 1)[-1].lower()
+    try:
+        raw = f.read()
+        if not raw:
+            return jsonify({"success": False, "error": "빈 파일입니다.", "detail": "빈 파일입니다."}), 400
+        if ext == "docx":
+            try:
+                text = _extract_text_from_docx_bytes(raw)
+            except ValueError as e:
+                return jsonify({"success": False, "error": str(e), "detail": str(e)}), 503
+        elif ext == "txt":
+            text = raw.decode("utf-8", errors="replace").strip()
+        else:
+            return jsonify({"success": False, "error": "지원 형식: .docx, .txt", "detail": "지원 형식: .docx, .txt"}), 400
+        if not text:
+            return jsonify({"success": False, "error": "추출된 텍스트가 없습니다.", "detail": "추출된 텍스트가 없습니다."}), 400
+        suggested = _suggest_document_hint_from_filename(f.filename or "")
+        dialogue_only = _extract_dialogue_only(text)
+        return jsonify({
+            "success": True,
+            "text": text,
+            "dialogue_only": dialogue_only,
+            "suggested_document_hint": suggested,
+        })
+    except Exception as e:
+        logger.exception("문서 추출 실패: %s", e)
+        return jsonify({"success": False, "error": f"문서 추출 실패: {e}", "detail": str(e)}), 500
+
+
+def _script_style_hint_instruction(hint: str, for_analyze: bool) -> str:
+    """문서 유형 힌트에 따른 분석/생성 지시문."""
+    if not hint:
+        return ""
+    if hint == "tone_down":
+        if for_analyze:
+            return (
+                "이 문서는 톤다운안·보도자료일 수 있으므로, 격식·중립·신중한 표현, "
+                "과장 완화·객관적 서술을 특히 분석해 주세요. "
+            )
+        return "톤다운·보도 스타일이므로 과장 없이 중립·신중·격식체를 유지해 주세요. "
+    if hint == "corporate":
+        if for_analyze:
+            return (
+                "이 문서는 기업·PR·보도 자료일 수 있으므로, 정중함·객관성·숫자·사실 전달 방식을 특히 분석해 주세요. "
+            )
+        return "기업·PR 스타일이므로 정중·객관·사실 위주로 유지해 주세요. "
+    return ""
+
+
+@app.route("/api/tts/script-style/analyze", methods=["POST"])
+def api_tts_script_style_analyze():
+    """샘플 대본의 톤·스타일·어투·말투 분석. JSON: sample_script, document_hint?, source_filename?"""
+    data = request.get_json() or {}
+    sample = (data.get("sample_script") or "").strip()
+    if not sample:
+        return jsonify({"success": False, "error": "sample_script가 비어 있습니다.", "detail": "sample_script가 비어 있습니다."}), 400
+    hint = (data.get("document_hint") or "").strip() or None
+    filename_note = f" (원본 파일명: {data.get('source_filename')})" if (data.get("source_filename") or "").strip() else ""
+    try:
+        hint_instruction = _script_style_hint_instruction(hint or "", True)
+        prompt = (
+            "다음 대본의 톤(tone), 스타일(문체), 어투(격식/비격식), 말투(감정·리듬·호흡)를 분석해 주세요. "
+            + hint_instruction
+            + "한국어로 요약과 핵심 특성을 짧게 나열해 주세요. 불릿 포인트로 정리해도 됩니다."
+            + filename_note
+            + "\n\n대본:\n"
+            + sample
+        )
+        result = ai_engine.analyze_message(prompt)
+        if not result.get("success"):
+            return jsonify({"success": False, "error": "스타일 분석 실패", "detail": result.get("message", "분석 실패")}), 500
+        summary = (result.get("response") or "").strip()
+        lines = [ln.strip() for ln in summary.split("\n") if ln.strip()][:10]
+        key_traits = lines if len(lines) > 1 else [summary[:500]] if summary else []
+        return jsonify({"success": True, "style_summary": summary, "key_traits": key_traits})
+    except Exception as e:
+        logger.exception("스타일 분석 실패: %s", e)
+        return jsonify({"success": False, "error": f"스타일 분석 실패: {e}", "detail": str(e)}), 500
+
+
+@app.route("/api/tts/script-style/generate", methods=["POST"])
+def api_tts_script_style_generate():
+    """샘플 스타일을 유지한 채 주제/개요에 맞는 새 대본 생성. JSON: sample_script, topic_or_outline, document_hint?, source_filename?"""
+    data = request.get_json() or {}
+    sample = (data.get("sample_script") or "").strip()
+    topic = (data.get("topic_or_outline") or "").strip()
+    if not sample:
+        return jsonify({"success": False, "error": "sample_script가 비어 있습니다.", "detail": "sample_script가 비어 있습니다."}), 400
+    if not topic:
+        return jsonify({"success": False, "error": "topic_or_outline가 비어 있습니다.", "detail": "topic_or_outline가 비어 있습니다."}), 400
+    hint = (data.get("document_hint") or "").strip() or None
+    try:
+        hint_instruction = _script_style_hint_instruction(hint or "", False)
+        prompt = (
+            "아래 '참조 대본'의 톤, 스타일, 어투, 말투를 그대로 살려서 "
+            "'생성할 주제/개요'에 맞는 새 대본만 작성해 주세요. "
+            + hint_instruction
+            + "설명이나 부가 문구 없이 대본 본문만 출력해 주세요.\n\n"
+            "참조 대본:\n"
+            + sample
+            + "\n\n생성할 주제/개요:\n"
+            + (topic[:2000] if len(topic) > 2000 else topic)
+        )
+        result = ai_engine.analyze_message(prompt)
+        if not result.get("success"):
+            return jsonify({"success": False, "error": "대본 생성 실패", "detail": result.get("message", "생성 실패")}), 500
+        generated = (result.get("response") or "").strip()
+        return jsonify({"success": True, "generated_script": generated})
+    except Exception as e:
+        logger.exception("스타일 대본 생성 실패: %s", e)
+        return jsonify({"success": False, "error": f"대본 생성 실패: {e}", "detail": str(e)}), 500
+
+
+@app.route("/api/tts/situations", methods=["GET"])
+def api_tts_situations():
+    """TTS 상황별 성우 목소리 프리셋 (UI 선택용)."""
+    situations = [
+        {"id": "default", "label": "기본", "instructions_preview": ""},
+        {"id": "narration", "label": "나레이션", "instructions_preview": "차분한 나레이션 톤으로"},
+        {"id": "news", "label": "뉴스/앵커", "instructions_preview": "뉴스 앵커처럼"},
+        {"id": "drama_dialogue", "label": "드라마 대사", "instructions_preview": "드라마 대사처럼 연기"},
+        {"id": "movie_dialogue", "label": "영화 대사", "instructions_preview": "영화 대사처럼"},
+    ]
+    return create_success_response({"success": True, "situations": situations})
+
+
+def _tts_base_url():
+    """TTS 서버 URL. 없으면 None."""
+    base = os.environ.get("QWEN_TTS_BASE_URL", "").rstrip("/")
+    return base if base else None
+
+
+def _tts_content_type(fmt):
+    m = {"wav": "audio/wav", "mp3": "audio/mpeg", "flac": "audio/flac", "pcm": "audio/basic", "aac": "audio/aac", "opus": "audio/opus"}
+    return m.get((fmt or "mp3").lower(), "audio/mpeg")
+
+
+def _tts_is_media_url(url: str) -> bool:
+    """YouTube/TikTok 등 지원 URL 여부."""
+    u = (url or "").strip().lower()
+    return bool(
+        "youtube.com" in u or "youtu.be" in u or "tiktok.com" in u or "vm.tiktok.com" in u
+    )
+
+
+def _tts_download_audio_from_url(url: str, max_seconds: int = 10) -> Tuple[bytes, str]:
+    """
+    URL에서 오디오 추출. YouTube/TikTok은 yt-dlp 사용, 그 외는 HTTP GET.
+    반환: (bytes, mime) 예: (wav_bytes, "audio/wav"). yt-dlp 미설치 시 YT/TikTok에서 실패.
+    """
+    url = (url or "").strip()
+    if not url:
+        raise ValueError("URL이 비어 있습니다.")
+    if _tts_is_media_url(url):
+        try:
+            import yt_dlp
+        except ImportError:
+            raise RuntimeError(
+                "영상에서 음성 추출을 위해 yt-dlp가 필요합니다. pip install yt-dlp"
+            )
+        out_dir = tempfile.mkdtemp()
+        out_path = os.path.join(out_dir, "audio.%(ext)s")
+        ydl_opts = {
+            "format": "bestaudio/best",
+            "outtmpl": out_path,
+            "quiet": True,
+            "no_warnings": True,
+            "postprocessors": [
+                {"key": "FFmpegExtractAudio", "preferredcodec": "wav", "preferredquality": None}
+            ],
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            try:
+                for f in os.listdir(out_dir):
+                    os.unlink(os.path.join(out_dir, f))
+                os.rmdir(out_dir)
+            except OSError:
+                pass
+            raise RuntimeError(f"영상 다운로드 실패: {e!s}") from e
+        wav_candidates = [os.path.join(out_dir, f) for f in os.listdir(out_dir) if f.endswith(".wav")]
+        if not wav_candidates:
+            for f in os.listdir(out_dir):
+                if f.startswith("audio."):
+                    wav_candidates = [os.path.join(out_dir, f)]
+                    break
+        if not wav_candidates:
+            try:
+                for f in os.listdir(out_dir):
+                    os.unlink(os.path.join(out_dir, f))
+                os.rmdir(out_dir)
+            except OSError:
+                pass
+            raise RuntimeError("오디오 추출 결과 없음")
+        wav_file = wav_candidates[0]
+        try:
+            with open(wav_file, "rb") as f:
+                raw = f.read()
+        finally:
+            try:
+                for f in os.listdir(out_dir):
+                    os.unlink(os.path.join(out_dir, f))
+                os.rmdir(out_dir)
+            except OSError:
+                pass
+        return raw, "audio/wav"
+    # 직접 HTTP URL: GET으로 다운로드
+    try:
+        import requests as req
+        r = req.get(url, timeout=60, stream=True)
+        r.raise_for_status()
+        raw = r.content
+        ctype = (r.headers.get("Content-Type") or "audio/wav").split(";")[0].strip().lower()
+        if "audio/" not in ctype:
+            ctype = "audio/wav"
+        return raw, ctype
+    except Exception as e:
+        raise RuntimeError(f"URL 다운로드 실패: {e!s}") from e
+
+
+def _tts_proxy_speech_sync(payload: Dict[str, Any], base: str) -> Tuple[bytes, str]:
+    """Qwen3-TTS 서버에 /v1/audio/speech 동기 POST 후 (bytes, content_type) 반환."""
+    import requests as req
+    url = f"{base}/v1/audio/speech"
+    r = req.post(url, json=payload, timeout=300)
+    if r.status_code != 200:
+        raise RuntimeError(f"TTS 서버 오류: {r.status_code} - {(r.text or '')[:200]}")
+    fmt = payload.get("response_format", "mp3")
+    return r.content, _tts_content_type(fmt)
+
+
+def _tts_fallback_gtts(text: str, lang: str = "ko") -> Tuple[bytes, str]:
+    """Qwen 미설정 시 gTTS로 mp3 생성. (bytes, mimetype) 반환."""
+    import io
+    try:
+        from gtts import gTTS
+    except ImportError as e:
+        raise ValueError(
+            "TTS 서버가 설정되지 않았습니다. QWEN_TTS_BASE_URL를 설정하거나 "
+            "폴백 음성 사용을 위해 pip install gtts 를 실행해 주세요."
+        ) from e
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("합성할 텍스트가 비어 있습니다.")
+    # gTTS 장문 제한 완화를 위해 최대 길이 제한 (약 5000자)
+    if len(text) > 5000:
+        text = text[:5000]
+    buf = io.BytesIO()
+    tts = gTTS(text=text, lang=lang)
+    tts.write_to_fp(buf)
+    return buf.getvalue(), "audio/mpeg"
+
+
+@app.route("/api/tts/speech", methods=["POST"])
+def api_tts_speech():
+    """TTS 음성 생성 (Qwen3-TTS 프록시). 미설정 시 gTTS 폴백."""
+    data = request.get_json() or {}
+    if not data.get("input"):
+        return create_error_response("input(합성할 텍스트)이 필요합니다.", 400)
+    base = _tts_base_url()
+    if base:
+        try:
+            import requests as req
+            url = f"{base}/v1/audio/speech"
+            r = req.post(url, json=data, timeout=300)
+            if r.status_code != 200:
+                return create_error_response(
+                    f"TTS 서버 오류: {r.status_code} - {(r.text or '')[:200]}", 502
+                )
+            fmt = (data.get("response_format") or "mp3").lower()
+            return Response(r.content, mimetype=_tts_content_type(fmt))
+        except Exception as e:
+            logger.exception("TTS speech 오류: %s", e)
+            return create_error_response(f"TTS 처리 중 오류: {e!s}", 502)
+    # Qwen 미설정 → gTTS 폴백 (설치 시)
+    try:
+        body, mimetype = _tts_fallback_gtts(data.get("input"), lang="ko")
+        return Response(body, mimetype=mimetype)
+    except ValueError as e:
+        return create_error_response(str(e), 503)
+    except Exception as e:
+        logger.exception("TTS gTTS 폴백 오류: %s", e)
+        return create_error_response(f"음성 생성 실패: {e!s}", 502)
+
+
+@app.route("/api/tts/speech-from-source", methods=["POST"])
+def api_tts_speech_from_source():
+    """URL에서 목소리 학습 후 TTS. QWEN_TTS_BASE_URL 필요. YouTube/TikTok은 yt-dlp 필요."""
+    base = _tts_base_url()
+    if not base:
+        return create_error_response("QWEN_TTS_BASE_URL를 설정해 주세요. speech-from-source는 TTS 서버 설정 후 사용 가능합니다.", 503)
+    try:
+        data = request.get_json() or {}
+        source_url = (data.get("source_url") or "").strip()
+        text = (data.get("input") or "").strip()
+        if not source_url or not text:
+            return create_error_response("source_url과 input(텍스트)이 필요합니다.", 400)
+        if _tts_is_media_url(source_url):
+            try:
+                import yt_dlp  # noqa: F401
+            except ImportError:
+                return create_error_response(
+                    "영상에서 음성 추출을 위해 yt-dlp가 필요합니다. pip install yt-dlp",
+                    501,
+                )
+        max_sec = int(data.get("max_ref_seconds") or 10)
+        max_sec = min(60, max(1, max_sec))
+        audio_bytes, mime = _tts_download_audio_from_url(source_url, max_seconds=max_sec)
+        ref_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        ref_audio_data_url = f"data:{mime};base64,{ref_b64}"
+        response_format = (data.get("response_format") or "mp3").lower()
+        payload = {
+            "input": text,
+            "task_type": "Base",
+            "ref_audio": ref_audio_data_url,
+            "response_format": response_format,
+            "max_new_tokens": 4096,
+            "quality_preset": "voice_clone_max",
+            "enhance_ref_audio": data.get("enhance_ref_audio", True),
+            "naturalness_mode": data.get("naturalness_mode") or "natural",
+            "speed": float(data.get("speed") or 1.0),
+        }
+        body, content_type = _tts_proxy_speech_sync(payload, base)
+        return Response(body, mimetype=content_type)
+    except ValueError as e:
+        return create_error_response(str(e), 400)
+    except RuntimeError as e:
+        msg = str(e)
+        if "yt-dlp" in msg or "yt_dlp" in msg:
+            return create_error_response(msg, 501)
+        return create_error_response(msg, 502)
+    except Exception as e:
+        logger.exception("TTS speech-from-source 오류: %s", e)
+        return create_error_response(f"TTS 처리 중 오류: {e!s}", 502)
+
+
+@app.route("/api/tts/speech-from-project", methods=["POST"])
+def api_tts_speech_from_project():
+    """프로젝트 보이스 소스로 TTS. QWEN_TTS_BASE_URL 및 프로젝트 보이스 소스 필요."""
+    base = _tts_base_url()
+    if not base:
+        return create_error_response("QWEN_TTS_BASE_URL를 설정해 주세요. speech-from-project는 TTS 서버 설정 후 사용 가능합니다.", 503)
+    try:
+        data = request.get_json() or {}
+        project_id = (data.get("project_id") or "").strip()
+        text = (data.get("input") or "").strip()
+        if not project_id or not text:
+            return create_error_response("project_id와 input(텍스트)이 필요합니다.", 400)
+        psa = _project_api()
+        if not psa:
+            return create_error_response("프로젝트 API를 사용할 수 없습니다.", 503)
+        sources = psa.get_project_voice_sources(project_id)
+        if not sources:
+            return create_error_response("이 프로젝트에 보이스 소스가 없습니다. YouTube/TikTok URL을 보이스 소스로 추가해 주세요.", 400)
+        voice_id = (data.get("voice_source_id") or "").strip()
+        chosen = next((s for s in sources if s.get("id") == voice_id), sources[0])
+        source_url = (chosen.get("url") or "").strip()
+        if not source_url:
+            return create_error_response("선택한 보이스 소스에 URL이 없습니다.", 400)
+        if _tts_is_media_url(source_url):
+            try:
+                import yt_dlp  # noqa: F401
+            except ImportError:
+                return create_error_response(
+                    "영상에서 음성 추출을 위해 yt-dlp가 필요합니다. pip install yt-dlp",
+                    501,
+                )
+        max_sec = int(data.get("max_ref_seconds") or 10)
+        max_sec = min(60, max(1, max_sec))
+        audio_bytes, mime = _tts_download_audio_from_url(source_url, max_seconds=max_sec)
+        ref_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        ref_audio_data_url = f"data:{mime};base64,{ref_b64}"
+        response_format = (data.get("response_format") or "mp3").lower()
+        payload = {
+            "input": text,
+            "task_type": "Base",
+            "ref_audio": ref_audio_data_url,
+            "response_format": response_format,
+            "max_new_tokens": 4096,
+            "quality_preset": "voice_clone_max",
+            "enhance_ref_audio": data.get("enhance_ref_audio", True),
+            "naturalness_mode": data.get("naturalness_mode") or "natural",
+            "speed": float(data.get("speed") or 1.0),
+        }
+        ref_text = (chosen.get("ref_text") or "").strip() or (data.get("ref_text_override") or "").strip()
+        if ref_text:
+            payload["ref_text"] = ref_text
+        body, content_type = _tts_proxy_speech_sync(payload, base)
+        return Response(body, mimetype=content_type)
+    except ValueError as e:
+        return create_error_response(str(e), 400)
+    except RuntimeError as e:
+        msg = str(e)
+        if "yt-dlp" in msg or "yt_dlp" in msg:
+            return create_error_response(msg, 501)
+        return create_error_response(msg, 502)
+    except Exception as e:
+        logger.exception("TTS speech-from-project 오류: %s", e)
+        return create_error_response(f"TTS 처리 중 오류: {e!s}", 502)
+
+
+@app.route("/api/chat/title", methods=["POST"])
+@monitor_performance
+def chat_title_endpoint():
+    """대화 제목 자동 생성 (프론트 ChatGPTInterface 호환). message 또는 assistant_response 기반 짧은 제목 반환."""
+    try:
+        data = request.get_json() or {}
+        message = (data.get("message") or "").strip()
+        assistant_response = (data.get("assistant_response") or "").strip()
+        max_length = min(50, max(10, data.get("max_length", 30)))
+
+        if message:
+            title = message[:max_length].strip()
+        elif assistant_response:
+            title = assistant_response[:max_length].strip()
+        else:
+            title = "새 대화"
+
+        return create_success_response({"title": title})
+    except Exception as e:
+        logger.warning(f"제목 생성 오류: {e}")
+        return create_success_response({"title": "새 대화"})
+
+
+@app.route("/api/chat", methods=["POST"])
+@validate_json_request(required_fields=["message"])
+@monitor_performance
+def chat_endpoint():
+    """대화 응답 생성 API (프론트엔드 호환성)
+
+    프론트엔드에서 사용하는 표준화된 대화 API 엔드포인트입니다.
+    SimpleIntegratedAI 엔진을 사용하여 메시지를 분석하고 응답을 생성합니다.
+
+    Args (요청 본문):
+        message (str): 사용자 메시지 (필수, 최대 10,000자)
+        user_id (str, optional): 사용자 ID (기본값: "anonymous")
+        quality (str, optional): 응답 품질 ("basic", "enhanced", "ultimate", 기본값: "enhanced")
+        conversation_id (str, optional): 대화 ID
+        context (dict, optional): 추가 컨텍스트 정보
+
+    Returns:
+        JSON 응답:
+        - success (bool): 성공 여부
+        - response (str): 생성된 응답 텍스트
+        - data (dict): 상세 정보 (model, tokens, processing_time, confidence 등)
+        - timestamp (str): 응답 생성 시간
+
+    Raises:
+        400: 메시지가 비어있거나 너무 길거나 짧은 경우
+        500: 서버 오류 또는 응답 생성 실패
+
+    Example:
+        POST /api/chat
+        {
+            "message": "안녕하세요",
+            "user_id": "user123",
+            "quality": "enhanced"
+        }
+    """
+    try:
+        data = request.get_json()
+        message = data.get("message", "").strip()
+        user_id = data.get("user_id", "anonymous")
+        quality = data.get("quality", "enhanced")
+        conversation_id = data.get("conversation_id")
+        # 질문·요구 등 프론트 context를 백엔드에서 사용해 결과물 생성
+        context = data.get("context") if isinstance(data.get("context"), dict) else {}
+
+        # 입력 검증
+        err = validate_message_length(message, CHAT_MAX_MESSAGE_LENGTH, "메시지")
+        if err:
+            return err
+
+        # quality 값 검증
+        if quality not in ["basic", "enhanced", "ultimate"]:
+            quality = "enhanced"  # 기본값으로 설정
+            logger.warning(f"잘못된 quality 값, 기본값(enhanced)으로 설정: {quality}")
+
+        logger.info(
+            f"대화 요청 수신: user_id={user_id}, quality={quality}, message_length={len(message)}"
+        )
+
+        # 라우팅·근거·검증 중심 파이프라인 — use_pipeline_v2 또는 agentic_pipeline
+        # docs/QUESTION_ANSWER_PIPELINE_ARCHITECTURE.md · pipeline_gate (basic/fast → 생략)
+        _run_pl = bool(context.get("use_pipeline_v2") or context.get("agentic_pipeline"))
+        try:
+            from api.question_answer_pipeline.pipeline_gate import (
+                should_skip_qa_pipeline_for_speed,
+            )
+
+            if should_skip_qa_pipeline_for_speed(quality=quality, context=context):
+                _run_pl = False
+        except Exception:
+            if (quality or "").strip().lower() == "basic":
+                _run_pl = False
+
+        if _run_pl:
+            try:
+                from api.question_answer_pipeline.orchestrator import run_pipeline
+                pipeline_result = run_pipeline(message, context=context)
+                response_text = pipeline_result.get("response", "")
+                if pipeline_result.get("success"):
+                    data = {
+                        "response": response_text,
+                        "message": response_text,
+                        "content": response_text,
+                        "model": "question-answer-pipeline",
+                        "tokens": len(response_text.split()),
+                        "processing_time": 0,
+                        "confidence": 0.85,
+                        "quality_score": 0.85,
+                        "trace_id": pipeline_result.get("trace_id"),
+                        "route_decision": pipeline_result.get("route_decision"),
+                        "user_id": user_id,
+                        "conversation_id": conversation_id,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                    if pipeline_result.get("response_alternatives"):
+                        data["response_alternatives"] = pipeline_result["response_alternatives"]
+                    if pipeline_result.get("follow_up_questions"):
+                        data["follow_up_questions"] = pipeline_result["follow_up_questions"]
+                    # unified_chat_api / 프론트 파싱과 동일 계열 메타 (next_actions·과업·검증 등)
+                    _pl_meta_keys = (
+                        "next_actions",
+                        "task_plan",
+                        "verification_summary",
+                        "verification_pass",
+                        "answer_blueprint",
+                        "generation_scenario",
+                        "evidence_coverage",
+                        "deepseek_refine_meta",
+                        "deepseek_critique",
+                        "deepseek_reasoner_meta",
+                        "korean_style_notes",
+                        "korean_quality_scores",
+                    )
+                    for _k in _pl_meta_keys:
+                        if pipeline_result.get(_k) is not None:
+                            data[_k] = pipeline_result[_k]
+                    payload = {
+                        "status": "success",
+                        "success": True,
+                        "response": response_text,
+                        "message": response_text,
+                        "content": response_text,
+                        "emotion_analysis": None,
+                        "intent_analysis": pipeline_result.get("analysis", {}).get("intent"),
+                        "data": data,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                    for _k in _pl_meta_keys:
+                        if pipeline_result.get(_k) is not None:
+                            payload[_k] = pipeline_result[_k]
+                    attach_context_ui_modes_to_payload(context, payload)
+                    if pipeline_result.get("trace_id"):
+                        tid = pipeline_result["trace_id"]
+                        payload["trace_id"] = tid
+                        payload["qa_pipeline_trace_id"] = tid
+                    return jsonify(payload)
+                else:
+                    return create_error_response(
+                        pipeline_result.get("error", "파이프라인 처리 실패"), 500
+                    )
+            except Exception as pipeline_err:
+                logger.warning("파이프라인 v2 실패, 기존 엔진으로 폴백: %s", pipeline_err)
+                context = {
+                    k: v
+                    for k, v in context.items()
+                    if k not in ("use_pipeline_v2", "agentic_pipeline")
+                }
+
+        # 다양한 답변: 대화에서는 캐시를 사용하지 않고, 매 요청마다 analyze_message로 새로 생성
+        # context(질문·요구 등)를 전달해 결과물 형식 답변 생성
+        result = ai_engine.analyze_message(message, context=context)
+
+        if result.get("success"):
+            response_text = result.get("response", "")
+            analysis = result.get("analysis", {})
+
+            # 응답 품질 지표 계산
+            emotion_data = analysis.get("emotion", {})
+            intent_data = analysis.get("intent", {})
+
+            emotion_confidence = (
+                emotion_data.get("confidence", 0.85)
+                if isinstance(emotion_data, dict)
+                else 0.85
+            )
+            intent_confidence = (
+                intent_data.get("confidence", 0.5)
+                if isinstance(intent_data, dict)
+                else 0.5
+            )
+
+            # 종합 신뢰도 계산 (감정 분석과 의도 분석의 가중 평균)
+            overall_confidence = emotion_confidence * 0.6 + intent_confidence * 0.4
+
+            # 품질 점수 계산 (응답 길이, 신뢰도, 처리 시간 고려)
+            response_length_score = min(
+                1.0, len(response_text) / 200
+            )  # 200자 이상이면 만점
+            confidence_score = overall_confidence
+            time_score = max(
+                0.5, 1.0 - (analysis.get("response_time", 0) / 10.0)
+            )  # 10초 이상이면 감점
+
+            quality_score = (
+                response_length_score * 0.3 + confidence_score * 0.5 + time_score * 0.2
+            )
+            quality_score = round(quality_score, 2)  # 소수점 2자리로 반올림
+
+            # 프론트엔드 호환 형식으로 응답 (App.js: data.response, data.emotion_analysis, data.intent_analysis)
+            _chat_payload: Dict[str, Any] = {
+                "status": "success",
+                "success": True,
+                "response": response_text,
+                "message": response_text,
+                "content": response_text,
+                "emotion_analysis": analysis.get("emotion"),
+                "intent_analysis": analysis.get("intent"),
+                "data": {
+                    "response": response_text,
+                    "message": response_text,
+                    "content": response_text,
+                    "model": "integrated-ai",
+                    "tokens": len(response_text.split()),
+                    "processing_time": analysis.get("response_time", 0),
+                    "confidence": round(overall_confidence, 2),
+                    "quality_score": quality_score,
+                    "emotion_confidence": round(emotion_confidence, 2)
+                    if emotion_confidence is not None
+                    else 0.85,
+                    "intent_confidence": round(intent_confidence, 2)
+                    if intent_confidence is not None
+                    else 0.5,
+                    "user_id": user_id,
+                    "conversation_id": conversation_id,
+                    "timestamp": datetime.now().isoformat(),
+                },
+                "timestamp": datetime.now().isoformat(),
+            }
+            attach_context_ui_modes_to_payload(context, _chat_payload)
+            return jsonify(_chat_payload)
+        else:
+            error_msg = result.get("error", "응답 생성 실패")
+            logger.error(f"응답 생성 실패: {error_msg}")
+            return create_error_response(error_msg, 500)
+
+    except ValueError as e:
+        logger.error(
+            f"입력 값 오류: {e}",
+            exc_info=True,
+            extra={"user_id": user_id if "user_id" in locals() else "unknown"},
+        )
+        return create_error_response(f"입력 값 오류: {str(e)}", 400)
+    except KeyError as e:
+        logger.error(
+            f"필수 필드 누락: {e}",
+            exc_info=True,
+            extra={"user_id": user_id if "user_id" in locals() else "unknown"},
+        )
+        return create_error_response(f"필수 필드가 누락되었습니다: {str(e)}", 400)
+    except Exception as e:
+        logger.error(
+            f"대화 API 오류: {e}",
+            exc_info=True,
+            extra={
+                "user_id": user_id if "user_id" in locals() else "unknown",
+                "message_length": len(message) if "message" in locals() else 0,
+            },
+        )
+        return create_error_response(
+            "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 500
+        )
+
+
+@app.route("/api/chat/stream", methods=["POST"])
+@validate_json_request(required_fields=["message"])
+def chat_stream_endpoint():
+    """대화 스트리밍 API — POST /api/chat와 동일한 답변 로직(ai_engine)을 사용해 SSE로 전송.
+
+    프론트엔드 streamingClient가 기대하는 형식:
+    - data: {"content": "청크 텍스트", "done": false}
+    - data: {"done": true, "fullContent": "전체 답변"}
+    """
+    import json as json_module
+    try:
+        data = request.get_json()
+        message = (data.get("message") or "").strip()
+        context = data.get("context") if isinstance(data.get("context"), dict) else {}
+        if not message:
+            return create_error_response("메시지가 비어있습니다.", 400)
+        if len(message) > CHAT_MAX_MESSAGE_LENGTH:
+            return create_error_response(
+                f"메시지가 너무 깁니다. 최대 {CHAT_MAX_MESSAGE_LENGTH}자까지 허용됩니다.", 400
+            )
+
+        def generate():
+            try:
+                result = ai_engine.analyze_message(message, context=context)
+                if not result.get("success"):
+                    err = result.get("error", "응답 생성 실패")
+                    yield f"data: {json_module.dumps({'error': err})}\n\n"
+                    return
+                full_text = (result.get("response") or "").strip() or "응답을 생성할 수 없습니다. 다시 시도해 주세요."
+                # 청크 단위로 전송 (한글/영문 혼합 고려, 약 20자 단위)
+                chunk_size = 20
+                for i in range(0, len(full_text), chunk_size):
+                    chunk = full_text[i : i + chunk_size]
+                    yield f"data: {json_module.dumps({'content': chunk, 'done': False})}\n\n"
+                _done_evt: Dict[str, Any] = {"done": True, "fullContent": full_text}
+                _stream_meta: Dict[str, str] = {}
+                for _k in ("answer_mode", "response_style"):
+                    _v = (context or {}).get(_k)
+                    if isinstance(_v, str) and _v.strip():
+                        _stream_meta[_k] = _v.strip()
+                if _stream_meta:
+                    _done_evt["metadata"] = _stream_meta
+                yield f"data: {json_module.dumps(_done_evt)}\n\n"
+            except Exception as e:
+                logger.exception("스트리밍 중 오류")
+                yield f"data: {json_module.dumps({'error': str(e)})}\n\n"
+
+        return Response(
+            generate(),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
+    except Exception as e:
+        logger.exception("대화 스트리밍 API 오류")
+        return create_error_response(
+            "스트리밍 중 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 500
+        )
+
+
 @app.route("/api/integrated/status", methods=["GET"])
 @monitor_performance
 def get_integrated_status():
@@ -701,7 +2871,7 @@ def health_check():
     return create_success_response(
         {
             "status": "healthy",
-            "service": "CORBU AI 통합 API",
+            "service": "CORBU.AI 통합 API",
         }
     )
 
@@ -775,54 +2945,122 @@ def get_analytics():
         return create_error_response(f"분석 데이터 조회 실패: {str(e)}", 500)
 
 
+def _get_logs_list() -> List[Dict[str, Any]]:
+    """시뮬레이션된 로그 목록 (공통 사용)."""
+    return [
+        {
+            "id": "1",
+            "level": "INFO",
+            "message": "시스템이 정상적으로 시작되었습니다.",
+            "timestamp": datetime.now().isoformat(),
+            "service": "integrated-api",
+        },
+        {
+            "id": "2",
+            "level": "INFO",
+            "message": "새로운 분석 요청을 처리했습니다.",
+            "timestamp": (datetime.now() - timedelta(minutes=1)).isoformat(),
+            "service": "emotion-analyzer",
+        },
+        {
+            "id": "3",
+            "level": "INFO",
+            "message": "성능 메트릭이 업데이트되었습니다.",
+            "timestamp": (datetime.now() - timedelta(minutes=2)).isoformat(),
+            "service": "metrics-collector",
+        },
+        {
+            "id": "4",
+            "level": "WARNING",
+            "message": "응답 시간이 평균보다 높습니다.",
+            "timestamp": (datetime.now() - timedelta(minutes=3)).isoformat(),
+            "service": "performance-monitor",
+        },
+        {
+            "id": "5",
+            "level": "INFO",
+            "message": "사용자 피드백을 수신했습니다.",
+            "timestamp": (datetime.now() - timedelta(minutes=4)).isoformat(),
+            "service": "feedback-handler",
+        },
+    ]
+
+
 @app.route("/api/integrated/logs", methods=["GET"])
 @monitor_performance
 def get_logs():
-    """시스템 로그 조회"""
+    """시스템 로그 조회. 쿼리: limit (기본 20), offset (기본 0)."""
     try:
-        # 시뮬레이션된 로그 데이터
-        logs = [
-            {
-                "id": "1",
-                "level": "INFO",
-                "message": "시스템이 정상적으로 시작되었습니다.",
-                "timestamp": datetime.now().isoformat(),
-                "service": "integrated-api",
-            },
-            {
-                "id": "2",
-                "level": "INFO",
-                "message": "새로운 분석 요청을 처리했습니다.",
-                "timestamp": (datetime.now() - timedelta(minutes=1)).isoformat(),
-                "service": "emotion-analyzer",
-            },
-            {
-                "id": "3",
-                "level": "INFO",
-                "message": "성능 메트릭이 업데이트되었습니다.",
-                "timestamp": (datetime.now() - timedelta(minutes=2)).isoformat(),
-                "service": "metrics-collector",
-            },
-            {
-                "id": "4",
-                "level": "WARNING",
-                "message": "응답 시간이 평균보다 높습니다.",
-                "timestamp": (datetime.now() - timedelta(minutes=3)).isoformat(),
-                "service": "performance-monitor",
-            },
-            {
-                "id": "5",
-                "level": "INFO",
-                "message": "사용자 피드백을 수신했습니다.",
-                "timestamp": (datetime.now() - timedelta(minutes=4)).isoformat(),
-                "service": "feedback-handler",
-            },
-        ]
+        limit = request.args.get("limit", default=20, type=int)
+        offset = request.args.get("offset", default=0, type=int)
+        limit = max(1, min(100, limit))
+        offset = max(0, offset)
 
-        return create_success_response({"logs": logs, "total_count": len(logs)})
+        all_logs = _get_logs_list()
+        total_count = len(all_logs)
+        logs = all_logs[offset : offset + limit]
+
+        return create_success_response({"logs": logs, "total_count": total_count})
     except Exception as e:
         logger.error(f"로그 조회 오류: {e}", exc_info=True)
         return create_error_response(f"로그 조회 실패: {str(e)}", 500)
+
+
+@app.route("/api/integrated/dashboard", methods=["GET"])
+@monitor_performance
+def get_dashboard():
+    """대시보드 일괄 조회: status, health, metrics, analytics 요약, 최근 로그를 한 번에 반환."""
+    try:
+        logs_limit = request.args.get("logs_limit", default=5, type=int)
+        logs_limit = max(1, min(20, logs_limit))
+
+        health_payload = {
+            "status": "healthy",
+            "service": "CORBU.AI 통합 API",
+        }
+        status_payload = ai_engine.get_system_status()
+        metrics_payload = ai_engine.system_metrics
+        all_logs = _get_logs_list()
+        recent_logs = all_logs[:logs_limit]
+
+        analytics_summary = {
+            "total_requests": metrics_payload.get("total_requests", 0),
+            "successful_requests": metrics_payload.get("successful_requests", 0),
+            "failed_requests": metrics_payload.get("failed_requests", 0),
+            "average_response_time": metrics_payload.get("average_response_time", 0),
+        }
+
+        return create_success_response({
+            "health": health_payload,
+            "status": status_payload,
+            "metrics": metrics_payload,
+            "analytics_summary": analytics_summary,
+            "recent_logs": recent_logs,
+        })
+    except Exception as e:
+        logger.error(f"대시보드 조회 오류: {e}", exc_info=True)
+        return create_error_response(f"대시보드 조회 실패: {str(e)}", 500)
+
+
+@app.route("/api/integrated/summary", methods=["GET"])
+@monitor_performance
+def get_integrated_summary():
+    """대시보드용 통합 요약: health + status + 최근 로그 한 번에 반환"""
+    try:
+        health_payload = {
+            "status": "healthy",
+            "service": "CORBU.AI 통합 API",
+        }
+        status_payload = ai_engine.get_system_status()
+        logs_payload = _get_logs_list()
+        return create_success_response({
+            "health": health_payload,
+            "status": status_payload,
+            "recent_logs": logs_payload,
+        })
+    except Exception as e:
+        logger.error(f"통합 요약 조회 오류: {e}", exc_info=True)
+        return create_error_response(f"통합 요약 조회 실패: {str(e)}", 500)
 
 
 @app.route("/api/integrated/creative/story", methods=["POST"])
@@ -2032,7 +4270,7 @@ def advanced_analytics():
                 "peak_hours": [9, 10, 11, 14, 15, 16, 20, 21],
                 "insights": [
                     "오전 9-11시와 오후 2-4시에 사용량이 집중됩니다.",
-                    "채팅 기능이 가장 많이 사용되고 있습니다.",
+                    "대화 기능이 가장 많이 사용되고 있습니다.",
                     "사용자 재방문율이 높습니다.",
                 ],
             }
@@ -2138,7 +4376,7 @@ def generate_predictions():
 
         # 예측 범위 계산
         horizons = {"7d": 7, "30d": 30, "90d": 90}
-        days = horizons.get(prediction_horizon, 30)
+        horizon_days = horizons.get(prediction_horizon, 30)
 
         if prediction_type == "user_satisfaction":
             # 사용자 만족도 예측
@@ -2163,6 +4401,7 @@ def generate_predictions():
                 "predicted_value": round(predicted_satisfaction, 2),
                 "confidence": random.randint(75, 95),
                 "trend": trend,
+                "horizon_days": horizon_days,
                 "factors": [
                     "사용자 피드백 개선",
                     "새로운 기능 추가",
@@ -2189,6 +4428,7 @@ def generate_predictions():
                 "predicted_value": predicted_performance,
                 "confidence": random.randint(70, 90),
                 "growth_rate": round(growth_rate * 100, 1),
+                "horizon_days": horizon_days,
                 "factors": [
                     "콘텐츠 품질 향상",
                     "사용자 참여도 증가",
@@ -2211,6 +4451,7 @@ def generate_predictions():
                 "current_value": current_load,
                 "predicted_value": predicted_load,
                 "confidence": random.randint(80, 95),
+                "horizon_days": horizon_days,
                 "peak_times": [9, 10, 11, 14, 15, 16, 20, 21],
                 "factors": [
                     "사용자 증가",
@@ -2341,7 +4582,7 @@ def generate_insights():
         # 포커스 영역별 필터링
         if focus_area != "all":
             focus_keywords = {
-                "chat": ["채팅", "대화", "응답"],
+                "chat": ["대화", "대화", "응답"],
                 "creative": ["창작", "글쓰기", "콘텐츠"],
                 "marketing": ["마케팅", "소셜", "이메일"],
                 "persuasion": ["설득", "건설", "시공"],
@@ -2728,8 +4969,14 @@ def process_ai_feedback():
 
 
 if __name__ == "__main__":
-    logger.info("🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...")
-    logger.info("📍 서버 주소: http://localhost:5002")
-    logger.info("🔗 기존 백엔드: http://localhost:5001")
+    _api_port = int(
+        os.environ.get(
+            "BACKEND_PORT",
+            os.environ.get("API_PORT", os.environ.get("PORT", "5002")),
+        )
+    )
+    logger.info("🚀 CORBU.AI 간단한 통합 API 서버를 시작합니다...")
+    logger.info(f"📍 API 서버: http://localhost:{_api_port} (프론트엔드는 PORT=3000, docs/PORTS.md 참고)")
+    logger.info(f"🔗 헬스: http://localhost:{_api_port}/api/integrated/health")
 
-    app.run(host="0.0.0.0", port=5002, debug=True, threaded=True)
+    app.run(host="0.0.0.0", port=_api_port, debug=True, threaded=True)

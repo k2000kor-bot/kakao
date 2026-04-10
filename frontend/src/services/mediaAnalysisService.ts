@@ -1,4 +1,7 @@
 // 미디어 파일 분석 및 이해 서비스
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+import { CHART_COLORS_HEX } from '../styles/themeColors';
 export interface MediaAnalysisResult {
     id: string;
     fileName: string;
@@ -10,7 +13,7 @@ export interface MediaAnalysisResult {
     imageAnalysis?: {
         dimensions: { width: number; height: number };
         colors: { dominant: string[]; palette: string[] };
-        objects: Array<{ name: string; confidence: number; boundingBox?: any }>;
+        objects: Array<{ name: string; confidence: number; boundingBox?: Record<string, unknown> }>;
         text: string; // OCR 결과
         scenes: string[];
         quality: { brightness: number; contrast: number; sharpness: number };
@@ -95,7 +98,7 @@ export interface ConversationMediaContext {
     narrativeFlow: string;
 }
 
-class MediaAnalysisService {
+export class MediaAnalysisService {
     private analysisCache = new Map<string, MediaAnalysisResult>();
     private conversationContext = new Map<string, ConversationMediaContext>();
 
@@ -153,8 +156,15 @@ class MediaAnalysisService {
             return analysis;
 
         } catch (error) {
-            console.error('미디어 분석 오류:', error);
-            throw new Error(`미디어 분석 중 오류 발생: ${error}`);
+            const err = toError(error);
+            errorLogger.error('미디어 분석 오류', err, {
+                component: 'mediaAnalysisService',
+                action: 'analyzeMedia',
+                fileId,
+                fileName: file.name,
+                projectId,
+            });
+            throw new Error(`미디어 분석 중 오류 발생: ${err.message}`);
         }
     }
 
@@ -189,8 +199,8 @@ class MediaAnalysisService {
                 const analysis = {
                     dimensions: { width: image.width, height: image.height },
                     colors: {
-                        dominant: ['#4A90E2', '#7ED321', '#F5A623'],
-                        palette: ['#4A90E2', '#7ED321', '#F5A623', '#D0021B', '#9013FE']
+                        dominant: [CHART_COLORS_HEX[0], CHART_COLORS_HEX[1], CHART_COLORS_HEX[2]],
+                        palette: [CHART_COLORS_HEX[0], CHART_COLORS_HEX[1], CHART_COLORS_HEX[2], CHART_COLORS_HEX[3], CHART_COLORS_HEX[4]]
                     },
                     objects: [
                         { name: '사람', confidence: 0.85 },
@@ -351,7 +361,7 @@ class MediaAnalysisService {
         // 각 미디어 타입별 지식 추출
         let extractedText = '';
         let scenes: string[] = [];
-        let metadata: any = {};
+        let metadata: Record<string, unknown> = {};
 
         if (analysis.imageAnalysis) {
             extractedText += analysis.imageAnalysis.text;
@@ -396,11 +406,12 @@ class MediaAnalysisService {
         analysis.confidence = this.calculateConfidence(analysis);
 
         // 확장된 메타데이터
-        (analysis as any).sentimentAnalysis = sentimentAnalysis;
-        (analysis as any).complexityAnalysis = complexityAnalysis;
-        (analysis as any).purposeAnalysis = purposeAnalysis;
-        (analysis as any).qualityMetrics = qualityMetrics;
-        (analysis as any).metadata = metadata;
+        const analysisExt = analysis as unknown as Record<string, unknown>;
+        analysisExt.sentimentAnalysis = sentimentAnalysis;
+        analysisExt.complexityAnalysis = complexityAnalysis;
+        analysisExt.purposeAnalysis = purposeAnalysis;
+        analysisExt.qualityMetrics = qualityMetrics;
+        analysisExt.metadata = metadata;
 
         return analysis;
     }
@@ -505,7 +516,7 @@ class MediaAnalysisService {
             if (matches) {
                 matches.forEach(match => {
                     if (match.length > 5 && match.length < 50) {
-                        actionItems.add(match.trim());
+                        actionItems.add(coerceTrimmedString(match, ''));
                     }
                 });
             }
@@ -528,7 +539,7 @@ class MediaAnalysisService {
             if (matches) {
                 matches.forEach(match => {
                     if (match.length > 5) {
-                        references.add(match.trim());
+                        references.add(coerceTrimmedString(match, ''));
                     }
                 });
             }
@@ -562,7 +573,7 @@ class MediaAnalysisService {
         }
 
         if (analysis.knowledgeExtraction.keyTopics.length > 0) {
-            summary += `. 주요 주제: ${analysis.knowledgeExtraction.keyTopics.slice(0, 3).join(', ')}`;
+            summary += `. 주요 주제: ${analysis.knowledgeExtraction.keyTopics.join(', ')}`;
         }
 
         return summary;
@@ -734,42 +745,47 @@ class MediaAnalysisService {
     }
     // 고도화된 분석 메서드들
 
-    private analyzeImageContext(imageAnalysis: any) {
+    private analyzeImageContext(imageAnalysis: Record<string, unknown>) {
+        const dims = imageAnalysis.dimensions as { width: number; height: number } | undefined;
+        const objects = imageAnalysis.objects as unknown[] | undefined;
+        const colors = imageAnalysis.colors as { palette?: string[] } | undefined;
         return {
-            visualComplexity: imageAnalysis.objects?.length > 5 ? 'high' : 'medium',
-            colorHarmony: this.calculateColorHarmony(imageAnalysis.colors?.palette || []),
+            visualComplexity: (objects?.length ?? 0) > 5 ? 'high' : 'medium',
+            colorHarmony: this.calculateColorHarmony(colors?.palette ?? []),
             compositionType: this.analyzeComposition(imageAnalysis),
             technicalQuality: {
-                resolution: imageAnalysis.dimensions ?
-                    imageAnalysis.dimensions.width * imageAnalysis.dimensions.height : 0,
-                aspectRatio: imageAnalysis.dimensions ?
-                    (imageAnalysis.dimensions.width / imageAnalysis.dimensions.height).toFixed(2) : '1.0'
+                resolution: dims ? dims.width * dims.height : 0,
+                aspectRatio: dims ? (dims.width / dims.height).toFixed(2) : '1.0'
             }
         };
     }
 
-    private analyzeVideoContext(videoAnalysis: any) {
+    private analyzeVideoContext(videoAnalysis: Record<string, unknown>) {
+        const scenes = (videoAnalysis.scenes as unknown[]) ?? [];
         return {
-            narrativeStructure: this.analyzeNarrativeStructure(videoAnalysis.scenes || []),
-            pacing: this.analyzePacing(videoAnalysis.scenes || []),
+            narrativeStructure: this.analyzeNarrativeStructure(scenes),
+            pacing: this.analyzePacing(scenes),
             visualStyle: this.analyzeVisualStyle(videoAnalysis),
             audioQuality: {
-                hasTranscript: !!videoAnalysis.audioTrack?.transcript,
+                hasTranscript: !!((videoAnalysis.audioTrack as { transcript?: string } | undefined)?.transcript),
                 speechClarity: Math.random() * 0.4 + 0.6, // 모의 점수
                 backgroundNoise: Math.random() * 0.5
             }
         };
     }
 
-    private analyzeAudioContext(audioAnalysis: any) {
+    private analyzeAudioContext(audioAnalysis: Record<string, unknown>) {
+        const transcript = (audioAnalysis.transcript as string) ?? '';
+        const music = audioAnalysis.music as { detected?: boolean } | undefined;
+        const topics = (audioAnalysis.topics as string[]) ?? [];
         return {
-            speechPattern: this.analyzeSpeechPattern(audioAnalysis.transcript || ''),
+            speechPattern: this.analyzeSpeechPattern(transcript),
             audioCharacteristics: {
-                hasMusic: audioAnalysis.music?.detected || false,
+                hasMusic: music?.detected ?? false,
                 hasSpeech: !!audioAnalysis.transcript,
-                dominantFrequency: audioAnalysis.frequency || 'mid'
+                dominantFrequency: (audioAnalysis.frequency as string) ?? 'mid'
             },
-            contentStructure: this.analyzeAudioStructure(audioAnalysis.topics || [])
+            contentStructure: this.analyzeAudioStructure(topics)
         };
     }
 
@@ -821,7 +837,7 @@ class MediaAnalysisService {
             documentation: /문서|기록|보고|정리|문서화/g
         };
 
-        const scores: any = {};
+        const scores: Record<string, number> = {};
         let maxScore = 0;
         let primaryPurpose = 'general';
 
@@ -846,7 +862,7 @@ class MediaAnalysisService {
 
     private calculateMediaQuality(analysis: MediaAnalysisResult) {
         let qualityScore = 0.5; // 기본 점수
-        const factors: any = {};
+        const factors: Record<string, unknown> = {};
 
         // 파일 크기 기반 품질 추정
         const sizeQuality = Math.min(analysis.fileSize / (5 * 1024 * 1024), 1); // 5MB 기준
@@ -857,7 +873,7 @@ class MediaAnalysisService {
         const contentRichness = (analysis.knowledgeExtraction.keyTopics.length +
             Object.values(analysis.knowledgeExtraction.entities).flat().length) / 20;
         factors.contentRichness = Math.min(contentRichness, 1);
-        qualityScore += factors.contentRichness * 0.3;
+        qualityScore += (factors.contentRichness as number) * 0.3;
 
         // 분석 신뢰도
         factors.analysisConfidence = analysis.confidence;
@@ -878,33 +894,34 @@ class MediaAnalysisService {
         return palette.length > 5 ? 'complex' : 'balanced';
     }
 
-    private analyzeComposition(imageAnalysis: any): string {
-        const objectCount = imageAnalysis.objects?.length || 0;
+    private analyzeComposition(imageAnalysis: Record<string, unknown>): string {
+        const objects = imageAnalysis.objects as unknown[] | undefined;
+        const objectCount = objects?.length ?? 0;
         if (objectCount > 10) return 'complex';
         if (objectCount > 5) return 'balanced';
         return 'simple';
     }
 
-    private analyzeNarrativeStructure(scenes: any[]): string {
+    private analyzeNarrativeStructure(scenes: unknown[]): string {
         if (scenes.length > 10) return 'multi-act';
         if (scenes.length > 5) return 'structured';
         return 'simple';
     }
 
-    private analyzePacing(scenes: any[]): string {
-        const avgDuration = scenes.reduce((sum, scene) => sum + (scene.duration || 30), 0) / scenes.length;
+    private analyzePacing(scenes: unknown[]): string {
+        const avgDuration = scenes.reduce((sum: number, scene: unknown) => sum + ((scene as { duration?: number }).duration ?? 30), 0) / (scenes.length || 1);
         if (avgDuration < 15) return 'fast';
         if (avgDuration > 45) return 'slow';
         return 'moderate';
     }
 
-    private analyzeVisualStyle(videoAnalysis: any): string {
+    private analyzeVisualStyle(_videoAnalysis: Record<string, unknown>): string {
         // 간단한 스타일 분석
         return 'documentary'; // 기본값
     }
 
-    private analyzeSpeechPattern(transcript: string): any {
-        const sentences = transcript.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    private analyzeSpeechPattern(transcript: string): Record<string, unknown> {
+        const sentences = transcript.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const avgSentenceLength = transcript.split(/\s+/).length / sentences.length;
 
         return {
@@ -914,7 +931,7 @@ class MediaAnalysisService {
         };
     }
 
-    private analyzeAudioStructure(topics: string[]): any {
+    private analyzeAudioStructure(topics: string[]): Record<string, unknown> {
         return {
             topicDiversity: topics.length,
             structureType: topics.length > 5 ? 'multi-topic' : 'focused'
@@ -923,7 +940,7 @@ class MediaAnalysisService {
 
     private calculateTextComplexity(text: string): number {
         const words = text.split(/\s+/);
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const avgWordsPerSentence = words.length / sentences.length;
         const longWords = words.filter(word => word.length > 6).length;
         const longWordRatio = longWords / words.length;

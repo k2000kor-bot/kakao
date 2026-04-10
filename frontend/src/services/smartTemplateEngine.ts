@@ -466,30 +466,29 @@ class SmartTemplateEngine {
     async createProjectFromTemplate(
         templateId: string,
         projectName: string,
-        customizations?: { [key: string]: any }
+        customizations?: Record<string, unknown>
     ): Promise<Project> {
         const template = this.templates.find(t => t.id === templateId);
         if (!template) {
             throw new Error('템플릿을 찾을 수 없습니다.');
         }
 
-        // 기본 프로젝트 데이터 생성
+        const addTags = Array.isArray(customizations?.additionalTags) ? customizations!.additionalTags : [];
         const projectData = {
             name: projectName,
-            description: customizations?.description || template.description,
+            description: String(customizations?.description ?? template.description),
             guidelines: this.customizeGuidelines(template.structure.guidelines, customizations),
-            tags: [...template.tags, ...(customizations?.additionalTags || [])],
+            tags: [...template.tags, ...addTags],
             status: 'active' as const,
-            files: [],
+            files: [] as Project['files'],
             instructions: this.customizeGuidelines(template.structure.guidelines, customizations),
             isActive: true,
             type: 'conversation' as const
         };
 
-        // 프로젝트 생성
-        const project = projectService.createProject(projectData);
+        const project = await projectService.createProject(projectData as Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'chats'> & { initialGuidelines?: string[] });
 
-        // 초기 채팅 생성 (비동기로 처리)
+        // 초기 대화 생성 (비동기로 처리)
         setTimeout(() => {
             this.createInitialChats(project.id, template);
         }, 1000);
@@ -503,7 +502,7 @@ class SmartTemplateEngine {
         projectName: string,
         description: string,
         tags: string[],
-        preferences?: any
+        preferences?: Record<string, unknown>
     ): number {
         let score = 0;
 
@@ -630,7 +629,7 @@ class SmartTemplateEngine {
     // 가이드라인 커스터마이징
     private customizeGuidelines(
         baseGuidelines: string,
-        customizations?: { [key: string]: any }
+        customizations?: Record<string, unknown>
     ): string {
         let guidelines = baseGuidelines;
 
@@ -645,12 +644,12 @@ class SmartTemplateEngine {
         return guidelines;
     }
 
-    // 초기 채팅 생성
+    // 초기 대화 생성
     private async createInitialChats(projectId: string, template: ProjectTemplate) {
         const { chatService } = await import('./projectService');
 
         for (const chatTemplate of template.structure.initialChats) {
-            const chat = chatService.createChat(projectId, chatTemplate.title);
+            const chat = await chatService.createChat(projectId, chatTemplate.title);
 
             // 환영 메시지 추가
             const { messageService } = await import('./projectService');

@@ -36,7 +36,7 @@ src/
 ├── components/
 │   ├── ContextualResponseInterface.tsx  # 맥락 기반 응답 컴포넌트
 │   ├── EnhancedConversationalInterface.tsx  # 고도화된 대화 컴포넌트
-│   └── ChatInterface.tsx                    # 통합 채팅 인터페이스
+│   └── ChatInterface.tsx                    # 통합 대화 인터페이스
 ├── services/
 │   └── enhancedConversationalService.ts     # API 서비스 (확장)
 └── App.tsx                                 # 루트 컴포넌트
@@ -86,7 +86,7 @@ src/
 
 - `POST /api/v2/enhanced/contextual` - 맥락 기반 응답
 - `POST /api/v2/enhanced/feedback` - 품질 피드백
-- `POST /api/v2/enhanced/chat` - 일반 채팅
+- `POST /api/v2/enhanced/chat` - 일반 대화
 - `POST /api/v2/enhanced/analyze` - 대화 분석
 - `POST /api/v2/enhanced/insights` - 인사이트 생성
 - `GET /api/v2/enhanced/health` - 서버 상태 확인
@@ -244,6 +244,6 @@ src/
 
 ---
 
-**개발팀**: CORBU AI Development Team  
+**개발팀**: CORBU.AI Development Team  
 **완성일**: 2025년 8월 2일  
 **상태**: ✅ 프로젝트 완료

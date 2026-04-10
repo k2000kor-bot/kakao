@@ -3,16 +3,20 @@
 궁극의 미디어 지식 활용 시스템 테스트 스크립트
 """
 
+import os
 import requests
 import json
 import time
 from pathlib import Path
 
+# 통합 main_server(5002) 또는 UMKS 단독 시 CORBU_ULTIMATE_MEDIA_BASE 로 지정
+_ULTIMATE_MEDIA_BASE = os.environ.get("CORBU_ULTIMATE_MEDIA_BASE", "http://localhost:5002")
+
 def test_system_health():
     """시스템 상태 확인"""
     print("🔍 시스템 상태 확인 중...")
     try:
-        response = requests.get("http://localhost:8001/api/v1/health")
+        response = requests.get(f"{_ULTIMATE_MEDIA_BASE}/api/v1/health")
         if response.status_code == 200:
             health_data = response.json()
             print(f"✅ 시스템 상태: {health_data['status']}")
@@ -33,10 +37,10 @@ def test_media_analysis():
     # 테스트용 텍스트 파일 생성
     test_file_path = Path("test_media_file.txt")
     test_content = """
-    대우건설 개포우성7차 재건축 프로젝트
+    데모 시공사 샘플 재건축 프로젝트
     
     프로젝트 개요:
-    - 위치: 서울특별시 강남구 개포동
+    - 위치: 서울특별시 강남구 ○○동 (데모)
     - 규모: 총 500세대
     - 시공사: 대우건설
     - 착공일: 2024년 3월
@@ -68,7 +72,7 @@ def test_media_analysis():
             data = {"project_id": "test_project_001"}
             
             response = requests.post(
-                "http://localhost:8001/api/v1/analyze-media",
+                f"{_ULTIMATE_MEDIA_BASE}/api/v1/analyze-media",
                 files=files,
                 data=data
             )
@@ -105,7 +109,7 @@ def test_knowledge_base():
     """지식 베이스 테스트"""
     print("\n📚 지식 베이스 테스트 중...")
     try:
-        response = requests.get("http://localhost:8001/api/v1/knowledge-base/test_project_001")
+        response = requests.get(f"{_ULTIMATE_MEDIA_BASE}/api/v1/knowledge-base/test_project_001")
         
         if response.status_code == 200:
             kb_data = response.json()
@@ -125,7 +129,7 @@ def test_learning_history():
     """학습 히스토리 테스트"""
     print("\n📖 학습 히스토리 테스트 중...")
     try:
-        response = requests.get("http://localhost:8001/api/v1/learning-history")
+        response = requests.get(f"{_ULTIMATE_MEDIA_BASE}/api/v1/learning-history")
         
         if response.status_code == 200:
             history_data = response.json()

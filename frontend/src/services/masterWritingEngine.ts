@@ -1,11 +1,21 @@
 /**
- * CORBU AI 마스터 글쓰기 엔진
+ * CORBU.AI 마스터 글쓰기 엔진
  * 정치적 성향, 연령대, 입장, 강성도를 모두 통합한 고도화된 글쓰기 시스템
  */
 
 import { politicalWritingEngine, PoliticalWritingProfile, PoliticalSpectrum, PoliticalStance, EmotionIntensity, ToneIntensity } from './politicalWritingEngine';
-import { generationWritingEngine, GenerationWritingProfile, AgeGroup, GenerationStyle, CommunicationPattern } from './generationWritingEngine';
-import { stanceWritingEngine, StanceWritingProfile, StancePosition, ArgumentStyle, PersuasionStrategy } from './stanceWritingEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { generationWritingEngine, GenerationWritingProfile, AgeGroup, GenerationStyle, CommunicationPattern, LanguageFormality } from './generationWritingEngine';
+import { stanceWritingEngine, StanceWritingProfile, StancePosition, ArgumentStyle, PersuasionStrategy, RhetoricalTechnique } from './stanceWritingEngine';
+
+/** 개별 엔진 결과 (분석 리포트 생성용) */
+interface EngineResultForReport {
+    keyArguments?: string[];
+    generationalCharacteristics?: string[];
+    stanceIndicators?: string[];
+    rhetoricalDevices?: string[];
+    persuasionElements?: string[];
+}
 
 export interface MasterWritingProfile {
     // 정치적 성향
@@ -282,7 +292,7 @@ class MasterWritingEngine {
                 originalText: request.originalText,
                 profile: generationProfile,
                 targetAudience: this.mapAudienceToAgeGroup(request.targetAudience),
-                purposeType: this.mapPurposeToGenerationType(request.purpose),
+                purposeType: this.mapPurposeToGenerationType(request.purpose) as 'advice' | 'opinion' | 'criticism' | 'support' | 'explanation',
                 targetLength: request.targetLength,
                 includePersonalExperience: request.profile.includePersonalExperience
             });
@@ -293,7 +303,7 @@ class MasterWritingEngine {
                 profile: stanceProfile,
                 targetLength: request.targetLength,
                 requiredSections: ['introduction', 'main_argument', 'evidence', 'conclusion'],
-                tone: request.tone,
+                tone: (request.tone ?? 'conversational') as 'formal' | 'informal' | 'academic' | 'conversational' | 'passionate',
                 includeCallToAction: request.purpose === 'persuade'
             });
 
@@ -327,7 +337,12 @@ class MasterWritingEngine {
             };
 
         } catch (error) {
-            console.error('마스터 글쓰기 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('마스터 글쓰기 생성 실패', err, {
+                component: 'masterWritingEngine',
+                action: 'generateMasterWriting',
+                topic: request.topic,
+            });
             throw new Error('마스터 글쓰기 생성에 실패했습니다.');
         }
     }
@@ -375,7 +390,7 @@ class MasterWritingEngine {
             position: masterProfile.stancePosition,
             argumentStyle: masterProfile.argumentStyle,
             persuasionStrategy: this.selectPersuasionStrategies(masterProfile),
-            rhetoricalTechniques: this.selectRhetoricalTechniques(masterProfile),
+            rhetoricalTechniques: this.selectRhetoricalTechniques(masterProfile) as RhetoricalTechnique[],
             strengthLevel: masterProfile.strengthLevel,
             includeCounterArguments: masterProfile.includeCounterArguments,
             includeEvidence: masterProfile.includeEvidence,
@@ -516,11 +531,11 @@ class MasterWritingEngine {
      * 분석 리포트 생성
      */
     private generateAnalysisReport(
-        politicalResult: any,
-        generationResult: any,
-        stanceResult: any,
+        politicalResult: EngineResultForReport,
+        generationResult: EngineResultForReport,
+        stanceResult: EngineResultForReport,
         profile: MasterWritingProfile
-    ): any {
+    ): MasterWritingResponse['analysisReport'] {
         return {
             politicalCharacteristics: politicalResult.keyArguments || [],
             generationalCharacteristics: generationResult.generationalCharacteristics || [],
@@ -539,7 +554,7 @@ class MasterWritingEngine {
     /**
      * 스타일 메트릭 계산
      */
-    private calculateStyleMetrics(profile: MasterWritingProfile, text: string): any {
+    private calculateStyleMetrics(profile: MasterWritingProfile, text: string): MasterWritingResponse['styleMetrics'] {
         // 텍스트 분석을 통한 점수 계산
         const formalityScore = this.calculateFormalityScore(profile, text);
         const aggressivenessScore = this.calculateAggressivenessScore(profile, text);
@@ -559,7 +574,7 @@ class MasterWritingEngine {
     /**
      * 개별 메트릭 계산 메서드들
      */
-    private calculateFormalityScore(profile: MasterWritingProfile, text: string): number {
+    private calculateFormalityScore(profile: MasterWritingProfile, _text: string): number {
         let score = 50; // 기본 점수
 
         // 격식 수준에 따른 점수
@@ -581,7 +596,7 @@ class MasterWritingEngine {
         return Math.min(100, score);
     }
 
-    private calculateAggressivenessScore(profile: MasterWritingProfile, text: string): number {
+    private calculateAggressivenessScore(profile: MasterWritingProfile, _text: string): number {
         let score = 0;
 
         // 어조 강도에 따른 점수
@@ -605,7 +620,7 @@ class MasterWritingEngine {
         return Math.min(100, score);
     }
 
-    private calculatePersuasivenessScore(profile: MasterWritingProfile, text: string): number {
+    private calculatePersuasivenessScore(profile: MasterWritingProfile, _text: string): number {
         let score = 50;
 
         // 증거 포함 여부
@@ -625,7 +640,7 @@ class MasterWritingEngine {
         return Math.min(100, score);
     }
 
-    private calculateAuthorityScore(profile: MasterWritingProfile, text: string): number {
+    private calculateAuthorityScore(profile: MasterWritingProfile, _text: string): number {
         let score = 30;
 
         // 연령대에 따른 권위
@@ -649,7 +664,7 @@ class MasterWritingEngine {
         return Math.min(100, score);
     }
 
-    private calculateEmotionalIntensityScore(profile: MasterWritingProfile, text: string): number {
+    private calculateEmotionalIntensityScore(profile: MasterWritingProfile, _text: string): number {
         const intensityMap = {
             'very_calm': 10,
             'calm': 25,
@@ -665,7 +680,7 @@ class MasterWritingEngine {
     /**
      * 개선 추천사항 생성
      */
-    private generateRecommendations(profile: MasterWritingProfile, metrics: any): string[] {
+    private generateRecommendations(profile: MasterWritingProfile, metrics: MasterWritingResponse['styleMetrics']): string[] {
         const recommendations: string[] = [];
 
         if (metrics.formalityScore < 50) {
@@ -698,19 +713,19 @@ class MasterWritingEngine {
         return 'hierarchical';
     }
 
-    private mapFormalityLevel(level: string): any {
-        const mapping = {
+    private mapFormalityLevel(level: string): LanguageFormality {
+        const mapping: Record<string, LanguageFormality> = {
             'very_formal': 'very_formal',
             'formal': 'formal',
             'moderate': 'semi_formal',
             'informal': 'casual',
             'very_informal': 'intimate'
         };
-        return (mapping as any)[level] || 'formal';
+        return mapping[level] ?? 'formal';
     }
 
     private mapAudienceToAgeGroup(audience: string): AgeGroup {
-        const mapping = {
+        const mapping: Record<string, AgeGroup> = {
             'younger': '30s',
             'older': '60s',
             'general': '50s',
@@ -718,11 +733,11 @@ class MasterWritingEngine {
             'opponents': '50s',
             'supporters': '50s'
         };
-        return ((mapping as any)[audience] as AgeGroup) || '50s';
+        return mapping[audience] ?? '50s';
     }
 
-    private mapPurposeToGenerationType(purpose: string): any {
-        const mapping = {
+    private mapPurposeToGenerationType(purpose: string): string {
+        const mapping: Record<string, string> = {
             'persuade': 'advice',
             'inform': 'explanation',
             'criticize': 'criticism',
@@ -730,7 +745,7 @@ class MasterWritingEngine {
             'educate': 'explanation',
             'provoke': 'opinion'
         };
-        return (mapping as any)[purpose] || 'opinion';
+        return mapping[purpose] ?? 'opinion';
     }
 
     private selectPersuasionStrategies(profile: MasterWritingProfile): PersuasionStrategy[] {
@@ -744,8 +759,8 @@ class MasterWritingEngine {
         return strategies.length > 0 ? strategies : ['facts_and_data'];
     }
 
-    private selectRhetoricalTechniques(profile: MasterWritingProfile): any[] {
-        const techniques: any[] = [];
+    private selectRhetoricalTechniques(profile: MasterWritingProfile): string[] {
+        const techniques: string[] = [];
 
         if (profile.strengthLevel === 'extreme' || profile.strengthLevel === 'passionate') {
             techniques.push('repetition', 'climax');
@@ -861,5 +876,6 @@ class MasterWritingEngine {
     }
 }
 
-export const masterWritingEngine = new MasterWritingEngine();
+const masterWritingEngine = new MasterWritingEngine();
 export default masterWritingEngine;
+export { MasterWritingEngine };

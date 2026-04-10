@@ -183,7 +183,7 @@
             cursor: pointer;
         }
 
-        /* 채팅 영역 */
+        /* 대화 영역 */
         .chat-area {
             flex: 1;
             display: flex;
@@ -566,17 +566,17 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
-                    새 채팅
+                    새 대화
                 </button>
             </div>
             <div class="sidebar-content">
                 <div class="nav-section">
-                    <div class="nav-section-title">최근 채팅</div>
+                    <div class="nav-section-title">최근 대화</div>
                     <div class="nav-item">
                         <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                         </svg>
-                        일반 채팅
+                        일반 대화
                     </div>
                     <div class="nav-item">
                         <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -617,7 +617,7 @@
                 </div>
             </div>
 
-            <!-- 채팅 영역 -->
+            <!-- 대화 영역 -->
             <div class="chat-area">
                 <div class="chat-messages" id="chat-messages">
                     <!-- 환영 화면 -->
@@ -971,7 +971,7 @@
                     <div style="padding: 8px 16px; cursor: pointer; hover:background: #f9fafb;" onclick="showUserStats(); this.parentElement.parentElement.remove();">📊 학습 통계</div>
                     <div style="padding: 8px 16px; cursor: pointer; hover:background: #f9fafb;" onclick="showPersonalizedRecommendations(); this.parentElement.parentElement.remove();">🌟 맞춤 추천</div>
                     <div style="padding: 8px 16px; cursor: pointer; hover:background: #f9fafb;" onclick="roleManager.switchToAdmin(); this.parentElement.parentElement.remove();">⚙️ 관리자 모드</div>
-                    <div style="padding: 8px 16px; cursor: pointer; hover:background: #f9fafb;" onclick="startNewChat(); this.parentElement.parentElement.remove();">🔄 새 채팅</div>
+                    <div style="padding: 8px 16px; cursor: pointer; hover:background: #f9fafb;" onclick="startNewChat(); this.parentElement.parentElement.remove();">🔄 새 대화</div>
                 </div>
             `;
             
@@ -988,7 +988,7 @@
             }, 100);
         }
 
-        // 새 채팅 시작
+        // 새 대화 시작
         function startNewChat() {
             chatMessages.innerHTML = '';
             conversationHistory = [];

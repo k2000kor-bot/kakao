@@ -9,7 +9,7 @@ interface AnalyticsData {
         [key: string]: number;
     };
     trends: {
-        [key: string]: any;
+        [key: string]: unknown;
     };
 }
 
@@ -178,8 +178,8 @@ class AdvancedAIAnalytics {
 
     // 실시간 메트릭 브로드캐스트
     private broadcastMetrics() {
-        if (typeof window !== 'undefined' && (window as any).postMessage) {
-            (window as any).postMessage({
+        if (typeof window !== 'undefined' && (window as Window).postMessage) {
+            (window as Window).postMessage({
                 type: 'REAL_TIME_METRICS',
                 data: this.realTimeMetrics
             }, '*');
@@ -238,4 +238,5 @@ class AdvancedAIAnalytics {
     }
 }
 
-export default new AdvancedAIAnalytics();
+const advancedAIAnalyticsInstance = new AdvancedAIAnalytics();
+export default advancedAIAnalyticsInstance;

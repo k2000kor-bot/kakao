@@ -784,11 +784,13 @@ async def test_endpoint():
     }
 
 if __name__ == "__main__":
+    import os
+    _p = int(os.environ.get("ENHANCED_MESSAGE_SYSTEM_PORT", os.environ.get("PORT", "8001")))
     print("🚀 향상된 메시지 시스템 시작 중...")
     uvicorn.run(
         "enhanced_message_system:app",
         host="0.0.0.0",
-        port=8001,
+        port=_p,
         reload=False,
         log_level="info"
     ) 

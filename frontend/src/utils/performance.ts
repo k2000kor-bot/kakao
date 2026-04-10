@@ -1,86 +1,171 @@
-// 성능 최적화 유틸리티
+/**
+ * 성능 최적화 유틸리티
+ * 디바운스·스로틀·메모이제이션·지연 로딩·가상 스크롤·프리로드·성능 측정 등 제공.
+ * @module performance
+ */
 
-// 디바운스 함수
+import { errorLogger } from './errorLogger';
+
+/**
+ * 디바운스 함수. 마지막 호출 후 wait ms 동안 추가 호출이 없을 때만 func 실행.
+ * @param func - 디바운스할 함수
+ * @param wait - 대기 시간 (ms)
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- HOF requires permissive typing for any callback
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
+  let timeout: NodeJS.Timeout | null = null;
+
+  return function executedFunction(...args: Parameters<T>) {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+
+    if (timeout) {
     clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
+    }
+    timeout = setTimeout(later, wait);
   };
 }
 
-// 쓰로틀 함수
+/**
+ * 쓰로틀 함수. limit ms 동안 최대 1회만 func 실행.
+ * @param func - 스로틀할 함수
+ * @param limit - 최소 호출 간격 (ms)
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- HOF requires permissive typing for any callback
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
-  return (...args: Parameters<T>) => {
+
+  return function executedFunction(...args: Parameters<T>) {
     if (!inThrottle) {
       func(...args);
       inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
+      setTimeout(() => {
+        inThrottle = false;
+      }, limit);
     }
   };
 }
 
-// 메모이제이션 함수
-export function memoize<T extends (...args: any[]) => any>(
-  func: T,
-  resolver?: (...args: Parameters<T>) => string
-): T {
-  const cache = new Map<string, ReturnType<T>>();
+/**
+ * 메모이제이션 헬퍼. 동일 인자로 재호출 시 캐시된 결과 반환.
+ * @param fn - 메모이제이션할 함수
+ */
+export function memoize<Args extends unknown[], Return>(
+  fn: (...args: Args) => Return
+): (...args: Args) => Return {
+  const cache = new Map<string, Return>();
   
-  return ((...args: Parameters<T>) => {
-    const key = resolver ? resolver(...args) : JSON.stringify(args);
+  return (...args: Args): Return => {
+    const key = JSON.stringify(args);
     
     if (cache.has(key)) {
-      return cache.get(key);
+      return cache.get(key)!;
     }
     
-    const result = func(...args);
+    const result = fn(...args);
     cache.set(key, result);
     return result;
-  }) as T;
+  };
 }
 
-// 가상화를 위한 아이템 크기 계산
-export function calculateItemSize(
-  itemCount: number,
-  containerHeight: number,
-  itemHeight: number = 60
-): { totalHeight: number; visibleCount: number } {
-  const totalHeight = itemCount * itemHeight;
-  const visibleCount = Math.ceil(containerHeight / itemHeight);
-  
-  return { totalHeight, visibleCount };
+/**
+ * 이미지 지연 로딩. 뷰포트에 들어오면 src 할당 (rootMargin 50px).
+ */
+export function lazyLoadImage(img: HTMLImageElement, src: string): void {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          img.src = src;
+          observer.unobserve(img);
+        }
+      });
+    },
+    { rootMargin: '50px' }
+  );
+
+  observer.observe(img);
 }
 
-// 이미지 지연 로딩
-export function lazyLoadImage(
-  img: HTMLImageElement,
-  src: string,
-  placeholder?: string
-): Promise<void> {
+/** 가상 스크롤링 옵션 */
+export interface VirtualScrollOptions {
+  containerHeight: number;
+  itemHeight: number;
+  totalItems: number;
+  overscan?: number;
+}
+
+export interface VirtualScrollResult {
+  startIndex: number;
+  endIndex: number;
+  visibleItems: number;
+  offsetY: number;
+}
+
+/**
+ * 가상 스크롤 계산. 뷰포트에 보일 항목 범위·오프셋 계산.
+ */
+export function calculateVirtualScroll(
+  scrollTop: number,
+  options: VirtualScrollOptions
+): VirtualScrollResult {
+  const { containerHeight, itemHeight, totalItems, overscan = 3 } = options;
+
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+  const endIndex = Math.min(
+    totalItems - 1,
+    Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
+  );
+  const visibleItems = endIndex - startIndex + 1;
+  const offsetY = startIndex * itemHeight;
+
+  return {
+    startIndex,
+    endIndex,
+    visibleItems,
+    offsetY,
+  };
+}
+
+/**
+ * 리소스 프리로딩. image/script/style 타입별로 미리 로드.
+ */
+export function preloadResource(url: string, type: 'image' | 'script' | 'style'): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (placeholder) {
-      img.src = placeholder;
-    }
-    
-    const image = new Image();
-    image.onload = () => {
-      img.src = src;
+    if (type === 'image') {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = reject;
+      img.src = url;
+    } else if (type === 'script') {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'script';
+      link.href = url;
+      document.head.appendChild(link);
       resolve();
-    };
-    image.onerror = reject;
-    image.src = src;
+    } else if (type === 'style') {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'style';
+      link.href = url;
+      document.head.appendChild(link);
+      resolve();
+    }
   });
 }
 
-// 성능 측정
+/**
+ * 성능 측정. development에서 duration 로깅.
+ */
 export function measurePerformance<T>(
   name: string,
   fn: () => T
@@ -89,104 +174,29 @@ export function measurePerformance<T>(
   const result = fn();
   const end = performance.now();
   
-  console.log(`${name} 실행 시간: ${end - start}ms`);
+  if (process.env.NODE_ENV === 'development') {
+    errorLogger.info(`[Performance] ${name}: ${(end - start).toFixed(2)}ms`, { component: 'performance', action: 'measurePerformance', name, duration: end - start });
+  }
+  
   return result;
 }
 
-// 메모리 사용량 모니터링
-export function monitorMemoryUsage(): void {
-  if ('memory' in performance) {
-    const memory = (performance as any).memory;
-    console.log('메모리 사용량:', {
-      used: Math.round(memory.usedJSHeapSize / 1048576) + 'MB',
-      total: Math.round(memory.totalJSHeapSize / 1048576) + 'MB',
-      limit: Math.round(memory.jsHeapSizeLimit / 1048576) + 'MB'
-    });
-  }
+/**
+ * 배치 업데이트. 여러 업데이트 함수를 순서대로 실행하고 결과 배열 반환.
+ */
+export function batchUpdates<T>(
+  updates: Array<() => T>
+): T[] {
+  return updates.map(update => update());
 }
 
-// 스크롤 성능 최적화
-export function optimizeScroll(
-  element: HTMLElement,
-  callback: (scrollTop: number) => void
-): () => void {
-  let ticking = false;
-  
-  const handleScroll = () => {
-    if (!ticking) {
-      requestAnimationFrame(() => {
-        callback(element.scrollTop);
-        ticking = false;
-      });
-      ticking = true;
-    }
-  };
-  
-  element.addEventListener('scroll', handleScroll, { passive: true });
-  
-  return () => {
-    element.removeEventListener('scroll', handleScroll);
-  };
-}
-
-// 컴포넌트 렌더링 최적화
-export function shouldComponentUpdate<T>(
-  prevProps: T,
-  nextProps: T,
-  keys: (keyof T)[]
-): boolean {
-  return keys.some(key => prevProps[key] !== nextProps[key]);
-}
-
-// 캐시 관리
-export class CacheManager {
-  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-  
-  set(key: string, data: any, ttl: number = 60000): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl
-    });
+/**
+ * 웹 워커 생성 헬퍼. 함수를 Blob으로 감싸 Worker 인스턴스 생성.
+ */
+export function createWorker(workerFunction: Function): Worker {
+  const blob = new Blob([`(${workerFunction.toString()})()`], {
+    type: 'application/javascript',
+  });
+  return new Worker(URL.createObjectURL(blob));
   }
   
-  get(key: string): any | null {
-    const item = this.cache.get(key);
-    if (!item) return null;
-    
-    if (Date.now() - item.timestamp > item.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return item.data;
-  }
-  
-  clear(): void {
-    this.cache.clear();
-  }
-  
-  size(): number {
-    return this.cache.size;
-  }
-}
-
-// 네트워크 상태 모니터링
-export function monitorNetworkStatus(): {
-  isOnline: boolean;
-  connectionType?: string;
-  downlink?: number;
-} {
-  const isOnline = navigator.onLine;
-  
-  if ('connection' in navigator) {
-    const connection = (navigator as any).connection;
-    return {
-      isOnline,
-      connectionType: connection?.effectiveType,
-      downlink: connection?.downlink
-    };
-  }
-  
-  return { isOnline };
-} 

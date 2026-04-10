@@ -699,4 +699,8 @@ async def get_property_types():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8007)
+
+    _ma = int(
+        os.environ.get("MARKET_ANALYSIS_ENGINE_PORT", os.environ.get("PORT", "8007"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_ma)

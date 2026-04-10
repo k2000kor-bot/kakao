@@ -4,29 +4,71 @@
  * 다양한 텍스트 조작 및 생성 기능을 통합하여 최고 수준의 응답 제공
  */
 
-import { advancedTextAnalysisService, TextAnalysisRequest } from './advancedTextAnalysisService.js';
-import { integratedWritingService, UnifiedWritingRequest } from './integratedWritingService';
-import { masterWritingEngine, MasterWritingProfile, WritingTemplate } from './masterWritingEngine';
-import { politicalWritingEngine, PoliticalSpectrum, PoliticalStance } from './politicalWritingEngine';
-import { generationWritingEngine, AgeGroup } from './generationWritingEngine';
+import {
+    API_BASE_URL,
+    API_V1_ANALYSIS_STATUS_PATH_PREFIX,
+    API_V1_CONSTRUCTION_BIAS_PATH,
+    API_V1_INTEGRATED_ANALYSIS_PATH,
+    API_V1_KAKAO_TENDENCY_PATH,
+    API_V1_OPINION_TREND_PATH,
+    FALLBACK_API_ORIGIN,
+    joinApiHealthCheckUrl,
+} from '../config/api';
+import { advancedTextAnalysisService, TextAnalysisRequest } from './advancedTextAnalysisService';
+import {
+    integratedWritingService,
+    UnifiedWritingRequest,
+    UnifiedWritingResponse,
+} from './integratedWritingService';
+import { MasterWritingProfile } from './masterWritingEngine';
+import { politicalWritingEngine, PoliticalSpectrum, PoliticalStance, PoliticalWritingProfile, EmotionIntensity, ToneIntensity } from './politicalWritingEngine';
+import { generationWritingEngine, AgeGroup, LanguageFormality } from './generationWritingEngine';
 import { stanceWritingEngine, StancePosition } from './stanceWritingEngine';
 import { ultimateStyleCloningService, UltimateStyleCloneRequest } from './ultimateStyleCloningService';
+import { WritingStyle } from './professionalWritingEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    coerceTrimmedString,
+    hasPipelineExtras,
+    mergePipelineMessageExtras,
+    type PipelineMessageExtras,
+} from '../utils/chatInputUtils';
+
+// Intent and params types for analysis flow
+export interface IntentParams {
+    dates?: string[];
+    period?: string;
+    participants?: string[];
+    extractedTexts?: string[];
+    analysisStyle?: string;
+    outputFormat?: string;
+}
+
+export interface IntentResult {
+    type: string;
+    confidence: number;
+    params: IntentParams;
+}
 
 export interface ConversationalRequest {
     message: string;
     roomId?: string;
-    context?: any;
+    /**
+     * 채팅·파이프라인에서 직접 넘기는 메타. `context.pipelineExtras`와 함께 있으면 이 값이 우선(필드 단위 병합).
+     */
+    pipelineExtras?: PipelineMessageExtras;
+    context?: Record<string, unknown>;
 }
 
 export interface ConversationalResponse {
     type: 'analysis' | 'information' | 'error' | 'general' | 'advanced_analysis' | 'text_manipulation' | 'political_writing' | 'generation_writing' | 'stance_writing' | 'master_writing' | 'style_cloning' | 'style_analysis';
     analysisType?: 'tendency' | 'bias' | 'opinion' | 'integrated' | 'summary' | 'descriptive' | 'research' | 'expert' | 'manipulation' | 'political' | 'generational' | 'stance' | 'master' | 'style_clone' | 'style_match';
     content: string;
-    data?: any;
+    data?: Record<string, unknown>;
     suggestions?: string[];
     followUpQuestions?: string[];
     researcherInsights?: string[];
-    expertAssessment?: any;
+    expertAssessment?: Record<string, unknown>;
     textManipulations?: {
         modification?: string;
         counterArgument?: string;
@@ -37,17 +79,51 @@ export interface ConversationalResponse {
         different_length?: string;
         different_structure?: string;
         different_perspective?: string;
-    } | any;
+    };
     methodologyNotes?: string;
-    contextualFactors?: any;
+    contextualFactors?: Record<string, unknown>;
+    /** 통합 글쓰기(`processUnifiedWritingRequest`)가 돌았을 때 `metadata.pipelineExtras` 에코 */
+    pipelineExtras?: PipelineMessageExtras;
     writingProfile?: MasterWritingProfile;
-    styleMetrics?: any;
+    styleMetrics?: Record<string, unknown>;
     writingRecommendations?: string[];
 }
 
-class ConversationalAnalysisService {
-    private baseUrl = 'http://localhost:8006/api/v1';
+export class ConversationalAnalysisService {
+    private readonly apiOrigin = API_BASE_URL || FALLBACK_API_ORIGIN;
     private enableAdvancedAnalysis = true; // 고급 분석 기능 활성화
+
+    /** `request.context.pipelineExtras`에서 통합 글쓰기·하이브리드 강화로 넘길 메타 */
+    private pipelineExtrasFromContext(context?: Record<string, unknown>): PipelineMessageExtras | undefined {
+        const raw = context?.pipelineExtras;
+        if (raw == null || typeof raw !== 'object') return undefined;
+        const ex = raw as PipelineMessageExtras;
+        return hasPipelineExtras(ex) ? ex : undefined;
+    }
+
+    private pipelineExtrasFromWritingMetadata(
+        metadata: UnifiedWritingResponse['metadata']
+    ): PipelineMessageExtras | undefined {
+        const pe = metadata.pipelineExtras;
+        if (pe != null && hasPipelineExtras(pe)) return pe;
+        return undefined;
+    }
+
+    /** 통합 글쓰기로 넘길 파이프라인 메타: 요청 최상위 + context 병합 */
+    private resolvedPipelineExtrasForUnifiedWriting(
+        request: ConversationalRequest
+    ): PipelineMessageExtras | undefined {
+        const fromReq =
+            request.pipelineExtras != null && hasPipelineExtras(request.pipelineExtras)
+                ? request.pipelineExtras
+                : undefined;
+        const fromCtx = this.pipelineExtrasFromContext(request.context);
+        if (fromReq != null && fromCtx != null) {
+            const merged = mergePipelineMessageExtras(fromReq, fromCtx);
+            return hasPipelineExtras(merged) ? merged : undefined;
+        }
+        return fromReq ?? fromCtx;
+    }
 
     /**
      * 자연어 메시지를 분석하여 적절한 응답 생성
@@ -66,7 +142,12 @@ class ConversationalAnalysisService {
                     return advancedResponse;
                 }
             } catch (error) {
-                console.log('고급 분석 실패, 기본 분석으로 전환:', error);
+                const err = toError(error);
+                errorLogger.warn('고급 분석 실패, 기본 분석으로 전환', {
+                    component: 'conversationalAnalysisService',
+                    action: 'processMessage',
+                    error: err.message,
+                });
             }
         }
 
@@ -100,10 +181,10 @@ class ConversationalAnalysisService {
                 return await this.handleResearchAnalysis(request, intent);
 
             case 'writing_request':
-                return await this.handleWritingRequest(request, intent);
+                return await this.handleWritingRequest(request, intent as unknown as Record<string, unknown>);
 
             case 'custom_writing':
-                return await this.handleCustomWriting(request, intent);
+                return await this.handleCustomWriting(request, intent as unknown as Record<string, unknown>);
 
             case 'political_writing':
                 return await this.handlePoliticalWriting(request, intent);
@@ -128,7 +209,7 @@ class ConversationalAnalysisService {
     /**
      * 메시지에서 의도 분석
      */
-    private analyzeIntent(message: string): { type: string; confidence: number; params: any } {
+    private analyzeIntent(message: string): IntentResult {
         const patterns = [
             // 성향 분석 관련
             {
@@ -450,11 +531,11 @@ class ConversationalAnalysisService {
     /**
      * 메시지에서 파라미터 추출
      */
-    private extractParameters(message: string, intentType: string): any {
-        const params: any = {};
+    private extractParameters(message: string, _intentType: string): IntentParams {
+        const params: IntentParams = {};
 
         // 날짜 추출
-        const datePattern = /(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/g;
+        const datePattern = /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/g;
         const dates = message.match(datePattern);
         if (dates) {
             params.dates = dates;
@@ -501,9 +582,9 @@ class ConversationalAnalysisService {
     /**
      * 성향 분석 처리
      */
-    private async handleTendencyAnalysis(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleTendencyAnalysis(request: ConversationalRequest, intent: IntentResult): Promise<ConversationalResponse> {
         try {
-            const response = await fetch(`${this.baseUrl}/kakao-tendency`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, `${API_V1_KAKAO_TENDENCY_PATH}`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -530,7 +611,7 @@ class ConversationalAnalysisService {
 • 부정적: ${analysis.tendency_distribution.negative}%
 
 🌟 **주요 참여자**
-${analysis.key_participants.map((p: any) =>
+${analysis.key_participants.map((p: { name: string; tendency: string; influence_score: number }) =>
                     `• ${p.name}: ${p.tendency} (영향력: ${p.influence_score}/10)`
                 ).join('\n')}
 
@@ -562,7 +643,11 @@ ${analysis.key_participants.map((p: any) =>
                 };
             }
         } catch (error) {
-            console.error('성향 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('성향 분석 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleTendencyAnalysis',
+            });
         }
 
         return {
@@ -574,9 +659,9 @@ ${analysis.key_participants.map((p: any) =>
     /**
      * 편향 분석 처리
      */
-    private async handleBiasAnalysis(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleBiasAnalysis(request: ConversationalRequest, intent: IntentResult): Promise<ConversationalResponse> {
         try {
-            const response = await fetch(`${this.baseUrl}/construction-bias`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, `${API_V1_CONSTRUCTION_BIAS_PATH}`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -601,8 +686,8 @@ ${analysis.key_participants.map((p: any) =>
 • 신뢰도: ${Math.round(bias.confidence * 100)}%
 
 🏢 **언급된 시공사**
-${Object.entries(companies.bias_scores).map(([company, info]: [string, any]) =>
-                    `• ${company}: ${info.score}/10 (${info.mentions}회 언급, ${info.sentiment})`
+${(Object.entries(companies.bias_scores || {}) as [string, { score?: number; mentions?: number; sentiment?: string }][]).map(([company, info]) =>
+                    `• ${company}: ${Number(info?.score ?? 0)}/10 (${Number(info?.mentions ?? 0)}회 언급, ${String(info?.sentiment ?? '')})`
                 ).join('\n')}
 
 📢 **홍보성 콘텐츠**
@@ -632,7 +717,11 @@ ${Object.entries(companies.bias_scores).map(([company, info]: [string, any]) =>
                 };
             }
         } catch (error) {
-            console.error('편향 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('편향 분석 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleBiasAnalysis',
+            });
         }
 
         return {
@@ -644,9 +733,9 @@ ${Object.entries(companies.bias_scores).map(([company, info]: [string, any]) =>
     /**
      * 여론 분석 처리
      */
-    private async handleOpinionAnalysis(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleOpinionAnalysis(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
-            const response = await fetch(`${this.baseUrl}/opinion-trend`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, `${API_V1_OPINION_TREND_PATH}`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -670,12 +759,12 @@ ${Object.entries(companies.bias_scores).map(([company, info]: [string, any]) =>
 • 트렌드 방향: ${trend.trend_direction === 'improving' ? '개선 중' : trend.trend_direction}
 
 📅 **시간대별 변화**
-${timeline.periods.map((period: any) =>
+${timeline.periods.map((period: { period: string; sentiment: number; key_events: string[] }) =>
                     `• ${period.period}: ${period.sentiment}/10 (주요 사건: ${period.key_events.join(', ')})`
                 ).join('\n')}
 
 💡 **영향 요인**
-${factors.map((factor: any) =>
+${factors.map((factor: { factor: string; impact: number; type: string }) =>
                     `• ${factor.factor}: 영향도 ${factor.impact}/10 (${factor.type === 'positive' ? '긍정적' : factor.type === 'negative' ? '부정적' : '중립적'})`
                 ).join('\n')}
 
@@ -702,7 +791,11 @@ ${factors.map((factor: any) =>
                 };
             }
         } catch (error) {
-            console.error('여론 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('여론 분석 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleOpinionAnalysis',
+            });
         }
 
         return {
@@ -714,9 +807,9 @@ ${factors.map((factor: any) =>
     /**
      * 통합 분석 처리
      */
-    private async handleIntegratedAnalysis(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleIntegratedAnalysis(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
-            const response = await fetch(`${this.baseUrl}/integrated-analysis`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, `${API_V1_INTEGRATED_ANALYSIS_PATH}`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -737,7 +830,7 @@ ${factors.map((factor: any) =>
 ${data.results.cross_analysis.key_insights.map((insight: string) => `• ${insight}`).join('\n')}
 
 ⚠️ **위험 요인**
-${data.results.cross_analysis.risk_factors.map((risk: any) =>
+${data.results.cross_analysis.risk_factors.map((risk: { factor: string; level: string; probability: number }) =>
                     `• ${risk.factor}: ${risk.level} 위험 (확률: ${Math.round(risk.probability * 100)}%)`
                 ).join('\n')}
 
@@ -764,7 +857,11 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
                 };
             }
         } catch (error) {
-            console.error('통합 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('통합 분석 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleIntegratedAnalysis',
+            });
         }
 
         return {
@@ -776,7 +873,7 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
     /**
      * 요약 요청 처리
      */
-    private async handleSummaryRequest(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleSummaryRequest(_request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         const content = `📋 **분석 결과 요약**
 
 🎯 **사용 가능한 분석 기능**
@@ -807,10 +904,12 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
     /**
      * 상태 조회 처리
      */
-    private async handleStatusInquiry(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleStatusInquiry(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const roomId = request.roomId || 'default';
-            const response = await fetch(`${this.baseUrl}/analysis-status/${roomId}`);
+            const response = await fetch(
+                joinApiHealthCheckUrl(this.apiOrigin, `${API_V1_ANALYSIS_STATUS_PATH_PREFIX}/${encodeURIComponent(roomId)}`),
+            );
             const data = await response.json();
 
             const content = `📊 **현재 분석 상태**
@@ -833,7 +932,11 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
                 ]
             };
         } catch (error) {
-            console.error('상태 조회 오류:', error);
+            const err = toError(error);
+            errorLogger.error('상태 조회 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleStatusInquiry',
+            });
         }
 
         return {
@@ -845,7 +948,7 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
     /**
      * 고급 분석 처리
      */
-    private async performAdvancedAnalysis(request: ConversationalRequest, intent: any): Promise<ConversationalResponse | null> {
+    private async performAdvancedAnalysis(request: ConversationalRequest, intent: IntentResult): Promise<ConversationalResponse | null> {
         try {
             const analysisRequest: TextAnalysisRequest = {
                 text: request.message,
@@ -856,6 +959,14 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
             };
 
             const result = await advancedTextAnalysisService.analyzeAndManipulateText(analysisRequest);
+            if (
+                result == null ||
+                typeof result !== 'object' ||
+                result.generatedTexts == null ||
+                result.analysisResult == null
+            ) {
+                return null;
+            }
 
             return {
                 type: 'advanced_analysis',
@@ -864,7 +975,7 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
                 data: result.analysisResult,
                 researcherInsights: result.analysisResult.insights,
                 expertAssessment: result.expertAssessment,
-                textManipulations: result.generatedTexts.alternatives,
+                textManipulations: result.generatedTexts.alternatives as unknown as NonNullable<ConversationalResponse['textManipulations']>,
                 methodologyNotes: `연구방법론: ${result.analysisResult.methodology}`,
                 contextualFactors: result.contextualFactors,
                 suggestions: result.analysisResult.recommendations,
@@ -876,7 +987,11 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
                 ]
             };
         } catch (error) {
-            console.error('고급 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('고급 분석 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'performAdvancedAnalysis',
+            });
             return null;
         }
     }
@@ -900,7 +1015,7 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
     /**
      * 텍스트 조작 처리
      */
-    private async handleTextManipulation(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleTextManipulation(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const analysisRequest: TextAnalysisRequest = {
                 text: request.message,
@@ -911,6 +1026,17 @@ ${data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
             };
 
             const result = await advancedTextAnalysisService.analyzeAndManipulateText(analysisRequest);
+            if (
+                result == null ||
+                typeof result !== 'object' ||
+                result.generatedTexts?.descriptiveAnalysis == null ||
+                result.analysisResult == null
+            ) {
+                return {
+                    type: 'error',
+                    content: '텍스트 조작 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+                };
+            }
 
             const content = `✍️ **텍스트 조작 및 생성 결과**
 
@@ -931,7 +1057,7 @@ ${result.generatedTexts.descriptiveAnalysis.substring(0, 500)}...
                 analysisType: 'manipulation',
                 content,
                 data: result.analysisResult,
-                textManipulations: result.generatedTexts.alternatives,
+                textManipulations: result.generatedTexts.alternatives as unknown as NonNullable<ConversationalResponse['textManipulations']>,
                 suggestions: [
                     '특정 버전(수정/반박/호소문/반박문)을 선택해서 전체 내용을 확인하세요',
                     '원하는 톤앤매너나 스타일로 추가 조정이 가능합니다',
@@ -944,7 +1070,11 @@ ${result.generatedTexts.descriptiveAnalysis.substring(0, 500)}...
                 ]
             };
         } catch (error) {
-            console.error('텍스트 조작 오류:', error);
+            const err = toError(error);
+            errorLogger.error('텍스트 조작 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleTextManipulation',
+            });
             return {
                 type: 'error',
                 content: '텍스트 조작 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
@@ -955,7 +1085,7 @@ ${result.generatedTexts.descriptiveAnalysis.substring(0, 500)}...
     /**
      * 서술적 분석 처리
      */
-    private async handleDescriptiveAnalysis(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleDescriptiveAnalysis(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const analysisRequest: TextAnalysisRequest = {
                 text: request.message,
@@ -965,6 +1095,19 @@ ${result.generatedTexts.descriptiveAnalysis.substring(0, 500)}...
             };
 
             const result = await advancedTextAnalysisService.analyzeAndManipulateText(analysisRequest);
+            if (
+                result == null ||
+                typeof result !== 'object' ||
+                result.generatedTexts?.descriptiveAnalysis == null ||
+                result.analysisResult == null ||
+                result.expertAssessment == null ||
+                typeof result.expertAssessment.credibility !== 'number'
+            ) {
+                return {
+                    type: 'error',
+                    content: '서술적 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+                };
+            }
 
             return {
                 type: 'advanced_analysis',
@@ -982,7 +1125,11 @@ ${result.generatedTexts.descriptiveAnalysis.substring(0, 500)}...
                 ]
             };
         } catch (error) {
-            console.error('서술적 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('서술적 분석 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleDescriptiveAnalysis',
+            });
             return {
                 type: 'error',
                 content: '서술적 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
@@ -993,7 +1140,7 @@ ${result.generatedTexts.descriptiveAnalysis.substring(0, 500)}...
     /**
      * 연구 분석 처리
      */
-    private async handleResearchAnalysis(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleResearchAnalysis(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const analysisRequest: TextAnalysisRequest = {
                 text: request.message,
@@ -1003,6 +1150,24 @@ ${result.generatedTexts.descriptiveAnalysis.substring(0, 500)}...
             };
 
             const result = await advancedTextAnalysisService.analyzeAndManipulateText(analysisRequest);
+            const ar = result?.analysisResult;
+            if (
+                result == null ||
+                typeof result !== 'object' ||
+                result.generatedTexts?.researchSummary == null ||
+                ar == null ||
+                typeof ar !== 'object' ||
+                !Array.isArray(ar.findings) ||
+                !Array.isArray(ar.insights) ||
+                !Array.isArray(ar.limitations) ||
+                !Array.isArray(ar.recommendations) ||
+                result.expertAssessment == null
+            ) {
+                return {
+                    type: 'error',
+                    content: '연구 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+                };
+            }
 
             const content = `🔬 **학술적 연구 분석 결과**
 
@@ -1045,7 +1210,11 @@ ${result.analysisResult.recommendations.map((rec: string) => `• ${rec}`).join(
                 ]
             };
         } catch (error) {
-            console.error('연구 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('연구 분석 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleResearchAnalysis',
+            });
             return {
                 type: 'error',
                 content: '연구 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
@@ -1062,47 +1231,49 @@ ${result.analysisResult.recommendations.map((rec: string) => `• ${rec}`).join(
             const writingRequirements = this.parseWritingRequirements(request.message, intent);
 
             // 통합 글쓰기 서비스 호출
+            const wr = writingRequirements as Record<string, unknown>;
+            const mergedPipeline = this.resolvedPipelineExtrasForUnifiedWriting(request);
             const writingRequest: UnifiedWritingRequest = {
                 input: {
-                    topic: writingRequirements.topic || '사용자 요청 주제',
-                    original_text: writingRequirements.originalText
+                    topic: String(wr.topic ?? '사용자 요청 주제'),
+                    original_text: wr.originalText as string | undefined
                 },
                 writing_style: {
-                    type: writingRequirements.style || 'adaptive'
+                    type: (['professional', 'conversational', 'analytical', 'adaptive'].includes(String(wr.style ?? 'adaptive')) ? wr.style : 'adaptive') as 'professional' | 'conversational' | 'analytical' | 'adaptive'
                 },
                 detailed_requirements: {
                     length: {
                         type: 'word_count',
-                        value: writingRequirements.wordCount || 500,
+                        value: Number(wr.wordCount) || 500,
                         flexibility: 'moderate'
                     },
                     tone: {
-                        formality: writingRequirements.formality || 'professional',
-                        emotion: writingRequirements.emotion || 'neutral',
-                        perspective: writingRequirements.perspective || '3인칭',
-                        voice_style: writingRequirements.voice || '능동태'
+                        formality: (['casual', 'friendly', 'professional', 'academic', 'authoritative'].includes(String(wr.formality ?? 'professional')) ? wr.formality : 'professional') as 'casual' | 'friendly' | 'professional' | 'academic' | 'authoritative',
+                        emotion: (['neutral', 'calm', 'urgent', 'encouraging', 'passionate'].includes(String(wr.emotion ?? 'neutral')) ? wr.emotion : 'neutral') as 'neutral' | 'calm' | 'urgent' | 'encouraging' | 'passionate',
+                        perspective: (['혼합', '1인칭', '2인칭', '3인칭'].includes(String(wr.perspective ?? '3인칭')) ? wr.perspective : '3인칭') as '혼합' | '1인칭' | '2인칭' | '3인칭',
+                        voice_style: (['혼합', '능동태', '수동태'].includes(String(wr.voice ?? '능동태')) ? wr.voice : '능동태') as '혼합' | '능동태' | '수동태'
                     },
                     sentence_structure: {
-                        average_length: writingRequirements.sentenceLength || 'medium',
-                        complexity: writingRequirements.complexity || 'mixed',
-                        rhythm: writingRequirements.rhythm || 'varied'
+                        average_length: (['medium', 'long', 'short', 'very_short', 'very_long'].includes(String(wr.sentenceLength ?? 'medium')) ? wr.sentenceLength : 'medium') as 'medium' | 'long' | 'short' | 'very_short' | 'very_long',
+                        complexity: (['simple', 'complex', 'compound', 'varied'].includes(String(wr.complexity ?? 'mixed')) ? wr.complexity : 'mixed') as 'simple' | 'complex' | 'compound' | 'varied',
+                        rhythm: (['varied', 'dramatic', 'consistent'].includes(String(wr.rhythm ?? 'varied')) ? wr.rhythm : 'varied') as 'varied' | 'dramatic' | 'consistent'
                     },
                     paragraph_structure: {
-                        count: writingRequirements.paragraphCount,
-                        average_sentences_per_paragraph: writingRequirements.sentencesPerParagraph || 4,
+                        count: wr.paragraphCount as number | undefined,
+                        average_sentences_per_paragraph: Number(wr.sentencesPerParagraph) || 4,
                         connection_style: 'smooth'
                     },
                     content_focus: {
-                        main_purpose: writingRequirements.purpose || 'inform',
-                        evidence_level: writingRequirements.evidenceLevel || 'moderate',
-                        include_statistics: writingRequirements.includeStats || false,
-                        include_examples: writingRequirements.includeExamples || true,
-                        include_quotes: writingRequirements.includeQuotes || false,
-                        include_personal_opinions: writingRequirements.includeOpinions || true
+                        main_purpose: (['analyze', 'inform', 'persuade', 'entertain', 'critique', 'argue'].includes(String(wr.purpose ?? 'inform')) ? wr.purpose : 'inform') as 'analyze' | 'inform' | 'persuade' | 'entertain' | 'critique' | 'argue',
+                        evidence_level: (['moderate', 'minimal', 'extensive'].includes(String(wr.evidenceLevel ?? 'moderate')) ? wr.evidenceLevel : 'moderate') as 'moderate' | 'minimal' | 'extensive',
+                        include_statistics: Boolean(wr.includeStats ?? false),
+                        include_examples: Boolean(wr.includeExamples ?? true),
+                        include_quotes: Boolean(wr.includeQuotes ?? false),
+                        include_personal_opinions: Boolean(wr.includeOpinions ?? true)
                     },
                     target_audience: {
-                        expertise_level: writingRequirements.audienceLevel || 'general_public',
-                        background_knowledge_level: writingRequirements.knowledgeLevel || 'intermediate'
+                        expertise_level: (['general_public', 'students', 'professionals', 'experts'].includes(String(wr.audienceLevel ?? 'general_public')) ? wr.audienceLevel : 'general_public') as 'general_public' | 'students' | 'professionals' | 'experts',
+                        background_knowledge_level: (['intermediate', 'advanced', 'beginner'].includes(String(wr.knowledgeLevel ?? 'intermediate')) ? wr.knowledgeLevel : 'intermediate') as 'intermediate' | 'advanced' | 'beginner'
                     }
                 },
                 output_options: {
@@ -1111,7 +1282,8 @@ ${result.analysisResult.recommendations.map((rec: string) => `• ${rec}`).join(
                     include_improvement_suggestions: true,
                     include_source_attribution: false,
                     format: 'markdown'
-                }
+                },
+                ...(mergedPipeline ? { pipelineExtras: mergedPipeline } : {}),
             };
 
             const result = await integratedWritingService.processUnifiedWritingRequest(writingRequest);
@@ -1135,11 +1307,13 @@ ${result.primary_content.content}
 • 총 단어 수: ${result.primary_content.word_count.toLocaleString()}개
 • 처리 시간: ${result.metadata.processing_time}ms`;
 
+            const outPipeline = this.pipelineExtrasFromWritingMetadata(result.metadata);
+
             return {
                 type: 'text_manipulation',
                 analysisType: 'manipulation',
                 content,
-                data: result,
+                data: result as unknown as Record<string, unknown>,
                 textManipulations: result.alternatives,
                 suggestions: result.improvement_suggestions,
                 followUpQuestions: [
@@ -1147,11 +1321,16 @@ ${result.primary_content.content}
                     '글자 수나 문단 수를 조정하고 싶으신가요?',
                     '특정 부분을 더 자세히 설명해드릴까요?',
                     '이 글을 바탕으로 다른 형태의 글을 작성해드릴까요?'
-                ]
+                ],
+                ...(outPipeline ? { pipelineExtras: outPipeline } : {}),
             };
 
         } catch (error) {
-            console.error('글쓰기 요청 처리 오류:', error);
+            const err = toError(error);
+            errorLogger.error('글쓰기 요청 처리 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleWritingRequest',
+            });
             return {
                 type: 'error',
                 content: '글쓰기 처리 중 오류가 발생했습니다. 요청사항을 다시 확인해 주세요.'
@@ -1165,26 +1344,32 @@ ${result.primary_content.content}
     private async handleCustomWriting(request: ConversationalRequest, intent: Record<string, unknown>): Promise<ConversationalResponse> {
         try {
             // 더 정교한 요구사항 파싱
-            const customRequirements = this.parseDetailedWritingRequirements(request.message, intent);
+            const cr = this.parseDetailedWritingRequirements(request.message, intent) as Record<string, unknown>;
+            const mergedPipeline = this.resolvedPipelineExtrasForUnifiedWriting(request);
 
             const writingRequest: UnifiedWritingRequest = {
                 input: {
-                    topic: customRequirements.topic,
-                    original_text: customRequirements.sourceText
+                    topic: String(cr.topic ?? ''),
+                    original_text: cr.sourceText as string | undefined
                 },
                 writing_style: {
-                    type: customRequirements.writingType || 'adaptive',
-                    professional_style: customRequirements.professionalStyle,
-                    custom_style: customRequirements.customStyle
+                    type: (['professional', 'conversational', 'analytical', 'adaptive'].includes(String(cr.writingType ?? 'adaptive')) ? cr.writingType : 'adaptive') as 'professional' | 'conversational' | 'analytical' | 'adaptive',
+                    professional_style: cr.professionalStyle as WritingStyle | undefined,
+                    custom_style: cr.customStyle ? {
+                        personality: String((cr.customStyle as Record<string, unknown>).personality ?? ''),
+                        expertise_field: String((cr.customStyle as Record<string, unknown>).expertise_field ?? ''),
+                        writing_approach: String((cr.customStyle as Record<string, unknown>).writing_approach ?? '')
+                    } : undefined
                 },
-                detailed_requirements: customRequirements.detailedReqs,
+                detailed_requirements: cr.detailedReqs as UnifiedWritingRequest['detailed_requirements'],
                 output_options: {
                     include_alternatives: true,
                     include_analysis: true,
                     include_improvement_suggestions: true,
-                    include_source_attribution: !!customRequirements.sourceText,
-                    format: customRequirements.outputFormat || 'markdown'
-                }
+                    include_source_attribution: !!cr.sourceText,
+                    format: (['html', 'markdown', 'plain_text', 'structured_json'].includes(String(cr.outputFormat ?? 'markdown')) ? cr.outputFormat : 'markdown') as 'html' | 'markdown' | 'plain_text' | 'structured_json'
+                },
+                ...(mergedPipeline ? { pipelineExtras: mergedPipeline } : {}),
             };
 
             const result = await integratedWritingService.processUnifiedWritingRequest(writingRequest);
@@ -1219,12 +1404,14 @@ ${result.improvement_suggestions && result.improvement_suggestions.length > 0 ?
                     `## 💡 **개선 제안사항**
 ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
 
+            const outPipeline = this.pipelineExtrasFromWritingMetadata(result.metadata);
+
             return {
                 type: 'advanced_analysis',
                 analysisType: 'manipulation',
                 content,
-                data: result,
-                textManipulations: result.alternatives,
+                data: result as unknown as Record<string, unknown>,
+                textManipulations: result.alternatives as unknown as NonNullable<ConversationalResponse['textManipulations']>,
                 expertAssessment: result.quality_analysis,
                 suggestions: result.improvement_suggestions,
                 followUpQuestions: [
@@ -1232,11 +1419,16 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
                     '특정 부분의 길이나 스타일을 조정하고 싶으신가요?',
                     '이 글을 바탕으로 다른 형태(요약, 확장, 반박 등)의 글을 만들어드릴까요?',
                     '대상 독자나 목적을 바꾼 버전을 원하시나요?'
-                ]
+                ],
+                ...(outPipeline ? { pipelineExtras: outPipeline } : {}),
             };
 
         } catch (error) {
-            console.error('맞춤형 글쓰기 처리 오류:', error);
+            const err = toError(error);
+            errorLogger.error('맞춤형 글쓰기 처리 오류', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleCustomWriting',
+            });
             return {
                 type: 'error',
                 content: '맞춤형 글쓰기 처리 중 오류가 발생했습니다. 요청 내용을 더 구체적으로 말씀해 주세요.'
@@ -1247,12 +1439,13 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
     /**
      * 기본 글쓰기 요구사항 파싱
      */
-    private parseWritingRequirements(message: string, intent: Record<string, unknown>): any {
-        const requirements: any = {};
+    private parseWritingRequirements(message: string, _intent: Record<string, unknown>): Record<string, unknown> {
+        const requirements: Record<string, unknown> = {};
 
         // 주제 추출
-        const topicMatch = message.match(/["""']([^"""']+)["""']/) ||
-            message.match(/에 대한|관한|대해서/) && message.split(/에 대한|관한|대해서/)[0].trim();
+        const topicMatch = (message.match(/["""']([^"""']+)["""']/) ||
+            (message.match(/에 대한|관한|대해서/) &&
+              coerceTrimmedString(message.split(/에 대한|관한|대해서/)[0], '')));
         requirements.topic = topicMatch ? (Array.isArray(topicMatch) ? topicMatch[1] : topicMatch) : '주제 미지정';
 
         // 글자수/단어수 추출
@@ -1301,11 +1494,11 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
     /**
      * 상세 글쓰기 요구사항 파싱
      */
-    private parseDetailedWritingRequirements(message: string, intent: Record<string, unknown>): any {
-        const baseReqs = this.parseWritingRequirements(message, intent);
+    private parseDetailedWritingRequirements(message: string, intent: Record<string, unknown>): Record<string, unknown> {
+        const baseReqs = this.parseWritingRequirements(message, intent) as Record<string, unknown>;
 
         // 더 상세한 파싱 로직
-        const customRequirements: any = {
+        const customRequirements: Record<string, unknown> = {
             ...baseReqs,
             detailedReqs: {
                 length: {
@@ -1424,8 +1617,8 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
     /**
      * 일반 질문 처리 (업그레이드)
      */
-    private async handleGeneralQuery(request: ConversationalRequest): Promise<ConversationalResponse> {
-        const content = `🤖 **CORBU AI 고급 분석 시스템**
+    private async handleGeneralQuery(_request: ConversationalRequest): Promise<ConversationalResponse> {
+        const content = `🤖 **CORBU.AI 고급 분석 시스템**
 
 안녕하세요! 연구자 수준의 심층 분석을 제공하는 AI입니다.
 
@@ -1468,7 +1661,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
     /**
      * 정치적 성향별 글쓰기 처리
      */
-    private async handlePoliticalWriting(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handlePoliticalWriting(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const message = request.message;
 
@@ -1478,11 +1671,11 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
             const toneIntensity = this.extractToneIntensity(message);
             const topic = this.extractTopic(message);
 
-            const profile: any = {
+            const profile: PoliticalWritingProfile = {
                 spectrum: politicalSpectrum,
                 stance: stance,
-                emotionIntensity: toneIntensity === 'combative' ? 'aggressive' : 'militant',
-                toneIntensity: toneIntensity,
+                emotionIntensity: (toneIntensity === 'combative' ? 'aggressive' : 'militant') as EmotionIntensity,
+                toneIntensity,
                 useRhetoric: true,
                 useStatistics: true,
                 useEmotionalAppeal: toneIntensity !== 'gentle',
@@ -1503,8 +1696,8 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
                 type: 'political_writing',
                 analysisType: 'political',
                 content: `🏛️ **정치적 성향 반영 글쓰기 완료**\n\n${result.generatedText}\n\n📊 **특징 분석:**\n• 정치적 프레이밍: ${result.politicalFraming}\n• 감정적 톤: ${result.emotionalTone}\n• 언어 스타일: ${result.languageStyle}`,
-                data: result,
-                writingProfile: profile as any,
+                data: result as unknown as Record<string, unknown>,
+                writingProfile: profile as unknown as MasterWritingProfile,
                 suggestions: [
                     '다른 정치적 성향으로 다시 써보기',
                     '강성도 조절해서 재작성',
@@ -1518,7 +1711,11 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
             };
 
         } catch (error) {
-            console.error('정치적 글쓰기 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('정치적 글쓰기 처리 실패', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handlePoliticalWriting',
+            });
             return {
                 type: 'error',
                 content: '정치적 성향 글쓰기 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
@@ -1529,7 +1726,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
     /**
      * 연령대별 어투 글쓰기 처리
      */
-    private async handleGenerationWriting(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleGenerationWriting(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const message = request.message;
 
@@ -1539,7 +1736,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
             const topic = this.extractTopic(message);
 
             const profile = generationWritingEngine.recommendGenerationProfile(ageGroup, 'general');
-            profile.languageFormality = formalityLevel as any;
+            profile.languageFormality = formalityLevel as LanguageFormality;
 
             const result = await generationWritingEngine.generateGenerationWriting({
                 topic: topic || '주어진 주제',
@@ -1554,7 +1751,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
                 type: 'generation_writing',
                 analysisType: 'generational',
                 content: `👴 **${ageGroup} 세대 어투 글쓰기 완료**\n\n${result.generatedText}\n\n📊 **세대적 특징:**\n• 소통 스타일: ${result.communicationStyle}\n• 격식 수준: ${result.formalityLevel}\n• 언어적 특징: ${result.languageFeatures.join(', ')}`,
-                data: result,
+                data: result as unknown as Record<string, unknown>,
                 suggestions: [
                     '다른 연령대 어투로 다시 써보기',
                     '더 격식적인 표현으로 변경',
@@ -1568,7 +1765,11 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
             };
 
         } catch (error) {
-            console.error('연령대별 글쓰기 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('연령대별 글쓰기 처리 실패', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleGenerationWriting',
+            });
             return {
                 type: 'error',
                 content: '연령대별 어투 글쓰기 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
@@ -1579,7 +1780,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
     /**
      * 찬성/반대 논조 글쓰기 처리
      */
-    private async handleStanceWriting(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleStanceWriting(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const message = request.message;
 
@@ -1589,7 +1790,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
             const topic = this.extractTopic(message);
 
             const profile = stanceWritingEngine.recommendStanceProfile(topic || '주어진 주제', position, 'general');
-            profile.strengthLevel = strengthLevel;
+            profile.strengthLevel = strengthLevel as 'strong' | 'moderate' | 'extreme' | 'mild' | 'passionate';
 
             const result = await stanceWritingEngine.generateStanceWriting({
                 topic: topic || '주어진 주제',
@@ -1604,7 +1805,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
                 type: 'stance_writing',
                 analysisType: 'stance',
                 content: `✊ **${position} 입장 글쓰기 완료**\n\n${result.generatedText}\n\n📊 **논조 분석:**\n• 강도 평가: ${result.strengthAssessment}\n• 설득 전략: ${result.persuasionElements.join(', ')}\n• 수사 기법: ${result.rhetoricalDevices.join(', ')}`,
-                data: result,
+                data: result as unknown as Record<string, unknown>,
                 suggestions: [
                     '반대 입장으로 다시 써보기',
                     '중립적 입장으로 변경',
@@ -1618,7 +1819,11 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
             };
 
         } catch (error) {
-            console.error('입장별 글쓰기 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('입장별 글쓰기 처리 실패', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleStanceWriting',
+            });
             return {
                 type: 'error',
                 content: '입장별 논조 글쓰기 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
@@ -1645,7 +1850,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
         return 'neutral';
     }
 
-    private extractToneIntensity(message: string): any {
+    private extractToneIntensity(message: string): ToneIntensity {
         if (message.includes('전투적') || message.includes('combative')) return 'combative';
         if (message.includes('공격적') || message.includes('aggressive')) return 'aggressive';
         if (message.includes('강성') || message.includes('militant')) return 'militant';
@@ -1674,7 +1879,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
         return 'neutral';
     }
 
-    private extractStrengthLevel(message: string): any {
+    private extractStrengthLevel(message: string): string {
         if (message.includes('극도로') || message.includes('최고')) return 'extreme';
         if (message.includes('강하게') || message.includes('열정적')) return 'passionate';
         if (message.includes('확실하게') || message.includes('단호')) return 'strong';
@@ -1684,14 +1889,16 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
 
     private extractTopic(message: string): string {
         // 메시지에서 주제 추출 (간단한 구현)
-        const topics = message.split(/에 대해|에 관해|에서|를|을|이|가/).filter(part => part.trim().length > 2);
-        return topics[0]?.trim() || '';
+        const topics = message
+          .split(/에 대해|에 관해|에서|를|을|이|가/)
+          .filter((part) => coerceTrimmedString(part, '').length > 2);
+        return coerceTrimmedString(topics[0] ?? '', '');
     }
 
     /**
      * 스타일 복제 처리
      */
-    private async handleStyleCloning(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleStyleCloning(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const message = request.message;
 
@@ -1721,7 +1928,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
                 creativityLevel: this.extractCreativityLevel(message),
                 adaptationLevel: this.extractAdaptationLevel(message),
                 preservationLevel: this.extractPreservationLevel(message),
-                lengthControl
+                lengthControl: lengthControl as import('./ultimateStyleCloningService').LengthControl | undefined
             };
 
             const result = await ultimateStyleCloningService.cloneUltimateStyle(cloneRequest);
@@ -1738,7 +1945,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
                 type: 'style_cloning',
                 analysisType: 'style_clone',
                 content,
-                data: result,
+                data: result as unknown as Record<string, unknown>,
                 suggestions: [
                     '다른 정확도로 다시 복제해보기',
                     '특정 부분만 조정하여 재생성',
@@ -1752,7 +1959,11 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
             };
 
         } catch (error) {
-            console.error('스타일 복제 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('스타일 복제 처리 실패', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleStyleCloning',
+            });
             return {
                 type: 'error',
                 content: '스타일 복제 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
@@ -1763,7 +1974,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
     /**
      * 스타일 분석 처리
      */
-    private async handleStyleAnalysis(request: ConversationalRequest, intent: any): Promise<ConversationalResponse> {
+    private async handleStyleAnalysis(request: ConversationalRequest, _intent: IntentResult): Promise<ConversationalResponse> {
         try {
             const message = request.message;
 
@@ -1817,7 +2028,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
                 type: 'style_analysis',
                 analysisType: 'style_match',
                 content: content + personalityInfo,
-                data: result,
+                data: result as unknown as Record<string, unknown>,
                 suggestions: [
                     '이 스타일로 새로운 글 써보기',
                     '더 상세한 분석 요청하기',
@@ -1831,7 +2042,11 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
             };
 
         } catch (error) {
-            console.error('스타일 분석 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('스타일 분석 처리 실패', err, {
+                component: 'conversationalAnalysisService',
+                action: 'handleStyleAnalysis',
+            });
             return {
                 type: 'error',
                 content: '스타일 분석 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
@@ -1853,12 +2068,12 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
         for (const pattern of patterns) {
             const match = message.match(pattern);
             if (match && match[1]) {
-                return match[1].trim();
+                return coerceTrimmedString(match[1], '');
             }
         }
 
         // 긴 텍스트 블록 찾기
-        const sentences = message.split(/[.!?]/).filter(s => s.trim().length > 50);
+        const sentences = message.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 50);
         if (sentences.length > 2) {
             return sentences.slice(0, -1).join('.') + '.';
         }
@@ -1878,12 +2093,12 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
         for (const pattern of patterns) {
             const match = message.match(pattern);
             if (match && match[1]) {
-                return match[1].trim();
+                return coerceTrimmedString(match[1], '');
             }
         }
 
         // 마지막 문장에서 주제 추출 시도
-        const lastSentence = message.split(/[.!?]/).pop()?.trim();
+        const lastSentence = coerceTrimmedString(message.split(/[.!?]/).pop() ?? '', '');
         if (lastSentence && lastSentence.length > 3 && lastSentence.length < 50) {
             return lastSentence;
         }
@@ -1891,7 +2106,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
         return '';
     }
 
-    private extractCloneAccuracy(message: string): any {
+    private extractCloneAccuracy(message: string): 'perfect' | 'exact' | 'precise' | 'approximate' | 'close' {
         if (message.includes('완벽히') || message.includes('100%')) return 'perfect';
         if (message.includes('정확히') || message.includes('똑같이')) return 'exact';
         if (message.includes('정밀하게') || message.includes('세밀하게')) return 'precise';
@@ -1899,7 +2114,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
         return 'close';
     }
 
-    private extractLengthControl(message: string): any {
+    private extractLengthControl(message: string): { targetType: string; targetValue: number; allowFlexibility: boolean } | undefined {
         if (message.includes('같은 길이') || message.includes('동일한 길이')) {
             return {
                 targetType: 'relative_length',
@@ -1912,7 +2127,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
         if (wordMatch) {
             return {
                 targetType: 'exact_words',
-                targetValue: parseInt(wordMatch[1]),
+                targetValue: parseInt(wordMatch[1], 10),
                 allowFlexibility: true
             };
         }
@@ -1969,20 +2184,21 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
         for (const pattern of patterns) {
             const match = message.match(pattern);
             if (match && match[1]) {
-                return match[1].trim();
+                return coerceTrimmedString(match[1], '');
             }
         }
 
         // 긴 텍스트 블록 찾기 (분석 요청 키워드 제외)
         const cleanMessage = message.replace(/스타일.*?분석|어조.*?분석|문체.*?분석|분석해/, '');
-        if (cleanMessage.trim().length > 100) {
-            return cleanMessage.trim();
+        const cleaned = coerceTrimmedString(cleanMessage, '');
+        if (cleaned.length > 100) {
+            return cleaned;
         }
 
         return '';
     }
 
-    private extractAnalysisDepth(message: string): any {
+    private extractAnalysisDepth(message: string): 'ultimate' | 'comprehensive' | 'advanced' | 'basic' {
         if (message.includes('궁극적') || message.includes('최고 수준')) return 'ultimate';
         if (message.includes('종합적') || message.includes('완전한')) return 'comprehensive';
         if (message.includes('고급') || message.includes('상세한')) return 'advanced';
@@ -2028,7 +2244,7 @@ ${result.improvement_suggestions.map(s => `• ${s}`).join('\n')}` : ''}`;
 
 class ConversationalAnalysisServiceExtended extends ConversationalAnalysisService {
     // AI 스마트 제안 생성
-    async generateSmartSuggestions(message: string, context?: any): Promise<{ suggestions: string[] }> {
+    async generateSmartSuggestions(message: string, _context?: Record<string, unknown>): Promise<{ suggestions: string[] }> {
         const suggestions: string[] = [];
 
         if (message.includes('분석')) {
@@ -2056,7 +2272,7 @@ class ConversationalAnalysisServiceExtended extends ConversationalAnalysisServic
             suggestions.push('실용적인 해결방안을 제시해주세요');
         }
 
-        return { suggestions: suggestions.slice(0, 3) };
+        return { suggestions };
     }
 }
 

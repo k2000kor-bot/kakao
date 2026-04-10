@@ -162,21 +162,21 @@ class WebResearchEngine:
         # 핵심 키워드 추출
         keywords = self._extract_keywords(question)
         for keyword in keywords:
-            queries.append(f'"{keyword}" 개포우성 재개발')
+            queries.append(f'"{keyword}" 재개발 정비')
             queries.append(f'"{keyword}" 부동산 시장')
             queries.append(f'"{keyword}" 정책 분석')
         
         # 맥락 기반 추가 쿼리
         if context:
             if 'project_type' in context:
-                queries.append(f'개포우성 {context["project_type"]} 사례')
+                queries.append(f'재개발 {context["project_type"]} 사례')
             if 'region' in context:
                 queries.append(f'{context["region"]} 재개발 프로젝트')
         
         # 최신 정보 쿼리
         current_year = datetime.now().year
-        queries.append(f'개포우성 재개발 {current_year} 최신 동향')
-        queries.append(f'개포우성 재개발 정책 변경 {current_year}')
+        queries.append(f'재개발 정비 {current_year} 최신 동향')
+        queries.append(f'재개발 정책 변경 {current_year}')
         
         return list(set(queries))  # 중복 제거
     
@@ -184,9 +184,8 @@ class WebResearchEngine:
         """핵심 키워드 추출"""
         keywords = []
         
-        # 개포우성 관련 키워드
-        if '개포우성' in question:
-            keywords.extend(['개포우성', '개포동', '강남구'])
+        if any(word in question for word in ['단지', '조합', '아파트', '재건축']):
+            keywords.extend(['재건축', '정비', '주거'])
         
         # 재개발 관련 키워드
         if any(word in question for word in ['재개발', '개발', '투자']):
@@ -246,9 +245,9 @@ class WebResearchEngine:
         # 시뮬레이션된 검색 결과
         mock_results = [
             {
-                'url': 'https://example.com/gaeposung-analysis',
-                'title': f'개포우성 재개발 프로젝트 분석 - {query}',
-                'content': f'개포우성 재개발 프로젝트에 대한 종합적인 분석 결과입니다. {query}에 대한 상세한 정보를 제공합니다.',
+                'url': 'https://example.com/project-analysis',
+                'title': f'재개발·정비 프로젝트 분석(예시) - {query}',
+                'content': f'프로젝트에 대한 종합 분석(시뮬레이션)입니다. {query}에 대한 상세 정보를 제공합니다.',
                 'domain': 'example.com'
             }
         ]
@@ -273,9 +272,9 @@ class WebResearchEngine:
         
         mock_results = [
             {
-                'url': 'https://blog.naver.com/gaeposung-info',
-                'title': f'개포우성 재개발 최신 정보 - {query}',
-                'content': f'개포우성 재개발 프로젝트의 최신 동향과 {query}에 대한 분석입니다.',
+                'url': 'https://blog.naver.com/sample-project-info',
+                'title': f'프로젝트 최신 정보(예시) - {query}',
+                'content': f'프로젝트 최신 동향과 {query}에 대한 분석(시뮬레이션)입니다.',
                 'domain': 'blog.naver.com'
             }
         ]
@@ -300,9 +299,9 @@ class WebResearchEngine:
         
         mock_results = [
             {
-                'url': 'https://cafe.daum.net/gaeposung-community',
-                'title': f'개포우성 주민 커뮤니티 - {query}',
-                'content': f'개포우성 재개발에 대한 주민들의 의견과 {query}에 대한 토론입니다.',
+                'url': 'https://cafe.daum.net/sample-community',
+                'title': f'이해관계자 커뮤니티(예시) - {query}',
+                'content': f'프로젝트 관련 의견과 {query}에 대한 토론(시뮬레이션)입니다.',
                 'domain': 'cafe.daum.net'
             }
         ]

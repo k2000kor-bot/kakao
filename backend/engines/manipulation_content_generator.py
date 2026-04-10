@@ -1,5 +1,5 @@
 """
-CORBU AI Manipulation Content Generator - 심리적 조작 콘텐츠 생성기
+CORBU.AI Manipulation Content Generator - 심리적 조작 콘텐츠 생성기
 """
 import re
 import json
@@ -398,7 +398,7 @@ class ManipulationContentGenerator:
             
             
             report_parts.append("---")
-            report_parts.append("*CORBU AI Manipulation Content Generator가 생성한 콘텐츠입니다*")
+            report_parts.append("*CORBU.AI Manipulation Content Generator가 생성한 콘텐츠입니다*")
             
             return "\n".join(report_parts)
             

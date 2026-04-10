@@ -1,6 +1,6 @@
-# 🚀 CORBU AI 시스템 완전 가이드
+# 🚀 CORBU.AI 시스템 완전 가이드
 
-**프로젝트명**: CORBU AI 시스템  
+**프로젝트명**: CORBU.AI 시스템  
 **버전**: 1.0.0  
 **상태**: ✅ **완전 개발 완료**  
 **기술 스택**: React + TypeScript + FastAPI + Python + Docker
@@ -21,14 +21,14 @@
 
 ## 🎯 프로젝트 개요
 
-### ✅ 완성된 CORBU AI 시스템
+### ✅ 완성된 CORBU.AI 시스템
 
-**CORBU AI 시스템**은 완전한 AI 기반 파일 업로드, 분석, 실시간 협업 시스템으로, 다음과 같은 기능들을 제공합니다:
+**CORBU.AI 시스템**은 완전한 AI 기반 파일 업로드, 분석, 실시간 협업 시스템으로, 다음과 같은 기능들을 제공합니다:
 
 #### 🎯 주요 기능
 - **고급 파일 업로드**: 드래그 앤 드롭, 청킹, 병렬 처리
 - **AI 분석**: 감정 분석, 키워드 추출, 편향 감지, 예측 분석
-- **실시간 협업**: 화상 통화, 화면 공유, 화이트보드, 채팅
+- **실시간 협업**: 화상 통화, 화면 공유, 화이트보드, 대화
 - **범용 컴포넌트**: UniversalChatInput, PerformanceOptimizer, SystemStatusMonitor
 - **성능 최적화**: 실시간 모니터링 및 자동 최적화
 - **보안 시스템**: 다층 보안, 암호화, 감사 로그
@@ -124,7 +124,7 @@ src/
 - **AI 기능**: 파일 분류, 메타데이터 추출, 감정 분석
 
 #### 2. **UniversalChatInput.tsx** (7.5KB, 244줄)
-- **기능**: 재사용 가능한 범용 채팅 입력 컴포넌트
+- **기능**: 재사용 가능한 범용 대화 입력 컴포넌트
 - **특징**: 자동 리사이징, 파일 업로드, 음성 입력 지원
 - **재사용성**: 다양한 프로젝트에서 활용 가능
 
@@ -140,7 +140,7 @@ src/
 
 #### 5. **UnifiedConversationInterface.tsx** (62KB, 1545줄)
 - **기능**: 통합 대화 인터페이스
-- **특징**: AI 응답, 파일 처리, 실시간 채팅
+- **특징**: AI 응답, 파일 처리, 실시간 대화
 - **통합**: 모든 대화 기능을 하나의 인터페이스로
 
 #### 6. **MessageGuidanceSystem.tsx** (41KB, 1157줄)
@@ -159,7 +159,7 @@ src/
 - **실시간**: WebSocket 기반 실시간 업데이트
 
 #### 9. **KnowledgeBasedChat.tsx** (13KB, 313줄)
-- **기능**: 지식 기반 채팅 시스템
+- **기능**: 지식 기반 대화 시스템
 - **특징**: 파일 기반 지식 추출, 질의응답
 - **AI**: 문서 분석 및 지식 그래프 구축
 
@@ -388,7 +388,7 @@ function App() {
       {/* 네비게이션 */}
       <nav className="bg-corbu-blue text-white p-4">
         <div className="flex space-x-4">
-          <button onClick={() => setCurrentView('main')}>CORBU AI</button>
+          <button onClick={() => setCurrentView('main')}>CORBU.AI</button>
           <button onClick={() => setCurrentView('chat')}>Chat Input</button>
           <button onClick={() => setCurrentView('performance')}>Performance</button>
           <button onClick={() => setCurrentView('status')}>System Status</button>
@@ -639,12 +639,12 @@ const useNotifications = () => {
 
 ---
 
-**🎉 CORBU AI 시스템이 완전히 개발되어 운영 준비가 완료되었습니다!**
+**🎉 CORBU.AI 시스템이 완전히 개발되어 운영 준비가 완료되었습니다!**
 
 **이제 사용자들에게 최고의 AI 기반 파일 업로드, 분석, 실시간 협업 서비스를 제공할 수 있습니다.**
 
 ---
 
-**개발팀**: CORBU AI Development Team  
+**개발팀**: CORBU.AI Development Team  
 **프로젝트 완료일**: 2025년 8월 5일  
 **상태**: ✅ **프로젝트 완료** 

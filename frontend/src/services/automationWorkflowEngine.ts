@@ -1,5 +1,7 @@
 import { ChatSession, Message } from '../types/chat';
 import { Project } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 interface WorkflowStep {
     id: string;
@@ -16,15 +18,15 @@ interface WorkflowContext {
     project: Project | null;
     userMessage: string;
     aiResponse: string;
-    userPatterns: any;
-    projectData: any;
+    userPatterns: Record<string, unknown>;
+    projectData: Record<string, unknown>;
     timestamp: Date;
 }
 
 interface WorkflowResult {
     success: boolean;
     action: string;
-    data: any;
+    data: Record<string, unknown>;
     message: string;
     nextSteps: string[];
 }
@@ -48,10 +50,10 @@ interface SmartSuggestion {
     description: string;
     confidence: number;
     action: string;
-    data: any;
+    data: Record<string, unknown>;
 }
 
-class AutomationWorkflowEngine {
+export class AutomationWorkflowEngine {
     private workflows: Map<string, WorkflowStep> = new Map();
     private rules: Map<string, AutomationRule> = new Map();
     private suggestions: SmartSuggestion[] = [];
@@ -77,14 +79,14 @@ class AutomationWorkflowEngine {
                     return {
                         success: false,
                         action: 'auto_file_organization',
-                        data: null,
+                        data: {},
                         message: '프로젝트가 선택되지 않았습니다.',
                         nextSteps: ['프로젝트를 선택하세요']
                     };
                 }
 
                 const files = context.project.files || [];
-                const organizedFiles = this.organizeFiles(files);
+                const organizedFiles = this.organizeFiles(files as unknown as Record<string, unknown>[]);
 
                 return {
                     success: true,
@@ -109,7 +111,7 @@ class AutomationWorkflowEngine {
                     return {
                         success: false,
                         action: 'auto_guideline_generation',
-                        data: null,
+                        data: {},
                         message: '프로젝트가 선택되지 않았습니다.',
                         nextSteps: ['프로젝트를 선택하세요']
                     };
@@ -278,7 +280,7 @@ class AutomationWorkflowEngine {
             return {
                 success: false,
                 action: workflowId,
-                data: null,
+                data: {},
                 message: '워크플로우를 찾을 수 없거나 비활성화되어 있습니다.',
                 nextSteps: ['워크플로우 확인', '활성화 필요']
             };
@@ -289,11 +291,16 @@ class AutomationWorkflowEngine {
             this.updateRuleExecution(workflowId);
             return result;
         } catch (error) {
-            console.error(`워크플로우 실행 오류 (${workflowId}):`, error);
+            const err = toError(error);
+            errorLogger.error('워크플로우 실행 오류', err, {
+                component: 'automationWorkflowEngine',
+                action: 'executeWorkflow',
+                workflowId,
+            });
             return {
                 success: false,
                 action: workflowId,
-                data: null,
+                data: {},
                 message: '워크플로우 실행 중 오류가 발생했습니다.',
                 nextSteps: ['오류 로그 확인', '재시도']
             };
@@ -348,7 +355,7 @@ class AutomationWorkflowEngine {
     }
 
     // 파일 정리
-    private organizeFiles(files: any[]): any[] {
+    private organizeFiles(files: Record<string, unknown>[]): Record<string, unknown>[] {
         const categories = {
             documents: ['pdf', 'doc', 'docx', 'txt'],
             images: ['jpg', 'jpeg', 'png', 'gif'],
@@ -357,11 +364,12 @@ class AutomationWorkflowEngine {
         };
 
         return files.map(file => {
-            const extension = file.name.split('.').pop()?.toLowerCase();
+            const name = (file as Record<string, unknown>).name;
+            const extension = (typeof name === 'string' ? name : '').split('.').pop()?.toLowerCase();
             let category = 'other';
 
             for (const [cat, exts] of Object.entries(categories)) {
-                if (exts.includes(extension)) {
+                if (extension && exts.includes(extension)) {
                     category = cat;
                     break;
                 }
@@ -376,7 +384,7 @@ class AutomationWorkflowEngine {
     }
 
     // 지침 생성
-    private generateGuidelinesFromProject(project: Project, session: ChatSession): any[] {
+    private generateGuidelinesFromProject(project: Project, session: ChatSession): Record<string, unknown>[] {
         const guidelines = [];
 
         // 파일 기반 지침
@@ -412,7 +420,7 @@ class AutomationWorkflowEngine {
     }
 
     // 대화 요약 생성
-    private generateConversationSummary(session: ChatSession): any {
+    private generateConversationSummary(session: ChatSession): Record<string, unknown> {
         const messages = session.messages;
         const userMessages = messages.filter(m => m.isUser);
         const aiMessages = messages.filter(m => !m.isUser);
@@ -464,14 +472,14 @@ class AutomationWorkflowEngine {
     }
 
     // 리소스 추천
-    private recommendResources(userMessage: string, project: Project | null): any[] {
+    private recommendResources(userMessage: string, project: Project | null): Record<string, unknown>[] {
         const resources = [];
 
         // 기본 리소스
         resources.push({
             type: 'documentation',
             title: '사용자 가이드',
-            description: 'CORBU AI 사용 방법에 대한 상세한 가이드',
+            description: 'CORBU.AI 사용 방법에 대한 상세한 가이드',
             url: '#',
             relevance: 0.9
         });
@@ -514,7 +522,7 @@ class AutomationWorkflowEngine {
     }
 
     // 응답 품질 검사
-    private checkResponseQuality(aiResponse: string, userMessage: string): any {
+    private checkResponseQuality(aiResponse: string, userMessage: string): Record<string, unknown> {
         const qualityMetrics = {
             relevance: this.calculateRelevance(aiResponse, userMessage),
             completeness: this.calculateCompleteness(aiResponse),
@@ -567,7 +575,7 @@ class AutomationWorkflowEngine {
     }
 
     // 규칙 실행
-    private async executeRule(rule: AutomationRule, context: WorkflowContext): Promise<WorkflowResult> {
+    private async executeRule(rule: AutomationRule, _context: WorkflowContext): Promise<WorkflowResult> {
         const actions = rule.actions.map(action => {
             switch (action) {
                 case '파일 업로드 제안':
@@ -663,7 +671,7 @@ class AutomationWorkflowEngine {
         suggestions.push({
             type: 'resource',
             title: '사용자 가이드',
-            description: 'CORBU AI의 모든 기능을 확인하세요.',
+            description: 'CORBU.AI의 모든 기능을 확인하세요.',
             confidence: 0.9,
             action: 'show_user_guide',
             data: {}
@@ -753,7 +761,7 @@ class AutomationWorkflowEngine {
     }
 
     private calculateClarity(response: string): number {
-        const sentences = response.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = response.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const avgSentenceLength = sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length;
 
         // 적절한 문장 길이 (20-50자)를 선호
@@ -772,22 +780,26 @@ class AutomationWorkflowEngine {
     }
 
     // 품질 개선 제안 생성
-    private generateQualitySuggestions(metrics: any): string[] {
+    private generateQualitySuggestions(metrics: Record<string, unknown>): string[] {
         const suggestions = [];
 
-        if (metrics.relevance < 0.7) {
+        const rel = Number((metrics as Record<string, unknown>).relevance) ?? 0;
+        const comp = Number((metrics as Record<string, unknown>).completeness) ?? 0;
+        const clar = Number((metrics as Record<string, unknown>).clarity) ?? 0;
+        const help = Number((metrics as Record<string, unknown>).helpfulness) ?? 0;
+        if (rel < 0.7) {
             suggestions.push('질문과 더 관련성 높은 답변을 제공하세요.');
         }
 
-        if (metrics.completeness < 0.7) {
+        if (comp < 0.7) {
             suggestions.push('더 상세하고 완전한 답변을 제공하세요.');
         }
 
-        if (metrics.clarity < 0.7) {
+        if (clar < 0.7) {
             suggestions.push('더 명확하고 이해하기 쉬운 답변을 제공하세요.');
         }
 
-        if (metrics.helpfulness < 0.7) {
+        if (help < 0.7) {
             suggestions.push('더 실용적이고 도움이 되는 답변을 제공하세요.');
         }
 
@@ -814,7 +826,11 @@ class AutomationWorkflowEngine {
             };
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
         } catch (error) {
-            console.error('자동화 워크플로우 데이터 저장 오류:', error);
+            const err = toError(error);
+            errorLogger.error('자동화 워크플로우 데이터 저장 오류', err, {
+                component: 'automationWorkflowEngine',
+                action: 'saveData',
+            });
         }
     }
 
@@ -834,7 +850,11 @@ class AutomationWorkflowEngine {
                 }
             }
         } catch (error) {
-            console.error('자동화 워크플로우 데이터 로드 오류:', error);
+            const err = toError(error);
+            errorLogger.error('자동화 워크플로우 데이터 로드 오류', err, {
+                component: 'automationWorkflowEngine',
+                action: 'loadData',
+            });
         }
     }
 

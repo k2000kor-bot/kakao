@@ -38,17 +38,12 @@ import {
     Info
 } from '@mui/icons-material';
 import integratedSystemAPI from '../../services/integratedSystemAPI';
-import { errorLogger } from '../../utils/errorLogger';
-
-// Helper function to safely convert unknown error types to Error objects
-const toError = (err: unknown): Error => {
-    if (err instanceof Error) {
-        return err as Error;
-    }
-    // Error 생성자를 명시적으로 사용
-    const ErrorConstructor = globalThis.Error;
-    return new ErrorConstructor(String(err)) as Error;
-};
+import { errorLogger, toError } from '../../utils/errorLogger';
+import {
+    API_BASE_URL,
+    FALLBACK_API_ORIGIN,
+    joinApiHealthCheckUrl,
+} from '../../config/api';
 
 interface ServiceConfig {
     id: string;
@@ -95,15 +90,16 @@ const SystemIntegrationManager: React.FC = () => {
         try {
             // 서비스 설정 로드
             const servicesResponse = await integratedSystemAPI.getSystemConfig();
-            if (servicesResponse.success && servicesResponse.data?.services) {
-                setServices(servicesResponse.data.services);
+            const data = servicesResponse.data as { services?: ServiceConfig[]; integrationRules?: IntegrationRule[] } | undefined;
+            if (servicesResponse.success && data?.services) {
+                setServices(data.services);
             } else {
                 // 기본 서비스 설정
                 setServices([
                     {
                         id: 'main',
                         name: '메인 서비스',
-                        url: 'http://localhost:5001',
+                        url: API_BASE_URL || FALLBACK_API_ORIGIN,
                         enabled: true,
                         timeout: 30000,
                         retryCount: 3,
@@ -112,7 +108,7 @@ const SystemIntegrationManager: React.FC = () => {
                     {
                         id: 'ai',
                         name: 'AI 서비스',
-                        url: 'http://localhost:8002',
+                        url: API_BASE_URL || FALLBACK_API_ORIGIN,
                         enabled: true,
                         timeout: 30000,
                         retryCount: 3,
@@ -121,7 +117,7 @@ const SystemIntegrationManager: React.FC = () => {
                     {
                         id: 'unified',
                         name: '통합 서비스',
-                        url: 'http://localhost:8003',
+                        url: API_BASE_URL || FALLBACK_API_ORIGIN,
                         enabled: true,
                         timeout: 30000,
                         retryCount: 3,
@@ -130,7 +126,7 @@ const SystemIntegrationManager: React.FC = () => {
                     {
                         id: 'ultimate',
                         name: '궁극 서비스',
-                        url: 'http://localhost:8004',
+                        url: API_BASE_URL || FALLBACK_API_ORIGIN,
                         enabled: true,
                         timeout: 30000,
                         retryCount: 3,
@@ -140,8 +136,8 @@ const SystemIntegrationManager: React.FC = () => {
             }
 
             // 통합 규칙 로드
-            if (servicesResponse.success && servicesResponse.data?.integrationRules) {
-                setIntegrationRules(servicesResponse.data.integrationRules);
+            if (servicesResponse.success && data?.integrationRules) {
+                setIntegrationRules(data.integrationRules);
             } else {
                 // 기본 통합 규칙
                 setIntegrationRules([
@@ -296,7 +292,7 @@ const SystemIntegrationManager: React.FC = () => {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), service.timeout);
 
-                    const response = await fetch(`${service.url}/api/health`, {
+                    const response = await fetch(joinApiHealthCheckUrl(service.url), {
                         method: 'GET',
                         signal: controller.signal
                     });
@@ -348,7 +344,7 @@ const SystemIntegrationManager: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom sx={{
-                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',

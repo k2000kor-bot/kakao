@@ -10,10 +10,21 @@ import time
 from dataclasses import dataclass, asdict
 from enum import Enum
 import uuid
+import os
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _notification_api_base() -> str:
+    """알림 HTTP API 베이스 (advanced_scheduler → notification 등)."""
+    explicit = os.environ.get("CORBU_NOTIFICATION_API_BASE", "").strip().rstrip("/")
+    if explicit:
+        return explicit
+    port = os.environ.get("NOTIFICATION_SERVER_PORT", "8004")
+    return f"http://localhost:{port}".rstrip("/")
+
 
 class MessagePriority(Enum):
     LOW = 1
@@ -421,8 +432,9 @@ class AdvancedScheduler:
             import aiohttp
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    'http://localhost:8004/api/notifications/room/' + message.chat_room,
-                    json=notification_data
+                    f"{_notification_api_base()}/api/notifications/room/"
+                    + message.chat_room,
+                    json=notification_data,
                 ) as response:
                     if response.status == 200:
                         return True
@@ -463,10 +475,11 @@ class AdvancedScheduler:
         try:
             import aiohttp
             async with aiohttp.ClientSession() as session:
-                if 'room_id' in data:
-                    url = f'http://localhost:8004/api/notifications/room/{data["room_id"]}'
+                base = _notification_api_base()
+                if "room_id" in data:
+                    url = f"{base}/api/notifications/room/{data['room_id']}"
                 else:
-                    url = 'http://localhost:8004/api/notifications/broadcast'
+                    url = f"{base}/api/notifications/broadcast"
                 
                 async with session.post(url, json=data) as response:
                     if response.status != 200:
@@ -578,7 +591,7 @@ if __name__ == "__main__":
         future_time = datetime.now() + timedelta(seconds=10)
         message_id = scheduler.schedule_message(
             content="테스트 스케줄 메시지입니다.",
-            chat_room="개포우성7차",
+            chat_room="demo_chat_room",
             recipient="all",
             sender="system",
             scheduled_time=future_time,

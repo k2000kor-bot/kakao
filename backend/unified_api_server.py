@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CORBU AI 통합 API 서버 v1.0
+CORBU.AI 통합 API 서버 v1.0
 - 모든 기존 API 기능 통합
 - 대화형 AI, 파일 처리, 프로젝트 관리, 분석 기능
 - 실시간 웹소켓 통신
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI 통합 API 서버",
+    title="CORBU.AI 통합 API 서버",
     description="모든 AI 기능을 통합한 완전한 API 서버",
     version="1.0.0"
 )
@@ -221,22 +221,29 @@ class ImageAnalysisResponse(BaseModel):
     confidence: float
     processing_time: float
 
-# 샘플 데이터
+# 샘플 데이터 (특정 사업장·현장 고유명 없음)
 SAMPLE_PROJECTS = {
-    "개포우성7차": {
-        "name": "개포우성7차",
-        "description": "개포우성7차 재개발 프로젝트",
+    "샘플 프로젝트 A": {
+        "name": "샘플 프로젝트 A",
+        "description": "데모용 정비·재건축 프로젝트",
         "status": "진행 중",
-        "files": ["[인증]행복한소유☆개포우성7차.txt"],
-        "guidelines": "시공사 홍보 문제 관련 지침"
+        "files": ["대화요약_sample.txt", "회의록_요약.pdf"],
+        "guidelines": "일정·비용·이해관계 리스크 점검 지침",
     }
 }
 
 SAMPLE_FILES = [
-    {"name": "[인증]행복한소유☆개포우성7차.txt", "size": "50KB", "type": "text"},
-    {"name": "개포우성7차_대화요약.pdf", "size": "120KB", "type": "pdf"},
-    {"name": "시공사_평가자료.xlsx", "size": "85KB", "type": "excel"}
+    {"name": "대화요약_sample.txt", "size": "50KB", "type": "text"},
+    {"name": "회의록_요약.pdf", "size": "120KB", "type": "pdf"},
+    {"name": "시공사_평가자료.xlsx", "size": "85KB", "type": "excel"},
 ]
+
+
+def _match_sample_project(text: str):
+    for key, project in SAMPLE_PROJECTS.items():
+        if key in text or project["name"] in text:
+            return project
+    return None
 
 # AI 응답 생성 함수
 def generate_ai_response(message: str, context: Optional[Dict[str, Any]] = None) -> str:
@@ -244,7 +251,7 @@ def generate_ai_response(message: str, context: Optional[Dict[str, Any]] = None)
     lower_message = message.lower()
     
     if "안녕" in message or "hello" in lower_message:
-        return "안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?"
+        return "안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?"
     
     elif "분석" in message or "analyze" in lower_message:
         return f"📊 분석 결과:\n'{message}'에 대한 분석을 수행했습니다.\n\n주요 발견사항:\n• 감정 분석: 중립적\n• 의도 분석: 정보 요청\n• 키워드: {message.split()[:3]}\n\n추가 분석이 필요하시면 말씀해주세요."
@@ -253,11 +260,11 @@ def generate_ai_response(message: str, context: Optional[Dict[str, Any]] = None)
         return f"💡 메시지 가이드:\n'{message}'에 대한 최적의 응답 가이드를 생성했습니다.\n\n권장 응답:\n• 공식적이고 정중한 톤 사용\n• 구체적인 정보 제공\n• 다음 단계 제시\n\n이 가이드를 참고하여 응답하시면 됩니다."
     
     elif "프로젝트" in message or "project" in lower_message:
-        if "개포우성" in message:
-            project = SAMPLE_PROJECTS["개포우성7차"]
+        project = _match_sample_project(message)
+        if project:
             return f"📁 프로젝트 정보:\n\n프로젝트명: {project['name']}\n설명: {project['description']}\n상태: {project['status']}\n\n관련 파일:\n• {', '.join(project['files'])}\n\n지침: {project['guidelines']}"
-        else:
-            return "📁 프로젝트 정보:\n\n현재 등록된 프로젝트:\n• 개포우성7차\n\n특정 프로젝트에 대한 정보를 원하시면 프로젝트명을 포함해서 질문해주세요."
+        names = "\n".join(f"• {p['name']}" for p in SAMPLE_PROJECTS.values())
+        return f"📁 프로젝트 정보:\n\n현재 등록된 프로젝트:\n{names}\n\n프로젝트명을 포함해 질문·요청해 주세요."
     
     elif "파일" in message or "file" in lower_message:
         file_list = "\n".join([f'• {file["name"]} ({file["size"]}, {file["type"]})' for file in SAMPLE_FILES])
@@ -273,7 +280,7 @@ def generate_ai_response(message: str, context: Optional[Dict[str, Any]] = None)
         return f"🖼️ 이미지 분석:\n\n이미지 분석 기능이 준비되었습니다.\n\n분석 가능한 항목:\n• 객체 감지\n• 텍스트 추출 (OCR)\n• 감정 분석\n• 이미지 분류\n\n이미지를 업로드하거나 분석할 이미지를 선택해주세요."
     
     elif "도움말" in message or "help" in lower_message:
-        return """🤖 CORBU AI 도움말:
+        return """🤖 CORBU.AI 도움말:
 
 사용 가능한 기능:
 • 분석: "분석" 또는 "analyze" 포함
@@ -287,7 +294,7 @@ def generate_ai_response(message: str, context: Optional[Dict[str, Any]] = None)
 예시:
 • "이 대화를 분석해줘"
 • "메시지 가이드를 만들어줘"
-• "개포우성7차 프로젝트 정보"
+• "샘플 프로젝트 A 정보"
 • "업로드된 파일 목록"
 • "시스템 상태 확인"
 • "음성 인식 시작"
@@ -296,7 +303,7 @@ def generate_ai_response(message: str, context: Optional[Dict[str, Any]] = None)
 무엇을 도와드릴까요?"""
     
     else:
-        return f"안녕하세요! '{message}'에 대해 이야기해보겠습니다. CORBU AI가 도와드릴게요!\n\n사용 가능한 기능:\n• 분석, 가이드, 프로젝트, 파일, 시스템, 음성, 이미지\n\n구체적인 요청을 해주시면 더 정확한 도움을 드릴 수 있습니다."
+        return f"안녕하세요! '{message}'에 대해 이야기해보겠습니다. CORBU.AI가 도와드릴게요!\n\n사용 가능한 기능:\n• 분석, 가이드, 프로젝트, 파일, 시스템, 음성, 이미지\n\n구체적인 요청을 해주시면 더 정확한 도움을 드릴 수 있습니다."
 
 # API 엔드포인트들
 
@@ -304,7 +311,7 @@ def generate_ai_response(message: str, context: Optional[Dict[str, Any]] = None)
 async def root():
     """루트 엔드포인트"""
     return {
-        "message": "CORBU AI 통합 API 서버",
+        "message": "CORBU.AI 통합 API 서버",
         "version": "1.0.0",
         "status": "정상 동작",
         "available_endpoints": [
@@ -414,11 +421,12 @@ async def process_project(request: ProjectRequest):
     start_time = time.time()
     
     try:
-        if "개포우성" in request.query:
-            project = SAMPLE_PROJECTS["개포우성7차"]
+        project = _match_sample_project(request.query)
+        if project:
             response_text = f"📁 프로젝트 정보:\n\n프로젝트명: {project['name']}\n설명: {project['description']}\n상태: {project['status']}\n\n관련 파일:\n• {', '.join(project['files'])}\n\n지침: {project['guidelines']}"
         else:
-            response_text = "📁 프로젝트 정보:\n\n현재 등록된 프로젝트:\n• 개포우성7차\n\n특정 프로젝트에 대한 정보를 원하시면 프로젝트명을 포함해서 질문해주세요."
+            names = "\n".join(f"• {p['name']}" for p in SAMPLE_PROJECTS.values())
+            response_text = f"📁 프로젝트 정보:\n\n현재 등록된 프로젝트:\n{names}\n\n프로젝트명을 포함해 질문해 주세요."
         
         processing_time = (time.time() - start_time) * 1000
         
@@ -592,8 +600,8 @@ async def get_projects():
         projects = [
             {
                 "id": "proj_1",
-                "name": "개포우성7차",
-                "description": "개포우성7차 재개발 프로젝트",
+                "name": "샘플 프로젝트 A",
+                "description": "데모용 정비·재건축 프로젝트",
                 "status": "진행 중",
                 "file_count": 3,
                 "created_time": datetime.now().isoformat()
@@ -617,7 +625,7 @@ async def get_files():
         files = [
             {
                 "id": "file_1",
-                "name": "[인증]행복한소유☆개포우성7차.txt",
+                "name": "대화요약_sample.txt",
                 "type": "text",
                 "size": "50KB",
                 "upload_time": datetime.now().isoformat(),
@@ -637,7 +645,7 @@ async def get_files():
 # WebSocket 엔드포인트
 @app.websocket("/ws/chat/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    """WebSocket 채팅 엔드포인트"""
+    """WebSocket 대화 엔드포인트"""
     await manager.connect(websocket, room_id)
     try:
         while True:
@@ -670,15 +678,18 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         manager.disconnect(websocket, room_id)
 
 if __name__ == "__main__":
-    logger.info("CORBU AI 통합 API 서버를 시작합니다...")
-    logger.info("서버 주소: http://localhost:8004")
-    logger.info("API 문서: http://localhost:8004/docs")
+    _port = int(
+        os.environ.get("UNIFIED_API_LEGACY_PORT", os.environ.get("PORT", "8004"))
+    )
+    logger.info("CORBU.AI 통합 API 서버를 시작합니다...")
+    logger.info("서버 주소: http://localhost:%s (UNIFIED_API_LEGACY_PORT)", _port)
+    logger.info("API 문서: http://localhost:%s/docs", _port)
     
     try:
         uvicorn.run(
             "unified_api_server:app",
             host="0.0.0.0",
-            port=8004,
+            port=_port,
             reload=True,
             log_level="info"
         )

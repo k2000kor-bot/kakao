@@ -649,7 +649,7 @@ class RealTimeConversationAnalyzer:
             
         if intervention_message:
             logger.info(f"자동 개입 메시지: {intervention_message}")
-            # 실제로는 채팅방에 봇 메시지 전송
+            # 실제로는 대화방에 봇 메시지 전송
             
     def _update_real_time_stats(self, moment: ConversationMoment):
         """실시간 통계 업데이트"""

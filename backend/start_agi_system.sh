@@ -5,17 +5,17 @@
 
 echo "🚀 AGI 시스템 시작 중..."
 
-# 현재 디렉토리 확인
-cd "$(dirname "$0")"
+BACKEND_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$BACKEND_DIR/.." && pwd)"
+# shellcheck source=../scripts/lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$BACKEND_DIR" || exit 1
 
-# 가상환경 활성화
-if [ -d "../venv" ]; then
-    echo "📦 가상환경 활성화..."
-    source ../venv/bin/activate
-else
-    echo "❌ 가상환경을 찾을 수 없습니다."
+if ! backend_venv_activate "$REPO_ROOT"; then
+    echo "❌ 가상환경을 찾을 수 없습니다 (backend/venv 또는 backend/.venv)."
     exit 1
 fi
+echo "📦 가상환경 활성화됨"
 
 # 필요한 패키지 설치 확인
 echo "🔧 패키지 설치 확인..."
@@ -34,7 +34,7 @@ sleep 2
 
 # AGI API 서버 시작
 echo "🌐 AGI API 서버 시작 (포트 8010)..."
-python agi_api_server.py > logs/agi_api_server.log 2>&1 &
+python3 agi_api_server.py > logs/agi_api_server.log 2>&1 &
 AGI_API_PID=$!
 
 # 서버 시작 대기

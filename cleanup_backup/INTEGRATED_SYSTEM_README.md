@@ -151,7 +151,7 @@ integrated_master_api.py              # 통합 API 서버
 
 ## 🔍 API 엔드포인트
 
-### **채팅 API**
+### **대화 API**
 - `POST /api/chat`: 메시지 전송 및 AI 응답
 - `GET /api/status`: 시스템 상태 조회
 - `WebSocket /ws`: 실시간 통신

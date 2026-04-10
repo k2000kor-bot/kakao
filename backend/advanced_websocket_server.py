@@ -7,6 +7,7 @@ Advanced WebSocket Server for Real-time Notifications
 import asyncio
 import json
 import logging
+import os
 from typing import Dict, Set, Optional
 from websockets.server import serve, WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosed
@@ -182,10 +183,13 @@ class ChatWebSocketServer:
 async def main():
     """메인 서버 실행"""
     server = ChatWebSocketServer()
-    
-    # WebSocket 서버 시작
-    async with serve(server.handle_client, "localhost", 8001):
-        logger.info("WebSocket 서버가 localhost:8001에서 시작되었습니다.")
+    ws_port = int(
+        os.environ.get("ADVANCED_WS_PORT", os.environ.get("PORT", "8001"))
+    )
+
+    # WebSocket 서버 시작 (포트: 환경변수 ADVANCED_WS_PORT, 기본 8001)
+    async with serve(server.handle_client, "localhost", ws_port):
+        logger.info("WebSocket 서버가 localhost:%s에서 시작되었습니다.", ws_port)
         await asyncio.Future()  # 서버를 계속 실행
 
 if __name__ == "__main__":

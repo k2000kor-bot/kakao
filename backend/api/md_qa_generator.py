@@ -63,7 +63,7 @@ class MDQAGenerator:
                 
                 if not self.indexer.index:
                     return {
-                        'answer': '문서 인덱싱이 아직 진행 중입니다. 잠시 후 다시 시도해주세요. 또는 일반 채팅 기능을 사용해주세요.',
+                        'answer': '문서 인덱싱이 아직 진행 중입니다. 잠시 후 다시 시도해주세요. 또는 일반 대화 기능을 사용해주세요.',
                         'sources': [],
                         'confidence': 0.0
                     }
@@ -80,8 +80,7 @@ class MDQAGenerator:
                 
                 # 검색 결과 재순위화
                 search_results = enhancer.rerank_results(search_results, enhanced_query)
-                search_results = search_results[:5]  # 상위 5개만
-                
+
                 logger.debug(f"검색 향상 적용: 타입={enhanced_query.get('query_type')}, 확장어={len(enhanced_query.get('expanded_terms', []))}")
             except Exception as e:
                 logger.warning(f"검색 향상 실패, 기본 검색 사용: {e}")
@@ -93,13 +92,13 @@ class MDQAGenerator:
             
             if not search_results:
                 return {
-                    'answer': '죄송합니다. 프로젝트 문서에서 관련 정보를 찾을 수 없습니다. 질문을 다르게 표현해보시거나, 일반 채팅 기능을 사용해주세요.',
+                    'answer': '죄송합니다. 프로젝트 문서에서 관련 정보를 찾을 수 없습니다. 질문을 다르게 표현해보시거나, 일반 대화 기능을 사용해주세요.',
                     'sources': [],
                     'confidence': 0.0
                 }
             
             # 컨텍스트 생성 (LLM에 전달할 충분한 정보)
-            context = self.indexer.get_context_for_query(question, max_chars=6000)
+            context = self.indexer.get_context_for_query(question, max_chars=None)
             
             # 답변 생성
             answer = self._generate_answer_from_context(question, context, search_results)
@@ -107,11 +106,11 @@ class MDQAGenerator:
             # 출처 정보 준비
             sources = []
             if include_sources:
-                for result in search_results[:3]:
+                for result in search_results:
                     sources.append({
                         'file': result['relative_path'],
                         'file_name': result['metadata'].get('file_name', ''),
-                        'sections': [s['title'] for s in result['matched_sections'][:3]]
+                        'sections': [s['title'] for s in result.get('matched_sections') or []]
                     })
             
             # 신뢰도 계산 (검색 결과 점수 기반)
@@ -209,7 +208,7 @@ class MDQAGenerator:
             if answer and len(answer.strip()) > 50:
                 # 출처 정보 추가
                 sources_text = "\n\n**📚 참고 문서:**\n"
-                for result in search_results[:3]:
+                for result in search_results:
                     file_name = result.get('relative_path', result.get('metadata', {}).get('file_name', ''))
                     sources_text += f"- `{file_name}`\n"
                 return answer + sources_text
@@ -226,12 +225,12 @@ class MDQAGenerator:
         """템플릿 기반 답변 생성"""
         # 가장 관련성 높은 섹션 추출
         top_sections = []
-        for result in search_results[:2]:
-            for section in result.get('matched_sections', [])[:2]:
+        for result in search_results:
+            for section in result.get('matched_sections', []):
                 if section['content']:
                     top_sections.append({
                         'title': section['title'],
-                        'content': section['content'][:1000],  # 길이 제한
+                        'content': section['content'],
                         'file': result['relative_path']
                     })
         

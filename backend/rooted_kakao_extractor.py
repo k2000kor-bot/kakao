@@ -36,7 +36,7 @@ class KakaoMessage(BaseModel):
     context_hash: Optional[str] = None
 
 class ChatRoom(BaseModel):
-    """채팅방 정보 모델"""
+    """대화방 정보 모델"""
     room_id: str
     room_name: str
     room_type: str  # direct, group, openchat
@@ -78,7 +78,7 @@ class RootedKakaoExtractor:
                 )
             """)
             
-            # 채팅방 테이블
+            # 대화방 테이블
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chat_rooms (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,7 +132,7 @@ class RootedKakaoExtractor:
             return False
 
     def store_chat_room(self, room: ChatRoom) -> bool:
-        """채팅방 정보 저장"""
+        """대화방 정보 저장"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
@@ -149,7 +149,7 @@ class RootedKakaoExtractor:
                 conn.commit()
                 return True
         except Exception as e:
-            print(f"채팅방 저장 오류: {e}")
+            print(f"대화방 저장 오류: {e}")
             return False
 
     def get_unprocessed_messages(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -189,7 +189,7 @@ class RootedKakaoExtractor:
             return False
 
     def get_chat_rooms(self) -> List[Dict[str, Any]]:
-        """모든 채팅방 정보 조회"""
+        """모든 대화방 정보 조회"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM chat_rooms ORDER BY last_message_time DESC")
@@ -266,7 +266,7 @@ async def receive_single_message(message: KakaoMessage):
 
 @app.post("/api/rooted/chatrooms/bulk")
 async def receive_bulk_chatrooms(rooms: List[ChatRoom]):
-    """루팅폰 앱에서 채팅방 정보 대량 수신"""
+    """루팅폰 앱에서 대화방 정보 대량 수신"""
     try:
         success_count = 0
         for room in rooms:
@@ -277,10 +277,10 @@ async def receive_bulk_chatrooms(rooms: List[ChatRoom]):
             "success": True,
             "received_count": len(rooms),
             "stored_count": success_count,
-            "message": f"{success_count}/{len(rooms)} 채팅방이 저장되었습니다."
+            "message": f"{success_count}/{len(rooms)} 대화방이 저장되었습니다."
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"채팅방 저장 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"대화방 저장 오류: {str(e)}")
 
 @app.get("/api/rooted/messages/unprocessed")
 async def get_unprocessed_messages(limit: int = 100):
@@ -311,7 +311,7 @@ async def mark_messages_processed(message_ids: List[str]):
 
 @app.get("/api/rooted/chatrooms")
 async def get_chatrooms():
-    """모든 채팅방 정보 조회"""
+    """모든 대화방 정보 조회"""
     try:
         rooms = extractor.get_chat_rooms()
         return {
@@ -320,7 +320,7 @@ async def get_chatrooms():
             "chatrooms": rooms
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"채팅방 조회 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"대화방 조회 오류: {str(e)}")
 
 @app.post("/api/rooted/sync-with-main-system")
 async def sync_with_main_system():
@@ -384,7 +384,7 @@ async def upload_media_file(file: UploadFile = File(...), message_id: str = None
 
 @app.post("/api/rooted/identify-and-store")
 async def identify_and_store_message(request: dict):
-    """메시지를 받아서 사용자/채팅방 식별 후 저장"""
+    """메시지를 받아서 사용자/대화방 식별 후 저장"""
     try:
         # 식별 시스템 import (실제 파일 경로에 맞게 수정)
         from kakao_user_identifier import KakaoIdentifier
@@ -427,7 +427,7 @@ async def get_user_info(user_id: str):
 
 @app.get("/api/rooted/chatroom/{chat_id}")
 async def get_chatroom_info(chat_id: str):
-    """채팅방 ID로 식별된 채팅방 정보 조회"""
+    """대화방 ID로 식별된 대화방 정보 조회"""
     try:
         from kakao_user_identifier import KakaoIdentifier
         
@@ -437,10 +437,10 @@ async def get_chatroom_info(chat_id: str):
         if room_info:
             return {"success": True, "chatroom": room_info}
         else:
-            return {"success": False, "message": "채팅방을 찾을 수 없습니다."}
+            return {"success": False, "message": "대화방을 찾을 수 없습니다."}
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"채팅방 조회 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"대화방 조회 오류: {str(e)}")
 
 @app.get("/api/rooted/identification-summary")
 async def get_identification_summary():
@@ -458,7 +458,7 @@ async def get_identification_summary():
 
 @app.post("/api/rooted/analyze-kakao-db")
 async def analyze_kakao_database(db_path: str):
-    """카카오톡 DB 파일을 분석하여 사용자/채팅방 식별"""
+    """카카오톡 DB 파일을 분석하여 사용자/대화방 식별"""
     try:
         from kakao_user_identifier import KakaoIdentifier
         
@@ -468,7 +468,7 @@ async def analyze_kakao_database(db_path: str):
         return {
             "success": True,
             "analysis_result": result,
-            "message": f"DB 분석 완료: 사용자 {len(result['users'])}명, 채팅방 {len(result['chatrooms'])}개"
+            "message": f"DB 분석 완료: 사용자 {len(result['users'])}명, 대화방 {len(result['chatrooms'])}개"
         }
         
     except Exception as e:
@@ -581,9 +581,10 @@ async def get_chatroom_statistics():
         raise HTTPException(status_code=500, detail=f"통계 조회 오류: {str(e)}")
 
 if __name__ == "__main__":
+    _rk = int(os.environ.get("ROOTED_KAKAO_PORT", os.environ.get("PORT", "8005")))
     print("🔓 루팅폰 카카오톡 데이터 수신 서버 시작...")
     print("📱 루팅폰 앱에서 다음 주소로 데이터를 전송하세요:")
-    print("   http://localhost:8005")
-    print("📊 API 문서: http://localhost:8005/docs")
-    
-    uvicorn.run(app, host="0.0.0.0", port=8005) 
+    print(f"   http://localhost:{_rk}")
+    print(f"📊 API 문서: http://localhost:{_rk}/docs")
+
+    uvicorn.run(app, host="0.0.0.0", port=_rk) 

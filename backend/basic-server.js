@@ -125,7 +125,7 @@ const server = http.createServer((req, res) => {
                 const newSession = {
                     id: Date.now().toString(),
                     projectId: projectId || '1',
-                    name: name || '새 채팅',
+                    name: name || '새 대화',
                     messages: [],
                     createdAt: new Date(),
                     updatedAt: new Date(),
@@ -200,7 +200,7 @@ const server = http.createServer((req, res) => {
                 // AI 응답
                 const aiMessage = {
                     id: (Date.now() + 1).toString(),
-                    content: `"${content}"에 대한 CORBU AI의 분석 결과입니다.
+                    content: `"${content}"에 대한 CORBU.AI의 분석 결과입니다.
 
 **🔍 분석 요약:**
 - 핵심 키워드 추출 완료
@@ -312,7 +312,7 @@ const server = http.createServer((req, res) => {
 
 // 서버 시작
 server.listen(PORT, () => {
-    console.log(`🚀 CORBU AI 기본 서버가 포트 ${PORT}에서 실행 중입니다`);
+    console.log(`🚀 CORBU.AI 기본 서버가 포트 ${PORT}에서 실행 중입니다`);
     console.log(`📊 API 엔드포인트: http://localhost:${PORT}/api`);
     console.log(`🔍 헬스체크: http://localhost:${PORT}/api/health`);
 });

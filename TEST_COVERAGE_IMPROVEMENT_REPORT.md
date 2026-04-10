@@ -48,7 +48,7 @@
 - ✅ `retryHandler.test.ts` - 재시도 핸들러 테스트
 - ✅ `topicDetector.test.ts` - 주제 감지 테스트 (일부 실패)
 - ✅ `useKeyboardNavigation.test.ts` - 키보드 네비게이션 훅 테스트
-- ✅ `ChatMessage.test.tsx` - 채팅 메시지 컴포넌트 테스트
+- ✅ `ChatMessage.test.tsx` - 대화 메시지 컴포넌트 테스트
 
 ### 새로 추가된 테스트
 - ✅ `errorLogger.test.ts` - 에러 로거 유틸리티 테스트 (일부 수정 필요)

@@ -310,7 +310,7 @@ def test_improved_parser():
     """개선된 파서 테스트"""
     
     parser = ImprovedKakaoChatParser()
-    chat_file = '../chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt'
+    chat_file = '../chat_rooms/sample_chat_room/sample_chat_room.txt'
     
     if os.path.exists(chat_file):
         print('📱 개선된 카카오톡 대화 파서 테스트')

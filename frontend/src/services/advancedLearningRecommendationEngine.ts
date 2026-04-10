@@ -1,6 +1,11 @@
+import {
+    DEMO_SIM_EXAMPLE_HTML_GUIDE_URL,
+    DEMO_SIM_EXAMPLE_REACT_HOOKS_URL,
+} from '../config/api';
 import { ConversationMemory } from './advancedConversationMemoryService';
 import { LearningExperience } from './personalizedLearningExperienceService';
 import { PerformanceAnalyticsResult } from './advancedPerformanceAnalyticsService';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface LearningRecommendationRequest {
     user_id: string;
@@ -136,7 +141,7 @@ class AdvancedLearningRecommendationEngine {
     private learningPaths: Map<string, LearningPath> = new Map();
     private contentLibrary: Map<string, ContentRecommendation> = new Map();
     private exerciseBank: Map<string, PracticeExercise> = new Map();
-    private skillFrameworks: Map<string, any> = new Map();
+    private skillFrameworks: Map<string, unknown> = new Map();
 
     constructor() {
         this.initializeLearningPaths();
@@ -181,11 +186,24 @@ class AdvancedLearningRecommendationEngine {
                 priority_recommendations: priorityRecommendations
             };
 
-            console.log(`Learning recommendations generated in ${Date.now() - startTime}ms`);
+            const processingTime = Date.now() - startTime;
+            errorLogger.info('Learning recommendations generated', {
+                component: 'advancedLearningRecommendationEngine',
+                action: 'generateRecommendations',
+                userId: request.user_id,
+                sessionId: request.session_id,
+                processingTime,
+            });
             return result;
 
         } catch (error) {
-            console.error('Learning recommendation error:', error);
+            const err = toError(error);
+            errorLogger.error('Learning recommendation error', err, {
+                component: 'advancedLearningRecommendationEngine',
+                action: 'generateRecommendations',
+                userId: request.user_id,
+                sessionId: request.session_id,
+            });
             return this.generateFallbackRecommendations();
         }
     }
@@ -196,10 +214,10 @@ class AdvancedLearningRecommendationEngine {
         const performance = request.performance_analytics;
         const skillGaps = request.performance_analytics.skill_gaps;
 
-        const recommendations: LearningPath[] = [];
+        const _recommendations: LearningPath[] = [];
 
         // 현재 수준에 맞는 경로 추천
-        const currentLevel = this.assessCurrentLevel(userProfile, performance);
+        const currentLevel = this.assessCurrentLevel(userProfile as unknown as Record<string, unknown>, performance);
         const matchingPaths = Array.from(this.learningPaths.values())
             .filter(path => this.isPathSuitable(path, currentLevel, skillGaps))
             .map(path => ({
@@ -208,12 +226,12 @@ class AdvancedLearningRecommendationEngine {
             }))
             .sort((a, b) => b.personalization_score - a.personalization_score);
 
-        return matchingPaths.slice(0, 3);
+        return matchingPaths;
     }
 
     // 콘텐츠 추천
     private async recommendContent(request: LearningRecommendationRequest): Promise<ContentRecommendation[]> {
-        const userProfile = request.conversation_memory.user_profile;
+        const _userProfile = request.conversation_memory.user_profile;
         const skillGaps = request.performance_analytics.skill_gaps;
         const learningPatterns = request.performance_analytics.learning_patterns;
 
@@ -229,29 +247,29 @@ class AdvancedLearningRecommendationEngine {
                 .map(content => ({
                     ...content,
                     relevance_score: this.calculateContentRelevance(content, request),
-                    learning_style_match: this.calculateLearningStyleMatch(content, learningPatterns)
+                    learning_style_match: this.calculateLearningStyleMatch(content, learningPatterns as unknown as Record<string, unknown>[])
                 }))
                 .sort((a, b) => b.relevance_score - a.relevance_score);
 
-            recommendations.push(...relevantContent.slice(0, 2));
+            recommendations.push(...relevantContent);
         });
 
         // 학습 패턴 기반 콘텐츠 추천
         if (learningPatterns.length > 0) {
             const topPattern = learningPatterns[0];
             const patternBasedContent = Array.from(this.contentLibrary.values())
-                .filter(content => this.matchesLearningPattern(content, topPattern))
+                .filter(content => this.matchesLearningPattern(content, topPattern as unknown as Record<string, unknown>))
                 .map(content => ({
                     ...content,
                     relevance_score: this.calculateContentRelevance(content, request),
-                    learning_style_match: this.calculateLearningStyleMatch(content, learningPatterns)
+                    learning_style_match: this.calculateLearningStyleMatch(content, learningPatterns as unknown as Record<string, unknown>[])
                 }))
                 .sort((a, b) => b.relevance_score - a.relevance_score);
 
-            recommendations.push(...patternBasedContent.slice(0, 2));
+            recommendations.push(...patternBasedContent);
         }
 
-        return recommendations.slice(0, 5);
+        return recommendations;
     }
 
     // 실습 연습 추천
@@ -273,7 +291,7 @@ class AdvancedLearningRecommendationEngine {
                     adaptive_difficulty: gap.gap_size > 0.3
                 }));
 
-            recommendations.push(...relevantExercises.slice(0, 2));
+            recommendations.push(...relevantExercises);
         });
 
         // 컨텍스트 기반 연습 추천
@@ -283,9 +301,9 @@ class AdvancedLearningRecommendationEngine {
                 exercise.description.toLowerCase().includes(currentContext.toLowerCase())
             );
 
-        recommendations.push(...contextBasedExercises.slice(0, 2));
+        recommendations.push(...contextBasedExercises);
 
-        return recommendations.slice(0, 5);
+        return recommendations;
     }
 
     // 복습 세션 추천
@@ -319,9 +337,9 @@ class AdvancedLearningRecommendationEngine {
                 focus_areas: [gap.skill_name, ...gap.related_concepts],
                 review_type: 'targeted',
                 duration: 45,
-                content_summary: this.generateSkillGapSummary(gap),
-                practice_questions: this.generateSkillGapQuestions(gap),
-                confidence_check: this.generateSkillGapChecks(gap),
+                content_summary: this.generateSkillGapSummary(gap as unknown as Record<string, unknown>),
+                practice_questions: this.generateSkillGapQuestions(gap as unknown as Record<string, unknown>),
+                confidence_check: this.generateSkillGapChecks(gap as unknown as Record<string, unknown>),
                 next_steps: gap.suggested_resources
             });
         });
@@ -341,16 +359,16 @@ class AdvancedLearningRecommendationEngine {
             priority: gap.impact_priority as 'medium' | 'low' | 'high' | 'critical',
             learning_resources: gap.suggested_resources,
             practice_exercises: this.findPracticeExercisesForSkill(gap.skill_name),
-            assessment_methods: this.generateAssessmentMethods(gap),
+            assessment_methods: this.generateAssessmentMethods(gap as unknown as Record<string, unknown>),
             timeline: gap.estimated_time_to_master,
-            milestones: this.generateSkillMilestones(gap)
+            milestones: this.generateSkillMilestones(gap as unknown as Record<string, unknown>)
         }));
     }
 
     // 적응형 제안 생성
     private async generateAdaptiveSuggestions(request: LearningRecommendationRequest): Promise<AdaptiveSuggestion[]> {
         const performance = request.performance_analytics;
-        const userProfile = request.conversation_memory.user_profile;
+        const _userProfile = request.conversation_memory.user_profile;
         const suggestions: AdaptiveSuggestion[] = [];
 
         // 난이도 조정 제안
@@ -474,7 +492,7 @@ class AdvancedLearningRecommendationEngine {
     }
 
     // 헬퍼 메서드들
-    private assessCurrentLevel(userProfile: any, performance: PerformanceAnalyticsResult): string {
+    private assessCurrentLevel(_userProfile: Record<string, unknown>, performance: PerformanceAnalyticsResult): string {
         const overallScore = performance.overall_score;
         const masteryLevel = performance.performance_metrics.learning_progress.mastery_level;
 
@@ -484,7 +502,7 @@ class AdvancedLearningRecommendationEngine {
         return 'beginner';
     }
 
-    private isPathSuitable(path: LearningPath, currentLevel: string, skillGaps: any[]): boolean {
+    private isPathSuitable(path: LearningPath, currentLevel: string, _skillGaps: unknown[]): boolean {
         const levelOrder = { beginner: 1, intermediate: 2, advanced: 3, expert: 4 };
         const pathLevel = levelOrder[path.difficulty_level];
         const userLevel = levelOrder[currentLevel as keyof typeof levelOrder];
@@ -540,10 +558,10 @@ class AdvancedLearningRecommendationEngine {
         return Math.min(1.0, relevance);
     }
 
-    private calculateLearningStyleMatch(content: ContentRecommendation, learningPatterns: any[]): number {
+    private calculateLearningStyleMatch(content: ContentRecommendation, learningPatterns: Record<string, unknown>[]): number {
         if (learningPatterns.length === 0) return 0.5;
 
-        const topPattern = learningPatterns[0];
+        const topPattern = learningPatterns[0] as Record<string, unknown>;
         let match = 0.3; // 기본 점수
 
         // 콘텐츠 타입과 학습 패턴 매칭
@@ -558,20 +576,19 @@ class AdvancedLearningRecommendationEngine {
         return Math.min(1.0, match);
     }
 
-    private matchesLearningPattern(content: ContentRecommendation, pattern: any): boolean {
+    private matchesLearningPattern(content: ContentRecommendation, pattern: Record<string, unknown>): boolean {
         // 간단한 패턴 매칭 로직
-        return content.type === 'video' && pattern.pattern_type === 'visual' ||
-            content.type === 'article' && pattern.pattern_type === 'reading';
+        return (content.type === 'video' && pattern.pattern_type === 'visual') ||
+            (content.type === 'article' && pattern.pattern_type === 'reading');
     }
 
     private findPracticeExercisesForSkill(skillName: string): string[] {
         return Array.from(this.exerciseBank.values())
             .filter(exercise => exercise.skill_focus.includes(skillName))
-            .map(exercise => exercise.title)
-            .slice(0, 3);
+            .map(exercise => exercise.title);
     }
 
-    private generateAssessmentMethods(gap: any): string[] {
+    private generateAssessmentMethods(_gap: Record<string, unknown>): string[] {
         return [
             '자체 평가 퀴즈',
             '실습 프로젝트',
@@ -580,9 +597,9 @@ class AdvancedLearningRecommendationEngine {
         ];
     }
 
-    private generateSkillMilestones(gap: any): SkillMilestone[] {
+    private generateSkillMilestones(gap: Record<string, unknown>): SkillMilestone[] {
         const milestones: SkillMilestone[] = [];
-        const totalDays = gap.estimated_time_to_master;
+        const totalDays = Number((gap as { estimated_time_to_master?: number }).estimated_time_to_master) || 30;
 
         milestones.push({
             milestone: '기본 개념 이해',
@@ -615,10 +632,10 @@ class AdvancedLearningRecommendationEngine {
                 .filter(Boolean)
         );
 
-        return Array.from(topics).slice(0, 5);
+        return Array.from(topics);
     }
 
-    private generatePracticeQuestions(memory: ConversationMemory): string[] {
+    private generatePracticeQuestions(_memory: ConversationMemory): string[] {
         return [
             '학습한 주요 개념을 3가지 요약해보세요.',
             '가장 어려웠던 부분은 무엇이고 어떻게 해결했나요?',
@@ -626,7 +643,7 @@ class AdvancedLearningRecommendationEngine {
         ];
     }
 
-    private generateConfidenceChecks(memory: ConversationMemory): string[] {
+    private generateConfidenceChecks(_memory: ConversationMemory): string[] {
         return [
             '이 개념을 다른 사람에게 설명할 수 있나요?',
             '관련 문제를 독립적으로 해결할 수 있나요?',
@@ -634,27 +651,30 @@ class AdvancedLearningRecommendationEngine {
         ];
     }
 
-    private generateSkillGapSummary(gap: any): string[] {
+    private generateSkillGapSummary(gap: Record<string, unknown>): string[] {
+        const skillName = String((gap as { skill_name?: string }).skill_name ?? '스킬');
         return [
-            `${gap.skill_name}의 기본 개념`,
-            `${gap.skill_name}의 핵심 원리`,
-            `${gap.skill_name}의 실제 적용 방법`
+            `${skillName}의 기본 개념`,
+            `${skillName}의 핵심 원리`,
+            `${skillName}의 실제 적용 방법`
         ];
     }
 
-    private generateSkillGapQuestions(gap: any): string[] {
+    private generateSkillGapQuestions(gap: Record<string, unknown>): string[] {
+        const skillName = String((gap as { skill_name?: string }).skill_name ?? '스킬');
         return [
-            `${gap.skill_name}의 정의는 무엇인가요?`,
-            `${gap.skill_name}를 언제 사용하나요?`,
-            `${gap.skill_name}의 장단점은 무엇인가요?`
+            `${skillName}의 정의는 무엇인가요?`,
+            `${skillName}를 언제 사용하나요?`,
+            `${skillName}의 장단점은 무엇인가요?`
         ];
     }
 
-    private generateSkillGapChecks(gap: any): string[] {
+    private generateSkillGapChecks(gap: Record<string, unknown>): string[] {
+        const skillName = String((gap as { skill_name?: string }).skill_name ?? '스킬');
         return [
-            `${gap.skill_name} 개념을 이해했나요?`,
-            `${gap.skill_name}를 실제로 사용해볼 수 있나요?`,
-            `${gap.skill_name} 관련 문제를 해결할 수 있나요?`
+            `${skillName} 개념을 이해했나요?`,
+            `${skillName}를 실제로 사용해볼 수 있나요?`,
+            `${skillName} 관련 문제를 해결할 수 있나요?`
         ];
     }
 
@@ -717,7 +737,7 @@ class AdvancedLearningRecommendationEngine {
             id: 'html-basics',
             title: 'HTML 완전 가이드',
             type: 'tutorial',
-            url: 'https://example.com/html-guide',
+            url: DEMO_SIM_EXAMPLE_HTML_GUIDE_URL,
             description: 'HTML의 모든 것을 배우는 완전한 가이드',
             difficulty_level: 'beginner',
             estimated_time: 120,
@@ -733,7 +753,7 @@ class AdvancedLearningRecommendationEngine {
             id: 'react-hooks',
             title: 'React Hooks 마스터',
             type: 'video',
-            url: 'https://example.com/react-hooks',
+            url: DEMO_SIM_EXAMPLE_REACT_HOOKS_URL,
             description: 'React Hooks를 완벽하게 이해하고 활용하기',
             difficulty_level: 'intermediate',
             estimated_time: 90,

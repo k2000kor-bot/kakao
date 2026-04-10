@@ -215,7 +215,7 @@ export class RecommendationService {
             .filter(rec => rec.score > 0)
             .sort((a, b) => b.score - a.score)
             .slice(0, limit)
-            .map(({ score, ...rec }) => rec);
+            .map(({ score: _score, ...rec }) => rec);
     }
 
     // 추천 사용 기록
@@ -279,7 +279,6 @@ export class RecommendationService {
 
         const favoriteCategories = Array.from(categoryCounts.entries())
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
             .map(([category]) => category);
 
         // 활성 시간대 분석
@@ -332,7 +331,7 @@ export class RecommendationService {
             suggestions.push('디자인 패턴을 적용해보세요');
         }
 
-        return suggestions.slice(0, 3);
+        return suggestions;
     }
 }
 

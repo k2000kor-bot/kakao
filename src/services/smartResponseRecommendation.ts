@@ -1,3 +1,5 @@
+import { errorLogger } from '../utils/errorLogger';
+
 interface UserQuestionPattern {
     category: string;
     complexity: 'simple' | 'moderate' | 'complex';
@@ -59,7 +61,7 @@ class SmartResponseRecommendation {
         let complexity: 'simple' | 'moderate' | 'complex' = 'moderate';
         for (const [comp, indicators] of Object.entries(this.complexityIndicators)) {
             if (indicators.some(indicator => input.includes(indicator))) {
-                complexity = comp as any;
+                complexity = comp as 'simple' | 'moderate' | 'complex';
                 break;
             }
         }
@@ -87,7 +89,7 @@ class SmartResponseRecommendation {
         const words = text.split(/\s+/).filter(word =>
             word.length > 1 && !stopWords.includes(word)
         );
-        return words.slice(0, 5); // 상위 5개 키워드만 반환
+        return words;
     }
 
     /**
@@ -110,7 +112,7 @@ class SmartResponseRecommendation {
             }
         }
 
-        return Array.from(new Set(contextKeywords)).slice(0, 3); // 중복 제거 후 상위 3개
+        return Array.from(new Set(contextKeywords));
     }
 
     /**
@@ -153,7 +155,7 @@ class SmartResponseRecommendation {
         currentResponse: string
     ): ResponseRecommendation | null {
         const responseLength = currentResponse.length;
-        const hasCode = currentResponse.includes('```') || currentResponse.includes('코드');
+        const _hasCode = currentResponse.includes('```') || currentResponse.includes('코드');
         const hasExamples = currentResponse.includes('예시') || currentResponse.includes('예제');
 
         let enhancement = '';
@@ -222,7 +224,7 @@ class SmartResponseRecommendation {
      */
     private generateFollowupRecommendation(
         pattern: UserQuestionPattern,
-        context: ConversationContext
+        _context: ConversationContext
     ): ResponseRecommendation | null {
         const followupQuestions = {
             technical: [
@@ -283,11 +285,13 @@ class SmartResponseRecommendation {
         // 사용자 피드백을 기반으로 선호도 학습
         const pattern = this.analyzeQuestionPattern(userInput, context);
 
-        console.log('사용자 선호도 학습:', {
+        errorLogger.info('사용자 선호도 학습', {
+            component: 'smartResponseRecommendation',
+            action: 'learnUserPreferences',
             pattern,
             feedback: userFeedback,
             responseLength: response.length,
-            responseStyle: context.userPreferences.responseStyle
+            responseStyle: context.userPreferences.responseStyle,
         });
 
         // 실제 구현에서는 이 정보를 저장하여 향후 추천에 활용

@@ -3,6 +3,9 @@
  * PDF, Word, Excel, PowerPoint 등 다양한 파일 형식을 지원합니다.
  */
 
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 interface FileMetadata {
     name: string;
     type: string;
@@ -18,8 +21,8 @@ interface ProcessedContent {
     text: string;
     metadata: FileMetadata;
     images?: string[];
-    tables?: any[][];
-    charts?: any[];
+    tables?: unknown[][];
+    charts?: unknown[];
     structure?: DocumentStructure;
     summary?: string;
     keywords?: string[];
@@ -329,10 +332,10 @@ class AdvancedFileProcessingService {
     /**
      * CSV 파일 처리
      */
-    private async processCSV(file: File, options: FileProcessingOptions): Promise<ProcessedContent> {
+    private async processCSV(file: File, _options: FileProcessingOptions): Promise<ProcessedContent> {
         const text = await file.text();
         const lines = text.split('\n');
-        const table = lines.map(line => line.split(',').map(cell => cell.trim()));
+        const table = lines.map((line) => line.split(',').map((cell) => coerceTrimmedString(cell, '')));
 
         return {
             text: this.convertTablesToText([table]),
@@ -413,7 +416,7 @@ class AdvancedFileProcessingService {
     /**
      * 텍스트 파일 처리
      */
-    private async processTextFile(file: File, options: FileProcessingOptions): Promise<ProcessedContent> {
+    private async processTextFile(file: File, _options: FileProcessingOptions): Promise<ProcessedContent> {
         const text = await file.text();
 
         return {
@@ -439,7 +442,7 @@ class AdvancedFileProcessingService {
 
         let combinedText = '';
         const images: string[] = [];
-        const tables: any[][] = [];
+        const tables: unknown[][] = [];
 
         for (const extractedFile of files) {
             if (this.isFileSupported(extractedFile)) {
@@ -473,7 +476,7 @@ class AdvancedFileProcessingService {
         options: FileProcessingOptions = {},
         progressCallback?: (fileId: string, progress: FileUploadProgress) => void
     ): Promise<ProcessedContent[]> {
-        const results: ProcessedContent[] = [];
+        const _results: ProcessedContent[] = [];
         const fileArray = Array.from(files);
 
         // 병렬 처리를 위한 프로미스 배열
@@ -488,7 +491,15 @@ class AdvancedFileProcessingService {
                 const result = await this.processFile(file, options, individualProgressCallback);
                 return { index, result };
             } catch (error) {
-                console.error(`파일 처리 실패: ${file.name}`, error);
+                const err = toError(error);
+                errorLogger.error('파일 처리 실패', err, {
+                    component: 'advancedFileProcessingService',
+                    action: 'processFiles',
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileSize: file.size,
+                    index,
+                });
                 return {
                     index,
                     result: {
@@ -544,19 +555,19 @@ class AdvancedFileProcessingService {
     }
 
     // 모의 구현 메서드들 (실제로는 적절한 라이브러리로 구현)
-    private async extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
+    private async extractTextFromPDF(_buffer: ArrayBuffer): Promise<string> {
         return "PDF에서 추출된 텍스트 내용입니다...";
     }
 
-    private async extractImagesFromPDF(buffer: ArrayBuffer): Promise<string[]> {
+    private async extractImagesFromPDF(_buffer: ArrayBuffer): Promise<string[]> {
         return ["data:image/jpeg;base64,..."]; // 모의 이미지 데이터
     }
 
-    private async extractTablesFromPDF(buffer: ArrayBuffer): Promise<any[][]> {
+    private async extractTablesFromPDF(_buffer: ArrayBuffer): Promise<string[][]> {
         return [["헤더1", "헤더2"], ["데이터1", "데이터2"]]; // 모의 테이블 데이터
     }
 
-    private async analyzePDFStructure(buffer: ArrayBuffer): Promise<DocumentStructure> {
+    private async analyzePDFStructure(_buffer: ArrayBuffer): Promise<DocumentStructure> {
         return {
             headings: [{ level: 1, text: "제목", page: 1 }],
             paragraphs: [{ text: "단락 내용", page: 1 }],
@@ -564,19 +575,19 @@ class AdvancedFileProcessingService {
         };
     }
 
-    private async extractTextFromWord(buffer: ArrayBuffer): Promise<string> {
+    private async extractTextFromWord(_buffer: ArrayBuffer): Promise<string> {
         return "Word 문서에서 추출된 텍스트 내용입니다...";
     }
 
-    private async extractImagesFromWord(buffer: ArrayBuffer): Promise<string[]> {
+    private async extractImagesFromWord(_buffer: ArrayBuffer): Promise<string[]> {
         return ["data:image/jpeg;base64,..."]; // 모의 이미지 데이터
     }
 
-    private async extractTablesFromWord(buffer: ArrayBuffer): Promise<any[][]> {
+    private async extractTablesFromWord(_buffer: ArrayBuffer): Promise<string[][]> {
         return [["헤더1", "헤더2"], ["데이터1", "데이터2"]]; // 모의 테이블 데이터
     }
 
-    private async analyzeWordStructure(buffer: ArrayBuffer): Promise<DocumentStructure> {
+    private async analyzeWordStructure(_buffer: ArrayBuffer): Promise<DocumentStructure> {
         return {
             headings: [{ level: 1, text: "제목" }],
             paragraphs: [{ text: "단락 내용" }],
@@ -584,7 +595,7 @@ class AdvancedFileProcessingService {
         };
     }
 
-    private async extractTablesFromExcel(buffer: ArrayBuffer): Promise<any[][]> {
+    private async extractTablesFromExcel(_buffer: ArrayBuffer): Promise<string[][]> {
         return [
             ["이름", "나이", "직업"],
             ["홍길동", "30", "개발자"],
@@ -592,25 +603,25 @@ class AdvancedFileProcessingService {
         ];
     }
 
-    private async extractChartsFromExcel(buffer: ArrayBuffer): Promise<any[]> {
+    private async extractChartsFromExcel(_buffer: ArrayBuffer): Promise<unknown[]> {
         return [{ type: "bar", data: [1, 2, 3, 4, 5] }];
     }
 
-    private convertTablesToText(tables: any[][]): string {
+    private convertTablesToText(tables: unknown[][]): string {
         return tables.map(table =>
-            table.map(row => row.join('\t')).join('\n')
+            (table as unknown[]).map(row => (row as unknown[]).map(c => String(c ?? '')).join('\t')).join('\n')
         ).join('\n\n');
     }
 
-    private async extractTextFromPresentation(buffer: ArrayBuffer): Promise<string> {
+    private async extractTextFromPresentation(_buffer: ArrayBuffer): Promise<string> {
         return "프레젠테이션에서 추출된 텍스트 내용입니다...";
     }
 
-    private async extractImagesFromPresentation(buffer: ArrayBuffer): Promise<string[]> {
+    private async extractImagesFromPresentation(_buffer: ArrayBuffer): Promise<string[]> {
         return ["data:image/jpeg;base64,..."]; // 모의 이미지 데이터
     }
 
-    private async analyzePresentationStructure(buffer: ArrayBuffer): Promise<DocumentStructure> {
+    private async analyzePresentationStructure(_buffer: ArrayBuffer): Promise<DocumentStructure> {
         return {
             headings: [{ level: 1, text: "슬라이드 제목" }],
             paragraphs: [{ text: "슬라이드 내용" }],
@@ -618,12 +629,12 @@ class AdvancedFileProcessingService {
         };
     }
 
-    private async performOCR(file: File, language: string): Promise<string> {
+    private async performOCR(_file: File, _language: string): Promise<string> {
         // 실제로는 Tesseract.js 등으로 구현
         return "OCR로 인식된 텍스트 내용입니다...";
     }
 
-    private detectEncoding(text: string): string {
+    private detectEncoding(_text: string): string {
         // 간단한 인코딩 감지 로직
         return 'UTF-8';
     }
@@ -635,24 +646,26 @@ class AdvancedFileProcessingService {
                 level: (line.match(/^#+/) || [''])[0].length,
                 text: line.replace(/^#+\s*/, '')
             })),
-            paragraphs: lines.filter(line => line.trim().length > 0 && !line.startsWith('#')).map(line => ({
+            paragraphs: lines
+              .filter((line) => coerceTrimmedString(line, '').length > 0 && !line.startsWith('#'))
+              .map((line) => ({
                 text: line
-            })),
+              })),
             lists: []
         };
     }
 
-    private async extractFilesFromArchive(file: File): Promise<File[]> {
+    private async extractFilesFromArchive(_file: File): Promise<File[]> {
         // 실제로는 JSZip 등으로 구현
         return []; // 모의 추출된 파일 목록
     }
 
     private async processGenericDocument(file: File, options: FileProcessingOptions): Promise<ProcessedContent> {
-        const text = await file.text();
+        const _text = await file.text();
         return this.processTextFile(file, options);
     }
 
-    private async processGenericSpreadsheet(file: File, options: FileProcessingOptions): Promise<ProcessedContent> {
+    private async processGenericSpreadsheet(file: File, _options: FileProcessingOptions): Promise<ProcessedContent> {
         const text = await file.text();
         return {
             text,
@@ -668,7 +681,7 @@ class AdvancedFileProcessingService {
 
     private async generateSummary(text: string): Promise<string> {
         // 실제로는 AI 모델을 사용하여 요약 생성
-        const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const summary = sentences.slice(0, 3).join('. ');
         return summary + (sentences.length > 3 ? '...' : '');
     }

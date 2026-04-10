@@ -10,17 +10,20 @@ if [ ! -f "ultra_advanced_message_system.py" ]; then
     exit 1
 fi
 
-# 가상환경 활성화
-if [ -d "../.venv" ]; then
-    echo "🔧 가상환경 활성화 중..."
-    source ../.venv/bin/activate
+# 가상환경 활성화 (저장소 루트 기준: backend/venv → backend/.venv → 루트 venv)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=../scripts/lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+if backend_venv_activate "$REPO_ROOT"; then
+    echo "🔧 가상환경 활성화됨"
 else
     echo "⚠️  가상환경을 찾을 수 없습니다. 시스템 Python을 사용합니다."
 fi
 
 # 필요한 패키지 설치 확인
 echo "📦 의존성 패키지 확인 중..."
-python -c "
+python3 -c "
 import sys
 required_packages = [
     'torch', 'transformers', 'opencv-python', 
@@ -52,6 +55,7 @@ fi
 # 임시 디렉토리 생성
 echo "📁 임시 디렉토리 생성 중..."
 mkdir -p temp_uploads
+mkdir -p "$REPO_ROOT/logs"
 
 # 기존 서버 프로세스 확인 및 종료
 echo "🔍 기존 서버 프로세스 확인 중..."
@@ -83,7 +87,7 @@ echo "   - 신경망 기반 개인화 활성화"
 echo ""
 
 # 백그라운드에서 API 서버 실행
-nohup python quantum_neural_message_api.py > ../logs/ultra_message_system.log 2>&1 &
+nohup python3 quantum_neural_message_api.py > "$REPO_ROOT/logs/ultra_message_system.log" 2>&1 &
 SERVER_PID=$!
 
 # 서버 시작 대기
@@ -106,7 +110,7 @@ if ps -p $SERVER_PID > /dev/null; then
     echo "   • 스트리밍: POST http://localhost:8010/api/v8/stream/generate"
     echo ""
     echo "🔗 API 문서: http://localhost:8010/docs"
-    echo "🔍 로그 확인: tail -f ../logs/ultra_message_system.log"
+    echo "🔍 로그 확인: tail -f $REPO_ROOT/logs/ultra_message_system.log"
     echo ""
     echo "🌟 초고도화 기능:"
     echo "   ✓ 멀티모달 AI 처리 (텍스트+이미지+음성)"
@@ -132,7 +136,7 @@ if ps -p $SERVER_PID > /dev/null; then
     
 else
     echo "❌ 서버 시작에 실패했습니다."
-    echo "   로그를 확인해주세요: cat ../logs/ultra_message_system.log"
+    echo "   로그를 확인해주세요: cat $REPO_ROOT/logs/ultra_message_system.log"
     exit 1
 fi
 

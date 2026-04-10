@@ -1,7 +1,9 @@
 // OpenAI GPT integration service (supports GPT-5 if available)
+
+import { joinApiBaseAndPath, OPENAI_OFFICIAL_API_V1_BASE_URL } from '../config/api';
 // Env vars (CRA-compatible):
 // - REACT_APP_OPENAI_API_KEY: required to enable OpenAI provider
-// - REACT_APP_OPENAI_BASE_URL: optional, defaults to https://api.openai.com/v1
+// - REACT_APP_OPENAI_BASE_URL: optional, defaults to OPENAI_OFFICIAL_API_V1_BASE_URL
 // - REACT_APP_OPENAI_MODEL: optional, defaults to 'gpt-5' then falls back to 'gpt-4o'
 
 export type OpenAIChatMessage = {
@@ -20,9 +22,11 @@ export interface OpenAIChatOptions {
 const getEnv = (key: string): string | undefined => {
     // In CRA/Vite environments, process.env access works at build-time.
     // Fallback to window for runtime-injected vars if present.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w: any = typeof window !== 'undefined' ? (window as any) : {};
-    return (process.env as unknown as Record<string, string | undefined>)[key] || w[key];
+    const w: Record<string, string | undefined> =
+        typeof window !== 'undefined'
+            ? (window as unknown as Record<string, string | undefined>)
+            : {};
+    return (process.env as unknown as Record<string, string | undefined>)[key] ?? w[key];
 };
 
 const defaultModelCandidates = ['gpt-5', 'gpt-5-mini', 'gpt-4o'];
@@ -35,7 +39,7 @@ export class OpenAIService {
     private static baseUrl(): string {
         return (
             getEnv('REACT_APP_OPENAI_BASE_URL')?.replace(/\/$/, '') ||
-            'https://api.openai.com/v1'
+            OPENAI_OFFICIAL_API_V1_BASE_URL
         );
     }
 
@@ -70,8 +74,8 @@ export class OpenAIService {
 
         // Prefer Chat Completions; if unavailable, try Responses API
         const endpoints = [
-            `${this.baseUrl()}/chat/completions`,
-            `${this.baseUrl()}/responses`,
+            joinApiBaseAndPath(this.baseUrl(), 'chat/completions'),
+            joinApiBaseAndPath(this.baseUrl(), 'responses'),
         ];
 
         for (const endpoint of endpoints) {

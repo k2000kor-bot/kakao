@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# CORBU AI 고도화된 자동 통합 시스템 중지 스크립트
+# CORBU.AI 고도화된 자동 통합 시스템 중지 스크립트
 
-echo "🛑 CORBU AI 고도화된 자동 통합 시스템을 중지합니다..."
+echo "🛑 CORBU.AI 고도화된 자동 통합 시스템을 중지합니다..."
 
 # PID 파일에서 프로세스 ID 읽기
 if [ -f ".enhanced_backend.pid" ]; then

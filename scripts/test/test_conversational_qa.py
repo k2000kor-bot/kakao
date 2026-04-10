@@ -3,19 +3,25 @@
 대화형 QA 기능 테스트 스크립트
 """
 
+import os
 import requests
 import json
+
+_API_PORT = os.environ.get("API_PORT") or os.environ.get("BACKEND_PORT") or "5002"
+_BASE = os.environ.get(
+    "CORBU_TEST_API_BASE", f"http://localhost:{_API_PORT}"
+).rstrip("/")
 
 def test_conversational_qa():
     """대화형 QA API 테스트"""
     
     # 테스트 질문들
     test_questions = [
-        "개포우성 재개발 프로젝트의 현재 진행 상황은 어떻나요?",
+        "샘플 재개발 프로젝트의 현재 진행 상황은 어떻나요?",
         "재개발 투자의 위험 요소는 무엇인가요?",
-        "개포우성 지역의 부동산 시세는 어떻게 되나요?",
+        "해당 지역 부동산 시세는 어떻게 되나요?",
         "재개발 관련 법규의 주요 내용은 무엇인가요?",
-        "개포우성 재개발의 향후 전망은 어떻나요?"
+        "재개발 사업의 향후 전망은 어떻나요?"
     ]
     
     print("💬 대화형 QA 기능 테스트 시작...\n")
@@ -26,7 +32,7 @@ def test_conversational_qa():
         # API 호출
         try:
             response = requests.post(
-                "http://localhost:5001/api/conversational/qa",
+                f"{_BASE}/api/conversational/qa",
                 json={
                     "question": question,
                     "context": {
@@ -73,8 +79,8 @@ def test_knowledge_addition():
     
     test_knowledge = [
         {
-            "topic": "개포우성 재개발 현황",
-            "content": "개포우성 재개발 프로젝트는 현재 1단계 사업이 진행 중이며, 주민 동의율이 85%를 달성했습니다. 2024년 말까지 기본계획 수립을 완료할 예정입니다.",
+            "topic": "샘플 재개발 현황",
+            "content": "샘플 재개발 프로젝트는 현재 1단계 사업이 진행 중이며, 주민 동의율이 85%를 달성했습니다. 2024년 말까지 기본계획 수립을 완료할 예정입니다.",
             "source_type": "official",
             "relevance_score": 0.9,
             "confidence": 0.95
@@ -93,7 +99,7 @@ def test_knowledge_addition():
         
         try:
             response = requests.post(
-                "http://localhost:5001/api/conversational/knowledge",
+                f"{_BASE}/api/conversational/knowledge",
                 json=knowledge,
                 headers={"Content-Type": "application/json"},
                 timeout=30

@@ -1,3 +1,5 @@
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface CritiqueOptions {
     requireCitations?: boolean;
     maxLength?: 'short' | 'medium' | 'long';
@@ -11,7 +13,7 @@ export interface CritiqueResult {
 
 export function critiqueAnswer(answer: string, options?: CritiqueOptions): CritiqueResult {
     const issues: string[] = [];
-    const length = answer.trim().length;
+    const length = coerceTrimmedString(answer, '').length;
 
     // 간단 휴리스틱: 너무 짧거나, 불릿/구조 부족, 인용 미비
     if (length < 60) issues.push('답변이 너무 짧습니다');

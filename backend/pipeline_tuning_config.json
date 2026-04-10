@@ -1,0 +1,57 @@
+{
+  "_comment": "파이프라인 튜닝 설정. 서버/관리자만 변경 가능.",
+  "version": 1,
+  "quality_presets": {
+    "basic": {
+      "description": "빠른 응답, 파이프라인 최소, ChatGPT/Gemini처럼 직접 LLM 우선",
+      "pipeline_steps": { "material_collection": true, "logical_structure": false, "style_instruction": false },
+      "llm_timeout_seconds": 15,
+      "temperature": 0.5,
+      "max_tokens": 1024,
+      "use_intelligent_engine": false,
+      "use_pre_generation_pipeline": false,
+      "prefer_direct_llm": true
+    },
+    "enhanced": {
+      "description": "균형 잡힌 품질, ChatGPT/Gemini처럼 직접 LLM 우선 시도 후 파이프라인",
+      "pipeline_steps": { "material_collection": true, "logical_structure": true, "style_instruction": true },
+      "llm_timeout_seconds": 30,
+      "temperature": 0.7,
+      "max_tokens": 4096,
+      "use_intelligent_engine": true,
+      "use_pre_generation_pipeline": true,
+      "prefer_direct_llm": true
+    },
+    "ultimate": {
+      "description": "최고 품질, ChatGPT/Gemini처럼 직접 LLM 우선 시도 후 파이프라인",
+      "pipeline_steps": { "material_collection": true, "logical_structure": true, "style_instruction": true },
+      "llm_timeout_seconds": 60,
+      "temperature": 0.8,
+      "max_tokens": 8192,
+      "use_intelligent_engine": true,
+      "use_pre_generation_pipeline": true,
+      "prefer_direct_llm": true
+    }
+  },
+  "pipeline": {
+    "max_web_research_chars": 2000,
+    "max_project_knowledge_chars": 1500,
+    "max_conversation_context_messages": 4,
+    "max_conversation_message_chars": 200,
+    "max_materials_summary_per_source": 800,
+    "enable_capability_help_injection": true
+  },
+  "deepseek_auto": {
+    "reasoner_min_query_len": 500,
+    "refine_min_query_len": 280,
+    "reasoner_max_query_len": 0,
+    "refine_max_query_len": 0,
+    "prefer_single_deepseek_stage": false
+  },
+  "response_flow": {
+    "try_intelligent_engine_first": true,
+    "try_knowledge_based_second": true,
+    "try_llm_service_third": true,
+    "fallback_to_intelligent_response": true
+  }
+}

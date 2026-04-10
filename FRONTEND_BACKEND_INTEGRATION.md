@@ -15,7 +15,7 @@
 
 ### 1. `chatService.ts` 백엔드 연동
 - **변경사항**: 
-  - API URL을 `http://localhost:8000`에서 `http://localhost:5001`로 변경
+  - API URL을 `http://localhost:8000`에서 `http://localhost:5002`로 변경
   - `sendMessage` 메서드에 백엔드 `/api/chat` 엔드포인트 호출 추가
   - `conversation_id`와 `context` 파라미터 지원 추가
   - 백엔드 API 실패 시 폴백 메커니즘 유지
@@ -29,7 +29,7 @@
 
 ### 2. `apiService.ts` 백엔드 연동
 - **변경사항**:
-  - API URL을 `http://localhost:8000/api`에서 `http://localhost:5001`로 변경
+  - API URL을 `http://localhost:8000/api`에서 `http://localhost:5002`로 변경
   - 엔드포인트 경로 처리 개선 (`/api` 중복 방지)
 
 - **주요 기능**:
@@ -82,7 +82,7 @@ projectService (백엔드 API 호출)
 실패 시 → 로컬 스토리지 폴백
 ```
 
-### 채팅 메시지
+### 대화 메시지
 ```
 프론트엔드 컴포넌트
     ↓
@@ -148,7 +148,7 @@ LLM 서비스
    - [ ] 프로젝트 삭제
    - [ ] 백엔드 API 실패 시 폴백 동작
 
-2. **채팅 메시지**
+2. **대화 메시지**
    - [ ] 메시지 전송 (백엔드 API)
    - [ ] 대화 컨텍스트 유지
    - [ ] 백엔드 API 실패 시 폴백 응답

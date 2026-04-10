@@ -1,14 +1,23 @@
 #!/bin/bash
 
+BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$BACKEND_DIR/.." && pwd)"
+# shellcheck source=../scripts/lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+
 echo "🚀 궁극적 메시지 통합 시스템 시작"
 echo "=================================================="
-echo "📍 프로젝트 루트: $(pwd)"
+echo "💡 CORBU 메인 FastAPI: npm run restart:backend (5002). 아래는 ultimate_message_integration.py (8002) 레거시."
+echo "📍 백엔드: $BACKEND_DIR | 저장소: $REPO_ROOT"
 echo ""
 
-# 가상환경 활성화
 echo "[STEP] 가상환경 활성화 중..."
-source venv/bin/activate
-echo "[SUCCESS] 가상환경 활성화 완료"
+cd "$REPO_ROOT" || exit 1
+if backend_venv_activate "$REPO_ROOT"; then
+    echo "[SUCCESS] 가상환경 활성화 완료"
+else
+    echo "[WARNING] venv 없음 — 시스템 Python 사용"
+fi
 
 # 포트 확인 및 정리
 echo "[STEP] 포트 8002 상태 확인 중..."
@@ -18,16 +27,15 @@ if lsof -Pi :8002 -sTCP:LISTEN -t >/dev/null ; then
     sleep 1
 fi
 
-# 백엔드 디렉토리로 이동
-cd backend
+mkdir -p "$REPO_ROOT/logs"
+cd "$BACKEND_DIR" || exit 1
 
-# 궁극적 메시지 통합 시스템 시작
 echo "[INFO] 궁극적 메시지 통합 시스템 시작 (포트 8002)..."
-python3 ultimate_message_integration.py > ../logs/ultimate_message_system.log 2>&1 &
+python3 ultimate_message_integration.py > "$REPO_ROOT/logs/ultimate_message_system.log" 2>&1 &
 ULTIMATE_MESSAGE_PID=$!
 echo "[SUCCESS] 궁극적 메시지 통합 시스템 시작됨 (PID: $ULTIMATE_MESSAGE_PID)"
 
-cd ..
+cd "$REPO_ROOT" || exit 1
 
 # 서버 상태 확인
 echo ""
@@ -64,12 +72,12 @@ echo "   - 사용자 ID 입력 (선택사항)"
 echo "   - '메시지 생성' 버튼 클릭"
 echo ""
 echo "🛑 서버 종료: kill $ULTIMATE_MESSAGE_PID"
-echo "📋 로그 확인: logs/ultimate_message_system.log"
+echo "📋 로그 확인: $REPO_ROOT/logs/ultimate_message_system.log"
 echo ""
 echo "🚀 궁극적 메시지 통합 시스템이 성공적으로 시작되었습니다!"
 
 # PID 저장
-echo "$ULTIMATE_MESSAGE_PID" > .ultimate_message_system_pid
+echo "$ULTIMATE_MESSAGE_PID" > "$REPO_ROOT/.ultimate_message_system_pid"
 
 # 백그라운드에서 실행 중인 프로세스 모니터링
 echo ""

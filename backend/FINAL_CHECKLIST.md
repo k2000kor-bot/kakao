@@ -1,4 +1,4 @@
-# CORBU AI Backend API 최종 체크리스트
+# CORBU.AI Backend API 최종 체크리스트
 
 ## ✅ 구현 완료 확인
 

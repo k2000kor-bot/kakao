@@ -3,7 +3,8 @@
  * 복합적이고 긴 문장의 여러 요구사항을 동시에 처리하고
  * 전체 대화 맥락을 이해하여 지속적으로 개선된 답변을 생성
  */
-
+import { errorLogger } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 export interface ComplexRequest {
     originalText: string;
     extractedRequirements: Requirement[];
@@ -192,9 +193,14 @@ class AdvancedConversationProcessor {
     async processComplexUserInput(
         userInput: string,
         sessionId: string,
-        additionalContext?: any
+        _additionalContext?: Record<string, unknown>
     ): Promise<EnhancedResponse> {
-        console.log('🧠 복합 사용자 입력 처리 시작:', userInput.substring(0, 100) + '...');
+        errorLogger.info('🧠 복합 사용자 입력 처리 시작', {
+            component: 'advancedConversationProcessor',
+            action: 'processComplexUserInput',
+            sessionId,
+            userInputPreview: userInput.substring(0, 100),
+        });
 
         // 1. 대화 메모리 로드 또는 초기화
         const conversationMemory = this.getOrCreateConversationMemory(sessionId);
@@ -248,7 +254,10 @@ class AdvancedConversationProcessor {
         userInput: string,
         conversationMemory: ConversationMemory
     ): Promise<ComplexRequest> {
-        console.log('🔍 복합 요구사항 분석 중...');
+        errorLogger.info('🔍 복합 요구사항 분석 중', {
+            component: 'advancedConversationProcessor',
+            action: 'analyzeComplexRequest',
+        });
 
         // 문장 분할 및 구조 분석
         const sentences = this.segmentComplexInput(userInput);
@@ -296,8 +305,11 @@ class AdvancedConversationProcessor {
     private async analyzeFullConversationalContext(
         complexRequest: ComplexRequest,
         conversationMemory: ConversationMemory
-    ): Promise<any> {
-        console.log('📚 전체 대화 맥락 분석 중...');
+    ): Promise<Record<string, unknown>> {
+        errorLogger.info('📚 전체 대화 맥락 분석 중', {
+            component: 'advancedConversationProcessor',
+            action: 'analyzeFullConversationalContext',
+        });
 
         // 최근 대화 턴들 분석
         const recentTurns = conversationMemory.fullHistory.slice(-this.contextAnalysisDepth);
@@ -332,9 +344,12 @@ class AdvancedConversationProcessor {
      */
     private async developProcessingStrategy(
         complexRequest: ComplexRequest,
-        contextualAnalysis: any
-    ): Promise<any> {
-        console.log('🎯 처리 전략 수립 중...');
+        _contextualAnalysis: Record<string, unknown>
+    ): Promise<Record<string, unknown>> {
+        errorLogger.info('🎯 처리 전략 수립 중', {
+            component: 'advancedConversationProcessor',
+            action: 'developProcessingStrategy',
+        });
 
         // 병렬 처리 가능한 요구사항 식별
         const parallelProcessable = this.identifyParallelProcessable(complexRequest);
@@ -361,29 +376,35 @@ class AdvancedConversationProcessor {
      * 처리 전략 실행
      */
     private async executeProcessingStrategy(
-        processingStrategy: any,
+        processingStrategy: Record<string, unknown>,
         conversationMemory: ConversationMemory
     ): Promise<Map<string, RequirementResponse>> {
-        console.log('⚡ 처리 전략 실행 중...');
+        errorLogger.info('⚡ 처리 전략 실행 중', {
+            component: 'advancedConversationProcessor',
+            action: 'executeProcessingStrategy',
+        });
 
         const processedRequirements = new Map<string, RequirementResponse>();
 
         // 병렬 처리 실행
-        if (processingStrategy.parallelProcessable.length > 0) {
+        const strategy = processingStrategy as { parallelProcessable?: Requirement[]; sequentialRequired?: Requirement[] };
+        const parallelList = strategy.parallelProcessable ?? [];
+        const sequentialList = strategy.sequentialRequired ?? [];
+        if (parallelList.length > 0) {
             const parallelResults = await Promise.all(
-                processingStrategy.parallelProcessable.map((req: Requirement) =>
+                parallelList.map((req: Requirement) =>
                     this.processRequirement(req, conversationMemory)
                 )
             );
             
             parallelResults.forEach((result, index) => {
-                const req = processingStrategy.parallelProcessable[index];
-                processedRequirements.set(req.id, result);
+                const req = parallelList[index];
+                if (req) processedRequirements.set(req.id, result);
             });
         }
 
         // 순차 처리 실행
-        for (const req of processingStrategy.sequentialRequired) {
+        for (const req of sequentialList) {
             const result = await this.processRequirement(req, conversationMemory);
             processedRequirements.set(req.id, result);
         }
@@ -398,7 +419,13 @@ class AdvancedConversationProcessor {
         requirement: Requirement,
         conversationMemory: ConversationMemory
     ): Promise<RequirementResponse> {
-        console.log(`🔧 요구사항 처리: ${requirement.type} - ${requirement.content.substring(0, 50)}...`);
+        errorLogger.info('🔧 요구사항 처리', {
+            component: 'advancedConversationProcessor',
+            action: 'processRequirement',
+            requirementId: requirement.id,
+            requirementType: requirement.type,
+            contentPreview: requirement.content.substring(0, 50),
+        });
 
         // 요구사항 타입별 전문 처리
         let response: string;
@@ -408,37 +435,37 @@ class AdvancedConversationProcessor {
         switch (requirement.type) {
             case 'question':
                 const questionResult = await this.processQuestion(requirement, conversationMemory);
-                response = questionResult.answer;
+                response = questionResult.answer as string;
                 processingMethod = 'advanced_qa';
-                sourcesUsed = questionResult.sources;
+                sourcesUsed = (questionResult.sources ?? []) as string[];
                 break;
 
             case 'analysis':
                 const analysisResult = await this.performAnalysis(requirement, conversationMemory);
-                response = analysisResult.analysis;
+                response = analysisResult.analysis as string;
                 processingMethod = 'deep_analysis';
-                sourcesUsed = analysisResult.sources;
+                sourcesUsed = (analysisResult.sources ?? []) as string[];
                 break;
 
             case 'comparison':
                 const comparisonResult = await this.performComparison(requirement, conversationMemory);
-                response = comparisonResult.comparison;
+                response = comparisonResult.comparison as string;
                 processingMethod = 'comparative_analysis';
-                sourcesUsed = comparisonResult.sources;
+                sourcesUsed = (comparisonResult.sources ?? []) as string[];
                 break;
 
             case 'problem_solving':
                 const solutionResult = await this.solveProblem(requirement, conversationMemory);
-                response = solutionResult.solution;
+                response = solutionResult.solution as string;
                 processingMethod = 'problem_solving';
-                sourcesUsed = solutionResult.sources;
+                sourcesUsed = (solutionResult.sources ?? []) as string[];
                 break;
 
             default:
                 const generalResult = await this.processGeneral(requirement, conversationMemory);
-                response = generalResult.response;
+                response = generalResult.response as string;
                 processingMethod = 'general_processing';
-                sourcesUsed = generalResult.sources;
+                sourcesUsed = (generalResult.sources ?? []) as string[];
         }
 
         // 품질 메트릭 계산
@@ -451,15 +478,15 @@ class AdvancedConversationProcessor {
         return {
             requirementId: requirement.id,
             response,
-            confidence: qualityMetrics.confidence,
+            confidence: (qualityMetrics.confidence ?? 0) as number,
             processingMethod,
             sourcesUsed,
             relatedRequirements: requirement.dependencies,
             qualityMetrics: {
-                completeness: qualityMetrics.completeness,
-                accuracy: qualityMetrics.accuracy,
-                relevance: qualityMetrics.relevance,
-                clarity: qualityMetrics.clarity
+                completeness: (qualityMetrics.completeness ?? 0) as number,
+                accuracy: (qualityMetrics.accuracy ?? 0) as number,
+                relevance: (qualityMetrics.relevance ?? 0) as number,
+                clarity: (qualityMetrics.clarity ?? 0) as number
             }
         };
     }
@@ -469,10 +496,14 @@ class AdvancedConversationProcessor {
      */
     private async generateIntegratedResponse(
         processedRequirements: Map<string, RequirementResponse>,
-        contextualAnalysis: any,
+        contextualAnalysis: Record<string, unknown>,
         conversationMemory: ConversationMemory
     ): Promise<EnhancedResponse> {
-        console.log('🎨 통합 응답 생성 중...');
+        errorLogger.info('🎨 통합 응답 생성 중', {
+            component: 'advancedConversationProcessor',
+            action: 'generateIntegratedResponse',
+            processedRequirementsCount: processedRequirements.size,
+        });
 
         // 메인 응답 구성
         const mainResponse = await this.synthesizeMainResponse(
@@ -521,7 +552,12 @@ class AdvancedConversationProcessor {
         response: EnhancedResponse,
         complexRequest: ComplexRequest
     ): Promise<void> {
-        console.log('💾 대화 메모리 업데이트 중...');
+        errorLogger.info('💾 대화 메모리 업데이트 중', {
+            component: 'advancedConversationProcessor',
+            action: 'updateConversationMemory',
+            sessionId,
+            requirementsCount: complexRequest.extractedRequirements.length,
+        });
 
         const conversationMemory = this.conversationMemories.get(sessionId)!;
 
@@ -568,7 +604,11 @@ class AdvancedConversationProcessor {
         sessionId: string,
         response: EnhancedResponse
     ): Promise<void> {
-        console.log('📈 지속적 학습 수행 중...');
+        errorLogger.info('📈 지속적 학습 수행 중', {
+            component: 'advancedConversationProcessor',
+            action: 'performContinuousLearning',
+            sessionId,
+        });
 
         // 성공적인 패턴 학습
         this.learnSuccessfulPatterns(response);
@@ -608,16 +648,18 @@ class AdvancedConversationProcessor {
 
     private segmentComplexInput(input: string): string[] {
         // 복잡한 문장을 의미 단위로 분할
-        const sentences = input.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = input.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const clauses = [];
         
         for (const sentence of sentences) {
             // 접속사, 관계사 등을 기준으로 추가 분할
-            const subClauses = sentence.split(/(?:그리고|또한|하지만|그러나|따라서|그래서|왜냐하면|만약|만일|그런데|그리하여)/).filter(s => s.trim().length > 0);
+            const subClauses = sentence
+              .split(/(?:그리고|또한|하지만|그러나|따라서|그래서|왜냐하면|만약|만일|그런데|그리하여)/)
+              .filter((s) => coerceTrimmedString(s, '').length > 0);
             clauses.push(...subClauses);
         }
         
-        return clauses.map(clause => clause.trim());
+        return clauses.map((clause) => coerceTrimmedString(clause, ''));
     }
 
     private async extractRequirementsFromSentence(
@@ -747,19 +789,19 @@ class AdvancedConversationProcessor {
             word.length > 2 && 
             !/^(그|이|저|것|수|등|및|또는|그리고|하지만)/.test(word)
         );
-        return keywords.slice(0, 5); // 상위 5개만
+        return keywords;
     }
 
     // 추가 메서드들은 실제 구현에서 완성...
-    private analyzeRequirementDependencies(requirements: Requirement[]): ContextDependency[] {
+    private analyzeRequirementDependencies(_requirements: Requirement[]): ContextDependency[] {
         // 요구사항 간 의존성 분석 로직
         return [];
     }
 
     private calculateProcessingPriority(
         requirements: Requirement[],
-        dependencies: ContextDependency[],
-        memory: ConversationMemory
+        _dependencies: ContextDependency[],
+        _memory: ConversationMemory
     ): ProcessingPriority[] {
         // 처리 우선순위 계산 로직
         return requirements.map(req => ({
@@ -787,27 +829,27 @@ class AdvancedConversationProcessor {
     }
 
     // 나머지 메서드들도 유사하게 구현...
-    private analyzeTopicContinuity(turns: ConversationTurn[], request: ComplexRequest): any {
+    private analyzeTopicContinuity(_turns: ConversationTurn[], _request: ComplexRequest): Record<string, unknown> {
         return { continuityScore: 0.8, mainTopics: [] };
     }
 
-    private trackIntentEvolution(turns: ConversationTurn[], request: ComplexRequest): any {
+    private trackIntentEvolution(_turns: ConversationTurn[], _request: ComplexRequest): Record<string, unknown> {
         return { evolutionPattern: 'deepening', confidence: 0.7 };
     }
 
-    private identifyUnresolvedIssues(memory: ConversationMemory): any[] {
+    private identifyUnresolvedIssues(_memory: ConversationMemory): unknown[] {
         return [];
     }
 
-    private analyzeSatisfactionPatterns(memory: ConversationMemory): any {
+    private analyzeSatisfactionPatterns(_memory: ConversationMemory): Record<string, unknown> {
         return { averageSatisfaction: 0.8, trend: 'improving' };
     }
 
-    private generatePersonalizationInsights(memory: ConversationMemory): any {
+    private generatePersonalizationInsights(_memory: ConversationMemory): Record<string, unknown> {
         return { preferredStyle: 'detailed', topicInterests: [] };
     }
 
-    private calculateContextualRelevance(request: ComplexRequest, memory: ConversationMemory): number {
+    private calculateContextualRelevance(_request: ComplexRequest, _memory: ConversationMemory): number {
         return 0.85;
     }
 
@@ -819,11 +861,11 @@ class AdvancedConversationProcessor {
         return request.extractedRequirements.filter(req => req.dependencies.length > 0);
     }
 
-    private planResourceAllocation(request: ComplexRequest): any {
+    private planResourceAllocation(_request: ComplexRequest): Record<string, unknown> {
         return { cpuIntensive: [], memoryIntensive: [], networkIntensive: [] };
     }
 
-    private setupQualityCheckpoints(request: ComplexRequest): any[] {
+    private setupQualityCheckpoints(_request: ComplexRequest): unknown[] {
         return [];
     }
 
@@ -831,27 +873,27 @@ class AdvancedConversationProcessor {
         return request.extractedRequirements.reduce((sum, req) => sum + req.estimatedProcessingTime, 0);
     }
 
-    private async processQuestion(req: Requirement, memory: ConversationMemory): Promise<any> {
+    private async processQuestion(req: Requirement, _memory: ConversationMemory): Promise<Record<string, unknown>> {
         return { answer: `질문에 대한 답변: ${req.content}`, sources: ['knowledge_base'] };
     }
 
-    private async performAnalysis(req: Requirement, memory: ConversationMemory): Promise<any> {
+    private async performAnalysis(req: Requirement, _memory: ConversationMemory): Promise<Record<string, unknown>> {
         return { analysis: `분석 결과: ${req.content}`, sources: ['analytical_tools'] };
     }
 
-    private async performComparison(req: Requirement, memory: ConversationMemory): Promise<any> {
+    private async performComparison(req: Requirement, _memory: ConversationMemory): Promise<Record<string, unknown>> {
         return { comparison: `비교 결과: ${req.content}`, sources: ['comparative_data'] };
     }
 
-    private async solveProblem(req: Requirement, memory: ConversationMemory): Promise<any> {
+    private async solveProblem(req: Requirement, _memory: ConversationMemory): Promise<Record<string, unknown>> {
         return { solution: `해결 방안: ${req.content}`, sources: ['expert_knowledge'] };
     }
 
-    private async processGeneral(req: Requirement, memory: ConversationMemory): Promise<any> {
+    private async processGeneral(req: Requirement, _memory: ConversationMemory): Promise<Record<string, unknown>> {
         return { response: `일반 처리 결과: ${req.content}`, sources: ['general_knowledge'] };
     }
 
-    private async calculateQualityMetrics(req: Requirement, response: string, memory: ConversationMemory): Promise<any> {
+    private async calculateQualityMetrics(_req: Requirement, _response: string, _memory: ConversationMemory): Promise<Record<string, unknown>> {
         return {
             confidence: 0.85,
             completeness: 0.9,
@@ -863,19 +905,19 @@ class AdvancedConversationProcessor {
 
     private async synthesizeMainResponse(
         processed: Map<string, RequirementResponse>,
-        analysis: any
+        _analysis: Record<string, unknown>
     ): Promise<string> {
         const responses = Array.from(processed.values()).map(r => r.response);
         return `통합 응답:\n\n${responses.join('\n\n')}`;
     }
 
-    private identifyContextualConnections(processed: Map<string, RequirementResponse>): ContextualConnection[] {
+    private identifyContextualConnections(_processed: Map<string, RequirementResponse>): ContextualConnection[] {
         return [];
     }
 
     private async generateFollowUpSuggestions(
         processed: Map<string, RequirementResponse>,
-        memory: ConversationMemory
+        _memory: ConversationMemory
     ): Promise<FollowUpSuggestion[]> {
         return [
             {
@@ -889,8 +931,8 @@ class AdvancedConversationProcessor {
     }
 
     private identifyImprovementOpportunities(
-        processed: Map<string, RequirementResponse>,
-        analysis: any
+        _processed: Map<string, RequirementResponse>,
+        _analysis: Record<string, unknown>
     ): ImprovementOpportunity[] {
         return [];
     }
@@ -908,7 +950,7 @@ class AdvancedConversationProcessor {
         };
     }
 
-    private generateProcessingInsights(processed: Map<string, RequirementResponse>): ProcessingInsights {
+    private generateProcessingInsights(_processed: Map<string, RequirementResponse>): ProcessingInsights {
         return {
             totalProcessingTime: 5000,
             mostChallenging: 'complex_analysis',
@@ -922,27 +964,27 @@ class AdvancedConversationProcessor {
         return requirements.map(req => req.type);
     }
 
-    private updateTopicEvolution(memory: ConversationMemory, turn: ConversationTurn): void {
+    private updateTopicEvolution(_memory: ConversationMemory, _turn: ConversationTurn): void {
         // 주제 진화 업데이트 로직
     }
 
-    private updateUserPatterns(memory: ConversationMemory, turn: ConversationTurn): void {
+    private updateUserPatterns(_memory: ConversationMemory, _turn: ConversationTurn): void {
         // 사용자 패턴 업데이트 로직
     }
 
-    private updateContextualInsights(memory: ConversationMemory, turn: ConversationTurn, response: EnhancedResponse): void {
+    private updateContextualInsights(_memory: ConversationMemory, _turn: ConversationTurn, _response: EnhancedResponse): void {
         // 맥락적 인사이트 업데이트 로직
     }
 
-    private learnSuccessfulPatterns(response: EnhancedResponse): void {
+    private learnSuccessfulPatterns(_response: EnhancedResponse): void {
         // 성공적인 패턴 학습 로직
     }
 
-    private applyImprovements(opportunities: ImprovementOpportunity[]): void {
+    private applyImprovements(_opportunities: ImprovementOpportunity[]): void {
         // 개선사항 적용 로직
     }
 
-    private predictAndPrepareForFeedback(response: EnhancedResponse): void {
+    private predictAndPrepareForFeedback(_response: EnhancedResponse): void {
         // 피드백 예측 및 대응 준비 로직
     }
 }

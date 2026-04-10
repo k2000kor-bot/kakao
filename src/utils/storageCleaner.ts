@@ -4,6 +4,12 @@
  */
 
 import { errorLogger } from './errorLogger';
+import { CURRENT_PROJECT_STORAGE_KEY } from '../services/projectStorageKeys';
+
+function getFileName(obj: Record<string, unknown>): string {
+  const n = obj.name ?? obj.filename ?? obj.fileName;
+  return typeof n === 'string' ? n : '';
+}
 
 export const cleanLocalStorage = () => {
   try {
@@ -33,10 +39,10 @@ export const cleanLocalStorage = () => {
           if (typeof parsed === 'object') {
             if (Array.isArray(parsed)) {
               // 배열인 경우
-              const cleaned = parsed.filter((item: any) => {
+              const cleaned = parsed.filter((item: Record<string, unknown>) => {
                 if (item && typeof item === 'object') {
                   // 파일 이름이 하드코딩된 파일인지 확인
-                  const fileName = item.name || item.filename || item.fileName || '';
+                  const fileName = getFileName(item);
                   if (fileName.includes('개포우성7차_제안서') || 
                       fileName.includes('래미안 루미원') ||
                       fileName.includes('Raemian') ||
@@ -58,8 +64,8 @@ export const cleanLocalStorage = () => {
               Object.keys(parsed).forEach(projectId => {
                 if (parsed[projectId] && parsed[projectId].files) {
                   const originalLength = parsed[projectId].files.length;
-                  parsed[projectId].files = parsed[projectId].files.filter((file: any) => {
-                    const fileName = file.name || file.filename || file.fileName || '';
+                  parsed[projectId].files = parsed[projectId].files.filter((file: Record<string, unknown>) => {
+                    const fileName = getFileName(file);
                     if (fileName.includes('개포우성7차_제안서') || 
                         fileName.includes('래미안 루미원') ||
                         fileName.includes('Raemian') ||
@@ -117,9 +123,9 @@ export const cleanLocalStorage = () => {
               
               if (Array.isArray(parsed)) {
                 const originalLength = parsed.length;
-                const cleaned = parsed.filter((item: any) => {
+                const cleaned = parsed.filter((item: Record<string, unknown>) => {
                   if (item && typeof item === 'object') {
-                    const fileName = item.name || item.filename || item.fileName || '';
+                    const fileName = getFileName(item);
                     if (fileName.includes('개포우성7차_제안서') || 
                         fileName.includes('래미안 루미원') ||
                         fileName.includes('Raemian') ||
@@ -185,8 +191,8 @@ export const resetProjectData = () => {
     // 프로젝트 데이터 초기화
     const projectData = {
       id: '1',
-      name: '개포우성7차',
-      description: '개포우성7차 재건축 프로젝트',
+      name: '샘플 프로젝트',
+      description: '데모용 재건축·정비 프로젝트',
       status: 'active',
       priority: 'high',
       createdAt: '2024-01-15',
@@ -209,10 +215,10 @@ export const resetProjectData = () => {
         notifications: true
       },
       archived: false,
-      tags: ['재건축', '개포우성', '프로젝트']
+      tags: ['재건축', '데모', '프로젝트']
     };
     
-    localStorage.setItem('currentProject', JSON.stringify(projectData));
+    localStorage.setItem(CURRENT_PROJECT_STORAGE_KEY, JSON.stringify(projectData));
     errorLogger.info('프로젝트 데이터 초기화 완료', { component: 'storageCleaner', action: 'resetProjectData' });
     return true;
   } catch (error) {

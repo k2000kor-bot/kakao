@@ -1,7 +1,36 @@
 // 고급 보안 API 서비스
 // backend/api/advanced_security_api.py의 모든 엔드포인트와 통합
 
+import {
+    ADVANCED_SECURITY_ALERTS_PATH,
+    ADVANCED_SECURITY_AUDIT_LOGS_PATH,
+    ADVANCED_SECURITY_DECRYPT_PATH,
+    ADVANCED_SECURITY_ENCRYPT_PATH,
+    ADVANCED_SECURITY_EVENTS_PATH,
+    ADVANCED_SECURITY_GENERATE_TOKEN_PATH,
+    ADVANCED_SECURITY_HASH_PATH,
+    ADVANCED_SECURITY_IP_BLOCK_PATH,
+    ADVANCED_SECURITY_IP_BLOCKED_PATH,
+    ADVANCED_SECURITY_IP_WHITELIST_PATH,
+    ADVANCED_SECURITY_KEYS_PATH,
+    ADVANCED_SECURITY_POLICIES_PATH,
+    ADVANCED_SECURITY_RATE_LIMIT_PATH,
+    ADVANCED_SECURITY_SCAN_PATH,
+    ADVANCED_SECURITY_STATUS_PATH,
+    ADVANCED_SECURITY_THREATS_PATH,
+    ADVANCED_SECURITY_VERIFY_PASSWORD_PATH,
+    ADVANCED_SECURITY_VERIFY_TOKEN_PATH,
+    API_QUERY_PARAM_LIMIT,
+    API_QUERY_PARAM_SCAN_TYPE,
+    API_QUERY_PARAM_SEVERITY,
+    API_QUERY_PARAM_STATUS,
+    API_QUERY_PARAM_USER_ID,
+    resolveApiBaseUrl,
+    resolveAxiosHttpOriginBaseUrl,
+} from '../config/api';
 import axios, { AxiosInstance } from 'axios';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 // ===== 타입 정의 =====
 export interface SecurityThreat {
@@ -23,7 +52,7 @@ export interface SecurityEvent {
     ip_address: string;
     user_agent: string;
     timestamp: string;
-    details: Record<string, any>;
+    details: Record<string, unknown>;
     risk_level: 'low' | 'medium' | 'high';
 }
 
@@ -47,7 +76,7 @@ export interface AuditLog {
     user_agent: string;
     timestamp: string;
     success: boolean;
-    details: Record<string, any>;
+    details: Record<string, unknown>;
 }
 
 export interface IPBlock {
@@ -64,7 +93,7 @@ export interface SecurityPolicy {
     name: string;
     description: string;
     policy_type: 'access_control' | 'rate_limit' | 'encryption' | 'authentication';
-    rules: Record<string, any>;
+    rules: Record<string, unknown>;
     enabled: boolean;
     created_at: string;
     updated_at: string;
@@ -79,7 +108,7 @@ export interface SecurityAlert {
     source: string;
     timestamp: string;
     status: 'new' | 'acknowledged' | 'resolved';
-    details: Record<string, any>;
+    details: Record<string, unknown>;
 }
 
 export interface SecurityStatus {
@@ -131,7 +160,7 @@ class AdvancedSecurityService {
     private baseURL: string;
 
     constructor() {
-        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+        this.baseURL = resolveAxiosHttpOriginBaseUrl(resolveApiBaseUrl().trim());
         this.api = axios.create({
             baseURL: this.baseURL,
             timeout: 30000,
@@ -156,31 +185,46 @@ class AdvancedSecurityService {
             }
 
             const params = new URLSearchParams();
-            if (severity) params.append('severity', severity);
-            if (status) params.append('status', status);
+            if (severity) params.append(API_QUERY_PARAM_SEVERITY, severity);
+            if (status) params.append(API_QUERY_PARAM_STATUS, status);
 
-            const response = await this.api.get(`/security/threats?${params.toString()}`);
+            const response = await this.api.get(`${ADVANCED_SECURITY_THREATS_PATH}?${params.toString()}`);
 
             if (!response.data?.success) {
                 throw new Error(response.data?.error || '보안 위협 조회 실패');
             }
 
             return response.data.data;
-        } catch (error: any) {
-            console.error('보안 위협 조회 실패:', error);
-            if (error.response) {
-                throw new Error(`서버 오류: ${error.response.status} - ${error.response.data?.detail || error.message}`);
+        } catch (error: unknown) {
+            const err = toError(error);
+            errorLogger.error('보안 위협 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getSecurityThreats',
+                status,
+                severity,
+            });
+            if (error && typeof error === 'object' && 'response' in error) {
+                const ax = error as { response: { status: number; data?: { detail?: string } }; message?: string };
+                throw new Error(`서버 오류: ${ax.response.status} - ${ax.response.data?.detail || ax.message}`);
             }
             throw error;
         }
     }
 
-    async resolveThreat(threatId: string, resolution: Record<string, any>): Promise<SecurityThreat> {
+    async resolveThreat(threatId: string, resolution: Record<string, unknown>): Promise<SecurityThreat> {
         try {
-            const response = await this.api.post(`/security/threats/${threatId}/resolve`, resolution);
+            const response = await this.api.post(
+                `${ADVANCED_SECURITY_THREATS_PATH}/${encodeURIComponent(threatId)}/resolve`,
+                resolution,
+            );
             return response.data.data;
         } catch (error) {
-            console.error('보안 위협 해결 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 위협 해결 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'resolveThreat',
+                threatId,
+            });
             throw error;
         }
     }
@@ -192,39 +236,55 @@ class AdvancedSecurityService {
         risk_distribution: Record<string, number>;
     }> {
         try {
-            const response = await this.api.get(`/security/events?limit=${limit}`);
+            const response = await this.api.get(ADVANCED_SECURITY_EVENTS_PATH, {
+                params: { [API_QUERY_PARAM_LIMIT]: limit },
+            });
             return response.data.data;
         } catch (error) {
-            console.error('보안 이벤트 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 이벤트 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getSecurityEvents',
+                limit,
+            });
             throw error;
         }
     }
 
     // ===== 암호화/복호화 =====
-    async encryptData(data: Record<string, any>): Promise<{
+    async encryptData(data: Record<string, unknown>): Promise<{
         encrypted_data: string;
         key_id: string;
         algorithm: string;
         timestamp: string;
     }> {
         try {
-            const response = await this.api.post('/security/encrypt', data);
+            const response = await this.api.post(ADVANCED_SECURITY_ENCRYPT_PATH, data);
             return response.data.data;
         } catch (error) {
-            console.error('데이터 암호화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('데이터 암호화 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'encryptData',
+            });
             throw error;
         }
     }
 
-    async decryptData(encryptedData: string, keyId: string): Promise<Record<string, any>> {
+    async decryptData(encryptedData: string, keyId: string): Promise<Record<string, unknown>> {
         try {
-            const response = await this.api.post('/security/decrypt', {
+            const response = await this.api.post(ADVANCED_SECURITY_DECRYPT_PATH, {
                 encrypted_data: encryptedData,
                 key_id: keyId,
             });
             return response.data.data;
         } catch (error) {
-            console.error('데이터 복호화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('데이터 복호화 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'decryptData',
+                keyId,
+            });
             throw error;
         }
     }
@@ -236,10 +296,14 @@ class AdvancedSecurityService {
         active_count: number;
     }> {
         try {
-            const response = await this.api.get('/security/keys');
+            const response = await this.api.get(ADVANCED_SECURITY_KEYS_PATH);
             return response.data.data;
         } catch (error) {
-            console.error('암호화 키 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('암호화 키 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getEncryptionKeys',
+            });
             throw error;
         }
     }
@@ -249,10 +313,15 @@ class AdvancedSecurityService {
         expires_days?: number;
     }): Promise<EncryptionKey> {
         try {
-            const response = await this.api.post('/security/keys', keyConfig);
+            const response = await this.api.post(ADVANCED_SECURITY_KEYS_PATH, keyConfig);
             return response.data.data;
         } catch (error) {
-            console.error('암호화 키 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('암호화 키 생성 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'createEncryptionKey',
+                keyName: keyConfig.name,
+            });
             throw error;
         }
     }
@@ -264,12 +333,16 @@ class AdvancedSecurityService {
         salt: string;
     }> {
         try {
-            const response = await this.api.post('/security/hash', null, {
+            const response = await this.api.post(ADVANCED_SECURITY_HASH_PATH, null, {
                 params: { password },
             });
             return response.data.data;
         } catch (error) {
-            console.error('비밀번호 해시 실패:', error);
+            const err = toError(error);
+            errorLogger.error('비밀번호 해시 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'hashPassword',
+            });
             throw error;
         }
     }
@@ -279,43 +352,55 @@ class AdvancedSecurityService {
         message: string;
     }> {
         try {
-            const response = await this.api.post('/security/verify-password', null, {
+            const response = await this.api.post(ADVANCED_SECURITY_VERIFY_PASSWORD_PATH, null, {
                 params: { password, hashed_password: hashedPassword },
             });
             return response.data.data;
         } catch (error) {
-            console.error('비밀번호 검증 실패:', error);
+            const err = toError(error);
+            errorLogger.error('비밀번호 검증 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'verifyPassword',
+            });
             throw error;
         }
     }
 
     // ===== JWT 토큰 관리 =====
-    async generateJWTToken(payload: Record<string, any>): Promise<{
+    async generateJWTToken(payload: Record<string, unknown>): Promise<{
         token: string;
         expires_at: string;
         algorithm: string;
     }> {
         try {
-            const response = await this.api.post('/security/generate-token', payload);
+            const response = await this.api.post(ADVANCED_SECURITY_GENERATE_TOKEN_PATH, payload);
             return response.data.data;
         } catch (error) {
-            console.error('JWT 토큰 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('JWT 토큰 생성 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'generateJWTToken',
+            });
             throw error;
         }
     }
 
     async verifyJWTToken(token: string): Promise<{
-        payload: Record<string, any>;
+        payload: Record<string, unknown>;
         is_valid: boolean;
         expires_at: string;
     }> {
         try {
-            const response = await this.api.post('/security/verify-token', null, {
+            const response = await this.api.post(ADVANCED_SECURITY_VERIFY_TOKEN_PATH, null, {
                 params: { token },
             });
             return response.data.data;
         } catch (error) {
-            console.error('JWT 토큰 검증 실패:', error);
+            const err = toError(error);
+            errorLogger.error('JWT 토큰 검증 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'verifyJWTToken',
+            });
             throw error;
         }
     }
@@ -329,13 +414,19 @@ class AdvancedSecurityService {
     }> {
         try {
             const params = new URLSearchParams();
-            if (userId) params.append('user_id', userId);
-            params.append('limit', limit.toString());
+            if (userId) params.append(API_QUERY_PARAM_USER_ID, userId);
+            params.append(API_QUERY_PARAM_LIMIT, limit.toString());
 
-            const response = await this.api.get(`/security/audit-logs?${params.toString()}`);
+            const response = await this.api.get(`${ADVANCED_SECURITY_AUDIT_LOGS_PATH}?${params.toString()}`);
             return response.data.data;
         } catch (error) {
-            console.error('감사 로그 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('감사 로그 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getAuditLogs',
+                userId,
+                limit,
+            });
             throw error;
         }
     }
@@ -343,10 +434,14 @@ class AdvancedSecurityService {
     // ===== 보안 상태 =====
     async getSecurityStatus(): Promise<SecurityStatus> {
         try {
-            const response = await this.api.get('/security/status');
+            const response = await this.api.get(ADVANCED_SECURITY_STATUS_PATH);
             return response.data.data;
         } catch (error) {
-            console.error('보안 상태 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 상태 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getSecurityStatus',
+            });
             throw error;
         }
     }
@@ -354,12 +449,17 @@ class AdvancedSecurityService {
     // ===== 보안 스캔 =====
     async runSecurityScan(scanType: 'full' | 'quick' | 'custom' = 'full'): Promise<SecurityScanResult> {
         try {
-            const response = await this.api.post('/security/scan', null, {
-                params: { scan_type: scanType },
+            const response = await this.api.post(ADVANCED_SECURITY_SCAN_PATH, null, {
+                params: { [API_QUERY_PARAM_SCAN_TYPE]: scanType },
             });
             return response.data.data;
         } catch (error) {
-            console.error('보안 스캔 실행 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 스캔 실행 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'runSecurityScan',
+                scanType,
+            });
             throw error;
         }
     }
@@ -384,17 +484,24 @@ class AdvancedSecurityService {
                 throw new Error('유효하지 않은 심각도 값입니다.');
             }
 
-            const response = await this.api.post('/security/ip/block', ipData);
+            const response = await this.api.post(ADVANCED_SECURITY_IP_BLOCK_PATH, ipData);
 
             if (!response.data?.success) {
                 throw new Error(response.data?.error || 'IP 차단 실패');
             }
 
             return response.data.data;
-        } catch (error: any) {
-            console.error('IP 차단 실패:', error);
-            if (error.response) {
-                throw new Error(`서버 오류: ${error.response.status} - ${error.response.data?.detail || error.message}`);
+        } catch (error: unknown) {
+            const err = toError(error);
+            errorLogger.error('IP 차단 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'blockIP',
+                ipAddress: ipData.ip_address,
+                reason: ipData.reason,
+            });
+            if (error && typeof error === 'object' && 'response' in error) {
+                const ax = error as { response: { status: number; data?: { detail?: string } }; message?: string };
+                throw new Error(`서버 오류: ${ax.response.status} - ${ax.response.data?.detail || ax.message}`);
             }
             throw error;
         }
@@ -402,9 +509,14 @@ class AdvancedSecurityService {
 
     async unblockIP(ipAddress: string): Promise<void> {
         try {
-            await this.api.delete(`/security/ip/block/${ipAddress}`);
+            await this.api.delete(`${ADVANCED_SECURITY_IP_BLOCK_PATH}/${encodeURIComponent(ipAddress)}`);
         } catch (error) {
-            console.error('IP 차단 해제 실패:', error);
+            const err = toError(error);
+            errorLogger.error('IP 차단 해제 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'unblockIP',
+                ipAddress,
+            });
             throw error;
         }
     }
@@ -414,10 +526,14 @@ class AdvancedSecurityService {
         total_count: number;
     }> {
         try {
-            const response = await this.api.get('/security/ip/blocked');
+            const response = await this.api.get(ADVANCED_SECURITY_IP_BLOCKED_PATH);
             return response.data.data;
         } catch (error) {
-            console.error('차단된 IP 목록 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('차단된 IP 목록 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getBlockedIPs',
+            });
             throw error;
         }
     }
@@ -435,10 +551,15 @@ class AdvancedSecurityService {
         notes: string;
     }> {
         try {
-            const response = await this.api.post('/security/ip/whitelist', ipData);
+            const response = await this.api.post(ADVANCED_SECURITY_IP_WHITELIST_PATH, ipData);
             return response.data.data;
         } catch (error) {
-            console.error('IP 화이트리스트 추가 실패:', error);
+            const err = toError(error);
+            errorLogger.error('IP 화이트리스트 추가 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'whitelistIP',
+                ipAddress: ipData.ip_address,
+            });
             throw error;
         }
     }
@@ -454,10 +575,14 @@ class AdvancedSecurityService {
         total_count: number;
     }> {
         try {
-            const response = await this.api.get('/security/ip/whitelist');
+            const response = await this.api.get(ADVANCED_SECURITY_IP_WHITELIST_PATH);
             return response.data.data;
         } catch (error) {
-            console.error('화이트리스트 IP 목록 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('화이트리스트 IP 목록 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getWhitelistedIPs',
+            });
             throw error;
         }
     }
@@ -471,10 +596,15 @@ class AdvancedSecurityService {
         enabled?: boolean;
     }): Promise<RateLimitConfig> {
         try {
-            const response = await this.api.post('/security/rate-limit', config);
+            const response = await this.api.post(ADVANCED_SECURITY_RATE_LIMIT_PATH, config);
             return response.data.data;
         } catch (error) {
-            console.error('Rate limiting 설정 실패:', error);
+            const err = toError(error);
+            errorLogger.error('Rate limiting 설정 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'configureRateLimit',
+                endpoint: config.endpoint,
+            });
             throw error;
         }
     }
@@ -484,10 +614,14 @@ class AdvancedSecurityService {
         total_endpoints: number;
     }> {
         try {
-            const response = await this.api.get('/security/rate-limit');
+            const response = await this.api.get(ADVANCED_SECURITY_RATE_LIMIT_PATH);
             return response.data.data;
         } catch (error) {
-            console.error('Rate limiting 설정 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('Rate limiting 설정 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getRateLimitConfig',
+            });
             throw error;
         }
     }
@@ -497,12 +631,12 @@ class AdvancedSecurityService {
         name: string;
         description?: string;
         policy_type: 'access_control' | 'rate_limit' | 'encryption' | 'authentication';
-        rules?: Record<string, any>;
+        rules?: Record<string, unknown>;
         enabled?: boolean;
     }): Promise<SecurityPolicy> {
         try {
             // 입력 검증
-            if (!policy.name || policy.name.trim().length === 0) {
+            if (!policy.name || coerceTrimmedString(policy.name, '').length === 0) {
                 throw new Error('정책 이름은 필수입니다.');
             }
 
@@ -515,17 +649,24 @@ class AdvancedSecurityService {
                 throw new Error('유효하지 않은 정책 유형입니다.');
             }
 
-            const response = await this.api.post('/security/policies', policy);
+            const response = await this.api.post(ADVANCED_SECURITY_POLICIES_PATH, policy);
 
             if (!response.data?.success) {
                 throw new Error(response.data?.error || '보안 정책 생성 실패');
             }
 
             return response.data.data;
-        } catch (error: any) {
-            console.error('보안 정책 생성 실패:', error);
-            if (error.response) {
-                throw new Error(`서버 오류: ${error.response.status} - ${error.response.data?.detail || error.message}`);
+        } catch (error: unknown) {
+            const err = toError(error);
+            errorLogger.error('보안 정책 생성 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'createSecurityPolicy',
+                policyName: policy.name,
+                policyType: policy.policy_type,
+            });
+            if (error && typeof error === 'object' && 'response' in error) {
+                const ax = error as { response: { status: number; data?: { detail?: string } }; message?: string };
+                throw new Error(`서버 오류: ${ax.response.status} - ${ax.response.data?.detail || ax.message}`);
             }
             throw error;
         }
@@ -537,10 +678,14 @@ class AdvancedSecurityService {
         enabled_count: number;
     }> {
         try {
-            const response = await this.api.get('/security/policies');
+            const response = await this.api.get(ADVANCED_SECURITY_POLICIES_PATH);
             return response.data.data;
         } catch (error) {
-            console.error('보안 정책 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 정책 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getSecurityPolicies',
+            });
             throw error;
         }
     }
@@ -550,10 +695,18 @@ class AdvancedSecurityService {
         policyUpdate: Partial<SecurityPolicy>
     ): Promise<SecurityPolicy> {
         try {
-            const response = await this.api.put(`/security/policies/${policyId}`, policyUpdate);
+            const response = await this.api.put(
+                `${ADVANCED_SECURITY_POLICIES_PATH}/${encodeURIComponent(policyId)}`,
+                policyUpdate,
+            );
             return response.data.data;
         } catch (error) {
-            console.error('보안 정책 업데이트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 정책 업데이트 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'updateSecurityPolicy',
+                policyId,
+            });
             throw error;
         }
     }
@@ -571,23 +724,35 @@ class AdvancedSecurityService {
     }> {
         try {
             const params = new URLSearchParams();
-            if (severity) params.append('severity', severity);
-            if (status) params.append('status', status);
-            params.append('limit', limit.toString());
+            if (severity) params.append(API_QUERY_PARAM_SEVERITY, severity);
+            if (status) params.append(API_QUERY_PARAM_STATUS, status);
+            params.append(API_QUERY_PARAM_LIMIT, limit.toString());
 
-            const response = await this.api.get(`/security/alerts?${params.toString()}`);
+            const response = await this.api.get(`${ADVANCED_SECURITY_ALERTS_PATH}?${params.toString()}`);
             return response.data.data;
         } catch (error) {
-            console.error('보안 알림 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 알림 조회 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'getSecurityAlerts',
+                severity,
+                status,
+                limit,
+            });
             throw error;
         }
     }
 
     async acknowledgeAlert(alertId: string): Promise<void> {
         try {
-            await this.api.post(`/security/alerts/${alertId}/acknowledge`);
+            await this.api.post(`${ADVANCED_SECURITY_ALERTS_PATH}/${encodeURIComponent(alertId)}/acknowledge`);
         } catch (error) {
-            console.error('알림 확인 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('알림 확인 처리 실패', err, {
+                component: 'advancedSecurityService',
+                action: 'acknowledgeAlert',
+                alertId,
+            });
             throw error;
         }
     }

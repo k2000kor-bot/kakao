@@ -1,4 +1,4 @@
-# CORBU AI 완전한 설정 및 실행 가이드
+# CORBU.AI 완전한 설정 및 실행 가이드
 
 ## ✅ 완료된 작업
 
@@ -71,9 +71,9 @@ npm start
 ### 3단계: 접속 및 확인
 
 1. **프론트엔드**: http://localhost:3000
-2. **백엔드 API**: http://localhost:5001
-3. **API 문서**: http://localhost:5001/docs
-4. **헬스 체크**: http://localhost:5001/api/health
+2. **백엔드 API**: http://localhost:5002
+3. **API 문서**: http://localhost:5002/api/docs
+4. **헬스 체크**: http://localhost:5002/api/health
 
 ## 🧪 테스트
 
@@ -124,7 +124,7 @@ kakao-frontend/
 - POST /api/auth/reset-password
 - GET /api/auth/me
 
-**채팅 (1개)**
+**대화 (1개)**
 - POST /api/chat
 
 **보안 (5개)**
@@ -176,10 +176,10 @@ kakao-frontend/
 프론트엔드는 다음 설정으로 백엔드에 연결됩니다:
 
 ```typescript
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+// 실제 코드: src/config/api.ts — resolveApiBaseUrl(), FALLBACK_API_ORIGIN, REACT_APP_API_URL
 ```
 
-기본적으로 `http://localhost:5001`을 사용하며, `.env` 파일에서 변경 가능합니다.
+`.env.local`의 **`REACT_APP_API_URL`** / **`REACT_APP_WS_URL`** 과 `docs/PORTS.md`를 참고하세요. 기본 폴백 포트는 **`src/config/api.ts`** 의 **`DEFAULT_API_PORT`**(5002)입니다.
 
 ### CORS 설정
 
@@ -216,7 +216,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 3. **브라우저 접속**
    - http://localhost:3000
 
-4. **채팅 시작**
+4. **대화 시작**
    - 메시지 입력
    - 백엔드 응답 확인
 

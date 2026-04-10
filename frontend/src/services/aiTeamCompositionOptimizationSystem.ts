@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // AI 팀 구성 최적화 인터페이스 정의
 export interface TeamComposition {
@@ -82,7 +83,7 @@ export interface TeamOptimization {
   type: 'composition' | 'role-assignment' | 'skill-balance' | 'diversity';
   status: 'pending' | 'in-progress' | 'completed' | 'failed';
   algorithm: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   results: OptimizationResult[];
   recommendations: OptimizationRecommendation[];
   timestamp: number;
@@ -183,7 +184,7 @@ export interface TeamAnalytics {
   developmentProgress: number;
 }
 
-class AITeamCompositionOptimizationSystem {
+export class AITeamCompositionOptimizationSystem {
   private teams: Map<string, TeamComposition> = new Map();
   private isRunning: boolean = false;
   private analytics: TeamAnalytics = {
@@ -200,12 +201,18 @@ class AITeamCompositionOptimizationSystem {
   };
 
   constructor() {
-    console.log('👥 AI 팀 구성 최적화 시스템 초기화 중...');
+    errorLogger.info('AI 팀 구성 최적화 시스템 초기화 중', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'constructor',
+    });
   }
 
   public start(): void {
     if (this.isRunning) {
-      console.log('⚠️ AI 팀 구성 최적화 시스템이 이미 실행 중입니다.');
+      errorLogger.warn('AI 팀 구성 최적화 시스템이 이미 실행 중입니다', {
+        component: 'aiTeamCompositionOptimizationSystem',
+        action: 'start',
+      });
       return;
     }
 
@@ -214,32 +221,68 @@ class AITeamCompositionOptimizationSystem {
     this.createInitialTeams();
     this.startOptimizationMonitoring();
 
-    console.log('✅ AI 팀 구성 최적화 시스템이 시작되었습니다.');
+    errorLogger.info('AI 팀 구성 최적화 시스템이 시작되었습니다', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'start',
+    });
     realTimeAIAlertSystem.sendAlert('info', 'AI 팀 구성 최적화 시스템이 시작되었습니다.');
   }
 
   public stop(): void {
     if (!this.isRunning) {
-      console.log('⚠️ AI 팀 구성 최적화 시스템이 실행 중이 아닙니다.');
+      errorLogger.warn('AI 팀 구성 최적화 시스템이 실행 중이 아닙니다', {
+        component: 'aiTeamCompositionOptimizationSystem',
+        action: 'stop',
+      });
       return;
     }
 
     this.isRunning = false;
     this.cleanupData();
 
-    console.log('🛑 AI 팀 구성 최적화 시스템이 중지되었습니다.');
+    errorLogger.info('AI 팀 구성 최적화 시스템이 중지되었습니다', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'stop',
+    });
     realTimeAIAlertSystem.sendAlert('info', 'AI 팀 구성 최적화 시스템이 중지되었습니다.');
   }
 
   private initializeSystem(): void {
-    console.log('🔧 팀 구성 최적화 시스템 초기화 중...');
+    errorLogger.info('팀 구성 최적화 시스템 초기화 중', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'initializeSystem',
+    });
 
-    console.log('👥 팀 구성 분석 엔진 초기화 완료');
-    console.log('🎯 역할 최적화 알고리즘 초기화 완료');
-    console.log('🔄 실시간 최적화 엔진 초기화 완료');
-    console.log('📈 성과 분석 시스템 초기화 완료');
-    console.log('🤝 협업 효과성 분석 초기화 완료');
-    console.log('💡 다양성 및 균형 분석 초기화 완료');
+    errorLogger.info('팀 구성 분석 엔진 초기화 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'team-analysis-engine',
+    });
+    errorLogger.info('역할 최적화 알고리즘 초기화 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'role-optimization-algorithm',
+    });
+    errorLogger.info('실시간 최적화 엔진 초기화 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'realtime-optimization-engine',
+    });
+    errorLogger.info('성과 분석 시스템 초기화 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'performance-analysis-system',
+    });
+    errorLogger.info('협업 효과성 분석 초기화 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'collaboration-effectiveness-analysis',
+    });
+    errorLogger.info('다양성 및 균형 분석 초기화 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'diversity-balance-analysis',
+    });
   }
 
   private createInitialTeams(): void {
@@ -472,7 +515,11 @@ class AITeamCompositionOptimizationSystem {
 
     this.teams.set(team1.teamId, team1);
     this.optimizeTeam(team1.teamId);
-    console.log('📋 초기 팀 구성 생성 완료');
+    errorLogger.info('초기 팀 구성 생성 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'createInitialTeams',
+      teamId: team1.teamId,
+    });
   }
 
   public createTeam(team: Omit<TeamComposition, 'teamId' | 'optimization' | 'performance' | 'recommendations' | 'timestamp'>): TeamComposition {
@@ -512,7 +559,12 @@ class AITeamCompositionOptimizationSystem {
     this.optimizeTeam(teamId);
     this.updateAnalytics();
 
-    console.log(`👥 새로운 팀 구성 생성: ${teamId}`);
+    errorLogger.info('새로운 팀 구성 생성', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'createTeam',
+      teamId,
+      teamName: team.name,
+    });
     return fullTeam;
   }
 
@@ -549,7 +601,11 @@ class AITeamCompositionOptimizationSystem {
     const team = this.teams.get(teamId);
     if (!team) return;
 
-    console.log(`🔧 팀 구성 최적화 시작: ${teamId}`);
+    errorLogger.info('팀 구성 최적화 시작', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'optimizeTeam',
+      teamId,
+    });
 
     const optimization = team.optimization;
     optimization.status = 'in-progress';
@@ -575,7 +631,11 @@ class AITeamCompositionOptimizationSystem {
     // 권장사항 생성
     this.generateRecommendations(team);
 
-    console.log(`✅ 팀 구성 최적화 완료: ${teamId}`);
+    errorLogger.info('팀 구성 최적화 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'optimizeTeam',
+      teamId,
+    });
   }
 
   private optimizeComposition(team: TeamComposition): void {
@@ -751,9 +811,19 @@ class AITeamCompositionOptimizationSystem {
 
     results.forEach(result => {
       if (result.improvement > 0.1) {
-        console.log(`📈 상당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
+        errorLogger.info('상당한 개선', {
+          component: 'aiTeamCompositionOptimizationSystem',
+          action: 'analyzeOptimizationResults',
+          metric: result.metric,
+          improvement: `${(result.improvement * 100).toFixed(1)}%`,
+        });
       } else if (result.improvement > 0.05) {
-        console.log(`📊 적당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
+        errorLogger.info('적당한 개선', {
+          component: 'aiTeamCompositionOptimizationSystem',
+          action: 'analyzeOptimizationResults',
+          metric: result.metric,
+          improvement: `${(result.improvement * 100).toFixed(1)}%`,
+        });
       }
     });
   }
@@ -890,7 +960,7 @@ class AITeamCompositionOptimizationSystem {
     return totalReliability / team.members.length;
   }
 
-  private calculateSatisfaction(team: TeamComposition): number {
+  private calculateSatisfaction(_team: TeamComposition): number {
     // 간단한 만족도 계산 (실제로는 설문조사 결과 기반)
     return 0.85;
   }
@@ -938,7 +1008,13 @@ class AITeamCompositionOptimizationSystem {
 
     // 자동 최적화 조건 확인
     if (settings.autoOptimization && team.performance.overallPerformance < settings.performanceThresholds.minimumPerformance) {
-      console.log(`🔄 성과 기준 미달로 자동 최적화 실행: ${teamId}`);
+      errorLogger.info('성과 기준 미달로 자동 최적화 실행', {
+        component: 'aiTeamCompositionOptimizationSystem',
+        action: 'checkOptimizationNeeds',
+        teamId,
+        currentPerformance: team.performance.overallPerformance,
+        minimumPerformance: settings.performanceThresholds.minimumPerformance,
+      });
       this.optimizeTeam(teamId);
     }
   }
@@ -972,7 +1048,10 @@ class AITeamCompositionOptimizationSystem {
 
   private cleanupData(): void {
     this.teams.clear();
-    console.log('🧹 팀 구성 데이터 정리 완료');
+    errorLogger.info('팀 구성 데이터 정리 완료', {
+      component: 'aiTeamCompositionOptimizationSystem',
+      action: 'cleanupData',
+    });
   }
 
   public getTeams(): TeamComposition[] {

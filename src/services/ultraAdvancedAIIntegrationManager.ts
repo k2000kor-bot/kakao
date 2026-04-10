@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { ultraAdvancedAIService } from './ultraAdvancedAIService';
 import ultraAdvancedAIOrchestrationService from './ultraAdvancedAIOrchestrationService';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface AIIntegrationConfig {
     id: string;
@@ -9,7 +10,7 @@ export interface AIIntegrationConfig {
     status: 'active' | 'inactive' | 'error' | 'maintenance';
     priority: 'low' | 'medium' | 'high' | 'critical';
     dependencies: string[];
-    settings: Record<string, any>;
+    settings: Record<string, unknown>;
     metadata: {
         created_at: Date;
         updated_at: Date;
@@ -41,7 +42,7 @@ export interface AIIntegrationEvent {
     type: 'integration_started' | 'integration_completed' | 'integration_failed' | 'service_updated' | 'workflow_triggered';
     integration_id: string;
     timestamp: Date;
-    data: any;
+    data: Record<string, unknown>;
     severity: 'info' | 'warning' | 'error' | 'critical';
 }
 
@@ -63,7 +64,10 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
     constructor() {
         super();
         this.initializeManager();
-        console.log('🔗 고도화된 AI 통합 관리 시스템이 초기화되었습니다.');
+        errorLogger.info('고도화된 AI 통합 관리 시스템이 초기화되었습니다', {
+            component: 'ultraAdvancedAIIntegrationManager',
+            action: 'constructor',
+        });
     }
 
     private async initializeManager(): Promise<void> {
@@ -162,7 +166,11 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
             this.emit('manager_initialized', this.metrics);
 
         } catch (error) {
-            console.error('AI 통합 관리 시스템 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('AI 통합 관리 시스템 초기화 실패', err, {
+                component: 'ultraAdvancedAIIntegrationManager',
+                action: 'initializeManager',
+            });
             this.emit('initialization_error', error);
         }
     }
@@ -196,7 +204,14 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
             });
 
         } catch (error) {
-            console.error(`통합 등록 실패 (${config.id}):`, error);
+            const err = toError(error);
+            errorLogger.error('통합 등록 실패', err, {
+                component: 'ultraAdvancedAIIntegrationManager',
+                action: 'registerIntegration',
+                integrationId: config.id,
+                integrationName: config.name,
+                integrationType: config.type,
+            });
             this.emit('integration_error', config.id, error);
         }
     }
@@ -258,7 +273,7 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
         this.metrics.active_integrations--;
     }
 
-    public async triggerWorkflow(workflowId: string, input: any): Promise<any> {
+    public async triggerWorkflow(workflowId: string, input: Record<string, unknown>): Promise<Record<string, unknown>> {
         try {
             const integration = this.integrations.get(workflowId);
             if (!integration || integration.type !== 'workflow') {
@@ -297,14 +312,19 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
                 type: 'workflow_triggered',
                 integration_id: workflowId,
                 timestamp: new Date(),
-                data: { input, result },
+                data: { input, result } as Record<string, unknown>,
                 severity: 'info'
             });
 
-            return result;
+            return (typeof result === 'object' && result !== null ? result : { output: result }) as Record<string, unknown>;
 
         } catch (error) {
-            console.error(`워크플로우 실행 실패 (${workflowId}):`, error);
+            const err = toError(error);
+            errorLogger.error('워크플로우 실행 실패', err, {
+                component: 'ultraAdvancedAIIntegrationManager',
+                action: 'triggerWorkflow',
+                workflowId,
+            });
             this.logEvent({
                 id: `event-${Date.now()}`,
                 type: 'integration_failed',
@@ -317,7 +337,7 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
         }
     }
 
-    public async performAnalysis(analysisId: string, data: any): Promise<any> {
+    public async performAnalysis(analysisId: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
         try {
             const integration = this.integrations.get(analysisId);
             if (!integration || integration.type !== 'analysis') {
@@ -354,7 +374,12 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
             return result;
 
         } catch (error) {
-            console.error(`분석 실패 (${analysisId}):`, error);
+            const err = toError(error);
+            errorLogger.error('분석 실패', err, {
+                component: 'ultraAdvancedAIIntegrationManager',
+                action: 'performAnalysis',
+                analysisId,
+            });
             this.logEvent({
                 id: `event-${Date.now()}`,
                 type: 'integration_failed',
@@ -367,7 +392,7 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
         }
     }
 
-    public async optimizePerformance(optimizationId: string, target: string): Promise<any> {
+    public async optimizePerformance(optimizationId: string, target: string): Promise<Record<string, unknown>> {
         try {
             const integration = this.integrations.get(optimizationId);
             if (!integration || integration.type !== 'optimization') {
@@ -397,7 +422,13 @@ class UltraAdvancedAIIntegrationManager extends EventEmitter {
             return { taskId, status: 'optimization_started' };
 
         } catch (error) {
-            console.error(`최적화 실패 (${optimizationId}):`, error);
+            const err = toError(error);
+            errorLogger.error('최적화 실패', err, {
+                component: 'ultraAdvancedAIIntegrationManager',
+                action: 'optimizePerformance',
+                optimizationId,
+                target,
+            });
             this.logEvent({
                 id: `event-${Date.now()}`,
                 type: 'integration_failed',

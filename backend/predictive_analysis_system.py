@@ -7,6 +7,7 @@
 - 예측 요약 대시보드
 """
 
+import os
 import asyncio
 import json
 import logging
@@ -25,6 +26,8 @@ from sklearn.metrics import mean_squared_error, r2_score
 import joblib
 import os
 
+from cors_config import get_cors_allow_origins
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,7 +37,7 @@ app = FastAPI(title="예측 분석 시스템", version="1.0.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -659,12 +662,17 @@ if __name__ == "__main__":
     import uvicorn
     
     try:
+        _p = int(
+            os.environ.get(
+                "PREDICTIVE_ANALYSIS_SYSTEM_PORT", os.environ.get("PORT", "8003")
+            )
+        )
         print("🔮 예측 분석 시스템 시작 중...")
-        print("📍 서버 주소: http://localhost:8003")
-        print("📚 API 문서: http://localhost:8003/docs")
+        print(f"📍 서버 주소: http://localhost:{_p}")
+        print(f"📚 API 문서: http://localhost:{_p}/docs")
         print("🎯 지원 예측: 사용자활동, 메시지품질, 시스템성능")
-        
-        uvicorn.run(app, host="0.0.0.0", port=8003)
+
+        uvicorn.run(app, host="0.0.0.0", port=_p)
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

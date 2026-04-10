@@ -11,8 +11,8 @@
 프론트엔드 루트에 `.env` 파일 생성:
 
 ```bash
-cd /Users/aD/kakao-frontend/frontend
-echo "REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated" > .env
+cd /path/to/kakao-frontend/kakao-frontend/frontend
+echo "REACT_APP_INTEGRATED_API_URL=http://localhost:5002/api/integrated" > .env
 ```
 
 ### 2. 서버 실행 확인
@@ -20,7 +20,7 @@ echo "REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated" > .env
 백엔드 서버가 실행 중인지 확인:
 
 ```bash
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 ```
 
 ### 3. 프론트엔드에서 사용

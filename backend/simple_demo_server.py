@@ -6,6 +6,7 @@
 - 시스템 상태 확인
 """
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -322,10 +323,11 @@ if __name__ == "__main__":
     print("🌟 ============================================")
     print("🚀 궁극의 시스템 데모 서버 v1.0 시작")
     print("🌟 ============================================")
-    print("🌐 서버 주소: http://localhost:8080")
-    print("📊 헬스 체크: http://localhost:8080/health") 
-    print("🧠 메시지 생성: POST http://localhost:8080/api/v10/generate/hyper-personalized")
-    print("📈 종합 분석: http://localhost:8080/api/v10/analytics/comprehensive")
+    _p = int(os.environ.get("SIMPLE_DEMO_SERVER_PORT", os.environ.get("PORT", "8080")))
+    print(f"🌐 서버 주소: http://localhost:{_p}")
+    print(f"📊 헬스 체크: http://localhost:{_p}/health")
+    print(f"🧠 메시지 생성: POST http://localhost:{_p}/api/v10/generate/hyper-personalized")
+    print(f"📈 종합 분석: http://localhost:{_p}/api/v10/analytics/comprehensive")
     print("🌟 ============================================")
     
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info") 
+    uvicorn.run(app, host="0.0.0.0", port=_p, log_level="info") 

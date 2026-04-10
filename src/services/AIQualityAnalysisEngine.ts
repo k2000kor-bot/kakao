@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface QualityAnalysisResult {
     id: string;
@@ -98,19 +99,28 @@ class AIQualityAnalysisEngine {
     }
 
     private initializeEngine(): void {
-        console.log('🔍 AI 품질 분석 엔진 초기화 중...');
+        errorLogger.info('🔍 AI 품질 분석 엔진 초기화 중', {
+            component: 'AIQualityAnalysisEngine',
+            action: 'initializeEngine',
+        });
 
         // 초기 분석 수행
         this.performAnalysis();
 
-        console.log('✅ AI 품질 분석 엔진이 초기화되었습니다.');
+        errorLogger.info('✅ AI 품질 분석 엔진이 초기화되었습니다', {
+            component: 'AIQualityAnalysisEngine',
+            action: 'initializeEngine',
+        });
     }
 
     public start(): void {
         if (this.isRunning) return;
 
         this.isRunning = true;
-        console.log('🚀 AI 품질 분석 엔진 시작');
+        errorLogger.info('🚀 AI 품질 분석 엔진 시작', {
+            component: 'AIQualityAnalysisEngine',
+            action: 'start',
+        });
 
         // 30초마다 자동 분석 수행
         this.analysisInterval = setInterval(() => {
@@ -144,12 +154,18 @@ class AIQualityAnalysisEngine {
             this.analysisInterval = null;
         }
 
-        console.log('🛑 AI 품질 분석 엔진 중지');
+        errorLogger.info('🛑 AI 품질 분석 엔진 중지', {
+            component: 'AIQualityAnalysisEngine',
+            action: 'stop',
+        });
     }
 
     private async performAnalysis(): Promise<void> {
         try {
-            console.log('🔍 AI 품질 분석 수행 중...');
+            errorLogger.info('🔍 AI 품질 분석 수행 중', {
+                component: 'AIQualityAnalysisEngine',
+                action: 'performAnalysis',
+            });
 
             const analysisResult: QualityAnalysisResult = {
                 id: `analysis-${Date.now()}`,
@@ -176,10 +192,19 @@ class AIQualityAnalysisEngine {
             // 중요 이슈 발견 시 알림 생성
             await this.checkForCriticalIssues(analysisResult);
 
-            console.log(`✅ 품질 분석 완료 - 전체 점수: ${analysisResult.overallScore.toFixed(1)}/100`);
+            errorLogger.info('✅ 품질 분석 완료', {
+                component: 'AIQualityAnalysisEngine',
+                action: 'performAnalysis',
+                analysisId: analysisResult.id,
+                overallScore: analysisResult.overallScore,
+            });
 
         } catch (error) {
-            console.error('❌ 품질 분석 중 오류 발생:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 품질 분석 중 오류 발생', err, {
+                component: 'AIQualityAnalysisEngine',
+                action: 'performAnalysis',
+            });
 
             realTimeAIAlertSystem.createAlert({
                 type: 'error',

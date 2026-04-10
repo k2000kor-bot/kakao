@@ -1,5 +1,6 @@
-import { ConversationMemory, UserProfile, LearningPattern } from './advancedConversationMemoryService';
-import { QuestionUnderstandingResult } from './advancedQuestionUnderstandingEngine';
+import { UserProfile } from './advancedConversationMemoryService';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { CORBU_LEARNING_EXPERIENCE_STORAGE_KEY } from './personalizedLearningExperienceStorageKeys';
 
 export interface LearningExperience {
     user_id: string;
@@ -209,7 +210,10 @@ class PersonalizedLearningExperienceService {
 
     // 서비스 초기화
     private initializeService(): void {
-        console.log('Personalized Learning Experience Service initialized');
+        errorLogger.info('Personalized Learning Experience Service initialized', {
+            component: 'personalizedLearningExperienceService',
+            action: 'initializeService',
+        });
         this.initializeLearningPaths();
         this.initializeContentLibrary();
         this.loadPersistedData();
@@ -758,7 +762,7 @@ class PersonalizedLearningExperienceService {
     }
 
     // 사용자 프로필 가져오기 (실제 구현에서는 메모리 서비스에서 가져옴)
-    private async getUserProfile(userId: string): Promise<UserProfile> {
+    private async getUserProfile(_userId: string): Promise<UserProfile> {
         return {
             expertise_level: 'intermediate',
             primary_domains: ['web_development'],
@@ -880,7 +884,7 @@ class PersonalizedLearningExperienceService {
     }
 
     // 학습 분석 리포트 생성
-    async generateLearningReport(userId: string, sessionId: string): Promise<any> {
+    async generateLearningReport(userId: string, sessionId: string): Promise<Record<string, unknown>> {
         const experience = await this.getLearningExperience(userId, sessionId);
 
         return {
@@ -940,7 +944,7 @@ class PersonalizedLearningExperienceService {
     // 지속화된 데이터 로드
     private loadPersistedData(): void {
         try {
-            const persisted = localStorage.getItem('corbu_learning_experience');
+            const persisted = localStorage.getItem(CORBU_LEARNING_EXPERIENCE_STORAGE_KEY);
             if (persisted) {
                 const parsed = JSON.parse(persisted);
                 for (const [key, experience] of Object.entries(parsed)) {
@@ -948,7 +952,12 @@ class PersonalizedLearningExperienceService {
                 }
             }
         } catch (error) {
-            console.warn('Failed to load persisted learning experience:', error);
+            const err = toError(error);
+            errorLogger.warn('Failed to load persisted learning experience', {
+                component: 'personalizedLearningExperienceService',
+                action: 'loadPersistedData',
+                error: err.message,
+            });
         }
     }
 
@@ -959,9 +968,14 @@ class PersonalizedLearningExperienceService {
             for (const [key, experience] of this.learningExperiences.entries()) {
                 experienceData[key] = experience;
             }
-            localStorage.setItem('corbu_learning_experience', JSON.stringify(experienceData));
+            localStorage.setItem(CORBU_LEARNING_EXPERIENCE_STORAGE_KEY, JSON.stringify(experienceData));
         } catch (error) {
-            console.warn('Failed to persist learning experience:', error);
+            const err = toError(error);
+            errorLogger.warn('Failed to persist learning experience', {
+                component: 'personalizedLearningExperienceService',
+                action: 'persistData',
+                error: err.message,
+            });
         }
     }
 
@@ -1004,9 +1018,14 @@ class PersonalizedLearningExperienceService {
     // 서비스 종료 시 데이터 지속화
     shutdown(): void {
         this.persistData();
-        console.log('Personalized Learning Experience Service shutdown');
+        errorLogger.info('Personalized Learning Experience Service shutdown', {
+            component: 'personalizedLearningExperienceService',
+            action: 'shutdown',
+        });
     }
 }
+
+export { CORBU_LEARNING_EXPERIENCE_STORAGE_KEY } from './personalizedLearningExperienceStorageKeys';
 
 const personalizedLearningExperienceService = new PersonalizedLearningExperienceService();
 export default personalizedLearningExperienceService;

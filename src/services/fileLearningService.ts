@@ -1,12 +1,27 @@
 import type { ProjectFile, LearningSession, AIInsight, FileClassification } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  API_BASE_URL,
+  API_FILES_BASE,
+  API_FILES_CONTENT_SEGMENT,
+  API_FILES_INSIGHTS_SEGMENT,
+  API_FILES_LEARNING_STATUS_SEGMENT,
+  API_LEARNING_METRICS_PREFIX,
+  API_LEARNING_MODELS_PATH,
+  API_LEARNING_PREDICT_PATH,
+  API_LEARNING_SESSIONS_PATH,
+  API_LEARNING_START_PATH,
+  API_LEARNING_STATUS_PREFIX,
+  API_LEARNING_STOP_PREFIX,
+  API_QUERY_PARAM_PROJECT_ID,
+  joinApiHealthCheckUrl,
+} from '../config/api';
 
 export class FileLearningService {
-  private baseUrl = 'http://localhost:8003/api';
-
   // 파일 학습 시작
   async startLearning(fileIds: string[]): Promise<LearningSession> {
     try {
-      const response = await fetch(`${this.baseUrl}/learning/start`, {
+      const response = await fetch(joinApiHealthCheckUrl(API_BASE_URL, API_LEARNING_START_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,7 +40,12 @@ export class FileLearningService {
       const session = await response.json();
       return session;
     } catch (error) {
-      console.error('파일 학습 시작 오류:', error);
+      const err = toError(error);
+      errorLogger.error('파일 학습 시작 오류', err, {
+        component: 'fileLearningService',
+        action: 'startLearning',
+        fileIdsCount: fileIds.length,
+      });
       throw error;
     }
   }
@@ -33,7 +53,9 @@ export class FileLearningService {
   // 학습 세션 상태 확인
   async getLearningStatus(sessionId: string): Promise<LearningSession> {
     try {
-      const response = await fetch(`${this.baseUrl}/learning/status/${sessionId}`);
+      const response = await fetch(
+        joinApiHealthCheckUrl(API_BASE_URL, `${API_LEARNING_STATUS_PREFIX}/${encodeURIComponent(sessionId)}`),
+      );
       
       if (!response.ok) {
         throw new Error('학습 상태 확인에 실패했습니다.');
@@ -41,7 +63,12 @@ export class FileLearningService {
 
       return await response.json();
     } catch (error) {
-      console.error('학습 상태 확인 오류:', error);
+      const err = toError(error);
+      errorLogger.error('학습 상태 확인 오류', err, {
+        component: 'fileLearningService',
+        action: 'getLearningStatus',
+        sessionId,
+      });
       throw error;
     }
   }
@@ -49,15 +76,21 @@ export class FileLearningService {
   // 학습 중지
   async stopLearning(sessionId: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/learning/stop/${sessionId}`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        joinApiHealthCheckUrl(API_BASE_URL, `${API_LEARNING_STOP_PREFIX}/${encodeURIComponent(sessionId)}`),
+        { method: 'POST' },
+      );
 
       if (!response.ok) {
         throw new Error('학습 중지에 실패했습니다.');
       }
     } catch (error) {
-      console.error('학습 중지 오류:', error);
+      const err = toError(error);
+      errorLogger.error('학습 중지 오류', err, {
+        component: 'fileLearningService',
+        action: 'stopLearning',
+        sessionId,
+      });
       throw error;
     }
   }
@@ -65,19 +98,30 @@ export class FileLearningService {
   // 파일 분류 업데이트
   async updateFileClassification(fileId: string, classification: FileClassification): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/files/${fileId}/classification`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          API_BASE_URL,
+          `${API_FILES_BASE}/${encodeURIComponent(fileId)}/classification`,
+        ),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(classification),
         },
-        body: JSON.stringify(classification),
-      });
+      );
 
       if (!response.ok) {
         throw new Error('파일 분류 업데이트에 실패했습니다.');
       }
     } catch (error) {
-      console.error('파일 분류 업데이트 오류:', error);
+      const err = toError(error);
+      errorLogger.error('파일 분류 업데이트 오류', err, {
+        component: 'fileLearningService',
+        action: 'updateFileClassification',
+        fileId,
+      });
       throw error;
     }
   }
@@ -85,7 +129,12 @@ export class FileLearningService {
   // AI 인사이트 추출
   async extractInsights(fileId: string): Promise<AIInsight[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/files/${fileId}/insights`);
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          API_BASE_URL,
+          `${API_FILES_BASE}/${encodeURIComponent(fileId)}${API_FILES_INSIGHTS_SEGMENT}`,
+        ),
+      );
       
       if (!response.ok) {
         throw new Error('인사이트 추출에 실패했습니다.');
@@ -93,7 +142,12 @@ export class FileLearningService {
 
       return await response.json();
     } catch (error) {
-      console.error('인사이트 추출 오류:', error);
+      const err = toError(error);
+      errorLogger.error('인사이트 추출 오류', err, {
+        component: 'fileLearningService',
+        action: 'extractInsights',
+        fileId,
+      });
       throw error;
     }
   }
@@ -101,7 +155,12 @@ export class FileLearningService {
   // 파일 내용 추출
   async extractContent(fileId: string): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/files/${fileId}/content`);
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          API_BASE_URL,
+          `${API_FILES_BASE}/${encodeURIComponent(fileId)}${API_FILES_CONTENT_SEGMENT}`,
+        ),
+      );
       
       if (!response.ok) {
         throw new Error('파일 내용 추출에 실패했습니다.');
@@ -110,15 +169,22 @@ export class FileLearningService {
       const data = await response.json();
       return data.content;
     } catch (error) {
-      console.error('파일 내용 추출 오류:', error);
+      const err = toError(error);
+      errorLogger.error('파일 내용 추출 오류', err, {
+        component: 'fileLearningService',
+        action: 'extractContent',
+        fileId,
+      });
       throw error;
     }
   }
 
   // 학습 메트릭 가져오기
-  async getLearningMetrics(sessionId: string): Promise<any> {
+  async getLearningMetrics(sessionId: string): Promise<Record<string, unknown>> {
     try {
-      const response = await fetch(`${this.baseUrl}/learning/metrics/${sessionId}`);
+      const response = await fetch(
+        joinApiHealthCheckUrl(API_BASE_URL, `${API_LEARNING_METRICS_PREFIX}/${encodeURIComponent(sessionId)}`),
+      );
       
       if (!response.ok) {
         throw new Error('학습 메트릭 조회에 실패했습니다.');
@@ -126,7 +192,12 @@ export class FileLearningService {
 
       return await response.json();
     } catch (error) {
-      console.error('학습 메트릭 조회 오류:', error);
+      const err = toError(error);
+      errorLogger.error('학습 메트릭 조회 오류', err, {
+        component: 'fileLearningService',
+        action: 'getLearningMetrics',
+        sessionId,
+      });
       throw error;
     }
   }
@@ -134,7 +205,7 @@ export class FileLearningService {
   // 파일 분류 예측
   async predictClassification(fileContent: string): Promise<FileClassification> {
     try {
-      const response = await fetch(`${this.baseUrl}/learning/predict`, {
+      const response = await fetch(joinApiHealthCheckUrl(API_BASE_URL, API_LEARNING_PREDICT_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +222,12 @@ export class FileLearningService {
 
       return await response.json();
     } catch (error) {
-      console.error('분류 예측 오류:', error);
+      const err = toError(error);
+      errorLogger.error('분류 예측 오류', err, {
+        component: 'fileLearningService',
+        action: 'predictClassification',
+        contentLength: fileContent.length,
+      });
       throw error;
     }
   }
@@ -159,7 +235,7 @@ export class FileLearningService {
   // 학습 모델 버전 관리
   async getModelVersions(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/learning/models`);
+      const response = await fetch(joinApiHealthCheckUrl(API_BASE_URL, API_LEARNING_MODELS_PATH));
       
       if (!response.ok) {
         throw new Error('모델 버전 조회에 실패했습니다.');
@@ -167,7 +243,11 @@ export class FileLearningService {
 
       return await response.json();
     } catch (error) {
-      console.error('모델 버전 조회 오류:', error);
+      const err = toError(error);
+      errorLogger.error('모델 버전 조회 오류', err, {
+        component: 'fileLearningService',
+        action: 'getModelVersions',
+      });
       throw error;
     }
   }
@@ -175,7 +255,8 @@ export class FileLearningService {
   // 학습 세션 목록 조회
   async getLearningSessions(projectId: string): Promise<LearningSession[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/learning/sessions?projectId=${projectId}`);
+      const q = new URLSearchParams({ [API_QUERY_PARAM_PROJECT_ID]: projectId }).toString();
+      const response = await fetch(joinApiHealthCheckUrl(API_BASE_URL, `${API_LEARNING_SESSIONS_PATH}?${q}`));
       
       if (!response.ok) {
         throw new Error('학습 세션 조회에 실패했습니다.');
@@ -183,7 +264,12 @@ export class FileLearningService {
 
       return await response.json();
     } catch (error) {
-      console.error('학습 세션 조회 오류:', error);
+      const err = toError(error);
+      errorLogger.error('학습 세션 조회 오류', err, {
+        component: 'fileLearningService',
+        action: 'getLearningSessions',
+        projectId,
+      });
       throw error;
     }
   }
@@ -191,22 +277,35 @@ export class FileLearningService {
   // 파일 학습 상태 업데이트
   async updateFileLearningStatus(fileId: string, status: ProjectFile['learningStatus'], progress: number): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/files/${fileId}/learning-status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          API_BASE_URL,
+          `${API_FILES_BASE}/${encodeURIComponent(fileId)}${API_FILES_LEARNING_STATUS_SEGMENT}`,
+        ),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status,
+            progress
+          }),
         },
-        body: JSON.stringify({
-          status,
-          progress
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error('파일 학습 상태 업데이트에 실패했습니다.');
       }
     } catch (error) {
-      console.error('파일 학습 상태 업데이트 오류:', error);
+      const err = toError(error);
+      errorLogger.error('파일 학습 상태 업데이트 오류', err, {
+        component: 'fileLearningService',
+        action: 'updateFileLearningStatus',
+        fileId,
+        status,
+        progress,
+      });
       throw error;
     }
   }
@@ -222,7 +321,12 @@ export class FileLearningService {
           clearInterval(pollInterval);
         }
       } catch (error) {
-        console.error('학습 진행률 모니터링 오류:', error);
+        const err = toError(error);
+        errorLogger.error('학습 진행률 모니터링 오류', err, {
+          component: 'fileLearningService',
+          action: 'monitorLearningProgress',
+          sessionId,
+        });
         clearInterval(pollInterval);
       }
     }, 2000); // 2초마다 확인

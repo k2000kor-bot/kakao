@@ -6,6 +6,7 @@ fastapi==0.104.1
 uvicorn==0.24.0
 python-multipart==0.0.6
 pydantic==2.5.0
+PyPDF2>=3.0.0
 psutil==5.9.6
 numpy==1.24.3
 pandas==2.0.3
@@ -22,3 +23,11 @@ plotly==5.15.0
 openai>=1.0.0
 anthropic>=0.18.0
 aiohttp>=3.9.0
+# YouTube/TikTok → 목소리 학습 (TTS speech-from-source, 선택사항)
+# yt-dlp>=2024.1.0  # pip install yt-dlp (ffmpeg 필요)
+# 특정인 검색·자막 수집·노트북 LLM 학습 (notebook-sources/from-youtube-search)
+youtube-transcript-api>=0.6.0
+# TTS 샘플 대본 스타일: docx 추출 (script-style/extract-document)
+python-docx>=1.0.0
+# TTS 폴백 (Qwen 미설정 시 브라우저/서버 음성용)
+gtts>=2.4.0

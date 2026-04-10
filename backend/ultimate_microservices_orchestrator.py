@@ -1015,6 +1015,10 @@ if __name__ == "__main__":
     print("🏗️ 궁극의 마이크로서비스 오케스트레이터 v6.0 초기화 완료")
     print("✅ 기능: 서비스디스커버리, 동적로드밸런싱, 자동스케일링, 헬스체크")
     print("🎯 지원: Docker, 프로세스, 서비스메시, 실시간모니터링")
-    
-    # 기본 실행
-    start_microservices_platform() 
+    _p = int(
+        os.environ.get(
+            "ULTIMATE_MICROSERVICES_ORCHESTRATOR_PORT",
+            os.environ.get("PORT", "8000"),
+        )
+    )
+    start_microservices_platform(port=_p) 

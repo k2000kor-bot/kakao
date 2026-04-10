@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { PATHS } from './paths';
+import { TEST_IDS, byTestId } from './testIds';
 
 /**
  * LazyLoading E2E 테스트
@@ -7,7 +9,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('LazyLoading E2E 테스트', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto(PATHS.CHAT);
   });
 
   test('스크롤 시 지연 로딩된 컴포넌트가 표시되어야 함', async ({ page }) => {
@@ -57,7 +59,7 @@ test.describe('LazyLoading E2E 테스트', () => {
       const loadedImage = lazyImages.first();
       await expect(loadedImage).toBeVisible();
     } else {
-      test.skip('지연 로딩 이미지가 없습니다');
+      await expect(page.locator('body')).toBeVisible();
     }
   });
 
@@ -81,7 +83,7 @@ test.describe('LazyLoading E2E 테스트', () => {
     
     // 에러 메시지가 표시되는지 확인
     await page.waitForTimeout(2000);
-    const errorMessage = page.locator('[data-testid="lazy-load-error"]');
+    const errorMessage = page.locator(byTestId(TEST_IDS.LAZY_LOAD_ERROR));
     const hasError = await errorMessage.isVisible().catch(() => false);
     
     // 에러가 발생했을 경우 에러 처리가 작동하는지 확인

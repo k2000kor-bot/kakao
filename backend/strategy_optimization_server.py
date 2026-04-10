@@ -481,10 +481,15 @@ async def get_optimization_history():
 
 # 서버 시작
 if __name__ == "__main__":
+    _p = int(
+        os.environ.get(
+            "STRATEGY_OPTIMIZATION_SERVER_PORT", os.environ.get("PORT", "8009")
+        )
+    )
     print("🚀 전략 최적화 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8009")
-    print("📖 API 문서: http://localhost:8009/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 엔드포인트:")
     print("   POST /api/optimize-strategy - 전략 최적화")
     print("   POST /api/run-ab-test - A/B 테스트")
@@ -500,7 +505,7 @@ if __name__ == "__main__":
         
         # 서버 시작
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8009, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=_p, log_level="info")
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

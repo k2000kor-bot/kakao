@@ -3,6 +3,8 @@
  * 질문의 의도, 문맥, 논리적 구조를 분석하여 더 정확한 답변 생성을 지원
  */
 
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface QuestionAnalysis {
     // 질문 이해
     questionType: 'factual' | 'analytical' | 'comparative' | 'explanatory' | 'procedural' | 'opinion';
@@ -135,7 +137,7 @@ class AdvancedNLPService {
     }
 
     private assessComplexity(question: string): QuestionAnalysis['complexity'] {
-        const sentences = question.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = question.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const words = question.split(/\s+/).length;
         const conjunctions = (question.match(/그리고|또한|하지만|그러나|따라서|왜냐하면/g) || []).length;
 
@@ -217,7 +219,7 @@ class AdvancedNLPService {
     }
 
     private analyzeLogicalStructure(question: string): QuestionAnalysis['logicalStructure'] {
-        const sentences = question.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = question.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
 
         const premises: string[] = [];
         const conclusions: string[] = [];
@@ -225,7 +227,7 @@ class AdvancedNLPService {
         const gaps: string[] = [];
 
         sentences.forEach((sentence, index) => {
-            const trimmed = sentence.trim();
+            const trimmed = coerceTrimmedString(sentence, '');
 
             // 전제 식별
             if (trimmed.includes('때문에') || trimmed.includes('이유로') || trimmed.includes('근거로')) {
@@ -364,7 +366,7 @@ class AdvancedNLPService {
     /**
      * 분석 결과를 바탕으로 향상된 답변 생성을 위한 가이드라인 제공
      */
-    generateResponseGuidelines(analysis: QuestionAnalysis, webSearchResults?: any[]): {
+    generateResponseGuidelines(analysis: QuestionAnalysis, webSearchResults?: Record<string, unknown>[]): {
         structure: string[];
         requiredElements: string[];
         tone: string;
@@ -456,7 +458,7 @@ class AdvancedNLPService {
         }
     }
 
-    private generateEvidenceRequirements(analysis: QuestionAnalysis, webSearchResults?: any[]): string[] {
+    private generateEvidenceRequirements(analysis: QuestionAnalysis, webSearchResults?: Record<string, unknown>[]): string[] {
         const requirements: string[] = [];
 
         if (analysis.requirements.evidenceNeeded.includes('factual_evidence')) {

@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class GaepoSungAnalyzer:
-    """개포우성7차 프로젝트 특화 분석기"""
+    """샘플 프로젝트 프로젝트 특화 분석기"""
     
     def __init__(self, db_path: str = "backend/advanced_message_system.db"):
         self.db_path = db_path
@@ -44,7 +44,7 @@ class GaepoSungAnalyzer:
             # 타임라인 분석
             timeline = self._analyze_timeline(room_id)
             
-            # 특화 분석 (개포우성7차)
+            # 특화 분석 (샘플 프로젝트)
             specialized_analysis = self._analyze_gaeposung_specific(room_id)
             
             return {
@@ -246,7 +246,7 @@ class GaepoSungAnalyzer:
             conn.close()
     
     def _analyze_gaeposung_specific(self, room_id: str) -> Dict[str, Any]:
-        """개포우성7차 특화 분석"""
+        """샘플 프로젝트 특화 분석"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -349,7 +349,7 @@ class GaepoSungAnalyzer:
             'timeline': [
                 {
                     'date': '2025-07-15',
-                    'events': ['채팅방 생성', '첫 번째 메시지']
+                    'events': ['대화방 생성', '첫 번째 메시지']
                 },
                 {
                     'date': '2025-07-20',

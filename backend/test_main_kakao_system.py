@@ -4,13 +4,17 @@
 - 메인 시스템의 모든 기능을 테스트
 """
 
+import os
 import requests
 import json
 import time
 from datetime import datetime
 
-# 서버 설정
-BASE_URL = "http://localhost:8004"
+# 서버 설정 (CORBU_MAIN_KAKAO_TEST_BASE 또는 MAIN_KAKAO_SYSTEM_PORT / PORT, 기본 8004)
+_mk_port = os.environ.get("MAIN_KAKAO_SYSTEM_PORT") or os.environ.get("PORT") or "8004"
+BASE_URL = os.environ.get(
+    "CORBU_MAIN_KAKAO_TEST_BASE", f"http://localhost:{_mk_port}"
+).rstrip("/")
 
 def test_health_check():
     """헬스 체크 테스트"""

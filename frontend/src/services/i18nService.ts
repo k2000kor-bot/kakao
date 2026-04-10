@@ -1,3 +1,6 @@
+import { PREFERRED_LOCALE_STORAGE_KEY } from './i18nStorageKeys';
+import { ASSISTANT_PLACEHOLDER_THINKING } from '../utils/chatInputUtils';
+
 export interface Locale {
   code: string;
   name: string;
@@ -39,7 +42,7 @@ class I18nService {
     this.translations = {
       ko: {
         common: {
-          newChat: '새 채팅',
+          newChat: '새 대화',
           newProject: '새 프로젝트',
           save: '저장',
           cancel: '취소',
@@ -58,10 +61,10 @@ class I18nService {
           send: '전송',
           voiceInput: '음성 입력',
           typing: '입력 중...',
-          thinking: '생각 중...',
+          thinking: ASSISTANT_PLACEHOLDER_THINKING,
           newMessage: '새 메시지',
           noMessages: '메시지가 없습니다',
-          noSession: '채팅 세션을 선택해주세요',
+          noSession: '대화 세션을 선택해주세요',
           messageCount: '{{count}}개 메시지',
           responseModes: {
             basic: '기본',
@@ -276,7 +279,7 @@ class I18nService {
   setLocale(locale: string) {
     if (this.currentLocale !== locale) {
       this.currentLocale = locale;
-      localStorage.setItem('preferred-locale', locale);
+      localStorage.setItem(PREFERRED_LOCALE_STORAGE_KEY, locale);
       this.notifyListeners();
     }
   }
@@ -299,7 +302,7 @@ class I18nService {
   // 번역 가져오기
   t(key: string, params?: { [key: string]: string | number }): string {
     const keys = key.split('.');
-    let translation: any = this.translations[this.currentLocale] || this.translations[this.fallbackLocale];
+    let translation: string | Translation = this.translations[this.currentLocale] || this.translations[this.fallbackLocale];
 
     // 키 경로를 따라 번역 찾기
     for (const k of keys) {
@@ -415,6 +418,8 @@ class I18nService {
     return this.isRTL() ? 'rtl' : 'ltr';
   }
 }
+
+export { I18N_APP_LANGUAGE_STORAGE_KEY, PREFERRED_LOCALE_STORAGE_KEY } from './i18nStorageKeys';
 
 const i18nService = new I18nService();
 export default i18nService;

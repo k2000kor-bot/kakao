@@ -1,4 +1,13 @@
 import axios from 'axios';
+import {
+  API_BASE_URL,
+  API_PERFORMANCE_HEALTH_PATH,
+  API_PERFORMANCE_METRICS_PATH,
+  API_PERFORMANCE_OPTIMIZE_PATH,
+  API_PERFORMANCE_RECOMMENDATIONS_PATH,
+  FALLBACK_API_ORIGIN,
+  joinApiHealthCheckUrl,
+} from '../config/api';
 
 // 성능 메트릭 인터페이스
 export interface PerformanceMetrics {
@@ -72,8 +81,8 @@ export interface OptimizationResult {
   message: string;
 }
 
-class PerformanceOptimizationService {
-  private baseURL = 'http://localhost:8004/api/performance';
+export class PerformanceOptimizationService {
+  private readonly origin = API_BASE_URL || FALLBACK_API_ORIGIN;
   private metricsCache: PerformanceMetrics | null = null;
   private healthCache: SystemHealth | null = null;
   private recommendationsCache: OptimizationRecommendation[] = [];
@@ -82,7 +91,7 @@ class PerformanceOptimizationService {
   // 실시간 성능 메트릭 조회
   async getPerformanceMetrics(): Promise<PerformanceMetrics> {
     try {
-      const response = await axios.get(`${this.baseURL}/metrics`);
+      const response = await axios.get(joinApiHealthCheckUrl(this.origin, API_PERFORMANCE_METRICS_PATH));
       this.metricsCache = response.data;
       return response.data;
     } catch (error) {
@@ -94,7 +103,7 @@ class PerformanceOptimizationService {
   // 시스템 건강도 조회
   async getSystemHealth(): Promise<SystemHealth> {
     try {
-      const response = await axios.get(`${this.baseURL}/health`);
+      const response = await axios.get(joinApiHealthCheckUrl(this.origin, API_PERFORMANCE_HEALTH_PATH));
       this.healthCache = response.data;
       return response.data;
     } catch (error) {
@@ -106,7 +115,7 @@ class PerformanceOptimizationService {
   // 최적화 권장사항 조회
   async getOptimizationRecommendations(): Promise<OptimizationRecommendation[]> {
     try {
-      const response = await axios.get(`${this.baseURL}/recommendations`);
+      const response = await axios.get(joinApiHealthCheckUrl(this.origin, API_PERFORMANCE_RECOMMENDATIONS_PATH));
       this.recommendationsCache = response.data.recommendations;
       return response.data.recommendations;
     } catch (error) {
@@ -121,7 +130,7 @@ class PerformanceOptimizationService {
     type: string;
   }): Promise<OptimizationResult> {
     try {
-      const response = await axios.post(`${this.baseURL}/optimize`, optimization);
+      const response = await axios.post(joinApiHealthCheckUrl(this.origin, API_PERFORMANCE_OPTIMIZE_PATH), optimization);
       return response.data;
     } catch (error) {
       console.error('최적화 적용 실패:', error);
@@ -285,4 +294,5 @@ class PerformanceOptimizationService {
   }
 }
 
-export default new PerformanceOptimizationService();
+export const performanceOptimizationService = new PerformanceOptimizationService();
+export default performanceOptimizationService;

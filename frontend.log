@@ -103908,3 +103908,3119 @@ TS2739: Type '{ width: number; height: number; top: number; left: number; bottom
     92 |             target: document.body,
     93 |           }], this);
 
+
+> corbu-ai@0.1.0 start
+> NODE_OPTIONS=--max-old-space-size=8192 BROWSER=none PORT=3000 HOST=0.0.0.0 DANGEROUSLY_DISABLE_HOST_CHECK=true DISABLE_ESLINT_PLUGIN=true react-scripts start
+
+Attempting to bind to HOST environment variable: 0.0.0.0
+If this was unintentional, check that you haven't mistakenly set it in your shell.
+Learn more here: https://cra.link/advanced-config
+
+(node:70817) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:70817) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+
+Compiled successfully!
+
+You can now view corbu-ai in the browser.
+
+  Local:            http://localhost:3000
+  On Your Network:  http://192.168.10.152:3000
+
+Note that the development build is not optimized.
+To create a production build, use npm run build.
+
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:791:19
+TS2304: Cannot find name 'COMPOSER_SIDEBAR_TITLE_HINT_SNIPPET'.
+    789 |                       ? ' · 질문·요구 형식으로 쓰면 품질 향상'
+    790 |                       : ''
+  > 791 |             } · ${COMPOSER_SIDEBAR_TITLE_HINT_SNIPPET}`,
+        |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    792 |         [responseStyleLabel, willUseSearchOrInformed, input.length],
+    793 |     );
+    794 |
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:8530:53
+TS2304: Cannot find name 'composerDefaultFooterHint'.
+    8528 |                                                 : attachedConversationFile
+    8529 |                                                   ? `📎 대화 파일 첨부됨: ${attachedConversationFile.name} · 질문/요구 입력 후 Enter 전송`
+  > 8530 |                                                   : composerDefaultFooterHint)}
+         |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    8531 |                                     {structuredInputGuardMessage && (
+    8532 |                                         <button
+    8533 |                                             type="button"
+
+ERROR in src/components/ChatGPTInterface.tsx:8946:53
+TS2304: Cannot find name 'composerDefaultFooterHint'.
+    8944 |                                                 : attachedConversationFile
+    8945 |                                                   ? `📎 대화 파일 첨부됨: ${attachedConversationFile.name} · 질문/요구 입력 후 Enter 전송`
+  > 8946 |                                                   : composerDefaultFooterHint)}
+         |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    8947 |                                     {structuredInputGuardMessage && (
+    8948 |                                         <button
+    8949 |                                             type="button"
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:8782:53
+TS2304: Cannot find name 'composerDefaultFooterHint'.
+    8780 |                                                 : attachedConversationFile
+    8781 |                                                   ? `📎 대화 파일 첨부됨: ${attachedConversationFile.name} · 질문/요구 입력 후 Enter 전송`
+  > 8782 |                                                   : composerDefaultFooterHint)}
+         |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    8783 |                                     {structuredInputGuardMessage && (
+    8784 |                                         <button
+    8785 |                                             type="button"
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/AppUnified.tsx:482:16
+TS2552: Cannot find name 'removeConversationFromStorage'. Did you mean 'removeConversationFromLocalStorage'?
+    480 |     if (!deleteChatConfirm) return;
+    481 |     const id = deleteChatConfirm.id;
+  > 482 |     const ok = removeConversationFromStorage(id);
+        |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    483 |     setDeleteChatConfirm(null);
+    484 |     if (!ok) {
+    485 |       showToast('대화를 삭제하지 못했습니다.', 'error');
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/utils/chatInputUtils.ts:236:25
+TS2304: Cannot find name 'EXPLICIT_TITLE_NEXT_LINE_MAX_CHARS'.
+    234 |         if (isQuestionOrRequirementHeaderLine(Lj)) break;
+    235 |         if (/^\s*#\s+/.test(Lj)) break;
+  > 236 |         if (Lj.length > EXPLICIT_TITLE_NEXT_LINE_MAX_CHARS) break;
+        |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    237 |         return Lj;
+    238 |       }
+    239 |       continue;
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/AppUnified.tsx:287:25
+TS2304: Cannot find name 'useMatches'.
+    285 | function DocumentTitle() {
+    286 |   const { pathname } = useLocation();
+  > 287 |   const leafDocTitle = (useMatches().at(-1)?.handle as RouteDocumentTitleHandle | undefined)?.documentTitle;
+        |                         ^^^^^^^^^^
+    288 |   useEffect(() => {
+    289 |     if (leafDocTitle) {
+    290 |       document.title = `${leafDocTitle} - CORBU.AI`;
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/AppUnified.tsx:1381:65
+TS2304: Cannot find name 'RouteDocumentTitleHandle'.
+    1379 |           path="*"
+    1380 |           element={<NotFoundPage />}
+  > 1381 |           handle={{ documentTitle: '페이지를 찾을 수 없습니다' } satisfies RouteDocumentTitleHandle}
+         |                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^
+    1382 |         />
+    1383 |       </Route>
+    1384 |     </Routes>
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:222:13
+TS2304: Cannot find name 'REACT_APP_DEEPSEEK_REVIEW_HINTS'.
+    220 |                 ? { answer_mode: 'guided' as const }
+    221 |                 : {}),
+  > 222 |         ...(REACT_APP_DEEPSEEK_REVIEW_HINTS && {
+        |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    223 |             deepseek_review_layer_hints: true,
+    224 |             ...buildDeepSeekReviewContextHints(),
+    225 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REFINE ? { pipeline_deepseek_refine: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:225:17
+TS2304: Cannot find name 'REACT_APP_PIPELINE_DEEPSEEK_REFINE'.
+    223 |             deepseek_review_layer_hints: true,
+    224 |             ...buildDeepSeekReviewContextHints(),
+  > 225 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REFINE ? { pipeline_deepseek_refine: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    226 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REASONER ? { pipeline_deepseek_reasoner: true } : {}),
+    227 |         }),
+    228 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:226:17
+TS2304: Cannot find name 'REACT_APP_PIPELINE_DEEPSEEK_REASONER'.
+    224 |             ...buildDeepSeekReviewContextHints(),
+    225 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REFINE ? { pipeline_deepseek_refine: true } : {}),
+  > 226 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REASONER ? { pipeline_deepseek_reasoner: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    227 |         }),
+    228 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+    229 |         ...(REACT_APP_PIPELINE_VERIFIER_REWRITE ? { pipeline_verifier_rewrite: true } : {}),
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/components/ChatGPTInterface.tsx:222:13
+TS2304: Cannot find name 'REACT_APP_DEEPSEEK_REVIEW_HINTS'.
+    220 |                 ? { answer_mode: 'guided' as const }
+    221 |                 : {}),
+  > 222 |         ...(REACT_APP_DEEPSEEK_REVIEW_HINTS && {
+        |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    223 |             deepseek_review_layer_hints: true,
+    224 |             ...buildDeepSeekReviewContextHints(),
+    225 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REFINE ? { pipeline_deepseek_refine: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:225:17
+TS2304: Cannot find name 'REACT_APP_PIPELINE_DEEPSEEK_REFINE'.
+    223 |             deepseek_review_layer_hints: true,
+    224 |             ...buildDeepSeekReviewContextHints(),
+  > 225 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REFINE ? { pipeline_deepseek_refine: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    226 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REASONER ? { pipeline_deepseek_reasoner: true } : {}),
+    227 |         }),
+    228 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:226:17
+TS2304: Cannot find name 'REACT_APP_PIPELINE_DEEPSEEK_REASONER'.
+    224 |             ...buildDeepSeekReviewContextHints(),
+    225 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REFINE ? { pipeline_deepseek_refine: true } : {}),
+  > 226 |             ...(REACT_APP_PIPELINE_DEEPSEEK_REASONER ? { pipeline_deepseek_reasoner: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    227 |         }),
+    228 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+    229 |         ...(REACT_APP_PIPELINE_VERIFIER_REWRITE ? { pipeline_verifier_rewrite: true } : {}),
+
+ERROR in src/services/modernChatContextBuilder.ts:195:25
+TS2304: Cannot find name 'isDeepseekReviewHintsEnabled'.
+    193 |   }
+    194 |
+  > 195 |   const deepSeekHints = isDeepseekReviewHintsEnabled();
+        |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    196 |
+    197 |   const rid = coerceTrimmedString(options?.gensparkRouteAgentId ?? '', '');
+    198 |   const cgs = coerceTrimmedString(options?.clientGenerationScenario ?? '', '');
+
+ERROR in src/services/modernChatContextBuilder.ts:208:46
+TS2304: Cannot find name 'isPipelineDeepseekRefineEnabled'.
+    206 |     ...(cgs ? { clientGenerationScenario: cgs } : {}),
+    207 |     deepSeekReviewLayerHints: deepSeekHints,
+  > 208 |     pipelineDeepSeekRefine: deepSeekHints && isPipelineDeepseekRefineEnabled(),
+        |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    209 |     pipelineDeepSeekReasoner: deepSeekHints && isPipelineDeepseekReasonerEnabled(),
+    210 |     skipWriterLlmPolish: process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+    211 |     ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+
+ERROR in src/services/modernChatContextBuilder.ts:209:48
+TS2304: Cannot find name 'isPipelineDeepseekReasonerEnabled'.
+    207 |     deepSeekReviewLayerHints: deepSeekHints,
+    208 |     pipelineDeepSeekRefine: deepSeekHints && isPipelineDeepseekRefineEnabled(),
+  > 209 |     pipelineDeepSeekReasoner: deepSeekHints && isPipelineDeepseekReasonerEnabled(),
+        |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    210 |     skipWriterLlmPolish: process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+    211 |     ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+    212 |       ? { pipelineVerifierRewrite: true }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/services/modernChatContextBuilder.ts:195:25
+TS2304: Cannot find name 'isDeepseekReviewHintsEnabled'.
+    193 |   }
+    194 |
+  > 195 |   const deepSeekHints = isDeepseekReviewHintsEnabled();
+        |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    196 |
+    197 |   const rid = coerceTrimmedString(options?.gensparkRouteAgentId ?? '', '');
+    198 |   const cgs = coerceTrimmedString(options?.clientGenerationScenario ?? '', '');
+
+ERROR in src/services/modernChatContextBuilder.ts:208:46
+TS2304: Cannot find name 'isPipelineDeepseekRefineEnabled'.
+    206 |     ...(cgs ? { clientGenerationScenario: cgs } : {}),
+    207 |     deepSeekReviewLayerHints: deepSeekHints,
+  > 208 |     pipelineDeepSeekRefine: deepSeekHints && isPipelineDeepseekRefineEnabled(),
+        |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    209 |     pipelineDeepSeekReasoner: deepSeekHints && isPipelineDeepseekReasonerEnabled(),
+    210 |     skipWriterLlmPolish: process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+    211 |     ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+
+ERROR in src/services/modernChatContextBuilder.ts:209:48
+TS2304: Cannot find name 'isPipelineDeepseekReasonerEnabled'.
+    207 |     deepSeekReviewLayerHints: deepSeekHints,
+    208 |     pipelineDeepSeekRefine: deepSeekHints && isPipelineDeepseekRefineEnabled(),
+  > 209 |     pipelineDeepSeekReasoner: deepSeekHints && isPipelineDeepseekReasonerEnabled(),
+        |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    210 |     skipWriterLlmPolish: process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+    211 |     ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+    212 |       ? { pipelineVerifierRewrite: true }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Failed to compile.
+
+SyntaxError: /Users/a0/kakao-frontend/kakao-frontend/src/AppUnified.tsx: Expected corresponding JSX closing tag for <>. (1135:8)
+  1133 |             </NavLink>
+  1134 |           </div>
+> 1135 |         </div>
+       |         ^
+  1136 |         <div className="sidebar-footer sidebar-chatgpt-footer">
+  1137 |           <div className="theme-toggle">
+  1138 |             <button type="button" className={!isDarkMode ? 'active' : ''} onClick={() => setMode('light')} aria-label="라이트 모드">
+ERROR in ./src/AppUnified.tsx
+Module build failed (from ./node_modules/babel-loader/lib/index.js):
+SyntaxError: /Users/a0/kakao-frontend/kakao-frontend/src/AppUnified.tsx: Expected corresponding JSX closing tag for <>. (1135:8)
+
+  1133 |             </NavLink>
+  1134 |           </div>
+> 1135 |         </div>
+       |         ^
+  1136 |         <div className="sidebar-footer sidebar-chatgpt-footer">
+  1137 |           <div className="theme-toggle">
+  1138 |             <button type="button" className={!isDarkMode ? 'active' : ''} onClick={() => setMode('light')} aria-label="라이트 모드">
+    at constructor (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:367:19)
+    at TypeScriptParserMixin.raise (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:6630:19)
+    at TypeScriptParserMixin.jsxParseElementAt (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4753:14)
+    at TypeScriptParserMixin.jsxParseElement (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4782:17)
+    at TypeScriptParserMixin.parseExprAtom (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4792:19)
+    at TypeScriptParserMixin.parseExprSubscripts (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11085:23)
+    at TypeScriptParserMixin.parseUpdate (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11070:21)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11050:23)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:9857:18)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10903:61)
+    at TypeScriptParserMixin.parseExprOps (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10908:23)
+    at TypeScriptParserMixin.parseMaybeConditional (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10885:23)
+    at TypeScriptParserMixin.parseMaybeAssign (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10835:21)
+    at /Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:9795:39
+    at TypeScriptParserMixin.tryParse (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:6938:20)
+    at TypeScriptParserMixin.parseMaybeAssign (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:9795:18)
+    at /Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10804:39
+    at TypeScriptParserMixin.allowInAnd (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:12436:12)
+    at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10804:17)
+    at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:12503:17)
+    at TypeScriptParserMixin.parseParenAndDistinguishExpression (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11683:28)
+    at TypeScriptParserMixin.parseExprAtom (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11335:23)
+    at TypeScriptParserMixin.parseExprAtom (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4797:20)
+    at TypeScriptParserMixin.parseExprSubscripts (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11085:23)
+    at TypeScriptParserMixin.parseUpdate (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11070:21)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11050:23)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:9857:18)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10903:61)
+    at TypeScriptParserMixin.parseExprOpBaseRightExpr (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10990:34)
+    at TypeScriptParserMixin.parseExprOpRightExpr (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10985:21)
+    at TypeScriptParserMixin.parseExprOp (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10951:27)
+    at TypeScriptParserMixin.parseExprOp (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:9394:18)
+    at TypeScriptParserMixin.parseExprOps (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10912:17)
+    at TypeScriptParserMixin.parseMaybeConditional (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10885:23)
+    at TypeScriptParserMixin.parseMaybeAssign (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10835:21)
+    at TypeScriptParserMixin.parseMaybeAssign (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:9806:20)
+    at TypeScriptParserMixin.parseExpressionBase (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10788:23)
+    at /Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10784:39
+    at TypeScriptParserMixin.allowInAnd (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:12436:12)
+    at TypeScriptParserMixin.parseExpression (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:10784:17)
+    at TypeScriptParserMixin.jsxParseExpressionContainer (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4665:31)
+    at TypeScriptParserMixin.jsxParseElementAt (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4744:36)
+    at TypeScriptParserMixin.jsxParseElementAt (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4731:32)
+    at TypeScriptParserMixin.jsxParseElementAt (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4731:32)
+    at TypeScriptParserMixin.jsxParseElementAt (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4731:32)
+    at TypeScriptParserMixin.jsxParseElement (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4782:17)
+    at TypeScriptParserMixin.parseExprAtom (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:4792:19)
+    at TypeScriptParserMixin.parseExprSubscripts (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11085:23)
+    at TypeScriptParserMixin.parseUpdate (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11070:21)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/a0/kakao-frontend/kakao-frontend/node_modules/@babel/parser/lib/index.js:11050:23)
+
+webpack compiled with 1 error
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/AppUnified.tsx:847:10
+TS17008: JSX element 'div' has no corresponding closing tag.
+    845 |           </div>
+    846 |         </div>
+  > 847 |         <div className="sidebar-body" aria-label="사이드바 리스트 영역">
+        |          ^^^
+    848 |           {/* 대화 기록: 프로젝트 목록과 동일한 상단 슬롯(젠스파이크형 기본에서도 맨 위) */}
+    849 |           <nav className="sidebar-nav sidebar-chatgpt-nav" aria-label="대화 기록">
+    850 |             {!sidebarCollapsed && <h3 className="sidebar-project-section-title">대화</h3>}
+
+ERROR in src/AppUnified.tsx:1054:11
+TS2657: JSX expressions must have one parent element.
+    1052 |           </nav>
+    1053 |           {isUiProjectsEnabled() && (
+  > 1054 |           <>
+         |           ^^
+  > 1055 |           <div style={{ height: sidebarCollapsed ? 6 : 12 }} aria-hidden="true" />
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1056 |           <div className="sidebar-project-section" aria-label="프로젝트">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1057 |             {!sidebarCollapsed && <h3 className="sidebar-project-section-title">프로젝트</h3>}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1058 |             <div className="sidebar-project-preview-list" role="list">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1059 |               <NavLink to="/projects" className="sidebar-project-create-row" aria-label="새 프로젝트" title="새 프로젝트">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1060 |                 <span className="sidebar-icon-folder-plus" aria-hidden>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1061 |                   <IconFolder size={16} className="sidebar-project-icon" />
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1062 |                   <IconPlus size={10} className="sidebar-project-plus" />
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1063 |                 </span>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1064 |                 {!sidebarCollapsed && <span>새 프로젝트</span>}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1065 |               </NavLink>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1066 |               {(() => {
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1067 |                 const q = coerceTrimmedString(menuSearch, '').toLowerCase();
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1068 |                 const filtered = q
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1069 |                   ? sidebarProjects.filter((p) => p.name.toLowerCase().includes(q))
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1070 |                   : sidebarProjects;
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1071 |                 const maxVisible = 8;
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1072 |                 const visible = filtered.slice(0, maxVisible);
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1073 |                 const hasMore = filtered.length > maxVisible;
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1074 |                 if (visible.length === 0) {
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1075 |                   const isEmpty = sidebarProjects.length === 0;
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1076 |                   return (
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1077 |                     <>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1078 |                       <p
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1079 |                         className="sidebar-project-empty"
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1080 |                         {...(q && !isEmpty ? { role: 'status' as const, 'aria-live': 'polite' as const } : {})}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1081 |                       >
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1082 |                         {isEmpty ? '생성된 프로젝트가 없습니다' : '검색 결과 없음'}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1083 |                       </p>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1084 |                       {!isEmpty && !q && (
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1085 |                         <NavLink to="/projects" className="sidebar-more-link">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1086 |                           {!sidebarCollapsed && '더 보기'}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1087 |                         </NavLink>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1088 |                       )}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1089 |                     </>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1090 |                   );
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1091 |                 }
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1092 |                 return (
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1093 |                   <>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1094 |                     {visible.map((p) => (
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1095 |                       <NavLink
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1096 |                         key={p.id}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1097 |                         to={`/projects/${p.id}`}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1098 |                         className={({ isActive }) => `sidebar-project-preview-item ${isActive ? 'active' : ''}`}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1099 |                         role="listitem"
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1100 |                         title={p.name}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1101 |                       >
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1102 |                         <IconFolder size={18} aria-hidden className="sidebar-project-icon" />
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1103 |                         {!sidebarCollapsed && <span className="sidebar-project-name">{p.name.length > 28 ? `${p.name.slice(0, 28)}...` : p.name}</span>}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1104 |                       </NavLink>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1105 |                     ))}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1106 |                     {hasMore && (
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1107 |                       <NavLink to="/projects" className="sidebar-more-link" aria-label="프로젝트 더 보기">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1108 |                         {!sidebarCollapsed && '··· 더 보기'}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1109 |                       </NavLink>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1110 |                     )}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1111 |                   </>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1112 |                 );
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1113 |               })()}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1114 |             </div>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1115 |           </div>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1116 |           )}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1117 |           {/* 도구: 목소리 생성 (Figma 볼륨 아이콘) */}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1118 |           <div className="sidebar-tools-section">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1119 |             {!sidebarCollapsed && <h3 className="sidebar-project-section-title">도구</h3>}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1120 |             <NavLink to={VOICE_GENERATION_PATH} className={({ isActive }) => `sidebar-tool-item ${isActive ? 'active' : ''}`} end aria-label="목소리 생성" title="목소리 생성">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1121 |               <IconVolume size={18} aria-hidden className="sidebar-icon-voice" />
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1122 |               {!sidebarCollapsed && <span>목소리 생성</span>}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1123 |             </NavLink>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1124 |             <NavLink
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1125 |               to={AGENTS_PATH}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1126 |               className={({ isActive }) => `sidebar-tool-item ${isActive ? 'active' : ''}`}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1127 |               end
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1128 |               aria-label="에이전트"
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1129 |               title="Genspark식 agents?id= 링크"
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1130 |             >
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1131 |               <IconMessage size={18} aria-hidden className="sidebar-icon-agent" />
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1132 |               {!sidebarCollapsed && <span>에이전트</span>}
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1133 |             </NavLink>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1134 |           </div>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1135 |         </div>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1136 |         <div className="sidebar-footer sidebar-chatgpt-footer">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1137 |           <div className="theme-toggle">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1138 |             <button type="button" className={!isDarkMode ? 'active' : ''} onClick={() => setMode('light')} aria-label="라이트 모드">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1139 |               <IconSun size={14} />
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1140 |               Light
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1141 |             </button>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1142 |             <button type="button" className={isDarkMode ? 'active' : ''} onClick={() => setMode('dark')} aria-label="다크 모드">
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1143 |               <IconMoon size={14} />
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1144 |               Dark
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1145 |             </button>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1146 |           </div>
+         | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 1147 |         </div>
+         | ^^^^^^^^^^^^^^^
+    1148 |       </aside>
+    1149 |       <main id="main-content" className="brainwave-main" tabIndex={-1} role="main">
+    1150 |         {isMobile && (
+
+ERROR in src/AppUnified.tsx:1116:12
+TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+    1114 |             </div>
+    1115 |           </div>
+  > 1116 |           )}
+         |            ^
+    1117 |           {/* 도구: 목소리 생성 (Figma 볼륨 아이콘) */}
+    1118 |           <div className="sidebar-tools-section">
+    1119 |             {!sidebarCollapsed && <h3 className="sidebar-project-section-title">도구</h3>}
+
+ERROR in src/AppUnified.tsx:1135:11
+TS17015: Expected corresponding closing tag for JSX fragment.
+    1133 |             </NavLink>
+    1134 |           </div>
+  > 1135 |         </div>
+         |           ^^^
+    1136 |         <div className="sidebar-footer sidebar-chatgpt-footer">
+    1137 |           <div className="theme-toggle">
+    1138 |             <button type="button" className={!isDarkMode ? 'active' : ''} onClick={() => setMode('light')} aria-label="라이트 모드">
+
+ERROR in src/AppUnified.tsx:1148:7
+TS1005: ')' expected.
+    1146 |           </div>
+    1147 |         </div>
+  > 1148 |       </aside>
+         |       ^^
+    1149 |       <main id="main-content" className="brainwave-main" tabIndex={-1} role="main">
+    1150 |         {isMobile && (
+    1151 |           <header className="brainwave-mobile-header">
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/services/modernChatContextBuilder.ts:199:25
+TS2304: Cannot find name 'isDeepseekReviewHintsEnabled'.
+    197 |   }
+    198 |
+  > 199 |   const deepSeekHints = isDeepseekReviewHintsEnabled();
+        |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    200 |
+    201 |   const rid = coerceTrimmedString(options?.gensparkRouteAgentId ?? '', '');
+    202 |   const cgs = coerceTrimmedString(options?.clientGenerationScenario ?? '', '');
+
+ERROR in src/services/modernChatContextBuilder.ts:212:46
+TS2304: Cannot find name 'isPipelineDeepseekRefineEnabled'.
+    210 |     ...(cgs ? { clientGenerationScenario: cgs } : {}),
+    211 |     deepSeekReviewLayerHints: deepSeekHints,
+  > 212 |     pipelineDeepSeekRefine: deepSeekHints && isPipelineDeepseekRefineEnabled(),
+        |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    213 |     pipelineDeepSeekReasoner: deepSeekHints && isPipelineDeepseekReasonerEnabled(),
+    214 |     skipWriterLlmPolish: process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+    215 |     ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+
+ERROR in src/services/modernChatContextBuilder.ts:213:48
+TS2304: Cannot find name 'isPipelineDeepseekReasonerEnabled'.
+    211 |     deepSeekReviewLayerHints: deepSeekHints,
+    212 |     pipelineDeepSeekRefine: deepSeekHints && isPipelineDeepseekRefineEnabled(),
+  > 213 |     pipelineDeepSeekReasoner: deepSeekHints && isPipelineDeepseekReasonerEnabled(),
+        |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    214 |     skipWriterLlmPolish: process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+    215 |     ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+    216 |       ? { pipelineVerifierRewrite: true }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/services/modernChatContextBuilder.ts:202:25
+TS2304: Cannot find name 'isDeepseekReviewHintsEnabled'.
+    200 |   }
+    201 |
+  > 202 |   const deepSeekHints = isDeepseekReviewHintsEnabled();
+        |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    203 |
+    204 |   const rid = coerceTrimmedString(options?.gensparkRouteAgentId ?? '', '');
+    205 |   const cgs = coerceTrimmedString(options?.clientGenerationScenario ?? '', '');
+
+ERROR in src/services/modernChatContextBuilder.ts:215:46
+TS2304: Cannot find name 'isPipelineDeepseekRefineEnabled'.
+    213 |     ...(cgs ? { clientGenerationScenario: cgs } : {}),
+    214 |     deepSeekReviewLayerHints: deepSeekHints,
+  > 215 |     pipelineDeepSeekRefine: deepSeekHints && isPipelineDeepseekRefineEnabled(),
+        |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    216 |     pipelineDeepSeekReasoner: deepSeekHints && isPipelineDeepseekReasonerEnabled(),
+    217 |     skipWriterLlmPolish: process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+    218 |     ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+
+ERROR in src/services/modernChatContextBuilder.ts:216:48
+TS2304: Cannot find name 'isPipelineDeepseekReasonerEnabled'.
+    214 |     deepSeekReviewLayerHints: deepSeekHints,
+    215 |     pipelineDeepSeekRefine: deepSeekHints && isPipelineDeepseekRefineEnabled(),
+  > 216 |     pipelineDeepSeekReasoner: deepSeekHints && isPipelineDeepseekReasonerEnabled(),
+        |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    217 |     skipWriterLlmPolish: process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+    218 |     ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+    219 |       ? { pipelineVerifierRewrite: true }
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/components/ChatGPTInterface.tsx:221:13
+TS2304: Cannot find name 'isDeepseekReviewHintsEnabled'.
+    219 |                 ? { answer_mode: 'guided' as const }
+    220 |                 : {}),
+  > 221 |         ...(isDeepseekReviewHintsEnabled() && {
+        |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    222 |             deepseek_review_layer_hints: true,
+    223 |             ...buildDeepSeekReviewContextHints(),
+    224 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:224:17
+TS2304: Cannot find name 'isPipelineDeepseekRefineEnabled'.
+    222 |             deepseek_review_layer_hints: true,
+    223 |             ...buildDeepSeekReviewContextHints(),
+  > 224 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    225 |             ...(isPipelineDeepseekReasonerEnabled() ? { pipeline_deepseek_reasoner: true } : {}),
+    226 |         }),
+    227 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:225:17
+TS2304: Cannot find name 'isPipelineDeepseekReasonerEnabled'.
+    223 |             ...buildDeepSeekReviewContextHints(),
+    224 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+  > 225 |             ...(isPipelineDeepseekReasonerEnabled() ? { pipeline_deepseek_reasoner: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    226 |         }),
+    227 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+    228 |         ...(REACT_APP_PIPELINE_VERIFIER_REWRITE ? { pipeline_verifier_rewrite: true } : {}),
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:222:13
+TS2304: Cannot find name 'isDeepseekReviewHintsEnabled'.
+    220 |                 ? { answer_mode: 'guided' as const }
+    221 |                 : {}),
+  > 222 |         ...(isDeepseekReviewHintsEnabled() && {
+        |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    223 |             deepseek_review_layer_hints: true,
+    224 |             ...buildDeepSeekReviewContextHints(),
+    225 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:225:17
+TS2304: Cannot find name 'isPipelineDeepseekRefineEnabled'.
+    223 |             deepseek_review_layer_hints: true,
+    224 |             ...buildDeepSeekReviewContextHints(),
+  > 225 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    226 |             ...(isPipelineDeepseekReasonerEnabled() ? { pipeline_deepseek_reasoner: true } : {}),
+    227 |         }),
+    228 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:226:17
+TS2304: Cannot find name 'isPipelineDeepseekReasonerEnabled'.
+    224 |             ...buildDeepSeekReviewContextHints(),
+    225 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+  > 226 |             ...(isPipelineDeepseekReasonerEnabled() ? { pipeline_deepseek_reasoner: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    227 |         }),
+    228 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+    229 |         ...(REACT_APP_PIPELINE_VERIFIER_REWRITE ? { pipeline_verifier_rewrite: true } : {}),
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:159:9
+TS2344: Type '"deepseekReviewHints" | "pipelineDeepSeekRefine" | "pipelineDeepSeekReasoner"' does not satisfy the constraint 'keyof Conversation'.
+  Type '"deepseekReviewHints"' is not assignable to type 'keyof Conversation'.
+    157 |     conversationDeepseek?: Pick<
+    158 |         Conversation,
+  > 159 |         'deepseekReviewHints' | 'pipelineDeepSeekRefine' | 'pipelineDeepSeekReasoner'
+        |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    160 |     > | null;
+    161 | }): {
+    162 |     parsedInput?: {
+
+ERROR in src/components/ChatGPTInterface.tsx:227:13
+TS2304: Cannot find name 'isDeepseekReviewHintsEnabled'.
+    225 |                 ? { answer_mode: 'guided' as const }
+    226 |                 : {}),
+  > 227 |         ...(isDeepseekReviewHintsEnabled() && {
+        |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    228 |             deepseek_review_layer_hints: true,
+    229 |             ...buildDeepSeekReviewContextHints(),
+    230 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:230:17
+TS2304: Cannot find name 'isPipelineDeepseekRefineEnabled'.
+    228 |             deepseek_review_layer_hints: true,
+    229 |             ...buildDeepSeekReviewContextHints(),
+  > 230 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    231 |             ...(isPipelineDeepseekReasonerEnabled() ? { pipeline_deepseek_reasoner: true } : {}),
+    232 |         }),
+    233 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:231:17
+TS2304: Cannot find name 'isPipelineDeepseekReasonerEnabled'.
+    229 |             ...buildDeepSeekReviewContextHints(),
+    230 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+  > 231 |             ...(isPipelineDeepseekReasonerEnabled() ? { pipeline_deepseek_reasoner: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    232 |         }),
+    233 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+    234 |         ...(REACT_APP_PIPELINE_VERIFIER_REWRITE ? { pipeline_verifier_rewrite: true } : {}),
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:159:9
+TS2344: Type '"deepseekReviewHints" | "pipelineDeepSeekRefine" | "pipelineDeepSeekReasoner"' does not satisfy the constraint 'keyof Conversation'.
+  Type '"deepseekReviewHints"' is not assignable to type 'keyof Conversation'.
+    157 |     conversationDeepseek?: Pick<
+    158 |         Conversation,
+  > 159 |         'deepseekReviewHints' | 'pipelineDeepSeekRefine' | 'pipelineDeepSeekReasoner'
+        |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    160 |     > | null;
+    161 | }): {
+    162 |     parsedInput?: {
+
+ERROR in src/components/ChatGPTInterface.tsx:180:52
+TS2345: Argument of type 'Pick<Conversation, "deepseekReviewHints" | "pipelineDeepSeekRefine" | "pipelineDeepSeekReasoner"> | undefined' is not assignable to parameter of type 'ConversationDeepseekFlags | null | undefined'.
+  Type 'Pick<Conversation, "deepseekReviewHints" | "pipelineDeepSeekRefine" | "pipelineDeepSeekReasoner">' is not assignable to type 'ConversationDeepseekFlags'.
+    Types of property 'deepseekReviewHints' are incompatible.
+      Type 'unknown' is not assignable to type 'boolean | undefined'.
+    178 |         conversationDeepseek,
+    179 |     } = options;
+  > 180 |     const ds = resolveDeepseekFlagsForConversation(conversationDeepseek ?? undefined);
+        |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    181 |     const parsedSections = parseQuestionRequirementSections(trimmedInput);
+    182 |     const inputIntent = parseInputIntent(trimmedInput);
+    183 |     const parsedInput = omitHollowStructuredParsedInput(
+
+ERROR in src/components/ChatGPTInterface.tsx:229:13
+TS2304: Cannot find name 'isDeepseekReviewHintsEnabled'.
+    227 |                 ? { answer_mode: 'guided' as const }
+    228 |                 : {}),
+  > 229 |         ...(isDeepseekReviewHintsEnabled() && {
+        |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    230 |             deepseek_review_layer_hints: true,
+    231 |             ...buildDeepSeekReviewContextHints(),
+    232 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:232:17
+TS2304: Cannot find name 'isPipelineDeepseekRefineEnabled'.
+    230 |             deepseek_review_layer_hints: true,
+    231 |             ...buildDeepSeekReviewContextHints(),
+  > 232 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    233 |             ...(isPipelineDeepseekReasonerEnabled() ? { pipeline_deepseek_reasoner: true } : {}),
+    234 |         }),
+    235 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:233:17
+TS2304: Cannot find name 'isPipelineDeepseekReasonerEnabled'.
+    231 |             ...buildDeepSeekReviewContextHints(),
+    232 |             ...(isPipelineDeepseekRefineEnabled() ? { pipeline_deepseek_refine: true } : {}),
+  > 233 |             ...(isPipelineDeepseekReasonerEnabled() ? { pipeline_deepseek_reasoner: true } : {}),
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    234 |         }),
+    235 |         ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
+    236 |         ...(REACT_APP_PIPELINE_VERIFIER_REWRITE ? { pipeline_verifier_rewrite: true } : {}),
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:159:9
+TS2344: Type '"deepseekReviewHints" | "pipelineDeepSeekRefine" | "pipelineDeepSeekReasoner"' does not satisfy the constraint 'keyof Conversation'.
+  Type '"deepseekReviewHints"' is not assignable to type 'keyof Conversation'.
+    157 |     conversationDeepseek?: Pick<
+    158 |         Conversation,
+  > 159 |         'deepseekReviewHints' | 'pipelineDeepSeekRefine' | 'pipelineDeepSeekReasoner'
+        |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    160 |     > | null;
+    161 | }): {
+    162 |     parsedInput?: {
+
+ERROR in src/components/ChatGPTInterface.tsx:180:52
+TS2345: Argument of type 'Pick<Conversation, "deepseekReviewHints" | "pipelineDeepSeekRefine" | "pipelineDeepSeekReasoner"> | undefined' is not assignable to parameter of type 'ConversationDeepseekFlags | null | undefined'.
+  Type 'Pick<Conversation, "deepseekReviewHints" | "pipelineDeepSeekRefine" | "pipelineDeepSeekReasoner">' is not assignable to type 'ConversationDeepseekFlags'.
+    Types of property 'deepseekReviewHints' are incompatible.
+      Type 'unknown' is not assignable to type 'boolean | undefined'.
+    178 |         conversationDeepseek,
+    179 |     } = options;
+  > 180 |     const ds = resolveDeepseekFlagsForConversation(conversationDeepseek ?? undefined);
+        |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    181 |     const parsedSections = parseQuestionRequirementSections(trimmedInput);
+    182 |     const inputIntent = parseInputIntent(trimmedInput);
+    183 |     const parsedInput = omitHollowStructuredParsedInput(
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:6288:39
+TS2304: Cannot find name 'editThreadForDeepseek'.
+    6286 |                 composerResponseMode,
+    6287 |                 responseStyle,
+  > 6288 |                 conversationDeepseek: editThreadForDeepseek,
+         |                                       ^^^^^^^^^^^^^^^^^^^^^
+    6289 |             });
+    6290 |             const editContextWithHistory = {
+    6291 |                 ...(buildChatContext(currentProject ?? null) ?? {}),
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/components/ChatGPTInterface.tsx:6288:39
+TS2304: Cannot find name 'editThreadForDeepseek'.
+    6286 |                 composerResponseMode,
+    6287 |                 responseStyle,
+  > 6288 |                 conversationDeepseek: editThreadForDeepseek,
+         |                                       ^^^^^^^^^^^^^^^^^^^^^
+    6289 |             });
+    6290 |             const editContextWithHistory = {
+    6291 |                 ...(buildChatContext(currentProject ?? null) ?? {}),
+
+ERROR in src/components/ChatGPTInterface.tsx:6374:25
+TS2304: Cannot find name 'editThreadForDeepseek'.
+    6372 |                             updatedConversation.messages
+    6373 |                         ),
+  > 6374 |                         editThreadForDeepseek
+         |                         ^^^^^^^^^^^^^^^^^^^^^
+    6375 |                     )
+    6376 |                 ),
+    6377 |                 DEFAULT_CHAT_POST_AXIOS_OPTIONS,
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/components/AI/FileAnalysisChatSystem.tsx:382:45
+TS2552: Cannot find name 'deepSeekHints'. Did you mean 'deepSeekOn'?
+    380 |             !!(featureCtx as Record<string, unknown>).enable_web_research;
+    381 |         const useQaPipeline = wantsStructured;
+  > 382 |         const deepSeekOn = useQaPipeline && deepSeekHints;
+        |                                             ^^^^^^^^^^^^^
+    383 |         const context = buildUnifiedChatContext(promptInput, {
+    384 |             conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
+    385 |             deepSeekReviewLayerHints: deepSeekOn,
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/views/FeaturesMapView.tsx:94:3
+TS2304: Cannot find name 'SECTION_HOME'.
+    92 |
+    93 | const SECTIONS_AGENTS_DEFAULT: FeatureSection[] = [
+  > 94 |   SECTION_HOME,
+       |   ^^^^^^^^^^^^
+    95 |   {
+    96 |     title: `에이전트 (${AGENTS_PATH})`,
+    97 |     items: [
+
+ERROR in src/views/FeaturesMapView.tsx:107:33
+TS2552: Cannot find name 'SECTIONS_WITH_PROJECTS'. Did you mean 'SECTIONS_WITH_PROJECTS_BASE'?
+    105 | function FeaturesMapView() {
+    106 |   const uiProjects = isUiProjectsEnabled();
+  > 107 |   const sections = uiProjects ? SECTIONS_WITH_PROJECTS : SECTIONS_AGENTS_DEFAULT;
+        |                                 ^^^^^^^^^^^^^^^^^^^^^^
+    108 |   const quickLinks = uiProjects
+    109 |     ? [
+    110 |         { to: '/', label: '일반 대화', desc: '독립 대화' },
+
+ERROR in src/views/FeaturesMapView.tsx:162:22
+TS7006: Parameter 'section' implicitly has an 'any' type.
+    160 |       </nav>
+    161 |
+  > 162 |       {sections.map((section, idx) => (
+        |                      ^^^^^^^
+    163 |         <section key={section.title} style={SECTION_STYLE} aria-labelledby={`section-heading-${idx}`}>
+    164 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    165 |           <ul style={LIST_STYLE}>
+
+ERROR in src/views/FeaturesMapView.tsx:162:31
+TS7006: Parameter 'idx' implicitly has an 'any' type.
+    160 |       </nav>
+    161 |
+  > 162 |       {sections.map((section, idx) => (
+        |                               ^^^
+    163 |         <section key={section.title} style={SECTION_STYLE} aria-labelledby={`section-heading-${idx}`}>
+    164 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    165 |           <ul style={LIST_STYLE}>
+
+ERROR in src/views/FeaturesMapView.tsx:166:33
+TS7006: Parameter 'item' implicitly has an 'any' type.
+    164 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    165 |           <ul style={LIST_STYLE}>
+  > 166 |             {section.items.map((item) => (
+        |                                 ^^^^
+    167 |               <li key={item.name} style={ITEM_STYLE}>
+    168 |                 {item.to ? (
+    169 |                   <Link to={item.to} style={LINK_STYLE}>
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/views/FeaturesMapView.tsx:94:3
+TS2304: Cannot find name 'SECTION_HOME'.
+    92 |
+    93 | const SECTIONS_AGENTS_DEFAULT: FeatureSection[] = [
+  > 94 |   SECTION_HOME,
+       |   ^^^^^^^^^^^^
+    95 |   {
+    96 |     title: `에이전트 (${AGENTS_PATH})`,
+    97 |     items: [
+
+ERROR in src/views/FeaturesMapView.tsx:107:33
+TS2552: Cannot find name 'SECTIONS_WITH_PROJECTS'. Did you mean 'SECTIONS_WITH_PROJECTS_BASE'?
+    105 | function FeaturesMapView() {
+    106 |   const uiProjects = isUiProjectsEnabled();
+  > 107 |   const sections = uiProjects ? SECTIONS_WITH_PROJECTS : SECTIONS_AGENTS_DEFAULT;
+        |                                 ^^^^^^^^^^^^^^^^^^^^^^
+    108 |   const quickLinks = uiProjects
+    109 |     ? [
+    110 |         { to: '/', label: '일반 대화', desc: '독립 대화' },
+
+ERROR in src/views/FeaturesMapView.tsx:162:22
+TS7006: Parameter 'section' implicitly has an 'any' type.
+    160 |       </nav>
+    161 |
+  > 162 |       {sections.map((section, idx) => (
+        |                      ^^^^^^^
+    163 |         <section key={section.title} style={SECTION_STYLE} aria-labelledby={`section-heading-${idx}`}>
+    164 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    165 |           <ul style={LIST_STYLE}>
+
+ERROR in src/views/FeaturesMapView.tsx:162:31
+TS7006: Parameter 'idx' implicitly has an 'any' type.
+    160 |       </nav>
+    161 |
+  > 162 |       {sections.map((section, idx) => (
+        |                               ^^^
+    163 |         <section key={section.title} style={SECTION_STYLE} aria-labelledby={`section-heading-${idx}`}>
+    164 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    165 |           <ul style={LIST_STYLE}>
+
+ERROR in src/views/FeaturesMapView.tsx:166:33
+TS7006: Parameter 'item' implicitly has an 'any' type.
+    164 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    165 |           <ul style={LIST_STYLE}>
+  > 166 |             {section.items.map((item) => (
+        |                                 ^^^^
+    167 |               <li key={item.name} style={ITEM_STYLE}>
+    168 |                 {item.to ? (
+    169 |                   <Link to={item.to} style={LINK_STYLE}>
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/views/FeaturesMapView.tsx:120:3
+TS2304: Cannot find name 'SECTION_HOME'.
+    118 |
+    119 | const SECTIONS_AGENTS_DEFAULT: FeatureSection[] = [
+  > 120 |   SECTION_HOME,
+        |   ^^^^^^^^^^^^
+    121 |   {
+    122 |     title: `에이전트 (${AGENTS_PATH})`,
+    123 |     items: [
+
+ERROR in src/views/FeaturesMapView.tsx:133:33
+TS2552: Cannot find name 'SECTIONS_WITH_PROJECTS'. Did you mean 'SECTIONS_WITH_PROJECTS_BASE'?
+    131 | function FeaturesMapView() {
+    132 |   const uiProjects = isUiProjectsEnabled();
+  > 133 |   const sections = uiProjects ? SECTIONS_WITH_PROJECTS : SECTIONS_AGENTS_DEFAULT;
+        |                                 ^^^^^^^^^^^^^^^^^^^^^^
+    134 |   const quickLinks = uiProjects
+    135 |     ? [
+    136 |         { to: '/', label: '일반 대화', desc: '독립 대화' },
+
+ERROR in src/views/FeaturesMapView.tsx:188:22
+TS7006: Parameter 'section' implicitly has an 'any' type.
+    186 |       </nav>
+    187 |
+  > 188 |       {sections.map((section, idx) => (
+        |                      ^^^^^^^
+    189 |         <section key={section.title} style={SECTION_STYLE} aria-labelledby={`section-heading-${idx}`}>
+    190 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    191 |           <ul style={LIST_STYLE}>
+
+ERROR in src/views/FeaturesMapView.tsx:188:31
+TS7006: Parameter 'idx' implicitly has an 'any' type.
+    186 |       </nav>
+    187 |
+  > 188 |       {sections.map((section, idx) => (
+        |                               ^^^
+    189 |         <section key={section.title} style={SECTION_STYLE} aria-labelledby={`section-heading-${idx}`}>
+    190 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    191 |           <ul style={LIST_STYLE}>
+
+ERROR in src/views/FeaturesMapView.tsx:192:33
+TS7006: Parameter 'item' implicitly has an 'any' type.
+    190 |           <h2 id={`section-heading-${idx}`} style={TITLE_STYLE}>{section.title}</h2>
+    191 |           <ul style={LIST_STYLE}>
+  > 192 |             {section.items.map((item) => (
+        |                                 ^^^^
+    193 |               <li key={item.name} style={ITEM_STYLE}>
+    194 |                 {item.to ? (
+    195 |                   <Link to={item.to} style={LINK_STYLE}>
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+ERROR in src/services/chatService.ts:94:41
+TS2304: Cannot find name 'resolveMergeOptionsFromHistoryAndExplicit'.
+    92 |                 const rawHist = Array.isArray(optHist) ? optHist : [];
+    93 |                 const history = normalizeChatTurnsForApiMerge(rawHist);
+  > 94 |                 const mergeForPayload = resolveMergeOptionsFromHistoryAndExplicit(
+       |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    95 |                     history,
+    96 |                     options?.mergeApiChatContextOptions
+    97 |                 );
+
+ERROR in src/services/chatService.ts:98:37
+TS2304: Cannot find name 'mergeApiChatContextPayload'.
+     96 |                     options?.mergeApiChatContextOptions
+     97 |                 );
+  >  98 |                 const { quality } = mergeApiChatContextPayload(
+        |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+     99 |                     message,
+    100 |                     context,
+    101 |                     history.length > 0 ? history : undefined,
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/ModernChatInterface.tsx:108:21
+TS2304: Cannot find name 'resolveAgentIdFromGensparkAgentsQuery'.
+    106 |   /** `/agents?id=` · `?type=super_agent` 와 동일 규칙 — 통합 파이프라인에 Genspark 라우트 에이전트 id 전달 */
+    107 |   const gensparkPipelineOptions = useMemo<ChatPipelineHistoryOptions | undefined>(() => {
+  > 108 |     const agentId = resolveAgentIdFromGensparkAgentsQuery(searchParams);
+        |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    109 |     return agentId ? { gensparkRouteAgentId: agentId } : undefined;
+    110 |   }, [searchParams]);
+    111 |
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+No issues found.
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.

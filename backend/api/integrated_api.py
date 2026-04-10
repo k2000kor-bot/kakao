@@ -1,5 +1,5 @@
 """
-CORBU AI 통합 API - FastAPI Router
+CORBU.AI 통합 API - FastAPI Router
 Flask main.py의 엔드포인트를 FastAPI로 변환
 """
 
@@ -309,17 +309,17 @@ class SimpleIntegratedAI:
         response_templates = {
             "greeting": {
                 "긍정": [
-                    "안녕하세요! 기분이 좋으시네요! CORBU AI가 더욱 기쁘게 도와드리겠습니다! 😊",
+                    "안녕하세요! 기분이 좋으시네요! CORBU.AI가 더욱 기쁘게 도와드리겠습니다! 😊",
                     "반갑습니다! 좋은 하루 보내고 계시는군요! 무엇을 도와드릴까요? ✨",
                     "안녕하세요! 긍정적인 에너지가 느껴지네요! 기꺼이 도와드리겠습니다! 🌟",
                 ],
                 "부정": [
-                    "안녕하세요... 힘든 하루이신 것 같네요. CORBU AI가 도와드릴게요. 😔",
+                    "안녕하세요... 힘든 하루이신 것 같네요. CORBU.AI가 도와드릴게요. 😔",
                     "반갑습니다. 마음이 무겁으시군요. 제가 도와드릴 수 있는 것이 있다면 말씀해주세요. 🤗",
                     "안녕하세요. 어려운 시간이시군요. 함께 해결해보아요. 💪",
                 ],
                 "중립": [
-                    "안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?",
+                    "안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?",
                     "반갑습니다! 어떤 도움이 필요하신가요?",
                     "안녕하세요! 기쁘게 도와드리겠습니다.",
                 ],
@@ -427,7 +427,7 @@ async def health_check():
     """헬스 체크"""
     return {
         "status": "healthy",
-        "service": "CORBU AI 통합 API",
+        "service": "CORBU.AI 통합 API",
         "timestamp": datetime.now().isoformat(),
     }
 
@@ -1635,7 +1635,7 @@ async def advanced_analytics(request: AdvancedAnalyticsRequest):
                 "peak_hours": [9, 10, 11, 14, 15, 16, 20, 21],
                 "insights": [
                     "오전 9-11시와 오후 2-4시에 사용량이 집중됩니다.",
-                    "채팅 기능이 가장 많이 사용되고 있습니다.",
+                    "대화 기능이 가장 많이 사용되고 있습니다.",
                     "사용자 재방문율이 높습니다.",
                 ],
             }
@@ -1883,7 +1883,7 @@ async def generate_insights(request: InsightsRequest):
 
         if focus_area != "all":
             focus_keywords = {
-                "chat": ["채팅", "대화", "응답"],
+                "chat": ["대화", "대화", "응답"],
                 "creative": ["창작", "글쓰기", "콘텐츠"],
                 "marketing": ["마케팅", "소셜", "이메일"],
                 "persuasion": ["설득", "건설", "시공"],

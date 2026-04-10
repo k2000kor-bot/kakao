@@ -1,4 +1,4 @@
-# CORBU AI Backend API
+# CORBU.AI Backend API
 
 FastAPI 기반의 완전한 인증, 보안, 사용자 관리 시스템입니다.
 
@@ -16,10 +16,10 @@ pip install fastapi uvicorn pydantic psutil
 python app.py
 ```
 
-서버가 시작되면:
-- **API**: http://localhost:5001
-- **문서**: http://localhost:5001/docs
-- **헬스 체크**: http://localhost:5001/api/health
+서버가 시작되면 (기본 포트 5002, `API_PORT`로 변경 가능):
+- **API**: http://localhost:5002
+- **문서**: http://localhost:5002/api/docs
+- **헬스 체크**: http://localhost:5002/api/health
 
 ## 📚 문서
 
@@ -73,7 +73,7 @@ python test_api.py
 ## 🔧 환경 변수
 
 ```bash
-API_PORT=5001        # API 포트 (기본값: 5001)
+API_PORT=5002        # API 포트 (기본값: 5002, main_server 와 겹치지 않게 단독 실행)
 API_HOST=0.0.0.0     # API 호스트 (기본값: 0.0.0.0)
 DEBUG=false          # 디버그 모드 (기본값: false)
 RELOAD=true          # 자동 리로드 (기본값: true)
@@ -87,7 +87,7 @@ RELOAD=true          # 자동 리로드 (기본값: true)
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5001',
+  baseURL: 'http://localhost:5002',
 });
 
 // 로그인
@@ -110,14 +110,14 @@ const userInfo = await api.get('/api/auth/me', {
 import requests
 
 # 로그인
-response = requests.post('http://localhost:5001/api/auth/login', json={
+response = requests.post('http://localhost:5002/api/auth/login', json={
     'username': 'testuser',
     'password': 'Test1234!'
 })
 
 # 인증이 필요한 요청
 headers = {'Authorization': f'Bearer {access_token}'}
-user_info = requests.get('http://localhost:5001/api/auth/me', headers=headers)
+user_info = requests.get('http://localhost:5002/api/auth/me', headers=headers)
 ```
 
 더 많은 예제는 [API_EXAMPLES.md](./API_EXAMPLES.md)를 참조하세요.
@@ -153,7 +153,7 @@ user_info = requests.get('http://localhost:5001/api/auth/me', headers=headers)
 
 ## 📝 라이선스
 
-이 프로젝트는 CORBU AI의 일부입니다.
+이 프로젝트는 CORBU.AI의 일부입니다.
 
 ## 🤝 기여
 
@@ -161,9 +161,9 @@ user_info = requests.get('http://localhost:5001/api/auth/me', headers=headers)
 
 ## 📞 지원
 
-- API 문서: http://localhost:5001/docs
-- 헬스 체크: http://localhost:5001/api/health
-- 버전 정보: http://localhost:5001/api/version
+- API 문서: http://localhost:5002/api/docs
+- 헬스 체크: http://localhost:5002/api/health
+- 버전 정보: http://localhost:5002/api/version
 
 ---
 

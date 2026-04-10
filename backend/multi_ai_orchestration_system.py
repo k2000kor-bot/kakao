@@ -880,6 +880,7 @@ async def create_ai_orchestration_app() -> FastAPI:
     return app
 
 if __name__ == "__main__":
+    import os
     import uvicorn
     
     # 로깅 설정
@@ -891,10 +892,11 @@ if __name__ == "__main__":
     async def main():
         app = await create_ai_orchestration_app()
         
+        _p = int(os.environ.get("MULTI_AI_ORCHESTRATION_SYSTEM_PORT", os.environ.get("PORT", "8001")))
         config = uvicorn.Config(
             app,
             host="0.0.0.0",
-            port=8001,
+            port=_p,
             log_level="info"
         )
         

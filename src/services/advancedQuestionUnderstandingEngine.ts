@@ -1,4 +1,5 @@
 import { NLPAnalysisResult } from './advancedNLPEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface QuestionUnderstandingResult {
     question_id: string;
@@ -132,10 +133,10 @@ export interface SuggestedApproach {
 }
 
 class AdvancedQuestionUnderstandingEngine {
-    private knowledgeBase: Map<string, any> = new Map();
-    private domainModels: Map<string, any> = new Map();
-    private ambiguityPatterns: Map<string, any> = new Map();
-    private complexityMetrics: Map<string, any> = new Map();
+    private knowledgeBase: Map<string, unknown> = new Map();
+    private domainModels: Map<string, unknown> = new Map();
+    private ambiguityPatterns: Map<string, unknown> = new Map();
+    private complexityMetrics: Map<string, unknown> = new Map();
 
     constructor() {
         this.initializeKnowledgeBase();
@@ -148,7 +149,7 @@ class AdvancedQuestionUnderstandingEngine {
     async understandQuestion(
         question: string,
         nlpAnalysis: NLPAnalysisResult,
-        context?: any
+        context?: Record<string, unknown>
     ): Promise<QuestionUnderstandingResult> {
         const startTime = Date.now();
         const questionId = `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -195,7 +196,12 @@ class AdvancedQuestionUnderstandingEngine {
             };
 
         } catch (error) {
-            console.error('Question understanding error:', error);
+            const err = toError(error);
+            errorLogger.error('Question understanding error', err, {
+                component: 'advancedQuestionUnderstandingEngine',
+                action: 'understandQuestion',
+                question: question.substring(0, 100),
+            });
             return this.generateFallbackResult(question, error as Error, Date.now() - startTime);
         }
     }
@@ -291,7 +297,7 @@ class AdvancedQuestionUnderstandingEngine {
     }
 
     // 관련 개념 찾기
-    private findRelatedConcepts(term: string, type: CoreConcept['type']): string[] {
+    private findRelatedConcepts(term: string, _type: CoreConcept['type']): string[] {
         const relatedConceptsMap: { [key: string]: string[] } = {
             'react': ['component', 'state', 'props', 'hooks', 'jsx'],
             'javascript': ['es6', 'async', 'promise', 'closure', 'prototype'],
@@ -322,7 +328,7 @@ class AdvancedQuestionUnderstandingEngine {
     }
 
     // 관계 식별
-    private async identifyRelationships(question: string, nlpAnalysis: NLPAnalysisResult): Promise<Relationship[]> {
+    private async identifyRelationships(question: string, _nlpAnalysis: NLPAnalysisResult): Promise<Relationship[]> {
         const relationships: Relationship[] = [];
 
         // 기술적 관계 패턴
@@ -386,7 +392,7 @@ class AdvancedQuestionUnderstandingEngine {
 
     // 컨텍스트 힌트 추출
     private extractContextHints(question: string, term: string): string[] {
-        const hints: string[] = [];
+        const _hints: string[] = [];
         const contextWords = question.split(' ').filter(word =>
             word !== term && word.length > 3
         );
@@ -499,7 +505,7 @@ class AdvancedQuestionUnderstandingEngine {
     }
 
     // 도메인 분류
-    private async classifyDomain(question: string, nlpAnalysis: NLPAnalysisResult): Promise<DomainClassification> {
+    private async classifyDomain(question: string, _nlpAnalysis: NLPAnalysisResult): Promise<DomainClassification> {
         const domainKeywords = {
             'software_engineering': ['code', 'programming', 'development', 'software'],
             'web_development': ['web', 'frontend', 'backend', 'browser'],
@@ -570,7 +576,7 @@ class AdvancedQuestionUnderstandingEngine {
     private async analyzeContext(
         question: string,
         nlpAnalysis: NLPAnalysisResult,
-        context?: any
+        context?: Record<string, unknown>
     ): Promise<ContextualUnderstanding> {
         return {
             conversation_context: this.analyzeConversationContext(context),
@@ -581,22 +587,24 @@ class AdvancedQuestionUnderstandingEngine {
     }
 
     // 대화 컨텍스트 분석
-    private analyzeConversationContext(context?: any): ConversationContext {
+    private analyzeConversationContext(context?: Record<string, unknown>): ConversationContext {
+        const c = context as Record<string, unknown> | undefined;
         return {
-            previous_questions: context?.conversation_history || [],
-            established_topics: context?.recent_topics || [],
-            user_preferences: context?.user_preferences || [],
+            previous_questions: (Array.isArray(c?.conversation_history) ? c?.conversation_history : []) as string[],
+            established_topics: (Array.isArray(c?.recent_topics) ? c?.recent_topics : []) as string[],
+            user_preferences: (Array.isArray(c?.user_preferences) ? c?.user_preferences : []) as string[],
             conversation_flow: this.determineConversationFlow(context)
         };
     }
 
     // 대화 흐름 결정
-    private determineConversationFlow(context?: any): ConversationContext['conversation_flow'] {
-        if (!context?.conversation_history || context.conversation_history.length === 0) {
+    private determineConversationFlow(context?: Record<string, unknown>): ConversationContext['conversation_flow'] {
+        const c = context as { conversation_history?: string[] } | undefined;
+        if (!c?.conversation_history || c.conversation_history.length === 0) {
             return 'new_topic';
         }
 
-        const lastQuestion = context.conversation_history[context.conversation_history.length - 1];
+        const lastQuestion = c.conversation_history[c.conversation_history.length - 1];
         if (lastQuestion.includes('?')) {
             return 'clarification';
         }
@@ -605,7 +613,7 @@ class AdvancedQuestionUnderstandingEngine {
     }
 
     // 사용자 컨텍스트 분석
-    private analyzeUserContext(nlpAnalysis: NLPAnalysisResult, context?: any): UserContext {
+    private analyzeUserContext(nlpAnalysis: NLPAnalysisResult, _context?: Record<string, unknown>): UserContext {
         return {
             expertise_level: nlpAnalysis.context.user_expertise_level,
             background_knowledge: this.inferBackgroundKnowledge(nlpAnalysis),
@@ -715,12 +723,13 @@ class AdvancedQuestionUnderstandingEngine {
     }
 
     // 상황적 컨텍스트 분석
-    private analyzeSituationalContext(context?: any): SituationalContext {
+    private analyzeSituationalContext(context?: Record<string, unknown>): SituationalContext {
+        const c = context as Record<string, unknown> | undefined;
         return {
-            current_task: context?.current_task || 'general_inquiry',
-            environment: context?.environment || 'development',
-            constraints: context?.constraints || [],
-            available_resources: context?.available_resources || ['web_search', 'documentation']
+            current_task: String(c?.current_task ?? 'general_inquiry'),
+            environment: String(c?.environment ?? 'development'),
+            constraints: Array.isArray(c?.constraints) ? (c?.constraints as string[]) : [],
+            available_resources: Array.isArray(c?.available_resources) ? (c?.available_resources as string[]) : ['web_search', 'documentation']
         };
     }
 
@@ -746,7 +755,7 @@ class AdvancedQuestionUnderstandingEngine {
     }
 
     // 보조 의도 식별
-    private identifySecondaryIntents(question: string, nlpAnalysis: NLPAnalysisResult): string[] {
+    private identifySecondaryIntents(question: string, _nlpAnalysis: NLPAnalysisResult): string[] {
         const intents: string[] = [];
 
         if (question.includes('example') || question.includes('예시')) {
@@ -841,7 +850,7 @@ class AdvancedQuestionUnderstandingEngine {
     private async suggestApproaches(
         question: string,
         semanticAnalysis: SemanticAnalysis,
-        contextualUnderstanding: ContextualUnderstanding
+        _contextualUnderstanding: ContextualUnderstanding
     ): Promise<SuggestedApproach[]> {
         const approaches: SuggestedApproach[] = [];
 
@@ -1083,7 +1092,7 @@ class AdvancedQuestionUnderstandingEngine {
         return await this.understandQuestion(question, mockNlpAnalysis);
     }
 
-    getUnderstandingCapabilities(): any {
+    getUnderstandingCapabilities(): Record<string, boolean> {
         return {
             semantic_analysis: true,
             contextual_understanding: true,

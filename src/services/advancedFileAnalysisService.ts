@@ -1,4 +1,5 @@
 import { ProjectFile } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface AdvancedFileAnalysisResult {
   id: string;
@@ -111,7 +112,7 @@ class AdvancedFileAnalysisService {
       id: analysisId,
       fileId: file.id,
       fileName: file.name,
-      file: (file as any).file || new File([], file.name), // 파일 객체 추가
+      file: (file as { file?: File }).file ?? new File([], file.name), // 파일 객체 추가
       fileType: file.type,
       analysisType,
       status: 'pending',
@@ -191,7 +192,15 @@ class AdvancedFileAnalysisService {
       analysis.completedAt = new Date().toISOString();
 
     } catch (error) {
-      console.error('고급 파일 분석 실패:', error);
+      const err = toError(error);
+      errorLogger.error('고급 파일 분석 실패', err, {
+        component: 'advancedFileAnalysisService',
+        action: 'analyzeFile',
+        analysisId,
+        fileName: analysis.fileName,
+        fileType: analysis.fileType,
+        analysisType: analysis.analysisType,
+      });
       analysis.status = 'failed';
       analysis.error = error instanceof Error ? error.message : '알 수 없는 오류';
     } finally {
@@ -247,8 +256,8 @@ class AdvancedFileAnalysisService {
     };
 
     analysis.imageResults = {
-      description: '대우건설 개포우성7차 재건축 프로젝트 시공사 선정 관련 문서',
-      tags: ['대우건설', '개포우성7차', '재건축', '시공사 선정', '프로젝트 관리'],
+      description: '데모: 재건축 프로젝트 시공사 선정 관련 문서',
+      tags: ['시공사', '샘플프로젝트', '재건축', '시공사 선정', '프로젝트 관리'],
       confidence: 0.95
     };
 
@@ -335,7 +344,7 @@ class AdvancedFileAnalysisService {
     }
 
     // 건설업계 관련 키워드 및 카테고리 추가
-    const constructionKeywords = [
+    const _constructionKeywords = [
       '대우건설', '건설업', '부동산', '개발', '시공', '감리', '설계', '인허가', '착공', '준공',
       '아파트', '빌라', '상가', '오피스텔', '재개발', '재건축', '도시개발', '신도시',
       '토목', '건축', '전기', '소방', '환경', '조경', '도시계획', '교통',
@@ -430,7 +439,7 @@ class AdvancedFileAnalysisService {
   }
 
   // AI 학습 시스템에 데이터 전달
-  private sendToAILearning(learningData: any): void {
+  private sendToAILearning(learningData: Record<string, unknown>): void {
     // AI 학습 시스템에 분석 결과 전달
     window.dispatchEvent(new CustomEvent('aiLearningData', {
       detail: {
@@ -559,7 +568,7 @@ class AdvancedFileAnalysisService {
             break;
           case 'OCR 처리':
             analysis.ocrResults = {
-              text: '대우건설 개포우성7차 재건축 프로젝트 시공사 선정 관련 문서',
+              text: '데모: 재건축 프로젝트 시공사 선정 관련 문서',
               language: 'ko',
               confidence: 0.92,
               regions: [
@@ -580,13 +589,13 @@ class AdvancedFileAnalysisService {
             analysis.comprehensiveResults = {
               extractedText: analysis.extractedText || '',
               keyTopics: [
-                '대우건설', '개포우성7차', '재건축', '시공사 선정', '프로젝트 관리',
+                '시공사', '샘플프로젝트', '재건축', '시공사 선정', '프로젝트 관리',
                 '건설업', '부동산개발', '시공관리', '안전관리', '품질관리',
                 '스마트건설', '친환경건설', 'BIM', '프리캐스트', '모듈러건설'
               ],
               entities: [
                 { name: '대우건설', type: 'organization', confidence: 0.95, occurrences: 12 },
-                { name: '개포우성7차', type: 'project', confidence: 0.88, occurrences: 8 },
+                { name: '샘플 프로젝트', type: 'project', confidence: 0.88, occurrences: 8 },
                 { name: '재건축', type: 'construction_type', confidence: 0.92, occurrences: 15 },
                 { name: '시공사', type: 'role', confidence: 0.85, occurrences: 6 },
                 { name: '프로젝트 관리', type: 'management', confidence: 0.90, occurrences: 10 },
@@ -602,7 +611,7 @@ class AdvancedFileAnalysisService {
                   negative: 0.10
                 }
               },
-              summary: '대우건설의 개포우성7차 재건축 프로젝트 시공사 선정 과정에서 체계적인 프로젝트 관리와 안전/품질 관리 시스템이 강조되고 있습니다.',
+              summary: '데모 문서: 시공사 선정 과정에서 프로젝트 관리와 안전·품질 관리가 강조됩니다.',
               insights: [
                 '대우건설의 체계적인 프로젝트 관리 시스템이 돋보임',
                 '안전관리와 품질관리의 균형 있는 접근',
@@ -624,7 +633,7 @@ class AdvancedFileAnalysisService {
               tags: [
                 '대우건설', '건설업', '프로젝트관리', '시공', '안전관리',
                 '품질관리', '스마트건설', 'BIM', '친환경', '재건축',
-                '개포우성7차', '시공사선정', '체계적관리', '기술혁신'
+                '샘플프로젝트', '시공사선정', '체계적관리', '기술혁신'
               ]
             };
             break;
@@ -649,16 +658,16 @@ class AdvancedFileAnalysisService {
   }
 
   // 샘플 텍스트 생성
-  private generateSampleText(file: File): string {
-    return `대우건설 개포우성7차 재건축 프로젝트 시공사 선정 관련 문서입니다.
-    
-이 문서는 대우건설이 개포우성7차 재건축 프로젝트의 시공사로 선정된 과정과 관련된 내용을 담고 있습니다.
+  private generateSampleText(_file: File): string {
+    return `데모: 재건축 프로젝트 시공사 선정 관련 문서입니다.
+
+이 문서는 시공사 선정 과정과 관련된 내용을 담고 있습니다(샘플).
 
 주요 내용:
 1. 프로젝트 개요
-- 프로젝트명: 개포우성7차 재건축
+- 프로젝트명: 샘플 재건축
 - 시공사: 대우건설
-- 위치: 서울특별시 강남구 개포동
+- 위치: 서울특별시 강남구 ○○동 (데모)
 - 규모: 약 500세대
 
 2. 시공사 선정 과정

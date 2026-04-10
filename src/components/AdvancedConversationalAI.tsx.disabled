@@ -256,7 +256,7 @@ const generateAdvancedResponse = (userMessage: string, analysis: TextAnalysisRes
         return {
             id: Date.now().toString(),
             type: 'ai',
-            content: `안녕하세요! 현재 CORBU AI 시스템의 상태를 상세히 설명드리겠습니다. 🤖
+            content: `안녕하세요! 현재 CORBU.AI 시스템의 상태를 상세히 설명드리겠습니다. 🤖
 
 📊 **전체 시스템 현황**
 • 활성화된 시스템: ${activeSystems.length}개 / ${aiSystems.length}개
@@ -334,7 +334,7 @@ ${aiSystems.map(sys => `• ${sys.name}: ${sys.performance}% 성능, ${sys.statu
     return {
         id: Date.now().toString(),
         type: 'ai',
-        content: `안녕하세요! 저는 CORBU AI 시스템의 고도화된 통합 어시스턴트입니다. 🤖✨
+        content: `안녕하세요! 저는 CORBU.AI 시스템의 고도화된 통합 어시스턴트입니다. 🤖✨
 
 귀하께서 요청하신 내용을 정확히 이해했습니다. 이제 다음과 같은 방식으로 도움을 드리겠습니다:
 
@@ -371,7 +371,7 @@ const AdvancedConversationalAI: React.FC = () => {
         {
             id: '1',
             type: 'ai',
-            content: `안녕하세요! 저는 CORBU AI 시스템의 고도화된 통합 어시스턴트입니다. 🤖✨
+            content: `안녕하세요! 저는 CORBU.AI 시스템의 고도화된 통합 어시스턴트입니다. 🤖✨
 
 귀하께서 요청하신 내용을 정확히 이해했습니다. 이제 다음과 같은 방식으로 도움을 드리겠습니다:
 
@@ -456,7 +456,7 @@ const AdvancedConversationalAI: React.FC = () => {
                                 <SmartToy />
                             </Avatar>
                             <Box>
-                                <Typography variant="h6">CORBU AI 고도화 대화형 시스템</Typography>
+                                <Typography variant="h6">CORBU.AI 고도화 대화형 시스템</Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     자연스러운 한국어 대화 & 상세한 분석 서비스
                                 </Typography>
@@ -480,7 +480,7 @@ const AdvancedConversationalAI: React.FC = () => {
 
             {/* 메인 컨텐츠 */}
             <Box sx={{ display: 'flex', flex: 1, gap: 2 }}>
-                {/* 채팅 영역 */}
+                {/* 대화 영역 */}
                 <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
                         {/* 메시지 영역 */}

@@ -4,21 +4,16 @@
 
 echo "🚀 고급 NLP 서버를 시작합니다..."
 
-# Python 가상환경 활성화 (있는 경우)
-if [ -d "venv" ]; then
-    echo "📦 가상환경을 활성화합니다..."
-    source venv/bin/activate
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
+backend_venv_activate "$REPO_ROOT" || true
 
-# 필요한 패키지 설치 확인
 echo "📋 필요한 패키지를 확인합니다..."
 pip install fastapi uvicorn pydantic
 
-# 서버 실행
 echo "🔧 고급 NLP 서버를 포트 8004에서 실행합니다..."
-cd backend
-python advanced_nlp_engine.py
-
-echo "✅ 고급 NLP 서버가 시작되었습니다!"
-echo "🌐 서버 주소: http://localhost:8004"
-echo "📊 API 문서: http://localhost:8004/docs"
+cd "$REPO_ROOT/backend" || exit 1
+exec python3 advanced_nlp_engine.py

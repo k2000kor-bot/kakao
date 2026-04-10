@@ -1,0 +1,43 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "node"]
+  },
+  "include": [
+    "./adaptiveLearningEngine.test.ts",
+    "./adaptiveLearningEngine.storage.test.ts",
+    "./advancedAIDocumentationAPISystem.test.ts",
+    "./advancedAIAnalytics.test.ts",
+    "./contextualResponseEnhancer.test.ts",
+    "./conversationalAnalysisService.test.ts",
+    "./generationPromptBuilder.test.ts",
+    "./integratedWritingService.test.ts",
+    "./messageHistoryService.test.ts",
+    "./modernChatContextBuilder.test.ts",
+    "./multiStepResponseGenerator.test.ts",
+    "./projectService.test.ts",
+    "./conversationHistoryService.test.ts",
+    "./unifiedAPI.test.ts",
+    "./chatService.test.ts",
+    "./enhancedBackendAPI.test.ts",
+    "./enhancedResponseProcessor.test.ts",
+    "./i18nStorageKeys.test.ts",
+    "./errorHandlingStorageKeys.test.ts",
+    "./adaptiveLearningStorageKeys.test.ts",
+    "./notificationStorageKeys.test.ts",
+    "./searchHistoryService.test.ts",
+    "./notebookLLMStreamingService.test.ts",
+    "./integratedSystemAPI.test.ts",
+    "./apiOptimizationService.test.ts",
+    "./billingViewService.test.ts",
+    "./newsService.test.ts",
+    "./chatDataService.test.ts",
+    "./templatesViewService.test.ts",
+    "./advancedAISystemAPI.test.ts",
+    "./multiLayerStyleAnalysisSystem.test.ts"
+  ],
+  "exclude": [
+    "../../../node_modules",
+    "../../components/backup"
+  ]
+}

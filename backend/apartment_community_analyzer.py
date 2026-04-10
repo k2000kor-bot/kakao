@@ -4,6 +4,7 @@
 입주민 성향, 댓글 분석, 맞춤형 대응글 생성
 """
 
+import os
 import json
 import sqlite3
 import logging
@@ -619,4 +620,8 @@ async def generate_custom_response(user_id: str, context: str = ""):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8005)
+
+    _ac = int(
+        os.environ.get("APARTMENT_COMMUNITY_PORT", os.environ.get("PORT", "8005"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_ac)

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * CORBU AI 시스템 최종 통합 테스트
+ * CORBU.AI 시스템 최종 통합 테스트
  * 모든 기능이 정상적으로 작동하는지 확인하는 테스트 스크립트
  */
 
-console.log('🚀 CORBU AI 시스템 최종 통합 테스트 시작...\n');
+console.log('🚀 CORBU.AI 시스템 최종 통합 테스트 시작...\n');
 
 // 테스트 결과 저장
 const testResults = {
@@ -220,4 +220,4 @@ console.log('2. 브라우저에서 http://localhost:3000 접속');
 console.log('3. 모든 기능 테스트');
 console.log('4. 프로덕션 배포 준비');
 
-console.log('\n🏆 CORBU AI 시스템 최종 통합 테스트 완료!');
+console.log('\n🏆 CORBU.AI 시스템 최종 통합 테스트 완료!');

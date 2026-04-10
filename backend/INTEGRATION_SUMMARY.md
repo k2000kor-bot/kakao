@@ -70,23 +70,32 @@ Flask 기반의 `backend/api/main.py`에 있는 모든 엔드포인트를 FastAP
 
 ### 서버 실행
 
+**권장** (프로젝트 루트, `package.json` 있는 폴더):
+
 ```bash
-cd /Users/aD/kakao-frontend/backend
-python main_server.py
+cd /path/to/kakao-frontend/kakao-frontend
+npm run restart:backend
 ```
 
-서버는 `http://localhost:8000`에서 실행됩니다.
+**대안** (백엔드 폴더에서 직접):
+
+```bash
+cd /path/to/kakao-frontend/kakao-frontend/backend
+python3 -m uvicorn main_server:app --host 0.0.0.0 --port 5002
+```
+
+서버는 **`http://localhost:5002`** 에서 실행됩니다.
 
 ### API 문서 확인
 
-- **Swagger UI**: `http://localhost:8000/api/docs`
-- **ReDoc**: `http://localhost:8000/api/redoc`
+- **Swagger UI**: `http://localhost:5002/api/docs`
+- **ReDoc**: `http://localhost:5002/api/redoc`
 
 ### 테스트 실행
 
 ```bash
 # 서버가 실행 중인 상태에서
-python test_integrated_api.py
+python3 test_integrated_api.py
 ```
 
 ## 📁 생성된 파일
@@ -117,9 +126,8 @@ app.include_router(integrated_router)
 
 ## 📝 참고사항
 
-- Flask `main.py`는 여전히 포트 5002에서 독립적으로 실행 가능
-- FastAPI 통합 버전은 포트 8000에서 실행
-- 두 서버 모두 동시에 실행 가능 (포트 충돌 없음)
+- **권장**: FastAPI `main_server:app` → **5002** (`npm run restart:backend` 또는 `uvicorn main_server:app --port 5002`)
+- **대안**: Flask 통합 엔트리 `python3 -m api.main` → **5002** (동일 포트이므로 **둘 중 하나만** 실행)
 
 ## 🎯 다음 단계 (선택사항)
 

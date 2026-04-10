@@ -1,5 +1,5 @@
 """
-CORBU AI Psychological Manipulation Detector - 심리적 조작 기법 감지 엔진
+CORBU.AI Psychological Manipulation Detector - 심리적 조작 기법 감지 엔진
 """
 import re
 import json
@@ -451,7 +451,7 @@ class PsychologicalManipulationDetector:
             report_parts.append("")
             
             report_parts.append("---")
-            report_parts.append("*CORBU AI Psychological Manipulation Detector가 제공하는 분석입니다*")
+            report_parts.append("*CORBU.AI Psychological Manipulation Detector가 제공하는 분석입니다*")
             
             return "\n".join(report_parts)
             

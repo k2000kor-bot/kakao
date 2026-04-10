@@ -13,7 +13,7 @@
 - **구현 파일**: `src/services/sideMenuDataService.ts`
 - **변경사항**:
   - 프로젝트 데이터를 `localStorage`의 `projects` 키에서 로드
-  - 채팅 세션을 `corbu_chat_sessions` 키에서 로드
+  - 대화 세션을 `corbu_chat_sessions` 키에서 로드
   - 타입 정의를 `types/project.ts`와 `types/chat.ts`로 정리
 
 ### 2. 프로젝트/세션 전환 핸들러 구현

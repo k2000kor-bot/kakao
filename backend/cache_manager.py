@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-CORBU AI 캐시 관리 시스템
+CORBU.AI 캐시 관리 시스템
 메모리 캐시 및 Redis 캐시 관리
 """
 
+import os
 import time
 import json
 import hashlib
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Cache Manager API",
-    description="Intelligent caching system for CORBU AI",
+    description="Intelligent caching system for CORBU.AI",
     version="1.0.0",
 )
 
@@ -264,4 +265,5 @@ if __name__ == "__main__":
     cleanup_thread.start()
     
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8014)
+    _p = int(os.environ.get("CACHE_MANAGER_PORT", os.environ.get("PORT", "8014")))
+    uvicorn.run(app, host="0.0.0.0", port=_p)

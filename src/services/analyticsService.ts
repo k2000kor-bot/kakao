@@ -1,5 +1,6 @@
 import { ChatSession, Message } from '../types/chat';
 import { Project } from '../types/project';
+import { CHART_COLORS_HEX } from '../styles/themeColors';
 
 export interface AnalyticsData {
   messageCount: number;
@@ -42,7 +43,7 @@ export interface ChartData {
 class AnalyticsService {
   
   // 대화 분석 데이터 생성
-  async generateAnalytics(session: ChatSession, project?: Project | null): Promise<AnalyticsData> {
+  async generateAnalytics(session: ChatSession, _project?: Project | null): Promise<AnalyticsData> {
     const messages = session.messages;
     const userMessages = messages.filter(m => m.isUser);
     const aiMessages = messages.filter(m => !m.isUser);
@@ -259,7 +260,7 @@ class AnalyticsService {
             analytics.responseQuality.advanced,
             analytics.responseQuality.adaptive
           ],
-          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+          backgroundColor: [CHART_COLORS_HEX[3], CHART_COLORS_HEX[0], CHART_COLORS_HEX[2], CHART_COLORS_HEX[1]]
         }]
       },
       
@@ -268,7 +269,7 @@ class AnalyticsService {
         datasets: [{
           label: '주제별 질문 수',
           data: Object.values(analytics.topicDistribution),
-          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+          backgroundColor: [CHART_COLORS_HEX[3], CHART_COLORS_HEX[0], CHART_COLORS_HEX[2], CHART_COLORS_HEX[1], CHART_COLORS_HEX[4], CHART_COLORS_HEX[2]]
         }]
       },
       
@@ -281,7 +282,7 @@ class AnalyticsService {
             analytics.sentimentAnalysis.neutral,
             analytics.sentimentAnalysis.negative
           ],
-          backgroundColor: ['#4BC0C0', '#FFCE56', '#FF6384']
+          backgroundColor: [CHART_COLORS_HEX[1], CHART_COLORS_HEX[2], CHART_COLORS_HEX[3]]
         }]
       },
       
@@ -290,9 +291,9 @@ class AnalyticsService {
         datasets: [{
           label: '일별 메시지 수',
           data: analytics.userEngagement.dailyMessages.map(d => d.count),
-          borderColor: '#36A2EB',
+          borderColor: CHART_COLORS_HEX[0],
           borderWidth: 2,
-          backgroundColor: ['rgba(54, 162, 235, 0.1)']
+          backgroundColor: ['rgba(0, 132, 255, 0.1)']
         }]
       },
       
@@ -305,7 +306,7 @@ class AnalyticsService {
             analytics.aiPerformance.relevance,
             analytics.aiPerformance.helpfulness
           ],
-          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+          backgroundColor: [CHART_COLORS_HEX[3], CHART_COLORS_HEX[0], CHART_COLORS_HEX[2]]
         }]
       }
     };

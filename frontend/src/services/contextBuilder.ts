@@ -1,4 +1,4 @@
-import { Project, ProjectFile, Guideline } from '../types/project';
+import { Project, ProjectFile } from '../types/project';
 
 export interface BuiltContext extends Record<string, unknown> {
     project_id?: string;

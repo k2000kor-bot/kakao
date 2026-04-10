@@ -18,6 +18,9 @@ from typing import Dict, List, Any
 app = Flask(__name__)
 CORS(app)
 
+# 이 스크립트가 있는 디렉터리(프로젝트 루트) — 하드코딩 경로 대신 사용
+_COMPLETE_SERVER_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 # 전역 변수들
 conversation_memory = {}  # session_id -> 대화 기록
 user_preferences = {}      # session_id -> 사용자 선호도
@@ -2894,7 +2897,7 @@ conversation_exports = {}
 @app.route('/')
 def serve_html():
     """modern_ai_interface.html 파일을 서빙"""
-    html_path = '/Users/aD/kakao-frontend/modern_ai_interface.html'
+    html_path = os.path.join(_COMPLETE_SERVER_ROOT, 'modern_ai_interface.html')
     if os.path.exists(html_path):
         return send_file(html_path)
     else:
@@ -2903,7 +2906,7 @@ def serve_html():
 @app.route('/legacy')
 def serve_legacy_html():
     """legacy modern_chat_interface.html 파일을 서빙"""
-    html_path = '/Users/aD/kakao-frontend/modern_chat_interface.html'
+    html_path = os.path.join(_COMPLETE_SERVER_ROOT, 'modern_chat_interface.html')
     if os.path.exists(html_path):
         return send_file(html_path)
     else:
@@ -2912,7 +2915,7 @@ def serve_legacy_html():
 @app.route('/sw.js')
 def serve_service_worker():
     """Service Worker 파일을 서빙"""
-    sw_path = '/Users/aD/kakao-frontend/sw.js'
+    sw_path = os.path.join(_COMPLETE_SERVER_ROOT, 'sw.js')
     if os.path.exists(sw_path):
         return send_file(sw_path, mimetype='application/javascript')
     else:
@@ -2920,7 +2923,7 @@ def serve_service_worker():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """메인 채팅 API - 노트북 LLM 통합"""
+    """메인 대화 API - 노트북 LLM 통합"""
     global total_requests, successful_requests
     
     start_time = time.time()
@@ -2938,7 +2941,7 @@ def chat():
         total_requests += 1
         
         # AI 응답 생성 - 모든 백엔드 기능 통합
-        print(f"🤖 채팅 API 호출: {message[:50]}...")
+        print(f"🤖 대화 API 호출: {message[:50]}...")
         
         if NOTEBOOK_LLM_AVAILABLE and use_notebook_llm:
             # 하이브리드 AI 엔진 사용 (모든 백엔드 기능 통합)
@@ -4197,7 +4200,7 @@ def upload_file():
         file.seek(0)  # 파일 포인터 리셋
         
         # 업로드 디렉토리 생성
-        upload_dir = '/Users/aD/kakao-frontend/uploads'
+        upload_dir = os.path.join(_COMPLETE_SERVER_ROOT, 'uploads')
         os.makedirs(upload_dir, exist_ok=True)
         
         # 파일 저장
@@ -4235,7 +4238,7 @@ def upload_file():
 def analyze_uploaded_file(file_id):
     """업로드된 파일 재분석"""
     try:
-        upload_dir = '/Users/aD/kakao-frontend/uploads'
+        upload_dir = os.path.join(_COMPLETE_SERVER_ROOT, 'uploads')
         
         # 파일 찾기
         for filename in os.listdir(upload_dir):
@@ -4256,10 +4259,10 @@ def analyze_uploaded_file(file_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-# 채팅 기록 관리 API
+# 대화 기록 관리 API
 @app.route('/api/chat-history/<session_id>', methods=['GET'])
 def get_chat_history(session_id):
-    """특정 세션의 채팅 기록 조회"""
+    """특정 세션의 대화 기록 조회"""
     try:
         if session_id in conversation_memory:
             conversations = conversation_memory[session_id].get('conversations', [])
@@ -4283,7 +4286,7 @@ def get_chat_history(session_id):
 
 @app.route('/api/chat-history', methods=['GET'])
 def get_all_chat_sessions():
-    """모든 채팅 세션 목록 조회"""
+    """모든 대화 세션 목록 조회"""
     try:
         sessions = []
         for session_id, data in conversation_memory.items():
@@ -4310,7 +4313,7 @@ def get_all_chat_sessions():
 
 @app.route('/api/chat-history/<session_id>', methods=['DELETE'])
 def delete_chat_history(session_id):
-    """특정 세션의 채팅 기록 삭제"""
+    """특정 세션의 대화 기록 삭제"""
     try:
         if session_id in conversation_memory:
             del conversation_memory[session_id]
@@ -4333,7 +4336,7 @@ def delete_chat_history(session_id):
 
 @app.route('/api/search-chat', methods=['POST'])
 def search_chat_history():
-    """채팅 기록 검색"""
+    """대화 기록 검색"""
     try:
         data = request.get_json()
         query = data.get('query', '').lower()
@@ -4660,7 +4663,7 @@ def advanced_research_stats():
 
 @app.route('/api/advanced-chat', methods=['POST'])
 def advanced_chat():
-    """고급 채팅 API - 다양한 응답 타입 지원"""
+    """고급 대화 API - 다양한 응답 타입 지원"""
     global total_requests, successful_requests
     
     try:

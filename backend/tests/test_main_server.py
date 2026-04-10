@@ -42,13 +42,30 @@ class TestHealthEndpoints:
         assert "status" in data
         assert data.get("status") in ["healthy", "unhealthy", "degraded"]
 
+    def test_api_health_response_structure(self):
+        """GET /api/health 응답에 status, timestamp 또는 success 포함 (main_server/Flask 형식 모두 허용)"""
+        response = client.get("/api/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
+        assert data.get("success") is True or "timestamp" in data or "uptime" in data
+
+    def test_api_chat_llm_status(self):
+        """GET /api/chat/llm-status → 200, success·provider·timestamp (또는 error)"""
+        response = client.get("/api/chat/llm-status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "timestamp" in data
+        assert "provider" in data or "error" in data
+        assert data.get("success") is True or "error" in data
+
 
 @pytest.mark.skipif(not APP_AVAILABLE, reason="main_server not available")
 class TestChatEndpoints:
-    """채팅 엔드포인트 테스트"""
+    """대화 엔드포인트 테스트"""
 
     def test_chat_basic(self):
-        """기본 채팅 테스트"""
+        """기본 대화 테스트"""
         payload = {
             "message": "안녕하세요",
             "quality": "enhanced"
@@ -59,7 +76,7 @@ class TestChatEndpoints:
         assert "response" in data or "message" in data or "content" in data
 
     def test_chat_with_context(self):
-        """컨텍스트가 있는 채팅 테스트"""
+        """컨텍스트가 있는 대화 테스트"""
         payload = {
             "message": "Python에 대해 알려줘",
             "quality": "enhanced",
@@ -77,8 +94,15 @@ class TestChatEndpoints:
         response = client.post("/api/chat", json=payload)
         assert response.status_code == 400
 
+    def test_chat_missing_message_422(self):
+        """필수 필드(message) 누락 → 422"""
+        response = client.post("/api/chat", json={})
+        assert response.status_code == 422
+        data = response.json()
+        assert "detail" in data
+
     def test_chat_stream_endpoint(self):
-        """스트리밍 채팅 엔드포인트 테스트"""
+        """스트리밍 대화 엔드포인트 테스트"""
         payload = {
             "message": "테스트",
             "session_id": "test-session"
@@ -138,6 +162,94 @@ class TestPerformanceEndpoints:
             assert isinstance(data, dict)
         else:
             assert response.status_code in [200, 404]
+
+
+@pytest.mark.skipif(not APP_AVAILABLE, reason="main_server not available")
+class TestIntentEndpoints:
+    """의도·키워드 분석 API (POST /api/intent/analyze) 테스트"""
+
+    def test_intent_analyze_greeting(self):
+        """인사 메시지 → intent type greeting"""
+        response = client.post("/api/intent/analyze", json={"message": "안녕하세요"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("success") is True
+        assert "data" in data
+        assert "intent" in data["data"]
+        assert data["data"]["intent"]["type"] == "greeting"
+        assert "confidence" in data["data"]["intent"]
+        assert "keywords" in data["data"]
+
+    def test_intent_analyze_gratitude(self):
+        """감사 메시지 → intent type gratitude"""
+        response = client.post("/api/intent/analyze", json={"message": "감사합니다"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("success") is True
+        assert data["data"]["intent"]["type"] == "gratitude"
+
+    def test_intent_analyze_empty_message_422(self):
+        """빈 메시지 → 422 (Pydantic min_length=1)"""
+        response = client.post("/api/intent/analyze", json={"message": ""})
+        assert response.status_code == 422
+        data = response.json()
+        assert "detail" in data
+
+    def test_intent_analyze_missing_message_422(self):
+        """message 필드 누락 → 422"""
+        response = client.post("/api/intent/analyze", json={})
+        assert response.status_code == 422
+        data = response.json()
+        assert "detail" in data
+
+    def test_intent_analyze_returns_keywords(self):
+        """응답에 keywords 배열 포함"""
+        response = client.post(
+            "/api/intent/analyze",
+            json={"message": "Python 프로그래밍 배우고 싶어요"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("success") is True
+        keywords = data["data"].get("keywords", [])
+        assert isinstance(keywords, list)
+        assert len(keywords) <= 10
+
+
+@pytest.mark.skipif(not APP_AVAILABLE, reason="main_server not available")
+class TestAnalysisWebResearch:
+    """웹 연구 API (POST /api/analysis/web-research) 테스트"""
+
+    def test_web_research_success(self):
+        """정상 요청 → 200 + success + result 구조"""
+        payload = {
+            "question": "테스트 질문입니다",
+            "context": {"project_id": "proj-1", "user_id": "user-1"},
+        }
+        response = client.post("/api/analysis/web-research", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("success") is True
+        assert "result" in data
+        result = data["result"]
+        assert result.get("original_question") == "테스트 질문입니다"
+        assert "research_results" in result
+        assert "sources" in result["research_results"]
+        assert "conclusion" in result
+        assert "confidence_score" in result
+
+    def test_web_research_empty_question_400(self):
+        """빈 질문 → 400"""
+        response = client.post(
+            "/api/analysis/web-research",
+            json={"question": "", "context": {}},
+        )
+        assert response.status_code == 400
+
+    def test_web_research_missing_question_422(self):
+        """question 필드 누락 → 422"""
+        response = client.post("/api/analysis/web-research", json={"context": {}})
+        assert response.status_code == 422
 
 
 @pytest.mark.skipif(not APP_AVAILABLE, reason="main_server not available")

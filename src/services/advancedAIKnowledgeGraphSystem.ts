@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // 지식 그래프 인터페이스
 interface KnowledgeNode {
@@ -6,7 +7,7 @@ interface KnowledgeNode {
     type: 'concept' | 'entity' | 'event' | 'attribute' | 'relation' | 'category';
     label: string;
     description: string;
-    properties: Record<string, any>;
+    properties: Record<string, unknown>;
     confidence: number; // 0-1
     source: string;
     created_at: Date;
@@ -26,7 +27,7 @@ interface KnowledgeEdge {
     relationship_type: 'is_a' | 'part_of' | 'causes' | 'influences' | 'similar_to' | 'opposite_of' | 'depends_on' | 'contains' | 'belongs_to' | 'interacts_with';
     weight: number; // 0-1
     confidence: number; // 0-1
-    properties: Record<string, any>;
+    properties: Record<string, unknown>;
     created_at: Date;
     updated_at: Date;
 }
@@ -60,7 +61,7 @@ interface KnowledgeQuery {
     id: string;
     query_type: 'node_search' | 'path_finding' | 'pattern_matching' | 'inference' | 'similarity' | 'clustering';
     query_text: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     results: KnowledgeQueryResult[];
     execution_time: number;
     confidence: number;
@@ -71,7 +72,7 @@ interface KnowledgeQueryResult {
     id: string;
     query_id: string;
     result_type: 'node' | 'path' | 'pattern' | 'inference' | 'cluster';
-    content: any;
+    content: unknown;
     relevance_score: number;
     confidence: number;
     explanation: string;
@@ -139,12 +140,18 @@ class AdvancedAIKnowledgeGraphSystem {
 
     // 시스템 초기화
     public initializeSystem(): void {
-        console.log('🧠 고급 AI 지식 그래프 시스템 초기화 중...');
+        errorLogger.info('🧠 고급 AI 지식 그래프 시스템 초기화 중', {
+            component: 'advancedAIKnowledgeGraphSystem',
+            action: 'initializeSystem',
+        });
 
         // 초기 지식 그래프 생성
         this.createInitialKnowledgeGraphs();
 
-        console.log('✅ 고급 AI 지식 그래프 시스템이 초기화되었습니다.');
+        errorLogger.info('✅ 고급 AI 지식 그래프 시스템이 초기화되었습니다', {
+            component: 'advancedAIKnowledgeGraphSystem',
+            action: 'initializeSystem',
+        });
     }
 
     // 초기 지식 그래프 생성
@@ -335,7 +342,7 @@ class AdvancedAIKnowledgeGraphSystem {
     }
 
     // 지식 쿼리 실행
-    public executeKnowledgeQuery(graphId: string, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp'>): KnowledgeQuery {
+    public executeKnowledgeQuery(graphId: string, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp' | 'confidence'>): KnowledgeQuery {
         const graph = this.knowledgeGraphs.get(graphId);
         if (!graph) {
             throw new Error(`지식 그래프를 찾을 수 없습니다: ${graphId}`);
@@ -396,7 +403,7 @@ class AdvancedAIKnowledgeGraphSystem {
     }
 
     // 노드 검색 실행
-    private executeNodeSearch(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp'>): KnowledgeQueryResult[] {
+    private executeNodeSearch(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp' | 'confidence'>): KnowledgeQueryResult[] {
         const results: KnowledgeQueryResult[] = [];
         const searchTerm = query.query_text.toLowerCase();
 
@@ -419,9 +426,12 @@ class AdvancedAIKnowledgeGraphSystem {
     }
 
     // 경로 찾기 실행
-    private executePathFinding(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp'>): KnowledgeQueryResult[] {
+    private executePathFinding(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp' | 'confidence'>): KnowledgeQueryResult[] {
         const results: KnowledgeQueryResult[] = [];
-        const { source_node, target_node, max_path_length = 5 } = query.parameters;
+        const params = query.parameters as Record<string, unknown>;
+        const source_node = params.source_node as string | undefined;
+        const target_node = params.target_node as string | undefined;
+        const max_path_length = Number(params.max_path_length ?? 5);
 
         if (!source_node || !target_node) {
             return results;
@@ -445,7 +455,7 @@ class AdvancedAIKnowledgeGraphSystem {
     }
 
     // 패턴 매칭 실행
-    private executePatternMatching(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp'>): KnowledgeQueryResult[] {
+    private executePatternMatching(graph: KnowledgeGraph, _query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp' | 'confidence'>): KnowledgeQueryResult[] {
         const results: KnowledgeQueryResult[] = [];
         const patterns = this.findPatterns(graph);
 
@@ -465,7 +475,7 @@ class AdvancedAIKnowledgeGraphSystem {
     }
 
     // 추론 실행
-    private executeInference(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp'>): KnowledgeQueryResult[] {
+    private executeInference(graph: KnowledgeGraph, _query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp' | 'confidence'>): KnowledgeQueryResult[] {
         const results: KnowledgeQueryResult[] = [];
         const inferences = this.generateInferences(graph);
 
@@ -485,15 +495,17 @@ class AdvancedAIKnowledgeGraphSystem {
     }
 
     // 유사성 검색 실행
-    private executeSimilaritySearch(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp'>): KnowledgeQueryResult[] {
+    private executeSimilaritySearch(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp' | 'confidence'>): KnowledgeQueryResult[] {
         const results: KnowledgeQueryResult[] = [];
-        const { target_node_id, similarity_threshold = 0.7 } = query.parameters;
+        const params = query.parameters as Record<string, unknown>;
+        const target_node_id = params.target_node_id as string | undefined;
+        const similarity_threshold = Number(params.similarity_threshold ?? 0.7);
 
         if (!target_node_id) {
             return results;
         }
 
-        const targetNode = graph.nodes.get(target_node_id);
+        const targetNode = graph.nodes.get(target_node_id as string);
         if (!targetNode) {
             return results;
         }
@@ -519,9 +531,9 @@ class AdvancedAIKnowledgeGraphSystem {
     }
 
     // 클러스터링 실행
-    private executeClustering(graph: KnowledgeGraph, query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp'>): KnowledgeQueryResult[] {
+    private executeClustering(graph: KnowledgeGraph, _query: Omit<KnowledgeQuery, 'id' | 'results' | 'execution_time' | 'timestamp' | 'confidence'>): KnowledgeQueryResult[] {
         const results: KnowledgeQueryResult[] = [];
-        const clusters = this.performClustering(graph);
+        const clusters = this.performClustering(graph) as Array<{ id?: string; nodes: string[]; cohesion: number }>;
 
         clusters.forEach((cluster, index) => {
             results.push({
@@ -560,7 +572,7 @@ class AdvancedAIKnowledgeGraphSystem {
             }
 
             visited.add(current);
-            for (const [edgeId, edge] of graph.edges.entries()) {
+            for (const [_edgeId, edge] of graph.edges.entries()) {
                 if (edge.source_node_id === current && !visited.has(edge.target_node_id)) {
                     dfs(edge.target_node_id, [...path, edge.target_node_id]);
                 }
@@ -583,7 +595,7 @@ class AdvancedAIKnowledgeGraphSystem {
             const source = path[i];
             const target = path[i + 1];
 
-            for (const [edgeId, edge] of graph.edges.entries()) {
+            for (const [_edgeId, edge] of graph.edges.entries()) {
                 if (edge.source_node_id === source && edge.target_node_id === target) {
                     totalConfidence += edge.confidence;
                     edgeCount++;
@@ -676,7 +688,7 @@ class AdvancedAIKnowledgeGraphSystem {
         const groups: string[][] = [];
         const visited = new Set<string>();
 
-        for (const [nodeId, node] of graph.nodes.entries()) {
+        for (const [nodeId, _node] of graph.nodes.entries()) {
             if (!visited.has(nodeId)) {
                 const group: string[] = [];
                 this.dfsConnectedNodes(graph, nodeId, visited, group);
@@ -694,7 +706,7 @@ class AdvancedAIKnowledgeGraphSystem {
         visited.add(nodeId);
         group.push(nodeId);
 
-        for (const [edgeId, edge] of graph.edges.entries()) {
+        for (const [_edgeId, edge] of graph.edges.entries()) {
             if (edge.source_node_id === nodeId && !visited.has(edge.target_node_id)) {
                 this.dfsConnectedNodes(graph, edge.target_node_id, visited, group);
             }
@@ -857,8 +869,8 @@ class AdvancedAIKnowledgeGraphSystem {
     }
 
     // 클러스터링 수행
-    private performClustering(graph: KnowledgeGraph): any[] {
-        const clusters: any[] = [];
+    private performClustering(graph: KnowledgeGraph): unknown[] {
+        const clusters: unknown[] = [];
         const visited = new Set<string>();
 
         for (const [nodeId, node] of graph.nodes.entries()) {
@@ -967,7 +979,7 @@ class AdvancedAIKnowledgeGraphSystem {
     private getNeighbors(graph: KnowledgeGraph, nodeId: string): string[] {
         const neighbors = new Set<string>();
 
-        for (const [edgeId, edge] of graph.edges.entries()) {
+        for (const [_edgeId, edge] of graph.edges.entries()) {
             if (edge.source_node_id === nodeId) {
                 neighbors.add(edge.target_node_id);
             }
@@ -984,7 +996,7 @@ class AdvancedAIKnowledgeGraphSystem {
         let count = 0;
         const nodeSet = new Set(nodes);
 
-        for (const [edgeId, edge] of graph.edges.entries()) {
+        for (const [_edgeId, edge] of graph.edges.entries()) {
             if (nodeSet.has(edge.source_node_id) && nodeSet.has(edge.target_node_id)) {
                 count++;
             }
@@ -1019,7 +1031,10 @@ class AdvancedAIKnowledgeGraphSystem {
     // 시스템 시작
     public start(): void {
         if (this.isRunning) {
-            console.log('⚠️ 고급 AI 지식 그래프 시스템이 이미 실행 중입니다.');
+            errorLogger.warn('⚠️ 고급 AI 지식 그래프 시스템이 이미 실행 중입니다', {
+                component: 'advancedAIKnowledgeGraphSystem',
+                action: 'start',
+            });
             return;
         }
 
@@ -1032,13 +1047,19 @@ class AdvancedAIKnowledgeGraphSystem {
             this.cleanupOldData();
         }, 30000); // 30초마다 업데이트
 
-        console.log('🚀 고급 AI 지식 그래프 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 고급 AI 지식 그래프 시스템이 시작되었습니다', {
+            component: 'advancedAIKnowledgeGraphSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
     public stop(): void {
         if (!this.isRunning) {
-            console.log('⚠️ 고급 AI 지식 그래프 시스템이 실행 중이 아닙니다.');
+            errorLogger.warn('⚠️ 고급 AI 지식 그래프 시스템이 실행 중이 아닙니다', {
+                component: 'advancedAIKnowledgeGraphSystem',
+                action: 'stop',
+            });
             return;
         }
 
@@ -1049,7 +1070,10 @@ class AdvancedAIKnowledgeGraphSystem {
             this.updateInterval = null;
         }
 
-        console.log('🛑 고급 AI 지식 그래프 시스템이 중지되었습니다.');
+        errorLogger.info('🛑 고급 AI 지식 그래프 시스템이 중지되었습니다', {
+            component: 'advancedAIKnowledgeGraphSystem',
+            action: 'stop',
+        });
     }
 
     // 메트릭 업데이트
@@ -1106,7 +1130,7 @@ class AdvancedAIKnowledgeGraphSystem {
         return { ...this.metrics };
     }
 
-    public getSystemHealth(): { status: string; details: any } {
+    public getSystemHealth(): { status: string; details: Record<string, unknown> } {
         return {
             status: this.isRunning ? 'healthy' : 'stopped',
             details: {

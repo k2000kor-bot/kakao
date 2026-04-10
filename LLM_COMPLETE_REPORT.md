@@ -7,7 +7,7 @@
 
 ## 🎯 프로젝트 개요
 
-CORBU AI에 LLM 연동 시스템을 구축하여 실제 AI 모델을 활용한 지능형 대화 기능을 구현했습니다.
+CORBU.AI에 LLM 연동 시스템을 구축하여 실제 AI 모델을 활용한 지능형 대화 기능을 구현했습니다.
 
 ---
 
@@ -56,7 +56,7 @@ CORBU AI에 LLM 연동 시스템을 구축하여 실제 AI 모델을 활용한 �
 
 **변경 사항**:
 - ✅ LLM 서비스 import 및 초기화
-- ✅ 채팅 API에 LLM 통합
+- ✅ 대화 API에 LLM 통합
 - ✅ `conversation_id` 지원 추가
 - ✅ 에러 처리 및 폴백 로직
 
@@ -166,7 +166,7 @@ python app.py
 ### 4. 테스트
 
 ```bash
-curl -X POST http://localhost:5001/api/chat \
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "안녕하세요",

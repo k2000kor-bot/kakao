@@ -1,6 +1,7 @@
 // 자동 파일 분류 및 학습 시스템
-import { clientFileProcessor, FileAnalysisResult, ProjectKnowledgeBase } from './clientFileProcessor';
+import { clientFileProcessor, FileAnalysisResult } from './clientFileProcessor';
 import { mediaAnalysisService, MediaAnalysisResult } from './mediaAnalysisService';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface FileClassification {
     id: string;
@@ -90,7 +91,12 @@ export class AutoFileClassifier {
             return classification;
 
         } catch (error) {
-            console.error('파일 분류 오류:', error);
+            const err = toError(error);
+            errorLogger.error('파일 분류 오류', err, {
+                component: 'autoFileClassifier',
+                action: 'classifyFile',
+                fileId,
+            });
 
             // 실패한 경우에도 기본 분류 정보 제공
             const failedClassification: FileClassification = {
@@ -258,7 +264,7 @@ export class AutoFileClassifier {
 
         if (fileAnalysis) {
             // 문서 파일 내용 기반 분류
-            const topics = fileAnalysis.keyTopics;
+            const _topics = fileAnalysis.keyTopics;
             const category = fileAnalysis.categorization.primaryCategory;
 
             if (category === 'construction') {
@@ -449,7 +455,7 @@ export class AutoFileClassifier {
 
     private suggestFileLocation(
         classification: { category: string; subCategory: string; confidence: number },
-        projectId: string
+        _projectId: string
     ): string {
 
         const baseStructure = {

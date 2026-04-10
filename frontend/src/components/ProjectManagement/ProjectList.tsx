@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * 프로젝트 목록 컴포넌트 (카드/리스트 뷰)
+ * @status 비활성 — backup/UnifiedProjectInterface.tsx.disabled에서만 사용.
+ * 현재 프로젝트 목록: ProjectsPage → ProjectHub.
+ * @see docs/COMPONENT_ARCHITECTURE.md §3, src/components/ProjectManagement/README.md
+ */
+import React, { useState } from 'react';
 import {
   Plus,
   Folder,
@@ -6,13 +12,13 @@ import {
   Edit,
   Trash2,
   Archive,
-  Settings,
-  Users,
   Calendar,
   FileText,
   MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getPriorityStyle, getProjectStatusStyle } from '../../styles/themeColors';
+import './ProjectList.css';
 
 interface Project {
   id: string;
@@ -69,23 +75,8 @@ const ProjectList: React.FC<ProjectListProps> = ({
     return matchesFilter && matchesSearch;
   });
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50';
-      case 'medium': return 'text-yellow-600 bg-yellow-50';
-      case 'low': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600 bg-green-50';
-      case 'completed': return 'text-blue-600 bg-blue-50';
-      case 'archived': return 'text-gray-600 bg-gray-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
+  const getPriorityStyleObj = (p: string) => getPriorityStyle(p);
+  const getStatusStyleObj = (s: string) => getProjectStatusStyle(s);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -97,36 +88,20 @@ const ProjectList: React.FC<ProjectListProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">프로젝트</h2>
-          <button
-            onClick={onProjectCreate}
-            className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="text-sm font-medium">새 프로젝트</span>
+    <div className="pl-root">
+      <div className="pl-header">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--spacing-md)' }}>
+          <h2 className="pl-title">프로젝트</h2>
+          <button type="button" onClick={onProjectCreate} className="bw-btn-primary" aria-label="새 프로젝트 만들기">
+            <Plus size={16} aria-hidden /> 새 프로젝트
           </button>
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex space-x-3">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="프로젝트 검색..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
+        <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+          <div style={{ flex: 1 }}>
+            <input type="text" placeholder="프로젝트 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bw-input" aria-label="프로젝트 검색" style={{ width: '100%' }} />
           </div>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          >
+          <select value={filter} onChange={(e) => setFilter(e.target.value as 'all' | 'active' | 'archived')} className="bw-input" style={{ flex: '0 0 auto', minWidth: 120 }} aria-label="프로젝트 필터">
             <option value="all">전체</option>
             <option value="active">활성</option>
             <option value="archived">보관됨</option>
@@ -134,8 +109,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
         </div>
       </div>
 
-      {/* Project List */}
-      <div className="max-h-96 overflow-y-auto">
+      <div className="pl-list">
         <AnimatePresence>
           {filteredProjects.map((project) => (
             <motion.div
@@ -143,113 +117,72 @@ const ProjectList: React.FC<ProjectListProps> = ({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${selectedProjectId === project.id ? 'bg-purple-50 border-purple-200' : 'hover:bg-gray-50'
-                }`}
+              className={`pl-item ${selectedProjectId === project.id ? 'selected' : ''}`}
               onClick={() => onProjectSelect(project)}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <Folder className="h-5 w-5 text-purple-600" />
-                    <h3 className="text-sm font-medium text-gray-900 truncate">
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--spacing-md)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
+                    <Folder size={20} style={{ color: 'var(--accent-info)', flexShrink: 0 }} aria-hidden />
+                    <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {project.name}
                     </h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(project.priority)}`}>
+                    <span className="pl-tag" style={getPriorityStyleObj(project.priority)}>
                       {project.priority === 'high' ? '높음' : project.priority === 'medium' ? '보통' : '낮음'}
                     </span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+                    <span className="pl-tag" style={getStatusStyleObj(project.status)}>
                       {project.status === 'active' ? '활성' : project.status === 'completed' ? '완료' : '보관'}
                     </span>
                   </div>
 
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-sm)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {project.description}
                   </p>
 
                   {project.tags && project.tags.length > 0 && (
-                    <div className="flex items-center space-x-1 mb-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 'var(--spacing-sm)' }}>
                       {project.tags.slice(0, 3).map((tag, index) => (
-                        <span key={index} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                          {tag}
-                        </span>
+                        <span key={index} className="pl-tag" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>{tag}</span>
                       ))}
                       {project.tags.length > 3 && (
-                        <span className="text-xs text-gray-500">+{project.tags.length - 3}</span>
+                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>+{project.tags.length - 3}</span>
                       )}
                     </div>
                   )}
 
-                  <div className="flex items-center space-x-4 text-xs text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <MessageSquare className="h-3 w-3" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <MessageSquare size={12} aria-hidden />
                       <span>{project.messageCount || 0}개 메시지</span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <FileText className="h-3 w-3" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <FileText size={12} aria-hidden />
                       <span>{project.fileCount || 0}개 파일</span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-3 w-3" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Calendar size={12} aria-hidden />
                       <span>{formatDate(project.updatedAt)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="relative">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(showMenu === project.id ? null : project.id);
-                  }}
-                  className="p-1 hover:bg-gray-100 rounded transition-colors"
-                >
-                  <MoreVertical className="h-4 w-4 text-gray-500" />
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <button type="button" onClick={(e) => { e.stopPropagation(); setShowMenu(showMenu === project.id ? null : project.id); }} className="pl-menu-btn" aria-label="프로젝트 메뉴">
+                  <MoreVertical size={16} aria-hidden />
                 </button>
-
                 <AnimatePresence>
                   {showMenu === project.id && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
-                    >
-                      <div className="py-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onProjectEdit(project.id);
-                            setShowMenu(null);
-                          }}
-                          className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span>편집</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onProjectArchive(project.id);
-                            setShowMenu(null);
-                          }}
-                          className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <Archive className="h-4 w-4" />
-                          <span>{project.status === 'archived' ? '복원' : '보관'}</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onProjectDelete(project.id);
-                            setShowMenu(null);
-                          }}
-                          className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span>삭제</span>
-                        </button>
-                      </div>
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bw-card" style={{ position: 'absolute', right: 0, top: 32, minWidth: 192, zIndex: 'var(--z-base)', padding: 'var(--spacing-xs)' }}>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); onProjectEdit(project.id); setShowMenu(null); }} className="pl-menu-item">
+                        <Edit size={16} aria-hidden /> 편집
+                      </button>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); onProjectArchive(project.id); setShowMenu(null); }} className="pl-menu-item">
+                        <Archive size={16} aria-hidden /> {project.status === 'archived' ? '복원' : '보관'}
+                      </button>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); onProjectDelete(project.id); setShowMenu(null); }} className="pl-menu-item danger">
+                        <Trash2 size={16} aria-hidden /> 삭제
+                      </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -259,16 +192,11 @@ const ProjectList: React.FC<ProjectListProps> = ({
       </AnimatePresence>
 
       {filteredProjects.length === 0 && (
-        <div className="p-8 text-center">
-          <Folder className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 mb-2">
-            {searchTerm ? '검색 결과가 없습니다.' : '프로젝트가 없습니다.'}
-          </p>
+        <div className="pl-empty" role="status" aria-live="polite">
+          <Folder size={48} style={{ color: 'var(--text-tertiary)', margin: '0 auto var(--spacing-md)', display: 'block' }} aria-hidden />
+          <p style={{ marginBottom: 'var(--spacing-sm)' }}>{searchTerm ? '검색 결과가 없습니다.' : '프로젝트가 없습니다.'}</p>
           {!searchTerm && (
-            <button
-              onClick={onProjectCreate}
-              className="text-purple-600 hover:text-purple-700 font-medium"
-            >
+            <button type="button" onClick={onProjectCreate} style={{ color: 'var(--accent-info)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }} aria-label="첫 번째 프로젝트 만들기">
               첫 번째 프로젝트를 만들어보세요
             </button>
           )}

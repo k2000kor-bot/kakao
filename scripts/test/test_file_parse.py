@@ -1,7 +1,7 @@
 import re
 
 def test_file_parse():
-    file_path = "chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt"
+    file_path = "chat_rooms/sample_chat_room/sample_chat_room.txt"
     
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#667eea">
     <meta name="description" content="CORBU.AI - 차세대 AI 강화 어시스턴트 웹 애플리케이션">
-    <meta name="keywords" content="AI, 인공지능, 채팅, 코드분석, 머신러닝, CORBU">
+    <meta name="keywords" content="AI, 인공지능, 대화, 코드분석, 머신러닝, CORBU">
 
     <!-- PWA 지원 -->
     <meta name="mobile-web-app-capable" content="yes">
@@ -250,7 +250,7 @@
         }
 
 
-        /* 채팅 영역 */
+        /* 대화 영역 */
         .chat-container {
             flex: 1;
             display: flex;
@@ -1781,7 +1781,7 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
-                    새 채팅
+                    새 대화
                 </button>
             </div>
 
@@ -1952,7 +1952,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
-                    일반 채팅
+                    일반 대화
                 </div>
                 <div class="nav-item" onclick="switchMode('coding')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2847,7 +2847,7 @@ fetchAndProcessData('/api/data')
             }
         }
 
-        // 🚀 지능형 채팅 시스템
+        // 🚀 지능형 대화 시스템
         class IntelligentChatSystem {
             constructor() {
                 this.responseGenerator = new PracticalResponseGenerator();
@@ -4180,7 +4180,7 @@ function example() {
                             <div style="font-size: 14px; line-height: 1.6;">
                                 <div><kbd>Enter</kbd> - 메시지 전송</div>
                                 <div><kbd>Shift + Enter</kbd> - 줄바꿈</div>
-                                <div><kbd>Ctrl/Cmd + K</kbd> - 새 채팅</div>
+                                <div><kbd>Ctrl/Cmd + K</kbd> - 새 대화</div>
                                 <div><kbd>Ctrl/Cmd + /</kbd> - 단축키 도움말</div>
                                 <div><kbd>Escape</kbd> - 모달 닫기</div>
                             </div>
@@ -4528,7 +4528,7 @@ function example() {
 
             // 키보드 단축키 설정
             document.addEventListener('keydown', (e) => {
-                // Ctrl/Cmd + K: 새 채팅
+                // Ctrl/Cmd + K: 새 대화
                 if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                     e.preventDefault();
                     startNewChat();
@@ -5285,7 +5285,7 @@ function example() {
                 const renderMode = document.getElementById('renderMode')?.value ?? 'detailed';
                 const ultraMode = document.getElementById('ultraMode')?.checked ?? false;
 
-                // 고급 채팅 API 요청
+                // 고급 대화 API 요청
                 const response = await fetch('/api/advanced-chat', {
                     method: 'POST',
                     headers: {
@@ -5411,7 +5411,7 @@ function example() {
                     appendMessage('ai', '텍스트 분석 모드로 전환했습니다! 분석하고 싶은 텍스트를 입력해주세요.');
                     break;
                 default:
-                    appendMessage('ai', '일반 채팅 모드입니다. 무엇이든 물어보세요!');
+                    appendMessage('ai', '일반 대화 모드입니다. 무엇이든 물어보세요!');
             }
         }
 
@@ -5847,7 +5847,7 @@ function example() {
 
         // 키보드 단축키 기능
         document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + K: 새 채팅
+            // Ctrl/Cmd + K: 새 대화
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
                 startNewChat();
@@ -6681,7 +6681,7 @@ ${data.response}`;
                 if (data.success) {
                     closeWritingModal();
 
-                    // 결과를 채팅에 표시
+                    // 결과를 대화에 표시
                     appendMessage('ai', `📝 **글쓰기 개선 결과**\n\n**원본 텍스트:**\n${data.original_text}\n\n**개선된 텍스트:**\n${data.improved_text}\n\n**개선 제안:**\n${data.suggestions.join('\n• ')}\n\n**읽기 쉬움 점수:** ${data.readability_score}/100`);
 
                     showNotification('글쓰기가 개선되었습니다!');
@@ -6728,7 +6728,7 @@ ${data.response}`;
                 if (data.success) {
                     closeStyleConvertModal();
 
-                    // 결과를 채팅에 표시
+                    // 결과를 대화에 표시
                     appendMessage('ai', `🎨 **스타일 변환 결과**\n\n**변환 스타일:** ${data.target_style}\n**스타일 특성:** ${data.style_characteristics}\n\n**원본 텍스트:**\n${data.original_text}\n\n**변환된 텍스트:**\n${data.converted_text}`);
 
                     showNotification('스타일이 변환되었습니다!');
@@ -6779,7 +6779,7 @@ ${data.response}`;
                 if (data.success) {
                     closeContentGeneratorModal();
 
-                    // 결과를 채팅에 표시
+                    // 결과를 대화에 표시
                     appendMessage('ai', `✨ **콘텐츠 생성 결과**\n\n**제목:** ${data.title}\n**유형:** ${data.content_type}\n**단어 수:** ${data.word_count}자\n**예상 읽기 시간:** ${data.estimated_reading_time}\n\n**생성된 콘텐츠:**\n${data.generated_content}\n\n**핵심 포인트:**\n• ${data.key_points.join('\n• ')}`);
 
                     showNotification('콘텐츠가 생성되었습니다!');

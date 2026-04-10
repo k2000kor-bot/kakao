@@ -52,12 +52,19 @@ export default defineConfig({
     },
   ],
 
-  /* 개발 서버 실행 */
-  webServer: {
-    command: 'npm start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  /* 개발 서버 실행 (E2E_SERVER_READY=1 이면 스킵 — 수동 npm start 후 실행)
+   * E2E_USE_BUILD=1 이면 build 폴더를 serve (빠른 시작, npm run build 선행 필요) */
+  ...(process.env.E2E_SERVER_READY
+    ? {}
+    : {
+        webServer: {
+          command: process.env.E2E_USE_BUILD
+            ? 'npx serve -s build -l 3000'
+            : 'npm start',
+          url: 'http://localhost:3000',
+          reuseExistingServer: !process.env.CI,
+          timeout: process.env.E2E_USE_BUILD ? 30 * 1000 : 600 * 1000,
+        },
+      }),
 });
 

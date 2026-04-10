@@ -32,8 +32,8 @@ export interface AIEngineState {
     websocket: {
         isConnected: boolean;
         connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
-        lastMessage: any;
-        messageHistory: any[];
+        lastMessage: unknown;
+        messageHistory: unknown[];
     };
 
     // 고급 분석 기능
@@ -119,8 +119,9 @@ export const initializeAIEngine = createAsyncThunk(
         try {
             const response = await apiService.initializeAIEngine();
             return response;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data || 'AI 엔진 초기화 실패');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown } };
+            return rejectWithValue(err.response?.data || 'AI 엔진 초기화 실패');
         }
     }
 );
@@ -131,8 +132,9 @@ export const switchAIModel = createAsyncThunk(
         try {
             const response = await apiService.switchAIModel(modelName);
             return response;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data || '모델 전환 실패');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown } };
+            return rejectWithValue(err.response?.data || '모델 전환 실패');
         }
     }
 );
@@ -143,8 +145,9 @@ export const startRealtimeAnalysis = createAsyncThunk(
         try {
             const response = await apiService.startRealtimeAnalysis();
             return response;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data || '실시간 분석 시작 실패');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown } };
+            return rejectWithValue(err.response?.data || '실시간 분석 시작 실패');
         }
     }
 );
@@ -155,8 +158,9 @@ export const analyzeSentiment = createAsyncThunk(
         try {
             const response = await apiService.analyzeSentiment(text);
             return response;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data || '감정 분석 실패');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown } };
+            return rejectWithValue(err.response?.data || '감정 분석 실패');
         }
     }
 );
@@ -167,8 +171,9 @@ export const detectIntent = createAsyncThunk(
         try {
             const response = await apiService.detectIntent(text);
             return response;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data || '의도 감지 실패');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown } };
+            return rejectWithValue(err.response?.data || '의도 감지 실패');
         }
     }
 );
@@ -184,15 +189,16 @@ const aiEngineSlice = createSlice({
         },
 
         // 웹소켓 메시지 수신
-        receiveWebSocketMessage: (state, action: PayloadAction<any>) => {
+        receiveWebSocketMessage: (state, action: PayloadAction<unknown>) => {
+            const payload = action.payload as { type?: string; data?: { analysis?: string; confidence?: number; processingTime?: number } };
             state.websocket.lastMessage = action.payload;
             state.websocket.messageHistory.push(action.payload);
 
             // 메시지 타입에 따른 상태 업데이트
-            if (action.payload.type === 'realtime_analysis') {
-                state.realtimeAnalysis.currentAnalysis = action.payload.data.analysis;
-                state.realtimeAnalysis.confidence = action.payload.data.confidence;
-                state.realtimeAnalysis.processingTime = action.payload.data.processingTime;
+            if (payload?.type === 'realtime_analysis' && payload?.data) {
+                state.realtimeAnalysis.currentAnalysis = payload.data.analysis ?? null;
+                state.realtimeAnalysis.confidence = payload.data.confidence ?? 0;
+                state.realtimeAnalysis.processingTime = payload.data.processingTime ?? 0;
             }
         },
 
@@ -245,10 +251,10 @@ const aiEngineSlice = createSlice({
             .addCase(initializeAIEngine.fulfilled, (state, action) => {
                 state.aiModels.isModelLoading = false;
                 if (action.payload && typeof action.payload === 'object' && 'data' in action.payload) {
-                    const data = action.payload.data;
+                    const data = action.payload.data as { currentModel?: string; availableModels?: string[] } | null;
                     if (data && typeof data === 'object') {
-                        state.aiModels.currentModel = data.currentModel || state.aiModels.currentModel;
-                        state.aiModels.availableModels = data.availableModels || state.aiModels.availableModels;
+                        state.aiModels.currentModel = data.currentModel ?? state.aiModels.currentModel;
+                        state.aiModels.availableModels = data.availableModels ?? state.aiModels.availableModels;
                     }
                 }
             })
@@ -266,9 +272,9 @@ const aiEngineSlice = createSlice({
             .addCase(switchAIModel.fulfilled, (state, action) => {
                 state.aiModels.isModelLoading = false;
                 if (action.payload && typeof action.payload === 'object' && 'data' in action.payload) {
-                    const data = action.payload.data;
+                    const data = action.payload.data as { model?: string } | null;
                     if (data && typeof data === 'object') {
-                        state.aiModels.currentModel = data.model || state.aiModels.currentModel;
+                        state.aiModels.currentModel = data.model ?? state.aiModels.currentModel;
                     }
                 }
             })
@@ -292,10 +298,11 @@ const aiEngineSlice = createSlice({
             // 감정 분석
             .addCase(analyzeSentiment.fulfilled, (state, action) => {
                 if (action.payload && typeof action.payload === 'object' && 'data' in action.payload) {
-                    const data = action.payload.data;
+                    const data = action.payload.data as { sentiment?: 'positive' | 'negative' | 'neutral'; confidence?: number } | null;
                     if (data && typeof data === 'object') {
-                        state.advancedAnalytics.sentimentAnalysis.currentSentiment = data.sentiment || 'neutral';
-                        state.advancedAnalytics.sentimentAnalysis.confidence = data.confidence || 0;
+                        const s = data.sentiment;
+                        state.advancedAnalytics.sentimentAnalysis.currentSentiment = (s === 'positive' || s === 'negative' || s === 'neutral') ? s : 'neutral';
+                        state.advancedAnalytics.sentimentAnalysis.confidence = data.confidence ?? 0;
                     }
                 }
             })
@@ -303,10 +310,10 @@ const aiEngineSlice = createSlice({
             // 의도 감지
             .addCase(detectIntent.fulfilled, (state, action) => {
                 if (action.payload && typeof action.payload === 'object' && 'data' in action.payload) {
-                    const data = action.payload.data;
+                    const data = action.payload.data as { intent?: string; confidence?: number } | null;
                     if (data && typeof data === 'object') {
-                        state.advancedAnalytics.intentRecognition.detectedIntent = data.intent || '';
-                        state.advancedAnalytics.intentRecognition.confidence = data.confidence || 0;
+                        state.advancedAnalytics.intentRecognition.detectedIntent = data.intent ?? '';
+                        state.advancedAnalytics.intentRecognition.confidence = data.confidence ?? 0;
                     }
                 }
             });

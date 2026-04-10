@@ -1,0 +1,10 @@
+---
+description: 한 턴에 여러 질문·요구가 있을 때 기능·답변을 항목별로 맞춤
+alwaysApply: true
+---
+
+# 다중 질문·요구 대응
+
+- 사용자가 **번호 목록·불릿·접속사(그리고/또한/추가로 등) 줄**로 여러 가지를 한 번에 요청하면, **고정 템플릿이나 “한 가지 시나리오만” 가정한 코드·문서를 유지하지 말 것**.
+- 대화 파이프라인: `buildFeatureContextFromMessage`가 `multi_request_items`와 항목별 플래그 합집합을 넣고, `buildUnifiedChatContext`가 `multi_request_adaptation_instruction`을 추가함. 백엔드 `unified_chat_api._compose_multi_request_instruction` → `_multi_request_instruction`으로 `llm_service` prefix·`intelligent_response_engine` considerations에 전달. `generate_chat_response` 초기와 `orchestrator._normalize_and_context_load`에서도 합성. DeepSeek 정제(`deepseek_optional_refine`)·Reasoner 비평(`deepseek_reasoner_critique`)에도 `_multi_request_instruction` 전달. 스트리밍에서 `multi_request_mode`이면 `_split_multiple_questions` 생략. `_ensure_original_message_and_adapt_defaults`는 비스트림·스트림 공통. `_generate_structured_response`·`style_renderer.render`도 다중 요청을 반영. 이 필드들을 깨뜨리지 말 것.
+- 새 기능 플래그를 `computeFeatureFlagsForTrimmedText`에 추가할 때, **다중 항목 병합**(`mergeBooleanFeatureRecords`)과 호환되는지 확인할 것.

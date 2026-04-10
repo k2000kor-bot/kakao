@@ -40,8 +40,8 @@ if [ -d "$PID_DIR" ]; then
     done
 fi
 
-# 포트별로 실행 중인 프로세스 찾기 및 종료
-for port in 3000 8000 5000 5001; do
+# 포트별로 실행 중인 프로세스 찾기 및 종료 (통합 백엔드 5002 우선, 5001은 개별·개포 분석 등)
+for port in 3000 5002 5001 8000 5000; do
     pid=$(lsof -ti:$port 2>/dev/null || true)
     if [ ! -z "$pid" ]; then
         echo -e "${YELLOW}포트 $port의 프로세스 종료 중... (PID: $pid)${NC}"
@@ -61,8 +61,9 @@ pkill -f "node.*server.js" 2>/dev/null || true
 
 # Python 프로세스 종료
 echo -e "${YELLOW}Python 프로세스 종료 중...${NC}"
+pkill -f "uvicorn main_server" 2>/dev/null || true
 pkill -f "uvicorn.*advanced_api_server" 2>/dev/null || true
-pkill -f "python.*advanced_api_server" 2>/dev/null || true
+pkill -f "python.*app.py" 2>/dev/null || true
 
 sleep 2
 

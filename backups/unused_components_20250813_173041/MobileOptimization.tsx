@@ -306,7 +306,7 @@ const MobileOptimization: React.FC<MobileOptimizationProps> = ({ children }) => 
                     <div className="install-prompt-content">
                         <div className="install-prompt-icon">📱</div>
                         <div className="install-prompt-text">
-                            <h3>CORBU AI 설치</h3>
+                            <h3>CORBU.AI 설치</h3>
                             <p>홈 화면에 추가하여 더 빠르고 편리하게 이용하세요!</p>
                         </div>
                         <div className="install-prompt-actions">

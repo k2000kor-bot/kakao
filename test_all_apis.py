@@ -52,7 +52,7 @@ class CorbuAITester:
             return False
     
     def test_chat_api(self):
-        """채팅 API 테스트"""
+        """대화 API 테스트"""
         try:
             start_time = time.time()
             payload = {
@@ -69,16 +69,16 @@ class CorbuAITester:
             if response.status_code == 200:
                 data = response.json()
                 if data.get('success'):
-                    self.log_test("채팅 API", True, f"응답 길이: {len(data.get('response', ''))}", response_time)
+                    self.log_test("대화 API", True, f"응답 길이: {len(data.get('response', ''))}", response_time)
                     return True
                 else:
-                    self.log_test("채팅 API", False, data.get('error', '알 수 없는 오류'), response_time)
+                    self.log_test("대화 API", False, data.get('error', '알 수 없는 오류'), response_time)
                     return False
             else:
-                self.log_test("채팅 API", False, f"HTTP {response.status_code}", response_time)
+                self.log_test("대화 API", False, f"HTTP {response.status_code}", response_time)
                 return False
         except Exception as e:
-            self.log_test("채팅 API", False, str(e))
+            self.log_test("대화 API", False, str(e))
             return False
     
     def test_web_search_api(self):
@@ -152,7 +152,7 @@ class CorbuAITester:
             return False
     
     def test_chat_history_api(self):
-        """채팅 기록 API 테스트"""
+        """대화 기록 API 테스트"""
         try:
             start_time = time.time()
             response = requests.get(f"{self.base_url}/api/chat-history", timeout=5)
@@ -162,20 +162,20 @@ class CorbuAITester:
                 data = response.json()
                 if data.get('success'):
                     session_count = data.get('session_count', 0)
-                    self.log_test("채팅 기록 API", True, f"세션: {session_count}개", response_time)
+                    self.log_test("대화 기록 API", True, f"세션: {session_count}개", response_time)
                     return True
                 else:
-                    self.log_test("채팅 기록 API", False, data.get('error', '알 수 없는 오류'), response_time)
+                    self.log_test("대화 기록 API", False, data.get('error', '알 수 없는 오류'), response_time)
                     return False
             else:
-                self.log_test("채팅 기록 API", False, f"HTTP {response.status_code}", response_time)
+                self.log_test("대화 기록 API", False, f"HTTP {response.status_code}", response_time)
                 return False
         except Exception as e:
-            self.log_test("채팅 기록 API", False, str(e))
+            self.log_test("대화 기록 API", False, str(e))
             return False
     
     def test_search_chat_api(self):
-        """채팅 검색 API 테스트"""
+        """대화 검색 API 테스트"""
         try:
             start_time = time.time()
             payload = {"query": "테스트"}
@@ -190,16 +190,16 @@ class CorbuAITester:
                 data = response.json()
                 if data.get('success'):
                     result_count = data.get('result_count', 0)
-                    self.log_test("채팅 검색 API", True, f"검색 결과: {result_count}개", response_time)
+                    self.log_test("대화 검색 API", True, f"검색 결과: {result_count}개", response_time)
                     return True
                 else:
-                    self.log_test("채팅 검색 API", False, data.get('error', '알 수 없는 오류'), response_time)
+                    self.log_test("대화 검색 API", False, data.get('error', '알 수 없는 오류'), response_time)
                     return False
             else:
-                self.log_test("채팅 검색 API", False, f"HTTP {response.status_code}", response_time)
+                self.log_test("대화 검색 API", False, f"HTTP {response.status_code}", response_time)
                 return False
         except Exception as e:
-            self.log_test("채팅 검색 API", False, str(e))
+            self.log_test("대화 검색 API", False, str(e))
             return False
     
     def test_service_worker(self):

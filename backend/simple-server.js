@@ -352,7 +352,7 @@ app.post('/api/sessions/:sessionId/messages', async (req, res) => {
 
 추가로 궁금한 점이나 더 자세한 설명이 필요한 부분이 있으시면 언제든 말씀해 주세요!`,
 
-            `"${content}"에 대한 CORBU AI의 분석 결과입니다.
+            `"${content}"에 대한 CORBU.AI의 분석 결과입니다.
 
 **🔍 분석 요약:**
 - 핵심 키워드 추출 완료
@@ -477,7 +477,7 @@ app.use('*', (req, res) => {
 
 // 서버 시작
 app.listen(PORT, () => {
-    console.log(`🚀 CORBU AI 간단 서버가 포트 ${PORT}에서 실행 중입니다`);
+    console.log(`🚀 CORBU.AI 간단 서버가 포트 ${PORT}에서 실행 중입니다`);
     console.log(`📊 API 엔드포인트: http://localhost:${PORT}/api`);
     console.log(`🔍 헬스체크: http://localhost:${PORT}/api/health`);
     console.log(`📈 분석 API: http://localhost:${PORT}/api/analytics`);

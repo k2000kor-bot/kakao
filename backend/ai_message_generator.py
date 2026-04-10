@@ -922,7 +922,7 @@ class AIMessageGenerator:
             ]
         }
         
-        # 프로젝트별 특수 가이드라인 (개포우성7차 기준)
+        # 프로젝트별 특수 가이드라인 (샘플 프로젝트 기준)
         guidelines["project_specific"] = {
             "key_stakeholders": ["GS건설", "파르나스", "조합원", "관리소"],
             "main_issues": ["운영권", "시공사 선정", "분담금", "투명성"],

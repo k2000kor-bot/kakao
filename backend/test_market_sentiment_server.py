@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -164,4 +166,9 @@ if __name__ == "__main__":
     print("  - POST /api/holistic-market-analysis")
     print("  - POST /api/market-consultation")
     print("  - GET  /api/market-indicators")
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+    _p = int(
+        os.environ.get(
+            "TEST_MARKET_SENTIMENT_SERVER_PORT", os.environ.get("PORT", "8001")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

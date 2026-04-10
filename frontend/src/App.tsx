@@ -1,138 +1,63 @@
-import React, { useState } from 'react';
-import { ThemeProvider, createTheme, CssBaseline, Box, Tabs, Tab, Paper } from '@mui/material';
-import SimpleChatInterface from './components/SimpleChatInterface';
-import TestComponent from './components/TestComponent';
-import IntegratedAPIDemo from './components/IntegratedAPIDemo';
-import AuthWrapper from './components/AuthWrapper';
+import React, { Suspense } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
+import ThemeProvider from './components/ThemeProvider';
+import LoadingSkeleton from './components/LoadingSkeleton';
+import ChatGPTInterfaceSimple from './components/ChatGPTInterfaceSimple'; // 테스트용
+import { errorLogger } from './utils/errorLogger';
+import './styles/theme.css';
+import './components/ChatGPTInterface.css';
+import './index.css';
 
-// 테마 생성
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#667eea',
-    },
-    secondary: {
-      main: '#764ba2',
-    },
-    background: {
-      default: '#f5f7fa',
-    },
-  },
-  typography: {
-    fontFamily: '"Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
-    h1: {
-      fontWeight: 700,
-    },
-    h2: {
-      fontWeight: 600,
-    },
-    h3: {
-      fontWeight: 600,
-    },
-    h4: {
-      fontWeight: 600,
-    },
-    h5: {
-      fontWeight: 600,
-    },
-    h6: {
-      fontWeight: 600,
-    },
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontWeight: 500,
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-        },
-      },
-    },
-  },
-});
+// 메인 인터페이스를 lazy loading하여 초기 번들 크기 감소
+const ChatGPTInterface = React.lazy(() => import('./components/ChatGPTInterface'));
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
+// 디버깅 모드: 간단한 테스트 컴포넌트로 교체하려면 아래 주석을 해제하세요
+// import DebugApp from './App.debug';
+// import SimpleTestApp from './components/SimpleTestApp';
+// 디버깅 시 DebugApp으로 전환용 (주석 해제 시 사용)
+const USE_DEBUG_MODE = false; // eslint-disable-line @typescript-eslint/no-unused-vars
+const USE_SIMPLE_MODE = false; // 간단한 모드 (문제 해결용) - 정상 모드로 복원
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+function App() {
+  // 디버깅 모드 (필요시 활성화)
+  // if (USE_DEBUG_MODE) {
+  //   return <DebugApp />;
+  // }
 
+  // 간단한 모드 (문제 해결용)
+  if (USE_SIMPLE_MODE) {
+    return (
+      <ErrorBoundary>
+        <ChatGPTInterfaceSimple />
+      </ErrorBoundary>
+    );
+  }
+
+  // 정상 모드
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        // 에러 리포팅
+        errorLogger.error('App Error', error, {
+          component: 'App',
+          componentStack: errorInfo.componentStack,
+        });
+      }}
     >
-      {value === index && <Box sx={{ height: '100vh' }}>{children}</Box>}
-    </div>
+      <ThemeProvider defaultMode="auto">
+        <Suspense
+          fallback={
+            <div className="brainwave-app-loading" role="status" aria-live="polite" aria-label="앱 로딩 중">
+              <span className="brainwave-app-loading-title">CORBU.AI</span>
+              <LoadingSkeleton type="card" lines={5} />
+            </div>
+          }
+        >
+          <ChatGPTInterface />
+        </Suspense>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
-
-const App: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
-
-  return (
-    <AuthWrapper>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-          <Paper sx={{ borderRadius: 0, boxShadow: 1 }}>
-            <Tabs
-              value={tabValue}
-              onChange={handleTabChange}
-              aria-label="CORBU AI 인터페이스 탭"
-              sx={{ borderBottom: 1, borderColor: 'divider' }}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              <Tab label="🤖 CORBU AI 채팅" />
-              <Tab label="🚀 통합 API" />
-              <Tab label="테스트" />
-            </Tabs>
-          </Paper>
-
-          <TabPanel value={tabValue} index={0}>
-            <SimpleChatInterface />
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={1}>
-            <IntegratedAPIDemo />
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={2}>
-            <TestComponent />
-          </TabPanel>
-        </Box>
-      </ThemeProvider>
-    </AuthWrapper>
-  );
-};
 
 export default App;
-

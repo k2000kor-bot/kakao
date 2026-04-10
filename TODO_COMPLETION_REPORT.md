@@ -53,7 +53,7 @@ setupGlobalErrorHandling();
 
 **통합**:
 - `useChatManagement.ts`에 realTimeSync 통합
-- 채팅 메시지 생성 시 실시간 동기화 이벤트 전송
+- 대화 메시지 생성 시 실시간 동기화 이벤트 전송
 
 ---
 

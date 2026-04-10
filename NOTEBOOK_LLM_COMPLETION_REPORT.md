@@ -35,7 +35,7 @@
 
 #### 4. 📡 API 통합
 
-- **하이브리드 채팅 API**: 기존 API에 노트북 LLM 옵션 추가
+- **하이브리드 대화 API**: 기존 API에 노트북 LLM 옵션 추가
 - **상태 모니터링**: 시스템 상태 및 성능 메트릭 제공
 - **오류 처리**: 견고한 예외 처리 및 폴백 메커니즘
 
@@ -125,7 +125,7 @@
 
 ```bash
 # 서버 시작
-cd /Users/aD/kakao-frontend
+cd /path/to/kakao-frontend/kakao-frontend
 source venv/bin/activate
 python complete_server.py
 

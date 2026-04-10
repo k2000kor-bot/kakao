@@ -725,11 +725,13 @@ async def test_endpoint():
 
 
 if __name__ == "__main__":
+    import os
+    _p = int(os.environ.get("MEDIA_KNOWLEDGE_SYSTEM_PORT", os.environ.get("PORT", "8005")))
     print("🚀 미디어 지식 시스템 시작 중...")
     uvicorn.run(
         "media_knowledge_system:app",
         host="0.0.0.0",
-        port=8005,
+        port=_p,
         reload=False,
         log_level="info"
     ) 

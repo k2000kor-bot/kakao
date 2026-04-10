@@ -1,3 +1,12 @@
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
+export type ResponseQualityContext = {
+  userIntent: string;
+  conversationHistory: string[];
+  attachedFiles: string[];
+  projectContext?: Record<string, unknown>;
+};
+
 export interface ResponseQualityMetrics {
   accuracy: number;        // 정확도 (0-1)
   relevance: number;       // 관련성 (0-1)
@@ -28,7 +37,7 @@ export interface ResponseAnalysis {
     userIntent: string;
     conversationHistory: string[];
     attachedFiles: string[];
-    projectContext?: any;
+    projectContext?: Record<string, unknown>;
   };
 }
 
@@ -51,7 +60,7 @@ export class AIResponseQualityService {
       userIntent: string;
       conversationHistory: string[];
       attachedFiles: string[];
-      projectContext?: any;
+      projectContext?: Record<string, unknown>;
     }
   ): Promise<ResponseAnalysis> {
     const startTime = Date.now();
@@ -83,7 +92,7 @@ export class AIResponseQualityService {
   // 품질 메트릭 계산
   private async calculateQualityMetrics(
     response: string,
-    context: any
+    context: { userIntent: string; conversationHistory: string[]; attachedFiles: string[]; projectContext?: Record<string, unknown> }
   ): Promise<ResponseQualityMetrics> {
     // 정확도: 사실 기반 정보의 정확성
     const accuracy = this.calculateAccuracy(response, context);
@@ -122,7 +131,7 @@ export class AIResponseQualityService {
   }
 
   // 정확도 계산
-  private calculateAccuracy(response: string, context: any): number {
+  private calculateAccuracy(response: string, context: ResponseQualityContext): number {
     // 사실 확인 가능한 정보 검출
     const factualStatements = this.extractFactualStatements(response);
     const verifiedFacts = factualStatements.filter(fact => 
@@ -181,7 +190,7 @@ export class AIResponseQualityService {
 
   // 명확성 계산
   private calculateClarity(response: string): number {
-    const sentences = response.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = response.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
     const avgSentenceLength = sentences.reduce((sum, sentence) => 
       sum + sentence.split(' ').length, 0
     ) / sentences.length;
@@ -232,7 +241,7 @@ export class AIResponseQualityService {
   }
 
   // 도움성 계산
-  private calculateHelpfulness(response: string, context: any): number {
+  private calculateHelpfulness(response: string, _context: ResponseQualityContext): number {
     const helpfulIndicators = [
       '도움이', '유용한', '실용적인', '구체적인', '상세한',
       '단계별', '방법', '가이드', '팁', '조언',
@@ -253,7 +262,7 @@ export class AIResponseQualityService {
   private identifyImprovements(
     metrics: ResponseQualityMetrics,
     response: string,
-    context: any
+    context: ResponseQualityContext
   ): QualityImprovement[] {
     const improvements: QualityImprovement[] = [];
     
@@ -282,8 +291,8 @@ export class AIResponseQualityService {
   private generateImprovementSuggestion(
     metric: string,
     score: number,
-    response: string,
-    context: any
+    _response: string,
+    _context: ResponseQualityContext
   ): string {
     const suggestions: { [key: string]: string[] } = {
       accuracy: [
@@ -337,7 +346,7 @@ export class AIResponseQualityService {
   private async improveResponse(
     response: string,
     improvements: QualityImprovement[],
-    context: any
+    context: ResponseQualityContext
   ): Promise<string> {
     let improvedResponse = response;
     
@@ -355,7 +364,7 @@ export class AIResponseQualityService {
   private async applyImprovement(
     response: string,
     improvement: QualityImprovement,
-    context: any
+    context: ResponseQualityContext
   ): Promise<string> {
     switch (improvement.type) {
       case 'accuracy':
@@ -380,7 +389,7 @@ export class AIResponseQualityService {
   }
 
   // 정확도 개선
-  private async improveAccuracy(response: string, context: any): Promise<string> {
+  private async improveAccuracy(response: string, context: ResponseQualityContext): Promise<string> {
     // 사실 확인 및 출처 추가
     const factualStatements = this.extractFactualStatements(response);
     let improved = response;
@@ -477,14 +486,14 @@ export class AIResponseQualityService {
     const contextKeywords = this.extractKeywords(recentContext);
     
     if (contextKeywords.length > 0) {
-      return `앞서 말씀하신 ${contextKeywords.slice(0, 2).join(', ')}와 관련하여, ${response}`;
+      return `앞서 말씀하신 ${contextKeywords.join(', ')}와 관련하여, ${response}`;
     }
     
     return response;
   }
 
   // 도움성 개선
-  private improveHelpfulness(response: string, context: any): string {
+  private improveHelpfulness(response: string, _context: ResponseQualityContext): string {
     const helpfulAdditions = [
       '\n\n💡 팁: 이 정보를 실제로 적용할 때 참고하세요.',
       '\n\n📋 체크리스트: 다음 단계를 확인해보세요.',
@@ -533,8 +542,7 @@ export class AIResponseQualityService {
     const stopWords = ['이', '그', '저', '것', '수', '등', '및', '또는', '그리고', '하지만', '그러나'];
     return text
       .split(/\s+/)
-      .filter(word => word.length > 1 && !stopWords.includes(word))
-      .slice(0, 10); // 상위 10개 키워드만
+      .filter(word => word.length > 1 && !stopWords.includes(word));
   }
 
   // 사실적 문장 추출
@@ -556,7 +564,7 @@ export class AIResponseQualityService {
   }
 
   // 사실 확인 (시뮬레이션)
-  private verifyFact(fact: string, context: any): boolean {
+  private verifyFact(_fact: string, _context: ResponseQualityContext): boolean {
     // 실제 구현에서는 외부 API나 데이터베이스를 사용
     return Math.random() > 0.3; // 70% 확률로 사실로 간주
   }

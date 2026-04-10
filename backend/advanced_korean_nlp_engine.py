@@ -1316,6 +1316,7 @@ def create_korean_nlp_app() -> FastAPI:
     return app
 
 if __name__ == "__main__":
+    import os
     import uvicorn
     
     # 로깅 설정
@@ -1325,10 +1326,10 @@ if __name__ == "__main__":
     )
     
     app = create_korean_nlp_app()
-    
+    _p = int(os.environ.get("ADVANCED_KOREAN_NLP_ENGINE_PORT", os.environ.get("PORT", "8007")))
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8007,
+        port=_p,
         log_level="info"
     ) 

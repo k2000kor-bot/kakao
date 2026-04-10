@@ -1,4 +1,89 @@
 import { Project, Chat, Message } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { ADAPTIVE_LEARNING_STORAGE_KEYS } from './adaptiveLearningStorageKeys';
+
+function safeLabelForLog(value: unknown): string {
+    try {
+        return String(value);
+    } catch {
+        return '[unstringifiable]';
+    }
+}
+
+/** 응답 시간 계산용: 오래된 메시지가 앞에 오도록 정렬 (동일 시각은 입력 순서 유지) */
+function compareMessagesByTimestampAsc(a: Message, b: Message): number {
+    try {
+        const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+        const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+        const tA = timestampA.getTime();
+        const tB = timestampB.getTime();
+        if (Number.isNaN(tA) || Number.isNaN(tB)) {
+            return 0;
+        }
+        return tA - tB;
+    } catch {
+        return 0;
+    }
+}
+
+/** message-pattern: 원본 입력·24시간 필터 후 각각 이 개수 미만이면 분석하지 않음 */
+const MIN_MESSAGES_FOR_MESSAGE_PATTERN = 10;
+
+/** message-pattern: 최근 메시지로 인정하는 시간 창(밀리초) */
+const MESSAGE_PATTERN_RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const MESSAGE_PATTERN_WINDOW_HOURS = MESSAGE_PATTERN_RECENT_WINDOW_MS / (60 * 60 * 1000);
+
+const MESSAGE_PATTERN_IMPACT = 0.6;
+const MESSAGE_PATTERN_CONFIDENCE_CAP = 0.8;
+/** confidence = min(cap, recentCount / 이 값) */
+const MESSAGE_PATTERN_CONFIDENCE_SAMPLE_TARGET = 50;
+
+/** message-pattern 지표(테스트·외부 검증과 엔진 수치 단일 출처 동기화용) */
+export const MESSAGE_PATTERN_METRICS = {
+    minMessages: MIN_MESSAGES_FOR_MESSAGE_PATTERN,
+    recentWindowMs: MESSAGE_PATTERN_RECENT_WINDOW_MS,
+    windowHours: MESSAGE_PATTERN_WINDOW_HOURS,
+    impact: MESSAGE_PATTERN_IMPACT,
+    confidenceCap: MESSAGE_PATTERN_CONFIDENCE_CAP,
+    confidenceSampleTarget: MESSAGE_PATTERN_CONFIDENCE_SAMPLE_TARGET,
+} as const;
+
+/** project-creation-pattern: 분석에 필요한 최소 프로젝트 수 */
+const MIN_PROJECTS_FOR_CREATION_PATTERN = 3;
+/** project-creation-pattern: 최근으로 볼 시간 창 */
+const PROJECT_CREATION_RECENT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+/** project-creation-pattern: 일평균 생성 수(frequency) 분모 일수 */
+const PROJECT_CREATION_FREQUENCY_WINDOW_DAYS = 30;
+const PROJECT_CREATION_IMPACT = 0.7;
+const PROJECT_CREATION_CONFIDENCE_CAP = 0.9;
+/** confidence = min(cap, recentCount / 이 값) */
+const PROJECT_CREATION_CONFIDENCE_SAMPLE_TARGET = 10;
+
+/** project-creation-pattern 지표(테스트·외부 검증용) */
+export const PROJECT_CREATION_PATTERN_METRICS = {
+    minProjects: MIN_PROJECTS_FOR_CREATION_PATTERN,
+    recentWindowMs: PROJECT_CREATION_RECENT_WINDOW_MS,
+    frequencyWindowDays: PROJECT_CREATION_FREQUENCY_WINDOW_DAYS,
+    impact: PROJECT_CREATION_IMPACT,
+    confidenceCap: PROJECT_CREATION_CONFIDENCE_CAP,
+    confidenceSampleTarget: PROJECT_CREATION_CONFIDENCE_SAMPLE_TARGET,
+} as const;
+
+/** chat-activity-pattern: 최근 대화로 볼 시간 창 */
+const CHAT_ACTIVITY_RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const CHAT_ACTIVITY_IMPACT = 0.8;
+const CHAT_ACTIVITY_CONFIDENCE_CAP = 0.85;
+/** confidence = min(cap, recentChats / 이 값) */
+const CHAT_ACTIVITY_CONFIDENCE_SAMPLE_TARGET = 20;
+
+/** chat-activity-pattern 지표(테스트·외부 검증용) */
+export const CHAT_ACTIVITY_PATTERN_METRICS = {
+    recentWindowMs: CHAT_ACTIVITY_RECENT_WINDOW_MS,
+    impact: CHAT_ACTIVITY_IMPACT,
+    confidenceCap: CHAT_ACTIVITY_CONFIDENCE_CAP,
+    confidenceSampleTarget: CHAT_ACTIVITY_CONFIDENCE_SAMPLE_TARGET,
+} as const;
 
 export interface LearningPattern {
     id: string;
@@ -29,8 +114,8 @@ export interface AdaptiveModel {
 export interface OptimizationResult {
     id: string;
     optimizationId: string;
-    beforeMetrics: any;
-    afterMetrics: any;
+    beforeMetrics: Record<string, unknown>;
+    afterMetrics: Record<string, unknown>;
     improvement: number;
     userSatisfaction: number;
     learningInsights: string[];
@@ -48,14 +133,25 @@ export interface PredictiveInsight {
     lastUpdated: Date;
 }
 
-class AdaptiveLearningEngine {
+export { ADAPTIVE_LEARNING_STORAGE_KEYS } from './adaptiveLearningStorageKeys';
+
+/** persist 백엔드 — 테스트에서 setItem/getItem mock 주입용 */
+export type AdaptiveLearningEngineStorage = Pick<Storage, 'getItem' | 'setItem'>;
+
+export interface AdaptiveLearningEngineOptions {
+    storage?: AdaptiveLearningEngineStorage;
+}
+
+export class AdaptiveLearningEngine {
+    private readonly storage: AdaptiveLearningEngineStorage;
     private learningPatterns: LearningPattern[] = [];
     private adaptiveModels: AdaptiveModel[] = [];
     private optimizationResults: OptimizationResult[] = [];
     private predictiveInsights: PredictiveInsight[] = [];
     private modelVersion = 1.0;
 
-    constructor() {
+    constructor(options?: AdaptiveLearningEngineOptions) {
+        this.storage = options?.storage ?? localStorage;
         this.initializeDefaultModels();
         this.loadStoredData();
     }
@@ -112,41 +208,74 @@ class AdaptiveLearningEngine {
 
     private loadStoredData() {
         try {
-            const storedPatterns = localStorage.getItem('adaptiveLearningPatterns');
+            const storedPatterns = this.storage.getItem(ADAPTIVE_LEARNING_STORAGE_KEYS.patterns);
             if (storedPatterns) {
-                this.learningPatterns = JSON.parse(storedPatterns).map((p: any) => ({
-                    ...p,
-                    lastObserved: new Date(p.lastObserved)
-                }));
-            }
-
-            const storedResults = localStorage.getItem('optimizationResults');
-            if (storedResults) {
-                this.optimizationResults = JSON.parse(storedResults).map((r: any) => ({
-                    ...r,
-                    appliedAt: new Date(r.appliedAt)
-                }));
-            }
-
-            const storedInsights = localStorage.getItem('predictiveInsights');
-            if (storedInsights) {
-                this.predictiveInsights = JSON.parse(storedInsights).map((i: any) => ({
-                    ...i,
-                    lastUpdated: new Date(i.lastUpdated)
-                }));
+                const parsed = JSON.parse(storedPatterns) as unknown;
+                if (Array.isArray(parsed)) {
+                    this.learningPatterns = parsed.map((p: Record<string, unknown>) => ({
+                        ...p,
+                        lastObserved: new Date(p.lastObserved as string | number | Date)
+                    })) as LearningPattern[];
+                }
             }
         } catch (error) {
-            console.error('적응형 학습 데이터 로드 중 오류:', error);
+            const err = toError(error);
+            errorLogger.error('적응형 학습 데이터 로드 중 오류 (adaptiveLearningPatterns)', err, {
+                component: 'adaptiveLearningEngine',
+                action: 'loadData:adaptiveLearningPatterns',
+            });
+        }
+
+        try {
+            const storedResults = this.storage.getItem(ADAPTIVE_LEARNING_STORAGE_KEYS.optimizationResults);
+            if (storedResults) {
+                const parsed = JSON.parse(storedResults) as unknown;
+                if (Array.isArray(parsed)) {
+                    this.optimizationResults = parsed.map((r: Record<string, unknown>) => ({
+                        ...r,
+                        appliedAt: new Date(r.appliedAt as string | number | Date)
+                    })) as OptimizationResult[];
+                }
+            }
+        } catch (error) {
+            const err = toError(error);
+            errorLogger.error('적응형 학습 데이터 로드 중 오류 (optimizationResults)', err, {
+                component: 'adaptiveLearningEngine',
+                action: 'loadData:optimizationResults',
+            });
+        }
+
+        try {
+            const storedInsights = this.storage.getItem(ADAPTIVE_LEARNING_STORAGE_KEYS.predictiveInsights);
+            if (storedInsights) {
+                const parsed = JSON.parse(storedInsights) as unknown;
+                if (Array.isArray(parsed)) {
+                    this.predictiveInsights = parsed.map((i: Record<string, unknown>) => ({
+                        ...i,
+                        lastUpdated: new Date(i.lastUpdated as string | number | Date)
+                    })) as PredictiveInsight[];
+                }
+            }
+        } catch (error) {
+            const err = toError(error);
+            errorLogger.error('적응형 학습 데이터 로드 중 오류 (predictiveInsights)', err, {
+                component: 'adaptiveLearningEngine',
+                action: 'loadData:predictiveInsights',
+            });
         }
     }
 
     private saveData() {
         try {
-            localStorage.setItem('adaptiveLearningPatterns', JSON.stringify(this.learningPatterns));
-            localStorage.setItem('optimizationResults', JSON.stringify(this.optimizationResults));
-            localStorage.setItem('predictiveInsights', JSON.stringify(this.predictiveInsights));
+            this.storage.setItem(ADAPTIVE_LEARNING_STORAGE_KEYS.patterns, JSON.stringify(this.learningPatterns));
+            this.storage.setItem(ADAPTIVE_LEARNING_STORAGE_KEYS.optimizationResults, JSON.stringify(this.optimizationResults));
+            this.storage.setItem(ADAPTIVE_LEARNING_STORAGE_KEYS.predictiveInsights, JSON.stringify(this.predictiveInsights));
         } catch (error) {
-            console.error('적응형 학습 데이터 저장 중 오류:', error);
+            const err = toError(error);
+            errorLogger.error('적응형 학습 데이터 저장 중 오류', err, {
+                component: 'adaptiveLearningEngine',
+                action: 'saveData',
+            });
         }
     }
 
@@ -160,7 +289,7 @@ class AdaptiveLearningEngine {
             patterns.push(projectCreationPattern);
         }
 
-        // 채팅 활동 패턴 분석
+        // 대화 활동 패턴 분석
         const chatActivityPattern = this.analyzeChatActivityPattern(chats, messages);
         if (chatActivityPattern) {
             patterns.push(chatActivityPattern);
@@ -180,14 +309,19 @@ class AdaptiveLearningEngine {
     }
 
     private analyzeProjectCreationPattern(projects: Project[]): LearningPattern | null {
-        if (projects.length < 3) return null;
+        if (projects.length < MIN_PROJECTS_FOR_CREATION_PATTERN) return null;
 
         const recentProjects = projects
             .filter(p => {
                 try {
-                    return p.createdAt && p.createdAt.getTime && new Date().getTime() - p.createdAt.getTime() < 30 * 24 * 60 * 60 * 1000; // 30일 이내
+                    return p.createdAt && p.createdAt.getTime && new Date().getTime() - p.createdAt.getTime() < PROJECT_CREATION_RECENT_WINDOW_MS;
                 } catch (error) {
-                    console.warn('Invalid createdAt in project:', p.createdAt);
+                    errorLogger.warn('Invalid createdAt in project', {
+                        component: 'adaptiveLearningEngine',
+                        action: 'analyzeProjectCreationPattern',
+                        createdAt: safeLabelForLog(p.createdAt),
+                        projectId: p.id,
+                    });
                     return false;
                 }
             })
@@ -196,29 +330,43 @@ class AdaptiveLearningEngine {
                     return a.createdAt && a.createdAt.getTime && b.createdAt && b.createdAt.getTime ?
                         b.createdAt.getTime() - a.createdAt.getTime() : 0;
                 } catch (error) {
-                    console.warn('Invalid createdAt in sort:', a.createdAt, b.createdAt);
+                    errorLogger.warn('Invalid createdAt in sort', {
+                        component: 'adaptiveLearningEngine',
+                        action: 'analyzeProjectCreationPattern',
+                        createdAtA: safeLabelForLog(a.createdAt),
+                        createdAtB: safeLabelForLog(b.createdAt),
+                    });
                     return 0;
                 }
             });
 
         if (recentProjects.length === 0) return null;
 
-        const avgCreationTime = recentProjects.reduce((sum, p) => {
+        const _avgCreationTime = recentProjects.reduce((sum, p) => {
             try {
                 return sum + (p.createdAt && p.createdAt.getTime ? p.createdAt.getTime() : 0);
             } catch (error) {
-                console.warn('Invalid createdAt in reduce:', p.createdAt);
+                errorLogger.warn('Invalid createdAt in reduce', {
+                    component: 'adaptiveLearningEngine',
+                    action: 'analyzeProjectCreationPattern',
+                    createdAt: safeLabelForLog(p.createdAt),
+                    projectId: p.id,
+                });
                 return sum;
             }
         }, 0) / recentProjects.length;
-        const creationFrequency = recentProjects.length / 30; // 일평균 생성 수
+        void _avgCreationTime;
+        const creationFrequency = recentProjects.length / PROJECT_CREATION_FREQUENCY_WINDOW_DAYS;
 
         return {
             id: 'project-creation-pattern',
             pattern: `프로젝트 생성 패턴: 일평균 ${creationFrequency.toFixed(2)}개 생성`,
             frequency: creationFrequency,
-            impact: 0.7,
-            confidence: Math.min(0.9, recentProjects.length / 10),
+            impact: PROJECT_CREATION_IMPACT,
+            confidence: Math.min(
+                PROJECT_CREATION_CONFIDENCE_CAP,
+                recentProjects.length / PROJECT_CREATION_CONFIDENCE_SAMPLE_TARGET,
+            ),
             lastObserved: new Date(),
             category: 'user_behavior'
         };
@@ -230,9 +378,14 @@ class AdaptiveLearningEngine {
         const recentChats = chats
             .filter(c => {
                 try {
-                    return c.createdAt && c.createdAt.getTime && new Date().getTime() - c.createdAt.getTime() < 7 * 24 * 60 * 60 * 1000; // 7일 이내
+                    return c.createdAt && c.createdAt.getTime && new Date().getTime() - c.createdAt.getTime() < CHAT_ACTIVITY_RECENT_WINDOW_MS;
                 } catch (error) {
-                    console.warn('Invalid createdAt in chat:', c.createdAt);
+                    errorLogger.warn('Invalid createdAt in chat', {
+                        component: 'adaptiveLearningEngine',
+                        action: 'analyzeChatActivityPattern',
+                        createdAt: safeLabelForLog(c.createdAt),
+                        chatId: c.id,
+                    });
                     return false;
                 }
             })
@@ -241,7 +394,12 @@ class AdaptiveLearningEngine {
                     return a.createdAt && a.createdAt.getTime && b.createdAt && b.createdAt.getTime ?
                         b.createdAt.getTime() - a.createdAt.getTime() : 0;
                 } catch (error) {
-                    console.warn('Invalid createdAt in chat sort:', a.createdAt, b.createdAt);
+                    errorLogger.warn('Invalid createdAt in chat sort', {
+                        component: 'adaptiveLearningEngine',
+                        action: 'analyzeChatActivityPattern',
+                        createdAtA: safeLabelForLog(a.createdAt),
+                        createdAtB: safeLabelForLog(b.createdAt),
+                    });
                     return 0;
                 }
             });
@@ -254,25 +412,38 @@ class AdaptiveLearningEngine {
 
         return {
             id: 'chat-activity-pattern',
-            pattern: `채팅 활동 패턴: 채팅당 평균 ${avgMessagesPerChat.toFixed(1)}개 메시지, 활동률 ${(activityRate * 100).toFixed(1)}%`,
+            pattern: `대화 활동 패턴: 대화당 평균 ${avgMessagesPerChat.toFixed(1)}개 메시지, 활동률 ${(activityRate * 100).toFixed(1)}%`,
             frequency: activityRate,
-            impact: 0.8,
-            confidence: Math.min(0.85, recentChats.length / 20),
+            impact: CHAT_ACTIVITY_IMPACT,
+            confidence: Math.min(
+                CHAT_ACTIVITY_CONFIDENCE_CAP,
+                recentChats.length / CHAT_ACTIVITY_CONFIDENCE_SAMPLE_TARGET,
+            ),
             lastObserved: new Date(),
             category: 'user_behavior'
         };
     }
 
     private analyzeMessagePattern(messages: Message[]): LearningPattern | null {
-        if (messages.length < 10) return null;
+        if (messages.length < MIN_MESSAGES_FOR_MESSAGE_PATTERN) return null;
 
+        const nowMs = Date.now();
         const recentMessages = messages
             .filter(m => {
                 try {
                     const timestamp = m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp);
-                    return timestamp && timestamp.getTime && new Date().getTime() - timestamp.getTime() < 24 * 60 * 60 * 1000; // 24시간 이내
+                    const tsMs = timestamp.getTime();
+                    if (Number.isNaN(tsMs)) {
+                        return false;
+                    }
+                    return nowMs - tsMs < MESSAGE_PATTERN_RECENT_WINDOW_MS;
                 } catch (error) {
-                    console.warn('Invalid timestamp in message:', m.timestamp);
+                    errorLogger.warn('Invalid timestamp in message', {
+                        component: 'adaptiveLearningEngine',
+                        action: 'analyzeMessagePattern',
+                        timestamp: safeLabelForLog(m.timestamp),
+                        messageId: m.id,
+                    });
                     return false;
                 }
             })
@@ -283,22 +454,31 @@ class AdaptiveLearningEngine {
                     return timestampB && timestampB.getTime && timestampA && timestampA.getTime ?
                         timestampB.getTime() - timestampA.getTime() : 0;
                 } catch (error) {
-                    console.warn('Invalid timestamp in sort:', a.timestamp, b.timestamp);
+                    errorLogger.warn('Invalid timestamp in sort', {
+                        component: 'adaptiveLearningEngine',
+                        action: 'analyzeMessagePattern',
+                        timestampA: safeLabelForLog(a.timestamp),
+                        timestampB: safeLabelForLog(b.timestamp),
+                    });
                     return 0;
                 }
             });
 
-        if (recentMessages.length === 0) return null;
+        if (recentMessages.length < MIN_MESSAGES_FOR_MESSAGE_PATTERN) return null;
 
         const avgMessageLength = recentMessages.reduce((sum, m) => sum + m.content.length, 0) / recentMessages.length;
-        const responseTime = this.calculateAverageResponseTime(recentMessages);
+        const chronologicalForResponse = [...recentMessages].sort(compareMessagesByTimestampAsc);
+        const responseTime = this.calculateAverageResponseTime(chronologicalForResponse);
 
         return {
             id: 'message-pattern',
             pattern: `메시지 패턴: 평균 길이 ${avgMessageLength.toFixed(0)}자, 응답시간 ${responseTime.toFixed(1)}분`,
-            frequency: recentMessages.length / 24, // 시간당 메시지 수
-            impact: 0.6,
-            confidence: Math.min(0.8, recentMessages.length / 50),
+            frequency: recentMessages.length / MESSAGE_PATTERN_WINDOW_HOURS, // 시간당 메시지 수
+            impact: MESSAGE_PATTERN_IMPACT,
+            confidence: Math.min(
+                MESSAGE_PATTERN_CONFIDENCE_CAP,
+                recentMessages.length / MESSAGE_PATTERN_CONFIDENCE_SAMPLE_TARGET,
+            ),
             lastObserved: new Date(),
             category: 'user_behavior'
         };
@@ -313,11 +493,48 @@ class AdaptiveLearningEngine {
             const previousMessage = messages[i - 1];
 
             if (currentMessage.role === 'assistant' && previousMessage.role === 'user') {
-                const currentTimestamp = currentMessage.timestamp instanceof Date ? currentMessage.timestamp : new Date(currentMessage.timestamp);
-                const previousTimestamp = previousMessage.timestamp instanceof Date ? previousMessage.timestamp : new Date(previousMessage.timestamp);
-                const responseTime = (currentTimestamp.getTime() - previousTimestamp.getTime()) / (1000 * 60); // 분 단위
-                totalResponseTime += responseTime;
-                responseCount++;
+                try {
+                    const currentTimestamp =
+                        currentMessage.timestamp instanceof Date ? currentMessage.timestamp : new Date(currentMessage.timestamp);
+                    const previousTimestamp =
+                        previousMessage.timestamp instanceof Date ? previousMessage.timestamp : new Date(previousMessage.timestamp);
+                    const t0 = currentTimestamp.getTime();
+                    const t1 = previousTimestamp.getTime();
+                    if (Number.isNaN(t0) || Number.isNaN(t1)) {
+                        errorLogger.warn('Invalid timestamp in responseTime pair', {
+                            component: 'adaptiveLearningEngine',
+                            action: 'calculateAverageResponseTime',
+                            messageIdUser: previousMessage.id,
+                            messageIdAssistant: currentMessage.id,
+                            timestampUser: safeLabelForLog(previousMessage.timestamp),
+                            timestampAssistant: safeLabelForLog(currentMessage.timestamp),
+                        });
+                        continue;
+                    }
+                    if (t0 < t1) {
+                        errorLogger.warn('Invalid timestamp in responseTime pair', {
+                            component: 'adaptiveLearningEngine',
+                            action: 'calculateAverageResponseTime',
+                            messageIdUser: previousMessage.id,
+                            messageIdAssistant: currentMessage.id,
+                            timestampUser: safeLabelForLog(previousMessage.timestamp),
+                            timestampAssistant: safeLabelForLog(currentMessage.timestamp),
+                            reason: 'assistantTimestampBeforeUser',
+                        });
+                        continue;
+                    }
+                    totalResponseTime += (t0 - t1) / (1000 * 60); // 분 단위
+                    responseCount++;
+                } catch {
+                    errorLogger.warn('Invalid timestamp in responseTime pair', {
+                        component: 'adaptiveLearningEngine',
+                        action: 'calculateAverageResponseTime',
+                        messageIdUser: previousMessage.id,
+                        messageIdAssistant: currentMessage.id,
+                        timestampUser: safeLabelForLog(previousMessage.timestamp),
+                        timestampAssistant: safeLabelForLog(currentMessage.timestamp),
+                    });
+                }
             }
         }
 
@@ -519,7 +736,7 @@ class AdaptiveLearningEngine {
     }
 
     // 학습 데이터 분석 리포트
-    generateLearningReport(): any {
+    generateLearningReport(): Record<string, unknown> {
         const totalPatterns = this.learningPatterns.length;
         const totalOptimizations = this.optimizationResults.length;
         const totalInsights = this.predictiveInsights.length;

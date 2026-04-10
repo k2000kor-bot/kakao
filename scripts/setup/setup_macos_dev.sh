@@ -2,10 +2,17 @@
 
 # macOS 개발 환경 설정 스크립트
 # KakaoTalk AI Analysis System
+#
+# Python 가상환경: backend/.venv (프로젝트 기본: lib-activate-backend-venv.sh, restart:backend 와 동일)
+# 저장소 루트로 이동한 뒤 실행합니다(스크립트 경로 기준 자동 cd).
 
 set -e  # Exit on error
 
-echo "🍎 macOS 개발 환경 설정을 시작합니다..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$REPO_ROOT" || exit 1
+
+echo "🍎 macOS 개발 환경 설정을 시작합니다... (저장소: $REPO_ROOT)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -94,18 +101,25 @@ for package in "${brew_packages[@]}"; do
     fi
 done
 
-# Python 가상환경 재생성
-print_status "Python 가상환경 재생성 중..."
-if [ -d ".venv" ]; then
-    print_warning "기존 가상환경을 백업합니다..."
-    mv .venv .venv_backup_$(date +%Y%m%d_%H%M%S)
+# Python 가상환경 재생성 (backend/.venv — 배포·검증 스크립트와 동일)
+print_status "Python 가상환경 재생성 중 (backend/.venv)..."
+mkdir -p "$REPO_ROOT/backend"
+if [ -d "$REPO_ROOT/backend/.venv" ]; then
+    print_warning "기존 backend/.venv 를 백업합니다..."
+    mv "$REPO_ROOT/backend/.venv" "$REPO_ROOT/backend/.venv_backup_$(date +%Y%m%d_%H%M%S)"
 fi
 
-# Create new virtual environment with Python 3.11
-python3.11 -m venv .venv
-source .venv/bin/activate
+PY311="$(command -v python3.11 2>/dev/null || true)"
+if [ -n "$PY311" ]; then
+    "$PY311" -m venv "$REPO_ROOT/backend/.venv"
+else
+    print_warning "python3.11 없음 — python3 로 venv 생성"
+    python3 -m venv "$REPO_ROOT/backend/.venv"
+fi
+# shellcheck disable=SC1091
+source "$REPO_ROOT/backend/.venv/bin/activate"
 
-print_success "새로운 가상환경이 생성되었습니다."
+print_success "새로운 가상환경이 생성되었습니다 (backend/.venv)."
 
 # Upgrade pip and install wheel
 print_status "pip 업그레이드 중..."
@@ -191,14 +205,12 @@ fi
 # Create convenient scripts
 print_status "편의 스크립트 생성 중..."
 
-# Backend start script
+# Backend start script (통합 main_server, 포트 5002)
 cat > start_backend.sh << 'EOF'
 #!/bin/bash
-echo "🚀 백엔드 서버 시작 중..."
-cd "$(dirname "$0")"
-source .venv/bin/activate
-cd backend
-python simple_message_generator.py
+echo "🚀 통합 백엔드 시작 (main_server, 기본 5002)..."
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+exec "$ROOT/scripts/restart-backend.sh"
 EOF
 
 # Frontend start script
@@ -228,7 +240,7 @@ echo "프론트엔드 서버 시작..."
 FRONTEND_PID=$!
 
 echo "시스템이 시작되었습니다!"
-echo "백엔드: http://localhost:8007"
+echo "백엔드: http://localhost:5002"
 echo "프론트엔드: http://localhost:3000"
 echo ""
 echo "종료하려면 Ctrl+C를 누르세요."
@@ -245,8 +257,8 @@ chmod +x start_backend.sh start_frontend.sh start_all.sh
 cat > .env.development << 'EOF'
 # 개발 환경 설정
 NODE_ENV=development
-REACT_APP_API_URL=http://localhost:8007
-BACKEND_PORT=8007
+REACT_APP_API_URL=http://localhost:5002
+BACKEND_PORT=5002
 FRONTEND_PORT=3000
 
 # Python 환경
@@ -259,7 +271,8 @@ EOF
 mkdir -p .vscode
 cat > .vscode/settings.json << 'EOF'
 {
-    "python.pythonPath": "./.venv/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+    "python.pythonPath": "${workspaceFolder}/backend/.venv/bin/python",
     "python.terminal.activateEnvironment": true,
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": false,
@@ -272,8 +285,7 @@ cat > .vscode/settings.json << 'EOF'
     },
     "files.exclude": {
         "**/__pycache__": true,
-        "**/*.pyc": true,
-        ".venv": false
+        "**/*.pyc": true
     }
 }
 EOF
@@ -283,97 +295,77 @@ cat > .vscode/launch.json << 'EOF'
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Backend Server",
+            "name": "Backend Server (main_server)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/backend/simple_message_generator.py",
+            "module": "uvicorn",
+            "args": ["main_server:app", "--host", "0.0.0.0", "--port", "5002", "--reload"],
             "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/backend"
             },
-            "cwd": "${workspaceFolder}",
-            "python": "${workspaceFolder}/.venv/bin/python"
+            "cwd": "${workspaceFolder}/backend",
+            "python": "${workspaceFolder}/backend/.venv/bin/python"
         }
     ]
 }
 EOF
 
-# Create README for development
-cat > DEVELOPMENT.md << 'EOF'
-# 🍎 macOS 개발 환경 가이드
+# 보조 가이드 (루트 DEVELOPMENT.md 는 덮어쓰지 않음)
+mkdir -p "$REPO_ROOT/docs/setup"
+cat > "$REPO_ROOT/docs/setup/MACOS_DEV_QUICKSTART.md" << 'EOF'
+# 🍎 macOS 개발 환경 — setup_macos_dev.sh 요약
+
+`scripts/setup/setup_macos_dev.sh` 실행 후 참고용입니다. 상세 워크플로는 저장소 루트 **DEVELOPMENT.md** 를 따르세요.
 
 ## 빠른 시작
 
-### 전체 시스템 실행
+### 전체 시스템 실행 (스크립트가 생성한 래퍼)
 ```bash
 ./start_all.sh
 ```
 
+### 통합 API (프로젝트 기본, 포트 5002)
+```bash
+npm run restart:backend
+# 또는: bash scripts/start-api-5002.sh
+```
+
 ### 개별 실행
 ```bash
-# 백엔드만 실행
-./start_backend.sh
-
-# 프론트엔드만 실행  
+./start_backend.sh    # 통합 API (restart-backend.sh)
 ./start_frontend.sh
 ```
 
-## 개발 환경
+## Python 가상환경
 
-### Python 가상환경 활성화
+- 위치: **`backend/.venv`** (배포·pytest·`lib-activate-backend-venv.sh` 와 동일)
+- 활성화:
 ```bash
-source .venv/bin/activate
+source scripts/lib-activate-backend-venv.sh
+backend_venv_activate "$(pwd)"
 ```
-
-### 새 패키지 설치
+또는:
 ```bash
-source .venv/bin/activate
-pip install 패키지명
-pip freeze > requirements.txt
-```
-
-### Node.js 패키지 관리
-```bash
-npm install 패키지명
-npm run build
+source backend/.venv/bin/activate
 ```
 
 ## 서버 주소
 
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:8007
-- **API 문서**: http://localhost:8007/docs
+- **통합 API (권장)**: http://localhost:5002
 
-## 개발 도구
+## VS Code
 
-### VS Code 확장 추천
-- Python
-- Pylance  
-- ES7+ React/Redux/React-Native snippets
-- Prettier
-- GitLens
-
-### 터미널 명령어
-```bash
-# 프로젝트 상태 확인
-tree -I 'node_modules|.venv|__pycache__'
-
-# 포트 사용 확인
-lsof -i :3000
-lsof -i :8007
-
-# 프로세스 종료
-pkill -f "simple_message_generator"
-pkill -f "npm start"
-```
+- 인터프리터: `backend/.venv/bin/python` (`.vscode/settings.json` 에 반영)
 
 ## 문제 해결
 
-### Python 가상환경 재생성
+### backend/.venv 재생성
 ```bash
-rm -rf .venv
-python3.11 -m venv .venv
-source .venv/bin/activate
+rm -rf backend/.venv
+python3.11 -m venv backend/.venv   # 또는 python3
+source backend/.venv/bin/activate
 pip install -r requirements_macos.txt
 ```
 
@@ -383,32 +375,24 @@ npm cache clean --force
 rm -rf node_modules package-lock.json
 npm install
 ```
-
-### 포트 충돌 해결
-```bash
-# 포트 사용 프로세스 확인
-lsof -i :8007
-lsof -i :3000
-
-# 프로세스 종료
-kill -9 PID번호
-```
 EOF
 
 print_success "개발 환경 설정이 완료되었습니다!"
 print_status "생성된 파일들:"
 echo "  📄 requirements_macos.txt - macOS용 Python 패키지"
-echo "  🚀 start_backend.sh - 백엔드 시작 스크립트"
+echo "  🐍 backend/.venv - Python 가상환경"
+echo "  🚀 start_backend.sh - 백엔드 시작 스크립트 (lib-activate 사용)"
 echo "  🚀 start_frontend.sh - 프론트엔드 시작 스크립트" 
 echo "  🚀 start_all.sh - 전체 시스템 시작"
 echo "  ⚙️  .env.development - 개발 환경 설정"
-echo "  🛠️  .vscode/ - VS Code 설정"
-echo "  📖 DEVELOPMENT.md - 개발 가이드"
+echo "  🛠️  .vscode/ - VS Code 설정 (backend/.venv)"
+echo "  📖 docs/setup/MACOS_DEV_QUICKSTART.md - macOS 셋업 요약 (루트 DEVELOPMENT.md 는 유지)"
 
 print_status "다음 명령어로 시스템을 시작할 수 있습니다:"
-echo "  ./start_all.sh"
+echo "  npm run restart:backend   # 통합 API 5002 (권장)"
+echo "  ./start_all.sh            # 레거시 래퍼"
 
-print_status "VS Code에서 프로젝트를 열면 Python 인터프리터가 자동으로 설정됩니다."
+print_status "VS Code에서 인터프리터: backend/.venv/bin/python"
 
 echo ""
 print_success "🎉 macOS 개발 환경 구축이 완료되었습니다!" 

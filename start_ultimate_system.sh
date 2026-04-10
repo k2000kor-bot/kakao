@@ -1,25 +1,30 @@
 #!/bin/bash
 
-# CORBU AI Ultimate System 시작 스크립트
-echo "🚀 CORBU AI Ultimate System을 시작합니다..."
+# CORBU.AI Ultimate System (레거시) — 저장소 루트에서 실행
+echo "🚀 CORBU.AI Ultimate System을 시작합니다..."
 
-# 백엔드 디렉토리로 이동
-cd backend
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+cd "$REPO_ROOT" || exit 1
 
-# 필요한 패키지 설치 확인
-echo "📦 필요한 패키지들을 확인하고 설치합니다..."
-pip install -r requirements.txt
+# shellcheck source=scripts/lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+if ! backend_venv_activate "$REPO_ROOT"; then
+    echo "⚠️  venv 없음 — backend 에서 pip 설치 후 재시도 권장 (./setup.sh)"
+fi
 
-# 데이터베이스 초기화
-echo "🗄️ 데이터베이스를 초기화합니다..."
-python -c "
+cd "$REPO_ROOT/backend" || exit 1
+
+echo "📦 필요한 패키지 확인..."
+pip install -q -r requirements.txt 2>/dev/null || pip install -q -r requirements-core.txt 2>/dev/null || true
+
+echo "🗄️ 데이터베이스 초기화..."
+python3 -c "
 import sqlite3
 import os
 
-# 데이터베이스 파일들 생성
 databases = [
     'performance_monitor.db',
-    'ai_engine.db', 
+    'ai_engine.db',
     'security_monitor.db',
     'user_experience.db',
     'system_monitor.db'
@@ -34,40 +39,28 @@ for db in databases:
         print(f'📁 {db} 이미 존재')
 "
 
-# 백엔드 서버 시작
-echo "🔧 백엔드 서버를 시작합니다..."
-python main_server.py &
+echo "🔧 백엔드 main_server 시작..."
+python3 main_server.py &
 
-# 백엔드 서버 시작 대기
 sleep 5
 
-# 프론트엔드 디렉토리로 이동
-cd ../frontend
+# 프론트: 보조 트리 frontend/ 있으면 사용, 없으면 루트 CRA
+if [ -f "$REPO_ROOT/frontend/package.json" ]; then
+    cd "$REPO_ROOT/frontend" || exit 1
+else
+    cd "$REPO_ROOT" || exit 1
+fi
 
-# 프론트엔드 의존성 설치
-echo "📦 프론트엔드 의존성을 설치합니다..."
+echo "📦 프론트엔드 의존성..."
 npm install
 
-# 프론트엔드 서버 시작
-echo "🎨 프론트엔드 서버를 시작합니다..."
+echo "🎨 프론트엔드 서버 시작..."
 npm start &
 
 echo ""
-echo "🎉 CORBU AI Ultimate System이 성공적으로 시작되었습니다!"
-echo ""
-echo "📊 시스템 접속 정보:"
-echo "   - 메인 시스템: http://localhost:3000"
-echo "   - API 문서: http://localhost:8000/api/docs"
-echo "   - 시스템 상태: http://localhost:8000/api/health"
-echo ""
-echo "🔧 관리 기능:"
-echo "   - 성능 최적화: http://localhost:3000/performance"
-echo "   - AI 엔진: http://localhost:3000/ai-engine"
-echo "   - 보안 모니터링: http://localhost:3000/security"
-echo "   - 사용자 경험: http://localhost:3000/user-experience"
-echo ""
-echo "🛑 시스템 중지: Ctrl+C 또는 ./stop_ultimate_system.sh 실행"
+echo "🎉 Ultimate System 기동 시도 완료 (백엔드는 backend 기준, 프론트는 위 경로)"
+echo "   통합 API 권장: npm run restart:backend (포트 5002)"
+echo "🛑 중지: ./stop_ultimate_system.sh"
 echo ""
 
-# 프로세스 대기
 wait

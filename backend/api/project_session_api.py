@@ -12,9 +12,9 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
-from fastapi import APIRouter, HTTPException, Depends, status, File, UploadFile
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from fastapi import APIRouter, HTTPException, Depends, status, File, UploadFile  # type: ignore[import-untyped]
+from fastapi.responses import StreamingResponse  # type: ignore[import-untyped]
+from pydantic import BaseModel, ConfigDict, Field, field_validator  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -109,10 +109,29 @@ class AddNotebookSourceFromUrlRequest(BaseModel):
     url: str = Field(..., description="소스로 가져올 웹페이지 URL")
 
 
+class AddNotebookSourceFromYoutubeUrlRequest(BaseModel):
+    """YouTube 영상 URL 하나를 지식 소스로 추가 요청 (자막 추출 → 노트북 소스)"""
+    url: str = Field(..., description="YouTube 영상 URL (예: https://www.youtube.com/watch?v=VIDEO_ID)")
+
+
+class AddNotebookSourceFromYoutubeSearchRequest(BaseModel):
+    """특정인/주제 YouTube 검색 후 자막 수집·노트북 소스 추가 요청"""
+    query: str = Field(..., description="검색어 (예: 특정인 이름, 주제)")
+    max_videos: int = Field(5, ge=1, le=15, description="수집할 영상 수 (1~15)")
+    add_first_as_voice_source: bool = Field(
+        False,
+        description="True면 첫 영상 URL을 프로젝트 보이스 소스로도 등록 (TTS 목소리 학습용)",
+    )
+
+
 class AddVoiceSourceRequest(BaseModel):
     """노트북 LLM 보이스 소스 추가 (YouTube/TikTok URL → 목소리 학습)"""
-    url: str = Field(..., description="YouTube 또는 TikTok 영상 URL")
+    url: str = Field(..., description="연결 URL (목소리 학습에 사용할 영상 주소)")
     ref_text: Optional[str] = Field(None, description="참조 대본 (미입력 시 자동 추출 시도)")
+    name: Optional[str] = Field(None, description="목소리 ID/이름 (구분용, 예: 홍길동)")
+    reference_url: Optional[str] = Field(None, description="심화 학습용 추가 URL (같은 목소리 더 수집 시 품질 향상)")
+    start_seconds: Optional[float] = Field(None, ge=0, description="해당 목소리만 쓰기: 구간 시작(초). 여러 화자 중 한 명만 쓸 때")
+    end_seconds: Optional[float] = Field(None, ge=0, description="해당 목소리만 쓰기: 구간 끝(초)")
 
 
 class NotebookLLMGenerateRequest(BaseModel):
@@ -127,7 +146,7 @@ class Session(SessionBase):
             "example": {
                 "id": "session_123",
                 "projectId": "proj_123",
-                "name": "새 채팅",
+                "name": "새 대화",
                 "messages": [],
                 "createdAt": "2026-01-22T09:00:00",
                 "updatedAt": "2026-01-22T09:00:00",
@@ -270,16 +289,38 @@ def save_project_notebook_context(
 
 def load_project_notebook_context(project_id: str) -> Optional[str]:
     """프로젝트 노트북 컨텍스트 텍스트 로드 (없으면 None)"""
-    path = get_project_knowledge_file(project_id)
-    if not path.exists():
+    return load_project_notebook_context_filtered(project_id, source_ids=None)
+
+
+def load_project_notebook_context_filtered(
+    project_id: str, source_ids: Optional[List[str]] = None
+) -> Optional[str]:
+    """프로젝트 노트북 컨텍스트 로드. source_ids가 있으면 해당 소스만 포함.
+
+    - source_ids is None: 전체 컨텍스트 (기존 동작)
+    - source_ids == []: 프로젝트 개요만 (학습된 소스 없음)
+    - source_ids == [id1, id2...]: 개요 + 해당 소스만
+    """
+    data = load_project_notebook_data(project_id)
+    if not data:
         return None
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data.get("context_text") or None
-    except Exception as e:
-        logger.error(f"프로젝트 노트북 컨텍스트 로드 실패: {e}")
+    project_data = load_project(project_id)
+    if not project_data:
         return None
+    sources = list(data.get("sources") or [])
+    if source_ids is not None:
+        id_set = set(source_ids)
+        filtered = []
+        for s in sources:
+            sid = s.get("id")
+            if sid == "overview" or s.get("type") == "overview":
+                filtered.append(s)
+            elif sid in id_set:
+                filtered.append(s)
+        sources = filtered
+    return _rebuild_context_text_from_sources(
+        project_id, project_data, sources
+    )
 
 
 def load_project_notebook_data(project_id: str) -> Optional[Dict[str, Any]]:
@@ -296,7 +337,7 @@ def load_project_notebook_data(project_id: str) -> Optional[Dict[str, Any]]:
 
 
 def get_project_source_count(project_id: str) -> int:
-    """채팅/노트북에서 사용 중인 소스 개수 (Google NotebookLM '소스 N개' 용)."""
+    """대화/노트북에서 사용 중인 소스 개수 (Google NotebookLM '소스 N개' 용)."""
     data = load_project_notebook_data(project_id)
     if not data:
         return 0
@@ -321,6 +362,10 @@ def add_project_voice_source(
     project_id: str,
     url: str,
     ref_text: Optional[str] = None,
+    name: Optional[str] = None,
+    reference_url: Optional[str] = None,
+    start_seconds: Optional[float] = None,
+    end_seconds: Optional[float] = None,
 ) -> Optional[Dict[str, Any]]:
     """프로젝트에 보이스 소스(YouTube/TikTok URL) 추가. 노트북 LLM 정보·영상 학습용."""
     project_data = load_project(project_id)
@@ -346,6 +391,14 @@ def add_project_voice_source(
         "ref_text": (ref_text or "").strip() or None,
         "created_at": datetime.now().isoformat(),
     }
+    if name is not None and (name or "").strip():
+        new_source["name"] = (name or "").strip()
+    if reference_url is not None and (reference_url or "").strip():
+        new_source["reference_url"] = (reference_url or "").strip()
+    if start_seconds is not None:
+        new_source["start_seconds"] = start_seconds
+    if end_seconds is not None:
+        new_source["end_seconds"] = end_seconds
     voice_sources.append(new_source)
     data["voice_sources"] = voice_sources
     data["updated_at"] = datetime.now().isoformat()
@@ -404,7 +457,7 @@ def load_project_studio_outputs(project_id: str) -> List[Dict[str, Any]]:
 def _fetch_url_and_extract_text(url: str) -> Tuple[str, str]:
     """URL을 조회해 본문 텍스트와 제목을 추출합니다. (title, content)"""
     try:
-        import requests
+        import requests  # type: ignore[import-untyped]
         resp = requests.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0 (compatible; NotebookLM/1.0)"})
         resp.raise_for_status()
         text = resp.text
@@ -424,20 +477,107 @@ def _fetch_url_and_extract_text(url: str) -> Tuple[str, str]:
         raise
 
 
+def _youtube_search_videos(query: str, max_videos: int = 5) -> List[Dict[str, Any]]:
+    """YouTube에서 검색어로 영상 목록 조회. 반환: [{"id", "title", "url"}, ...]"""
+    try:
+        import yt_dlp  # type: ignore[import-untyped]
+    except ImportError:
+        logger.warning("yt-dlp 미설치: pip install yt-dlp")
+        return []
+    search_url = f"ytsearch{max_videos}:{query.strip()}"
+    ydl_opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "extract_flat": True,
+        "skip_download": True,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(search_url, download=False)
+        if not info or "entries" not in info:
+            return []
+        entries = info["entries"] or []
+        result = []
+        for e in entries[:max_videos]:
+            if not e or not isinstance(e, dict):
+                continue
+            vid = e.get("id")
+            if not vid:
+                url_raw = e.get("url") or ""
+                if "youtube.com/watch?v=" in url_raw:
+                    vid = url_raw.split("watch?v=")[-1].split("&")[0].strip()
+                elif "youtu.be/" in url_raw:
+                    vid = url_raw.split("youtu.be/")[-1].split("?")[0].strip()
+                else:
+                    continue
+            title = (e.get("title") or "").strip() or f"영상 {vid}"
+            url = e.get("url") or f"https://www.youtube.com/watch?v={vid}"
+            result.append({"id": vid, "title": title, "url": url})
+        return result
+    except Exception as e:
+        logger.warning(f"YouTube 검색 실패: {e}")
+        return []
+
+
+def _extract_youtube_video_id(url: str) -> Optional[str]:
+    """YouTube URL에서 video_id 추출. 지원: youtube.com/watch?v=ID, youtu.be/ID."""
+    url = (url or "").strip()
+    if not url:
+        return None
+    if "youtube.com/watch?v=" in url:
+        return url.split("watch?v=")[-1].split("&")[0].strip()
+    if "youtu.be/" in url:
+        return url.split("youtu.be/")[-1].split("?")[0].strip()
+    return None
+
+
+def _get_youtube_video_title(video_id: str) -> str:
+    """YouTube 영상 제목 조회 (yt-dlp). 실패 시 'YouTube 영상 (video_id)' 반환."""
+    try:
+        import yt_dlp  # type: ignore[import-untyped]
+        ydl_opts = {"quiet": True, "no_warnings": True, "skip_download": True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+        if info and isinstance(info.get("title"), str):
+            return (info["title"] or "").strip()[:200] or f"YouTube 영상 ({video_id})"
+    except Exception as e:
+        logger.debug("영상 제목 조회 실패 %s: %s", video_id, e)
+    return f"YouTube 영상 ({video_id})"
+
+
+def _get_youtube_transcript(video_id: str) -> Optional[str]:
+    """YouTube 영상 자막(자동/수동) 텍스트 추출. 실패 시 None."""
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore[import-untyped]
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        if not transcript_list:
+            return None
+        parts = [t.get("text", "").strip() for t in transcript_list if t.get("text")]
+        return "\n".join(parts).strip() if parts else None
+    except ImportError:
+        logger.warning("youtube_transcript_api 미설치: pip install youtube-transcript-api")
+        return None
+    except Exception as e:
+        logger.warning(f"자막 추출 실패 {video_id}: {e}")
+        return None
+
+
 def _extract_text_from_upload(file_path: Path, filename: str) -> Tuple[str, str]:
-    """업로드 파일에서 텍스트 추출. (title, content). txt 또는 pdf 지원."""
+    """업로드 파일에서 텍스트 추출. (title, content). txt, pdf, docx, doc, 이미지(png/jpg 등) 지원."""
     name = (filename or "file").rsplit(".", 1)[0][:200]
     ext = (filename or "").lower().rsplit(".", 1)[-1] if "." in (filename or "") else ""
+    # 텍스트
     if ext == "txt" or not ext:
         try:
             with open(file_path, "r", encoding="utf-8", errors="replace") as f:
                 return name, f.read()[:100000]
         except Exception as e:
             logger.warning(f"텍스트 파일 읽기 실패: {e}")
-            raise
+            raise ValueError(f"텍스트 파일 읽기 실패: {e}") from e
+    # PDF
     if ext == "pdf":
         try:
-            import PyPDF2
+            import PyPDF2  # type: ignore[import-untyped]
             with open(file_path, "rb") as f:
                 reader = PyPDF2.PdfReader(f)
                 parts = []
@@ -445,16 +585,33 @@ def _extract_text_from_upload(file_path: Path, filename: str) -> Tuple[str, str]
                     parts.append(reader.pages[i].extract_text() or "")
                 return name, ("\n".join(parts))[:100000]
         except ImportError:
-            raise HTTPException(
-                status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                detail={"error": "PDF 추출을 위해 PyPDF2가 필요합니다", "timestamp": datetime.now().isoformat()},
-            )
+            raise ValueError("PDF 추출을 위해 PyPDF2가 필요합니다. pip install PyPDF2 를 실행해 주세요.") from None
         except Exception as e:
             logger.warning(f"PDF 텍스트 추출 실패: {e}")
-            raise
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail={"error": "지원 형식: .txt, .pdf", "timestamp": datetime.now().isoformat()},
+            raise ValueError(f"PDF 텍스트 추출 실패: {e}") from e
+    # 워드(docx, doc)
+    if ext in ("docx", "doc"):
+        try:
+            import docx as docx_module  # type: ignore
+        except ImportError:
+            raise ValueError("워드 파일 추출을 위해 python-docx가 필요합니다. pip install python-docx 를 실행해 주세요.") from None
+        try:
+            with open(file_path, "rb") as f:
+                doc = docx_module.Document(f)
+            text = "\n".join(p.text for p in doc.paragraphs if p.text).strip()
+            return name, (text or "(내용 없음)")[:100000]
+        except Exception as e:
+            logger.warning(f"워드(docx) 텍스트 추출 실패: {e}")
+            raise ValueError(f"워드 파일 추출 실패: {e}") from e
+    # 이미지: 텍스트 추출 불가 → 플레이스홀더로 소스에 등록 (나중에 vision/OCR 연동 가능)
+    if ext in ("png", "jpg", "jpeg", "gif", "webp"):
+        placeholder = (
+            f"[이미지 파일: {filename}. 시각 내용은 현재 텍스트로 추출되지 않습니다. "
+            "이미지 설명이 필요하면 별도로 텍스트로 입력해 주세요.]"
+        )
+        return name, placeholder
+    raise ValueError(
+        "지원 형식: .txt, .pdf, .docx, .doc, .png, .jpg, .jpeg, .gif, .webp"
     )
 
 
@@ -784,6 +941,54 @@ async def get_project(project_id: str) -> Dict[str, Any]:
 
 
 @router.get(
+    "/projects/{project_id}/analytics",
+    summary="프로젝트별 사용 통계 (세션 수·메시지 수·소스 수)",
+)
+async def get_project_analytics(project_id: str) -> Dict[str, Any]:
+    """프로젝트별 사용 통계 — 세션 수, 총 메시지 수, 노트북 소스 수. AnalyticsView 프로젝트별 리포팅용."""
+    try:
+        project_data = load_project(project_id)
+        if not project_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "프로젝트를 찾을 수 없습니다",
+                    "message": f"ID '{project_id}'에 해당하는 프로젝트가 존재하지 않습니다.",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+        sessions = load_all_sessions(project_id)
+        total_messages = sum(
+            len(s.get("messages", [])) if isinstance(s.get("messages"), list) else 0
+            for s in sessions
+        )
+        source_count = get_project_source_count(project_id)
+        return {
+            "success": True,
+            "data": {
+                "project_id": project_id,
+                "project_name": project_data.get("name", ""),
+                "session_count": len(sessions),
+                "total_messages": total_messages,
+                "source_count": source_count,
+            },
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"프로젝트 분석 조회 실패: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "프로젝트 분석 조회 실패",
+                "message": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
+
+@router.get(
     "/projects/{project_id}/notebook-context",
     summary="프로젝트 노트북 LLM 컨텍스트 조회",
 )
@@ -1095,7 +1300,7 @@ async def delete_project(project_id: str) -> Dict[str, Any]:
 async def add_notebook_source(
     project_id: str, body: AddNotebookSourceRequest
 ) -> Dict[str, Any]:
-    """프로젝트에 학습 소스를 추가합니다. 채팅/스튜디오 시 반영됩니다."""
+    """프로젝트에 학습 소스를 추가합니다. 대화/스튜디오 시 반영됩니다."""
     try:
         if not load_project(project_id):
             raise HTTPException(
@@ -1214,14 +1419,184 @@ async def add_notebook_source_from_url(
 
 
 @router.post(
+    "/projects/{project_id}/notebook-sources/from-youtube-url",
+    summary="YouTube 영상 URL 하나를 자막 추출해 노트북 지식 소스로 추가",
+)
+async def add_notebook_source_from_youtube_url(
+    project_id: str, body: AddNotebookSourceFromYoutubeUrlRequest
+) -> Dict[str, Any]:
+    """YouTube 영상 URL을 입력하면 자막(자동/수동)을 추출해 프로젝트 노트북 지식으로 추가합니다. 대화/노트북 LLM이 이 내용을 근거로 답변합니다."""
+    try:
+        if not load_project(project_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "프로젝트를 찾을 수 없습니다",
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+        url = (body.url or "").strip()
+        if not url:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"error": "url을 입력해주세요", "timestamp": datetime.now().isoformat()},
+            )
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url
+        video_id = _extract_youtube_video_id(url)
+        if not video_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "유효한 YouTube URL이 아닙니다. youtube.com/watch?v=... 또는 youtu.be/... 형식으로 입력해주세요.",
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+        transcript = _get_youtube_transcript(video_id)
+        if not (transcript or "").strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "해당 영상에서 자막을 추출할 수 없습니다. 자막이 있는 영상인지 확인하거나, youtube-transcript-api 설치: pip install youtube-transcript-api",
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+        title = _get_youtube_video_title(video_id)
+        new_source = add_project_notebook_source(
+            project_id=project_id,
+            title=title,
+            content=transcript.strip(),
+            source_type="youtube",
+        )
+        if not new_source:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "error": "소스 추가 실패",
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+        return {
+            "success": True,
+            "data": {
+                "source": new_source,
+                "source_count": get_project_source_count(project_id),
+            },
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"YouTube URL 소스 추가 실패: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "YouTube 소스 추가 실패",
+                "message": str(e),
+                "timestamp": datetime.now().isoformat(),
+            },
+        )
+
+
+@router.post(
+    "/projects/{project_id}/notebook-sources/from-youtube-search",
+    summary="특정인/주제 YouTube 검색 후 자막 수집·노트북 소스 추가 (딥러닝·학습용)",
+)
+async def add_notebook_sources_from_youtube_search(
+    project_id: str, body: AddNotebookSourceFromYoutubeSearchRequest
+) -> Dict[str, Any]:
+    """YouTube에서 검색어(특정인 이름 등)로 영상을 찾고, 각 영상 자막을 추출해 노트북 소스로 추가합니다. 노트북 LLM이 해당 자료를 학습해 활용합니다."""
+    try:
+        if not load_project(project_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "프로젝트를 찾을 수 없습니다",
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+        query = (body.query or "").strip()
+        if not query:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"error": "검색어(query)를 입력해주세요", "timestamp": datetime.now().isoformat()},
+            )
+        max_videos = min(max(body.max_videos or 5, 1), 15)
+        videos = _youtube_search_videos(query, max_videos)
+        if not videos:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "YouTube 검색 결과가 없거나 yt-dlp를 사용할 수 없습니다. pip install yt-dlp 후 다시 시도해주세요.",
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+        added_sources = []
+        first_video_url = None
+        for v in videos:
+            video_id = v.get("id") or ""
+            title = v.get("title") or f"영상 {video_id}"
+            url = v.get("url") or f"https://www.youtube.com/watch?v={video_id}"
+            if not video_id:
+                continue
+            transcript = _get_youtube_transcript(video_id)
+            content = (transcript or "").strip()
+            if not content:
+                logger.info(f"자막 없음 스킵: {title} ({video_id})")
+                continue
+            new_source = add_project_notebook_source(
+                project_id=project_id,
+                title=title[:200],
+                content=content[:100000],
+                source_type="youtube",
+            )
+            if new_source:
+                added_sources.append(new_source)
+                if first_video_url is None:
+                    first_video_url = url
+        if not added_sources:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "자막을 추출할 수 있는 영상이 없습니다. youtube-transcript-api 설치: pip install youtube-transcript-api",
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+        if body.add_first_as_voice_source and first_video_url:
+            add_project_voice_source(project_id=project_id, url=first_video_url, ref_text=None)
+        return {
+            "success": True,
+            "data": {
+                "added_count": len(added_sources),
+                "sources": added_sources,
+                "source_count": get_project_source_count(project_id),
+                "first_video_added_as_voice": body.add_first_as_voice_source and bool(first_video_url),
+            },
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"YouTube 검색·소스 추가 실패: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "YouTube 검색·소스 추가 실패",
+                "message": str(e),
+                "timestamp": datetime.now().isoformat(),
+            },
+        )
+
+
+@router.post(
     "/projects/{project_id}/notebook-sources/from-file",
-    summary="파일 업로드로 소스 추가 (PDF·텍스트)",
+    summary="파일 업로드로 소스 추가 (PDF·워드·텍스트·이미지)",
 )
 async def add_notebook_source_from_file(
     project_id: str,
-    file: UploadFile = File(..., description="PDF 또는 TXT 파일"),
+    file: UploadFile = File(..., description="PDF, 워드(docx/doc), TXT, 이미지(png/jpg 등)"),
 ) -> Dict[str, Any]:
-    """업로드한 PDF 또는 텍스트 파일에서 텍스트를 추출해 노트북 소스로 추가합니다."""
+    """업로드한 파일에서 텍스트를 추출해 노트북 소스(학습 자료)로 추가합니다. 이미지는 플레이스홀더로 등록됩니다."""
     try:
         if not load_project(project_id):
             raise HTTPException(
@@ -1249,7 +1624,7 @@ async def add_notebook_source_from_file(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail={"error": "파일에서 추출된 텍스트가 없습니다", "timestamp": datetime.now().isoformat()},
                 )
-            source_type = "pdf" if filename.lower().endswith(".pdf") else "text"
+            source_type = "pdf" if filename.lower().endswith(".pdf") else ("doc" if filename.lower().endswith((".docx", ".doc")) else "text")
             new_source = add_project_notebook_source(
                 project_id=project_id,
                 title=title or filename,
@@ -1276,6 +1651,11 @@ async def add_notebook_source_from_file(
                 pass
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": str(e), "timestamp": datetime.now().isoformat()},
+        ) from e
     except Exception as e:
         logger.error(f"파일 소스 추가 실패: {e}", exc_info=True)
         raise HTTPException(
@@ -1285,7 +1665,7 @@ async def add_notebook_source_from_file(
                 "message": str(e),
                 "timestamp": datetime.now().isoformat(),
             }
-        )
+        ) from e
 
 
 @router.delete(
@@ -1380,6 +1760,10 @@ async def add_voice_source(
         project_id=project_id,
         url=body.url.strip(),
         ref_text=body.ref_text.strip() if body.ref_text else None,
+        name=body.name.strip() if body.name else None,
+        reference_url=body.reference_url.strip() if body.reference_url else None,
+        start_seconds=body.start_seconds,
+        end_seconds=body.end_seconds,
     )
     if not new_source:
         raise HTTPException(
@@ -1600,7 +1984,7 @@ async def delete_notebook_studio_output(
 
 @router.get(
     "/projects/{project_id}/notebook-suggested-questions",
-    summary="소스 기반 추천 질문 생성 (채팅 웰컴용)",
+    summary="소스 기반 추천 질문 생성 (대화 웰컴용)",
 )
 async def get_notebook_suggested_questions(
     project_id: str,
@@ -1625,7 +2009,7 @@ async def get_notebook_suggested_questions(
         prompt = (
             "아래 [학습된 소스]를 바탕으로 사용자가 물어볼 만한 추천 질문 3~5개를 "
             "한 줄에 하나씩만 작성해 주세요. 번호나 기호 없이 질문만 한 줄씩 출력하세요.\n\n"
-            + (context_text[:12000] or "")
+            + (context_text or "")
         )
         context = {"projectId": project_id, "project_id": project_id}
         try:
@@ -1643,12 +2027,12 @@ async def get_notebook_suggested_questions(
             for line in (raw or "").strip().split("\n")
             if line.strip() and not line.strip().startswith(("1.", "2.", "3.", "4.", "5.", "-", "*", "#"))
         ]
-        questions = lines[:5] if lines else []
+        questions = list(lines) if lines else []
         # 번호 제거 (예: "1. 질문" -> "질문")
         questions = [re.sub(r"^\d+[.)]\s*", "", q) for q in questions if q]
         return {
             "success": True,
-            "data": {"questions": questions[:5]},
+            "data": {"questions": questions},
             "timestamp": datetime.now().isoformat(),
         }
     except HTTPException:

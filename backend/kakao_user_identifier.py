@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-카카오톡 사용자 및 채팅방 식별 시스템
+카카오톡 사용자 및 대화방 식별 시스템
 KakaoTalk User and Chatroom Identification System
 """
 
@@ -27,7 +27,7 @@ class KakaoUser:
 
 @dataclass
 class KakaoChatRoom:
-    """카카오톡 채팅방 정보"""
+    """카카오톡 대화방 정보"""
     chat_id: str
     room_name: str
     room_type: str  # 'direct', 'group', 'openchat'
@@ -40,7 +40,7 @@ class KakaoChatRoom:
 
 @dataclass
 class ChatRoomMember:
-    """채팅방 참여자 정보"""
+    """대화방 참여자 정보"""
     chat_id: str
     user_id: str
     nickname_in_room: str
@@ -89,7 +89,7 @@ class KakaoIdentifier:
                 )
             """)
             
-            # 채팅방 테이블
+            # 대화방 테이블
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS kakao_chatrooms (
                     chat_id TEXT PRIMARY KEY,
@@ -104,7 +104,7 @@ class KakaoIdentifier:
                 )
             """)
             
-            # 채팅방 참여자 테이블
+            # 대화방 참여자 테이블
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chatroom_members (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -139,7 +139,7 @@ class KakaoIdentifier:
             conn.commit()
 
     def extract_and_identify_from_kakao_db(self, kakao_db_path: str) -> Dict[str, Any]:
-        """카카오톡 DB에서 사용자 및 채팅방 정보 추출"""
+        """카카오톡 DB에서 사용자 및 대화방 정보 추출"""
         result = {
             "users": [],
             "chatrooms": [],
@@ -153,7 +153,7 @@ class KakaoIdentifier:
                 users = self._extract_users(conn)
                 result["users"] = users
                 
-                # 채팅방 정보 추출
+                # 대화방 정보 추출
                 chatrooms = self._extract_chatrooms(conn)
                 result["chatrooms"] = chatrooms
                 
@@ -237,12 +237,12 @@ class KakaoIdentifier:
         return users
 
     def _extract_chatrooms(self, conn: sqlite3.Connection) -> List[KakaoChatRoom]:
-        """채팅방 정보 추출"""
+        """대화방 정보 추출"""
         chatrooms = []
         cursor = conn.cursor()
         
         try:
-            # 채팅방 기본 정보
+            # 대화방 기본 정보
             cursor.execute("""
                 SELECT 
                     id as chat_id,
@@ -256,7 +256,7 @@ class KakaoIdentifier:
             for row in cursor.fetchall():
                 chat_id, room_name, room_type, member_count, members = row
                 
-                # 채팅방 타입 변환
+                # 대화방 타입 변환
                 room_type_str = {
                     1: "direct",
                     2: "group", 
@@ -266,7 +266,7 @@ class KakaoIdentifier:
                 # 참여자 목록 파싱
                 participants = self._parse_participants(members)
                 
-                # 채팅방 활동 통계
+                # 대화방 활동 통계
                 cursor.execute("""
                     SELECT 
                         COUNT(*) as message_count,
@@ -296,17 +296,17 @@ class KakaoIdentifier:
                 chatrooms.append(chatroom)
                 
         except Exception as e:
-            print(f"채팅방 추출 오류: {e}")
+            print(f"대화방 추출 오류: {e}")
             
         return chatrooms
 
     def _extract_relationships(self, conn: sqlite3.Connection) -> List[ChatRoomMember]:
-        """채팅방-사용자 관계 추출"""
+        """대화방-사용자 관계 추출"""
         relationships = []
         cursor = conn.cursor()
         
         try:
-            # 각 메시지에서 사용자-채팅방 관계 추출
+            # 각 메시지에서 사용자-대화방 관계 추출
             cursor.execute("""
                 SELECT DISTINCT
                     chat_id,
@@ -355,7 +355,7 @@ class KakaoIdentifier:
             cursor.execute("SELECT COUNT(DISTINCT chat_id) FROM chat_logs")
             stats["total_chatrooms"] = cursor.fetchone()[0]
             
-            # 채팅방 타입별 통계
+            # 대화방 타입별 통계
             cursor.execute("""
                 SELECT type, COUNT(*) 
                 FROM open_chat_link 
@@ -406,7 +406,7 @@ class KakaoIdentifier:
                                 VALUES (?, ?, ?)
                             """, (user.user_id, nickname, user.nickname_history[i + 1]))
             
-            # 채팅방 정보 저장
+            # 대화방 정보 저장
             for room in chatrooms:
                 cursor.execute("""
                     INSERT OR REPLACE INTO kakao_chatrooms 
@@ -447,7 +447,7 @@ class KakaoIdentifier:
             
             user_info = cursor.fetchone()
             
-            # 채팅방 정보 조회
+            # 대화방 정보 조회
             cursor.execute("""
                 SELECT room_name, room_type, participant_count 
                 FROM kakao_chatrooms 
@@ -456,7 +456,7 @@ class KakaoIdentifier:
             
             room_info = cursor.fetchone()
             
-            # 채팅방 참여자 조회
+            # 대화방 참여자 조회
             cursor.execute("""
                 SELECT u.nickname, cm.nickname_in_room, cm.role
                 FROM chatroom_members cm
@@ -515,7 +515,7 @@ class KakaoIdentifier:
             return None
 
     def get_chatroom_by_id(self, chat_id: str) -> Optional[Dict[str, Any]]:
-        """채팅방 ID로 채팅방 정보 조회"""
+        """대화방 ID로 대화방 정보 조회"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -557,7 +557,7 @@ class KakaoIdentifier:
             return None
 
     def find_similar_chatrooms(self, participants: List[str]) -> List[Dict[str, Any]]:
-        """참여자 목록을 기반으로 유사한 채팅방 찾기"""
+        """참여자 목록을 기반으로 유사한 대화방 찾기"""
         room_hash = self._generate_room_hash(participants)
         
         with sqlite3.connect(self.db_path) as conn:
@@ -605,7 +605,7 @@ class KakaoIdentifier:
             return []
 
     def _generate_room_hash(self, participants: List[str]) -> str:
-        """참여자 기반 채팅방 해시 생성"""
+        """참여자 기반 대화방 해시 생성"""
         if not participants:
             return ""
         
@@ -637,7 +637,7 @@ class KakaoIdentifier:
             cursor.execute("SELECT COUNT(*) FROM kakao_users WHERE is_me = TRUE")
             me_users = cursor.fetchone()[0]
             
-            # 채팅방 통계
+            # 대화방 통계
             cursor.execute("SELECT COUNT(*) FROM kakao_chatrooms")
             total_rooms = cursor.fetchone()[0]
             
@@ -675,10 +675,10 @@ if __name__ == "__main__":
     # 루팅폰에서 추출한 카카오톡 DB 분석
     kakao_db_path = "/path/to/KakaoTalk.db"  # 실제 경로로 변경 필요
     
-    print("🔍 카카오톡 사용자/채팅방 식별 시스템 시작...")
+    print("🔍 카카오톡 사용자/대화방 식별 시스템 시작...")
     
     # result = identifier.extract_and_identify_from_kakao_db(kakao_db_path)
-    # print(f"✅ 식별 완료: 사용자 {len(result['users'])}명, 채팅방 {len(result['chatrooms'])}개")
+    # print(f"✅ 식별 완료: 사용자 {len(result['users'])}명, 대화방 {len(result['chatrooms'])}개")
     
     summary = identifier.get_identification_summary()
     print("📊 식별 시스템 현재 상태:")

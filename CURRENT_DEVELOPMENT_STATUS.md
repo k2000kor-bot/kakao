@@ -7,10 +7,10 @@
 
 ## ✅ 완료된 작업
 
-### Task-C 시리즈: 채팅 경험 업그레이드
+### Task-C 시리즈: 대화 경험 업그레이드
 
-- ✅ **Task-C1**: 채팅 경험 업그레이드 (로딩 상태, 에러 처리)
-- ✅ **Task-C2**: 채팅 기능 개선 (메시지 액션, 편집)
+- ✅ **Task-C1**: 대화 경험 업그레이드 (로딩 상태, 에러 처리)
+- ✅ **Task-C2**: 대화 기능 개선 (메시지 액션, 편집)
 - ✅ **Task-C3**: 메시지 히스토리 관리 개선
 
 ### Task-D 시리즈: 검색/네비게이션 심화
@@ -118,7 +118,7 @@
 
 | 카테고리 | 완료 | 진행 중 | 대기 |
 |---------|------|---------|------|
-| 채팅 경험 | 3/3 | 0 | 0 |
+| 대화 경험 | 3/3 | 0 | 0 |
 | 검색/네비게이션 | 3/3 | 0 | 0 |
 | 퍼블리싱/테마 | 3/3 | 0 | 0 |
 | 성능 최적화 | 1/1 | 0 | 0 |
@@ -140,7 +140,7 @@
 
 ### 완료된 주요 작업
 
-- ✅ Task-C 시리즈: 채팅 경험 업그레이드 (3/3)
+- ✅ Task-C 시리즈: 대화 경험 업그레이드 (3/3)
 - ✅ Task-D 시리즈: 검색/네비게이션 심화 (3/3)
 - ✅ Task-E 시리즈: 퍼블리싱·테마 일관화 (3/3)
 - ✅ Task-F 시리즈: 성능 최적화 (1/1)
@@ -149,7 +149,7 @@
 
 ### 주요 기능
 
-- ✅ 실시간 채팅 인터페이스
+- ✅ 실시간 대화 인터페이스
 - ✅ 고급 검색 및 필터링
 - ✅ 프로젝트 관리 시스템
 - ✅ 통합 디자인 시스템
@@ -187,6 +187,18 @@
 ### 코드 개선
 
 - ✅ chatGPTProjectService.ts의 getProjects 메서드 타입 안전성 개선
+
+### 대화 입력·답변 출력 안정화 (2026-03)
+
+- ✅ **입력창 전송 통일**: 전송 버튼을 `type="submit"`으로 통일, form submit 시 DOM → getCurrentInputValue() 순으로 입력값 읽어 `sendMessage(v)` 호출 (웰컴/대화 화면 동일)
+- ✅ **답변 미표시 수정**: API 응답 반영 시 `setCurrentConversation`을 `(prev && prev.id !== conversation.id ? prev : finalConversation)`로 변경해, 다른 effect로 `currentConversation`이 null이 되어도 답변이 화면에 표시되도록 수정 (스트리밍/비스트리밍/에러 경로 모두 적용)
+- ✅ **전송 시 토스트만 뜨고 전송 안 되던 문제**: `validateInput` 성공 시 반환하는 trimmed 문자열을 에러로 잘못 처리해 토스트로 띄우고 return하던 분기 제거 → 검증 통과 시 그대로 전송
+- ✅ **글자 수 제한 제거**: 10,000자 제한 및 관련 토스트/`maxLength`/힌트 제거
+- ✅ **전송 후 대화 사라짐 방지**: 웰컴 effect에서 `currentConversation` 초기화를 **경로가 `/`로 바뀐 경우에만** 수행하도록 변경 (`prevPathnameForWelcomeRef` 사용), 이미 `/`에서 메시지 전송 후 리렌더 시에는 초기화하지 않음
+- ✅ **전송 직후 대화가 null로 덮어씌워지던 문제**: `conversationIdFromState` effect에서 `conversationId`가 없을 때마다 `setCurrentConversation(null)` 호출 → 전송 후 `conversations` 갱신 시 effect 재실행되어 방금 만든 대화가 지워짐. **수정**: `prevConversationIdFromStateRef`로 “이전에 state에 conversationId가 있었는지”만 추적해, **있었다가 없어진 경우**(새 대화 클릭 등)에만 초기화하고, 처음부터 없는 경우(웰컴에서 바로 전송)에는 초기화하지 않음
+
+- ✅ **답변 로직·생성 본문 우선 표시**: 프론트 `getTextFromObject`에서 `generated_content`·`generated_text`·`response_text`·`answer_text` 우선 추출. 백엔드 `generate_default_response(message, context)`로 fallback 시에도 `parsed_input`·품질 지침 반영
+- ✅ **답변 글 간격·구성**: `.message-text` 패딩·줄간격(1.65/1.7), 단락·제목·목록·인용·코드 margin/padding, 메시지 행 간격(24px)·messages-container 패딩 적용
 
 ---
 

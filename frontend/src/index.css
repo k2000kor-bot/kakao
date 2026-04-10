@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Brainwave: 루트 테마 (Figma node-id=7-3 디자인 기준) */
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family-base);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@supports (min-height: 100dvh) {
+  body,
+  #root,
+  .brainwave-app-loading,
+  .brainwave-simple-screen {
+    min-height: 100dvh;
+  }
+}
+
 /* 알림 애니메이션 */
 @keyframes slideIn {
     from {
@@ -28,30 +49,51 @@
 }
 
 .animate-slide-in {
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn var(--transition-slow) ease-out;
 }
 
 .animate-slide-out {
-    animation: slideOut 0.3s ease-in;
+    animation: slideOut var(--transition-slow) ease-in;
 }
 
-/* 스크롤바 스타일링 */
+/* 스크롤바: 테마 변수 적용 */
 ::-webkit-scrollbar {
-    width: 6px;
+    width: var(--scrollbar-width);
+    height: var(--scrollbar-width);
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
+    background: var(--border-hover);
+    border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: var(--text-secondary);
+}
+
+/* 포커스: 키보드 사용자 접근성 */
+:focus {
+    outline: none;
+}
+
+:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
 }
 
 /* 로딩 애니메이션 */
@@ -68,12 +110,101 @@
 }
 
 .animate-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulse var(--animation-duration-pulse) cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* 포커스 링 */
+/* prefers-reduced-motion: 애니메이션 최소화 (접근성) */
+@media (prefers-reduced-motion: reduce) {
+    .animate-slide-in,
+    .animate-slide-out,
+    .animate-pulse {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Brainwave 앱 로딩 (Suspense fallback) */
+.brainwave-app-loading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    gap: var(--spacing-lg);
+    padding: var(--spacing-2xl);
+    font-family: var(--font-family-base);
+}
+
+.brainwave-app-loading .brainwave-app-loading-title {
+    font-size: var(--font-size-lg);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* Brainwave 심플 모드 (Figma node-id=7-3) */
+.brainwave-simple-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-family-base);
+    padding: var(--spacing-3xl);
+}
+
+.brainwave-simple-title {
+    font-size: var(--font-size-2xl);
+    margin: 0 0 var(--spacing-xl);
+    color: var(--accent-primary);
+}
+
+.brainwave-simple-desc {
+    font-size: var(--font-size-lg);
+    margin: 0 0 var(--spacing-md);
+    color: var(--text-primary);
+}
+
+.brainwave-simple-hint {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.brainwave-simple-card {
+    margin-top: var(--spacing-3xl);
+    padding: var(--spacing-xl);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    max-width: var(--content-max-md);
+    border: var(--border-width) solid var(--border-color);
+}
+
+.brainwave-simple-card-title {
+    font-size: var(--font-size-xl);
+    margin: 0 0 var(--spacing-lg);
+    color: var(--text-primary);
+}
+
+.brainwave-simple-list {
+    text-align: left;
+    line-height: var(--line-height-normal);
+    margin: 0;
+    padding-left: var(--spacing-2xl);
+    color: var(--text-primary);
+}
+
+/* 포커스 링 — Brainwave (theme.css --focus-ring) */
 .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    outline: none;
+}
+.focus-ring:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
 }
 
 /* 버튼 호버 효과 */

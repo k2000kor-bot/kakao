@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-새로운 카카오톡 채팅 파일 자동 처리 스크립트
+새로운 카카오톡 대화 파일 자동 처리 스크립트
 """
 
 import os
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def find_new_chat_files():
-    """새로운 채팅 파일 탐지"""
+    """새로운 대화 파일 탐지"""
     # 가능한 위치들에서 새 파일 찾기
     search_paths = [
         "uploads/*.txt",
@@ -52,7 +52,7 @@ def process_uploaded_file(file_path: str):
         
         if result.processing_status == "success":
             logger.info("✅ 처리 성공!")
-            logger.info(f"   채팅방: {result.chat_room_name}")
+            logger.info(f"   대화방: {result.chat_room_name}")
             logger.info(f"   메시지: {result.message_count}개")
             logger.info(f"   참여자: {result.participant_count}명")
             logger.info(f"   미디어: {result.media_files_count}개")
@@ -77,7 +77,7 @@ def show_processing_summary():
     print("\n" + "="*50)
     print("📊 카카오톡 데이터 처리 요약")
     print("="*50)
-    print(f"총 채팅방 수: {summary['total_chat_rooms']}개")
+    print(f"총 대화방 수: {summary['total_chat_rooms']}개")
     print(f"총 메시지 수: {summary['total_messages']:,}개")
     print(f"총 미디어 파일: {summary['total_media_files']:,}개")
     print(f"총 참여자 수: {summary['total_participants']}명")
@@ -96,7 +96,7 @@ def main():
             logger.error(f"파일을 찾을 수 없습니다: {file_path}")
     else:
         # 자동 탐지 및 처리
-        logger.info("🔍 새로운 채팅 파일 자동 탐지 중...")
+        logger.info("🔍 새로운 대화 파일 자동 탐지 중...")
         
         new_files = find_new_chat_files()
         
@@ -110,7 +110,7 @@ def main():
                 process_uploaded_file(file)
                 
         else:
-            logger.info("새로운 채팅 파일이 없습니다.")
+            logger.info("새로운 대화 파일이 없습니다.")
     
     # 처리 요약 출력
     show_processing_summary()

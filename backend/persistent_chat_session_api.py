@@ -1,5 +1,5 @@
 """
-지속적 채팅 세션 관리 API
+지속적 대화 세션 관리 API
 ChatGPT 5 수준의 고급 대화 인터페이스를 위한 백엔드 API
 """
 
@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+import os
 import sqlite3
 import uuid
 import json
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 # FastAPI 앱 생성
 app = FastAPI(
     title="Persistent Chat Session API",
-    description="ChatGPT 5 수준의 지속적 채팅 세션 관리 API",
+    description="ChatGPT 5 수준의 지속적 대화 세션 관리 API",
     version="1.0.0"
 )
 
@@ -103,7 +104,7 @@ def init_database():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # 채팅 세션 테이블
+    # 대화 세션 테이블
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_sessions (
             id TEXT PRIMARY KEY,
@@ -191,12 +192,12 @@ async def health_check():
     """헬스 체크"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-# 채팅 세션 관리 엔드포인트들
+# 대화 세션 관리 엔드포인트들
 
 
 @app.post("/api/persistent-sessions", response_model=ChatSession)
 async def create_persistent_session(session_data: ChatSessionCreate):
-    """새로운 지속적 채팅 세션 생성"""
+    """새로운 지속적 대화 세션 생성"""
     session_id = str(uuid.uuid4())
     now = datetime.now()
     
@@ -261,7 +262,7 @@ async def get_persistent_sessions(
     offset: int = 0,
     search: Optional[str] = None
 ):
-    """지속적 채팅 세션 목록 조회"""
+    """지속적 대화 세션 목록 조회"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -310,7 +311,7 @@ async def get_persistent_sessions(
 
 @app.get("/api/persistent-sessions/{session_id}", response_model=ChatSession)
 async def get_persistent_session(session_id: str):
-    """특정 지속적 채팅 세션 조회"""
+    """특정 지속적 대화 세션 조회"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -350,7 +351,7 @@ async def get_persistent_session(session_id: str):
 async def update_persistent_session(
     session_id: str, session_data: ChatSessionUpdate
 ):
-    """지속적 채팅 세션 업데이트"""
+    """지속적 대화 세션 업데이트"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -432,7 +433,7 @@ async def update_persistent_session(
 
 @app.delete("/api/persistent-sessions/{session_id}")
 async def delete_persistent_session(session_id: str):
-    """지속적 채팅 세션 삭제"""
+    """지속적 대화 세션 삭제"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -462,7 +463,7 @@ async def delete_persistent_session(session_id: str):
 
 @app.post("/api/persistent-sessions/{session_id}/archive")
 async def archive_persistent_session(session_id: str):
-    """지속적 채팅 세션 아카이브"""
+    """지속적 대화 세션 아카이브"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -491,7 +492,7 @@ async def archive_persistent_session(session_id: str):
 
 @app.post("/api/persistent-sessions/{session_id}/restore")
 async def restore_persistent_session(session_id: str):
-    """아카이브된 지속적 채팅 세션 복원"""
+    """아카이브된 지속적 대화 세션 복원"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -651,7 +652,7 @@ async def get_session_messages(
 
 @app.get("/api/persistent-sessions/stats", response_model=SessionStats)
 async def get_session_stats():
-    """채팅 세션 통계 조회"""
+    """대화 세션 통계 조회"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -791,4 +792,10 @@ async def cleanup_old_sessions(days: int = 30):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+
+    _pcs = int(
+        os.environ.get(
+            "PERSISTENT_CHAT_SESSION_PORT", os.environ.get("PORT", "8001")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_pcs)

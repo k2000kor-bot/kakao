@@ -655,4 +655,5 @@ if __name__ == "__main__":
     print("   🎯 적응형 메시지 생성")
     print("   📊 실시간 학습 및 최적화")
     
-    uvicorn.run(app, host="0.0.0.0", port=8091) 
+    _p = int(os.environ.get("ULTRA_CHATGPT_ADVANCED_PORT", os.environ.get("PORT", "8091")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

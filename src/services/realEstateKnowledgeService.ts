@@ -1,4 +1,11 @@
 import { webSearchService } from './webSearchService';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  CONSTRUCTION_COMPANIES_STORAGE_KEY,
+  POLICY_UPDATES_STORAGE_KEY,
+  REAL_ESTATE_LAWS_STORAGE_KEY,
+  RECONSTRUCTION_PROJECTS_STORAGE_KEY,
+} from './realEstateKnowledgeStorageKeys';
 
 // 부동산 관련 인터페이스
 export interface RealEstateLaw {
@@ -707,60 +714,76 @@ class RealEstateKnowledgeService {
   // 저장된 데이터 로드
   private loadStoredData(): void {
     try {
-      const storedLaws = localStorage.getItem('real_estate_laws');
-      const storedProjects = localStorage.getItem('reconstruction_projects');
-      const storedCompanies = localStorage.getItem('construction_companies');
-      const storedPolicies = localStorage.getItem('policy_updates');
+      const storedLaws = localStorage.getItem(REAL_ESTATE_LAWS_STORAGE_KEY);
+      const storedProjects = localStorage.getItem(RECONSTRUCTION_PROJECTS_STORAGE_KEY);
+      const storedCompanies = localStorage.getItem(CONSTRUCTION_COMPANIES_STORAGE_KEY);
+      const storedPolicies = localStorage.getItem(POLICY_UPDATES_STORAGE_KEY);
 
       if (storedLaws) {
-        this.laws = JSON.parse(storedLaws).map((law: any) => ({
+        const parsed = JSON.parse(storedLaws) as Array<Record<string, unknown>>;
+        this.laws = parsed.map((law) => ({
           ...law,
-          lastUpdated: new Date(law.lastUpdated)
-        }));
+          lastUpdated: new Date(String(law.lastUpdated ?? ''))
+        })) as RealEstateLaw[];
       }
 
       if (storedProjects) {
-        this.projects = JSON.parse(storedProjects).map((project: any) => ({
-          ...project,
-          timeline: {
-            ...project.timeline,
-            planningStart: new Date(project.timeline.planningStart),
-            approvalSubmission: project.timeline.approvalSubmission ? new Date(project.timeline.approvalSubmission) : undefined,
-            approvalReceived: project.timeline.approvalReceived ? new Date(project.timeline.approvalReceived) : undefined,
-            constructionStart: project.timeline.constructionStart ? new Date(project.timeline.constructionStart) : undefined,
-            expectedCompletion: project.timeline.expectedCompletion ? new Date(project.timeline.expectedCompletion) : undefined,
-            actualCompletion: project.timeline.actualCompletion ? new Date(project.timeline.actualCompletion) : undefined
-          }
-        }));
+        const parsed = JSON.parse(storedProjects) as Array<Record<string, unknown>>;
+        this.projects = parsed.map((project) => {
+          const tl = project.timeline as Record<string, unknown> | undefined;
+          if (!tl || typeof tl !== 'object') return project;
+          return {
+            ...project,
+            timeline: {
+              ...tl,
+              planningStart: new Date(String(tl.planningStart ?? '')),
+              approvalSubmission: tl.approvalSubmission ? new Date(String(tl.approvalSubmission)) : undefined,
+              approvalReceived: tl.approvalReceived ? new Date(String(tl.approvalReceived)) : undefined,
+              constructionStart: tl.constructionStart ? new Date(String(tl.constructionStart)) : undefined,
+              expectedCompletion: tl.expectedCompletion ? new Date(String(tl.expectedCompletion)) : undefined,
+              actualCompletion: tl.actualCompletion ? new Date(String(tl.actualCompletion)) : undefined
+            }
+          };
+        }) as unknown as ReconstructionProject[];
       }
 
       if (storedCompanies) {
-        this.companies = JSON.parse(storedCompanies).map((company: any) => ({
+        const parsed = JSON.parse(storedCompanies) as Array<Record<string, unknown>>;
+        this.companies = parsed.map((company) => ({
           ...company,
-          established: new Date(company.established)
-        }));
+          established: new Date(String(company.established ?? ''))
+        })) as ConstructionCompanyProfile[];
       }
 
       if (storedPolicies) {
-        this.policies = JSON.parse(storedPolicies).map((policy: any) => ({
+        const parsed = JSON.parse(storedPolicies) as Array<Record<string, unknown>>;
+        this.policies = parsed.map((policy) => ({
           ...policy,
-          effectiveDate: new Date(policy.effectiveDate)
-        }));
+          effectiveDate: new Date(String(policy.effectiveDate ?? ''))
+        })) as PolicyUpdate[];
       }
     } catch (error) {
-      console.error('부동산 지식 데이터 로드 실패:', error);
+      const err = toError(error);
+      errorLogger.error('부동산 지식 데이터 로드 실패', err, {
+        component: 'realEstateKnowledgeService',
+        action: 'loadData',
+      });
     }
   }
 
   // 데이터 저장
   private saveData(): void {
     try {
-      localStorage.setItem('real_estate_laws', JSON.stringify(this.laws));
-      localStorage.setItem('reconstruction_projects', JSON.stringify(this.projects));
-      localStorage.setItem('construction_companies', JSON.stringify(this.companies));
-      localStorage.setItem('policy_updates', JSON.stringify(this.policies));
+      localStorage.setItem(REAL_ESTATE_LAWS_STORAGE_KEY, JSON.stringify(this.laws));
+      localStorage.setItem(RECONSTRUCTION_PROJECTS_STORAGE_KEY, JSON.stringify(this.projects));
+      localStorage.setItem(CONSTRUCTION_COMPANIES_STORAGE_KEY, JSON.stringify(this.companies));
+      localStorage.setItem(POLICY_UPDATES_STORAGE_KEY, JSON.stringify(this.policies));
     } catch (error) {
-      console.error('부동산 지식 데이터 저장 실패:', error);
+      const err = toError(error);
+      errorLogger.error('부동산 지식 데이터 저장 실패', err, {
+        component: 'realEstateKnowledgeService',
+        action: 'saveData',
+      });
     }
   }
 
@@ -781,7 +804,11 @@ class RealEstateKnowledgeService {
 
       this.saveData();
     } catch (error) {
-      console.error('외부 지식 업데이트 실패:', error);
+      const err = toError(error);
+      errorLogger.error('외부 지식 업데이트 실패', err, {
+        component: 'realEstateKnowledgeService',
+        action: 'updateKnowledgeFromExternalSources',
+      });
     }
   }
 
@@ -798,10 +825,14 @@ class RealEstateKnowledgeService {
     for (const query of searchQueries) {
       try {
         const results = await webSearchService.searchWeb(query);
-        // 검색 결과를 법령 데이터로 파싱하고 업데이트
-        await this.parseLegalSearchResults(results);
+        await this.parseLegalSearchResults(results as unknown as Record<string, unknown>[]);
       } catch (error) {
-        console.error(`법령 검색 실패: ${query}`, error);
+        const err = toError(error);
+        errorLogger.error(`법령 검색 실패: ${query}`, err, {
+          component: 'realEstateKnowledgeService',
+          action: 'updateLegalInformation',
+          query,
+        });
       }
     }
   }
@@ -819,9 +850,14 @@ class RealEstateKnowledgeService {
     for (const query of policyQueries) {
       try {
         const results = await webSearchService.searchWeb(query);
-        await this.parsePolicySearchResults(results);
+        await this.parsePolicySearchResults(results as unknown as Record<string, unknown>[]);
       } catch (error) {
-        console.error(`정책 검색 실패: ${query}`, error);
+        const err = toError(error);
+        errorLogger.error(`정책 검색 실패: ${query}`, err, {
+          component: 'realEstateKnowledgeService',
+          action: 'updatePolicyInformation',
+          query,
+        });
       }
     }
   }
@@ -832,9 +868,15 @@ class RealEstateKnowledgeService {
       try {
         const searchQuery = `${company.name} 시공사 하자 이슈 평가`;
         const results = await webSearchService.searchWeb(searchQuery);
-        await this.parseCompanySearchResults(company.id, results);
+        await this.parseCompanySearchResults(company.id, results as unknown as Record<string, unknown>[]);
       } catch (error) {
-        console.error(`시공사 정보 업데이트 실패: ${company.name}`, error);
+        const err = toError(error);
+        errorLogger.error(`시공사 정보 업데이트 실패: ${company.name}`, err, {
+          component: 'realEstateKnowledgeService',
+          action: 'updateConstructionCompanyInfo',
+          companyId: company.id,
+          companyName: company.name,
+        });
       }
     }
   }
@@ -854,34 +896,39 @@ class RealEstateKnowledgeService {
 
         for (const query of queries) {
           const results = await webSearchService.searchWeb(query);
-          await this.parseMarketSearchResults(region, results);
+          await this.parseMarketSearchResults(region, results as unknown as Record<string, unknown>[]);
         }
       } catch (error) {
-        console.error(`시장 데이터 업데이트 실패: ${region}`, error);
+        const err = toError(error);
+        errorLogger.error(`시장 데이터 업데이트 실패: ${region}`, err, {
+          component: 'realEstateKnowledgeService',
+          action: 'updateMarketData',
+          region,
+        });
       }
     }
   }
 
   // 검색 결과 파싱 메서드들
-  private async parseLegalSearchResults(results: any[]): Promise<void> {
-    // 법령 검색 결과를 파싱하여 laws 배열에 추가
+  private async parseLegalSearchResults(results: Record<string, unknown>[]): Promise<void> {
     for (const result of results) {
-      if (result.title.includes('법') || result.title.includes('시행령')) {
+      const title = String(result.title ?? '');
+      if (title.includes('법') || title.includes('시행령')) {
         // 새로운 법령 정보 생성 및 추가 로직
       }
     }
   }
 
-  private async parsePolicySearchResults(results: any[]): Promise<void> {
-    // 정책 검색 결과를 파싱하여 policies 배열에 추가
+  private async parsePolicySearchResults(results: Record<string, unknown>[]): Promise<void> {
     for (const result of results) {
-      if (result.title.includes('정책') || result.title.includes('발표')) {
+      const title = String(result.title ?? '');
+      if (title.includes('정책') || title.includes('발표')) {
         // 새로운 정책 정보 생성 및 추가 로직
       }
     }
   }
 
-  private async parseCompanySearchResults(companyId: string, results: any[]): Promise<void> {
+  private async parseCompanySearchResults(companyId: string, _results: Record<string, unknown>[]): Promise<void> {
     // 시공사 검색 결과를 파싱하여 회사 정보 업데이트
     const company = this.companies.find(c => c.id === companyId);
     if (company) {
@@ -889,7 +936,7 @@ class RealEstateKnowledgeService {
     }
   }
 
-  private async parseMarketSearchResults(region: string, results: any[]): Promise<void> {
+  private async parseMarketSearchResults(_region: string, _results: Record<string, unknown>[]): Promise<void> {
     // 시장 데이터 검색 결과를 파싱하여 marketData에 추가
     // 가격 정보, 트렌드 분석 등
   }
@@ -1041,7 +1088,7 @@ class RealEstateKnowledgeService {
   }
 
   // 부정적 피드백 응답
-  private generateNegativeResponse(feedback: CommunityFeedback, tone: string, project: ReconstructionProject): string {
+  private generateNegativeResponse(feedback: CommunityFeedback, tone: string, _project: ReconstructionProject): string {
     const responses = {
       professional: '불편을 끼쳐드려 죄송합니다. 해당 사안을 면밀히 검토하여 개선 방안을 마련하겠습니다.',
       friendly: '걱정해주시는 마음 충분히 이해합니다. 빠른 시일 내에 해결책을 찾아보겠습니다.',
@@ -1570,5 +1617,12 @@ class RealEstateKnowledgeService {
     return this.taxInformation.find(t => t.propertyId === propertyId);
   }
 }
+
+export {
+  CONSTRUCTION_COMPANIES_STORAGE_KEY,
+  POLICY_UPDATES_STORAGE_KEY,
+  REAL_ESTATE_LAWS_STORAGE_KEY,
+  RECONSTRUCTION_PROJECTS_STORAGE_KEY,
+} from './realEstateKnowledgeStorageKeys';
 
 export const realEstateKnowledgeService = new RealEstateKnowledgeService();

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { errorLogger } from './errorLogger';
+import { showToast } from './toast';
 
 export interface ErrorInfo {
     code: string;
@@ -252,7 +253,7 @@ export const setupGlobalErrorHandling = (): void => {
 
         // 심각한 에러는 사용자에게 알림
         if (errorResponse.error.severity === 'critical') {
-            alert(`심각한 오류가 발생했습니다: ${errorResponse.error.message}`);
+            showToast(`심각한 오류가 발생했습니다: ${errorResponse.error.message}`);
         }
     });
 
@@ -308,31 +309,33 @@ export class ErrorBoundary extends React.Component<
 
 // 기본 에러 폴백 컴포넌트
 const DefaultErrorFallback: React.FC<{ error: ErrorInfo }> = ({ error }) => (
-    <div style= {{
+    <div role="alert" aria-live="assertive" style={{
         padding: '20px',
-        border: '1px solid #ff6b6b',
-        borderRadius: '8px',
-        backgroundColor: '#fff5f5',
+        border: '1px solid var(--accent-error)',
+        borderRadius: 'var(--radius-lg)',
+        backgroundColor: 'var(--accent-error-muted)',
         margin: '20px'
-  }}>
-    <h3 style={ { color: '#ff6b6b', marginBottom: '10px' } }>
-        오류가 발생했습니다
-            </h3>
-            < p style = {{ marginBottom: '10px' }}> { error.message } </p>
-                < button
-onClick = {() => window.location.reload()}
-style = {{
-    padding: '8px 16px',
-        backgroundColor: '#ff6b6b',
-            color: 'white',
+    }}>
+        <h3 style={{ color: 'var(--accent-error)', marginBottom: '10px' }}>
+            오류가 발생했습니다
+        </h3>
+        <p style={{ marginBottom: '10px' }}>{error.message}</p>
+        <button
+            type="button"
+            onClick={() => window.location.reload()}
+            aria-label="페이지 새로고침"
+            style={{
+                padding: '8px 16px',
+                backgroundColor: 'var(--accent-error)',
+                color: 'var(--on-accent)',
                 border: 'none',
-                    borderRadius: '4px',
-                        cursor: 'pointer'
-}}
-    >
-    페이지 새로고침
+                borderRadius: '4px',
+                cursor: 'pointer'
+            }}
+        >
+            페이지 새로고침
         </button>
-        </div>
+    </div>
 );
 
 export default errorHandler;

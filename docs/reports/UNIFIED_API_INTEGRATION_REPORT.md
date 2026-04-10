@@ -1,4 +1,4 @@
-# CORBU AI 통합 API 서버 구축 완료 보고서
+# CORBU.AI 통합 API 서버 구축 완료 보고서
 
 ## 🎯 프로젝트 개요
 
@@ -71,7 +71,7 @@
 ### 실시간 통신
 
 ```bash
-✅ WebSocket /ws/chat/{room_id} # 실시간 채팅
+✅ WebSocket /ws/chat/{room_id} # 실시간 대화
 ```
 
 ## 🧪 테스트 결과
@@ -224,7 +224,7 @@ ws.send(JSON.stringify({
 ### 1. 프론트엔드 연동
 
 - [ ] React 앱에서 새로운 통합 API 사용
-- [ ] WebSocket 실시간 채팅 구현
+- [ ] WebSocket 실시간 대화 구현
 - [ ] 파일 업로드 UI 개선
 
 ### 2. 기능 확장
@@ -241,7 +241,7 @@ ws.send(JSON.stringify({
 
 ## 📝 결론
 
-CORBU AI 통합 API 서버가 성공적으로 구축되어 모든 기존 API 기능들이 하나의 서버로 완전히 통합되었습니다.
+CORBU.AI 통합 API 서버가 성공적으로 구축되어 모든 기존 API 기능들이 하나의 서버로 완전히 통합되었습니다.
 
 ### 주요 성과
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * CORBU AI 시스템 고도화 최종 통합 테스트 스크립트
+ * CORBU.AI 시스템 고도화 최종 통합 테스트 스크립트
  * 모든 기능이 완벽하게 작동하는지 확인
  */
 
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 CORBU AI 시스템 고도화 최종 통합 테스트 시작\n');
+console.log('🚀 CORBU.AI 시스템 고도화 최종 통합 테스트 시작\n');
 
 // 테스트 결과 저장
 const testResults = {
@@ -235,24 +235,24 @@ const successRate = (testResults.passed / testResults.total) * 100;
 console.log('\n' + '='.repeat(60));
 
 if (successRate >= 90) {
-    console.log('🎉 축하합니다! CORBU AI 시스템이 완벽하게 통합되었습니다!');
+    console.log('🎉 축하합니다! CORBU.AI 시스템이 완벽하게 통합되었습니다!');
     console.log('🚀 시스템이 프로덕션 배포 준비가 완료되었습니다!');
 } else if (successRate >= 80) {
-    console.log('✅ CORBU AI 시스템이 대부분 통합되었습니다!');
+    console.log('✅ CORBU.AI 시스템이 대부분 통합되었습니다!');
     console.log('🔧 일부 개선사항이 필요합니다.');
 } else {
-    console.log('⚠️ CORBU AI 시스템 통합에 문제가 있습니다.');
+    console.log('⚠️ CORBU.AI 시스템 통합에 문제가 있습니다.');
     console.log('🔧 추가 작업이 필요합니다.');
 }
 
 console.log('\n📋 다음 단계:');
-console.log('1. 브라우저에서 http://localhost:3001 접속하여 테스트');
+console.log('1. 브라우저에서 http://localhost:3000 접속하여 테스트');
 console.log('2. API 키 설정 (Gemini, OpenAI, Claude)');
 console.log('3. ./deploy_to_production.sh 실행하여 배포');
 console.log('4. 사용자 가이드 참조');
 
 console.log('\n' + '='.repeat(60));
-console.log('🏆 CORBU AI 시스템 고도화 최종 통합 테스트 완료');
+console.log('🏆 CORBU.AI 시스템 고도화 최종 통합 테스트 완료');
 console.log('='.repeat(60));
 
 // 결과를 파일로 저장

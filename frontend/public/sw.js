@@ -1,4 +1,4 @@
-// CORBU AI Service Worker
+// CORBU.AI Service Worker
 const CACHE_NAME = 'corbu-ai-v1.0.0';
 const STATIC_CACHE = 'corbu-ai-static-v1.0.0';
 const DYNAMIC_CACHE = 'corbu-ai-dynamic-v1.0.0';
@@ -218,7 +218,7 @@ self.addEventListener('push', (event) => {
   };
   
   event.waitUntil(
-    self.registration.showNotification('CORBU AI', options)
+    self.registration.showNotification('CORBU.AI', options)
   );
 });
 

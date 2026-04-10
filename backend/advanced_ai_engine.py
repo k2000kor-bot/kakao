@@ -6,6 +6,7 @@
 - 감정 분석 및 예측
 - 패턴 인식 및 학습
 """
+import os
 import sqlite3
 import json
 import re
@@ -412,4 +413,5 @@ async def health_check():
 if __name__ == "__main__":
     init_database()
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8013) 
+    _p = int(os.environ.get("ADVANCED_AI_ENGINE_PORT", os.environ.get("PORT", "8013")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

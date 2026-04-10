@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getSeverityColor } from '../../styles/themeColors';
 import {
     Box,
     Card,
@@ -6,16 +7,11 @@ import {
     Typography,
     Grid,
     Chip,
-    LinearProgress,
     IconButton,
-    Tooltip,
-    Alert,
-    AlertTitle,
     List,
     ListItem,
     ListItemIcon,
     ListItemText,
-    Divider,
     Button,
     Dialog,
     DialogTitle,
@@ -28,8 +24,6 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Avatar,
-    Badge,
     Switch,
     FormControlLabel,
     Tabs,
@@ -44,41 +38,21 @@ import {
 import {
     Security,
     Shield,
-    Lock,
     Warning,
-    CheckCircle,
     Error,
     Info,
     Refresh,
     Settings,
     Visibility,
-    VisibilityOff,
     Person,
     AdminPanelSettings,
     Login,
     Logout,
-    Key,
-    History,
-    Assessment,
-    Notifications,
     Block,
-    Check,
-    Close
 } from '@mui/icons-material';
-import securityService, { SecurityEvent, SecurityConfig, User } from '../../services/securityService';
-import advancedSecurityService from '../../services/advancedSecurityService';
+import securityService, { SecurityEvent, SecurityConfig } from '../../services/securityService';
 import AdvancedSecurityPanel from './AdvancedSecurityPanel';
-import { errorLogger } from '../../utils/errorLogger';
-
-// Helper function to safely convert unknown error types to Error objects
-const toError = (err: unknown): Error => {
-    if (err instanceof Error) {
-        return err as Error;
-    }
-    // Error 생성자를 명시적으로 사용
-    const ErrorConstructor = globalThis.Error;
-    return new ErrorConstructor(String(err)) as Error;
-};
+import { errorLogger, toError } from '../../utils/errorLogger';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -109,7 +83,12 @@ function TabPanel(props: TabPanelProps) {
 const SecurityDashboard: React.FC = () => {
     const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
     const [securityConfig, setSecurityConfig] = useState<SecurityConfig | null>(null);
-    const [securityMetrics, setSecurityMetrics] = useState<any>(null);
+    interface SecurityMetricsShape {
+        totalEvents?: number;
+        failedLogins?: number;
+        suspiciousActivities?: number;
+    }
+    const [securityMetrics, setSecurityMetrics] = useState<SecurityMetricsShape | null>(null);
     const [selectedTab, setSelectedTab] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
@@ -122,6 +101,7 @@ const SecurityDashboard: React.FC = () => {
         // 30초마다 보안 이벤트 업데이트
         const interval = setInterval(loadSecurityEvents, 30000);
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadSecurityData = async () => {
@@ -173,7 +153,7 @@ const SecurityDashboard: React.FC = () => {
     const loadSecurityMetrics = async () => {
         try {
             const metrics = await securityService.getSecurityMetrics();
-            setSecurityMetrics(metrics);
+            setSecurityMetrics(metrics as SecurityMetricsShape | null);
         } catch (error) {
             const err = toError(error);
             errorLogger.error('보안 메트릭 로드 실패', err, {
@@ -222,21 +202,6 @@ const SecurityDashboard: React.FC = () => {
         }
     };
 
-    const getSeverityColor = (severity: string) => {
-        switch (severity) {
-            case 'low':
-                return '#4CAF50';
-            case 'medium':
-                return '#FF9800';
-            case 'high':
-                return '#F44336';
-            case 'critical':
-                return '#9C27B0';
-            default:
-                return '#9E9E9E';
-        }
-    };
-
     const getEventTypeLabel = (type: string) => {
         switch (type) {
             case 'login':
@@ -272,7 +237,7 @@ const SecurityDashboard: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom sx={{
-                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',

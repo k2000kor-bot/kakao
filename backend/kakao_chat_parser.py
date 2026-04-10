@@ -395,7 +395,7 @@ if __name__ == "__main__":
     parser = KakaoChatParser()
     
     # 테스트 파일 경로
-    test_file = "chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt"
+    test_file = "chat_rooms/sample_chat_room/sample_chat_room.txt"
     
     if os.path.exists(test_file):
         try:

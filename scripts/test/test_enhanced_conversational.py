@@ -5,15 +5,21 @@
 Enhanced Conversational Interface Test
 """
 
+import os
 import requests
 import json
 import time
 from datetime import datetime
 
+# 통합 main_server(기본 5002)에 /api/v2/enhanced 포함. 단독 서버는 ENHANCED_CONV_PORT(기본 8003).
+_ENHANCED_CONV_BASE = os.environ.get(
+    "CORBU_ENHANCED_CONV_BASE", "http://localhost:5002"
+)
+
 def test_enhanced_conversational_api():
     """고도화된 대화형 API 테스트"""
     
-    base_url = "http://localhost:8003"
+    base_url = _ENHANCED_CONV_BASE
     conversation_id = f"test_conversation_{int(time.time())}"
     user_id = "test_user"
     
@@ -38,8 +44,8 @@ def test_enhanced_conversational_api():
     
     print()
     
-    # 2. 채팅 테스트
-    print("2. 채팅 기능 테스트")
+    # 2. 대화 테스트
+    print("2. 대화 기능 테스트")
     test_messages = [
         "안녕하세요!",
         "오늘 날씨가 좋네요",
@@ -76,7 +82,7 @@ def test_enhanced_conversational_api():
                         print(f"⏱️ 처리시간: {metadata.get('processing_time', 'N/A')}ms")
                         print(f"🎯 신뢰도: {metadata.get('confidence', 'N/A'):.2f}")
                 else:
-                    print(f"❌ 채팅 실패: {data}")
+                    print(f"❌ 대화 실패: {data}")
             else:
                 print(f"❌ HTTP 오류: {response.status_code}")
                 
@@ -165,7 +171,7 @@ def test_enhanced_conversational_api():
 def test_different_personalities():
     """다양한 AI 성격 테스트"""
     
-    base_url = "http://localhost:8003"
+    base_url = _ENHANCED_CONV_BASE
     personalities = ["helpful", "creative", "analytical", "empathetic"]
     styles = ["concise", "detailed", "conversational", "technical"]
     

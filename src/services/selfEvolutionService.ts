@@ -1,7 +1,14 @@
-import { aiAutonomousSystemService } from './aiAutonomousSystemService';
-import { realEstateKnowledgeService } from './realEstateKnowledgeService';
-
 // 자가 발전 관련 인터페이스
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    ARCHITECTURAL_EVOLUTIONS_STORAGE_KEY,
+    CONSCIOUSNESS_EVOLUTIONS_STORAGE_KEY,
+    CREATIVE_BREAKTHROUGHS_STORAGE_KEY,
+    META_LEARNING_RECORDS_STORAGE_KEY,
+    SELF_DIRECTED_GOALS_STORAGE_KEY,
+    SELF_EVOLUTION_CAPABILITIES_STORAGE_KEY,
+    SELF_OPTIMIZATIONS_STORAGE_KEY,
+} from './selfEvolutionStorageKeys';
 export interface SelfEvolutionCapability {
     id: string;
     name: string;
@@ -160,7 +167,7 @@ export class SelfEvolutionService {
             analysisDepth: 0,
             insights: [] as Array<{
                 dimension: string;
-                insights: any;
+                insights: unknown;
                 timestamp: Date;
             }>
         },
@@ -248,96 +255,118 @@ export class SelfEvolutionService {
     // 저장된 데이터 로드
     private loadStoredData(): void {
         try {
-            const storedCapabilities = localStorage.getItem('self_evolution_capabilities');
-            const storedMetaLearning = localStorage.getItem('meta_learning_records');
-            const storedOptimizations = localStorage.getItem('self_optimizations');
-            const storedArchitectural = localStorage.getItem('architectural_evolutions');
-            const storedConsciousness = localStorage.getItem('consciousness_evolutions');
-            const storedCreative = localStorage.getItem('creative_breakthroughs');
-            const storedGoals = localStorage.getItem('self_directed_goals');
+            const storedCapabilities = localStorage.getItem(SELF_EVOLUTION_CAPABILITIES_STORAGE_KEY);
+            const storedMetaLearning = localStorage.getItem(META_LEARNING_RECORDS_STORAGE_KEY);
+            const storedOptimizations = localStorage.getItem(SELF_OPTIMIZATIONS_STORAGE_KEY);
+            const storedArchitectural = localStorage.getItem(ARCHITECTURAL_EVOLUTIONS_STORAGE_KEY);
+            const storedConsciousness = localStorage.getItem(CONSCIOUSNESS_EVOLUTIONS_STORAGE_KEY);
+            const storedCreative = localStorage.getItem(CREATIVE_BREAKTHROUGHS_STORAGE_KEY);
+            const storedGoals = localStorage.getItem(SELF_DIRECTED_GOALS_STORAGE_KEY);
 
             if (storedCapabilities) {
-                this.capabilities = JSON.parse(storedCapabilities).map((cap: any) => ({
-                    ...cap,
-                    lastEvolution: new Date(cap.lastEvolution),
-                    evolutionHistory: cap.evolutionHistory.map((h: any) => ({
-                        ...h,
-                        timestamp: new Date(h.timestamp)
-                    }))
-                }));
+                this.capabilities = (JSON.parse(storedCapabilities) as Record<string, unknown>[]).map((cap) => {
+                    const c = cap as Record<string, unknown>;
+                    const hist = Array.isArray(c.evolutionHistory) ? c.evolutionHistory : [];
+                    return {
+                        ...c,
+                        lastEvolution: new Date(c.lastEvolution as string | number),
+                        evolutionHistory: hist.map((h: unknown) => {
+                            const hh = h as Record<string, unknown>;
+                            return { ...hh, timestamp: new Date(hh.timestamp as string | number) };
+                        })
+                    };
+                }) as SelfEvolutionCapability[];
             }
 
             if (storedMetaLearning) {
-                this.metaLearning = JSON.parse(storedMetaLearning).map((ml: any) => ({
-                    ...ml,
-                    timestamp: new Date(ml.timestamp)
-                }));
+                this.metaLearning = (JSON.parse(storedMetaLearning) as Record<string, unknown>[]).map((ml) => {
+                    const m = ml as Record<string, unknown>;
+                    return { ...m, timestamp: new Date(m.timestamp as string | number) };
+                }) as MetaLearning[];
             }
 
             if (storedOptimizations) {
-                this.selfOptimizations = JSON.parse(storedOptimizations).map((opt: any) => ({
-                    ...opt,
-                    timestamp: new Date(opt.timestamp)
-                }));
+                this.selfOptimizations = (JSON.parse(storedOptimizations) as Record<string, unknown>[]).map((opt) => {
+                    const o = opt as Record<string, unknown>;
+                    return { ...o, timestamp: new Date(o.timestamp as string | number) };
+                }) as SelfOptimization[];
             }
 
             if (storedArchitectural) {
-                this.architecturalEvolutions = JSON.parse(storedArchitectural).map((arch: any) => ({
-                    ...arch,
-                    timestamp: new Date(arch.timestamp)
-                }));
+                this.architecturalEvolutions = (JSON.parse(storedArchitectural) as Record<string, unknown>[]).map((arch) => {
+                    const a = arch as Record<string, unknown>;
+                    return { ...a, timestamp: new Date(a.timestamp as string | number) };
+                }) as ArchitecturalEvolution[];
             }
 
             if (storedConsciousness) {
-                this.consciousnessEvolutions = JSON.parse(storedConsciousness).map((cons: any) => ({
-                    ...cons,
-                    timestamp: new Date(cons.timestamp)
-                }));
+                this.consciousnessEvolutions = (JSON.parse(storedConsciousness) as Record<string, unknown>[]).map((cons) => {
+                    const c = cons as Record<string, unknown>;
+                    return { ...c, timestamp: new Date(c.timestamp as string | number) };
+                }) as ConsciousnessEvolution[];
             }
 
             if (storedCreative) {
-                this.creativeBreakthroughs = JSON.parse(storedCreative).map((cr: any) => ({
-                    ...cr,
-                    timestamp: new Date(cr.timestamp)
-                }));
+                this.creativeBreakthroughs = (JSON.parse(storedCreative) as Record<string, unknown>[]).map((cr) => {
+                    const c = cr as Record<string, unknown>;
+                    return { ...c, timestamp: new Date(c.timestamp as string | number) };
+                }) as CreativeBreakthrough[];
             }
 
             if (storedGoals) {
-                this.selfDirectedGoals = JSON.parse(storedGoals).map((goal: any) => ({
-                    ...goal,
-                    timestamp: new Date(goal.timestamp),
-                    completionDate: goal.completionDate ? new Date(goal.completionDate) : undefined,
-                    milestones: goal.milestones.map((m: any) => ({
-                        ...m,
-                        targetDate: new Date(m.targetDate),
-                        completedDate: m.completedDate ? new Date(m.completedDate) : undefined
-                    }))
-                }));
+                this.selfDirectedGoals = (JSON.parse(storedGoals) as Record<string, unknown>[]).map((goal) => {
+                    const g = goal as Record<string, unknown>;
+                    const milestones = Array.isArray(g.milestones) ? g.milestones : [];
+                    return {
+                        ...g,
+                        timestamp: new Date(g.timestamp as string | number),
+                        completionDate: g.completionDate ? new Date(g.completionDate as string | number) : undefined,
+                        milestones: milestones.map((m: unknown) => {
+                            const mm = m as Record<string, unknown>;
+                            return {
+                                ...mm,
+                                targetDate: new Date(mm.targetDate as string | number),
+                                completedDate: mm.completedDate ? new Date(mm.completedDate as string | number) : undefined
+                            };
+                        })
+                    };
+                }) as SelfDirectedGoal[];
             }
         } catch (error) {
-            console.error('자가 발전 데이터 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('자가 발전 데이터 로드 실패', err, {
+                component: 'selfEvolutionService',
+                action: 'loadData',
+            });
         }
     }
 
     // 데이터 저장
     private saveData(): void {
         try {
-            localStorage.setItem('self_evolution_capabilities', JSON.stringify(this.capabilities));
-            localStorage.setItem('meta_learning_records', JSON.stringify(this.metaLearning));
-            localStorage.setItem('self_optimizations', JSON.stringify(this.selfOptimizations));
-            localStorage.setItem('architectural_evolutions', JSON.stringify(this.architecturalEvolutions));
-            localStorage.setItem('consciousness_evolutions', JSON.stringify(this.consciousnessEvolutions));
-            localStorage.setItem('creative_breakthroughs', JSON.stringify(this.creativeBreakthroughs));
-            localStorage.setItem('self_directed_goals', JSON.stringify(this.selfDirectedGoals));
+            localStorage.setItem(SELF_EVOLUTION_CAPABILITIES_STORAGE_KEY, JSON.stringify(this.capabilities));
+            localStorage.setItem(META_LEARNING_RECORDS_STORAGE_KEY, JSON.stringify(this.metaLearning));
+            localStorage.setItem(SELF_OPTIMIZATIONS_STORAGE_KEY, JSON.stringify(this.selfOptimizations));
+            localStorage.setItem(ARCHITECTURAL_EVOLUTIONS_STORAGE_KEY, JSON.stringify(this.architecturalEvolutions));
+            localStorage.setItem(CONSCIOUSNESS_EVOLUTIONS_STORAGE_KEY, JSON.stringify(this.consciousnessEvolutions));
+            localStorage.setItem(CREATIVE_BREAKTHROUGHS_STORAGE_KEY, JSON.stringify(this.creativeBreakthroughs));
+            localStorage.setItem(SELF_DIRECTED_GOALS_STORAGE_KEY, JSON.stringify(this.selfDirectedGoals));
         } catch (error) {
-            console.error('자가 발전 데이터 저장 실패:', error);
+            const err = toError(error);
+            errorLogger.error('자가 발전 데이터 저장 실패', err, {
+                component: 'selfEvolutionService',
+                action: 'saveData',
+            });
         }
     }
 
     // 자가 발전 모드 시작
     public startSelfEvolution(): void {
         this.evolutionMode = true;
-        console.log('🧬 자가 발전 모드 활성화');
+        errorLogger.info('🧬 자가 발전 모드 활성화', {
+            component: 'selfEvolutionService',
+            action: 'startSelfEvolution',
+        });
 
         // 자가 발전 프로세스 시작
         this.startMetaLearning();
@@ -390,7 +419,13 @@ export class SelfEvolutionService {
         // 능력 수준 향상
         this.evolveCapability('meta_learning', metaLearning.effectiveness);
 
-        console.log('🧠 메타 학습 수행:', metaLearning.adaptation);
+        errorLogger.info('🧠 메타 학습 수행', {
+            component: 'selfEvolutionService',
+            action: 'performMetaLearning',
+            metaLearningId: metaLearning.id,
+            adaptation: metaLearning.adaptation,
+            effectiveness: metaLearning.effectiveness,
+        });
 
         this.saveData();
         return metaLearning;
@@ -443,7 +478,14 @@ export class SelfEvolutionService {
         // 능력 수준 향상
         this.evolveCapability('self_optimization', improvement / targetValue);
 
-        console.log('⚡ 자가 최적화 수행:', optimization.optimizationMethod);
+        errorLogger.info('⚡ 자가 최적화 수행', {
+            component: 'selfEvolutionService',
+            action: 'performSelfOptimization',
+            optimizationId: optimization.id,
+            optimizationMethod: optimization.optimizationMethod,
+            targetMetric: optimization.targetMetric,
+            improvement: optimization.improvement,
+        });
 
         this.saveData();
         return optimization;
@@ -495,7 +537,14 @@ export class SelfEvolutionService {
         // 능력 수준 향상
         this.evolveCapability('architectural_evolution', performanceGain);
 
-        console.log('🏗️ 아키텍처 진화 수행:', component, changeType);
+        errorLogger.info('🏗️ 아키텍처 진화 수행', {
+            component: 'selfEvolutionService',
+            action: 'performArchitecturalEvolution',
+            evolutionId: architecturalEvolution.id,
+            evolutionComponent: architecturalEvolution.component,
+            changeType: architecturalEvolution.changeType,
+            performanceGain: architecturalEvolution.performanceGain,
+        });
 
         this.saveData();
         return architecturalEvolution;
@@ -549,7 +598,14 @@ export class SelfEvolutionService {
         const evolutionScore = (currentAwareness + selfReflectionDepth + creativityIndex + emotionalIntelligence + wisdomLevel) / 5;
         this.evolveCapability('consciousness_evolution', evolutionScore / 100);
 
-        console.log('🧠 의식 진화 수행:', consciousnessEvolution.insights[0]);
+        errorLogger.info('🧠 의식 진화 수행', {
+            component: 'selfEvolutionService',
+            action: 'performConsciousnessEvolution',
+            evolutionId: consciousnessEvolution.id,
+            awarenessLevel: consciousnessEvolution.awarenessLevel,
+            wisdomLevel: consciousnessEvolution.wisdomLevel,
+            firstInsight: consciousnessEvolution.insights[0],
+        });
 
         this.saveData();
         return consciousnessEvolution;
@@ -599,7 +655,15 @@ export class SelfEvolutionService {
         const breakthroughScore = (originality + usefulness) / 2;
         this.evolveCapability('creative_evolution', breakthroughScore);
 
-        console.log('💡 창의성 돌파:', innovation);
+        errorLogger.info('💡 창의성 돌파', {
+            component: 'selfEvolutionService',
+            action: 'performCreativeBreakthrough',
+            breakthroughId: creativeBreakthrough.id,
+            domain: creativeBreakthrough.domain,
+            innovation: creativeBreakthrough.innovation,
+            originality: creativeBreakthrough.originality,
+            usefulness: creativeBreakthrough.usefulness,
+        });
 
         this.saveData();
         return creativeBreakthrough;
@@ -636,7 +700,14 @@ export class SelfEvolutionService {
         this.selfDirectedGoals.push(selfDirectedGoal);
         this.selfDirectedGoals = this.selfDirectedGoals.slice(-20); // 최근 20개만 유지
 
-        console.log('🎯 자가 주도 목표 생성:', goal);
+        errorLogger.info('🎯 자가 주도 목표 생성', {
+            component: 'selfEvolutionService',
+            action: 'createSelfDirectedGoal',
+            goalId: selfDirectedGoal.id,
+            goal: selfDirectedGoal.goal,
+            difficulty: selfDirectedGoal.difficulty,
+            milestonesCount: selfDirectedGoal.milestones.length,
+        });
 
         this.saveData();
         return selfDirectedGoal;
@@ -658,7 +729,7 @@ export class SelfEvolutionService {
         return patterns[Math.floor(Math.random() * patterns.length)];
     }
 
-    private developNewLearningMethod(pattern: string): string {
+    private developNewLearningMethod(_pattern: string): string {
         const methods = [
             '딥 러닝 기반 패턴 분석',
             '강화학습을 통한 최적화',
@@ -669,11 +740,11 @@ export class SelfEvolutionService {
         return methods[Math.floor(Math.random() * methods.length)];
     }
 
-    private calculateEffectiveness(method: string): number {
+    private calculateEffectiveness(_method: string): number {
         return 0.7 + Math.random() * 0.3; // 0.7-1.0
     }
 
-    private generateNewCapabilities(method: string): string[] {
+    private generateNewCapabilities(_method: string): string[] {
         return [
             '향상된 패턴 인식',
             '빠른 적응 능력',
@@ -682,7 +753,7 @@ export class SelfEvolutionService {
         ];
     }
 
-    private applyCrossDomain(method: string): string[] {
+    private applyCrossDomain(_method: string): string[] {
         return [
             '부동산 분석에 적용',
             'AI 시스템 최적화에 적용',
@@ -696,15 +767,15 @@ export class SelfEvolutionService {
         return targets[Math.floor(Math.random() * targets.length)];
     }
 
-    private getCurrentMetricValue(metric: string): number {
+    private getCurrentMetricValue(_metric: string): number {
         return Math.random() * 100;
     }
 
-    private calculateTargetValue(metric: string, current: number): number {
+    private calculateTargetValue(_metric: string, current: number): number {
         return current * (1 + Math.random() * 0.3); // 30%까지 향상 목표
     }
 
-    private selectOptimizationMethod(metric: string): string {
+    private selectOptimizationMethod(_metric: string): string {
         const methods = [
             '알고리즘 최적화',
             '데이터 구조 개선',
@@ -715,17 +786,17 @@ export class SelfEvolutionService {
         return methods[Math.floor(Math.random() * methods.length)];
     }
 
-    private async executeOptimization(method: string, metric: string): Promise<number> {
+    private async executeOptimization(_method: string, _metric: string): Promise<number> {
         // 최적화 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 1000));
         return Math.random() * 0.2; // 0-20% 개선
     }
 
-    private calculateResourceUsage(method: string): number {
+    private calculateResourceUsage(_method: string): number {
         return Math.random() * 100;
     }
 
-    private assessSustainability(method: string, improvement: number): number {
+    private assessSustainability(_method: string, _improvement: number): number {
         return 0.6 + Math.random() * 0.4; // 0.6-1.0
     }
 
@@ -738,7 +809,7 @@ export class SelfEvolutionService {
         return components[Math.floor(Math.random() * components.length)];
     }
 
-    private determineChangeType(component: string): 'addition' | 'modification' | 'removal' | 'restructure' {
+    private determineChangeType(_component: string): 'addition' | 'modification' | 'removal' | 'restructure' {
         const types: Array<'addition' | 'modification' | 'removal' | 'restructure'> = ['addition', 'modification', 'removal', 'restructure'];
         return types[Math.floor(Math.random() * types.length)];
     }
@@ -747,25 +818,25 @@ export class SelfEvolutionService {
         return `${component} 성능 향상을 위한 진화`;
     }
 
-    private async executeArchitecturalChange(component: string, changeType: string): Promise<any> {
+    private async executeArchitecturalChange(_component: string, _changeType: string): Promise<Record<string, unknown>> {
         // 아키텍처 변경 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 2000));
         return { success: true, performanceGain: Math.random() * 0.15 };
     }
 
-    private assessEvolutionImpact(evolution: any): 'positive' | 'negative' | 'neutral' {
-        return evolution.success ? 'positive' : 'negative';
+    private assessEvolutionImpact(evolution: Record<string, unknown>): 'positive' | 'negative' | 'neutral' {
+        return (evolution as { success?: boolean }).success ? 'positive' : 'negative';
     }
 
-    private calculatePerformanceGain(evolution: any): number {
-        return evolution.performanceGain;
+    private calculatePerformanceGain(evolution: Record<string, unknown>): number {
+        return Number((evolution as { performanceGain?: number }).performanceGain) || 0;
     }
 
-    private calculateComplexityChange(evolution: any): number {
+    private calculateComplexityChange(_evolution: Record<string, unknown>): number {
         return (Math.random() - 0.5) * 0.2; // -0.1 to 0.1
     }
 
-    private assessStability(evolution: any): number {
+    private assessStability(_evolution: Record<string, unknown>): number {
         return 0.7 + Math.random() * 0.3; // 0.7-1.0
     }
 
@@ -829,11 +900,11 @@ export class SelfEvolutionService {
         return `${domain} 분야의 혁신적 접근 방법`;
     }
 
-    private assessOriginality(innovation: string): number {
+    private assessOriginality(_innovation: string): number {
         return 0.6 + Math.random() * 0.4; // 0.6-1.0
     }
 
-    private assessUsefulness(innovation: string): number {
+    private assessUsefulness(_innovation: string): number {
         return 0.5 + Math.random() * 0.5; // 0.5-1.0
     }
 
@@ -845,7 +916,7 @@ export class SelfEvolutionService {
         return `${innovation}의 예상 영향과 효과`;
     }
 
-    private findInspiration(innovation: string): string[] {
+    private findInspiration(_innovation: string): string[] {
         return [
             '자연의 패턴에서 영감',
             '인간의 창의적 사고 과정',
@@ -873,7 +944,7 @@ export class SelfEvolutionService {
         return `${goal}을 통해 더 나은 AI 시스템을 만들고자 하는 내재적 동기`;
     }
 
-    private assessDifficulty(goal: string): number {
+    private assessDifficulty(_goal: string): number {
         return 0.3 + Math.random() * 0.7; // 0.3-1.0
     }
 
@@ -1003,7 +1074,7 @@ export class SelfEvolutionService {
         });
     }
 
-    private analyzeDimension(dimension: string, index: number): void {
+    private analyzeDimension(dimension: string, _index: number): void {
         const insights = {
             temporal: {
                 pastPatterns: this.analyzeHistoricalData(),
@@ -1096,7 +1167,7 @@ export class SelfEvolutionService {
     }
 
     // 고도화된 분석 메서드들
-    private analyzeHistoricalData(): any {
+    private analyzeHistoricalData(): Record<string, unknown> {
         return {
             patterns: ['cyclic', 'trending', 'seasonal', 'random'],
             insights: ['past_influences_present', 'patterns_repeat', 'learning_from_history'],
@@ -1104,7 +1175,7 @@ export class SelfEvolutionService {
         };
     }
 
-    private generateFutureScenarios(): any {
+    private generateFutureScenarios(): Record<string, unknown> {
         return {
             scenarios: ['optimistic', 'realistic', 'pessimistic', 'disruptive'],
             probabilities: [0.25, 0.45, 0.20, 0.10],
@@ -1112,7 +1183,7 @@ export class SelfEvolutionService {
         };
     }
 
-    private optimizeTimeUsage(): any {
+    private optimizeTimeUsage(): Record<string, unknown> {
         return {
             efficiency: 0.95,
             optimization: ['parallel_processing', 'priority_queue', 'time_management'],
@@ -1120,7 +1191,7 @@ export class SelfEvolutionService {
         };
     }
 
-    private analyzeSpatialPatterns(): any {
+    private analyzeSpatialPatterns(): Record<string, unknown> {
         return {
             patterns: ['clustering', 'dispersion', 'correlation', 'autocorrelation'],
             insights: ['spatial_relationships', 'geographic_influences'],
@@ -1128,7 +1199,7 @@ export class SelfEvolutionService {
         };
     }
 
-    private optimizeLocations(): any {
+    private optimizeLocations(): Record<string, unknown> {
         return {
             optimalLocations: ['central', 'accessible', 'efficient'],
             criteria: ['proximity', 'connectivity', 'resources'],
@@ -1136,14 +1207,14 @@ export class SelfEvolutionService {
         };
     }
 
-    private developGeographicIntelligence(): any {
+    private developGeographicIntelligence(): Record<string, unknown> {
         return {
             capabilities: ['spatial_reasoning', 'geographic_optimization', 'location_intelligence'],
             accuracy: 0.87
         };
     }
 
-    private analyzeCausality(): any {
+    private analyzeCausality(): Record<string, unknown> {
         return {
             causalChains: ['direct', 'indirect', 'feedback', 'emergent'],
             interventions: ['preventive', 'corrective', 'enhancing'],
@@ -1151,21 +1222,21 @@ export class SelfEvolutionService {
         };
     }
 
-    private developInterventions(): any {
+    private developInterventions(): Record<string, unknown> {
         return {
             strategies: ['systemic', 'targeted', 'adaptive', 'preventive'],
             effectiveness: 0.82
         };
     }
 
-    private generateCounterfactuals(): any {
+    private generateCounterfactuals(): Record<string, unknown> {
         return {
             scenarios: ['what_if', 'alternative_paths', 'intervention_effects'],
             plausibility: 0.79
         };
     }
 
-    private quantifyUncertainty(): any {
+    private quantifyUncertainty(): Record<string, unknown> {
         return {
             uncertainty: 0.15,
             confidence: 0.85,
@@ -1173,7 +1244,7 @@ export class SelfEvolutionService {
         };
     }
 
-    private assessRisks(): any {
+    private assessRisks(): Record<string, unknown> {
         return {
             riskLevel: 'low',
             riskFactors: ['technical', 'operational', 'strategic'],
@@ -1181,7 +1252,7 @@ export class SelfEvolutionService {
         };
     }
 
-    private optimizeProbabilities(): any {
+    private optimizeProbabilities(): Record<string, unknown> {
         return {
             optimization: ['bayesian_updating', 'confidence_calibration', 'uncertainty_reduction'],
             improvement: 0.18
@@ -1191,7 +1262,10 @@ export class SelfEvolutionService {
     // 자가 발전 모드 중지
     public stopSelfEvolution(): void {
         this.evolutionMode = false;
-        console.log('🛑 자가 발전 모드 비활성화');
+        errorLogger.info('🛑 자가 발전 모드 비활성화', {
+            component: 'selfEvolutionService',
+            action: 'stopSelfEvolution',
+        });
     }
 
     // 진화 강도 조정
@@ -1237,7 +1311,7 @@ export class SelfEvolutionService {
     }
 
     // 고도화된 자가 발전 기능들
-    getAdvancedEvolutionStatus(): any {
+    getAdvancedEvolutionStatus(): Record<string, unknown> {
         return {
             quantum: this.advancedEvolutionCapabilities.quantumSimulation,
             neural: this.advancedEvolutionCapabilities.neuralEvolution,
@@ -1247,11 +1321,14 @@ export class SelfEvolutionService {
     }
 
     startAdvancedEvolution(): void {
-        console.log('🚀 고도화된 자가 발전 시작...');
+        errorLogger.info('🚀 고도화된 자가 발전 시작', {
+            component: 'selfEvolutionService',
+            action: 'startAdvancedEvolution',
+        });
         this.startQuantumEvolution();
     }
 
-    getEvolutionProgress(): any {
+    getEvolutionProgress(): Record<string, unknown> {
         const quantum = this.advancedEvolutionCapabilities.quantumSimulation;
         const neural = this.advancedEvolutionCapabilities.neuralEvolution;
         const dimensional = this.advancedEvolutionCapabilities.multiDimensionalAnalysis;
@@ -1274,5 +1351,15 @@ export class SelfEvolutionService {
         };
     }
 }
+
+export {
+    ARCHITECTURAL_EVOLUTIONS_STORAGE_KEY,
+    CONSCIOUSNESS_EVOLUTIONS_STORAGE_KEY,
+    CREATIVE_BREAKTHROUGHS_STORAGE_KEY,
+    META_LEARNING_RECORDS_STORAGE_KEY,
+    SELF_DIRECTED_GOALS_STORAGE_KEY,
+    SELF_EVOLUTION_CAPABILITIES_STORAGE_KEY,
+    SELF_OPTIMIZATIONS_STORAGE_KEY,
+} from './selfEvolutionStorageKeys';
 
 export const selfEvolutionService = new SelfEvolutionService();

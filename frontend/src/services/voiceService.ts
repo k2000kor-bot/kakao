@@ -1,4 +1,6 @@
 // 음성 인식 및 합성 서비스
+import { errorLogger } from '../utils/errorLogger';
+
 export interface VoiceConfig {
     language: string;
     voice: string;
@@ -13,8 +15,8 @@ export interface VoiceRecognitionResult {
     timestamp: number;
 }
 
-class VoiceService {
-    private recognition: any;
+export class VoiceService {
+    private recognition: SpeechRecognition | null = null;
     private synthesis: SpeechSynthesis;
     private isListening: boolean = false;
     private isSpeaking: boolean = false;
@@ -26,20 +28,22 @@ class VoiceService {
     }
 
     private initializeRecognition() {
-        // Web Speech API 지원 확인
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            console.warn('음성 인식이 지원되지 않는 브라우저입니다.');
+        const win = window as Window & { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown };
+        if (!win.webkitSpeechRecognition && !win.SpeechRecognition) {
+            errorLogger.warn('음성 인식이 지원되지 않는 브라우저입니다.', { component: 'VoiceService', action: 'initializeRecognition' });
             return;
         }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        this.recognition = new SpeechRecognition();
+        const RecognitionCtor = win.SpeechRecognition ?? win.webkitSpeechRecognition;
+        if (!RecognitionCtor) return;
+        this.recognition = new RecognitionCtor() as SpeechRecognition;
 
         // 음성 인식 설정
         this.recognition.continuous = true;
         this.recognition.interimResults = true;
         this.recognition.lang = 'ko-KR';
-        this.recognition.maxAlternatives = 1;
+        if ('maxAlternatives' in this.recognition) {
+            (this.recognition as SpeechRecognition & { maxAlternatives: number }).maxAlternatives = 1;
+        }
     }
 
     // 음성 인식 시작
@@ -59,7 +63,7 @@ class VoiceService {
 
         this.isListening = true;
 
-        this.recognition.onresult = (event: any) => {
+        this.recognition.onresult = (event: SpeechRecognitionEvent) => {
             let finalTranscript = '';
             let interimTranscript = '';
 
@@ -82,7 +86,7 @@ class VoiceService {
             }
         };
 
-        this.recognition.onerror = (event: any) => {
+        this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
             this.isListening = false;
             let errorMessage = '음성 인식 중 오류가 발생했습니다.';
 
@@ -257,7 +261,7 @@ class VoiceService {
     ): void {
         if (!this.recognition) return;
 
-        this.recognition.onresult = (event: any) => {
+        this.recognition.onresult = (event: SpeechRecognitionEvent) => {
             const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
 
             for (const keyword of keywords) {

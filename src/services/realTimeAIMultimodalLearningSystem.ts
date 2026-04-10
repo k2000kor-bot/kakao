@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // 멀티모달 학습 인터페이스
 interface MultimodalInput {
@@ -9,7 +10,7 @@ interface MultimodalInput {
         imageUrl?: string;
         audioUrl?: string;
         videoUrl?: string;
-        metadata?: Record<string, any>;
+        metadata?: Record<string, unknown>;
     };
     timestamp: Date;
     userId: string;
@@ -57,7 +58,7 @@ interface LearningModule {
         images?: string[];
         audio?: string;
         video?: string;
-        interactive?: any;
+        interactive?: Record<string, unknown>;
     };
     completionRate: number;
     averageScore: number;
@@ -131,7 +132,10 @@ class RealTimeAIMultimodalLearningSystem {
     }
 
     private initializeSystem(): void {
-        console.log('🎓 실시간 AI 멀티모달 학습 시스템 초기화 중...');
+        errorLogger.info('🎓 실시간 AI 멀티모달 학습 시스템 초기화 중', {
+            component: 'realTimeAIMultimodalLearningSystem',
+            action: 'initializeSystem',
+        });
 
         // 초기 학습 모듈 생성
         this.createInitialModules();
@@ -148,7 +152,10 @@ class RealTimeAIMultimodalLearningSystem {
         // 학습 추천 생성 시작
         this.startLearningRecommendationGeneration();
 
-        console.log('✅ 실시간 AI 멀티모달 학습 시스템 초기화 완료');
+        errorLogger.info('✅ 실시간 AI 멀티모달 학습 시스템 초기화 완료', {
+            component: 'realTimeAIMultimodalLearningSystem',
+            action: 'initializeSystem',
+        });
     }
 
     private createInitialModules(): void {
@@ -406,7 +413,7 @@ class RealTimeAIMultimodalLearningSystem {
     private determineUserLevel(inputs: MultimodalInput[]): 'beginner' | 'intermediate' | 'advanced' | 'expert' {
         const totalInputs = inputs.length;
         const avgConfidence = inputs.reduce((sum, input) => sum + input.confidence, 0) / inputs.length;
-        const complexity = this.calculateInputComplexity(inputs);
+        const _complexity = this.calculateInputComplexity(inputs);
 
         if (totalInputs < 10 || avgConfidence < 0.5) return 'beginner';
         if (totalInputs < 50 || avgConfidence < 0.7) return 'intermediate';
@@ -517,7 +524,10 @@ class RealTimeAIMultimodalLearningSystem {
     private startMultimodalAnalysis(): void {
         setInterval(() => {
             this.analyzeMultimodalInputs();
-            this.generateCrossModalInsights(this.inputs);
+            const combined = this.analyses.length > 0
+                ? this.analyses.reduce((acc, a) => ({ ...acc, ...(a.analysis as Record<string, unknown>) }), { crossModalInsights: [] as string[] } as Record<string, unknown>)
+                : { crossModalInsights: [] as string[] } as Record<string, unknown>;
+            this.generateCrossModalInsights(combined);
         }, 15000); // 15초마다 업데이트
     }
 
@@ -528,11 +538,12 @@ class RealTimeAIMultimodalLearningSystem {
         });
 
         recentInputs.forEach(input => {
+            const analysisResult = this.performMultimodalAnalysis(input);
             const analysis: MultimodalAnalysis = {
                 id: `analysis-${Date.now()}-${Math.random()}`,
                 inputId: input.id,
                 userId: input.userId,
-                analysis: this.performMultimodalAnalysis(input),
+                analysis: { ...analysisResult, crossModalInsights: Array.isArray(analysisResult.crossModalInsights) ? analysisResult.crossModalInsights : [] },
                 timestamp: new Date(),
                 confidence: input.confidence
             };
@@ -541,8 +552,8 @@ class RealTimeAIMultimodalLearningSystem {
         });
     }
 
-    private performMultimodalAnalysis(input: MultimodalInput): any {
-        const analysis: any = {};
+    private performMultimodalAnalysis(input: MultimodalInput): Record<string, unknown> {
+        const analysis: Record<string, unknown> = {};
 
         // 텍스트 분석
         if (input.content.text) {
@@ -577,7 +588,7 @@ class RealTimeAIMultimodalLearningSystem {
         // 크로스모달 인사이트
         analysis.crossModalInsights = this.generateCrossModalInsights(analysis);
 
-        return analysis;
+        return analysis as Record<string, unknown> & { crossModalInsights: string[] };
     }
 
     private analyzeSentiment(text: string): 'positive' | 'negative' | 'neutral' {
@@ -612,58 +623,61 @@ class RealTimeAIMultimodalLearningSystem {
         return words.slice(0, 5);
     }
 
-    private detectObjects(imageUrl: string): string[] {
+    private detectObjects(_imageUrl: string): string[] {
         // 시뮬레이션된 객체 감지
         const objects = ['사람', '책', '컴퓨터', '의자', '테이블', '창문', '문'];
         return objects.filter(() => Math.random() > 0.5).slice(0, 3);
     }
 
-    private detectEmotions(imageUrl: string): string[] {
+    private detectEmotions(_imageUrl: string): string[] {
         const emotions = ['행복', '집중', '호기심', '지루함', '혼란'];
         return emotions.filter(() => Math.random() > 0.6).slice(0, 2);
     }
 
-    private analyzeColors(imageUrl: string): string[] {
+    private analyzeColors(_imageUrl: string): string[] {
         const colors = ['파랑', '빨강', '초록', '노랑', '보라', '주황'];
         return colors.filter(() => Math.random() > 0.5).slice(0, 3);
     }
 
-    private analyzeComposition(imageUrl: string): string {
+    private analyzeComposition(_imageUrl: string): string {
         const compositions = ['대칭', '비대칭', '중앙집중', '분산'];
         return compositions[Math.floor(Math.random() * compositions.length)];
     }
 
-    private transcribeAudio(audioUrl: string): string {
+    private transcribeAudio(_audioUrl: string): string {
         return "오디오 내용의 텍스트 변환 결과입니다.";
     }
 
-    private detectAudioEmotion(audioUrl: string): string {
+    private detectAudioEmotion(_audioUrl: string): string {
         const emotions = ['기쁨', '슬픔', '분노', '평온', '흥미'];
         return emotions[Math.floor(Math.random() * emotions.length)];
     }
 
-    private analyzeTone(audioUrl: string): string {
+    private analyzeTone(_audioUrl: string): string {
         const tones = ['따뜻함', '차가움', '부드러움', '강함', '약함'];
         return tones[Math.floor(Math.random() * tones.length)];
     }
 
-    private assessAudioClarity(audioUrl: string): number {
+    private assessAudioClarity(_audioUrl: string): number {
         return Math.random() * 0.5 + 0.5; // 0.5-1.0
     }
 
-    private generateCrossModalInsights(analysis: any): string[] {
+    private generateCrossModalInsights(analysis: Record<string, unknown>): string[] {
         const insights: string[] = [];
 
-        if (analysis.textAnalysis && analysis.imageAnalysis) {
-            if (analysis.textAnalysis.sentiment === 'positive' &&
-                analysis.imageAnalysis.emotions.includes('행복')) {
+        const textA = analysis.textAnalysis as { sentiment?: string; complexity?: number } | undefined;
+        const imgA = analysis.imageAnalysis as { emotions?: string[] } | undefined;
+        const audA = analysis.audioAnalysis as { clarity?: number } | undefined;
+        if (textA && imgA) {
+            if (textA.sentiment === 'positive' &&
+                Array.isArray(imgA.emotions) && imgA.emotions.includes('행복')) {
                 insights.push('텍스트와 이미지에서 일관된 긍정적 감정이 감지되었습니다.');
             }
         }
 
-        if (analysis.textAnalysis && analysis.audioAnalysis) {
-            if (analysis.textAnalysis.complexity > 0.7 &&
-                analysis.audioAnalysis.clarity > 0.8) {
+        if (textA && audA) {
+            if ((textA.complexity ?? 0) > 0.7 &&
+                (audA.clarity ?? 0) > 0.8) {
                 insights.push('복잡한 텍스트와 명확한 오디오가 조화를 이루고 있습니다.');
             }
         }
@@ -764,7 +778,10 @@ class RealTimeAIMultimodalLearningSystem {
         if (this.isRunning) return;
 
         this.isRunning = true;
-        console.log('🚀 실시간 AI 멀티모달 학습 시스템 시작');
+        errorLogger.info('🚀 실시간 AI 멀티모달 학습 시스템 시작', {
+            component: 'realTimeAIMultimodalLearningSystem',
+            action: 'start',
+        });
 
         // 알림 생성
         realTimeAIAlertSystem.createAlert({
@@ -794,7 +811,10 @@ class RealTimeAIMultimodalLearningSystem {
             this.updateInterval = null;
         }
 
-        console.log('🛑 실시간 AI 멀티모달 학습 시스템 중지');
+        errorLogger.info('🛑 실시간 AI 멀티모달 학습 시스템 중지', {
+            component: 'realTimeAIMultimodalLearningSystem',
+            action: 'stop',
+        });
     }
 
     public getMetrics(): MultimodalLearningMetrics {
@@ -872,14 +892,24 @@ class RealTimeAIMultimodalLearningSystem {
 
     public addModule(module: LearningModule): void {
         this.modules.push(module);
-        console.log(`✅ 새로운 학습 모듈 추가: ${module.title}`);
+        errorLogger.info(`✅ 새로운 학습 모듈 추가: ${module.title}`, {
+            component: 'realTimeAIMultimodalLearningSystem',
+            action: 'addModule',
+            moduleId: module.id,
+            moduleTitle: module.title,
+        });
     }
 
     public updateModule(moduleId: string, updates: Partial<LearningModule>): void {
         const module = this.modules.find(m => m.id === moduleId);
         if (module) {
             Object.assign(module, updates);
-            console.log(`✅ 모듈 업데이트: ${module.title}`);
+            errorLogger.info(`✅ 모듈 업데이트: ${module.title}`, {
+                component: 'realTimeAIMultimodalLearningSystem',
+                action: 'updateModule',
+                moduleId,
+                moduleTitle: module.title,
+            });
         }
     }
 }

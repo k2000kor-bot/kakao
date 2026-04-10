@@ -1,5 +1,19 @@
 // 통합 메시지 시스템 API 서비스
-const UNIFIED_MESSAGE_API_BASE = 'http://localhost:8001';
+import {
+  ANALYZE_MESSAGES_PATH,
+  API_HEALTH_PATH,
+  API_STATUS_PATH,
+  GENERATE_ADVANCED_MESSAGE_PATH,
+  GENERATE_CONTEXTUAL_MESSAGE_PATH,
+  GENERATE_FORMATTED_MESSAGE_PATH,
+  GENERATE_KAKAO_MESSAGE_PATH,
+  MESSAGE_FORMATS_PATH,
+  joinApiHealthCheckUrl,
+  resolveApiBaseUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+
+const UNIFIED_MESSAGE_API_BASE = resolveApiBaseUrl();
 
 export interface MessageFormatRequest {
   format_type: string;
@@ -57,7 +71,7 @@ export interface GeneratedMessage {
   generated_message: string;
   timestamp: string;
   confidence_score?: number;
-  emotion_analysis?: any;
+  emotion_analysis?: unknown;
   impact_prediction?: number;
 }
 
@@ -65,15 +79,15 @@ export interface MessageAnalysisResult {
   total_messages: number;
   analysis_type: string;
   timestamp: string;
-  emotion_analysis?: any;
-  sentiment_analysis?: any;
-  comprehensive_analysis?: any;
+  emotion_analysis?: unknown;
+  sentiment_analysis?: unknown;
+  comprehensive_analysis?: unknown;
 }
 
 // API 호출 헬퍼 함수
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   try {
-    const response = await fetch(`${UNIFIED_MESSAGE_API_BASE}${endpoint}`, {
+    const response = await fetch(joinApiHealthCheckUrl(UNIFIED_MESSAGE_API_BASE, endpoint), {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -87,7 +101,13 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 
     return await response.json();
   } catch (error) {
-    console.error('API 호출 오류:', error);
+    const err = toError(error);
+    errorLogger.error('API 호출 오류', err, {
+      component: 'unifiedMessageAPI',
+      action: 'apiCall',
+      endpoint,
+      method: options?.method || 'GET',
+    });
     throw error;
   }
 };
@@ -96,46 +116,46 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 export class UnifiedMessageAPI {
   // 시스템 상태 확인
   static async getStatus() {
-    return apiCall('/api/status');
+    return apiCall(API_STATUS_PATH);
   }
 
   // 헬스 체크
   static async healthCheck() {
-    return apiCall('/api/health');
+    return apiCall(API_HEALTH_PATH);
   }
 
   // 메시지 형식 목록 조회
   static async getMessageFormats(): Promise<{ success: boolean; formats: MessageFormat }> {
-    return apiCall('/api/message-formats');
+    return apiCall(MESSAGE_FORMATS_PATH);
   }
 
   // 형식별 메시지 생성
   static async generateFormattedMessage(request: MessageFormatRequest): Promise<{ success: boolean; message: GeneratedMessage }> {
-    return apiCall('/api/generate-formatted-message', {
+    return apiCall(GENERATE_FORMATTED_MESSAGE_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   // 고급 메시지 생성
-  static async generateAdvancedMessage(request: AdvancedMessageRequest): Promise<{ success: boolean; message: any }> {
-    return apiCall('/api/generate-advanced-message', {
+  static async generateAdvancedMessage(request: AdvancedMessageRequest): Promise<{ success: boolean; message: unknown }> {
+    return apiCall(GENERATE_ADVANCED_MESSAGE_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   // 맥락 기반 메시지 생성
-  static async generateContextualMessage(request: ContextualMessageRequest): Promise<{ success: boolean; message: any }> {
-    return apiCall('/api/generate-contextual-message', {
+  static async generateContextualMessage(request: ContextualMessageRequest): Promise<{ success: boolean; message: unknown }> {
+    return apiCall(GENERATE_CONTEXTUAL_MESSAGE_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   // 카카오톡 메시지 생성
-  static async generateKakaoMessage(request: KakaoMessageRequest): Promise<{ success: boolean; message: any }> {
-    return apiCall('/api/generate-kakao-message', {
+  static async generateKakaoMessage(request: KakaoMessageRequest): Promise<{ success: boolean; message: unknown }> {
+    return apiCall(GENERATE_KAKAO_MESSAGE_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -143,7 +163,7 @@ export class UnifiedMessageAPI {
 
   // 메시지 분석
   static async analyzeMessages(request: MessageAnalysisRequest): Promise<{ success: boolean; analysis: MessageAnalysisResult }> {
-    return apiCall('/api/analyze-messages', {
+    return apiCall(ANALYZE_MESSAGES_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -155,7 +175,11 @@ export class UnifiedMessageAPI {
       await this.healthCheck();
       return true;
     } catch (error) {
-      console.error('서버 연결 실패:', error);
+      const err = toError(error);
+      errorLogger.error('서버 연결 실패', err, {
+        component: 'unifiedMessageAPI',
+        action: 'testConnection',
+      });
       return false;
     }
   }
@@ -169,25 +193,35 @@ export const messageAPI = {
       const response = await UnifiedMessageAPI.getMessageFormats();
       return response.formats;
     } catch (error) {
-      console.error('메시지 형식 조회 실패:', error);
+      const err = toError(error);
+      errorLogger.error('메시지 형식 조회 실패', err, {
+        component: 'unifiedMessageAPI',
+        action: 'getFormats',
+      });
       return {};
     }
   },
 
   // 형식별 메시지 생성
-  generateFormatted: async (formatType: string, originalMessage: string, context: string = '', recentMessages: any[] = []) => {
+  generateFormatted: async (formatType: string, originalMessage: string, context: string = '', recentMessages: unknown[] = []) => {
     try {
       const request: MessageFormatRequest = {
         format_type: formatType,
         original_message: originalMessage,
         context,
-        recent_messages: recentMessages,
+        recent_messages: recentMessages as Array<{ content: string; sender: string; timestamp: string }>,
       };
       
       const response = await UnifiedMessageAPI.generateFormattedMessage(request);
       return response.message;
     } catch (error) {
-      console.error('형식별 메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('형식별 메시지 생성 실패', err, {
+        component: 'unifiedMessageAPI',
+        action: 'generateFormatted',
+        formatType,
+        originalMessageLength: originalMessage.length,
+      });
       throw error;
     }
   },
@@ -198,7 +232,13 @@ export const messageAPI = {
       const response = await UnifiedMessageAPI.generateAdvancedMessage(request);
       return response.message;
     } catch (error) {
-      console.error('고급 메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('고급 메시지 생성 실패', err, {
+        component: 'unifiedMessageAPI',
+        action: 'generateAdvanced',
+        chatRoomId: request.chat_room_id,
+        userId: request.user_id,
+      });
       throw error;
     }
   },
@@ -209,7 +249,13 @@ export const messageAPI = {
       const response = await UnifiedMessageAPI.generateContextualMessage(request);
       return response.message;
     } catch (error) {
-      console.error('맥락 기반 메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('맥락 기반 메시지 생성 실패', err, {
+        component: 'unifiedMessageAPI',
+        action: 'generateContextual',
+        chatRoomId: request.chat_room_id,
+        targetPerson: request.target_person,
+      });
       throw error;
     }
   },
@@ -220,7 +266,13 @@ export const messageAPI = {
       const response = await UnifiedMessageAPI.generateKakaoMessage(request);
       return response.message;
     } catch (error) {
-      console.error('카카오톡 메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('카카오톡 메시지 생성 실패', err, {
+        component: 'unifiedMessageAPI',
+        action: 'generateKakao',
+        messageType: request.message_type,
+        chatRoomId: request.chat_room_id,
+      });
       throw error;
     }
   },
@@ -231,7 +283,12 @@ export const messageAPI = {
       const response = await UnifiedMessageAPI.analyzeMessages(request);
       return response.analysis;
     } catch (error) {
-      console.error('메시지 분석 실패:', error);
+      const err = toError(error);
+      errorLogger.error('메시지 분석 실패', err, {
+        component: 'unifiedMessageAPI',
+        action: 'analyze',
+        messagesCount: request.messages?.length || 0,
+      });
       throw error;
     }
   },
@@ -242,7 +299,11 @@ export const messageAPI = {
       const response = await UnifiedMessageAPI.getStatus();
       return response.status === 'healthy';
     } catch (error) {
-      console.error('서버 상태 확인 실패:', error);
+      const err = toError(error);
+      errorLogger.error('서버 상태 확인 실패', err, {
+        component: 'unifiedMessageAPI',
+        action: 'checkStatus',
+      });
       return false;
     }
   },

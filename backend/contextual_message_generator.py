@@ -1069,4 +1069,10 @@ async def get_message_templates():
     return {"templates": message_generator.message_templates}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8007) 
+    _p = int(
+        os.environ.get(
+            "CONTEXTUAL_MESSAGE_GENERATOR_PORT",
+            os.environ.get("PORT", "8007"),
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

@@ -1,5 +1,6 @@
 import enhancedResponseProcessor, { EnhancedResponseContext } from './enhancedResponseProcessor';
 import enhancedBackendAPI from './enhancedBackendAPI';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface TestResult {
     testName: string;
@@ -41,7 +42,10 @@ class SystemIntegrationTest {
      * 전체 시스템 통합 테스트 실행
      */
     async runFullSystemTest(): Promise<SystemTestReport> {
-        console.log('🧪 전체 시스템 통합 테스트 시작...');
+        errorLogger.info('🧪 전체 시스템 통합 테스트 시작', {
+            component: 'systemIntegrationTest',
+            action: 'runFullSystemTest',
+        });
 
         const startTime = Date.now();
         const testResults: TestResult[] = [];
@@ -71,11 +75,15 @@ class SystemIntegrationTest {
         // 4. 결과 분석
         const report = this.analyzeTestResults(testResults, systemStatus, totalTime);
 
-        console.log('✅ 전체 시스템 통합 테스트 완료');
-        console.log(`📊 결과: ${report.passedTests}/${report.totalTests} 성공`);
-        console.log(`⏱️ 총 소요시간: ${totalTime}ms`);
-        console.log(`📈 평균 품질 점수: ${(report.averageQualityScore * 100).toFixed(1)}%`);
-        console.log(`🎯 평균 신뢰도: ${(report.averageConfidence * 100).toFixed(1)}%`);
+        errorLogger.info('✅ 전체 시스템 통합 테스트 완료', {
+            component: 'systemIntegrationTest',
+            action: 'runFullSystemTest',
+            passedTests: report.passedTests,
+            totalTests: report.totalTests,
+            totalTime,
+            averageQualityScore: report.averageQualityScore,
+            averageConfidence: report.averageConfidence,
+        });
 
         return report;
     }
@@ -145,7 +153,11 @@ class SystemIntegrationTest {
             results.push(standardResult);
 
         } catch (error) {
-            console.error('백엔드 API 테스트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('백엔드 API 테스트 실패', err, {
+                component: 'systemIntegrationTest',
+                action: 'runBackendAPITests',
+            });
         }
 
         return results;
@@ -210,7 +222,11 @@ class SystemIntegrationTest {
             status.enhancedAPI = backendStatus.enhanced;
             status.standardAPI = backendStatus.standard;
         } catch (error) {
-            console.error('백엔드 상태 확인 실패:', error);
+            const err = toError(error);
+            errorLogger.error('백엔드 상태 확인 실패', err, {
+                component: 'systemIntegrationTest',
+                action: 'checkSystemStatus',
+            });
         }
 
         return status;
@@ -222,7 +238,7 @@ class SystemIntegrationTest {
     private analyzeTestResults(
         results: TestResult[],
         systemStatus: SystemTestReport['systemStatus'],
-        totalTime: number
+        _totalTime: number
     ): SystemTestReport {
         const successfulTests = results.filter(r => r.success);
         const failedTests = results.filter(r => !r.success);
@@ -267,16 +283,22 @@ class SystemIntegrationTest {
         standard: boolean;
         overall: boolean;
     }> {
-        console.log('🔍 백엔드 상태 확인 시작...');
+        errorLogger.info('🔍 백엔드 상태 확인 시작', {
+            component: 'systemIntegrationTest',
+            action: 'checkBackendStatus',
+        });
 
         const status = await enhancedBackendAPI.checkBackendStatus();
         const overall = status.ultimate || status.enhanced || status.standard;
 
-        console.log('📊 백엔드 상태 확인 결과:');
-        console.log(`Ultimate API: ${status.ultimate ? '✅' : '❌'}`);
-        console.log(`Enhanced API: ${status.enhanced ? '✅' : '❌'}`);
-        console.log(`Standard API: ${status.standard ? '✅' : '❌'}`);
-        console.log(`전체 상태: ${overall ? '✅' : '❌'}`);
+        errorLogger.info('📊 백엔드 상태 확인 결과', {
+            component: 'systemIntegrationTest',
+            action: 'checkBackendStatus',
+            ultimate: status.ultimate,
+            enhanced: status.enhanced,
+            standard: status.standard,
+            overall,
+        });
 
         return {
             ...status,
@@ -292,7 +314,10 @@ class SystemIntegrationTest {
         backendAPI: number;
         averageQuality: number;
     }> {
-        console.log('🏃 성능 벤치마크 시작...');
+        errorLogger.info('🏃 성능 벤치마크 시작', {
+            component: 'systemIntegrationTest',
+            action: 'runPerformanceBenchmark',
+        });
 
         const testQuestion = "인공지능 기술의 현재와 미래에 대해 상세히 설명해주세요";
         const iterations = 5;
@@ -321,7 +346,13 @@ class SystemIntegrationTest {
                 enhancedTimes.push(Date.now() - startTime);
                 enhancedQualities.push(result.qualityScore);
             } catch (error) {
-                console.error(`Enhanced Processor 벤치마크 ${i + 1} 실패:`, error);
+                const err = toError(error);
+                errorLogger.error(`Enhanced Processor 벤치마크 ${i + 1} 실패`, err, {
+                    component: 'systemIntegrationTest',
+                    action: 'runPerformanceBenchmark',
+                    iteration: i + 1,
+                    benchmarkType: 'enhancedProcessor',
+                });
             }
 
             await this.delay(2000); // 2초 간격
@@ -345,7 +376,13 @@ class SystemIntegrationTest {
                 });
                 backendTimes.push(Date.now() - startTime);
             } catch (error) {
-                console.error(`Backend API 벤치마크 ${i + 1} 실패:`, error);
+                const err = toError(error);
+                errorLogger.error(`Backend API 벤치마크 ${i + 1} 실패`, err, {
+                    component: 'systemIntegrationTest',
+                    action: 'runPerformanceBenchmark',
+                    iteration: i + 1,
+                    benchmarkType: 'backendAPI',
+                });
             }
 
             await this.delay(2000); // 2초 간격
@@ -363,10 +400,13 @@ class SystemIntegrationTest {
             ? enhancedQualities.reduce((sum, quality) => sum + quality, 0) / enhancedQualities.length
             : 0;
 
-        console.log('📊 성능 벤치마크 결과:');
-        console.log(`Enhanced Processor 평균 응답시간: ${avgEnhancedTime.toFixed(0)}ms`);
-        console.log(`Backend API 평균 응답시간: ${avgBackendTime.toFixed(0)}ms`);
-        console.log(`평균 품질 점수: ${(avgQuality * 100).toFixed(1)}%`);
+        errorLogger.info('📊 성능 벤치마크 결과', {
+            component: 'systemIntegrationTest',
+            action: 'runPerformanceBenchmark',
+            avgEnhancedTime,
+            avgBackendTime,
+            avgQuality,
+        });
 
         return {
             enhancedProcessor: avgEnhancedTime,

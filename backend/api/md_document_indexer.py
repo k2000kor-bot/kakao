@@ -364,46 +364,44 @@ class MDDocumentIndexer:
             return self.index[file_path]['content']
         return None
     
-    def get_context_for_query(self, query: str, max_chars: int = 3000) -> str:
+    def get_context_for_query(self, query: str, max_chars: Optional[int] = None) -> str:
         """
         쿼리에 대한 컨텍스트 생성 (여러 파일의 관련 내용 결합)
-        
+
         Args:
             query: 검색 쿼리
-            max_chars: 최대 문자 수
-            
-        Returns:
-            결합된 컨텍스트 문자열
+            max_chars: 최대 문자 수(None이면 검색·섹션·본문 전부 포함)
         """
-        results = self.search(query, max_results=3)
-        context_parts = []
+        results = self.search(query, max_results=20)
+        context_parts: List[str] = []
         total_chars = 0
-        
+
         for result in results:
-            if total_chars >= max_chars:
+            file_name = result["metadata"].get("file_name", "Unknown")
+            header = f"\n## 파일: {file_name}\n"
+            if max_chars is not None and total_chars + len(header) > max_chars:
                 break
-            
-            # 파일 제목 추가
-            file_name = result['metadata'].get('file_name', 'Unknown')
-            context_parts.append(f"\n## 파일: {file_name}\n")
-            total_chars += len(context_parts[-1])
-            
-            # 매칭된 섹션 추가
-            for section in result['matched_sections'][:2]:  # 최대 2개 섹션
-                section_text = f"\n### {section['title']}\n{section['content'][:800]}\n"
+            context_parts.append(header)
+            total_chars += len(header)
+
+            for section in result.get("matched_sections") or []:
+                body = section.get("content") or ""
+                section_text = f"\n### {section.get('title', '')}\n{body}\n"
+                if max_chars is None:
+                    context_parts.append(section_text)
+                    continue
                 if total_chars + len(section_text) > max_chars:
-                    # 잘라서 추가
                     remaining = max_chars - total_chars - 100
                     if remaining > 0:
                         context_parts.append(section_text[:remaining] + "...")
-                    break
+                    return "\n".join(context_parts)
                 context_parts.append(section_text)
                 total_chars += len(section_text)
-            
-            if total_chars >= max_chars:
+
+            if max_chars is not None and total_chars >= max_chars:
                 break
-        
-        return '\n'.join(context_parts)
+
+        return "\n".join(context_parts)
 
 
 # 전역 인스턴스

@@ -3,6 +3,13 @@
  * 사용자 행동 분석, 패턴 인식, 예측 모델링, 개인화 추천 기능 제공
  */
 
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  ANALYTICS_SESSION_START_STORAGE_KEY,
+  ANALYTICS_USER_BEHAVIORS_STORAGE_KEY,
+  ANALYTICS_USER_ID_STORAGE_KEY,
+  analyticsPersonalizationProfileStorageKey,
+} from './analyticsPersistenceStorageKeys';
 export interface UserBehavior {
   userId: string;
   timestamp: Date;
@@ -19,7 +26,7 @@ export interface UserBehavior {
   context: {
     sessionDuration: number;
     previousActions: string[];
-    deviceInfo: any;
+    deviceInfo: unknown;
     networkStatus: string;
   };
 }
@@ -308,12 +315,13 @@ class AdvancedAIAnalyticsService {
   /**
    * 사용 패턴 분석
    */
-  private analyzeUsagePattern(behaviors: UserBehavior[]): any {
+  private analyzeUsagePattern(behaviors: UserBehavior[]): Record<string, unknown> | null {
     if (behaviors.length < 10) return null;
 
     const timeSlots = behaviors.map(b => new Date(b.timestamp).getHours());
     const daysOfWeek = behaviors.map(b => new Date(b.timestamp).getDay());
-    const actions = behaviors.map(b => b.action);
+    const _actions = behaviors.map(b => b.action);
+    void _actions;
 
     const mostActiveHours = this.getMostFrequent(timeSlots, 3);
     const mostActiveDays = this.getMostFrequent(daysOfWeek, 3);
@@ -330,7 +338,7 @@ class AdvancedAIAnalyticsService {
   /**
    * 선호도 패턴 분석
    */
-  private analyzePreferencePattern(behaviors: UserBehavior[]): any {
+  private analyzePreferencePattern(behaviors: UserBehavior[]): Record<string, unknown> {
     const categories = behaviors.map(b => b.category);
     const queries = behaviors.filter(b => b.details.query).map(b => b.details.query!);
     const projects = behaviors.filter(b => b.details.projectId).map(b => b.details.projectId!);
@@ -355,7 +363,7 @@ class AdvancedAIAnalyticsService {
   /**
    * 오류 패턴 분석
    */
-  private analyzeErrorPattern(behaviors: UserBehavior[]): any {
+  private analyzeErrorPattern(behaviors: UserBehavior[]): Record<string, unknown> | null {
     const errorBehaviors = behaviors.filter(b => !b.details.success);
     if (errorBehaviors.length === 0) return null;
 
@@ -377,7 +385,7 @@ class AdvancedAIAnalyticsService {
   /**
    * 성능 패턴 분석
    */
-  private analyzePerformancePattern(behaviors: UserBehavior[]): any {
+  private analyzePerformancePattern(behaviors: UserBehavior[]): Record<string, unknown> | null {
     const performanceBehaviors = behaviors.filter(b => b.details.responseTime);
     if (performanceBehaviors.length === 0) return null;
 
@@ -403,11 +411,11 @@ class AdvancedAIAnalyticsService {
   /**
    * 행동 패턴 업데이트
    */
-  private updateBehaviorPattern(userId: string, type: string, pattern: any): void {
+  private updateBehaviorPattern(userId: string, type: string, pattern: Record<string, unknown>): void {
     const existingPattern = this.behaviorPatterns.find(p => p.userId === userId && p.pattern.type === type);
 
     if (existingPattern) {
-      existingPattern.pattern = { ...existingPattern.pattern, ...pattern };
+      existingPattern.pattern = { ...existingPattern.pattern, ...pattern } as BehaviorPattern['pattern'];
       existingPattern.updatedAt = new Date();
       existingPattern.insights = this.generateInsights(type, pattern);
     } else {
@@ -415,11 +423,11 @@ class AdvancedAIAnalyticsService {
         id: crypto.randomUUID(),
         userId,
         pattern: {
-          type: type as any,
-          frequency: pattern.frequency,
-          timeOfDay: pattern.timeOfDay,
-          dayOfWeek: pattern.dayOfWeek,
-          duration: pattern.duration
+          type: type as BehaviorPattern['pattern']['type'],
+          frequency: (pattern.frequency as number) ?? 0,
+          timeOfDay: (pattern.timeOfDay as string[]) ?? [],
+          dayOfWeek: (pattern.dayOfWeek as string[]) ?? [],
+          duration: (pattern.duration as number) ?? 0
         },
         insights: this.generateInsights(type, pattern),
         createdAt: new Date(),
@@ -433,37 +441,38 @@ class AdvancedAIAnalyticsService {
   /**
    * 인사이트 생성
    */
-  private generateInsights(type: string, pattern: any): any {
+  private generateInsights(type: string, pattern: Record<string, unknown>): BehaviorPattern['insights'] {
+    const freq = Number(pattern.frequency) || 0;
     const insights = {
       description: '',
-      confidence: Math.min(pattern.frequency / 10, 1),
+      confidence: Math.min(freq / 10, 1),
       recommendations: [] as string[]
     };
 
     switch (type) {
       case 'usage':
-        insights.description = `사용자는 주로 ${pattern.timeOfDay.join(', ')} 시간대에 활발하게 활동합니다.`;
+        insights.description = `사용자는 주로 ${((pattern.timeOfDay as string[]) ?? []).join(', ')} 시간대에 활발하게 활동합니다.`;
         insights.recommendations = [
           '가장 활발한 시간대에 중요한 알림을 설정하세요.',
           '사용 패턴에 맞춰 자동화 기능을 활용하세요.'
         ];
         break;
       case 'preference':
-        insights.description = `사용자는 ${pattern.preferences?.categories.join(', ')} 카테고리를 선호합니다.`;
+        insights.description = `사용자는 ${((pattern.preferences as { categories?: string[] })?.categories ?? []).join(', ')} 카테고리를 선호합니다.`;
         insights.recommendations = [
           '선호하는 카테고리의 기능을 더 쉽게 접근할 수 있도록 배치하세요.',
           '관련 프로젝트와 콘텐츠를 추천하세요.'
         ];
         break;
       case 'error':
-        insights.description = `주요 오류 유형: ${pattern.errorTypes?.join(', ')}`;
+        insights.description = `주요 오류 유형: ${((pattern.errorTypes as string[]) ?? []).join(', ')}`;
         insights.recommendations = [
           '오류가 자주 발생하는 기능을 개선하세요.',
           '사용자에게 오류 해결 가이드를 제공하세요.'
         ];
         break;
       case 'performance':
-        insights.description = `평균 응답 시간: ${pattern.duration.toFixed(2)}ms`;
+        insights.description = `평균 응답 시간: ${Number(pattern.duration).toFixed(2)}ms`;
         insights.recommendations = [
           '응답 시간이 느린 기능을 최적화하세요.',
           '사용자에게 성능 개선 팁을 제공하세요.'
@@ -549,7 +558,7 @@ class AdvancedAIAnalyticsService {
   /**
    * 추천 생성
    */
-  private generateRecommendations(profile: PersonalizationProfile): any {
+  private generateRecommendations(profile: PersonalizationProfile): PersonalizationProfile['recommendations'] {
     const recommendations = {
       suggestedProjects: [] as string[],
       recommendedFeatures: [] as string[],
@@ -597,7 +606,7 @@ class AdvancedAIAnalyticsService {
   /**
    * 예측 생성
    */
-  private async generatePrediction(model: PredictiveModel): Promise<any> {
+  private async generatePrediction(model: PredictiveModel): Promise<{ timestamp: Date; value: number; confidence: number }> {
     const timestamp = new Date();
     let value = 0;
     let confidence = 0;
@@ -752,10 +761,10 @@ class AdvancedAIAnalyticsService {
    * 유틸리티 메서드들
    */
   private getCurrentUserId(): string {
-    return localStorage.getItem('userId') || 'anonymous';
+    return localStorage.getItem(ANALYTICS_USER_ID_STORAGE_KEY) || 'anonymous';
   }
 
-  private getDeviceInfo(): any {
+  private getDeviceInfo(): { userAgent: string; screenSize: string; timezone: string } {
     return {
       userAgent: navigator.userAgent,
       screenSize: `${window.screen.width}x${window.screen.height}`,
@@ -764,7 +773,7 @@ class AdvancedAIAnalyticsService {
   }
 
   private getSessionDuration(): number {
-    const sessionStart = localStorage.getItem('sessionStart');
+    const sessionStart = localStorage.getItem(ANALYTICS_SESSION_START_STORAGE_KEY);
     if (sessionStart) {
       return Date.now() - parseInt(sessionStart);
     }
@@ -795,7 +804,7 @@ class AdvancedAIAnalyticsService {
   private extractKeywords(text: string): string[] {
     // 간단한 키워드 추출 (실제로는 더 정교한 NLP 사용)
     const words = text.toLowerCase().split(/\s+/);
-    return words.filter(word => word.length > 2).slice(0, 5);
+    return words.filter(word => word.length > 2);
   }
 
   /**
@@ -803,9 +812,14 @@ class AdvancedAIAnalyticsService {
    */
   private saveBehaviors(): void {
     try {
-      localStorage.setItem('userBehaviors', JSON.stringify(this.userBehaviors.slice(-1000)));
+      localStorage.setItem(ANALYTICS_USER_BEHAVIORS_STORAGE_KEY, JSON.stringify(this.userBehaviors.slice(-1000)));
     } catch (error) {
-      console.error('행동 데이터 저장 실패:', error);
+      const err = toError(error);
+      errorLogger.error('행동 데이터 저장 실패', err, {
+        component: 'advancedAIAnalyticsService',
+        action: 'saveBehaviors',
+        behaviorsCount: this.userBehaviors.length,
+      });
     }
   }
 
@@ -813,10 +827,15 @@ class AdvancedAIAnalyticsService {
     try {
       const profile = this.personalizationProfiles.get(userId);
       if (profile) {
-        localStorage.setItem(`personalization_${userId}`, JSON.stringify(profile));
+        localStorage.setItem(analyticsPersonalizationProfileStorageKey(userId), JSON.stringify(profile));
       }
     } catch (error) {
-      console.error('개인화 프로필 저장 실패:', error);
+      const err = toError(error);
+      errorLogger.error('개인화 프로필 저장 실패', err, {
+        component: 'advancedAIAnalyticsService',
+        action: 'savePersonalizationProfile',
+        userId,
+      });
     }
   }
 
@@ -860,6 +879,14 @@ class AdvancedAIAnalyticsService {
     });
   }
 }
+
+export {
+  ANALYTICS_PERSONALIZATION_KEY_PREFIX,
+  ANALYTICS_SESSION_START_STORAGE_KEY,
+  ANALYTICS_USER_BEHAVIORS_STORAGE_KEY,
+  ANALYTICS_USER_ID_STORAGE_KEY,
+  analyticsPersonalizationProfileStorageKey,
+} from './analyticsPersistenceStorageKeys';
 
 // 싱글톤 인스턴스
 export const advancedAIAnalyticsService = new AdvancedAIAnalyticsService();

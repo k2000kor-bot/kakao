@@ -4,6 +4,7 @@
 Ultimate AI Message System 통합 테스트
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -176,7 +177,7 @@ async def process_feedback(request: FeedbackRequest):
 
 @app.get("/api/v8/learning-status/{chat_room_id}")
 async def get_learning_status(chat_room_id: str):
-    """채팅방별 학습 상태 조회"""
+    """대화방별 학습 상태 조회"""
     return {
         "success": True,
         "chat_room_id": chat_room_id,
@@ -186,7 +187,7 @@ async def get_learning_status(chat_room_id: str):
 
 @app.get("/api/v8/chat-stats/{chat_room_id}")
 async def get_chat_stats(chat_room_id: str):
-    """채팅방별 통계 조회"""
+    """대화방별 통계 조회"""
     return {
         "success": True,
         "chat_room_id": chat_room_id,
@@ -196,7 +197,7 @@ async def get_chat_stats(chat_room_id: str):
 
 @app.get("/api/v8/chatroom-messages/{chat_room_id}")
 async def get_chatroom_messages(chat_room_id: str):
-    """채팅방 메시지 조회"""
+    """대화방 메시지 조회"""
     sample_messages = [
         {
             "id": f"msg_{i}",
@@ -277,8 +278,8 @@ async def get_projects():
         "projects": [
             {
                 "id": "proj_1",
-                "name": "개포우성7차 재건축",
-                "description": "개포우성7차 아파트 재건축 프로젝트",
+                "name": "샘플 재건축",
+                "description": "데모용 아파트 재건축 프로젝트",
                 "created_at": "2024-01-15T10:00:00Z",
                 "knowledge_items": 25
             },
@@ -354,14 +355,15 @@ async def add_project_knowledge(project_id: str, data: Dict[str, Any]):
     }
 
 if __name__ == "__main__":
+    _p = int(os.environ.get("SIMPLE_API_TEST_PORT", os.environ.get("PORT", "8003")))
     print("🚀 Ultimate AI Message System API 서버 시작...")
-    print("📡 포트: 8003")
-    print("🔗 Health Check: http://localhost:8003/health")
-    print("📚 API 문서: http://localhost:8003/docs")
+    print(f"📡 포트: {_p}")
+    print(f"🔗 Health Check: http://localhost:{_p}/health")
+    print(f"📚 API 문서: http://localhost:{_p}/docs")
     
     uvicorn.run(
         app,
         host="localhost",
-        port=8003,
+        port=_p,
         log_level="info"
     ) 

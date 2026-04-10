@@ -1,7 +1,5 @@
 import { EventEmitter } from 'events';
-import ultraAdvancedAIService from './ultraAdvancedAIService';
-import ultraAdvancedAIOrchestrationService from './ultraAdvancedAIOrchestrationService';
-import ultraAdvancedAIIntegrationManager from './ultraAdvancedAIIntegrationManager';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface PredictiveModel {
     id: string;
@@ -15,7 +13,7 @@ export interface PredictiveModel {
     created_at: Date;
     updated_at: Date;
     version: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     features: string[];
     target_variable: string;
     training_data_size: number;
@@ -37,10 +35,10 @@ export interface PredictiveModel {
 export interface PredictionRequest {
     id: string;
     model_id: string;
-    input_data: Record<string, any>;
+    input_data: Record<string, unknown>;
     timestamp: Date;
     status: 'pending' | 'processing' | 'completed' | 'failed';
-    result?: any;
+    result?: unknown;
     confidence?: number;
     processing_time?: number;
     error_message?: string;
@@ -133,7 +131,10 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         super();
         this.initializeSystem();
         this._isInitialized = true;
-        console.log('🔮 고도화된 AI 예측 분석 시스템이 초기화되었습니다.');
+        errorLogger.info('🔮 고도화된 AI 예측 분석 시스템이 초기화되었습니다.', {
+            component: 'ultraAdvancedAIPredictiveAnalyticsSystem',
+            action: 'constructor',
+        });
     }
 
     private async initializeSystem(): Promise<void> {
@@ -264,7 +265,11 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
             this.emit('system_initialized', this.metrics);
 
         } catch (error) {
-            console.error('AI 예측 분석 시스템 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('AI 예측 분석 시스템 초기화 실패', err, {
+                component: 'ultraAdvancedAIPredictiveAnalyticsSystem',
+                action: 'initializeSystem',
+            });
             this.emit('initialization_error', error);
         }
     }
@@ -281,7 +286,12 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
             this.updateMetrics();
 
         } catch (error) {
-            console.error(`모델 생성 실패 (${modelConfig.id}):`, error);
+            const err = toError(error);
+            errorLogger.error(`모델 생성 실패 (${modelConfig.id})`, err, {
+                component: 'ultraAdvancedAIPredictiveAnalyticsSystem',
+                action: 'createModel',
+                modelId: modelConfig.id,
+            });
             this.emit('model_creation_error', modelConfig.id, error);
         }
     }
@@ -318,7 +328,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         this.emit('model_deployed', model);
     }
 
-    public async retrainModel(modelId: string, newData?: any): Promise<void> {
+    public async retrainModel(modelId: string, _newData?: unknown): Promise<void> {
         const model = this.models.get(modelId);
         if (!model) {
             throw new Error(`모델 ${modelId}를 찾을 수 없습니다.`);
@@ -353,7 +363,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         }
     }
 
-    public async makePrediction(modelId: string, inputData: Record<string, any>): Promise<PredictionRequest> {
+    public async makePrediction(modelId: string, inputData: Record<string, unknown>): Promise<PredictionRequest> {
         const model = this.models.get(modelId);
         if (!model) {
             throw new Error(`모델 ${modelId}를 찾을 수 없습니다.`);
@@ -389,7 +399,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
             const confidence = Math.random() * 0.3 + 0.7; // 70-100% 신뢰도
 
             // 모델 타입에 따른 결과 생성
-            let result: any;
+            let result: unknown;
             if (!model.type) {
                 result = { prediction: 'unknown', confidence, error: '모델 타입이 정의되지 않음' };
             } else {
@@ -439,7 +449,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         }
     }
 
-    private generateClassificationResult(model: PredictiveModel, inputData: Record<string, any>, confidence: number): any {
+    private generateClassificationResult(model: PredictiveModel, inputData: Record<string, unknown>, confidence: number): Record<string, unknown> {
         const classes = ['positive', 'negative', 'neutral'];
         const predictedClass = classes[Math.floor(Math.random() * classes.length)];
 
@@ -459,7 +469,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         };
     }
 
-    private generateRegressionResult(model: PredictiveModel, inputData: Record<string, any>, confidence: number): any {
+    private generateRegressionResult(model: PredictiveModel, inputData: Record<string, unknown>, confidence: number): Record<string, unknown> {
         const baseValue = Math.random() * 100;
         const predictedValue = baseValue + (Math.random() - 0.5) * 20;
 
@@ -478,7 +488,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         };
     }
 
-    private generateClusteringResult(model: PredictiveModel, inputData: Record<string, any>, confidence: number): any {
+    private generateClusteringResult(model: PredictiveModel, inputData: Record<string, unknown>, confidence: number): Record<string, unknown> {
         const clusterId = Math.floor(Math.random() * 5);
         const anomalyScore = Math.random();
 
@@ -496,7 +506,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         };
     }
 
-    private generateTimeSeriesResult(model: PredictiveModel, inputData: Record<string, any>, confidence: number): any {
+    private generateTimeSeriesResult(model: PredictiveModel, inputData: Record<string, unknown>, confidence: number): Record<string, unknown> {
         const baseValue = Math.random() * 1000;
         const trend = Math.random() * 10 - 5;
         const forecastValues = Array.from({ length: 24 }, (_, i) => baseValue + trend * i + Math.random() * 20);
@@ -518,7 +528,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         };
     }
 
-    public async batchPredict(modelId: string, inputDataList: Record<string, any>[]): Promise<PredictionRequest[]> {
+    public async batchPredict(modelId: string, inputDataList: Record<string, unknown>[]): Promise<PredictionRequest[]> {
         const results: PredictionRequest[] = [];
 
         for (const inputData of inputDataList) {
@@ -526,7 +536,12 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
                 const result = await this.makePrediction(modelId, inputData);
                 results.push(result);
             } catch (error) {
-                console.error('배치 예측 중 오류:', error);
+                const err = toError(error);
+                errorLogger.error('배치 예측 중 오류', err, {
+                    component: 'ultraAdvancedAIPredictiveAnalyticsSystem',
+                    action: 'batchPredict',
+                    modelId,
+                });
             }
         }
 
@@ -534,7 +549,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         return results;
     }
 
-    public async evaluateModel(modelId: string, testData: any[]): Promise<any> {
+    public async evaluateModel(modelId: string, _testData: unknown[]): Promise<Record<string, unknown>> {
         const model = this.models.get(modelId);
         if (!model) {
             throw new Error(`모델 ${modelId}를 찾을 수 없습니다.`);
@@ -569,19 +584,22 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         return evaluation;
     }
 
-    public async optimizeHyperparameters(modelId: string): Promise<any> {
+    public async optimizeHyperparameters(modelId: string): Promise<Record<string, unknown>> {
         const model = this.models.get(modelId);
         if (!model) {
             throw new Error(`모델 ${modelId}를 찾을 수 없습니다.`);
         }
 
         // 하이퍼파라미터 최적화 시뮬레이션
+        const params = model.parameters as Record<string, unknown>;
+        const learningRate = typeof params.learning_rate === 'number' ? params.learning_rate : 0.01;
+        const batchSize = typeof params.batch_size === 'number' ? params.batch_size : 32;
         const optimization = {
             original_parameters: model.parameters,
             optimized_parameters: {
                 ...model.parameters,
-                learning_rate: model.parameters.learning_rate * (0.8 + Math.random() * 0.4),
-                batch_size: Math.floor(model.parameters.batch_size * (0.8 + Math.random() * 0.4))
+                learning_rate: learningRate * (0.8 + Math.random() * 0.4),
+                batch_size: Math.floor(batchSize * (0.8 + Math.random() * 0.4))
             },
             performance_improvement: Math.random() * 0.1,
             optimization_timestamp: new Date()
@@ -700,7 +718,7 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         this.updateMetrics();
     }
 
-    public async exportModel(modelId: string): Promise<any> {
+    public async exportModel(modelId: string): Promise<Record<string, unknown>> {
         const model = this.models.get(modelId);
         if (!model) {
             throw new Error(`모델 ${modelId}를 찾을 수 없습니다.`);
@@ -714,12 +732,16 @@ class UltraAdvancedAIPredictiveAnalyticsSystem extends EventEmitter {
         };
     }
 
-    public async importModel(modelData: any): Promise<void> {
+    public async importModel(modelData: unknown): Promise<void> {
+        if (!modelData || typeof modelData !== 'object' || !('model' in modelData)) {
+            throw new Error('Invalid model data format');
+        }
+        const data = modelData as { model: Record<string, unknown> };
         const model: PredictiveModel = {
-            ...modelData.model,
+            ...data.model,
             created_at: new Date(),
             updated_at: new Date()
-        };
+        } as PredictiveModel;
 
         await this.createModel(model);
     }

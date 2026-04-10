@@ -491,10 +491,15 @@ async def submit_feedback(response_id: str, success: bool, feedback: str = ""):
 
 # 서버 시작
 if __name__ == "__main__":
+    _p = int(
+        os.environ.get(
+            "RESPONSE_GENERATION_SERVER_PORT", os.environ.get("PORT", "8007")
+        )
+    )
     print("🚀 대응메시지 생성 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8007")
-    print("📖 API 문서: http://localhost:8007/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 엔드포인트:")
     print("   POST /api/generate-response - 대응메시지 생성")
     print("   GET /api/response-strategies - 전략 목록")
@@ -510,7 +515,7 @@ if __name__ == "__main__":
         
         # 서버 시작
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8007, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=_p, log_level="info")
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

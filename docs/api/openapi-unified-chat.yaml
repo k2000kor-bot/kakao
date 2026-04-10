@@ -1,0 +1,509 @@
+openapi: 3.0.3
+info:
+  title: Kakao Frontend — Unified Chat API (Genspark + DeepSeek context)
+  description: |
+    통합 대화 엔드포인트 (`unified_chat_api` + `main_server`의 llm-status).
+    - `context` 객체는 [GENSPARK_DEEPSEEK_ENGINE_API_AND_PRD.md](../architecture/GENSPARK_DEEPSEEK_ENGINE_API_AND_PRD.md) §4와 정합을 유지할 것.
+    - SSE 스트림은 표준 OpenAPI로 완전 기술하기 어려우므로, 응답은 `text/event-stream` 본문 형식을 설명으로 둔다.
+  version: 1.0.0
+  contact:
+    name: 프로젝트 내부
+
+servers:
+  - url: http://localhost:5002
+    description: 로컬 기본 (포트는 실행 환경에 맞게 변경)
+
+tags:
+  - name: health
+  - name: chat
+  - name: llm
+
+paths:
+  /api/health:
+    get:
+      tags: [health]
+      summary: 통합 대화 API 헬스
+      operationId: getApiHealth
+      responses:
+        "200":
+          description: 정상 또는 세부 unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/chat/llm-status:
+    get:
+      tags: [llm]
+      summary: 메인 대화 LLM provider·모델 요약
+      operationId: getChatLlmStatus
+      responses:
+        "200":
+          description: 조회 성공 또는 LLM 미연동
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmStatusResponse"
+
+  /api/chat:
+    post:
+      tags: [chat]
+      summary: 통합 대화 응답 생성 (JSON)
+      operationId: postUnifiedChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnifiedChatRequest"
+      responses:
+        "200":
+          description: 성공 시 본문에 `response`/`message`/`content` 및 선택적 메타
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnifiedChatResponse"
+        "400":
+          description: 검증 실패 (빈 메시지 등)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+
+  /api/unified/chat:
+    post:
+      tags: [chat]
+      summary: POST /api/chat 호환 별칭
+      operationId: postUnifiedChatCompat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnifiedChatRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnifiedChatResponse"
+
+  /api/chat/stream:
+    post:
+      tags: [chat]
+      summary: 통합 대화 SSE 스트리밍
+      description: |
+        응답 `Content-Type: text/event-stream`.
+        각 이벤트는 `data: {JSON}\n\n` 형태.
+        - 진행: `{"content":"...", "done": false}` (선택 `metadata` 조각은 클라이언트에서 누적 병합 가능)
+        - 종료: `{"content":"", "done": true, "fullContent":"...", "metadata": {...}}` — `metadata`에 `next_actions`, `follow_up_questions`, `response_alternatives`, `task_plan`, `verification_summary`(내부에 `verifier_rewrite_attempted` 가능), `verification_pass`, `evidence_coverage`, `trace_id` 등 파이프라인 필드가 올 수 있음
+      operationId: postUnifiedChatStream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatStreamRequest"
+      responses:
+        "200":
+          description: SSE 스트림
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                data: {"content":"안녕","done":false}
+
+                data: {"content":"","done":true,"fullContent":"안녕하세요.","metadata":{"model":"unified-chat-api"}}
+
+  /api/unified/chat/stream:
+    post:
+      tags: [chat]
+      summary: POST /api/chat/stream 호환 별칭
+      operationId: postUnifiedChatStreamCompat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatStreamRequest"
+      responses:
+        "200":
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+          example: unified-chat-api
+        llm_provider:
+          type: string
+          description: LLM 연동 시 (예 deepseek, deepseek-local)
+        timestamp:
+          type: string
+          format: date-time
+
+    LlmStatusResponse:
+      type: object
+      required: [success, timestamp]
+      properties:
+        success:
+          type: boolean
+        provider:
+          type: string
+          nullable: true
+          example: deepseek
+        model:
+          type: string
+          nullable: true
+          example: deepseek-chat
+        summary:
+          type: string
+          example: DeepSeek(API)
+        error:
+          type: string
+          description: 조회 실패 시
+        timestamp:
+          type: string
+
+    UnifiedChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          maxLength: 10000
+          description: 사용자 메시지 (공백만 불가)
+        user_id:
+          type: string
+        conversation_id:
+          type: string
+        context:
+          oneOf:
+            - $ref: "#/components/schemas/ChatContext"
+            - type: array
+              description: 대화 히스토리 등 — 서버에서 conversationContext로 정규화될 수 있음
+        quality:
+          type: string
+          enum: [basic, enhanced, ultimate]
+          default: enhanced
+        mode:
+          type: string
+          description: writing, chat, analysis 등
+        options:
+          type: object
+          additionalProperties: true
+        diversity:
+          type: boolean
+          default: true
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.8
+        request_id:
+          type: string
+        avoid_repetition:
+          type: boolean
+          default: true
+        variation_mode:
+          type: string
+          enum: [normal, high]
+          default: high
+        diversity_level:
+          type: string
+          description: stable, varied, exploratory
+        max_tokens:
+          type: integer
+          default: 16384
+        response_style:
+          type: string
+          enum: [concise, balanced, detailed, comprehensive]
+          default: balanced
+        handle_multiple_questions:
+          type: boolean
+          default: true
+        perspective:
+          type: string
+          nullable: true
+        project_id:
+          type: string
+
+    ChatStreamRequest:
+      allOf:
+        - $ref: "#/components/schemas/UnifiedChatRequest"
+        - type: object
+          properties:
+            session_id:
+              type: string
+              description: conversation_id 대체 가능
+
+    ChatContext:
+      type: object
+      description: |
+        프론트 `buildUnifiedChatContext` 출력과 동일 계열. 필드는 모두 선택적.
+      additionalProperties: true
+      properties:
+        deepseek_review_layer_hints:
+          type: boolean
+        pipeline_deepseek_refine:
+          type: boolean
+        pipeline_deepseek_reasoner:
+          type: boolean
+        agentic_genspark_style:
+          type: boolean
+        use_pipeline_v2:
+          type: boolean
+        agentic_pipeline:
+          type: boolean
+        qa_pipeline_fast_path:
+          type: boolean
+          description: true면 다단계 Q→A 파이프라인 생략(직경로 우선)
+        qa_pipeline_force:
+          type: boolean
+          description: true면 fast/basic 생략 규칙 무시하고 파이프라인 강제
+        answer_mode:
+          type: string
+          description: fast(파이프라인 생략), guided|expert(라우터 근거 preferred 상향·expert는 블루프린트)
+        parsed_input:
+          type: object
+          additionalProperties: true
+        korean_understanding:
+          type: object
+          additionalProperties: true
+        korean_layer_instruction:
+          type: string
+        enable_korean_depth:
+          type: boolean
+        projectId:
+          type: string
+        project_instructions:
+          type: string
+        pipeline_web_evidence:
+          type: string
+          description: 파이프라인 내 web 근거로 주입할 선행 웹 요약(선택)
+        pipeline_skip_writer_llm_polish:
+          type: boolean
+          description: true면 Writer 단계 LLM 다듬기 생략(PIPELINE_WRITER_SKIP_LLM_POLISH와 동효과)
+
+    StreamMetadata:
+      type: object
+      additionalProperties: true
+      properties:
+        progress:
+          type: integer
+        model:
+          type: string
+        response_style:
+          type: string
+        perspective:
+          type: string
+        questions_processed:
+          type: integer
+        max_tokens:
+          type: integer
+        next_actions:
+          type: array
+          items:
+            type: string
+        follow_up_questions:
+          type: array
+          items:
+            type: string
+          description: 이어질 질문 제안(파이프라인·창의 생성)
+        response_alternatives:
+          type: array
+          items:
+            type: string
+          description: 동일 내용의 다른 표현(대안 초안)
+        verification_pass:
+          type: boolean
+          description: Verifier 통과(verification_summary와 병행)
+        answer_blueprint:
+          description: 개요/블루프린트 (구조 자유)
+        qa_pipeline_trace_id:
+          type: string
+        task_plan:
+          description: Q→A 파이프라인 과업 계획 스냅샷 (task_type, subquestions, pipeline_status, answer_mode, response_style, evidence_coverage 등)
+          type: object
+          additionalProperties: true
+        verification_summary:
+          description: Verifier 요약 (skipped/reason 또는 pass, issue_count, issues_preview, fix_actions_preview, verifier_rewrite_attempted 등)
+          type: object
+          additionalProperties: true
+        answer_mode:
+          type: string
+          description: 요청 context 에코(fast|guided|expert 등) — task_plan과 병행 가능
+        trace_id:
+          type: string
+          description: 파이프라인 trace (qa_pipeline_trace_id와 동계열, JSON 폴백 병합용)
+        evidence_coverage:
+          type: number
+          description: 근거 번들 커버리지(0~1)
+        route_decision:
+          description: 라우팅 요약
+        korean_style_notes:
+          description: 한국어 스타일 노트
+        korean_quality_scores:
+          description: 한국어 품질 점수
+        deepseek_refine_meta:
+          $ref: "#/components/schemas/DeepseekRefineMeta"
+        deepseek_critique:
+          description: DeepSeek Reasoner 비평 JSON (옵트인)
+          type: object
+          additionalProperties: true
+        deepseek_reasoner_meta:
+          description: Reasoner 호출 메타 (applied, tokens, error 등)
+          type: object
+          additionalProperties: true
+        workspace_tool_result:
+          description: 워크스페이스 도구 결과
+
+    DeepseekRefineMeta:
+      type: object
+      additionalProperties: true
+      properties:
+        refine_attempted:
+          type: boolean
+        refine_applied:
+          type: boolean
+        model:
+          type: string
+        tokens:
+          type: integer
+        skipped:
+          type: string
+        error:
+          type: string
+
+    UnifiedChatResponse:
+      type: object
+      description: 성공 시 최상위 필드 — 프로젝트 호환을 위해 중복 키가 있을 수 있음
+      additionalProperties: true
+      properties:
+        status:
+          type: string
+          example: success
+        success:
+          type: boolean
+          example: true
+        response:
+          type: string
+        message:
+          type: string
+        content:
+          type: string
+        timestamp:
+          type: string
+        next_actions:
+          type: array
+          items:
+            type: string
+        follow_up_questions:
+          type: array
+          items:
+            type: string
+        response_alternatives:
+          type: array
+          items:
+            type: string
+        verification_pass:
+          type: boolean
+        evidence_coverage:
+          type: number
+          description: 근거 번들 커버리지(0~1)
+        trace_id:
+          type: string
+        answer_mode:
+          type: string
+          description: 요청 context 에코 (JSON 응답·스트림 metadata)
+        response_style:
+          type: string
+          description: 요청 응답 스타일 에코 (balanced|detailed 등)
+        answer_blueprint: {}
+        korean_style_notes: {}
+        korean_quality_scores: {}
+        deepseek_refine_meta:
+          $ref: "#/components/schemas/DeepseekRefineMeta"
+        deepseek_critique:
+          type: object
+          additionalProperties: true
+        deepseek_reasoner_meta:
+          type: object
+          additionalProperties: true
+        task_plan:
+          type: object
+          additionalProperties: true
+        verification_summary:
+          description: Verifier 요약 (SSE 종료 metadata·JSON 응답과 동일 계약)
+          type: object
+          additionalProperties: true
+        workspace_tool_result: {}
+        data:
+          type: object
+          additionalProperties: true
+          properties:
+            response:
+              type: string
+            next_actions:
+              type: array
+              items:
+                type: string
+            follow_up_questions:
+              type: array
+              items:
+                type: string
+            response_alternatives:
+              type: array
+              items:
+                type: string
+            verification_pass:
+              type: boolean
+            evidence_coverage:
+              type: number
+            trace_id:
+              type: string
+            answer_mode:
+              type: string
+            response_style:
+              type: string
+            task_plan:
+              type: object
+              additionalProperties: true
+            verification_summary:
+              type: object
+              additionalProperties: true
+            answer_blueprint: {}
+            deepseek_refine_meta:
+              $ref: "#/components/schemas/DeepseekRefineMeta"
+
+    ErrorBody:
+      type: object
+      additionalProperties: true
+      properties:
+        status:
+          type: string
+          example: error
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        status_code:
+          type: integer

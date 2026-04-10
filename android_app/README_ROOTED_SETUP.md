@@ -65,7 +65,7 @@ private val serverUrl = "http://192.168.1.100:8005"
 -- 메시지 데이터
 chat_logs:
 - _id: 메시지 ID
-- chat_id: 채팅방 ID  
+- chat_id: 대화방 ID  
 - user_id: 보낸 사람 ID
 - nickname: 보낸 사람 이름
 - message: 메시지 내용
@@ -73,11 +73,11 @@ chat_logs:
 - created_at: 생성 시간
 - attachment: 첨부파일 경로
 
--- 채팅방 정보
+-- 대화방 정보
 open_chat_link:
-- id: 채팅방 ID
-- nickname: 채팅방 이름
-- type: 채팅방 타입 (1=개인, 2=그룹, 3=오픈채팅)
+- id: 대화방 ID
+- nickname: 대화방 이름
+- type: 대화방 타입 (1=개인, 2=그룹, 3=오픈대화)
 - member_count: 참여자 수
 - members: 참여자 목록
 ```
@@ -102,7 +102,7 @@ fileObserver = object : FileObserver(dbFolder, MODIFY) {
 ```
 1. 루트 권한으로 DB 파일 복사
 2. SQLite 데이터베이스 읽기
-3. 메시지/채팅방 정보 파싱
+3. 메시지/대화방 정보 파싱
 4. JSON 형식으로 변환
 5. HTTP API로 PC 서버 전송
 6. 기존 웹 시스템과 동기화
@@ -148,7 +148,7 @@ fileObserver = object : FileObserver(dbFolder, MODIFY) {
 ```
 POST /api/rooted/messages/bulk        # 대량 메시지 수신
 POST /api/rooted/message              # 단일 메시지 수신
-POST /api/rooted/chatrooms/bulk       # 채팅방 정보 수신
+POST /api/rooted/chatrooms/bulk       # 대화방 정보 수신
 GET  /api/rooted/messages/unprocessed # 미처리 메시지 조회
 POST /api/rooted/sync-with-main-system # 메인 시스템 동기화
 POST /api/rooted/upload-media         # 미디어 파일 업로드
@@ -248,7 +248,7 @@ adb logcat | grep "KakaoRootExtractor"
 ### 향후 개발 계획
 
 - **다중 기기 지원**: 여러 폰 동시 모니터링
-- **선택적 채팅방**: 특정 채팅방만 모니터링
+- **선택적 대화방**: 특정 대화방만 모니터링
 - **스마트 필터링**: AI 기반 중요 메시지 자동 선별
 - **실시간 알림**: 중요 메시지 즉시 알림
 

@@ -1,7 +1,9 @@
 /**
- * CORBU AI 다중 계층 스타일 분석 시스템
+ * CORBU.AI 다중 계층 스타일 분석 시스템
  * 텍스트의 다층적 스타일 요소를 심층 분석하는 고도화된 시스템
  */
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface StyleLayer {
     name: string;
@@ -13,11 +15,11 @@ export interface StyleLayer {
 
 export interface StyleElement {
     type: string;
-    value: any;
+    value: unknown;
     confidence: number;
     impact: number;
     context: string[];
-    variations: any[];
+    variations: unknown[];
 }
 
 export interface MultiLayerAnalysis {
@@ -102,12 +104,120 @@ export interface AdvancedStyleReplication {
     };
 }
 
+// Internal types for analysis options and method signatures
+interface AnalysisOptions {
+    focusLayers?: string[];
+    culturalContext?: string;
+    targetUse?: string;
+    comparisonTexts?: string[];
+}
+
+interface DepthConfig {
+    depth: number;
+    analyzers: string[];
+    detail_level: string;
+}
+
+interface ReplicationStrategyResult {
+    strategy_type: string;
+    priority_layers: string[];
+    adaptation_approach: string;
+    quality_thresholds: { minimum: number; target: number; maximum: number };
+}
+
+interface LayerMappingsResult {
+    linguistic_mappings: Record<string, unknown>;
+    semantic_mappings: Record<string, unknown>;
+    rhetorical_mappings: Record<string, unknown>;
+}
+
+interface GeneratedContentResult {
+    primary: string;
+    alternatives: string[];
+    confidence: number;
+    layerFidelity: Record<string, number>;
+}
+
+type CorrelationItem = MultiLayerAnalysis['crossLayerPatterns']['correlations'][number];
+type ConflictItem = MultiLayerAnalysis['crossLayerPatterns']['conflicts'][number];
+type SynergyItem = MultiLayerAnalysis['crossLayerPatterns']['synergies'][number];
+type EvolutionChangeItem = {
+    layer: string;
+    changeType: 'evolution' | 'shift' | 'regression';
+    magnitude: number;
+    significance: number;
+};
+type EvolutionTrajectoryItem = {
+    timePoint: string;
+    analysis: MultiLayerAnalysis;
+    changes: EvolutionChangeItem[];
+};
+type EvolutionPatternsResult = {
+    trends: string[];
+    cycles: string[];
+    anomalies: string[];
+    predictions: string[];
+};
+type EvolutionInsightsResult = {
+    drivingFactors: string[];
+    stabilityFactors: string[];
+    adaptationCapacity: number;
+    futureProjections: string[];
+};
+type FusionPlanResult = {
+    fusion_strategy: string;
+    layer_weights: number[];
+    priority_elements: string[];
+    conflict_resolution: string;
+};
+type FusedLayersResult = Record<string, { fused_elements: unknown[]; confidence: number }>;
+type FusionMapItem = {
+    layer: string;
+    contributions: Array<{
+        sourceIndex: number;
+        contribution: number;
+        elements: string[];
+    }>;
+};
+type FusedContentResult = {
+    primary: string;
+    variants: string[];
+    explanation: string;
+};
+type FusionQualityResult = {
+    coherence: number;
+    uniqueness: number;
+    effectiveness: number;
+    risks: string[];
+};
+
+/** 대화 멀티레이어 힌트용 — `maybeCompact*`에서 surface 분석 비용·지연 방지 */
+export const CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS = 8192;
+
+/** 대화 API `context.multilayer_style_hint`용 — 전체 계층 객체는 보내지 않음 */
+export function compactMultiLayerAnalysisForChatContext(m: MultiLayerAnalysis): Record<string, unknown> {
+    return {
+        analysis_depth: m.analysisDepth,
+        style_signature: {
+            uniqueness: m.styleSignature.uniqueness,
+            consistency: m.styleSignature.consistency,
+            complexity: m.styleSignature.complexity,
+            adaptability: m.styleSignature.adaptability,
+            distinctiveness: m.styleSignature.distinctiveness.slice(0, 8),
+        },
+        recommendation_samples: {
+            preservation: m.recommendations.preservation.slice(0, 3),
+            enhancement: m.recommendations.enhancement.slice(0, 2),
+        },
+    };
+}
+
 class MultiLayerStyleAnalysisSystem {
-    private analysisEngines: Map<string, any> = new Map();
-    private layerInteractionRules: Map<string, any> = new Map();
-    private stylePatternDatabase: Map<string, any> = new Map();
-    private replicationAlgorithms: Map<string, any> = new Map();
-    private qualityMetrics: Map<string, any> = new Map();
+    private analysisEngines: Map<string, Record<string, unknown>> = new Map();
+    private layerInteractionRules: Map<string, Record<string, unknown>> = new Map();
+    private stylePatternDatabase: Map<string, Record<string, unknown>> = new Map();
+    private replicationAlgorithms: Map<string, Record<string, unknown>> = new Map();
+    private qualityMetrics: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializeAnalysisEngines();
@@ -130,19 +240,26 @@ class MultiLayerStyleAnalysisSystem {
             comparisonTexts?: string[];
         } = {}
     ): Promise<MultiLayerAnalysis> {
+        const normalizedText = coerceTrimmedString(text, '');
+        if (!normalizedText) {
+            throw new Error('분석할 텍스트가 비어 있습니다.');
+        }
+
         try {
-            console.log('🔍 다중 계층 스타일 분석 시작...', {
-                textLength: text.length,
-                depth: analysisDepth
+            errorLogger.info('🔍 다중 계층 스타일 분석 시작...', {
+                component: 'multiLayerStyleAnalysisSystem',
+                action: 'performMultiLayerAnalysis',
+                textLength: normalizedText.length,
+                depth: analysisDepth,
             });
 
-            const textId = this.generateTextId(text);
+            const textId = this.generateTextId(normalizedText);
 
             // 1. 각 계층별 분석 수행
-            const layers = await this.analyzeAllLayers(text, analysisDepth, options);
+            const layers = await this.analyzeAllLayers(normalizedText, analysisDepth, options);
 
             // 2. 계층 간 상호작용 분석
-            const crossLayerPatterns = await this.analyzeCrossLayerPatterns(layers, text);
+            const crossLayerPatterns = await this.analyzeCrossLayerPatterns(layers, normalizedText);
 
             // 3. 스타일 시그니처 생성
             const styleSignature = await this.generateStyleSignature(layers, crossLayerPatterns);
@@ -165,7 +282,11 @@ class MultiLayerStyleAnalysisSystem {
             };
 
         } catch (error) {
-            console.error('❌ 다중 계층 스타일 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 다중 계층 스타일 분석 실패', err, {
+                component: 'multiLayerStyleAnalysisSystem',
+                action: 'performMultiLayerAnalysis',
+            });
             throw new Error('다중 계층 스타일 분석에 실패했습니다.');
         }
     }
@@ -178,15 +299,26 @@ class MultiLayerStyleAnalysisSystem {
         targetTopic: string,
         precision: StyleClonePrecision
     ): Promise<AdvancedStyleReplication> {
+        const normalizedSource = coerceTrimmedString(sourceText, '');
+        if (!normalizedSource) {
+            throw new Error('원본 텍스트가 비어 있습니다.');
+        }
+        const normalizedTopic = coerceTrimmedString(targetTopic, '');
+        if (!normalizedTopic) {
+            throw new Error('복제 대상 주제가 비어 있습니다.');
+        }
+
         try {
-            console.log('🎯 고정밀 스타일 복제 시작...', {
-                sourceLength: sourceText.length,
-                accuracy: precision.targetAccuracy
+            errorLogger.info('🎯 고정밀 스타일 복제 시작...', {
+                component: 'multiLayerStyleAnalysisSystem',
+                action: 'performPrecisionStyleCloning',
+                sourceLength: normalizedSource.length,
+                accuracy: precision.targetAccuracy,
             });
 
             // 1. 원본 텍스트 심층 분석
             const originalAnalysis = await this.performMultiLayerAnalysis(
-                sourceText,
+                normalizedSource,
                 'comprehensive',
                 { targetUse: 'style_cloning' }
             );
@@ -200,13 +332,13 @@ class MultiLayerStyleAnalysisSystem {
             // 3. 계층별 요소 추출 및 매핑
             const layerMappings = await this.extractLayerMappings(
                 originalAnalysis,
-                targetTopic,
+                normalizedTopic,
                 precision
             );
 
             // 4. 컨텐츠 생성
             const generatedContent = await this.generateStyledContent(
-                targetTopic,
+                normalizedTopic,
                 layerMappings,
                 replicationStrategy,
                 precision
@@ -222,7 +354,7 @@ class MultiLayerStyleAnalysisSystem {
             return {
                 originalAnalysis,
                 replicationRequest: {
-                    newTopic: targetTopic,
+                    newTopic: normalizedTopic,
                     preservationLevel: this.calculatePreservationLevel(precision),
                     adaptationLevel: this.calculateAdaptationLevel(precision),
                     creativityLevel: this.calculateCreativityLevel(precision),
@@ -234,7 +366,11 @@ class MultiLayerStyleAnalysisSystem {
             };
 
         } catch (error) {
-            console.error('❌ 고정밀 스타일 복제 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 고정밀 스타일 복제 실패', err, {
+                component: 'multiLayerStyleAnalysisSystem',
+                action: 'performPrecisionStyleCloning',
+            });
             throw new Error('고정밀 스타일 복제에 실패했습니다.');
         }
     }
@@ -270,10 +406,19 @@ class MultiLayerStyleAnalysisSystem {
             futureProjections: string[];
         };
     }> {
+        if (textSeries.length === 0) {
+            throw new Error('스타일 진화 분석을 위한 텍스트가 없습니다.');
+        }
+        if (textSeries.length !== timePoints.length) {
+            throw new Error('텍스트 개수와 시점 개수가 일치해야 합니다.');
+        }
+
         try {
-            console.log('📈 스타일 진화 분석 시작...', {
+            errorLogger.info('📈 스타일 진화 분석 시작...', {
+                component: 'multiLayerStyleAnalysisSystem',
+                action: 'analyzeStyleEvolution',
                 seriesLength: textSeries.length,
-                analysisType
+                analysisType,
             });
 
             // 각 시점별 분석
@@ -309,7 +454,11 @@ class MultiLayerStyleAnalysisSystem {
             };
 
         } catch (error) {
-            console.error('❌ 스타일 진화 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 스타일 진화 분석 실패', err, {
+                component: 'multiLayerStyleAnalysisSystem',
+                action: 'analyzeStyleEvolution',
+            });
             throw new Error('스타일 진화 분석에 실패했습니다.');
         }
     }
@@ -347,10 +496,20 @@ class MultiLayerStyleAnalysisSystem {
             risks: string[];
         };
     }> {
+        if (sourceTexts.length === 0) {
+            throw new Error('융합할 소스 텍스트가 없습니다.');
+        }
+        const normalizedTopic = coerceTrimmedString(targetTopic, '');
+        if (!normalizedTopic) {
+            throw new Error('융합 주제가 비어 있습니다.');
+        }
+
         try {
-            console.log('🔗 다중 스타일 융합 시작...', {
+            errorLogger.info('🔗 다중 스타일 융합 시작...', {
+                component: 'multiLayerStyleAnalysisSystem',
+                action: 'fuseMultipleStyles',
                 sourceCount: sourceTexts.length,
-                strategy: fusionStrategy
+                strategy: fusionStrategy,
             });
 
             // 각 소스 텍스트 분석
@@ -375,14 +534,14 @@ class MultiLayerStyleAnalysisSystem {
             );
 
             // 융합된 분석 구성
-            const fusedAnalysis = await this.constructFusedAnalysis(fusedLayers, targetTopic);
+            const fusedAnalysis = await this.constructFusedAnalysis(fusedLayers, normalizedTopic);
 
             // 융합 맵 생성
             const fusionMap = await this.generateFusionMap(sourceAnalyses, fusedLayers, sourceTexts);
 
             // 컨텐츠 생성
             const generatedContent = await this.generateFusedContent(
-                targetTopic,
+                normalizedTopic,
                 fusedAnalysis,
                 fusionPlan
             );
@@ -402,7 +561,11 @@ class MultiLayerStyleAnalysisSystem {
             };
 
         } catch (error) {
-            console.error('❌ 다중 스타일 융합 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 다중 스타일 융합 실패', err, {
+                component: 'multiLayerStyleAnalysisSystem',
+                action: 'fuseMultipleStyles',
+            });
             throw new Error('다중 스타일 융합에 실패했습니다.');
         }
     }
@@ -859,7 +1022,7 @@ class MultiLayerStyleAnalysisSystem {
     private async analyzeAllLayers(
         text: string,
         depth: MultiLayerAnalysis['analysisDepth'],
-        options: any
+        options: AnalysisOptions
     ): Promise<MultiLayerAnalysis['layers']> {
         const depthConfig = this.getDepthConfiguration(depth);
         const layers = {} as MultiLayerAnalysis['layers'];
@@ -893,7 +1056,7 @@ class MultiLayerStyleAnalysisSystem {
 
     private async analyzeCrossLayerPatterns(
         layers: MultiLayerAnalysis['layers'],
-        text: string
+        _text: string
     ): Promise<MultiLayerAnalysis['crossLayerPatterns']> {
         // 상관관계 분석
         const correlations = await this.calculateLayerCorrelations(layers);
@@ -939,7 +1102,7 @@ class MultiLayerStyleAnalysisSystem {
     // 계층별 분석 메서드들
     // ============================
 
-    private async analyzeLinguisticLayer(text: string, depthConfig: any, options: any): Promise<StyleLayer> {
+    private async analyzeLinguisticLayer(text: string, depthConfig: DepthConfig, _options: AnalysisOptions): Promise<StyleLayer> {
         const elements: StyleElement[] = [];
 
         // 형태론적 분석
@@ -984,7 +1147,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async analyzeSemanticLayer(text: string, depthConfig: any, options: any): Promise<StyleLayer> {
+    private async analyzeSemanticLayer(text: string, depthConfig: DepthConfig, _options: AnalysisOptions): Promise<StyleLayer> {
         const elements: StyleElement[] = [];
 
         // 개념적 분석
@@ -1018,7 +1181,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async analyzeRhetoricalLayer(text: string, depthConfig: any, options: any): Promise<StyleLayer> {
+    private async analyzeRhetoricalLayer(text: string, depthConfig: DepthConfig, _options: AnalysisOptions): Promise<StyleLayer> {
         const elements: StyleElement[] = [];
 
         // 설득 전략 분석
@@ -1052,7 +1215,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async analyzeEmotionalLayer(text: string, depthConfig: any, options: any): Promise<StyleLayer> {
+    private async analyzeEmotionalLayer(text: string, depthConfig: DepthConfig, _options: AnalysisOptions): Promise<StyleLayer> {
         const elements: StyleElement[] = [];
 
         // 감정 탐지 분석
@@ -1086,7 +1249,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async analyzePragmaticLayer(text: string, depthConfig: any, options: any): Promise<StyleLayer> {
+    private async analyzePragmaticLayer(text: string, depthConfig: DepthConfig, _options: AnalysisOptions): Promise<StyleLayer> {
         const elements: StyleElement[] = [];
 
         const speechActAnalysis = await this.performSpeechActAnalysis(text, depthConfig);
@@ -1108,7 +1271,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async analyzePsychologicalLayer(text: string, depthConfig: any, options: any): Promise<StyleLayer> {
+    private async analyzePsychologicalLayer(text: string, depthConfig: DepthConfig, _options: AnalysisOptions): Promise<StyleLayer> {
         const elements: StyleElement[] = [];
 
         const personalityIndicators = await this.performPersonalityAnalysis(text, depthConfig);
@@ -1130,7 +1293,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async analyzeCulturalLayer(text: string, depthConfig: any, options: any): Promise<StyleLayer> {
+    private async analyzeCulturalLayer(text: string, depthConfig: DepthConfig, _options: AnalysisOptions): Promise<StyleLayer> {
         const elements: StyleElement[] = [];
 
         const culturalValues = await this.performCulturalValueAnalysis(text, depthConfig);
@@ -1152,7 +1315,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async analyzeCognitiveLayer(text: string, depthConfig: any, options: any): Promise<StyleLayer> {
+    private async analyzeCognitiveLayer(text: string, depthConfig: DepthConfig, _options: AnalysisOptions): Promise<StyleLayer> {
         const elements: StyleElement[] = [];
 
         const complexityAnalysis = await this.performComplexityAnalysis(text, depthConfig);
@@ -1182,8 +1345,8 @@ class MultiLayerStyleAnalysisSystem {
         return `text_${Date.now()}_${text.length}_${text.substring(0, 10).replace(/\s/g, '')}`;
     }
 
-    private getDepthConfiguration(depth: MultiLayerAnalysis['analysisDepth']): any {
-        const configs = {
+    private getDepthConfiguration(depth: MultiLayerAnalysis['analysisDepth']): DepthConfig {
+        const configs: Record<MultiLayerAnalysis['analysisDepth'], DepthConfig> = {
             surface: { depth: 1, analyzers: ['basic'], detail_level: 'low' },
             intermediate: { depth: 2, analyzers: ['basic', 'intermediate'], detail_level: 'medium' },
             deep: { depth: 3, analyzers: ['basic', 'intermediate', 'advanced'], detail_level: 'high' },
@@ -1194,7 +1357,7 @@ class MultiLayerStyleAnalysisSystem {
     }
 
     // 분석 메서드들 (간략화)
-    private async performMorphologicalAnalysis(text: string, config: any): Promise<any> {
+    private async performMorphologicalAnalysis(text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             word_segmentation: text.split(/\s+/),
             morpheme_count: text.split(/\s+/).length,
@@ -1203,28 +1366,30 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performSyntacticAnalysis(text: string, config: any): Promise<any> {
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    private async performSyntacticAnalysis(text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
+        const sentences = text.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
+        const totalLen = sentences.reduce((sum, s) => sum + s.length, 0);
         return {
             sentence_count: sentences.length,
-            average_length: sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length,
+            average_length: sentences.length > 0 ? totalLen / sentences.length : 0,
             complexity_patterns: ['compound_sentences', 'subordinate_clauses'],
             structural_variety: 0.8
         };
     }
 
-    private async performLexicalAnalysis(text: string, config: any): Promise<any> {
-        const words = text.split(/\s+/);
+    private async performLexicalAnalysis(text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
+        const words = text.trim().split(/\s+/).filter((w) => w.length > 0);
         const uniqueWords = new Set(words);
+        const n = words.length;
         return {
             vocabulary_size: uniqueWords.size,
-            lexical_diversity: uniqueWords.size / words.length,
+            lexical_diversity: n > 0 ? uniqueWords.size / n : 0,
             register_level: 'semi_formal',
             domain_specificity: 0.6
         };
     }
 
-    private async performConceptualAnalysis(text: string, config: any): Promise<any> {
+    private async performConceptualAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             main_concepts: ['communication', 'analysis', 'style'],
             semantic_fields: ['technology', 'linguistics', 'cognition'],
@@ -1233,7 +1398,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performRelationalAnalysis(text: string, config: any): Promise<any> {
+    private async performRelationalAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             coherence_score: 0.85,
             semantic_relations: ['cause_effect', 'part_whole', 'comparison'],
@@ -1242,7 +1407,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performPersuasionAnalysis(text: string, config: any): Promise<any> {
+    private async performPersuasionAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             ethos_elements: ['credibility_indicators', 'authority_markers'],
             pathos_elements: ['emotional_appeals', 'value_connections'],
@@ -1251,7 +1416,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performRhetoricalDevicesAnalysis(text: string, config: any): Promise<any> {
+    private async performRhetoricalDevicesAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             identified_devices: ['metaphor', 'analogy', 'repetition'],
             device_frequency: 0.6,
@@ -1260,7 +1425,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performEmotionDetection(text: string, config: any): Promise<any> {
+    private async performEmotionDetection(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             primary_emotions: ['curiosity', 'confidence'],
             emotion_intensity: 0.6,
@@ -1269,7 +1434,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performEmotionalFlowAnalysis(text: string, config: any): Promise<any> {
+    private async performEmotionalFlowAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             emotional_arc: ['neutral_start', 'building_interest', 'confident_conclusion'],
             transition_smoothness: 0.8,
@@ -1278,7 +1443,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performSpeechActAnalysis(text: string, config: any): Promise<any> {
+    private async performSpeechActAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             primary_acts: ['assertive', 'directive'],
             illocutionary_force: 0.7,
@@ -1287,7 +1452,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performPersonalityAnalysis(text: string, config: any): Promise<any> {
+    private async performPersonalityAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             big_five_markers: {
                 openness: 0.8,
@@ -1301,7 +1466,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performCulturalValueAnalysis(text: string, config: any): Promise<any> {
+    private async performCulturalValueAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             cultural_dimensions: {
                 individualism_collectivism: 0.6,
@@ -1313,7 +1478,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performComplexityAnalysis(text: string, config: any): Promise<any> {
+    private async performComplexityAnalysis(_text: string, _config: DepthConfig): Promise<Record<string, unknown>> {
         return {
             syntactic_complexity: 0.7,
             semantic_complexity: 0.6,
@@ -1323,7 +1488,7 @@ class MultiLayerStyleAnalysisSystem {
     }
 
     // 상관관계, 충돌, 시너지 분석 메서드들 (간략화)
-    private async calculateLayerCorrelations(layers: MultiLayerAnalysis['layers']): Promise<any[]> {
+    private async calculateLayerCorrelations(_layers: MultiLayerAnalysis['layers']): Promise<CorrelationItem[]> {
         return [
             {
                 layers: ['linguistic', 'cognitive'],
@@ -1340,7 +1505,7 @@ class MultiLayerStyleAnalysisSystem {
         ];
     }
 
-    private async identifyLayerConflicts(layers: MultiLayerAnalysis['layers']): Promise<any[]> {
+    private async identifyLayerConflicts(_layers: MultiLayerAnalysis['layers']): Promise<ConflictItem[]> {
         return [
             {
                 layers: ['formal_linguistic', 'casual_emotional'],
@@ -1350,7 +1515,7 @@ class MultiLayerStyleAnalysisSystem {
         ];
     }
 
-    private async identifyLayerSynergies(layers: MultiLayerAnalysis['layers']): Promise<any[]> {
+    private async identifyLayerSynergies(_layers: MultiLayerAnalysis['layers']): Promise<SynergyItem[]> {
         return [
             {
                 layers: ['semantic', 'rhetorical'],
@@ -1361,27 +1526,32 @@ class MultiLayerStyleAnalysisSystem {
     }
 
     // 스타일 시그니처 계산 메서드들 (간략화)
-    private async calculateUniqueness(layers: any, patterns: any): Promise<number> {
+    private async calculateUniqueness(_layers: MultiLayerAnalysis['layers'], _patterns: MultiLayerAnalysis['crossLayerPatterns']): Promise<number> {
         return 0.75; // 실제로는 복잡한 계산
     }
 
-    private async calculateConsistency(layers: any, patterns: any): Promise<number> {
+    private async calculateConsistency(_layers: MultiLayerAnalysis['layers'], _patterns: MultiLayerAnalysis['crossLayerPatterns']): Promise<number> {
         return 0.85; // 실제로는 복잡한 계산
     }
 
-    private async calculateComplexity(layers: any): Promise<number> {
+    private async calculateComplexity(_layers: MultiLayerAnalysis['layers']): Promise<number> {
         return 0.7; // 실제로는 복잡한 계산
     }
 
-    private async calculateAdaptability(layers: any, patterns: any): Promise<number> {
+    private async calculateAdaptability(_layers: MultiLayerAnalysis['layers'], _patterns: MultiLayerAnalysis['crossLayerPatterns']): Promise<number> {
         return 0.8; // 실제로는 복잡한 계산
     }
 
-    private async extractDistinctiveFeatures(layers: any, patterns: any): Promise<string[]> {
+    private async extractDistinctiveFeatures(_layers: MultiLayerAnalysis['layers'], _patterns: MultiLayerAnalysis['crossLayerPatterns']): Promise<string[]> {
         return ['analytical_approach', 'formal_yet_engaging', 'systematic_structure'];
     }
 
-    private async generateRecommendations(layers: any, patterns: any, signature: any, options: any): Promise<any> {
+    private async generateRecommendations(
+        _layers: MultiLayerAnalysis['layers'],
+        _patterns: MultiLayerAnalysis['crossLayerPatterns'],
+        _signature: MultiLayerAnalysis['styleSignature'],
+        _options: AnalysisOptions
+    ): Promise<MultiLayerAnalysis['recommendations']> {
         return {
             preservation: ['maintain_analytical_tone', 'preserve_formal_register'],
             enhancement: ['add_more_examples', 'increase_emotional_engagement'],
@@ -1407,7 +1577,7 @@ class MultiLayerStyleAnalysisSystem {
     }
 
     // 추가 복제 관련 메서드들은 간략화하여 구현
-    private async developReplicationStrategy(analysis: MultiLayerAnalysis, precision: StyleClonePrecision): Promise<any> {
+    private async developReplicationStrategy(analysis: MultiLayerAnalysis, precision: StyleClonePrecision): Promise<ReplicationStrategyResult> {
         return {
             strategy_type: 'layer_weighted_replication',
             priority_layers: precision.preservationPriority,
@@ -1416,7 +1586,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async extractLayerMappings(analysis: MultiLayerAnalysis, targetTopic: string, precision: StyleClonePrecision): Promise<any> {
+    private async extractLayerMappings(_analysis: MultiLayerAnalysis, _targetTopic: string, _precision: StyleClonePrecision): Promise<LayerMappingsResult> {
         return {
             linguistic_mappings: { sentence_patterns: [], vocabulary_choices: [] },
             semantic_mappings: { concept_transfers: [], metaphor_adaptations: [] },
@@ -1424,7 +1594,12 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async generateStyledContent(targetTopic: string, mappings: any, strategy: any, precision: StyleClonePrecision): Promise<any> {
+    private async generateStyledContent(
+        targetTopic: string,
+        _mappings: LayerMappingsResult,
+        _strategy: ReplicationStrategyResult,
+        _precision: StyleClonePrecision
+    ): Promise<GeneratedContentResult> {
         return {
             primary: `${targetTopic}에 대한 분석적 접근을 통해 체계적으로 살펴보겠습니다.`,
             alternatives: [`${targetTopic}의 핵심 요소들을 구조적으로 분석해보겠습니다.`],
@@ -1438,7 +1613,11 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async assessReplicationQuality(original: MultiLayerAnalysis, generated: any, precision: StyleClonePrecision): Promise<any> {
+    private async assessReplicationQuality(
+        _original: MultiLayerAnalysis,
+        _generated: GeneratedContentResult,
+        _precision: StyleClonePrecision
+    ): Promise<AdvancedStyleReplication['qualityAssessment']> {
         return {
             overallScore: 0.82,
             layerScores: {
@@ -1453,7 +1632,7 @@ class MultiLayerStyleAnalysisSystem {
     }
 
     // 스타일 진화 분석 관련 메서드들 (간략화)
-    private async calculateStyleChanges(prevText: string, currentText: string, prevTime: string, currentTime: string): Promise<any[]> {
+    private async calculateStyleChanges(_prevText: string, _currentText: string, _prevTime: string, _currentTime: string): Promise<EvolutionChangeItem[]> {
         return [
             {
                 layer: 'linguistic',
@@ -1470,7 +1649,7 @@ class MultiLayerStyleAnalysisSystem {
         ];
     }
 
-    private async identifyEvolutionPatterns(trajectory: any[], analysisType: string): Promise<any> {
+    private async identifyEvolutionPatterns(_trajectory: EvolutionTrajectoryItem[], _analysisType: string): Promise<EvolutionPatternsResult> {
         return {
             trends: ['increasing_complexity', 'emotional_sophistication'],
             cycles: ['formal_informal_alternation'],
@@ -1479,7 +1658,7 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async generateEvolutionInsights(trajectory: any[], patterns: any): Promise<any> {
+    private async generateEvolutionInsights(_trajectory: EvolutionTrajectoryItem[], _patterns: EvolutionPatternsResult): Promise<EvolutionInsightsResult> {
         return {
             drivingFactors: ['audience_feedback', 'topic_complexity', 'writing_experience'],
             stabilityFactors: ['core_analytical_approach', 'formal_register_preference'],
@@ -1489,7 +1668,11 @@ class MultiLayerStyleAnalysisSystem {
     }
 
     // 스타일 융합 관련 메서드들 (간략화)
-    private async developFusionPlan(analyses: MultiLayerAnalysis[], sources: any[], strategy: string): Promise<any> {
+    private async developFusionPlan(
+        _analyses: MultiLayerAnalysis[],
+        sources: Array<{ text: string; weight: number; priority: string[] }>,
+        strategy: string
+    ): Promise<FusionPlanResult> {
         return {
             fusion_strategy: strategy,
             layer_weights: sources.map(s => s.weight),
@@ -1498,7 +1681,11 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async performLayerFusion(analyses: MultiLayerAnalysis[], plan: any, sources: any[]): Promise<any> {
+    private async performLayerFusion(
+        _analyses: MultiLayerAnalysis[],
+        _plan: FusionPlanResult,
+        _sources: Array<{ text: string; weight: number; priority: string[] }>
+    ): Promise<FusedLayersResult> {
         return {
             linguistic: { fused_elements: [], confidence: 0.8 },
             semantic: { fused_elements: [], confidence: 0.85 },
@@ -1506,12 +1693,12 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async constructFusedAnalysis(fusedLayers: any, targetTopic: string): Promise<MultiLayerAnalysis> {
+    private async constructFusedAnalysis(fusedLayers: FusedLayersResult, _targetTopic: string): Promise<MultiLayerAnalysis> {
         // 간략화된 융합 분석 구성
         return {
             textId: `fused_${Date.now()}`,
             analysisDepth: 'comprehensive',
-            layers: fusedLayers as MultiLayerAnalysis['layers'],
+            layers: fusedLayers as unknown as MultiLayerAnalysis['layers'],
             crossLayerPatterns: {
                 correlations: [],
                 conflicts: [],
@@ -1533,7 +1720,11 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async generateFusionMap(sourceAnalyses: MultiLayerAnalysis[], fusedLayers: any, sources: any[]): Promise<any[]> {
+    private async generateFusionMap(
+        _sourceAnalyses: MultiLayerAnalysis[],
+        _fusedLayers: FusedLayersResult,
+        sources: Array<{ text: string; weight: number; priority: string[] }>
+    ): Promise<FusionMapItem[]> {
         return [
             {
                 layer: 'linguistic',
@@ -1546,7 +1737,11 @@ class MultiLayerStyleAnalysisSystem {
         ];
     }
 
-    private async generateFusedContent(targetTopic: string, fusedAnalysis: MultiLayerAnalysis, plan: any): Promise<any> {
+    private async generateFusedContent(
+        targetTopic: string,
+        _fusedAnalysis: MultiLayerAnalysis,
+        _plan: FusionPlanResult
+    ): Promise<FusedContentResult> {
         return {
             primary: `${targetTopic}에 대한 다각적 접근을 통해 융합적 관점에서 분석해보겠습니다.`,
             variants: [`${targetTopic}의 통합적 이해를 위한 체계적 분석입니다.`],
@@ -1554,7 +1749,11 @@ class MultiLayerStyleAnalysisSystem {
         };
     }
 
-    private async assessFusionQuality(fusedAnalysis: MultiLayerAnalysis, content: any, sources: MultiLayerAnalysis[]): Promise<any> {
+    private async assessFusionQuality(
+        _fusedAnalysis: MultiLayerAnalysis,
+        _content: FusedContentResult,
+        _sources: MultiLayerAnalysis[]
+    ): Promise<FusionQualityResult> {
         return {
             coherence: 0.85,
             uniqueness: 0.9,
@@ -1567,3 +1766,48 @@ class MultiLayerStyleAnalysisSystem {
 export const multiLayerStyleAnalysisSystem = new MultiLayerStyleAnalysisSystem();
 export default multiLayerStyleAnalysisSystem;
 export { MultiLayerStyleAnalysisSystem };
+
+/**
+ * `REACT_APP_CHAT_MULTILAYER_STYLE_HINT=true`일 때만 surface 분석 후 compact 객체 반환.
+ * ChatGPTInterface·스트리밍·파일분석 등 공통 진입점용.
+ */
+export async function maybeCompactMultilayerStyleHintForChatContext(
+    rawInput: string
+): Promise<Record<string, unknown> | undefined> {
+    if (typeof process === 'undefined' || process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT !== 'true') {
+        return undefined;
+    }
+    const text = coerceTrimmedString(rawInput, '');
+    if (text.length < 8) {
+        return undefined;
+    }
+    const textForAnalysis =
+        text.length > CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS
+            ? text.slice(0, CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS)
+            : text;
+    try {
+        const mla = await multiLayerStyleAnalysisSystem.performMultiLayerAnalysis(textForAnalysis, 'surface');
+        return compactMultiLayerAnalysisForChatContext(mla);
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * `context`를 얕게 복사한 뒤 `multilayer_style_hint`가 없을 때만 채움.
+ * 통합 API·apiClient·스트리밍 등 공통.
+ */
+export async function enrichChatContextRecordWithOptionalMultilayerStyleHint(
+    rawUserMessage: string,
+    context?: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+    const ctx = context && typeof context === 'object' ? { ...context } : {};
+    if (ctx.multilayer_style_hint) {
+        return ctx;
+    }
+    const mlh = await maybeCompactMultilayerStyleHintForChatContext(coerceTrimmedString(rawUserMessage, ''));
+    if (mlh) {
+        Object.assign(ctx, { multilayer_style_hint: mlh });
+    }
+    return ctx;
+}

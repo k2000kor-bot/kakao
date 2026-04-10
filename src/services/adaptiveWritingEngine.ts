@@ -5,6 +5,7 @@
  */
 
 import { errorLogger } from '../utils/errorLogger';
+import { coerceTrimmedString, type PipelineMessageExtras } from '../utils/chatInputUtils';
 
 export interface SourceMaterial {
     type: 'original_text' | 'knowledge_base' | 'media_file' | 'reference_document';
@@ -95,37 +96,156 @@ export interface WritingRequirements {
     };
 }
 
+export interface ToneAnalysis {
+    score: number;
+    compliance?: string;
+}
+
+export interface ContentMetadata {
+    actual_word_count: number;
+    actual_character_count: number;
+    actual_paragraph_count: number;
+    avg_sentence_length: number;
+    readability_score: number;
+    tone_analysis: ToneAnalysis;
+    keyword_density: Record<string, number> | number;
+    style_conformance: Record<string, number> | number;
+}
+
+export interface AnalyzedSources {
+    original_texts: SourceAnalysis[];
+    knowledge_items: SourceAnalysis[];
+    media_contents: SourceAnalysis[];
+    references: SourceAnalysis[];
+    synthesis?: SynthesisResult;
+    key_themes?: string[];
+    factual_claims?: FactualClaim[];
+    perspectives?: Perspective[];
+}
+
+export interface SourceAnalysis {
+    content: string;
+    metadata?: Record<string, unknown>;
+    linguistic_features: LinguisticFeatures;
+    key_concepts: string[];
+    sentiment: SentimentResult;
+    writing_style: WritingStyleResult;
+    factual_density: number;
+    quotable_segments: string[];
+    statistical_data: StatisticalDataItem[];
+    expert_opinions: ExpertOpinion[];
+}
+
+export interface LinguisticFeatures {
+    sentence_complexity: string;
+    vocabulary_level: string;
+    rhetorical_devices: string[];
+    emotional_markers: string[];
+}
+
+export interface SentimentResult {
+    polarity: string;
+    intensity: number;
+    emotional_tone: string;
+}
+
+export interface WritingStyleResult {
+    formality_level: string;
+    complexity_score: number;
+    readability_grade: number;
+    style_markers: string[];
+}
+
+export interface StatisticalDataItem {
+    value: string;
+    context: string;
+    reliability: number;
+}
+
+export interface ExpertOpinion {
+    expert: string;
+    opinion: string;
+    field: string;
+}
+
+export interface SynthesisResult {
+    main_findings: string;
+    key_insights: string;
+    common_themes: string;
+    conflicting_views: string;
+}
+
+export interface FactualClaim {
+    claim: string;
+    evidence: string;
+    reliability: number;
+}
+
+export interface Perspective {
+    perspective: string;
+    supporters: string;
+    strength: string;
+}
+
+export interface RelevantKnowledge {
+    domain_knowledge: string[];
+    current_events: string[];
+    expert_perspectives: ExpertOpinion[];
+    statistical_context: string[];
+    historical_context: string[];
+    comparative_data: string[];
+}
+
+export interface ContentStructure {
+    sections: string[];
+    transitions: string[];
+    emphasis_points: string[];
+    flow_pattern: string;
+}
+
+export interface StyleGuidelines {
+    sentence_templates: string[];
+    vocabulary_level: string;
+    transition_phrases: string[];
+    emphasis_techniques: string[];
+    paragraph_connectors: string[];
+    tone_markers: string[];
+    formality_indicators: string[];
+    target_metrics: {
+        avg_sentence_length: string | number;
+        paragraph_length: number;
+        complexity_score: string;
+    };
+}
+
+export interface ContentAlternatives {
+    different_tone: string;
+    different_length: string;
+    different_structure: string;
+}
+
+export interface SourceAttribution {
+    primary_sources: string[];
+    knowledge_integration: string[];
+    media_references: string[];
+}
+
 export interface GeneratedContent {
     title: string;
     content: string;
-    metadata: {
-        actual_word_count: number;
-        actual_character_count: number;
-        actual_paragraph_count: number;
-        avg_sentence_length: number;
-        readability_score: number;
-        tone_analysis: any;
-        keyword_density: Record<string, number>;
-        style_conformance: Record<string, number>;
-    };
-    alternatives: {
-        different_tone: string;
-        different_length: string;
-        different_structure: string;
-    };
+    metadata: ContentMetadata;
+    alternatives: ContentAlternatives;
     improvement_suggestions: string[];
-    source_attribution: {
-        primary_sources: string[];
-        knowledge_integration: string[];
-        media_references: string[];
-    };
+    source_attribution: SourceAttribution | null;
+    /** 상위 파이프라인·통합 API에서 실을 Q→A 메타(선택) */
+    pipelineExtras?: PipelineMessageExtras;
 }
 
 class AdaptiveWritingEngine {
 
-    private knowledgeBase: Map<string, any> = new Map();
+    private knowledgeBase: Map<string, unknown> = new Map();
     private mediaContentAnalyzer: MediaContentAnalyzer;
-    private styleTemplates: Map<string, any> = new Map();
+    private styleTemplates: Map<string, StyleGuidelines> = new Map();
     private readonly PROMPT_TEMPLATES: Record<string, string> = {
         formal: `당신은 전문적인 글쓰기 전문가입니다. 다음 요구사항에 따라 고품질의 글을 작성해주세요.`,
         creative: `당신은 창의적인 글쓰기 전문가입니다. 독창적이고 매력적인 글을 작성해주세요.`,
@@ -179,11 +299,11 @@ class AdaptiveWritingEngine {
 
             // 9. 개선 제안 생성
             // generateImprovementSuggestions는 현재 사용하지 않음
-            const suggestions: any[] = []; // this.generateImprovementSuggestions(refinedContent, requirements, metadata);
+            const suggestions: string[] = []; // this.generateImprovementSuggestions(refinedContent, requirements, metadata);
 
             // 10. 소스 어트리뷰션 생성
             // generateSourceAttribution는 현재 사용하지 않음
-            const attribution: any = null; // this.generateSourceAttribution(analyzedSources, relevantKnowledge, sources);
+            const attribution: SourceAttribution | null = null; // this.generateSourceAttribution(analyzedSources, relevantKnowledge, sources);
 
             return {
                 title: '', // this.generateTitle(requirements, metadata, refinedContent), // generateTitle는 현재 사용하지 않음
@@ -206,12 +326,12 @@ class AdaptiveWritingEngine {
     /**
      * 소스 자료 분석
      */
-    private async analyzeSources(sources: SourceMaterial[]): Promise<any> {
-        const analyzedSources = {
-            original_texts: [] as any[],
-            knowledge_items: [] as any[],
-            media_contents: [] as any[],
-            references: [] as any[]
+    private async analyzeSources(sources: SourceMaterial[]): Promise<AnalyzedSources> {
+        const analyzedSources: AnalyzedSources = {
+            original_texts: [] as SourceAnalysis[],
+            knowledge_items: [] as SourceAnalysis[],
+            media_contents: [] as SourceAnalysis[],
+            references: [] as SourceAnalysis[]
         };
 
         for (const source of sources) {
@@ -245,7 +365,7 @@ class AdaptiveWritingEngine {
     /**
      * 개별 소스 분석
      */
-    private async analyzeIndividualSource(source: SourceMaterial): Promise<any> {
+    private async analyzeIndividualSource(source: SourceMaterial): Promise<SourceAnalysis> {
         return {
             content: source.content,
             metadata: source.metadata,
@@ -263,7 +383,7 @@ class AdaptiveWritingEngine {
     /**
      * 관련 지식 추출
      */
-    private async extractRelevantKnowledge(topic: string): Promise<any> {
+    private async extractRelevantKnowledge(topic: string): Promise<RelevantKnowledge> {
         // 실제 구현에서는 외부 지식 베이스나 API 연동
         return {
             domain_knowledge: [`${topic} 관련 전문 지식 1`, `${topic} 관련 전문 지식 2`],
@@ -281,11 +401,11 @@ class AdaptiveWritingEngine {
     /**
      * 콘텐츠 구조 설계
      */
-    private designContentStructure(requirements: WritingRequirements): any {
-        const structure = {
-            sections: [] as string[],
-            transitions: [] as string[],
-            emphasis_points: [] as string[],
+    private designContentStructure(requirements: WritingRequirements): ContentStructure {
+        const structure: ContentStructure = {
+            sections: [],
+            transitions: [],
+            emphasis_points: [],
             flow_pattern: ''
         };
 
@@ -325,7 +445,7 @@ class AdaptiveWritingEngine {
     /**
      * 스타일 가이드라인 생성
      */
-    private generateStyleGuidelines(requirements: WritingRequirements): any {
+    private generateStyleGuidelines(requirements: WritingRequirements): StyleGuidelines {
         return {
             sentence_templates: ['기본 문장 템플릿 1', '기본 문장 템플릿 2'],
             vocabulary_level: requirements.target_audience.expertise_level || 'intermediate',
@@ -346,10 +466,10 @@ class AdaptiveWritingEngine {
      * 메인 콘텐츠 생성
      */
     private async generateMainContent(
-        sources: any,
-        knowledge: any,
-        structure: any,
-        guidelines: any,
+        sources: AnalyzedSources,
+        knowledge: RelevantKnowledge,
+        structure: ContentStructure,
+        guidelines: StyleGuidelines,
         requirements: WritingRequirements
     ): Promise<string> {
         let content = '';
@@ -382,16 +502,18 @@ class AdaptiveWritingEngine {
      */
     private async generateSection(
         sectionName: string,
-        sources: any,
-        knowledge: any,
-        guidelines: any,
+        sources: AnalyzedSources,
+        knowledge: RelevantKnowledge,
+        guidelines: StyleGuidelines,
         requirements: WritingRequirements,
-        sectionIndex: number,
-        totalSections: number
+        _sectionIndex: number,
+        _totalSections: number
     ): Promise<string> {
 
-        const sectionPurpose = 'general';
-        const targetLength = 200;
+        const _sectionPurpose = 'general';
+        const _targetLength = 200;
+        void _sectionPurpose;
+        void _targetLength;
 
         let sectionContent = '';
 
@@ -431,7 +553,7 @@ class AdaptiveWritingEngine {
     /**
      * 서론 생성
      */
-    private generateIntroduction(sources: any, knowledge: any, guidelines: any, requirements: WritingRequirements): string {
+    private generateIntroduction(sources: AnalyzedSources, knowledge: RelevantKnowledge, guidelines: StyleGuidelines, requirements: WritingRequirements): string {
         const topic = requirements.topic;
         const formality = requirements.tone.formality;
         const purpose = requirements.purpose;
@@ -462,10 +584,13 @@ class AdaptiveWritingEngine {
     /**
      * 설득적 서론 생성
      */
-    private generatePersuasiveIntro(topic: string, sources: any, knowledge: any, formality: string): string {
-        const urgency = 'normal';
-        const stakeholders: string[] = [];
-        const impact = 'moderate';
+    private generatePersuasiveIntro(topic: string, sources: AnalyzedSources, knowledge: RelevantKnowledge, formality: string): string {
+        const _urgency = 'normal';
+        const _stakeholders: string[] = [];
+        const _impact = 'moderate';
+        void _urgency;
+        void _stakeholders;
+        void _impact;
 
         if (formality === 'very_formal' || formality === 'formal') {
             return `현대 사회에서 "${topic}"은 더 이상 선택의 문제가 아닌 필수적 과제로 대두되고 있다. 이는 우리 사회 전반에 광범위한 영향을 미치고 있으며, 특히 관련 당사자들에게는 직접적이고 즉각적인 변화를 요구하고 있다.
@@ -512,7 +637,7 @@ class AdaptiveWritingEngine {
     /**
      * 길이 조정
      */
-    private adjustContentLength(content: string, structureReq: any): string {
+    private adjustContentLength(content: string, structureReq: WritingRequirements['structure']): string {
         const currentWordCount = content.split(/\s+/).filter(w => w.length > 0).length;
         const targetWordCount = structureReq.word_count?.target;
 
@@ -535,12 +660,12 @@ class AdaptiveWritingEngine {
      * 콘텐츠 축소
      */
     private condenseContent(content: string, ratio: number): string {
-        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = content.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const targetSentenceCount = Math.floor(sentences.length * ratio);
 
         // 중요도 기반 문장 선별
         const sentenceImportance = sentences.map(sentence => ({
-            sentence: sentence.trim(),
+            sentence: coerceTrimmedString(sentence, ''),
             importance: sentence.length > 50 ? 0.8 : 0.6
         }));
 
@@ -556,15 +681,15 @@ class AdaptiveWritingEngine {
     /**
      * 콘텐츠 확장
      */
-    private expandContent(content: string, ratio: number): string {
-        const paragraphs = content.split('\n\n').filter(p => p.trim().length > 0);
+    private expandContent(content: string, _ratio: number): string {
+        const paragraphs = content.split('\n\n').filter((p) => coerceTrimmedString(p, '').length > 0);
 
         let expandedParagraphs = paragraphs.map(paragraph => {
-            const sentences = paragraph.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            const sentences = paragraph.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
             const expandedSentences = [];
 
             for (const sentence of sentences) {
-                expandedSentences.push(sentence.trim() + '.');
+                expandedSentences.push(coerceTrimmedString(sentence, '') + '.');
 
                 // 문장별 확장 기회 평가
                 if (sentence.length < 30) {
@@ -584,9 +709,9 @@ class AdaptiveWritingEngine {
     /**
      * 대안 버전 생성
      */
-    private async generateAlternatives(content: string, requirements: WritingRequirements): Promise<any> {
+    private async generateAlternatives(content: string, _requirements: WritingRequirements): Promise<ContentAlternatives> {
         return {
-            different_tone: await this.generateToneAlternative(content, requirements),
+            different_tone: await this.generateToneAlternative(content, _requirements),
             different_length: content.substring(0, Math.floor(content.length * 0.7)),
             different_structure: '다른 구조로 재구성된 내용입니다.'
         };
@@ -599,13 +724,14 @@ class AdaptiveWritingEngine {
         const currentTone = requirements.tone.formality;
         const alternateTone = currentTone === 'formal' ? 'casual' : 'formal';
 
-        const alternateRequirements = {
+        const _alternateRequirements = {
             ...requirements,
             tone: {
                 ...requirements.tone,
                 formality: alternateTone
             }
         };
+        void _alternateRequirements;
 
         return content; // Tone conversion logic would go here
     }
@@ -613,11 +739,11 @@ class AdaptiveWritingEngine {
     /**
      * 메타데이터 분석
      */
-    private analyzeGeneratedContent(content: string, requirements: WritingRequirements): any {
+    private analyzeGeneratedContent(content: string, _requirements: WritingRequirements): ContentMetadata {
         return {
             actual_word_count: content.split(/\s+/).filter(w => w.length > 0).length,
             actual_character_count: content.length,
-            actual_paragraph_count: content.split('\n\n').filter(p => p.trim().length > 0).length,
+            actual_paragraph_count: content.split('\n\n').filter((p) => coerceTrimmedString(p, '').length > 0).length,
             avg_sentence_length: 20,
             readability_score: 0.8,
             tone_analysis: { score: 0.8 },
@@ -627,7 +753,7 @@ class AdaptiveWritingEngine {
     }
 
     // 헬퍼 메서드들 (실제 구현에서는 더 정교한 로직 필요)
-    private synthesizeSources(sources: any): any {
+    private synthesizeSources(_sources: AnalyzedSources): SynthesisResult {
         return {
             main_findings: '주요 발견사항들을 종합한 결과',
             key_insights: '핵심 인사이트들',
@@ -636,25 +762,25 @@ class AdaptiveWritingEngine {
         };
     }
 
-    private extractKeyThemes(sources: any): string[] {
+    private extractKeyThemes(_sources: AnalyzedSources): string[] {
         return ['주제1', '주제2', '주제3'];
     }
 
-    private extractFactualClaims(sources: any): any[] {
+    private extractFactualClaims(_sources: AnalyzedSources): FactualClaim[] {
         return [
             { claim: '사실적 주장1', evidence: '근거1', reliability: 0.9 },
             { claim: '사실적 주장2', evidence: '근거2', reliability: 0.8 }
         ];
     }
 
-    private extractPerspectives(sources: any): any[] {
+    private extractPerspectives(_sources: AnalyzedSources): Perspective[] {
         return [
             { perspective: '관점1', supporters: '지지자들', strength: 'high' },
             { perspective: '관점2', supporters: '지지자들', strength: 'medium' }
         ];
     }
 
-    private analyzeLinguisticFeatures(content: string): any {
+    private analyzeLinguisticFeatures(_content: string): LinguisticFeatures {
         return {
             sentence_complexity: 'medium',
             vocabulary_level: 'intermediate',
@@ -670,7 +796,7 @@ class AdaptiveWritingEngine {
             .slice(0, 10);
     }
 
-    private analyzeSentiment(content: string): any {
+    private analyzeSentiment(_content: string): SentimentResult {
         return {
             polarity: 'positive',
             intensity: 0.6,
@@ -678,7 +804,7 @@ class AdaptiveWritingEngine {
         };
     }
 
-    private analyzeWritingStyle(content: string): any {
+    private analyzeWritingStyle(_content: string): WritingStyleResult {
         return {
             formality_level: 'formal',
             complexity_score: 0.7,
@@ -687,7 +813,7 @@ class AdaptiveWritingEngine {
         };
     }
 
-    private calculateFactualDensity(content: string): number {
+    private calculateFactualDensity(_content: string): number {
         return 0.3; // 30% 사실적 내용
     }
 
@@ -698,7 +824,7 @@ class AdaptiveWritingEngine {
             .slice(0, 3);
     }
 
-    private extractStatisticalData(content: string): any[] {
+    private extractStatisticalData(content: string): StatisticalDataItem[] {
         const numberPattern = /\d+(?:\.\d+)?%?/g;
         const matches = content.match(numberPattern) || [];
         return matches.map(match => ({
@@ -708,7 +834,7 @@ class AdaptiveWritingEngine {
         }));
     }
 
-    private extractExpertOpinions(content: string): any[] {
+    private extractExpertOpinions(_content: string): ExpertOpinion[] {
         return [
             { expert: '전문가1', opinion: '의견1', field: '분야1' },
             { expert: '전문가2', opinion: '의견2', field: '분야2' }
@@ -740,16 +866,16 @@ class AdaptiveWritingEngine {
     ];
     
     moreHelperMethods.forEach(methodName => {
-        if (!(this as any)[methodName]) {
-            (this as any)[methodName] = (...args: any[]) => {
+        if (!(this as Record<string, (...args: unknown[]) => unknown>)[methodName]) {
+            (this as Record<string, (...args: unknown[]) => unknown>)[methodName] = (...args: unknown[]) => {
                 // 각 메서드의 기본 구현
                 switch (methodName) {
                     case 'countWords':
                         return args[0].split(/\s+/).filter((word: string) => word.length > 0).length;
                     case 'countParagraphs':
-                        return args[0].split('\n\n').filter((p: string) => p.trim().length > 0).length;
+                        return args[0].split('\n\n').filter((p: string) => coerceTrimmedString(p, '').length > 0).length;
                     case 'calculateAvgSentenceLength':
-                        const sentences = args[0].split(/[.!?]+/).filter((s: string) => s.trim().length > 0);
+                        const sentences = args[0].split(/[.!?]+/).filter((s: string) => coerceTrimmedString(s, '').length > 0);
                         const totalWords = this.countWords(args[0]);
                         return Math.round(totalWords / sentences.length);
                     case 'calculateReadabilityScore':
@@ -765,12 +891,46 @@ class AdaptiveWritingEngine {
     */
 }
 
+interface MediaFileData {
+    content?: ArrayBuffer | string;
+    type?: string;
+    name?: string;
+}
+
+interface MediaFileAnalysis {
+    content_type: string;
+    extracted_text: string;
+    key_points: string[];
+    metadata: {
+        creation_date: string;
+        file_size: number;
+        format: string;
+    };
+}
+
+interface AudioAnalysis {
+    transcript: string;
+    speaker_info: string;
+    key_topics: string[];
+}
+
+interface VideoAnalysis {
+    transcript: string;
+    visual_elements: string[];
+    key_moments: string[];
+}
+
+interface SectionInfo {
+    name: string;
+    index?: number;
+}
+
 /**
  * 미디어 콘텐츠 분석기
  */
 class MediaContentAnalyzer {
 
-    async analyzeMediaFile(file: any): Promise<any> {
+    async analyzeMediaFile(_file: MediaFileData): Promise<MediaFileAnalysis> {
         // 실제 구현에서는 파일 타입별 분석 로직
         return {
             content_type: 'document',
@@ -784,12 +944,12 @@ class MediaContentAnalyzer {
         };
     }
 
-    async extractTextFromImage(imageData: any): Promise<string> {
+    async extractTextFromImage(_imageData: ArrayBuffer | string): Promise<string> {
         // OCR 기능 구현
         return '이미지에서 추출된 텍스트';
     }
 
-    async analyzeAudioContent(audioData: any): Promise<any> {
+    async analyzeAudioContent(_audioData: ArrayBuffer | string): Promise<AudioAnalysis> {
         // 음성 인식 및 분석
         return {
             transcript: '음성 전사 내용',
@@ -798,7 +958,7 @@ class MediaContentAnalyzer {
         };
     }
 
-    async analyzeVideoContent(videoData: any): Promise<any> {
+    async analyzeVideoContent(_videoData: ArrayBuffer | string): Promise<VideoAnalysis> {
         // 비디오 분석 (음성 + 비주얼)
         return {
             transcript: '비디오 전사 내용',
@@ -811,11 +971,11 @@ class MediaContentAnalyzer {
 
     // ===== 누락된 메서드들 구현 시작 =====
 
-    private generateTransition(currentSection: any, nextSection: any, guidelines: any): string {
+    private generateTransition(currentSection: SectionInfo, nextSection: SectionInfo, _guidelines: StyleGuidelines): string {
         return `\n\n이제 ${nextSection.name}으로 넘어가겠습니다.\n\n`;
     }
 
-    private determineSectionPurpose(sectionName: string, purpose: string): string {
+    private determineSectionPurpose(sectionName: string, _purpose: string): string {
         const purposeMap: Record<string, string> = {
             'introduction': '도입',
             'background': '배경 설명',
@@ -827,36 +987,36 @@ class MediaContentAnalyzer {
         return purposeMap[sectionName] || '일반';
     }
 
-    private calculateSectionLength(requirements: any, sectionIndex: number, totalSections: number): number {
+    private calculateSectionLength(requirements: WritingRequirements, sectionIndex: number, totalSections: number): number {
         const totalTarget = requirements.structure?.word_count?.target || 1000;
         return Math.floor(totalTarget / totalSections);
     }
 
-    private generateBackground(sources: any, knowledge: any, guidelines: any, requirements: any): string {
-        return `이 주제의 배경을 살펴보면, ${sources?.length > 0 ? '관련 자료에 따르면' : '일반적으로'} 중요한 맥락이 있습니다.`;
+    private generateBackground(sources: AnalyzedSources, _knowledge: RelevantKnowledge, _guidelines: StyleGuidelines, _requirements: WritingRequirements): string {
+        return `이 주제의 배경을 살펴보면, ${sources?.original_texts?.length > 0 ? '관련 자료에 따르면' : '일반적으로'} 중요한 맥락이 있습니다.`;
     }
 
-    private generateMainArgument(sources: any, knowledge: any, guidelines: any, requirements: any): string {
+    private generateMainArgument(_sources: AnalyzedSources, _knowledge: RelevantKnowledge, _guidelines: StyleGuidelines, requirements: WritingRequirements): string {
         return `핵심 논점은 다음과 같습니다. ${requirements.purpose === 'persuade' ? '이는 설득력 있는 주장입니다.' : '이를 체계적으로 분석해보겠습니다.'}`;
     }
 
-    private generateEvidence(sources: any, knowledge: any, guidelines: any, requirements: any): string {
-        return `이를 뒷받침하는 증거로는 ${sources?.length > 0 ? '제공된 자료들이' : '다양한 사례들이'} 있습니다.`;
+    private generateEvidence(sources: AnalyzedSources, _knowledge: RelevantKnowledge, _guidelines: StyleGuidelines, _requirements: WritingRequirements): string {
+        return `이를 뒷받침하는 증거로는 ${sources?.references?.length > 0 ? '제공된 자료들이' : '다양한 사례들이'} 있습니다.`;
     }
 
-    private generateAnalysis(sources: any, knowledge: any, guidelines: any, requirements: any): string {
+    private generateAnalysis(_sources: AnalyzedSources, _knowledge: RelevantKnowledge, _guidelines: StyleGuidelines, requirements: WritingRequirements): string {
         return `이상의 내용을 종합적으로 분석해보면, ${requirements.purpose === 'analyze' ? '다각적인 해석이 가능합니다.' : '명확한 패턴을 확인할 수 있습니다.'}`;
     }
 
-    private generateConclusion(sources: any, knowledge: any, guidelines: any, requirements: any): string {
+    private generateConclusion(_sources: AnalyzedSources, _knowledge: RelevantKnowledge, _guidelines: StyleGuidelines, requirements: WritingRequirements): string {
         return `결론적으로, ${requirements.purpose === 'persuade' ? '앞서 제시한 논증들을 통해' : '이번 분석을 통해'} 중요한 시사점을 도출할 수 있습니다.`;
     }
 
-    private generateGenericSection(sources: any, knowledge: any, guidelines: any, requirements: any): string {
+    private generateGenericSection(_sources: AnalyzedSources, _knowledge: RelevantKnowledge, _guidelines: StyleGuidelines, requirements: WritingRequirements): string {
         return `이 섹션에서는 ${requirements.purpose || '주요 내용'}에 대해 다루어보겠습니다.`;
     }
 
-    private adjustSectionLength(content: string, targetLength: number, guidelines: any): string {
+    private adjustSectionLength(content: string, targetLength: number, _guidelines: StyleGuidelines): string {
         const currentLength = this.countWords(content);
         if (currentLength < targetLength * 0.8) {
             return content + ' 추가적으로 고려해야 할 점들이 있습니다.';
@@ -866,61 +1026,61 @@ class MediaContentAnalyzer {
         return content;
     }
 
-    private applyStyleGuidelines(content: string, guidelines: any, requirements: any): string {
+    private applyStyleGuidelines(content: string, _guidelines: StyleGuidelines, requirements: WritingRequirements): string {
         if (requirements.tone?.formality === 'very_formal') {
             return content.replace(/입니다/g, '입니다만');
         }
         return content;
     }
 
-    private generateInformativeIntro(topic: string, sources: any, knowledge: any, formality: string): string {
+    private generateInformativeIntro(topic: string, _sources: AnalyzedSources, _knowledge: RelevantKnowledge, formality: string): string {
         const formal = formality === 'very_formal' || formality === 'formal';
         return formal
             ? `${topic}에 대해 체계적으로 살펴보고자 합니다.`
             : `${topic}에 대해 알아보겠습니다.`;
     }
 
-    private generateAnalyticalIntro(topic: string, sources: any, knowledge: any, formality: string): string {
+    private generateAnalyticalIntro(topic: string, _sources: AnalyzedSources, _knowledge: RelevantKnowledge, _formality: string): string {
         return `${topic}을 다각적으로 분석해보겠습니다.`;
     }
 
-    private generateCriticalIntro(topic: string, sources: any, knowledge: any, formality: string): string {
+    private generateCriticalIntro(topic: string, _sources: AnalyzedSources, _knowledge: RelevantKnowledge, _formality: string): string {
         return `${topic}에 대한 비판적 검토를 수행하겠습니다.`;
     }
 
-    private generateGenericIntro(topic: string, sources: any, knowledge: any, formality: string): string {
+    private generateGenericIntro(topic: string, _sources: AnalyzedSources, _knowledge: RelevantKnowledge, _formality: string): string {
         return `${topic}에 대해 살펴보겠습니다.`;
     }
 
-    private assessUrgency(topic: string, sources: any): string {
+    private assessUrgency(_topic: string, _sources: AnalyzedSources): string {
         return '중요한';
     }
 
-    private identifyStakeholders(topic: string, sources: any): string[] {
+    private identifyStakeholders(_topic: string, _sources: AnalyzedSources): string[] {
         return ['관련 당사자들'];
     }
 
-    private assessImpact(topic: string, knowledge: any): string {
+    private assessImpact(_topic: string, _knowledge: RelevantKnowledge): string {
         return '상당한 영향';
     }
 
-    private ensureToneConsistency(content: string, tone: any): string {
+    private ensureToneConsistency(content: string, _tone: WritingRequirements['tone']): string {
         return content;
     }
 
-    private adjustSentenceStructure(content: string, sentenceStyle: any): string {
+    private adjustSentenceStructure(content: string, _sentenceStyle: WritingRequirements['sentence_style']): string {
         return content;
     }
 
-    private optimizeKeywordDensity(content: string, contentRequirements: any): string {
+    private optimizeKeywordDensity(content: string, _contentRequirements: WritingRequirements['content_requirements']): string {
         return content;
     }
 
-    private improveReadability(content: string, targetAudience: string): string {
+    private improveReadability(content: string, _targetAudience: string): string {
         return content;
     }
 
-    private strengthenLogicalFlow(content: string, purpose: string): string {
+    private strengthenLogicalFlow(content: string, _purpose: string): string {
         return content;
     }
 
@@ -944,12 +1104,12 @@ class MediaContentAnalyzer {
         return sentence + ' 이에 대한 추가 설명이 필요합니다.';
     }
 
-    private generateLengthAlternative(content: string, requirements: any): Promise<string> {
+    private generateLengthAlternative(content: string, _requirements: WritingRequirements): Promise<string> {
         const shorter = content.substring(0, Math.floor(content.length * 0.7));
         return Promise.resolve(shorter);
     }
 
-    private generateStructureAlternative(content: string, requirements: any): Promise<string> {
+    private generateStructureAlternative(_content: string, _requirements: WritingRequirements): Promise<string> {
         return Promise.resolve('다른 구조로 재구성된 내용입니다.');
     }
 
@@ -963,33 +1123,33 @@ class MediaContentAnalyzer {
         return alternates[currentTone] || 'moderate';
     }
 
-    private convertTone(content: string, requirements: any): string {
+    private convertTone(content: string, _requirements: WritingRequirements): string {
         return content;
     }
 
     private countParagraphs(content: string): number {
-        return content.split('\n\n').filter(p => p.trim().length > 0).length;
+        return content.split('\n\n').filter((p) => coerceTrimmedString(p, '').length > 0).length;
     }
 
     private calculateAvgSentenceLength(content: string): number {
-        const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = content.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const totalWords = this.countWords(content);
         return sentences.length > 0 ? totalWords / sentences.length : 0;
     }
 
-    private calculateReadabilityScore(content: string): number {
+    private calculateReadabilityScore(_content: string): number {
         return 0.75;
     }
 
-    private analyzeToneCompliance(content: string, tone: any): any {
-        return { compliance: 'good' };
+    private analyzeToneCompliance(_content: string, _tone: WritingRequirements['tone']): ToneAnalysis {
+        return { score: 0.8, compliance: 'good' };
     }
 
-    private calculateKeywordDensity(content: string, keywords: string[]): number {
+    private calculateKeywordDensity(_content: string, _keywords: string[]): number {
         return 0.05;
     }
 
-    private evaluateStyleConformance(content: string, requirements: any): number {
+    private evaluateStyleConformance(_content: string, _requirements: WritingRequirements): number {
         return 0.8;
     }
 

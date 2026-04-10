@@ -303,7 +303,7 @@ const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ className
                     <div className="flex items-center space-x-3">
                         <ChatBubbleLeftRightIcon className="w-6 h-6 text-blue-600" />
                         <div>
-                            <h1 className="text-lg font-bold text-gray-900">CORBU AI 대화 시스템</h1>
+                            <h1 className="text-lg font-bold text-gray-900">CORBU.AI 대화 시스템</h1>
                             <p className="text-xs text-gray-600">통합 AI 기능을 대화형으로 이용하세요</p>
                         </div>
                     </div>
@@ -401,7 +401,7 @@ const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ className
                 {messages.length === 0 ? (
                     <div className="text-center py-8">
                         <ChatBubbleLeftRightIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">CORBU AI와 대화를 시작하세요</h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">CORBU.AI와 대화를 시작하세요</h3>
                         <p className="text-gray-600 text-sm mb-4">분석, 가이드, 프로젝트 관리 등 다양한 기능을 대화형으로 이용할 수 있습니다.</p>
                         
                         {/* 시작 가이드 */}

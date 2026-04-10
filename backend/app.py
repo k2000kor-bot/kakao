@@ -15,6 +15,8 @@ import json
 import traceback
 import os
 
+from cors_config import get_cors_allow_origins
+
 # LLM 서비스 import
 try:
     from llm_service import LLMService
@@ -39,9 +41,9 @@ API_VERSIONS = {
 }
 
 app = FastAPI(
-    title="CORBU AI Backend API",
+    title="CORBU.AI Backend API",
     version=API_VERSION,
-    description="CORBU AI 백엔드 API - 인증, 보안, 사용자 관리 시스템",
+    description="CORBU.AI 백엔드 API - 인증, 보안, 사용자 관리 시스템",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json"
@@ -50,7 +52,7 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -350,7 +352,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[
 @app.get("/")
 async def root():
     return {
-        "message": "CORBU AI Backend API",
+        "message": "CORBU.AI Backend API",
         "status": "running",
         "version": API_VERSION,
         "docs": "/docs",
@@ -393,7 +395,7 @@ async def api_health_check():
         
         return {
             "status": "healthy",
-            "service": "CORBU AI Backend API",
+            "service": "CORBU.AI Backend API",
             "version": "1.0.0",
             "timestamp": datetime.now().isoformat(),
             "system": {
@@ -425,7 +427,7 @@ async def api_health_check():
     except Exception as e:
         return {
             "status": "degraded",
-            "service": "CORBU AI Backend API",
+            "service": "CORBU.AI Backend API",
             "version": "1.0.0",
             "timestamp": datetime.now().isoformat(),
             "error": str(e),
@@ -439,7 +441,7 @@ async def api_health_check():
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
-    """채팅 메시지 처리"""
+    """대화 메시지 처리"""
     start_time = time.time()
 
     try:
@@ -519,7 +521,7 @@ async def chat_endpoint(request: ChatRequest):
         raise
     except Exception as e:
         # 로깅 추가
-        print(f"[ERROR] 채팅 처리 오류: {str(e)}")
+        print(f"[ERROR] 대화 처리 오류: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
@@ -546,7 +548,7 @@ async def api_status():
 
 @app.post("/api/chat")
 async def api_chat(request: ChatRequest):
-    """API 채팅 엔드포인트 (프론트엔드 호환성)"""
+    """API 대화 엔드포인트 (프론트엔드 호환성)"""
     return await chat_endpoint(request)
 
 
@@ -1043,8 +1045,8 @@ async def reset_password(request: ResetPasswordRequest):
                 "timestamp": datetime.now().isoformat(),
             }
 
-        # TODO: 실제로는 이메일로 재설정 링크 전송
-        # 임시로 새 비밀번호 생성 (실제로는 링크를 통한 재설정)
+        # NOTE: 실제 운영 시에는 SMTP/이메일 서비스를 연동해 재설정 링크를 전송해야 함.
+        # 현재는 보안상 사용자 존재 시에도 "전송됨" 메시지만 반환 (링크 미발송).
         return {
             "success": True,
             "message": "비밀번호 재설정 링크가 이메일로 전송되었습니다.",
@@ -1608,7 +1610,12 @@ async def get_utils_stats():
     }
 
 # 환경 변수 설정
-API_PORT = int(os.getenv("API_PORT", "5001"))
+API_PORT = int(
+    os.getenv(
+        "API_PORT",
+        os.getenv("BACKEND_PORT", os.getenv("PORT", "5002")),
+    )
+)
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 RELOAD = os.getenv("RELOAD", "true").lower() == "true"
@@ -1759,7 +1766,7 @@ async def delete_project(project_id: str):
 
 
 if __name__ == "__main__":
-    print("🚀 CORBU AI Backend API 시작 중...")
+    print("🚀 CORBU.AI Backend API 시작 중...")
     print(f"📍 서버: http://{API_HOST}:{API_PORT}")
     print(f"📚 문서: http://{API_HOST}:{API_PORT}/docs")
     print(f"🔍 ReDoc: http://{API_HOST}:{API_PORT}/redoc")

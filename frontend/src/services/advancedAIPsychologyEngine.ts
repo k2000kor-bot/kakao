@@ -1,4 +1,39 @@
 import { EventEmitter } from 'events';
+import { errorLogger } from '../utils/errorLogger';
+
+/** Interaction/analysis payload from callers */
+type InteractionData = Record<string, unknown>;
+
+interface TextEmotionResult {
+    primary: EmotionalState['primary_emotion'];
+    secondary: string[];
+    intensity: number;
+    valence: number;
+    arousal: number;
+    confidence: number;
+}
+
+interface InteractionEmotionResult {
+    primary: EmotionalState['primary_emotion'];
+    intensity: number;
+}
+
+export interface UserPsychologyData {
+    emotional_state?: EmotionalState;
+    cognitive_load?: CognitiveLoad;
+    learning_motivation?: LearningMotivation;
+    stress_level?: StressLevel;
+    personality_insights?: PersonalityInsights;
+}
+
+export interface PsychologyStatistics {
+    total_users: number;
+    total_recommendations: number;
+    average_emotional_intensity: number;
+    average_cognitive_load: number;
+    average_motivation_level: number;
+    high_stress_users: number;
+}
 
 // 인터페이스 정의
 export interface EmotionalState {
@@ -128,7 +163,10 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
             this.performPsychologicalAnalysis();
         }, 30000); // 30초마다 분석
 
-        console.log('🧠 고급 AI 심리학 분석이 시작되었습니다.');
+        errorLogger.info('🧠 고급 AI 심리학 분석이 시작되었습니다', {
+            component: 'advancedAIPsychologyEngine',
+            action: 'startAnalysis',
+        });
     }
 
     // 분석 중지
@@ -138,11 +176,14 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
             this.analysisInterval = null;
         }
         this.isAnalyzing = false;
-        console.log('⏹️ AI 심리학 분석이 중지되었습니다.');
+        errorLogger.info('⏹️ AI 심리학 분석이 중지되었습니다', {
+            component: 'advancedAIPsychologyEngine',
+            action: 'stopAnalysis',
+        });
     }
 
     // 감정 상태 분석
-    public analyzeEmotionalState(userId: string, sessionId: string, interactionData: any): EmotionalState {
+    public analyzeEmotionalState(userId: string, sessionId: string, interactionData: InteractionData): EmotionalState {
         const key = `${userId}-${sessionId}`;
 
         let emotionalState = this.emotionalStates.get(key) || {
@@ -169,10 +210,11 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 감정 상태 업데이트
-    private updateEmotionalState(state: EmotionalState, data: any): EmotionalState {
+    private updateEmotionalState(state: EmotionalState, data: InteractionData): EmotionalState {
+        const d = data as Record<string, unknown>;
         // 텍스트 분석을 통한 감정 감지
-        if (data.text) {
-            const emotionAnalysis = this.analyzeTextEmotion(data.text);
+        if (typeof d.text === 'string') {
+            const emotionAnalysis = this.analyzeTextEmotion(d.text);
             state.primary_emotion = emotionAnalysis.primary;
             state.secondary_emotions = emotionAnalysis.secondary;
             state.intensity = emotionAnalysis.intensity;
@@ -182,8 +224,8 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
         }
 
         // 상호작용 패턴 분석
-        if (data.interaction_patterns) {
-            const patternEmotion = this.analyzeInteractionEmotion(data.interaction_patterns);
+        if (d.interaction_patterns && typeof d.interaction_patterns === 'object') {
+            const patternEmotion = this.analyzeInteractionEmotion(d.interaction_patterns as Record<string, unknown>);
             state.primary_emotion = patternEmotion.primary;
             state.intensity = Math.max(state.intensity, patternEmotion.intensity);
         }
@@ -199,9 +241,9 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 텍스트 감정 분석
-    private analyzeTextEmotion(text: string): any {
+    private analyzeTextEmotion(text: string): TextEmotionResult {
         const lowerText = text.toLowerCase();
-        let primary = 'neutral';
+        let primary: EmotionalState['primary_emotion'] = 'neutral';
         let secondary: string[] = [];
         let intensity = 5;
         let valence = 0;
@@ -251,20 +293,20 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 상호작용 패턴 감정 분석
-    private analyzeInteractionEmotion(patterns: any): any {
-        let primary = 'neutral';
+    private analyzeInteractionEmotion(patterns: Record<string, unknown>): InteractionEmotionResult {
+        let primary: EmotionalState['primary_emotion'] = 'neutral';
         let intensity = 5;
-
-        if (patterns.rapid_responses) {
+        const p = patterns as Record<string, unknown>;
+        if (p.rapid_responses) {
             primary = 'fear';
             intensity = 8;
-        } else if (patterns.repeated_questions) {
+        } else if (p.repeated_questions) {
             primary = 'fear';
             intensity = 7;
-        } else if (patterns.short_responses) {
+        } else if (p.short_responses) {
             primary = 'anger';
             intensity = 6;
-        } else if (patterns.long_detailed_responses) {
+        } else if (p.long_detailed_responses) {
             primary = 'joy';
             intensity = 6;
         }
@@ -273,27 +315,27 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 감정 트리거 식별
-    private identifyEmotionalTriggers(data: any): string[] {
+    private identifyEmotionalTriggers(data: InteractionData): string[] {
         const triggers: string[] = [];
-
-        if (data.complex_topics) triggers.push('복잡한 주제');
-        if (data.technical_errors) triggers.push('기술적 오류');
-        if (data.slow_responses) triggers.push('느린 응답');
-        if (data.unclear_explanations) triggers.push('불명확한 설명');
-        if (data.learning_progress) triggers.push('학습 진전');
-        if (data.successful_completion) triggers.push('성공적 완료');
+        const d = data as Record<string, unknown>;
+        if (d.complex_topics) triggers.push('복잡한 주제');
+        if (d.technical_errors) triggers.push('기술적 오류');
+        if (d.slow_responses) triggers.push('느린 응답');
+        if (d.unclear_explanations) triggers.push('불명확한 설명');
+        if (d.learning_progress) triggers.push('학습 진전');
+        if (d.successful_completion) triggers.push('성공적 완료');
 
         return triggers;
     }
 
     // 감정 지속 시간 계산
-    private calculateEmotionDuration(state: EmotionalState, data: any): number {
+    private calculateEmotionDuration(state: EmotionalState, _data: InteractionData): number {
         const timeSinceLastUpdate = Date.now() - state.last_updated.getTime();
         return state.duration + (timeSinceLastUpdate / 1000);
     }
 
     // 인지 부하 분석
-    public analyzeCognitiveLoad(userId: string, sessionId: string, interactionData: any): CognitiveLoad {
+    public analyzeCognitiveLoad(userId: string, sessionId: string, interactionData: InteractionData): CognitiveLoad {
         const key = `${userId}-${sessionId}`;
 
         let cognitiveLoad = this.cognitiveLoads.get(key) || {
@@ -326,33 +368,35 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 인지 부하 업데이트
-    private updateCognitiveLoad(load: CognitiveLoad, data: any): CognitiveLoad {
+    private updateCognitiveLoad(load: CognitiveLoad, data: InteractionData): CognitiveLoad {
+        const d = data as Record<string, unknown>;
         // 응답 시간 가변성 계산
-        if (data.response_times) {
-            const times = data.response_times;
-            const mean = times.reduce((sum: number, time: number) => sum + time, 0) / times.length;
-            const variance = times.reduce((sum: number, time: number) => sum + Math.pow(time - mean, 2), 0) / times.length;
+        const responseTimes = Array.isArray(d.response_times) ? (d.response_times as number[]) : undefined;
+        if (responseTimes && responseTimes.length > 0) {
+            const mean = responseTimes.reduce((sum: number, time: number) => sum + time, 0) / responseTimes.length;
+            const variance = responseTimes.reduce((sum: number, time: number) => sum + Math.pow(time - mean, 2), 0) / responseTimes.length;
             load.indicators.response_time_variability = Math.sqrt(variance);
         }
 
         // 오류 빈도 계산
-        if (data.errors) {
-            load.indicators.error_frequency = data.errors.length;
+        const errors = Array.isArray(d.errors) ? d.errors : undefined;
+        if (errors) {
+            load.indicators.error_frequency = errors.length;
         }
 
         // 반복 요청 계산
-        if (data.repetition_requests) {
-            load.indicators.repetition_requests = data.repetition_requests;
+        if (typeof d.repetition_requests === 'number') {
+            load.indicators.repetition_requests = d.repetition_requests;
         }
 
         // 주제 전환 계산
-        if (data.topic_switches) {
-            load.indicators.topic_switching = data.topic_switches;
+        if (typeof d.topic_switches === 'number') {
+            load.indicators.topic_switching = d.topic_switches;
         }
 
         // 좌절 신호 계산
-        if (data.frustration_signals) {
-            load.indicators.frustration_signals = data.frustration_signals;
+        if (typeof d.frustration_signals === 'number') {
+            load.indicators.frustration_signals = d.frustration_signals;
         }
 
         // 전체 인지 부하 계산
@@ -369,7 +413,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 전체 인지 부하 계산
-    private calculateOverallCognitiveLoad(indicators: any): number {
+    private calculateOverallCognitiveLoad(indicators: CognitiveLoad['indicators']): number {
         let load = 5; // 기본값
 
         // 응답 시간 가변성이 높으면 부하 증가
@@ -391,22 +435,23 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 부하 구성 요소 업데이트
-    private updateLoadComponents(load: CognitiveLoad, data: any): any {
+    private updateLoadComponents(load: CognitiveLoad, data: InteractionData): CognitiveLoad['components'] {
         const components = { ...load.components };
+        const d = data as Record<string, unknown>;
 
         // 내재적 부하 (작업 복잡성)
-        if (data.task_complexity) {
-            components.intrinsic_load = Math.min(10, data.task_complexity);
+        if (typeof d.task_complexity === 'number') {
+            components.intrinsic_load = Math.min(10, d.task_complexity);
         }
 
         // 외재적 부하 (불필요한 정보)
-        if (data.irrelevant_information) {
-            components.extraneous_load = Math.min(10, components.extraneous_load + data.irrelevant_information);
+        if (typeof d.irrelevant_information === 'number') {
+            components.extraneous_load = Math.min(10, components.extraneous_load + d.irrelevant_information);
         }
 
         // 관련 부하 (학습에 도움이 되는 정보)
-        if (data.helpful_information) {
-            components.germane_load = Math.min(10, components.germane_load + data.helpful_information);
+        if (typeof d.helpful_information === 'number') {
+            components.germane_load = Math.min(10, components.germane_load + d.helpful_information);
         }
 
         return components;
@@ -434,7 +479,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 학습 동기 분석
-    public analyzeLearningMotivation(userId: string, sessionId: string, interactionData: any): LearningMotivation {
+    public analyzeLearningMotivation(userId: string, sessionId: string, interactionData: InteractionData): LearningMotivation {
         const key = `${userId}-${sessionId}`;
 
         let motivation = this.learningMotivations.get(key) || {
@@ -466,25 +511,26 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 학습 동기 업데이트
-    private updateLearningMotivation(motivation: LearningMotivation, data: any): LearningMotivation {
+    private updateLearningMotivation(motivation: LearningMotivation, data: InteractionData): LearningMotivation {
+        const d = data as Record<string, unknown>;
         // 호기심 분석
-        if (data.follow_up_questions) {
-            motivation.factors.curiosity = Math.min(10, 5 + data.follow_up_questions * 0.5);
+        if (typeof d.follow_up_questions === 'number') {
+            motivation.factors.curiosity = Math.min(10, 5 + d.follow_up_questions * 0.5);
         }
 
         // 숙달 목표 분석
-        if (data.deep_diving) {
-            motivation.factors.mastery_goal = Math.min(10, 5 + data.deep_diving * 0.3);
+        if (typeof d.deep_diving === 'number') {
+            motivation.factors.mastery_goal = Math.min(10, 5 + d.deep_diving * 0.3);
         }
 
         // 성과 목표 분석
-        if (data.performance_focus) {
-            motivation.factors.performance_goal = Math.min(10, 5 + data.performance_focus * 0.3);
+        if (typeof d.performance_focus === 'number') {
+            motivation.factors.performance_goal = Math.min(10, 5 + d.performance_focus * 0.3);
         }
 
         // 자기 효능감 분석
-        if (data.confidence_signals) {
-            motivation.factors.self_efficacy = Math.min(10, 5 + data.confidence_signals * 0.4);
+        if (typeof d.confidence_signals === 'number') {
+            motivation.factors.self_efficacy = Math.min(10, 5 + d.confidence_signals * 0.4);
         }
 
         // 전체 동기 수준 계산
@@ -505,7 +551,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 전체 동기 수준 계산
-    private calculateOverallMotivation(factors: any): number {
+    private calculateOverallMotivation(factors: LearningMotivation['factors']): number {
         const weights = {
             curiosity: 0.2,
             mastery_goal: 0.25,
@@ -516,15 +562,15 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
         };
 
         let totalMotivation = 0;
-        Object.keys(weights).forEach(factor => {
-            totalMotivation += factors[factor] * weights[factor as keyof typeof weights];
+        (Object.keys(weights) as Array<keyof LearningMotivation['factors']>).forEach(factor => {
+            totalMotivation += factors[factor] * weights[factor];
         });
 
         return Math.min(10, Math.max(0, totalMotivation));
     }
 
     // 동기 유형 분류
-    private classifyMotivationType(factors: any): 'intrinsic' | 'extrinsic' | 'mixed' {
+    private classifyMotivationType(factors: LearningMotivation['factors']): 'intrinsic' | 'extrinsic' | 'mixed' {
         const intrinsicFactors = factors.curiosity + factors.mastery_goal + factors.self_efficacy;
         const extrinsicFactors = factors.performance_goal + factors.social_recognition + factors.external_rewards;
 
@@ -534,33 +580,33 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 동기 장벽 식별
-    private identifyMotivationBarriers(data: any): string[] {
+    private identifyMotivationBarriers(data: InteractionData): string[] {
         const barriers: string[] = [];
-
-        if (data.difficulty_level > 8) barriers.push('높은 난이도');
-        if (data.lack_of_progress) barriers.push('진전 부족');
-        if (data.negative_feedback) barriers.push('부정적 피드백');
-        if (data.time_pressure) barriers.push('시간 압박');
-        if (data.lack_of_relevance) barriers.push('관련성 부족');
+        const d = data as Record<string, unknown>;
+        if (typeof d.difficulty_level === 'number' && d.difficulty_level > 8) barriers.push('높은 난이도');
+        if (d.lack_of_progress) barriers.push('진전 부족');
+        if (d.negative_feedback) barriers.push('부정적 피드백');
+        if (d.time_pressure) barriers.push('시간 압박');
+        if (d.lack_of_relevance) barriers.push('관련성 부족');
 
         return barriers;
     }
 
     // 동기 강화 요소 식별
-    private identifyMotivationEnhancers(data: any): string[] {
+    private identifyMotivationEnhancers(data: InteractionData): string[] {
         const enhancers: string[] = [];
-
-        if (data.learning_progress) enhancers.push('학습 진전');
-        if (data.positive_feedback) enhancers.push('긍정적 피드백');
-        if (data.interesting_content) enhancers.push('흥미로운 내용');
-        if (data.social_interaction) enhancers.push('사회적 상호작용');
-        if (data.achievement_recognition) enhancers.push('성취 인정');
+        const d = data as Record<string, unknown>;
+        if (d.learning_progress) enhancers.push('학습 진전');
+        if (d.positive_feedback) enhancers.push('긍정적 피드백');
+        if (d.interesting_content) enhancers.push('흥미로운 내용');
+        if (d.social_interaction) enhancers.push('사회적 상호작용');
+        if (d.achievement_recognition) enhancers.push('성취 인정');
 
         return enhancers;
     }
 
     // 동기 트렌드 분석
-    private analyzeMotivationTrend(motivation: LearningMotivation, data: any): 'increasing' | 'stable' | 'decreasing' {
+    private analyzeMotivationTrend(motivation: LearningMotivation, _data: InteractionData): 'increasing' | 'stable' | 'decreasing' {
         // 시뮬레이션 - 실제로는 이전 데이터와 비교
         if (motivation.motivation_level > 7) return 'increasing';
         if (motivation.motivation_level < 3) return 'decreasing';
@@ -568,7 +614,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 스트레스 레벨 분석
-    public analyzeStressLevel(userId: string, sessionId: string, interactionData: any): StressLevel {
+    public analyzeStressLevel(userId: string, sessionId: string, interactionData: InteractionData): StressLevel {
         const key = `${userId}-${sessionId}`;
 
         let stressLevel = this.stressLevels.get(key) || {
@@ -599,31 +645,32 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 스트레스 레벨 업데이트
-    private updateStressLevel(stress: StressLevel, data: any): StressLevel {
+    private updateStressLevel(stress: StressLevel, data: InteractionData): StressLevel {
         let stressScore = 3; // 기본값
+        const d = data as Record<string, unknown>;
 
         // 스트레스 지표 분석
-        if (data.rapid_typing) {
+        if (d.rapid_typing) {
             stress.indicators.rapid_typing = true;
             stressScore += 2;
         }
-        if (data.short_responses) {
+        if (d.short_responses) {
             stress.indicators.short_responses = true;
             stressScore += 1;
         }
-        if (data.topic_avoidance) {
+        if (d.topic_avoidance) {
             stress.indicators.topic_avoidance = true;
             stressScore += 2;
         }
-        if (data.repeated_questions) {
+        if (d.repeated_questions) {
             stress.indicators.repeated_questions = true;
             stressScore += 1;
         }
-        if (data.negative_language) {
+        if (d.negative_language) {
             stress.indicators.negative_language = true;
             stressScore += 2;
         }
-        if (data.time_pressure) {
+        if (d.time_pressure) {
             stress.indicators.time_pressure = true;
             stressScore += 3;
         }
@@ -644,9 +691,9 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 스트레스 유형 분류
-    private classifyStressType(stressLevel: number, data: any): 'eustress' | 'distress' | 'none' {
+    private classifyStressType(stressLevel: number, data: InteractionData): 'eustress' | 'distress' | 'none' {
         if (stressLevel < 3) return 'none';
-        if (data.positive_outcome_expectation) return 'eustress';
+        if ((data as Record<string, unknown>).positive_outcome_expectation) return 'eustress';
         return 'distress';
     }
 
@@ -669,7 +716,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 성격 인사이트 분석
-    public analyzePersonalityInsights(userId: string, sessionId: string, interactionData: any): PersonalityInsights {
+    public analyzePersonalityInsights(userId: string, sessionId: string, interactionData: InteractionData): PersonalityInsights {
         const key = `${userId}-${sessionId}`;
 
         let personality = this.personalityInsights.get(key) || {
@@ -695,32 +742,33 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 성격 인사이트 업데이트
-    private updatePersonalityInsights(personality: PersonalityInsights, data: any): PersonalityInsights {
+    private updatePersonalityInsights(personality: PersonalityInsights, data: InteractionData): PersonalityInsights {
+        const d = data as Record<string, unknown>;
         // 학습 스타일 분석
-        if (data.visual_preferences) personality.learning_style = 'visual';
-        else if (data.auditory_preferences) personality.learning_style = 'auditory';
-        else if (data.kinesthetic_preferences) personality.learning_style = 'kinesthetic';
-        else if (data.reading_preferences) personality.learning_style = 'reading';
+        if (d.visual_preferences) personality.learning_style = 'visual';
+        else if (d.auditory_preferences) personality.learning_style = 'auditory';
+        else if (d.kinesthetic_preferences) personality.learning_style = 'kinesthetic';
+        else if (d.reading_preferences) personality.learning_style = 'reading';
 
         // 의사소통 선호도 분석
-        if (data.direct_communication) personality.communication_preference = 'direct';
-        else if (data.detailed_explanations) personality.communication_preference = 'detailed';
-        else if (data.technical_communication) personality.communication_preference = 'technical';
+        if (d.direct_communication) personality.communication_preference = 'direct';
+        else if (d.detailed_explanations) personality.communication_preference = 'detailed';
+        else if (d.technical_communication) personality.communication_preference = 'technical';
 
         // 의사결정 스타일 분석
-        if (data.analytical_approach) personality.decision_making_style = 'analytical';
-        else if (data.intuitive_approach) personality.decision_making_style = 'intuitive';
-        else if (data.collaborative_approach) personality.decision_making_style = 'collaborative';
-        else if (data.systematic_approach) personality.decision_making_style = 'systematic';
+        if (d.analytical_approach) personality.decision_making_style = 'analytical';
+        else if (d.intuitive_approach) personality.decision_making_style = 'intuitive';
+        else if (d.collaborative_approach) personality.decision_making_style = 'collaborative';
+        else if (d.systematic_approach) personality.decision_making_style = 'systematic';
 
         // 위험 감수 성향 분석
-        if (data.risk_averse_behavior) personality.risk_tolerance = 'low';
-        else if (data.risk_seeking_behavior) personality.risk_tolerance = 'high';
+        if (d.risk_averse_behavior) personality.risk_tolerance = 'low';
+        else if (d.risk_seeking_behavior) personality.risk_tolerance = 'high';
 
         // 신뢰도, 적응성, 지속성 업데이트
-        if (data.confidence_signals) personality.confidence_level = Math.min(10, 5 + data.confidence_signals * 0.5);
-        if (data.adaptability_signals) personality.adaptability = Math.min(10, 5 + data.adaptability_signals * 0.5);
-        if (data.persistence_signals) personality.persistence = Math.min(10, 5 + data.persistence_signals * 0.5);
+        if (typeof d.confidence_signals === 'number') personality.confidence_level = Math.min(10, 5 + d.confidence_signals * 0.5);
+        if (typeof d.adaptability_signals === 'number') personality.adaptability = Math.min(10, 5 + d.adaptability_signals * 0.5);
+        if (typeof d.persistence_signals === 'number') personality.persistence = Math.min(10, 5 + d.persistence_signals * 0.5);
 
         personality.last_updated = new Date();
         return personality;
@@ -741,7 +789,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
         this.recommendations = [];
 
         // 감정적 지원 권장사항
-        this.emotionalStates.forEach((state, key) => {
+        this.emotionalStates.forEach((state, _key) => {
             if (state.intensity > 7 && state.valence < -2) {
                 this.recommendations.push({
                     recommendation_id: `psych-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -768,7 +816,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
         });
 
         // 인지 최적화 권장사항
-        this.cognitiveLoads.forEach((load, key) => {
+        this.cognitiveLoads.forEach((load, _key) => {
             if (load.overall_load > 8) {
                 this.recommendations.push({
                     recommendation_id: `psych-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -796,7 +844,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 사용자별 데이터 가져오기
-    public getUserPsychologyData(userId: string, sessionId: string): any {
+    public getUserPsychologyData(userId: string, sessionId: string): UserPsychologyData {
         const key = `${userId}-${sessionId}`;
 
         return {
@@ -817,7 +865,7 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
     }
 
     // 통계 정보 가져오기
-    public getPsychologyStatistics(): any {
+    public getPsychologyStatistics(): PsychologyStatistics {
         return {
             total_users: this.emotionalStates.size,
             total_recommendations: this.recommendations.length,
@@ -870,7 +918,10 @@ class AdvancedAIPsychologyEngine extends EventEmitter {
         this.stressLevels.clear();
         this.personalityInsights.clear();
         this.recommendations = [];
-        console.log('🔌 고급 AI 심리학 분석 서비스가 종료되었습니다.');
+        errorLogger.info('🔌 고급 AI 심리학 분석 서비스가 종료되었습니다', {
+            component: 'advancedAIPsychologyEngine',
+            action: 'shutdown',
+        });
     }
 }
 

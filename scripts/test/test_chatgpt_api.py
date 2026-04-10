@@ -11,7 +11,7 @@ def test_chatgpt_analysis():
     
     # 테스트 데이터
     test_data = {
-        "content": "2025년 7월 12일부터 7월 14일 기준, 행복한소유☆개포우성7차의 대화 내용입니다. 0116: 특정 참여자가 삼성 논리만 대변한다고 지적하며 \"대우 장점도 언급하라\"고 요구. 0024: \"익명방에서 이지매처럼 특정인 몰아가는 방식은 부적절하다\"며 반박. 0036: '92번님'의 과거 발언을 인용해 \"편파적이다\", \"이사일 경우 더 문제가 된다\"는 우려 제기.",
+        "content": "2025년 7월 12일부터 7월 14일 기준, sample_chat_room의 대화 내용입니다. 0116: 특정 참여자가 삼성 논리만 대변한다고 지적하며 \"대우 장점도 언급하라\"고 요구. 0024: \"익명방에서 이지매처럼 특정인 몰아가는 방식은 부적절하다\"며 반박. 0036: '92번님'의 과거 발언을 인용해 \"편파적이다\", \"이사일 경우 더 문제가 된다\"는 우려 제기.",
         "room_id": "room_001",
         "time_range": {
             "startDate": "2025-07-12",
@@ -27,7 +27,7 @@ def test_chatgpt_analysis():
     try:
         # API 호출
         response = requests.post(
-            "http://localhost:8000/api/v7/chatgpt/analyze",
+            "http://localhost:5002/api/v7/chatgpt/analyze",
             json=test_data,
             headers={"Content-Type": "application/json"}
         )
@@ -44,7 +44,7 @@ def test_chatgpt_analysis():
                 print(f"• 총 이슈 수: {summary['총_이슈_수']}")
                 print(f"• 높은 갈등 이슈: {summary['높은_갈등_이슈']}")
                 print(f"• 긴급 이슈: {summary['긴급_이슈']}")
-                print(f"• 채팅방: {summary['채팅방_정보']['방_이름']}")
+                print(f"• 대화방: {summary['채팅방_정보']['방_이름']}")
                 print(f"• 총 참여자: {summary['채팅방_정보']['총_참여자']}명")
                 print(f"• 총 메시지: {summary['채팅방_정보']['총_메시지']}개")
                 
@@ -137,7 +137,7 @@ def test_simple_analysis():
     
     try:
         response = requests.post(
-            "http://localhost:8000/api/v7/chatgpt/analyze",
+            "http://localhost:5002/api/v7/chatgpt/analyze",
             json=simple_data,
             headers={"Content-Type": "application/json"}
         )

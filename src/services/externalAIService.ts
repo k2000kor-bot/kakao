@@ -1,5 +1,15 @@
+import {
+  ANTHROPIC_API_BASE_URL,
+  ANTHROPIC_API_V1_MESSAGES_PATH,
+  API_QUERY_PARAM_KEY,
+  GOOGLE_GENERATIVE_LANGUAGE_V1BETA_BASE_URL,
+  OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH,
+  OPENAI_OFFICIAL_API_BASE_URL,
+  joinApiBaseAndPath,
+} from '../config/api';
 import { ChatSession } from '../types/chat';
 import { Project } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface AIProvider {
   id: string;
@@ -118,7 +128,14 @@ export class ExternalAIService {
       response.latency = Date.now() - startTime;
       return response;
     } catch (error) {
-      console.error('AI 응답 생성 오류:', error);
+      const err = toError(error);
+      errorLogger.error('AI 응답 생성 오류', err, {
+        component: 'externalAIService',
+        action: 'generateResponse',
+        provider: config.provider,
+        model: config.model,
+        messagePreview: message.substring(0, 100),
+      });
       // 폴백으로 로컬 AI 사용
       return await this.callLocalAI(message, session, project, config);
     }
@@ -139,19 +156,22 @@ export class ExternalAIService {
     const systemPrompt = this.buildSystemPrompt(session, project, config);
     const messages = this.buildMessages(message, session, systemPrompt);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+    const response = await fetch(
+      joinApiBaseAndPath(OPENAI_OFFICIAL_API_BASE_URL, OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: config.model,
+          messages,
+          temperature: config.temperature,
+          max_tokens: config.maxTokens,
+        }),
       },
-      body: JSON.stringify({
-        model: config.model,
-        messages,
-        temperature: config.temperature,
-        max_tokens: config.maxTokens
-      })
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`OpenAI API 오류: ${response.status}`);
@@ -186,20 +206,23 @@ export class ExternalAIService {
     const systemPrompt = this.buildSystemPrompt(session, project, config);
     const messages = this.buildMessages(message, session, systemPrompt);
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+    const response = await fetch(
+      joinApiBaseAndPath(ANTHROPIC_API_BASE_URL, ANTHROPIC_API_V1_MESSAGES_PATH),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: config.model,
+          messages,
+          max_tokens: config.maxTokens,
+          temperature: config.temperature,
+        }),
       },
-      body: JSON.stringify({
-        model: config.model,
-        messages,
-        max_tokens: config.maxTokens,
-        temperature: config.temperature
-      })
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Claude API 오류: ${response.status}`);
@@ -234,23 +257,30 @@ export class ExternalAIService {
     const systemPrompt = this.buildSystemPrompt(session, project, config);
     const prompt = `${systemPrompt}\n\n사용자: ${message}`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+    const geminiUrl = `${joinApiBaseAndPath(
+      GOOGLE_GENERATIVE_LANGUAGE_V1BETA_BASE_URL,
+      `models/${config.model}:generateContent`,
+    )}?${API_QUERY_PARAM_KEY}=${encodeURIComponent(apiKey)}`;
+    const response = await fetch(
+      geminiUrl,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt,
+            }],
+          }],
+          generationConfig: {
+            temperature: config.temperature,
+            maxOutputTokens: config.maxTokens,
+          },
+        }),
       },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: config.temperature,
-          maxOutputTokens: config.maxTokens
-        }
-      })
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Gemini API 오류: ${response.status}`);
@@ -292,8 +322,8 @@ export class ExternalAIService {
   }
 
   // 시스템 프롬프트 생성
-  private buildSystemPrompt(session: ChatSession, project: Project | null, config: AIConfig): string {
-    let prompt = `당신은 CORBU AI의 고급 AI 어시스턴트입니다. 사용자의 질문에 정확하고 도움이 되는 답변을 제공해주세요.
+  private buildSystemPrompt(session: ChatSession, project: Project | null, _config: AIConfig): string {
+    let prompt = `당신은 CORBU.AI의 고급 AI 어시스턴트입니다. 사용자의 질문에 정확하고 도움이 되는 답변을 제공해주세요.
 
 현재 대화 세션: ${session.title}
 총 메시지 수: ${session.messages.length}개
@@ -353,7 +383,7 @@ export class ExternalAIService {
     let response = '';
 
     if (keywords.includes('안녕') || keywords.includes('hello')) {
-      response = '안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?';
+      response = '안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?';
     } else if (keywords.includes('프로젝트') && project) {
       response = `현재 "${project.name}" 프로젝트를 진행 중이시군요. 프로젝트 관련 질문이 있으시면 언제든 말씀해주세요.`;
     } else if (keywords.includes('도움') || keywords.includes('help')) {
@@ -388,7 +418,14 @@ export class ExternalAIService {
 
         results[provider] = await this.generateResponse(message, session, project, config);
       } catch (error) {
-        console.error(`${provider} 모델 호출 실패:`, error);
+        const err = toError(error);
+        const defaultModel = this.getDefaultModel(provider);
+        errorLogger.error(`${provider} 모델 호출 실패`, err, {
+          component: 'externalAIService',
+          action: 'compareModels',
+          provider,
+          model: defaultModel,
+        });
         results[provider] = {
           content: `오류: ${error}`,
           provider,

@@ -562,7 +562,7 @@ class IntentAnalyzer:
 class ResponseGenerator:
     def generate(self, message: str, context: Dict, personality: str, style: str) -> str:
         if context.get("is_greeting"):
-            return f"👋 안녕하세요! {message}\n\n저는 도움을 주는 CORBU AI입니다. 무엇을 도와드릴까요?"
+            return f"👋 안녕하세요! {message}\n\n저는 도움을 주는 CORBU.AI입니다. 무엇을 도와드릴까요?"
         elif context.get("is_question"):
             return f"🤔 {message}에 대한 답변을 드리겠습니다.\n\n도움을 주는 관점에서 대화형 답변을 제공해드릴게요."
         elif context.get("is_request"):
@@ -571,5 +571,10 @@ class ResponseGenerator:
             return f"💭 {message}에 대해 생각해보겠습니다.\n\n도움을 주는 관점에서 대화형 분석을 제공해드릴게요."
 
 if __name__ == "__main__":
+    import os
+
     api = EnhancedConversationalAPI()
-    uvicorn.run(api.app, host="0.0.0.0", port=8003) 
+    _port = int(
+        os.environ.get("ENHANCED_CONV_PORT", os.environ.get("PORT", "8003"))
+    )
+    uvicorn.run(api.app, host="0.0.0.0", port=_port) 

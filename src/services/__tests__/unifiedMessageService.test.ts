@@ -2,11 +2,30 @@
  * unifiedMessageService 서비스 테스트
  * 통합 메시지 서비스 테스트
  */
+/* eslint-disable jest/no-conditional-expect */
 
+import { getChatPostUrlsForConfigBase, resolveApiBaseUrl } from '../../config/api';
+import {
+  AGENTS_QUERY_PARAM_ID,
+  AGENTS_QUERY_PARAM_TYPE,
+  GENSPARK_AGENTS_TYPE_SUPER_AGENT,
+} from '../../config/routes';
+import { GENSPARK_REFERENCE_AGENT_ID } from '../gensparkReferenceAgentPreset';
+import {
+  buildModernChatPipelineContext,
+  scenarioInheritMergeOptionsFromPipelineLikeMessages,
+} from '../modernChatContextBuilder';
+import type { Message as UiMessage } from '../../types';
+import multiLayerStyleAnalysisSystem, {
+  CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS,
+} from '../multiLayerStyleAnalysisSystem';
 import unifiedMessageService, { UnifiedMessageRequest } from '../unifiedMessageService';
+import { installJestFetchMock } from '../../test-utils/installJestFetchMock';
+
+const unifiedMessageChatPostUrls = () => getChatPostUrlsForConfigBase(resolveApiBaseUrl());
 
 // fetch 모킹
-global.fetch = jest.fn();
+installJestFetchMock();
 
 // errorLogger 모킹
 jest.mock('../../utils/errorLogger', () => ({
@@ -16,7 +35,7 @@ jest.mock('../../utils/errorLogger', () => ({
   },
 }));
 
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+const mockFetch: jest.MockedFunction<typeof fetch> = jest.mocked(global.fetch);
 
 describe('unifiedMessageService', () => {
   beforeEach(() => {
@@ -31,7 +50,7 @@ describe('unifiedMessageService', () => {
   });
 
   describe('processMessage', () => {
-    it('채팅 메시지를 처리할 수 있어야 함', async () => {
+    it('대화 메시지를 처리할 수 있어야 함', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -59,6 +78,347 @@ describe('unifiedMessageService', () => {
       expect(response.message.content).toBe('테스트 응답');
       expect(response.metadata).toBeDefined();
       expect(response.metadata?.usedServices).toContain('chat');
+    });
+
+    it('멀티레이어 힌트 env 활성화 시 초장문은 surface 분석 입력이 상한으로 잘린다', async () => {
+      const prev = process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT;
+      process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT = 'true';
+      const spy = jest
+        .spyOn(multiLayerStyleAnalysisSystem, 'performMultiLayerAnalysis')
+        .mockRejectedValue(new Error('short-circuit'));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+          metadata: {},
+        }),
+      } as Response);
+      try {
+        const longMsg = 'q'.repeat(CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS + 30);
+        await unifiedMessageService.processMessage({ type: 'chat', content: longMsg });
+        expect(spy).toHaveBeenCalledWith(
+          'q'.repeat(CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS),
+          'surface'
+        );
+      } finally {
+        spy.mockRestore();
+        if (prev === undefined) delete process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT;
+        else process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT = prev;
+      }
+    });
+
+    it('첫 /api/chat이 404면 /api/unified/chat으로 재시도한다', async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          json: async () => ({}),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: { response: 'unified 본문' },
+          }),
+        } as Response);
+
+      const response = await unifiedMessageService.processMessage({
+        type: 'chat',
+        content: 'hello',
+      });
+
+      expect(mockFetch.mock.calls.length).toBe(2);
+      const [firstChatUrl, secondChatUrl] = unifiedMessageChatPostUrls();
+      expect(mockFetch.mock.calls[0][0]).toBe(firstChatUrl);
+      expect(mockFetch.mock.calls[1][0]).toBe(secondChatUrl);
+      expect(response.success).toBe(true);
+      expect(response.message.content).toBe('unified 본문');
+    });
+
+    it('대화 conversationHistory 옵션의 pipelineExtras만으로 상속 env 시 client_generation_scenario를 넣는다', async () => {
+      const prev = process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+      process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = 'true';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        const request: UnifiedMessageRequest = {
+          type: 'chat',
+          content: '질문: X\n요구사항: Y',
+          conversationHistory: [
+            {
+              role: 'assistant',
+              content: '이전',
+              pipelineExtras: { generationScenarioMarkdown: '## UnifiedHist옵션\n시나리오' },
+            },
+          ],
+        };
+        await unifiedMessageService.processMessage(request);
+        const init = (mockFetch.mock.calls[0][1] as { body: string }).body;
+        const body = JSON.parse(init);
+        expect(String(body.context?.client_generation_scenario)).toContain('UnifiedHist옵션');
+      } finally {
+        if (prev === undefined) delete process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+        else process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = prev;
+      }
+    });
+
+    it('대화 context.messages의 pipelineExtras로 상속 env 시 client_generation_scenario를 넣는다', async () => {
+      const prev = process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+      process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = 'true';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        const request: UnifiedMessageRequest = {
+          type: 'chat',
+          content: '질문: X\n요구사항: Y',
+          context: {
+            messages: [
+              {
+                role: 'assistant',
+                content: '이전',
+                pipelineExtras: { generationScenarioMarkdown: '## UnifiedMessages키\n시나리오' },
+              },
+            ],
+          },
+        };
+        await unifiedMessageService.processMessage(request);
+        const init = (mockFetch.mock.calls[0][1] as { body: string }).body;
+        const body = JSON.parse(init);
+        expect(String(body.context?.client_generation_scenario)).toContain('UnifiedMessages키');
+      } finally {
+        if (prev === undefined) delete process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+        else process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = prev;
+      }
+    });
+
+    it('대화 context.conversation_history의 pipelineExtras로 상속 env 시 client_generation_scenario를 넣는다', async () => {
+      const prev = process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+      process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = 'true';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        const request: UnifiedMessageRequest = {
+          type: 'chat',
+          content: '질문: X\n요구사항: Y',
+          context: {
+            conversation_history: [
+              {
+                role: 'assistant',
+                content: '이전',
+                pipelineExtras: { generationScenarioMarkdown: '## UnifiedMessage\n시나리오' },
+              },
+            ],
+          },
+        };
+        await unifiedMessageService.processMessage(request);
+        const init = (mockFetch.mock.calls[0][1] as { body: string }).body;
+        const body = JSON.parse(init);
+        expect(String(body.context?.client_generation_scenario)).toContain('UnifiedMessage');
+      } finally {
+        if (prev === undefined) delete process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+        else process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = prev;
+      }
+    });
+
+    it('REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT=1이면 URL에 id가 있어도 chat context에 genspark_*를 넣지 않는다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = '1';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_ID}=7c36051a-2b94-4e9e-bd36-05dfabfe3e07`,
+        );
+        await unifiedMessageService.processMessage({
+          type: 'chat',
+          content: '안녕',
+          context: {},
+        });
+        const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+        expect(body.context?.genspark_route_agent_id).toBeUndefined();
+        expect(body.context?.genspark_reference_agent_id).toBeUndefined();
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('URL type=super_agent만 있으면 chat context에 참조 Super Agent id가 실린다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      if (prevDisable !== undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_TYPE}=${encodeURIComponent(GENSPARK_AGENTS_TYPE_SUPER_AGENT)}`,
+        );
+        await unifiedMessageService.processMessage({
+          type: 'chat',
+          content: '안녕',
+          context: {},
+        });
+        const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+        expect(body.context?.genspark_reference_agent_id).toBe(GENSPARK_REFERENCE_AGENT_ID);
+        expect(body.context?.genspark_route_agent_id).toBe(GENSPARK_REFERENCE_AGENT_ID);
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('GENSPARK_DISABLE이면 type=super_agent만 있어도 chat context에 genspark_*를 넣지 않는다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = '1';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_TYPE}=${encodeURIComponent(GENSPARK_AGENTS_TYPE_SUPER_AGENT)}`,
+        );
+        await unifiedMessageService.processMessage({
+          type: 'chat',
+          content: '안녕',
+          context: {},
+        });
+        const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+        expect(body.context?.genspark_route_agent_id).toBeUndefined();
+        expect(body.context?.genspark_reference_agent_id).toBeUndefined();
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('ModernChat 파이프라인 context로 processMessage(chat) 시 GENSPARK_DISABLE이면 URL id가 context에 끼지 않는다', async () => {
+      delete process.env.REACT_APP_MODERN_CHAT_UNIFIED_CONTEXT;
+      const windowUuid = '7c36051a-2b94-4e9e-bd36-05dfabfe3e07';
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = '1';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        window.history.replaceState({}, '', `/?${AGENTS_QUERY_PARAM_ID}=${windowUuid}`);
+        const recent: UiMessage[] = [
+          { id: 1, sender: 'user', text: '이전', timestamp: 't', analysis: null },
+        ];
+        const unifiedCtx = buildModernChatPipelineContext('질문: a\n요구사항: b', recent);
+        expect(unifiedCtx).toBeDefined();
+        const mergeOpts = scenarioInheritMergeOptionsFromPipelineLikeMessages(recent);
+        await unifiedMessageService.processMessage({
+          type: 'chat',
+          content: '질문: a\n요구사항: b',
+          context: unifiedCtx as Record<string, unknown>,
+          ...(mergeOpts != null ? { mergeApiChatContextOptions: mergeOpts } : {}),
+        });
+        const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+        expect(body.context?.genspark_route_agent_id).not.toBe(windowUuid);
+        expect(body.context?.genspark_reference_agent_id).not.toBe(windowUuid);
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('ModernChat 파이프라인 옵션(gensparkRouteAgentId)으로 processMessage(chat) 시 context에 해당 에이전트 id가 실린다', async () => {
+      delete process.env.REACT_APP_MODERN_CHAT_UNIFIED_CONTEXT;
+      const routeId = '7c36051a-2b94-4e9e-bd36-05dfabfe3e07';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      const unifiedCtx = buildModernChatPipelineContext('질문: a\n요구사항: b', [], {
+        gensparkRouteAgentId: routeId,
+      });
+      expect(unifiedCtx).toBeDefined();
+      await unifiedMessageService.processMessage({
+        type: 'chat',
+        content: '질문: a\n요구사항: b',
+        context: unifiedCtx as Record<string, unknown>,
+      });
+      const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+      expect(body.context?.genspark_reference_agent_id).toBe(routeId);
+      expect(String(body.context?.genspark_external_agent_profile ?? '')).toContain(routeId);
     });
 
     it('분석 메시지를 처리할 수 있어야 함', async () => {
@@ -202,7 +562,7 @@ describe('unifiedMessageService', () => {
       expect(response.success).toBe(false);
     });
 
-    it('알 수 없는 타입은 기본 채팅으로 처리해야 함', async () => {
+    it('알 수 없는 타입은 기본 대화로 처리해야 함', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -215,7 +575,7 @@ describe('unifiedMessageService', () => {
       } as Response);
 
       const request = {
-        type: 'unknown' as any,
+        type: 'unknown' as 'chat',
         content: '테스트',
       };
 
@@ -343,7 +703,7 @@ describe('unifiedMessageService', () => {
       expect(response.metadata?.usedServices).toContain('analysis');
     });
 
-    it('명령이 없으면 기본 채팅으로 처리해야 함', async () => {
+    it('명령이 없으면 기본 대화로 처리해야 함', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({

@@ -1,4 +1,39 @@
 import { sendChatMessage, ChatRequest } from './unifiedAPI';
+import { coerceChatTurnsFromContextRecord, type ChatTurn } from './modernChatContextBuilder';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
+function conversationTurnsFromContext(context: Record<string, unknown>): ChatTurn[] | undefined {
+    const t = coerceChatTurnsFromContextRecord(context);
+    return t.length > 0 ? t : undefined;
+}
+
+/** `request.context`의 대화 턴을 최상위 `conversation_history`로 승격하고, 파이프라인 턴이 있으면 보강 (`mergeApiChatContextPayload` 호환) */
+function mergeChatRequestConversationHistory(
+    request: ChatRequest,
+    pipelineHistory?: ChatTurn[]
+): ChatRequest {
+    let next: ChatRequest = { ...request };
+    if (pipelineHistory?.length && !next.conversation_history?.length) {
+        next = { ...next, conversation_history: pipelineHistory };
+    }
+    if (next.conversation_history?.length) return next;
+    const ctx = next.context;
+    if (ctx && typeof ctx === 'object') {
+        const fromCtx = conversationTurnsFromContext(ctx as Record<string, unknown>);
+        if (fromCtx?.length) {
+            next = { ...next, conversation_history: fromCtx };
+        }
+    }
+    return next;
+}
+
+function sendChatWithMergedHistory(
+    request: ChatRequest,
+    pipelineHistory?: ChatTurn[]
+): ReturnType<typeof sendChatMessage> {
+    return sendChatMessage(mergeChatRequestConversationHistory(request, pipelineHistory));
+}
 
 export interface KnowledgeSource {
     id: string;
@@ -99,7 +134,7 @@ ${JSON.stringify(context, null, 2)}
             }
         };
 
-        const response = await sendChatMessage(chatRequest);
+        const response = await sendChatWithMergedHistory(chatRequest);
         if (response.success && response.message) {
             // 응답을 파싱하여 구조화된 데이터로 변환
             const content = response.message.content;
@@ -118,7 +153,12 @@ ${JSON.stringify(context, null, 2)}
             };
         }
     } catch (error) {
-        console.error('질문 분석 오류:', error);
+        const err = toError(error);
+        errorLogger.error('질문 분석 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'analyzeAndClarifyQuestion',
+            questionPreview: question,
+        });
     }
 
     return {
@@ -133,7 +173,7 @@ ${JSON.stringify(context, null, 2)}
 const extractSection = (text: string, sectionName: string): string => {
     const regex = new RegExp(`${sectionName}\\s*([\\s\\S]*?)(?=\\n\\s*[-\\w]+:|$)`, 'i');
     const match = text.match(regex);
-    return match ? match[1].trim() : '';
+    return match ? coerceTrimmedString(match[1], '') : '';
 };
 
 // 리스트 추출 헬퍼 함수
@@ -143,7 +183,7 @@ const extractList = (text: string, sectionName: string): string[] => {
 
     return section
         .split('\n')
-        .map(line => line.replace(/^[-•*]\s*/, '').trim())
+        .map((line) => coerceTrimmedString(line.replace(/^[-•*]\s*/, ''), ''))
         .filter(line => line.length > 0);
 };
 
@@ -177,19 +217,32 @@ const performSystematicAnalysis = async (question: string, sources: KnowledgeSou
             }
         };
 
-        const response = await sendChatMessage(chatRequest);
+        const response = await sendChatWithMergedHistory(chatRequest);
         if (response.success && response.message) {
-            return response.message.content.split('\n').filter((line: string) => line.trim().length > 0);
+            return response.message.content
+              .split('\n')
+              .filter((line: string) => coerceTrimmedString(line, '').length > 0);
         }
     } catch (error) {
-        console.error('체계적 분석 오류:', error);
+        const err = toError(error);
+        errorLogger.error('체계적 분석 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performSystematicAnalysis',
+            questionPreview: question,
+            sourcesCount: sources.length,
+        });
     }
 
     return ['체계적 분석을 수행할 수 없습니다.'];
 };
 
 // 핵심 정보 추출 및 구조화 함수
-const extractAndStructureInfo = async (question: string, analysisResults: string[], sources: KnowledgeSource[]): Promise<Record<string, unknown>> => {
+const extractAndStructureInfo = async (
+    question: string,
+    analysisResults: string[],
+    sources: KnowledgeSource[],
+    conversationHistory?: ChatTurn[]
+): Promise<Record<string, unknown>> => {
     const extractionPrompt = `
 다음 질문과 분석 결과에서 핵심 정보를 추출하고 구조화해주세요:
 
@@ -218,7 +271,7 @@ const extractAndStructureInfo = async (question: string, analysisResults: string
             }
         };
 
-        const response = await sendChatMessage(chatRequest);
+        const response = await sendChatWithMergedHistory(chatRequest, conversationHistory);
         if (response.success && response.message) {
             try {
                 return JSON.parse(response.message.content);
@@ -227,14 +280,24 @@ const extractAndStructureInfo = async (question: string, analysisResults: string
             }
         }
     } catch (error) {
-        console.error('정보 추출 오류:', error);
+        const err = toError(error);
+        errorLogger.error('정보 추출 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'extractAndStructureInfo',
+            questionPreview: question,
+        });
     }
 
     return { extractedInfo: '정보 추출을 수행할 수 없습니다.' };
 };
 
 // 다각도 관점 분석 함수
-const performPerspectiveAnalysis = async (question: string, extractedInfo: Record<string, unknown>, sources: KnowledgeSource[]): Promise<string[]> => {
+const performPerspectiveAnalysis = async (
+    question: string,
+    extractedInfo: Record<string, unknown>,
+    sources: KnowledgeSource[],
+    conversationHistory?: ChatTurn[]
+): Promise<string[]> => {
     const perspectivePrompt = `
 다음 질문과 정보를 다양한 관점에서 분석해주세요:
 
@@ -265,19 +328,31 @@ const performPerspectiveAnalysis = async (question: string, extractedInfo: Recor
             }
         };
 
-        const response = await sendChatMessage(chatRequest);
+        const response = await sendChatWithMergedHistory(chatRequest, conversationHistory);
         if (response.success && response.message) {
-            return response.message.content.split('\n').filter((line: string) => line.trim().length > 0);
+            return response.message.content
+              .split('\n')
+              .filter((line: string) => coerceTrimmedString(line, '').length > 0);
         }
     } catch (error) {
-        console.error('관점 분석 오류:', error);
+        const err = toError(error);
+        errorLogger.error('관점 분석 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performPerspectiveAnalysis',
+            questionPreview: question,
+        });
     }
 
     return ['관점 분석을 수행할 수 없습니다.'];
 };
 
 // 응답 최적화 및 개선 함수
-const optimizeResponse = async (response: string, questionAnalysis: any, sources: KnowledgeSource[]): Promise<string> => {
+const optimizeResponse = async (
+    response: string,
+    questionAnalysis: Record<string, unknown>,
+    sources: KnowledgeSource[],
+    conversationHistory?: ChatTurn[]
+): Promise<string> => {
     const optimizationPrompt = `
 다음 응답을 최적화하고 개선해주세요:
 
@@ -285,8 +360,8 @@ const optimizeResponse = async (response: string, questionAnalysis: any, sources
 
 **질문 분석 정보:**
 - 원본 질문 의도: ${questionAnalysis.intentAnalysis}
-- 추론한 가정들: ${questionAnalysis.assumptions.join(', ')}
-- 추가된 맥락: ${questionAnalysis.contextEnhancement.join(', ')}
+- 추론한 가정들: ${((questionAnalysis.assumptions as string[] | undefined) || []).join(', ')}
+- 추가된 맥락: ${((questionAnalysis.contextEnhancement as string[] | undefined) || []).join(', ')}
 
 **개선 요구사항:**
 1. 사용자가 실제로 원하는 정보에 더 집중
@@ -310,19 +385,30 @@ const optimizeResponse = async (response: string, questionAnalysis: any, sources
             }
         };
 
-        const response = await sendChatMessage(chatRequest);
+        const response = await sendChatWithMergedHistory(chatRequest, conversationHistory);
         if (response.success && response.message) {
             return response.message.content;
         }
     } catch (error) {
-        console.error('응답 최적화 오류:', error);
+        const err = toError(error);
+        errorLogger.error('응답 최적화 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'optimizeResponse',
+            responsePreview: response,
+        });
     }
 
     return response;
 };
 
 // 최종 검토 및 완성 함수
-const performFinalReview = async (response: string, originalQuestion: string, questionAnalysis: any, sources: KnowledgeSource[]): Promise<string> => {
+const performFinalReview = async (
+    response: string,
+    originalQuestion: string,
+    questionAnalysis: Record<string, unknown>,
+    sources: KnowledgeSource[],
+    conversationHistory?: ChatTurn[]
+): Promise<string> => {
     const reviewPrompt = `
 다음 응답을 최종 검토하고 완성해주세요:
 
@@ -339,8 +425,8 @@ const performFinalReview = async (response: string, originalQuestion: string, qu
 
 **질문 분석 정보:**
 - 의도 분석: ${questionAnalysis.intentAnalysis}
-- 추론한 가정들: ${questionAnalysis.assumptions.join(', ')}
-- 추가된 맥락: ${questionAnalysis.contextEnhancement.join(', ')}
+- 추론한 가정들: ${((questionAnalysis.assumptions as string[] | undefined) || []).join(', ')}
+- 추가된 맥락: ${((questionAnalysis.contextEnhancement as string[] | undefined) || []).join(', ')}
 
 최종 검토를 완료하고 필요시 수정하여 완성된 응답을 제공해주세요.`;
 
@@ -356,12 +442,17 @@ const performFinalReview = async (response: string, originalQuestion: string, qu
             }
         };
 
-        const response = await sendChatMessage(chatRequest);
+        const response = await sendChatWithMergedHistory(chatRequest, conversationHistory);
         if (response.success && response.message) {
             return response.message.content;
         }
     } catch (error) {
-        console.error('최종 검토 오류:', error);
+        const err = toError(error);
+        errorLogger.error('최종 검토 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performFinalReview',
+            originalQuestionPreview: originalQuestion,
+        });
     }
 
     return response;
@@ -390,7 +481,7 @@ export const performWebSearch = async (query: string): Promise<KnowledgeSource[]
                 }
             };
 
-            const response = await sendChatMessage(chatRequest);
+            const response = await sendChatWithMergedHistory(chatRequest);
             if (response.success && response.message) {
                 sources.push({
                     id: `source_${Date.now()}_${Math.random()}`,
@@ -404,7 +495,12 @@ export const performWebSearch = async (query: string): Promise<KnowledgeSource[]
                 });
             }
         } catch (error) {
-            console.error('웹 검색 오류:', error);
+            const err = toError(error);
+            errorLogger.error('웹 검색 오류', err, {
+                component: 'intelligentKnowledgeProcessor',
+                action: 'performWebSearch',
+                queryPreview: query,
+            });
         }
     }
 
@@ -459,6 +555,8 @@ export interface ProcessingOptions {
     cacheExpiry?: number;
     enableProgressTracking?: boolean;
     onProgress?: ProgressCallback;
+    /** `CHAT_POST_PATH` 병합용 최근 대화 (processIntelligentKnowledge·performLogicalReasoning) */
+    conversation_history?: ChatTurn[];
 }
 
 // 고급 캐시 관리 시스템
@@ -587,26 +685,34 @@ class RetryManager {
             backoffMultiplier: 2
         }
     ): Promise<T> {
-        let lastError: Error;
+        let lastError: Error = new Error('Retry exhausted');
         let delay = options.baseDelay;
 
         for (let attempt = 0; attempt <= options.maxRetries; attempt++) {
             try {
                 return await operation();
             } catch (error) {
-                lastError = error as Error;
+                lastError = error instanceof Error ? error : new Error(String(error));
 
                 if (attempt === options.maxRetries) {
                     throw lastError;
                 }
 
-                console.warn(`시도 ${attempt + 1} 실패, ${delay}ms 후 재시도:`, error);
+                const err = toError(error);
+                errorLogger.warn(`시도 ${attempt + 1} 실패, ${delay}ms 후 재시도`, {
+                    component: 'intelligentKnowledgeProcessor',
+                    action: 'withRetry',
+                    attempt: attempt + 1,
+                    maxRetries: options.maxRetries,
+                    delay,
+                    error: err.message,
+                });
                 await this.delay(delay);
                 delay = Math.min(delay * options.backoffMultiplier, options.maxDelay);
             }
         }
 
-        throw lastError!;
+        throw lastError;
     }
 }
 
@@ -714,7 +820,8 @@ const performanceMonitor = new PerformanceMonitor();
 // 병렬 처리 함수
 const executeStepsInParallel = async (
     steps: Array<{ step: number; prompt: string; context: Record<string, unknown> }>,
-    maxConcurrent: number = 3
+    maxConcurrent: number = 3,
+    pipelineHistory?: ChatTurn[]
 ): Promise<Array<{ step: number; result: string; confidence: number }>> => {
     const results: Array<{ step: number; result: string; confidence: number }> = [];
 
@@ -733,14 +840,19 @@ const executeStepsInParallel = async (
                     }
                 };
 
-                const response = await sendChatMessage(chatRequest);
+                const response = await sendChatWithMergedHistory(chatRequest, pipelineHistory);
                 return {
                     step,
                     result: response.success && response.message ? response.message.content : '처리 실패',
                     confidence: response.success ? 0.7 : 0.5
                 };
             } catch (error) {
-                console.error(`단계 ${step} 병렬 처리 오류:`, error);
+                const err = toError(error);
+                errorLogger.error(`단계 ${step} 병렬 처리 오류`, err, {
+                    component: 'intelligentKnowledgeProcessor',
+                    action: 'executeStepsInParallel',
+                    step,
+                });
                 return {
                     step,
                     result: `단계 ${step} 처리 중 오류가 발생했습니다.`,
@@ -780,6 +892,8 @@ export const performLogicalReasoning = async (
         onProgress
     } = options;
 
+    const pipelineHistory = options.conversation_history;
+
     const reasoningSteps: ReasoningStep[] = [];
 
     // 진행 상황 업데이트 함수
@@ -787,7 +901,13 @@ export const performLogicalReasoning = async (
         if (enableProgressTracking && onProgress) {
             onProgress(step, 10, description, confidence);
         }
-        console.log(`🧠 단계 ${step}/10: ${description} (신뢰도: ${(confidence * 100).toFixed(1)}%)`);
+        errorLogger.info(`🧠 단계 ${step}/10: ${description}`, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'updateProgress',
+            step,
+            totalSteps: 10,
+            confidence: (confidence * 100).toFixed(1) + '%',
+        });
     };
 
     // 상세한 진행 상황 메시지
@@ -839,17 +959,17 @@ export const performLogicalReasoning = async (
         };
 
         const analysisResponse = await RetryManager.withRetry(
-            () => withTimeout(sendChatMessage(analysisRequest), timeoutPerStep),
+            () => withTimeout(sendChatWithMergedHistory(analysisRequest, pipelineHistory), timeoutPerStep),
             { maxRetries: 2, baseDelay: 1000, maxDelay: 5000, backoffMultiplier: 1.5 }
         );
 
-        if ((analysisResponse as any).success && (analysisResponse as any).message) {
+        if ((analysisResponse as { success?: boolean; message?: unknown }).success && (analysisResponse as { success?: boolean; message?: unknown }).message) {
             reasoningSteps.push({
                 id: 'analysis_1',
                 type: 'analysis',
                 description: '문제 분석 및 요구사항 파악',
                 input: [question, ...sources.map(s => s.content)],
-                output: (analysisResponse as any).message.content,
+                output: (analysisResponse as { message?: { content?: string } }).message?.content ?? '',
                 confidence: 0.85,
                 reasoning: '질문의 핵심 요구사항과 필요한 정보 유형을 심층 분석했습니다.',
                 sources: sources.map(s => s.id)
@@ -857,7 +977,12 @@ export const performLogicalReasoning = async (
             performanceMonitor.endStep(1, true);
         }
     } catch (error) {
-        console.error('1단계 분석 오류:', error);
+        const err = toError(error);
+        errorLogger.error('1단계 분석 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performLogicalReasoning',
+            step: 1,
+        });
         updateProgress(1, '문제 분석 실패', 0.3);
         performanceMonitor.endStep(1, false, error instanceof Error ? error.message : 'Unknown error');
         performanceMonitor.recordRetry();
@@ -892,24 +1017,29 @@ export const performLogicalReasoning = async (
         };
 
         const qualityResponse = await withTimeout(
-            sendChatMessage(qualityRequest),
+            sendChatWithMergedHistory(qualityRequest, pipelineHistory),
             timeoutPerStep
         );
 
-        if ((qualityResponse as any).success && (qualityResponse as any).message) {
+        if ((qualityResponse as { success?: boolean; message?: unknown }).success && (qualityResponse as { success?: boolean; message?: unknown }).message) {
             reasoningSteps.push({
                 id: 'quality_2',
                 type: 'evaluation',
                 description: '정보 품질 평가 및 우선순위 설정',
                 input: [reasoningSteps[0]?.output || '', ...sources.map(s => s.content)],
-                output: (qualityResponse as any).message.content,
+                output: (qualityResponse as { message?: { content?: string } }).message?.content ?? '',
                 confidence: 0.8,
                 reasoning: '수집된 정보의 품질을 평가하고 우선순위를 설정했습니다.',
                 sources: sources.map(s => s.id)
             });
         }
     } catch (error) {
-        console.error('2단계 품질 평가 오류:', error);
+        const err = toError(error);
+        errorLogger.error('2단계 품질 평가 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performLogicalReasoning',
+            step: 2,
+        });
         updateProgress(2, '품질 평가 실패', 0.3);
     }
 
@@ -973,7 +1103,7 @@ export const performLogicalReasoning = async (
         ];
 
         try {
-            const parallelResults = await executeStepsInParallel(parallelSteps, maxConcurrentSteps);
+            const parallelResults = await executeStepsInParallel(parallelSteps, maxConcurrentSteps, pipelineHistory);
 
             parallelResults.forEach(({ step, result, confidence }) => {
                 reasoningSteps.push({
@@ -989,7 +1119,12 @@ export const performLogicalReasoning = async (
                 });
             });
         } catch (error) {
-            console.error('병렬 처리 오류:', error);
+            const err = toError(error);
+            errorLogger.error('병렬 처리 오류', err, {
+                component: 'intelligentKnowledgeProcessor',
+                action: 'performLogicalReasoning',
+                step: 3,
+            });
             updateProgress(3, '병렬 처리 실패', 0.3);
         }
     } else {
@@ -1023,7 +1158,7 @@ export const performLogicalReasoning = async (
             };
 
             const extractionResponse = await withTimeout(
-                sendChatMessage(extractionRequest),
+                sendChatWithMergedHistory(extractionRequest, pipelineHistory),
                 timeoutPerStep
             );
 
@@ -1040,7 +1175,12 @@ export const performLogicalReasoning = async (
                 });
             }
         } catch (error) {
-            console.error('3단계 정보 추출 오류:', error);
+            const err = toError(error);
+            errorLogger.error('3단계 정보 추출 오류', err, {
+                component: 'intelligentKnowledgeProcessor',
+                action: 'performLogicalReasoning',
+                step: 3,
+            });
             updateProgress(3, '정보 추출 실패', 0.3);
         }
 
@@ -1073,7 +1213,7 @@ export const performLogicalReasoning = async (
             };
 
             const perspectiveResponse = await withTimeout(
-                sendChatMessage(perspectiveRequest),
+                sendChatWithMergedHistory(perspectiveRequest, pipelineHistory),
                 timeoutPerStep
             );
 
@@ -1090,7 +1230,12 @@ export const performLogicalReasoning = async (
                 });
             }
         } catch (error) {
-            console.error('4단계 다관점 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('4단계 다관점 분석 오류', err, {
+                component: 'intelligentKnowledgeProcessor',
+                action: 'performLogicalReasoning',
+                step: 4,
+            });
             updateProgress(4, '다관점 분석 실패', 0.3);
         }
 
@@ -1129,7 +1274,7 @@ export const performLogicalReasoning = async (
             };
 
             const inferenceResponse = await withTimeout(
-                sendChatMessage(inferenceRequest),
+                sendChatWithMergedHistory(inferenceRequest, pipelineHistory),
                 timeoutPerStep
             );
 
@@ -1146,7 +1291,12 @@ export const performLogicalReasoning = async (
                 });
             }
         } catch (error) {
-            console.error('5단계 논리적 추론 오류:', error);
+            const err = toError(error);
+            errorLogger.error('5단계 논리적 추론 오류', err, {
+                component: 'intelligentKnowledgeProcessor',
+                action: 'performLogicalReasoning',
+                step: 5,
+            });
             updateProgress(5, '논리적 추론 실패', 0.3);
         }
     }
@@ -1188,7 +1338,7 @@ export const performLogicalReasoning = async (
         };
 
         const synthesisResponse = await withTimeout(
-            sendChatMessage(synthesisRequest),
+            sendChatWithMergedHistory(synthesisRequest, pipelineHistory),
             timeoutPerStep
         );
 
@@ -1205,7 +1355,12 @@ export const performLogicalReasoning = async (
             });
         }
     } catch (error) {
-        console.error('6단계 정보 종합 오류:', error);
+        const err = toError(error);
+        errorLogger.error('6단계 정보 종합 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performLogicalReasoning',
+            step: 6,
+        });
         updateProgress(6, '정보 종합 실패', 0.3);
     }
 
@@ -1238,7 +1393,7 @@ export const performLogicalReasoning = async (
         };
 
         const verificationResponse = await withTimeout(
-            sendChatMessage(verificationRequest),
+            sendChatWithMergedHistory(verificationRequest, pipelineHistory),
             timeoutPerStep
         );
 
@@ -1255,7 +1410,12 @@ export const performLogicalReasoning = async (
             });
         }
     } catch (error) {
-        console.error('7단계 사실 검증 오류:', error);
+        const err = toError(error);
+        errorLogger.error('7단계 사실 검증 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performLogicalReasoning',
+            step: 7,
+        });
         updateProgress(7, '사실 검증 실패', 0.3);
     }
 
@@ -1292,7 +1452,7 @@ export const performLogicalReasoning = async (
         };
 
         const biasResponse = await withTimeout(
-            sendChatMessage(biasRequest),
+            sendChatWithMergedHistory(biasRequest, pipelineHistory),
             timeoutPerStep
         );
 
@@ -1309,7 +1469,12 @@ export const performLogicalReasoning = async (
             });
         }
     } catch (error) {
-        console.error('8단계 편향성 평가 오류:', error);
+        const err = toError(error);
+        errorLogger.error('8단계 편향성 평가 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performLogicalReasoning',
+            step: 8,
+        });
         updateProgress(8, '편향성 평가 실패', 0.3);
     }
 
@@ -1349,7 +1514,7 @@ export const performLogicalReasoning = async (
         };
 
         const optimizationResponse = await withTimeout(
-            sendChatMessage(optimizationRequest),
+            sendChatWithMergedHistory(optimizationRequest, pipelineHistory),
             timeoutPerStep
         );
 
@@ -1366,7 +1531,12 @@ export const performLogicalReasoning = async (
             });
         }
     } catch (error) {
-        console.error('9단계 응답 최적화 오류:', error);
+        const err = toError(error);
+        errorLogger.error('9단계 응답 최적화 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performLogicalReasoning',
+            step: 9,
+        });
         updateProgress(9, '응답 최적화 실패', 0.3);
     }
 
@@ -1404,7 +1574,7 @@ export const performLogicalReasoning = async (
         };
 
         const finalReviewResponse = await withTimeout(
-            sendChatMessage(finalReviewRequest),
+            sendChatWithMergedHistory(finalReviewRequest, pipelineHistory),
             timeoutPerStep
         );
 
@@ -1421,7 +1591,12 @@ export const performLogicalReasoning = async (
             });
         }
     } catch (error) {
-        console.error('10단계 최종 검토 오류:', error);
+        const err = toError(error);
+        errorLogger.error('10단계 최종 검토 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performLogicalReasoning',
+            step: 10,
+        });
         updateProgress(10, '최종 검토 실패', 0.3);
     }
 
@@ -1432,7 +1607,8 @@ export const performLogicalReasoning = async (
 // 사실 검증
 export const performFactChecking = async (
     response: string,
-    sources: KnowledgeSource[]
+    sources: KnowledgeSource[],
+    conversationHistory?: ChatTurn[]
 ): Promise<string[]> => {
     const factCheckPrompt = `다음 응답의 사실을 검증해주세요:
 
@@ -1459,12 +1635,16 @@ export const performFactChecking = async (
             }
         };
 
-        const factCheckResponse = await sendChatMessage(factCheckRequest);
+        const factCheckResponse = await sendChatWithMergedHistory(factCheckRequest, conversationHistory);
         if (factCheckResponse.success && factCheckResponse.message) {
             return [factCheckResponse.message.content];
         }
     } catch (error) {
-        console.error('사실 검증 오류:', error);
+        const err = toError(error);
+        errorLogger.error('사실 검증 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'performFactChecking',
+        });
     }
 
     return ['사실 검증을 수행할 수 없습니다.'];
@@ -1473,7 +1653,8 @@ export const performFactChecking = async (
 // 편향성 평가
 export const assessBias = async (
     response: string,
-    sources: KnowledgeSource[]
+    sources: KnowledgeSource[],
+    conversationHistory?: ChatTurn[]
 ): Promise<string[]> => {
     const biasAssessmentPrompt = `다음 응답의 편향성을 평가해주세요:
 
@@ -1500,12 +1681,16 @@ export const assessBias = async (
             }
         };
 
-        const biasResponse = await sendChatMessage(biasRequest);
+        const biasResponse = await sendChatWithMergedHistory(biasRequest, conversationHistory);
         if (biasResponse.success && biasResponse.message) {
             return [biasResponse.message.content];
         }
     } catch (error) {
-        console.error('편향성 평가 오류:', error);
+        const err = toError(error);
+        errorLogger.error('편향성 평가 오류', err, {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'assessBias',
+        });
     }
 
     return ['편향성 평가를 수행할 수 없습니다.'];
@@ -1522,18 +1707,34 @@ export const processIntelligentKnowledge = async (
 
     const {
         enableCaching = true,
-        cacheExpiry = 3600000, // 1시간
+        cacheExpiry: _cacheExpiry = 3600000, // 1시간
         enableProgressTracking = true,
         onProgress
     } = options;
 
-    console.log('🧠 지능형 지식 처리 시작:', question);
+    const fromCtxTurns = conversationTurnsFromContext(context);
+    const pipelineHistory: ChatTurn[] | undefined =
+        fromCtxTurns?.length
+            ? fromCtxTurns
+            : options.conversation_history?.length
+              ? options.conversation_history
+              : undefined;
+
+    errorLogger.info('🧠 지능형 지식 처리 시작', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        questionPreview: question,
+    });
 
     // 캐시 확인
     if (enableCaching) {
         const cachedResponse = advancedCache.get(question);
         if (cachedResponse) {
-            console.log('📋 캐시된 응답 사용');
+            errorLogger.info('📋 캐시된 응답 사용', {
+                component: 'intelligentKnowledgeProcessor',
+                action: 'processIntelligentKnowledge',
+                cached: true,
+            });
             performanceMonitor.recordCacheHit();
             return cachedResponse;
         }
@@ -1545,22 +1746,38 @@ export const processIntelligentKnowledge = async (
         onProgress(0, 11, '🔍 질문을 분석하고 명확화하고 있습니다...', 0.3);
     }
 
-    console.log('🔍 0단계: 질문 분석 및 명확화 중...');
-    const questionAnalysis = await analyzeAndClarifyQuestion(question, context);
+    errorLogger.info('🔍 0단계: 질문 분석 및 명확화 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 0,
+    });
+    const contextForClarify =
+        pipelineHistory?.length
+            ? { ...context, conversation_history: pipelineHistory }
+            : context;
+    const questionAnalysis = await analyzeAndClarifyQuestion(question, contextForClarify);
     const clarifiedQuestion = questionAnalysis.clarifiedQuestion;
 
-    console.log('📝 원본 질문:', question);
-    console.log('✨ 명확화된 질문:', clarifiedQuestion);
-    console.log('🤔 추론한 가정들:', questionAnalysis.assumptions);
-    console.log('📚 추가된 맥락:', questionAnalysis.contextEnhancement);
-    console.log('🎯 질문 의도:', questionAnalysis.intentAnalysis);
+    errorLogger.info('질문 분석 결과', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        originalQuestion: question,
+        clarifiedQuestion,
+        assumptions: questionAnalysis.assumptions,
+        contextEnhancement: questionAnalysis.contextEnhancement,
+        intentAnalysis: questionAnalysis.intentAnalysis,
+    });
 
     // 1단계: 지식 수집 (명확화된 질문 사용)
     if (enableProgressTracking && onProgress) {
         onProgress(1, 11, '🌐 웹에서 최신 정보를 수집하고 있습니다...', 0.4);
     }
 
-    console.log('📚 1단계: 지식 수집 중...');
+    errorLogger.info('📚 1단계: 지식 수집 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 1,
+    });
     const searchQueries = [
         clarifiedQuestion,
         `${clarifiedQuestion} 최신 정보`,
@@ -1581,21 +1798,30 @@ export const processIntelligentKnowledge = async (
         reliability: evaluateSourceReliability(source)
     })).filter(source => source.reliability > 0.3);
 
-    console.log(`📚 수집된 정보: ${evaluatedSources.length}개 소스`);
+    errorLogger.info(`📚 수집된 정보: ${evaluatedSources.length}개 소스`, {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        sourcesCount: evaluatedSources.length,
+    });
 
     if (enableProgressTracking && onProgress) {
         onProgress(2, 11, '🧠 지능형 분석 시스템을 초기화하고 있습니다...', 0.5);
     }
 
     // 2단계: 지능형 분석 시스템 초기화
-    console.log('🧠 2단계: 지능형 분석 시스템 초기화 중...');
+    errorLogger.info('🧠 2단계: 지능형 분석 시스템 초기화 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 2,
+    });
     const analysisContext = {
         originalQuestion: question,
         clarifiedQuestion: clarifiedQuestion,
         assumptions: questionAnalysis.assumptions,
         contextEnhancement: questionAnalysis.contextEnhancement,
         intentAnalysis: questionAnalysis.intentAnalysis,
-        sources: evaluatedSources
+        sources: evaluatedSources,
+        ...(pipelineHistory?.length ? { conversation_history: pipelineHistory } : {})
     };
 
     if (enableProgressTracking && onProgress) {
@@ -1603,7 +1829,11 @@ export const processIntelligentKnowledge = async (
     }
 
     // 3단계: 체계적 정보 분석
-    console.log('📊 3단계: 체계적 정보 분석 중...');
+    errorLogger.info('📊 3단계: 체계적 정보 분석 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 3,
+    });
     const analysisResults = await performSystematicAnalysis(clarifiedQuestion, evaluatedSources, analysisContext);
 
     if (enableProgressTracking && onProgress) {
@@ -1611,32 +1841,65 @@ export const processIntelligentKnowledge = async (
     }
 
     // 4단계: 핵심 정보 추출 및 구조화
-    console.log('🔍 4단계: 핵심 정보 추출 및 구조화 중...');
-    const extractedInfo = await extractAndStructureInfo(clarifiedQuestion, analysisResults, evaluatedSources);
+    errorLogger.info('🔍 4단계: 핵심 정보 추출 및 구조화 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 4,
+    });
+    const extractedInfo = await extractAndStructureInfo(
+        clarifiedQuestion,
+        analysisResults,
+        evaluatedSources,
+        pipelineHistory
+    );
 
     if (enableProgressTracking && onProgress) {
         onProgress(5, 11, '👁️ 다양한 관점에서 정보를 분석하고 있습니다...', 0.65);
     }
 
     // 5단계: 다각도 관점 분석
-    console.log('👁️ 5단계: 다각도 관점 분석 중...');
-    const perspectiveAnalysis = await performPerspectiveAnalysis(clarifiedQuestion, extractedInfo, evaluatedSources);
+    errorLogger.info('👁️ 5단계: 다각도 관점 분석 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 5,
+    });
+    const perspectiveAnalysis = await performPerspectiveAnalysis(
+        clarifiedQuestion,
+        extractedInfo,
+        evaluatedSources,
+        pipelineHistory
+    );
 
     if (enableProgressTracking && onProgress) {
         onProgress(6, 11, '⚡ 논리적 추론을 통해 결론을 도출하고 있습니다...', 0.7);
     }
 
     // 6단계: 논리적 추론을 통한 결론 도출
-    console.log('⚡ 6단계: 논리적 추론을 통한 결론 도출 중...');
-    const reasoningSteps = await performLogicalReasoning(clarifiedQuestion, evaluatedSources, options);
-    console.log(`🧮 추론 단계: ${reasoningSteps.length}개 완료`);
+    errorLogger.info('⚡ 6단계: 논리적 추론을 통한 결론 도출 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 6,
+    });
+    const reasoningSteps = await performLogicalReasoning(clarifiedQuestion, evaluatedSources, {
+        ...options,
+        ...(pipelineHistory?.length ? { conversation_history: pipelineHistory } : {})
+    });
+    errorLogger.info(`🧮 추론 단계: ${reasoningSteps.length}개 완료`, {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        reasoningStepsCount: reasoningSteps.length,
+    });
 
     if (enableProgressTracking && onProgress) {
         onProgress(7, 11, '🔗 모든 분석 결과를 종합하고 있습니다...', 0.75);
     }
 
     // 7단계: 모든 분석 결과 종합
-    console.log('🔗 7단계: 모든 분석 결과 종합 중...');
+    errorLogger.info('🔗 7단계: 모든 분석 결과 종합 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 7,
+    });
     const synthesisPrompt = `다음 정보를 종합하여 최종 답변을 생성해주세요:
 
 **원본 질문:** ${question}
@@ -1671,7 +1934,7 @@ export const processIntelligentKnowledge = async (
         }
     };
 
-    const synthesisResponse = await sendChatMessage(synthesisRequest);
+    const synthesisResponse = await sendChatWithMergedHistory(synthesisRequest as ChatRequest, pipelineHistory);
     const finalResponse = synthesisResponse.success && synthesisResponse.message
         ? synthesisResponse.message.content
         : '답변 생성 중 오류가 발생했습니다.';
@@ -1681,32 +1944,59 @@ export const processIntelligentKnowledge = async (
     }
 
     // 8단계: 사실 검증 및 정확성 확인
-    console.log('✅ 8단계: 사실 검증 및 정확성 확인 중...');
-    const factCheck = await performFactChecking(finalResponse, evaluatedSources);
+    errorLogger.info('✅ 8단계: 사실 검증 및 정확성 확인 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 8,
+    });
+    const factCheck = await performFactChecking(finalResponse, evaluatedSources, pipelineHistory);
 
     if (enableProgressTracking && onProgress) {
         onProgress(9, 11, '⚖️ 편향성을 평가하고 객관성을 확보하고 있습니다...', 0.85);
     }
 
     // 9단계: 편향성 평가 및 객관성 확보
-    console.log('⚖️ 9단계: 편향성 평가 및 객관성 확보 중...');
-    const biasAssessment = await assessBias(finalResponse, evaluatedSources);
+    errorLogger.info('⚖️ 9단계: 편향성 평가 및 객관성 확보 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 9,
+    });
+    const biasAssessment = await assessBias(finalResponse, evaluatedSources, pipelineHistory);
 
     if (enableProgressTracking && onProgress) {
         onProgress(10, 11, '✨ 응답을 최적화하고 개선하고 있습니다...', 0.9);
     }
 
     // 10단계: 응답 최적화 및 개선
-    console.log('✨ 10단계: 응답 최적화 및 개선 중...');
-    const optimizedResponse = await optimizeResponse(finalResponse, questionAnalysis, evaluatedSources);
+    errorLogger.info('✨ 10단계: 응답 최적화 및 개선 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 10,
+    });
+    const optimizedResponse = await optimizeResponse(
+        finalResponse,
+        questionAnalysis,
+        evaluatedSources,
+        pipelineHistory
+    );
 
     if (enableProgressTracking && onProgress) {
         onProgress(11, 11, '🎯 최종 검토를 완료하고 있습니다...', 0.95);
     }
 
     // 11단계: 최종 검토 및 완성
-    console.log('🎯 11단계: 최종 검토 및 완성 중...');
-    const finalReviewedResponse = await performFinalReview(optimizedResponse, question, questionAnalysis, evaluatedSources);
+    errorLogger.info('🎯 11단계: 최종 검토 및 완성 중', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        step: 11,
+    });
+    const finalReviewedResponse = await performFinalReview(
+        optimizedResponse,
+        question,
+        questionAnalysis,
+        evaluatedSources,
+        pipelineHistory
+    );
 
     // 최종 응답 구성 (11단계 완료)
     const metrics = performanceMonitor.endMonitoring();
@@ -1760,29 +2050,34 @@ export const processIntelligentKnowledge = async (
         onProgress(11, 11, '🎉 11단계 지능형 처리 완료! 모호한 질문도 정확하고 신뢰할 수 있는 답변을 제공합니다.', 1.0);
     }
 
-    console.log('🎯 11단계 지능형 지식 처리 완료!');
-    console.log(`📝 원본 질문: ${question}`);
-    console.log(`✨ 명확화된 질문: ${clarifiedQuestion}`);
-    console.log(`⏱️ 처리 시간: ${processingTime}ms`);
-    console.log(`📊 신뢰도: ${confidence.toFixed(2)}`);
-    console.log(`📚 사용된 소스: ${evaluatedSources.length}개`);
-    console.log(`🧮 추론 단계: ${reasoningSteps.length}개`);
-    console.log(`🔍 질문 분석: ${questionAnalysis.intentAnalysis}`);
+    errorLogger.info('🎯 11단계 지능형 지식 처리 완료', {
+        component: 'intelligentKnowledgeProcessor',
+        action: 'processIntelligentKnowledge',
+        originalQuestion: question,
+        clarifiedQuestion,
+        processingTime,
+        confidence: confidence.toFixed(2),
+        sourcesCount: evaluatedSources.length,
+        reasoningStepsCount: reasoningSteps.length,
+        intentAnalysis: questionAnalysis.intentAnalysis,
+    });
 
     // 성능 통계 출력
     if (metrics) {
-        console.log('📈 성능 통계:');
-        console.log(`  - 캐시 히트: ${metrics.cacheHits}회`);
-        console.log(`  - 캐시 미스: ${metrics.cacheMisses}회`);
-        console.log(`  - 재시도 횟수: ${metrics.retryCount}회`);
-        console.log(`  - 총 소스 수: ${metrics.totalSources}개`);
-        console.log(`  - 최종 신뢰도: ${metrics.finalConfidence.toFixed(2)}`);
-
-        // 단계별 성능 분석
-        console.log('  - 단계별 처리 시간:');
-        metrics.steps.forEach(step => {
-            const status = step.success ? '✅' : '❌';
-            console.log(`    ${status} 단계 ${step.step}: ${step.duration}ms ${step.error ? `(${step.error})` : ''}`);
+        errorLogger.info('📈 성능 통계', {
+            component: 'intelligentKnowledgeProcessor',
+            action: 'processIntelligentKnowledge',
+            cacheHits: metrics.cacheHits,
+            cacheMisses: metrics.cacheMisses,
+            retryCount: metrics.retryCount,
+            totalSources: metrics.totalSources,
+            finalConfidence: metrics.finalConfidence.toFixed(2),
+            steps: metrics.steps.map(step => ({
+                step: step.step,
+                duration: step.duration,
+                success: step.success,
+                error: step.error,
+            })),
         });
     }
 

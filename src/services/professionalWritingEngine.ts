@@ -3,6 +3,8 @@
  * 논술, 비평가, 선거평론가, 영화평론가, 여론평론가, 정치평론가 등
  * 다양한 전문 분야의 논리적이고 설득력 있는 글쓰기 시스템
  */
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export type WritingStyle = 
     | 'essay'              // 논술
@@ -55,9 +57,38 @@ export interface ProfessionalWriting {
     };
 }
 
+/** 스타일별 템플릿 (structure, characteristics, vocabulary, citation_style) */
+export interface StyleTemplate {
+    structure: string[];
+    characteristics: string[];
+    vocabulary: string;
+    citation_style: string;
+}
+
+/** 논리적 구조 (designLogicalStructure 반환) */
+export interface LogicalStructure {
+    type: string;
+    flow: string;
+    reasoning: string;
+}
+
+/** 수사학 전략 (selectRhetoricalStrategy 반환) */
+export interface RhetoricalStrategy {
+    devices: string[];
+    techniques: string[];
+    approach: string;
+}
+
+/** 전문 요소 (applyProfessionalElements 반환) */
+export interface ProfessionalElements {
+    terminology: string[];
+    style_markers: string[];
+    authority_signals: string[];
+}
+
 class ProfessionalWritingEngine {
     
-    private styleTemplates: Map<WritingStyle, any> = new Map();
+    private styleTemplates: Map<WritingStyle, StyleTemplate> = new Map();
     private rhetoricalDevices: Map<string, string[]> = new Map();
     private argumentStructures: Map<WritingStyle, string[]> = new Map();
     
@@ -82,7 +113,7 @@ class ProfessionalWritingEngine {
             const rhetoricalStrategy = this.selectRhetoricalStrategy(request);
             
             // 4. 전문 용어 및 스타일 적용
-            const professionalElements = this.applyProfessionalElements(request);
+            void this.applyProfessionalElements(request);
             
             // 5. 주요 콘텐츠 생성
             const content = this.generateContent(request, styleFramework, logicalStructure, rhetoricalStrategy);
@@ -110,7 +141,13 @@ class ProfessionalWritingEngine {
             };
             
         } catch (error) {
-            console.error('전문 글쓰기 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('전문 글쓰기 생성 오류', err, {
+                component: 'professionalWritingEngine',
+                action: 'generateProfessionalWriting',
+                style: request.style,
+                topic: request.topic.substring(0, 100),
+            });
             throw new Error('글쓰기 생성 중 오류가 발생했습니다.');
         }
     }
@@ -205,9 +242,7 @@ class ProfessionalWritingEngine {
     /**
      * 논리적 구조 설계
      */
-    private designLogicalStructure(request: WritingRequest): any {
-        const template = this.styleTemplates.get(request.style);
-        
+    private designLogicalStructure(request: WritingRequest): LogicalStructure {
         switch (request.style) {
             case 'essay':
                 return {
@@ -249,7 +284,7 @@ class ProfessionalWritingEngine {
     /**
      * 수사학적 전략 선택
      */
-    private selectRhetoricalStrategy(request: WritingRequest): any {
+    private selectRhetoricalStrategy(request: WritingRequest): RhetoricalStrategy {
         const style = request.style;
         const perspective = request.perspective || 'analytical';
         
@@ -266,7 +301,7 @@ class ProfessionalWritingEngine {
     /**
      * 전문 요소 적용
      */
-    private applyProfessionalElements(request: WritingRequest): any {
+    private applyProfessionalElements(request: WritingRequest): ProfessionalElements {
         return {
             terminology: this.getProfessionalTerminology(request.style),
             style_markers: this.getStyleMarkers(request.style),
@@ -279,11 +314,11 @@ class ProfessionalWritingEngine {
      */
     private generateContent(
         request: WritingRequest,
-        styleFramework: any,
-        logicalStructure: any,
-        rhetoricalStrategy: any
+        _styleFramework: StyleTemplate,
+        logicalStructure: LogicalStructure,
+        _rhetoricalStrategy: RhetoricalStrategy
     ): string {
-        const topic = request.topic;
+        const _topic = request.topic;
         const style = request.style;
         
         switch (style) {
@@ -307,10 +342,10 @@ class ProfessionalWritingEngine {
     /**
      * 논술 스타일 콘텐츠 생성
      */
-    private generateEssayContent(request: WritingRequest, structure: any): string {
+    private generateEssayContent(request: WritingRequest, _structure: LogicalStructure): string {
         const topic = request.topic;
         
-        return `
+        return coerceTrimmedString(`
 ## 서론: 문제의식과 논제 설정
 
 현대 사회에서 제기되는 "${topic}"에 대한 논의는 단순한 찬반의 차원을 넘어서는 복합적 사고를 요구한다. 이 문제는 우리 사회의 **근본적 가치체계**와 **미래 지향적 비전** 사이의 긴장 관계를 드러내며, 따라서 다층적이고 체계적인 접근이 필요하다.
@@ -399,16 +434,16 @@ class ProfessionalWritingEngine {
 **아인슈타인**의 말처럼, "문제를 만들어낸 수준의 사고로는 그 문제를 해결할 수 없다." 우리에게는 **한 차원 높은 사고**와 **더 넓은 관점**이 필요한 시점이다.
 
 *[총 2,400자 내외의 본격적인 논술문]*
-        `.trim();
+        `, '');
     }
     
     /**
      * 영화평론가 스타일 콘텐츠 생성
      */
-    private generateFilmCriticContent(request: WritingRequest, structure: any): string {
+    private generateFilmCriticContent(request: WritingRequest, _structure: LogicalStructure): string {
         const topic = request.topic; // 영화 제목이나 영화 관련 주제
         
-        return `
+        return coerceTrimmedString(`
 ## 영화적 언어의 새로운 지평: "${topic}"이 제시하는 시네마의 현재성
 
 ### 작품 개관: 장르적 경계의 실험
@@ -484,16 +519,16 @@ class ProfessionalWritingEngine {
 **★★★★☆** (별 4개 / 5개 만점)
 
 *[전문 영화평론가 수준의 심층 분석 리뷰]*
-        `.trim();
+        `, '');
     }
     
     /**
      * 선거평론가 스타일 콘텐츠 생성
      */
-    private generateElectionAnalysisContent(request: WritingRequest, structure: any): string {
+    private generateElectionAnalysisContent(request: WritingRequest, _structure: LogicalStructure): string {
         const topic = request.topic; // 선거나 정치적 이슈
         
-        return `
+        return coerceTrimmedString(`
 ## 선거 지형의 변화와 정치적 함의: "${topic}"을 중심으로 한 데이터 분석
 
 ### 현황 분석: 수치로 읽는 정치 역학
@@ -598,16 +633,16 @@ class ProfessionalWritingEngine {
 **2024년 총선**을 앞둔 시점에서, 이 이슈는 **정치 지형 재편**의 **중요한 변수**로 작용할 것이며, **선거 결과**에도 **상당한 영향**을 미칠 것으로 전망된다.
 
 *[데이터 기반 전문 선거 분석 리포트]*
-        `.trim();
+        `, '');
     }
     
     /**
      * 정치평론가 스타일 콘텐츠 생성
      */
-    private generatePoliticalCommentaryContent(request: WritingRequest, structure: any): string {
+    private generatePoliticalCommentaryContent(request: WritingRequest, _structure: LogicalStructure): string {
         const topic = request.topic;
         
-        return `
+        return coerceTrimmedString(`
 ## 권력의 생태학: "${topic}"이 드러내는 한국 정치의 현주소
 
 ### 정치적 배경: 구조와 행위자의 변증법
@@ -754,28 +789,28 @@ class ProfessionalWritingEngine {
 결국 이 모든 것은 **한국 사회의 정치적 성숙도**를 가늠하는 **리트머스 시험지**다. **위기**를 **기회**로 전환시킬 수 있는 **집단적 지혜**를 발휘할 때, 우리는 **한 단계 발전된 민주주의**로 나아갈 수 있을 것이다.
 
 *[권력 관계에 대한 날카로운 통찰을 담은 정치평론]*
-        `.trim();
+        `, '');
     }
     
     // 나머지 스타일별 콘텐츠 생성 메서드들...
-    private generateCriticContent(request: WritingRequest, structure: any): string {
+    private generateCriticContent(_request: WritingRequest, _structure: LogicalStructure): string {
         return `전문 비평가 수준의 분석적 콘텐츠가 여기에 생성됩니다.`;
     }
     
-    private generateOpinionAnalysisContent(request: WritingRequest, structure: any): string {
+    private generateOpinionAnalysisContent(_request: WritingRequest, _structure: LogicalStructure): string {
         return `여론분석가 관점의 사회적 동향 분석이 여기에 생성됩니다.`;
     }
     
-    private generateGenericProfessionalContent(request: WritingRequest, structure: any): string {
+    private generateGenericProfessionalContent(_request: WritingRequest, _structure: LogicalStructure): string {
         return `선택된 스타일에 맞는 전문적 콘텐츠가 여기에 생성됩니다.`;
     }
     
     // 헬퍼 메서드들
-    private getStyleFramework(style: WritingStyle): any {
-        return this.styleTemplates.get(style) || {};
+    private getStyleFramework(style: WritingStyle): StyleTemplate {
+        return this.styleTemplates.get(style) ?? { structure: [], characteristics: [], vocabulary: '', citation_style: '' };
     }
     
-    private getPersuasionTechniques(style: WritingStyle, perspective: string): string[] {
+    private getPersuasionTechniques(_style: WritingStyle, _perspective: string): string[] {
         const techniques = [
             '논리적 근거 제시', '감정적 호소', '권위에 의한 논증', 
             '구체적 사례 활용', '데이터와 통계 활용', '비유와 은유',
@@ -806,15 +841,15 @@ class ProfessionalWritingEngine {
         return termMap[style] || ['전문', '분석', '평가', '해석', '의미'];
     }
     
-    private getStyleMarkers(style: WritingStyle): string[] {
+    private getStyleMarkers(_style: WritingStyle): string[] {
         return ['전문적 어투', '논리적 구성', '근거 기반 서술', '객관적 분석', '비판적 시각'];
     }
     
-    private getAuthoritySignals(style: WritingStyle): string[] {
+    private getAuthoritySignals(_style: WritingStyle): string[] {
         return ['전문 지식 활용', '권위 있는 인용', '데이터 기반 분석', '비교 분석', '역사적 맥락'];
     }
     
-    private generateTitle(request: WritingRequest, content: string): string {
+    private generateTitle(request: WritingRequest, _content: string): string {
         const titleMap: Record<WritingStyle, string> = {
             'essay': `"${request.topic}"에 대한 종합적 고찰`,
             'critic': `"${request.topic}": 비평적 성찰과 문화적 의미`,
@@ -832,7 +867,7 @@ class ProfessionalWritingEngine {
         return titleMap[request.style] || `"${request.topic}": 전문가적 분석`;
     }
     
-    private generateAlternativeVersions(request: WritingRequest, content: string): any {
+    private generateAlternativeVersions(request: WritingRequest, _content: string): ProfessionalWriting['alternative_versions'] {
         return {
             different_perspective: `반대 관점에서 바라본 "${request.topic}"에 대한 다른 시각의 분석`,
             stronger_argument: `더욱 강력한 논증과 설득력을 갖춘 "${request.topic}" 분석`,
@@ -840,7 +875,7 @@ class ProfessionalWritingEngine {
         };
     }
     
-    private assessWritingQuality(content: string, style: WritingStyle): any {
+    private assessWritingQuality(_content: string, _style: WritingStyle): ProfessionalWriting['expert_assessment'] {
         return {
             logical_coherence: 0.9,
             persuasiveness: 0.85,

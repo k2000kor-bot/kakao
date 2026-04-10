@@ -7,6 +7,7 @@
 - 이미지 감정 분석
 """
 
+import os
 import asyncio
 import json
 import logging
@@ -25,6 +26,8 @@ from PIL import Image, ImageEnhance
 import requests
 from io import BytesIO
 
+from cors_config import get_cors_allow_origins
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,7 +37,7 @@ app = FastAPI(title="고급 이미지 분석 시스템", version="1.0.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -647,12 +650,15 @@ if __name__ == "__main__":
     import uvicorn
     
     try:
+        _p = int(
+            os.environ.get("ADVANCED_IMAGE_ANALYSIS_PORT", os.environ.get("PORT", "8002"))
+        )
         print("🖼️ 고급 이미지 분석 시스템 시작 중...")
-        print("📍 서버 주소: http://localhost:8002")
-        print("📚 API 문서: http://localhost:8002/docs")
+        print(f"📍 서버 주소: http://localhost:{_p}")
+        print(f"📚 API 문서: http://localhost:{_p}/docs")
         print("🔍 지원 분석: OCR, 객체감지, 감정분석")
-        
-        uvicorn.run(app, host="0.0.0.0", port=8002)
+
+        uvicorn.run(app, host="0.0.0.0", port=_p)
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

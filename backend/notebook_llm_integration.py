@@ -47,9 +47,50 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def _read_temperature_max_tokens_from_context(
+    context: Optional[Dict],
+    default_temp: float,
+    default_max: int,
+) -> tuple[float, int]:
+    """context의 temperature·max_tokens (llm_service·unified_chat·파이프라인 튜닝과 정합)."""
+    temp, mx = default_temp, default_max
+    if not context or not isinstance(context, dict):
+        return temp, mx
+    if context.get("temperature") is not None:
+        try:
+            temp = float(context["temperature"])
+        except (TypeError, ValueError):
+            pass
+    if context.get("max_tokens") is not None:
+        try:
+            mx = int(context["max_tokens"])
+        except (TypeError, ValueError):
+            pass
+    if mx <= 0:
+        mx = default_max
+    return temp, mx
+
+
+try:
+    from llm_internal_security import is_deepseek_cloud_blocked
+except ImportError:
+    def is_deepseek_cloud_blocked() -> bool:
+        return False
+
+
+# DeepSeek (API 또는 설치형 로컬)
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+DEEPSEEK_USE_LOCAL = os.getenv("DEEPSEEK_USE_LOCAL", "").lower() in ("1", "true", "yes")
+DEEPSEEK_LOCAL_MODEL = os.getenv("DEEPSEEK_LOCAL_MODEL", "deepseek-r1")  # Ollama 모델명
+
+
 class LLMModelType(Enum):
     """지원되는 LLM 모델 타입"""
 
+    # DeepSeek (우선 사용)
+    CLOUD_DEEPSEEK = "deepseek-chat"
     # 실제 Ollama에 설치된 모델 사용
     OLLAMA_QWEN = "qwen3:4b"  # 실제 설치된 모델
     OLLAMA_GPTOSS = "gpt-oss:20b"  # 실제 설치된 모델
@@ -102,7 +143,9 @@ class NotebookLLMIntegration:
     """노트북 LLM 통합 시스템"""
 
     def __init__(self):
-        self.ollama_base_url = "http://localhost:11434"
+        self.ollama_base_url = os.getenv(
+            "OLLAMA_BASE_URL", "http://localhost:11434"
+        ).rstrip("/")
         self.available_models = {}
         self.model_cache = {}
         self.performance_metrics = {
@@ -115,24 +158,32 @@ class NotebookLLMIntegration:
         self.memory_threshold = 0.8  # 80% 메모리 사용률 제한
         self.current_mode = ProcessingMode.AUTO
 
-        # 모델 우선순위 설정
+        # DeepSeek: 클라우드 차단 시 API 없이 로컬만 우선(열거형 이름은 호환용)
+        _ds_cloud_allowed = bool(DEEPSEEK_API_KEY) and not is_deepseek_cloud_blocked()
+        deepseek_first = (
+            [LLMModelType.CLOUD_DEEPSEEK] if (_ds_cloud_allowed or DEEPSEEK_USE_LOCAL) else []
+        )
         self.model_priority = {
-            "korean_chat": [
+            "korean_chat": deepseek_first
+            + [
                 LLMModelType.OLLAMA_KULLM,
                 LLMModelType.OLLAMA_POLYGLOT,
                 LLMModelType.CLOUD_GPT4,
             ],
-            "general_chat": [
+            "general_chat": deepseek_first
+            + [
                 LLMModelType.OLLAMA_LLAMA,
                 LLMModelType.OLLAMA_QWEN,
                 LLMModelType.CLOUD_CLAUDE,
             ],
-            "analysis": [
+            "analysis": deepseek_first
+            + [
                 LLMModelType.OLLAMA_GEMMA,
                 LLMModelType.CLOUD_GPT4,
                 LLMModelType.CLOUD_GEMINI,
             ],
-            "fast_response": [LLMModelType.OLLAMA_LLAMA, LLMModelType.CLOUD_GEMINI],
+            "fast_response": deepseek_first
+            + [LLMModelType.OLLAMA_LLAMA, LLMModelType.CLOUD_GEMINI],
         }
 
         self._initialize_ollama()
@@ -177,8 +228,23 @@ class NotebookLLMIntegration:
             # 모델 선택
             model = preferred_model or self._select_optimal_model(prompt, context, mode)
 
-            # 응답 생성
-            if mode in [ProcessingMode.LOCAL_ONLY, ProcessingMode.HYBRID]:
+            # 응답 생성 (설치형 DeepSeek > DeepSeek API > 로컬/클라우드)
+            if DEEPSEEK_USE_LOCAL and model == DEEPSEEK_LOCAL_MODEL:
+                response = await self._generate_local_response(prompt, model, context)
+            elif model == DEEPSEEK_MODEL or (DEEPSEEK_API_KEY and model == "deepseek-chat"):
+                if is_deepseek_cloud_blocked():
+                    if DEEPSEEK_USE_LOCAL:
+                        response = await self._generate_local_response(
+                            prompt, DEEPSEEK_LOCAL_MODEL, context
+                        )
+                    else:
+                        response = await self._generate_local_response(
+                            prompt, model if model in self.available_models else "qwen3:4b", context
+                        )
+                    logger.info("🔒 내부 보안: DeepSeek 클라우드 호출 생략, 로컬 모델 사용")
+                else:
+                    response = await self._generate_deepseek_response(prompt, context)
+            elif mode in [ProcessingMode.LOCAL_ONLY, ProcessingMode.HYBRID]:
                 response = await self._generate_local_response(prompt, model, context)
             else:
                 response = await self._generate_cloud_response(prompt, model, context)
@@ -232,17 +298,19 @@ class NotebookLLMIntegration:
     def _select_optimal_model(
         self, prompt: str, context: Optional[Dict], mode: ProcessingMode
     ) -> str:
-        """최적 모델 선택"""
+        """최적 모델 선택 (설치형 DeepSeek > DeepSeek API 우선)"""
+        if DEEPSEEK_USE_LOCAL:
+            return DEEPSEEK_LOCAL_MODEL
+        if DEEPSEEK_API_KEY:
+            return DEEPSEEK_MODEL
         # 한국어 감지
         if self._is_korean_text(prompt):
             return self.model_priority["korean_chat"][0].value
-
         # 요청 타입 분석
         if context and context.get("type") == "analysis":
             return self.model_priority["analysis"][0].value
         elif context and context.get("type") == "fast":
             return self.model_priority["fast_response"][0].value
-
         return self.model_priority["general_chat"][0].value
 
     async def _generate_local_response(
@@ -252,14 +320,15 @@ class NotebookLLMIntegration:
         try:
             # Ollama API 호출 (스트리밍 수집 방식)
             enhanced_prompt = self._enhance_prompt(prompt, context)
+            _t, _n = _read_temperature_max_tokens_from_context(context, 0.7, 1024)
             payload = {
                 "model": model,
                 "prompt": enhanced_prompt,
                 "stream": True,  # 스트리밍으로 변경
                 "options": {
-                    "temperature": 0.7,
+                    "temperature": _t,
                     "top_p": 0.9,
-                    "num_predict": 1024,  # 토큰 수 제한
+                    "num_predict": _n,  # max_tokens와 동일 의미
                 },
             }
 
@@ -334,10 +403,47 @@ class NotebookLLMIntegration:
             logger.error(f"상세 오류: {traceback.format_exc()}")
             raise
 
+    async def _generate_deepseek_response(self, prompt: str, context: Optional[Dict]) -> Dict:
+        """DeepSeek API로 응답 생성 (OpenAI 호환)"""
+        if is_deepseek_cloud_blocked():
+            raise RuntimeError("내부 보안 정책으로 DeepSeek 클라우드 API 호출이 비활성화됨")
+        try:
+            from openai import AsyncOpenAI
+
+            if not DEEPSEEK_API_KEY:
+                raise ValueError("DEEPSEEK_API_KEY가 설정되지 않았습니다.")
+            enhanced_prompt = self._enhance_prompt(prompt, context)
+            _t, _mt = _read_temperature_max_tokens_from_context(context, 0.7, 2048)
+            client = AsyncOpenAI(
+                api_key=DEEPSEEK_API_KEY,
+                base_url=DEEPSEEK_BASE_URL.rstrip("/"),
+            )
+            messages = [{"role": "user", "content": enhanced_prompt}]
+            response = await client.chat.completions.create(
+                model=DEEPSEEK_MODEL,
+                messages=messages,
+                temperature=_t,
+                max_tokens=_mt,
+            )
+            content = response.choices[0].message.content if response.choices else ""
+            usage = response.usage
+            tokens = (usage.total_tokens if usage else 0) or 0
+            return {
+                "content": content or "",
+                "confidence": 0.9,
+                "tokens": tokens,
+                "metadata": {"model_info": DEEPSEEK_MODEL, "cloud": "deepseek"},
+            }
+        except Exception as e:
+            logger.error(f"DeepSeek 응답 생성 실패: {e}")
+            raise
+
     async def _generate_cloud_response(
         self, prompt: str, model: str, context: Optional[Dict]
     ) -> Dict:
-        """클라우드 모델로 응답 생성"""
+        """클라우드 모델로 응답 생성 (DeepSeek 우선, 없으면 기존 엔진)"""
+        if DEEPSEEK_API_KEY and not is_deepseek_cloud_blocked():
+            return await self._generate_deepseek_response(prompt, context)
         # 기존 클라우드 AI 엔진 사용
         from next_generation_ai_engine import NextGenerationAIEngine
 
@@ -362,10 +468,40 @@ class NotebookLLMIntegration:
             raise
 
     def _enhance_prompt(self, prompt: str, context: Optional[Dict]) -> str:
-        """프롬프트 향상"""
-        enhanced_prompt = f"""당신은 CORBU.AI의 지능형 어시스턴트입니다.
+        """프롬프트 향상 (학습된 소스 기반 그라운딩 응답, 사전 파이프라인 결과 반영)"""
+        enhanced_prompt = "당신은 CORBU.AI의 지능형 어시스턴트입니다.\n\n"
 
-사용자 요청: {prompt}
+        if context and context.get("projectKnowledge"):
+            enhanced_prompt += """[그라운딩 규칙 – 반드시 준수]
+• 답변은 아래 "학습된 정보"에 근거하여 작성하세요. 학습된 정보가 우선입니다.
+• 학습된 정보와 맞지 않는 내용은 포함하지 마세요.
+• 학습된 정보에 없는 내용을 덧붙일 경우 "(추정)", "(학습된 소스 밖의 보충 정보)" 등으로 구분해 표시하세요.
+• 확실하지 않은 부분은 추측임을 명시하세요.
+
+[현재 프로젝트에 대해 학습된 정보 – 이 내용을 기준으로 답변하세요]
+"""
+            enhanced_prompt += context["projectKnowledge"].strip() + "\n\n"
+
+        # 사전 파이프라인: 수집 자료 요약
+        if context and context.get("_collected_materials_summary"):
+            enhanced_prompt += "[수집 자료 – 참고하여 논리적으로 정리]\n"
+            enhanced_prompt += context["_collected_materials_summary"][:1500] + "\n\n"
+            if context.get("_materials_collection_hint"):
+                enhanced_prompt += context["_materials_collection_hint"] + "\n\n"
+
+        # 사전 파이프라인: 논리 구성 지침
+        if context and context.get("_logical_structure_outline"):
+            enhanced_prompt += "[논리 구성 지침]\n"
+            enhanced_prompt += context["_logical_structure_outline"] + "\n\n"
+            if context.get("_structure_hint"):
+                enhanced_prompt += context["_structure_hint"] + "\n\n"
+
+        # 사전 파이프라인: 어투·말투·스타일 지시
+        if context and context.get("_style_and_tone_instruction"):
+            enhanced_prompt += "[어투·말투·스타일]\n"
+            enhanced_prompt += context["_style_and_tone_instruction"] + "\n\n"
+
+        enhanced_prompt += f"""사용자 요청: {prompt}
 
 """
 
@@ -377,10 +513,10 @@ class NotebookLLMIntegration:
 
         enhanced_prompt += """
 다음 지침을 따라 응답해주세요:
-1. 정확하고 유용한 정보 제공
+1. 학습된 정보에 근거한 정확하고 유용한 정보 제공
 2. 한국어로 자연스럽게 응답
 3. 구체적이고 실행 가능한 조언 제공
-4. 필요시 예시나 단계별 설명 포함
+4. 필요시 예시나 단계별 설명 포함 (학습된 정보와 충돌하지 않도록)
 
 응답:"""
 

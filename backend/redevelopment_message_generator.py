@@ -9,6 +9,7 @@ Features:
 - 사업 단계별 적절한 톤 조절
 """
 
+import os
 import json
 import re
 from typing import Dict, List, Optional, Any, Tuple
@@ -665,4 +666,10 @@ async def get_redevelopment_knowledge():
     }
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8008) 
+    _p = int(
+        os.environ.get(
+            "REDEVELOPMENT_MESSAGE_GENERATOR_PORT",
+            os.environ.get("PORT", "8008"),
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

@@ -486,11 +486,13 @@ async def test_endpoint():
     }
 
 if __name__ == "__main__":
+    import os
+    _p = int(os.environ.get("SIMPLE_UNIFIED_SERVER_PORT", os.environ.get("PORT", "8000")))
     print("🚀 간단한 통합 메시지 시스템 시작 중...")
     uvicorn.run(
         "simple_unified_server:app",
         host="0.0.0.0",
-        port=8000,
+        port=_p,
         reload=False,
         log_level="info"
     ) 

@@ -1,24 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     MessageSquare,
-    Brain,
-    TrendingUp,
-    AlertTriangle,
-    CheckCircle,
-    Clock,
     Users,
     BarChart,
     Activity,
-    Zap,
-    Eye,
-    EyeOff,
     Play,
     Pause,
     RotateCcw,
-    Download,
     Settings,
-    Filter,
-    Search,
     Lightbulb,
     Target,
     Heart,
@@ -27,6 +16,7 @@ import {
     ThumbsDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSentimentColor, getPriorityColor, getInsightTypeColor } from '../../styles/themeColors';
 
 interface ConversationMessage {
     id: string;
@@ -94,15 +84,15 @@ interface RealTimeConversationAnalyzerProps {
 }
 
 const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> = ({
-    onAnalysisComplete,
+    onAnalysisComplete: _onAnalysisComplete,
     onInsightAction,
     onRecommendationAction,
-    onExportAnalysis
+    onExportAnalysis: _onExportAnalysis
 }) => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [activeTab, setActiveTab] = useState<'live' | 'analysis' | 'insights' | 'recommendations' | 'settings'>('live');
-    const [conversations, setConversations] = useState<ConversationAnalysis[]>([]);
+    const [, setConversations] = useState<ConversationAnalysis[]>([]);
     const [currentConversation, setCurrentConversation] = useState<ConversationAnalysis | null>(null);
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
     const [analysisSettings, setAnalysisSettings] = useState({
@@ -122,7 +112,7 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
     });
 
     const analysisInterval = useRef<NodeJS.Timeout | null>(null);
-    const messageQueue = useRef<ConversationMessage[]>([]);
+    const _messageQueue = useRef<ConversationMessage[]>([]);
 
     // Mock data for demonstration
     useEffect(() => {
@@ -248,53 +238,35 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
         }
     };
 
-    const getSentimentColor = (sentiment: string) => {
-        switch (sentiment) {
-            case 'positive': return 'text-green-600 bg-green-50';
-            case 'negative': return 'text-red-600 bg-red-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
-    };
-
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'critical': return 'text-red-600 bg-red-50';
-            case 'high': return 'text-orange-600 bg-orange-50';
-            case 'medium': return 'text-yellow-600 bg-yellow-50';
-            case 'low': return 'text-green-600 bg-green-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
-    };
-
-    const getInsightTypeColor = (type: string) => {
-        switch (type) {
-            case 'opportunity': return 'text-green-600 bg-green-50';
-            case 'risk': return 'text-red-600 bg-red-50';
-            case 'improvement': return 'text-blue-600 bg-blue-50';
-            case 'trend': return 'text-purple-600 bg-purple-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
-    };
+    const chipStyle = (bgVar: string, isNeutral = false) => ({
+        padding: '4px 8px',
+        fontSize: '12px',
+        fontWeight: 500,
+        borderRadius: '9999px',
+        backgroundColor: bgVar,
+        color: isNeutral ? 'var(--text-primary)' : 'var(--on-accent)',
+    });
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="rounded-lg shadow-sm border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
             {/* Header */}
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 border-b" style={{ borderColor: 'var(--bg-tertiary)' }}>
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <MessageSquare className="h-6 w-6 text-blue-600" />
+                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--accent-info-muted)' }}>
+                            <MessageSquare className="h-6 w-6" style={{ color: 'var(--accent-info)' }} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-semibold text-gray-900">실시간 대화 분석</h2>
-                            <p className="text-sm text-gray-500">AI 기반 실시간 대화 분석 및 인사이트 제공</p>
+                            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>실시간 대화 분석</h2>
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>AI 기반 실시간 대화 분석 및 인사이트 제공</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
                         {!isAnalyzing ? (
                             <button
                                 onClick={startAnalysis}
-                                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors"
+                                style={{ backgroundColor: 'var(--accent-success)' }}
                             >
                                 <Play className="h-4 w-4" />
                                 <span>분석 시작</span>
@@ -304,7 +276,8 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                 {isPaused ? (
                                     <button
                                         onClick={resumeAnalysis}
-                                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                        className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors"
+                                        style={{ backgroundColor: 'var(--accent-info)' }}
                                     >
                                         <Play className="h-4 w-4" />
                                         <span>재개</span>
@@ -312,7 +285,8 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                 ) : (
                                     <button
                                         onClick={pauseAnalysis}
-                                        className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                                        className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors"
+                                        style={{ backgroundColor: 'var(--accent-warning)' }}
                                     >
                                         <Pause className="h-4 w-4" />
                                         <span>일시정지</span>
@@ -320,7 +294,8 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                 )}
                                 <button
                                     onClick={stopAnalysis}
-                                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                                    className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors"
+                                    style={{ backgroundColor: 'var(--accent-error)' }}
                                 >
                                     <RotateCcw className="h-4 w-4" />
                                     <span>중지</span>
@@ -333,13 +308,16 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                 {/* Status Indicator */}
                 <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full ${isAnalyzing ? 'bg-green-500' : 'bg-gray-400'}`} />
-                        <span className="text-sm text-gray-600">
+                        <div
+                            className={`w-3 h-3 rounded-full ${isAnalyzing ? '' : ''}`}
+                            style={{ backgroundColor: isAnalyzing ? 'var(--accent-success)' : 'var(--text-tertiary)' }}
+                        />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                             {isAnalyzing ? (isPaused ? '일시정지됨' : '분석 중') : '대기 중'}
                         </span>
                     </div>
                     {currentConversation && (
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="flex items-center space-x-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                             <span>메시지: {currentConversation.messageCount}개</span>
                             <span>지속시간: {Math.floor(currentConversation.duration / 1000)}초</span>
                             <span>참여자: {currentConversation.participants.length}명</span>
@@ -348,23 +326,26 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                 </div>
 
                 {/* Tabs */}
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mt-4">
-                    {[
+                <div className="flex space-x-1 p-1 rounded-lg mt-4" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                    {([
                         { id: 'live', label: '실시간', icon: Activity },
                         { id: 'analysis', label: '분석', icon: BarChart },
                         { id: 'insights', label: '인사이트', icon: Lightbulb },
                         { id: 'recommendations', label: '추천', icon: Target },
                         { id: 'settings', label: '설정', icon: Settings }
-                    ].map((tab) => {
+                    ] as const).map((tab) => {
                         const IconComponent = tab.icon;
+                        const isActive = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id
-                                        ? 'bg-white text-blue-600 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                onClick={() => setActiveTab(tab.id)}
+                                className="flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                style={{
+                                    backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
+                                    color: isActive ? 'var(--accent-info)' : 'var(--text-secondary)',
+                                    boxShadow: isActive ? 'var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05))' : undefined,
+                                }}
                             >
                                 <IconComponent className="h-4 w-4" />
                                 <span>{tab.label}</span>
@@ -387,7 +368,7 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                         >
                             {/* Real-time Metrics */}
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg">
+                                <div className="text-white p-4 rounded-lg" style={{ background: 'var(--accent-info)' }}>
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm opacity-90">전체 감정 점수</p>
@@ -398,7 +379,7 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                         <Heart className="h-8 w-8 opacity-80" />
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg">
+                                <div className="text-white p-4 rounded-lg" style={{ background: 'var(--accent-success)' }}>
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm opacity-90">품질 점수</p>
@@ -409,7 +390,7 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                         <Star className="h-8 w-8 opacity-80" />
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg">
+                                <div className="text-white p-4 rounded-lg" style={{ background: 'var(--accent-secondary)' }}>
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm opacity-90">참여도</p>
@@ -420,7 +401,7 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                         <Users className="h-8 w-8 opacity-80" />
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-lg">
+                                <div className="text-white p-4 rounded-lg" style={{ background: 'var(--accent-orange)' }}>
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm opacity-90">관련성</p>
@@ -434,40 +415,41 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                             </div>
 
                             {/* Live Messages */}
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">실시간 메시지 분석</h3>
+                            <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>실시간 메시지 분석</h3>
                                 <div className="space-y-3 max-h-96 overflow-y-auto">
                                     {messages.slice(-10).map((message) => (
                                         <motion.div
                                             key={message.id}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            className="bg-white p-3 rounded-lg border border-gray-200"
+                                            className="p-3 rounded-lg border"
+                                            style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}
                                         >
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
                                                     <div className="flex items-center space-x-2 mb-2">
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSentimentColor(message.sentiment)}`}>
+                                                        <span style={chipStyle(getSentimentColor(message.sentiment), message.sentiment === 'neutral')}>
                                                             {message.sentiment === 'positive' ? '긍정' : message.sentiment === 'negative' ? '부정' : '중립'}
                                                         </span>
-                                                        <span className="text-xs text-gray-500">
+                                                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                             {message.timestamp.toLocaleTimeString()}
                                                         </span>
-                                                        <span className="text-xs text-gray-500">
+                                                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                             신뢰도: {Math.round(message.confidence * 100)}%
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-gray-700 mb-2">{message.content}</p>
+                                                    <p className="text-sm mb-2" style={{ color: 'var(--text-primary)' }}>{message.content}</p>
                                                     <div className="flex flex-wrap gap-1">
                                                         {message.keywords.slice(0, 3).map((keyword, index) => (
-                                                            <span key={index} className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                                                            <span key={index} className="px-2 py-1 text-xs rounded-full" style={{ backgroundColor: 'var(--accent-info-muted)', color: 'var(--accent-info)' }}>
                                                                 {keyword}
                                                             </span>
                                                         ))}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center space-x-1">
-                                                    <div className="text-xs text-gray-500">
+                                                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                         품질: {Math.round(message.quality * 100)}%
                                                     </div>
                                                 </div>
@@ -488,20 +470,20 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                             className="space-y-6"
                         >
                             {/* Key Topics */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">주요 주제</h3>
+                            <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>주요 주제</h3>
                                 <div className="space-y-3">
                                     {currentConversation.keyTopics.map((topic, index) => (
                                         <div key={index} className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-700">{topic.topic}</span>
+                                            <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{topic.topic}</span>
                                             <div className="flex items-center space-x-4">
-                                                <div className="w-32 bg-gray-200 rounded-full h-2">
+                                                <div className="w-32 rounded-full h-2" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                                                     <div
-                                                        className="bg-blue-600 h-2 rounded-full"
-                                                        style={{ width: `${(topic.importance * 100)}%` }}
+                                                        className="h-2 rounded-full"
+                                                        style={{ width: `${(topic.importance * 100)}%`, backgroundColor: 'var(--accent-info)' }}
                                                     />
                                                 </div>
-                                                <span className="text-xs text-gray-500 w-12">
+                                                <span className="text-xs w-12" style={{ color: 'var(--text-secondary)' }}>
                                                     {topic.frequency}회
                                                 </span>
                                             </div>
@@ -511,20 +493,20 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                             </div>
 
                             {/* Emotions */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">감정 분석</h3>
+                            <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>감정 분석</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {currentConversation.emotions.map((emotion, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                            <span className="text-sm font-medium text-gray-700">{emotion.emotion}</span>
+                                        <div key={index} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{emotion.emotion}</span>
                                             <div className="flex items-center space-x-2">
-                                                <div className="w-20 bg-gray-200 rounded-full h-2">
+                                                <div className="w-20 rounded-full h-2" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                                                     <div
-                                                        className="bg-purple-600 h-2 rounded-full"
-                                                        style={{ width: `${(emotion.intensity * 100)}%` }}
+                                                        className="h-2 rounded-full"
+                                                        style={{ width: `${(emotion.intensity * 100)}%`, backgroundColor: 'var(--accent-secondary)' }}
                                                     />
                                                 </div>
-                                                <span className="text-xs text-gray-500 w-8">
+                                                <span className="text-xs w-8" style={{ color: 'var(--text-secondary)' }}>
                                                     {emotion.frequency}회
                                                 </span>
                                             </div>
@@ -534,24 +516,24 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                             </div>
 
                             {/* Quality Metrics */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">품질 지표</h3>
+                            <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>품질 지표</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {Object.entries(currentConversation.qualityMetrics).map(([metric, value]) => (
-                                        <div key={metric} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                            <span className="text-sm font-medium text-gray-700 capitalize">
+                                        <div key={metric} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                                            <span className="text-sm font-medium capitalize" style={{ color: 'var(--text-primary)' }}>
                                                 {metric === 'clarity' ? '명확성' :
                                                     metric === 'relevance' ? '관련성' :
                                                         metric === 'completeness' ? '완성도' : '참여도'}
                                             </span>
                                             <div className="flex items-center space-x-2">
-                                                <div className="w-20 bg-gray-200 rounded-full h-2">
+                                                <div className="w-20 rounded-full h-2" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                                                     <div
-                                                        className="bg-green-600 h-2 rounded-full"
-                                                        style={{ width: `${(value * 100)}%` }}
+                                                        className="h-2 rounded-full"
+                                                        style={{ width: `${(value * 100)}%`, backgroundColor: 'var(--accent-success)' }}
                                                     />
                                                 </div>
-                                                <span className="text-sm font-medium text-gray-900">
+                                                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                                                     {Math.round(value * 100)}%
                                                 </span>
                                             </div>
@@ -576,19 +558,20 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                         key={index}
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white border border-gray-200 rounded-lg p-6"
+                                        className="rounded-lg p-6 border"
+                                        style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-blue-100 rounded-lg">
-                                                    <Lightbulb className="h-5 w-5 text-blue-600" />
+                                                <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--accent-info-muted)' }}>
+                                                    <Lightbulb className="h-5 w-5" style={{ color: 'var(--accent-info)' }} />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">{insight.title}</h3>
-                                                    <p className="text-sm text-gray-500">{insight.description}</p>
+                                                    <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{insight.title}</h3>
+                                                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{insight.description}</p>
                                                 </div>
                                             </div>
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getInsightTypeColor(insight.type)}`}>
+                                            <span style={chipStyle(getInsightTypeColor(insight.type))}>
                                                 {insight.type === 'opportunity' ? '기회' :
                                                     insight.type === 'risk' ? '위험' :
                                                         insight.type === 'improvement' ? '개선' : '트렌드'}
@@ -597,26 +580,28 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
 
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(insight.priority)}`}>
+                                                <span style={chipStyle(getPriorityColor(insight.priority))}>
                                                     {insight.priority === 'high' ? '높음' :
                                                         insight.priority === 'medium' ? '중간' : '낮음'}
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                     신뢰도: {Math.round(insight.confidence * 100)}%
                                                 </span>
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <button
                                                     onClick={() => onInsightAction?.(insight.title, 'accept')}
-                                                    className="p-1 hover:bg-green-100 rounded transition-colors"
+                                                    className="p-1 rounded transition-colors hover:opacity-80"
+                                                    style={{ color: 'var(--accent-success)' }}
                                                 >
-                                                    <ThumbsUp className="h-4 w-4 text-green-600" />
+                                                    <ThumbsUp className="h-4 w-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => onInsightAction?.(insight.title, 'reject')}
-                                                    className="p-1 hover:bg-red-100 rounded transition-colors"
+                                                    className="p-1 rounded transition-colors hover:opacity-80"
+                                                    style={{ color: 'var(--accent-error)' }}
                                                 >
-                                                    <ThumbsDown className="h-4 w-4 text-red-600" />
+                                                    <ThumbsDown className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         </div>
@@ -640,19 +625,20 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                         key={recommendation.id}
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white border border-gray-200 rounded-lg p-6"
+                                        className="rounded-lg p-6 border"
+                                        style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-green-100 rounded-lg">
-                                                    <Target className="h-5 w-5 text-green-600" />
+                                                <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--accent-success-muted, rgba(63,221,120,0.15))' }}>
+                                                    <Target className="h-5 w-5" style={{ color: 'var(--accent-success)' }} />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">{recommendation.title}</h3>
-                                                    <p className="text-sm text-gray-500">{recommendation.description}</p>
+                                                    <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{recommendation.title}</h3>
+                                                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{recommendation.description}</p>
                                                 </div>
                                             </div>
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(recommendation.priority)}`}>
+                                            <span style={chipStyle(getPriorityColor(recommendation.priority))}>
                                                 {recommendation.priority === 'critical' ? '긴급' :
                                                     recommendation.priority === 'high' ? '높음' :
                                                         recommendation.priority === 'medium' ? '중간' : '낮음'}
@@ -662,15 +648,15 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                         <div className="space-y-3">
                                             <div className="grid grid-cols-2 gap-4 text-sm">
                                                 <div>
-                                                    <span className="text-gray-500">영향도</span>
-                                                    <div className="font-medium">
+                                                    <span style={{ color: 'var(--text-secondary)' }}>영향도</span>
+                                                    <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
                                                         {recommendation.impact === 'high' ? '높음' :
                                                             recommendation.impact === 'medium' ? '중간' : '낮음'}
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <span className="text-gray-500">노력</span>
-                                                    <div className="font-medium">
+                                                    <span style={{ color: 'var(--text-secondary)' }}>노력</span>
+                                                    <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
                                                         {recommendation.effort === 'low' ? '낮음' :
                                                             recommendation.effort === 'medium' ? '중간' : '높음'}
                                                     </div>
@@ -680,13 +666,15 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                             <div className="flex items-center space-x-2">
                                                 <button
                                                     onClick={() => onRecommendationAction?.(recommendation.id, 'accept')}
-                                                    className="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                                                    className="flex-1 px-3 py-2 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
+                                                    style={{ backgroundColor: 'var(--accent-success)' }}
                                                 >
                                                     수락
                                                 </button>
                                                 <button
                                                     onClick={() => onRecommendationAction?.(recommendation.id, 'reject')}
-                                                    className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                                                    className="flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:opacity-90"
+                                                    style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                                                 >
                                                     거부
                                                 </button>
@@ -707,12 +695,12 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                             className="space-y-6"
                         >
                             {/* Analysis Settings */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">분석 설정</h3>
+                            <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>분석 설정</h3>
                                 <div className="space-y-4">
                                     {Object.entries(analysisSettings).map(([key, value]) => (
                                         <div key={key} className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                                                 {key === 'realTimeAnalysis' ? '실시간 분석' :
                                                     key === 'sentimentAnalysis' ? '감정 분석' :
                                                         key === 'emotionDetection' ? '감정 감지' :
@@ -723,11 +711,10 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                             </span>
                                             <button
                                                 onClick={() => setAnalysisSettings(prev => ({ ...prev, [key]: !value }))}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-blue-600' : 'bg-gray-200'
-                                                    }`}
+                                                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                                style={{ backgroundColor: value ? 'var(--accent-info)' : 'var(--bg-tertiary)' }}
                                             >
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'
-                                                    }`} />
+                                                <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} style={{ backgroundColor: 'var(--bg-primary)' }} />
                                             </button>
                                         </div>
                                     ))}
@@ -735,11 +722,11 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                             </div>
 
                             {/* Filter Settings */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">필터 설정</h3>
+                            <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>필터 설정</h3>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                             최소 신뢰도
                                         </label>
                                         <input
@@ -751,10 +738,10 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                             onChange={(e) => setFilterSettings(prev => ({ ...prev, minConfidence: parseFloat(e.target.value) }))}
                                             className="w-full"
                                         />
-                                        <span className="text-sm text-gray-500">{Math.round(filterSettings.minConfidence * 100)}%</span>
+                                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{Math.round(filterSettings.minConfidence * 100)}%</span>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                             최소 품질
                                         </label>
                                         <input
@@ -766,7 +753,7 @@ const RealTimeConversationAnalyzer: React.FC<RealTimeConversationAnalyzerProps> 
                                             onChange={(e) => setFilterSettings(prev => ({ ...prev, minQuality: parseFloat(e.target.value) }))}
                                             className="w-full"
                                         />
-                                        <span className="text-sm text-gray-500">{Math.round(filterSettings.minQuality * 100)}%</span>
+                                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{Math.round(filterSettings.minQuality * 100)}%</span>
                                     </div>
                                 </div>
                             </div>

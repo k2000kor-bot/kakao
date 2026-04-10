@@ -1,7 +1,10 @@
 /**
- * CORBU AI 소셜 미디어 상호작용 글쓰기 엔진
+ * CORBU.AI 소셜 미디어 상호작용 글쓰기 엔진
  * 게시글, 댓글, 반박글, 바이럴 콘텐츠 생성을 위한 고도화된 시스템
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface SocialMediaPost {
     platform: 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'youtube' | 'tiktok' | 'blog' | 'community';
@@ -52,11 +55,119 @@ export interface DebatePosition {
     rhetoricalStrategy: 'direct_attack' | 'subtle_undermining' | 'fact_checking' | 'reframing' | 'redirection';
 }
 
+// Internal types for template maps and method signatures
+interface PlatformTemplate {
+    maxLength: number;
+    optimalLength: number;
+    hashtagOptimal: number;
+    tone: string;
+    features: string[];
+}
+
+interface CommentPattern {
+    starters: string[];
+    connectors: string[];
+    closers: string[];
+}
+
+interface ViralFormula {
+    hooks: string[];
+    structure: string;
+    timing: string;
+    shareability: string;
+}
+
+interface DebateStrategyTemplate {
+    approach: string;
+    techniques: string[];
+    tone: string;
+    structure: string;
+}
+
+interface AudienceProfile {
+    demographics: string[];
+    interests: string[];
+    behavior: string;
+    preferences: string;
+    engagementPattern: string;
+}
+
+interface CommentStrategyResult {
+    approach: string;
+    tone: string;
+    personalTouch: string;
+    engagementGoal: string;
+}
+
+interface LogicalStructureAnalysis {
+    premises: string[];
+    conclusions: string[];
+    evidence: string[];
+    logicalFlow: string;
+}
+
+interface CounterStrategyResult {
+    attackPoints: string[];
+    evidenceToUse: string[];
+    rhetoricalApproach: string;
+    argumentType: string;
+}
+
+interface CommentRiskAssessment {
+    controversy: number;
+    backlash: number;
+    misunderstanding: number;
+}
+
+interface ViralElementsResult {
+    hooks: string[];
+    triggers: string[];
+    shareDrivers: string[];
+}
+
+interface PlatformSpecificResult {
+    timing: string;
+    hashtags: string[];
+    format: string;
+    length: number;
+}
+
+interface TrendAnalysisResult {
+    relevantTrends: string[];
+    trendStrength: number;
+    longevity: string;
+    audience: string;
+}
+
+interface TimingStrategyResult {
+    optimalTiming: string;
+    frequency: string;
+    duration: string;
+}
+
+interface CrossPlatformStrategyResult {
+    adaptations: { platform: string; content: string }[];
+    sequencing: string[];
+}
+
+interface CounterArgumentStructureResult {
+    premise: string[];
+    reasoning: string[];
+    conclusion: string;
+    evidence: string[];
+}
+
+interface RhetoricalAnalysisResult {
+    persuasionTechniques: string[];
+    logicalFallacies: string[];
+    emotionalAppeals: string[];
+}
+
 class SocialMediaInteractionEngine {
-    private platformTemplates: Map<string, any> = new Map();
-    private commentPatterns: Map<string, any> = new Map();
-    private viralFormulas: Map<string, any> = new Map();
-    private debateStrategies: Map<string, any> = new Map();
+    private platformTemplates: Map<string, PlatformTemplate> = new Map();
+    private commentPatterns: Map<string, CommentPattern> = new Map();
+    private viralFormulas: Map<string, ViralFormula> = new Map();
+    private debateStrategies: Map<string, DebateStrategyTemplate> = new Map();
 
     constructor() {
         this.initializePlatformTemplates();
@@ -82,7 +193,13 @@ class SocialMediaInteractionEngine {
         viralScore: number;
     }> {
         try {
-            console.log('📱 소셜 미디어 게시글 생성...', { topic, platform, purpose });
+            errorLogger.info('📱 소셜 미디어 게시글 생성', {
+                component: 'socialMediaInteractionEngine',
+                action: 'generateSocialMediaPost',
+                topic,
+                platform,
+                purpose,
+            });
 
             // 플랫폼별 최적화 설정
             const platformSettings = this.getPlatformSettings(platform);
@@ -121,7 +238,14 @@ class SocialMediaInteractionEngine {
             };
 
         } catch (error) {
-            console.error('❌ 소셜 미디어 게시글 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 소셜 미디어 게시글 생성 실패', err, {
+                component: 'socialMediaInteractionEngine',
+                action: 'generateSocialMediaPost',
+                topic,
+                platform,
+                purpose,
+            });
             throw new Error('소셜 미디어 게시글 생성에 실패했습니다.');
         }
     }
@@ -146,7 +270,11 @@ class SocialMediaInteractionEngine {
         };
     }> {
         try {
-            console.log('💬 댓글 생성 시작...', { strategy: strategy.approach });
+            errorLogger.info('💬 댓글 생성 시작', {
+                component: 'socialMediaInteractionEngine',
+                action: 'generateComment',
+                approach: strategy.approach,
+            });
 
             // 원본 게시글 분석
             const postAnalysis = await this.analyzeOriginalPost(originalPost);
@@ -181,7 +309,12 @@ class SocialMediaInteractionEngine {
             };
 
         } catch (error) {
-            console.error('❌ 댓글 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 댓글 생성 실패', err, {
+                component: 'socialMediaInteractionEngine',
+                action: 'generateComment',
+                approach: strategy.approach,
+            });
             throw new Error('댓글 생성에 실패했습니다.');
         }
     }
@@ -211,7 +344,11 @@ class SocialMediaInteractionEngine {
         responseStrategy: string;
     }> {
         try {
-            console.log('⚔️ 반박글 생성 시작...', { stance: debatePosition.stance });
+            errorLogger.info('⚔️ 반박글 생성 시작', {
+                component: 'socialMediaInteractionEngine',
+                action: 'generateCounterArgument',
+                stance: debatePosition.stance,
+            });
 
             // 원본 글 논리 구조 분석
             const logicalAnalysis = await this.analyzeLogicalStructure(originalPost);
@@ -259,7 +396,12 @@ class SocialMediaInteractionEngine {
             };
 
         } catch (error) {
-            console.error('❌ 반박글 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 반박글 생성 실패', err, {
+                component: 'socialMediaInteractionEngine',
+                action: 'generateCounterArgument',
+                stance: debatePosition.stance,
+            });
             throw new Error('반박글 생성에 실패했습니다.');
         }
     }
@@ -288,7 +430,12 @@ class SocialMediaInteractionEngine {
         ethicalConsiderations: string[];
     }> {
         try {
-            console.log('🚀 바이럴 콘텐츠 최적화...', { platform, clickbaitLevel: optimization.clickbaitLevel });
+            errorLogger.info('🚀 바이럴 콘텐츠 최적화', {
+                component: 'socialMediaInteractionEngine',
+                action: 'optimizeForViral',
+                platform,
+                clickbaitLevel: optimization.clickbaitLevel,
+            });
 
             // 바이럴 요소 분석
             const viralElements = await this.analyzeViralPotential(content, platform);
@@ -332,7 +479,13 @@ class SocialMediaInteractionEngine {
             };
 
         } catch (error) {
-            console.error('❌ 바이럴 콘텐츠 최적화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 바이럴 콘텐츠 최적화 실패', err, {
+                component: 'socialMediaInteractionEngine',
+                action: 'optimizeForViral',
+                platform,
+                clickbaitLevel: optimization.clickbaitLevel,
+            });
             throw new Error('바이럴 콘텐츠 최적화에 실패했습니다.');
         }
     }
@@ -364,7 +517,12 @@ class SocialMediaInteractionEngine {
         };
     }> {
         try {
-            console.log('📈 트렌드 기반 콘텐츠 생성...', { topic, audienceAge });
+            errorLogger.info('📈 트렌드 기반 콘텐츠 생성', {
+                component: 'socialMediaInteractionEngine',
+                action: 'generateTrendBasedContent',
+                topic,
+                audienceAge,
+            });
 
             // 관련 트렌드 분석
             const relevantTrends = await this.identifyRelevantTrends(topic, currentTrends, audienceAge);
@@ -397,7 +555,13 @@ class SocialMediaInteractionEngine {
             };
 
         } catch (error) {
-            console.error('❌ 트렌드 기반 콘텐츠 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 트렌드 기반 콘텐츠 생성 실패', err, {
+                component: 'socialMediaInteractionEngine',
+                action: 'generateTrendBasedContent',
+                topic,
+                audienceAge,
+            });
             throw new Error('트렌드 기반 콘텐츠 생성에 실패했습니다.');
         }
     }
@@ -526,16 +690,17 @@ class SocialMediaInteractionEngine {
     // 핵심 처리 메서드들
     // ============================
 
-    private getPlatformSettings(platform: SocialMediaPost['platform']): any {
-        return this.platformTemplates.get(platform) || {
+    private getPlatformSettings(platform: SocialMediaPost['platform']): PlatformTemplate {
+        return this.platformTemplates.get(platform) ?? {
             maxLength: 1000,
             optimalLength: 300,
             hashtagOptimal: 3,
-            tone: 'neutral'
+            tone: 'neutral',
+            features: ['text']
         };
     }
 
-    private async analyzeTargetAudience(audience: string[]): Promise<any> {
+    private async analyzeTargetAudience(audience: string[]): Promise<AudienceProfile> {
         return {
             demographics: audience,
             interests: audience.map(a => `${a} 관련 관심사`),
@@ -549,8 +714,8 @@ class SocialMediaInteractionEngine {
         topic: string,
         platform: SocialMediaPost['platform'],
         purpose: SocialMediaPost['purpose'],
-        audience: any,
-        settings: any,
+        audience: AudienceProfile,
+        settings: PlatformTemplate,
         customization?: Partial<SocialMediaPost>
     ): Promise<SocialMediaPost> {
         const baseContent = await this.generateBaseContent(topic, purpose, audience, settings);
@@ -560,7 +725,7 @@ class SocialMediaInteractionEngine {
         return {
             platform,
             content: optimizedContent,
-            tone: customization?.tone || settings.tone || 'friendly',
+            tone: (customization?.tone || settings.tone || 'friendly') as 'formal' | 'casual' | 'friendly' | 'professional' | 'humorous' | 'serious' | 'provocative',
             purpose,
             targetAudience: audience.demographics,
             hashtags,
@@ -569,10 +734,10 @@ class SocialMediaInteractionEngine {
     }
 
     private async generatePostVariations(post: SocialMediaPost, count: number): Promise<SocialMediaPost[]> {
-        const variations = [];
+        const variations: SocialMediaPost[] = [];
         
         for (let i = 0; i < count; i++) {
-            const variation = {
+            const variation: SocialMediaPost = {
                 ...post,
                 content: await this.createContentVariation(post.content, i + 1),
                 tone: this.getVariationTone(post.tone, i)
@@ -598,12 +763,12 @@ class SocialMediaInteractionEngine {
     private async createCommentOptions(
         originalPost: string,
         analysis: CommentAnalysis,
-        strategy: any,
+        strategy: CommentStrategyResult,
         persona?: string,
-        context?: string
+        _context?: string
     ): Promise<string[]> {
-        const comments = [];
-        const pattern = this.commentPatterns.get(strategy.approach) || this.commentPatterns.get('supportive');
+        const comments: string[] = [];
+        const pattern = this.commentPatterns.get(strategy.approach) ?? this.commentPatterns.get('supportive');
 
         // 기본 댓글
         const baseComment = await this.constructComment(originalPost, analysis, strategy, pattern, persona);
@@ -611,7 +776,7 @@ class SocialMediaInteractionEngine {
 
         // 변형 댓글들
         for (let i = 0; i < 2; i++) {
-            const variation = await this.createCommentVariation(baseComment, strategy, i + 1);
+            const variation = await this.createCommentVariation(baseComment, strategy as unknown as CommentStrategy, i + 1);
             comments.push(variation);
         }
 
@@ -620,12 +785,12 @@ class SocialMediaInteractionEngine {
 
     private async constructCounterArguments(
         originalPost: string,
-        strategy: any,
+        strategy: CounterStrategyResult,
         position: DebatePosition,
         evidence?: string[]
     ): Promise<string[]> {
-        const counterArgs = [];
-        const debateStrategy = this.debateStrategies.get(position.argumentType) || 
+        const counterArgs: string[] = [];
+        const debateStrategy = this.debateStrategies.get(position.argumentType) ??
                               this.debateStrategies.get('logical_attack');
 
         // 메인 반박글
@@ -665,8 +830,10 @@ class SocialMediaInteractionEngine {
 
     private extractMainPoints(text: string): string[] {
         // 주요 논점 추출
-        const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 10);
-        return sentences.slice(0, 3).map(s => s.trim());
+        const sentences = text
+          .split(/[.!?]/)
+          .filter((s) => coerceTrimmedString(s, '').length > 10);
+        return sentences.slice(0, 3).map((s) => coerceTrimmedString(s, ''));
     }
 
     private identifyEmotionalTriggers(text: string): string[] {
@@ -729,7 +896,7 @@ class SocialMediaInteractionEngine {
     // 콘텐츠 생성 메서드들
     // ============================
 
-    private async generateBaseContent(topic: string, purpose: string, audience: any, settings: any): Promise<string> {
+    private async generateBaseContent(topic: string, purpose: string, _audience: AudienceProfile, _settings: PlatformTemplate): Promise<string> {
         const templates = {
             inform: `${topic}에 대해 알아보겠습니다. 중요한 정보를 공유드리니 참고하시기 바랍니다.`,
             entertain: `${topic}와 관련된 재미있는 이야기를 들려드릴게요! 😊`,
@@ -743,7 +910,7 @@ class SocialMediaInteractionEngine {
         return templates[purpose as keyof typeof templates] || templates.inform;
     }
 
-    private async applyPlatformOptimization(content: string, platform: string, settings: any): Promise<string> {
+    private async applyPlatformOptimization(content: string, platform: string, settings: PlatformTemplate): Promise<string> {
         let optimized = content;
 
         // 플랫폼별 최적화
@@ -767,7 +934,7 @@ class SocialMediaInteractionEngine {
         return optimized;
     }
 
-    private optimizeForTwitter(content: string, settings: any): string {
+    private optimizeForTwitter(content: string, _settings: PlatformTemplate): string {
         // 트위터 최적화: 간결함, 해시태그, 스레드 고려
         let optimized = content;
         if (optimized.length > 250) {
@@ -776,17 +943,17 @@ class SocialMediaInteractionEngine {
         return optimized;
     }
 
-    private optimizeForInstagram(content: string, settings: any): string {
+    private optimizeForInstagram(content: string, _settings: PlatformTemplate): string {
         // 인스타그램 최적화: 시각적 요소, 해시태그, 스토리 형식
         return `${content}\n\n📸 사진과 함께 더 자세한 내용을 확인해보세요!`;
     }
 
-    private optimizeForLinkedIn(content: string, settings: any): string {
+    private optimizeForLinkedIn(content: string, _settings: PlatformTemplate): string {
         // 링크드인 최적화: 전문성, 인사이트, 네트워킹
         return `${content}\n\n전문가 여러분의 인사이트를 기대합니다. 어떻게 생각하시나요?`;
     }
 
-    private optimizeForFacebook(content: string, settings: any): string {
+    private optimizeForFacebook(content: string, _settings: PlatformTemplate): string {
         // 페이스북 최적화: 커뮤니티, 공유, 토론
         return `${content}\n\n친구들과 가족들에게도 공유해보세요! 👥`;
     }
@@ -829,15 +996,15 @@ class SocialMediaInteractionEngine {
     }
 
     // 나머지 메서드들도 유사하게 구현...
-    private generateOptimizationTips(platform: string, purpose: string, audience: any): string[] {
+    private generateOptimizationTips(platform: string, purpose: string, _audience: AudienceProfile): string[] {
         return [
-            `${platform}에서는 ${this.getPlatformSettings(platform as any).optimalLength}자 내외가 최적입니다`,
+            `${platform}에서는 ${this.getPlatformSettings(platform as SocialMediaPost['platform']).optimalLength}자 내외가 최적입니다`,
             `${purpose} 목적으로는 감정적 호소가 효과적입니다`,
             `타겟 오디언스의 활발한 시간대에 게시하세요`
         ];
     }
 
-    private async predictEngagement(post: SocialMediaPost, audience: any): Promise<number> {
+    private async predictEngagement(post: SocialMediaPost, _audience: AudienceProfile): Promise<number> {
         let score = 50;
         if (post.hashtags && post.hashtags.length > 0) score += 15;
         if (post.content.includes('?')) score += 10;
@@ -845,11 +1012,11 @@ class SocialMediaInteractionEngine {
         return Math.min(score, 100);
     }
 
-    private async calculateViralScore(post: SocialMediaPost, platform: string): Promise<number> {
+    private async calculateViralScore(post: SocialMediaPost, _platform: string): Promise<number> {
         return this.assessViralPotential(post.content);
     }
 
-    private async developCommentStrategy(analysis: CommentAnalysis, strategy: CommentStrategy, persona?: string): Promise<any> {
+    private async developCommentStrategy(analysis: CommentAnalysis, strategy: CommentStrategy, persona?: string): Promise<CommentStrategyResult> {
         return {
             approach: strategy.approach,
             tone: strategy.tonality,
@@ -862,7 +1029,7 @@ class SocialMediaInteractionEngine {
         return `${strategy.approach} 방식으로 ${analysis.sentiment} 감정에 맞춰 응답하는 것이 효과적입니다.`;
     }
 
-    private async generateFollowUpComments(comment: string, strategy: CommentStrategy): Promise<string[]> {
+    private async generateFollowUpComments(_comment: string, _strategy: CommentStrategy): Promise<string[]> {
         return [
             '추가로 말씀드리면...',
             '더 궁금한 점이 있으시면 언제든지!',
@@ -870,7 +1037,7 @@ class SocialMediaInteractionEngine {
         ];
     }
 
-    private assessCommentRisks(comment: string, originalPost: string, strategy: CommentStrategy): any {
+    private assessCommentRisks(comment: string, originalPost: string, strategy: CommentStrategy): CommentRiskAssessment {
         return {
             controversy: strategy.approach === 'critical' ? 60 : 20,
             backlash: strategy.tonality === 'assertive' ? 40 : 15,
@@ -881,13 +1048,13 @@ class SocialMediaInteractionEngine {
     private async constructComment(
         originalPost: string,
         analysis: CommentAnalysis,
-        strategy: any,
-        pattern: any,
-        persona?: string
+        strategy: CommentStrategyResult,
+        pattern: CommentPattern | undefined,
+        _persona?: string
     ): Promise<string> {
-        const starter = pattern?.starters[0] || '좋은 글이네요!';
-        const connector = pattern?.connectors[0] || '특히';
-        const closer = pattern?.closers[0] || '감사합니다!';
+        const starter = pattern?.starters[0] ?? '좋은 글이네요!';
+        const connector = pattern?.connectors[0] ?? '특히';
+        const closer = pattern?.closers[0] ?? '감사합니다!';
         
         const mainPoint = analysis.mainPoints[0] || '이 내용';
         
@@ -905,7 +1072,7 @@ class SocialMediaInteractionEngine {
     }
 
     // 반박글 관련 메서드들
-    private async analyzeLogicalStructure(post: string): Promise<any> {
+    private async analyzeLogicalStructure(post: string): Promise<LogicalStructureAnalysis> {
         return {
             premises: this.extractPremises(post),
             conclusions: this.extractConclusions(post),
@@ -914,7 +1081,7 @@ class SocialMediaInteractionEngine {
         };
     }
 
-    private async identifyWeaknesses(post: string, analysis: any, targetWeakness?: string[]): Promise<string[]> {
+    private async identifyWeaknesses(post: string, analysis: LogicalStructureAnalysis, targetWeakness?: string[]): Promise<string[]> {
         const weaknesses = [];
         
         if (analysis.evidence.length === 0) weaknesses.push('근거 부족');
@@ -924,7 +1091,7 @@ class SocialMediaInteractionEngine {
         return weaknesses;
     }
 
-    private async developCounterStrategy(position: DebatePosition, weaknesses: string[], evidence?: string[]): Promise<any> {
+    private async developCounterStrategy(position: DebatePosition, weaknesses: string[], evidence?: string[]): Promise<CounterStrategyResult> {
         return {
             attackPoints: weaknesses,
             evidenceToUse: evidence || [],
@@ -934,10 +1101,10 @@ class SocialMediaInteractionEngine {
     }
 
     private async buildMainCounterArgument(
-        originalPost: string,
-        strategy: any,
+        _originalPost: string,
+        strategy: CounterStrategyResult,
         position: DebatePosition,
-        debateStrategy: any,
+        _debateStrategy: DebateStrategyTemplate | undefined,
         evidence?: string[]
     ): Promise<string> {
         const introduction = this.createCounterIntroduction(position.stance);
@@ -947,7 +1114,7 @@ class SocialMediaInteractionEngine {
         return `${introduction}\n\n${mainArgument}\n\n${conclusion}`;
     }
 
-    private async generateAlternativeCounters(mainCounter: string, position: DebatePosition, evidence?: string[]): Promise<string[]> {
+    private async generateAlternativeCounters(mainCounter: string, _position: DebatePosition, _evidence?: string[]): Promise<string[]> {
         return [
             `감정적 접근: ${mainCounter.substring(0, 100)}...의 감정적 측면을 고려하면`,
             `실용적 접근: ${mainCounter.substring(0, 100)}...의 실용적 관점에서 보면`
@@ -975,7 +1142,7 @@ class SocialMediaInteractionEngine {
         
         if (evidence && evidence.length > 0) {
             argument += `\n관련 근거:\n`;
-            evidence.forEach((ev, index) => {
+            evidence.forEach((ev, _index) => {
                 argument += `- ${ev}\n`;
             });
         }
@@ -1014,11 +1181,11 @@ class SocialMediaInteractionEngine {
         );
     }
 
-    private analyzeLogicalFlow(text: string): string {
+    private analyzeLogicalFlow(_text: string): string {
         return '논리적 흐름 분석 결과: 일반적인 구조를 따르고 있습니다.';
     }
 
-    private analyzeCounterArgumentStructure(counter: string): any {
+    private analyzeCounterArgumentStructure(counter: string): CounterArgumentStructureResult {
         return {
             premise: this.extractPremises(counter),
             reasoning: ['논리적 추론 과정'],
@@ -1027,7 +1194,7 @@ class SocialMediaInteractionEngine {
         };
     }
 
-    private analyzeRhetoricalEffectiveness(counter: string): any {
+    private analyzeRhetoricalEffectiveness(_counter: string): RhetoricalAnalysisResult {
         return {
             persuasionTechniques: ['논리적 호소', '감정적 호소'],
             logicalFallacies: ['발견된 오류 없음'],
@@ -1050,7 +1217,7 @@ class SocialMediaInteractionEngine {
     }
 
     // 바이럴 최적화 관련 메서드들 (간략화)
-    private async analyzeViralPotential(content: string, platform: string): Promise<any> {
+    private async analyzeViralPotential(_content: string, _platform: string): Promise<ViralElementsResult> {
         return {
             hooks: ['감정적 훅', '호기심 훅'],
             triggers: ['공감 트리거', '공유 트리거'],
@@ -1058,7 +1225,7 @@ class SocialMediaInteractionEngine {
         };
     }
 
-    private async optimizeForPlatform(content: string, platform: string, optimization: ViralContentOptimization): Promise<string> {
+    private async optimizeForPlatform(content: string, platform: string, _optimization: ViralContentOptimization): Promise<string> {
         return `[${platform} 최적화] ${content}`;
     }
 
@@ -1070,7 +1237,7 @@ class SocialMediaInteractionEngine {
         return `${factors.join(' + ')} 공유 요소 강화: ${content}`;
     }
 
-    private async generateViralVariations(content: string, optimization: ViralContentOptimization): Promise<string[]> {
+    private async generateViralVariations(content: string, _optimization: ViralContentOptimization): Promise<string[]> {
         return [
             `${content} (기본 버전)`,
             `🔥 ${content} (감정 강화 버전)`,
@@ -1078,24 +1245,24 @@ class SocialMediaInteractionEngine {
         ];
     }
 
-    private getPlatformSpecificSettings(platform: string, optimization: ViralContentOptimization): any {
+    private getPlatformSpecificSettings(platform: string, _optimization: ViralContentOptimization): PlatformSpecificResult {
         const settings = this.getPlatformSettings(platform as SocialMediaPost['platform']);
         return {
             timing: '오후 7-9시 (최고 활동 시간)',
             hashtags: [`#${platform}`, '#바이럴', '#핫이슈'],
-            format: settings.features[0] || 'text',
+            format: settings.features[0] ?? 'text',
             length: settings.optimalLength
         };
     }
 
-    private assessViralRisks(content: string, optimization: ViralContentOptimization): string[] {
+    private assessViralRisks(_content: string, optimization: ViralContentOptimization): string[] {
         const risks = [];
         if (optimization.clickbaitLevel > 70) risks.push('과도한 클릭베이트 위험');
         if (optimization.controversyLevel > 80) risks.push('논란 증폭 위험');
         return risks;
     }
 
-    private evaluateEthicalImplications(content: string, optimization: ViralContentOptimization): string[] {
+    private evaluateEthicalImplications(_content: string, optimization: ViralContentOptimization): string[] {
         const considerations = [];
         if (optimization.clickbaitLevel > 50) considerations.push('진실성 검토 필요');
         if (optimization.controversyLevel > 60) considerations.push('사회적 책임 고려');
@@ -1112,7 +1279,7 @@ class SocialMediaInteractionEngine {
         );
     }
 
-    private async analyzeTrendStrength(trends: string[], platform: string): Promise<any> {
+    private async analyzeTrendStrength(trends: string[], _platform: string): Promise<TrendAnalysisResult> {
         return {
             relevantTrends: trends,
             trendStrength: 75,
@@ -1122,9 +1289,9 @@ class SocialMediaInteractionEngine {
     }
 
     private async createTrendBasedContent(
-        topic: string, 
-        trends: string[], 
-        platform: SocialMediaPost['platform'], 
+        topic: string,
+        trends: string[],
+        platform: SocialMediaPost['platform'],
         audienceAge: string
     ): Promise<SocialMediaPost[]> {
         const trendContent = `${trends[0] || '최신 트렌드'}와 ${topic}의 연결점을 살펴보겠습니다! #${audienceAge}세대`;
@@ -1139,7 +1306,7 @@ class SocialMediaInteractionEngine {
         }];
     }
 
-    private developTimingStrategy(trendAnalysis: any, platform: string): any {
+    private developTimingStrategy(trendAnalysis: TrendAnalysisResult, _platform: string): TimingStrategyResult {
         return {
             optimalTiming: '트렌드 초기 단계 (48시간 이내)',
             frequency: '일 1회',
@@ -1147,7 +1314,7 @@ class SocialMediaInteractionEngine {
         };
     }
 
-    private async developCrossPlatformStrategy(mainPost: SocialMediaPost, trends: string[]): Promise<any> {
+    private async developCrossPlatformStrategy(mainPost: SocialMediaPost, _trends: string[]): Promise<CrossPlatformStrategyResult> {
         const platforms = ['instagram', 'twitter', 'facebook', 'linkedin'];
         
         return {

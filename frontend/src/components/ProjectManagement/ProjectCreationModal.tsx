@@ -1,6 +1,13 @@
+/**
+ * @status 비활성
+ * 현재 프로젝트 생성 흐름: ProjectHub → projectService.createProject → ProjectEditModal
+ * 사용처: backup/UnifiedProjectInterface.tsx.disabled
+ * @see docs/COMPONENT_ARCHITECTURE.md §3
+ */
 import React, { useState } from 'react';
-import { X, Plus, FileText, Settings, Tag, Calendar } from 'lucide-react';
+import { X, Plus, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { coerceTrimmedString } from '../../utils/chatInputUtils';
 
 interface ProjectCreationModalProps {
   isOpen: boolean;
@@ -29,8 +36,9 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
   const [isCreating, setIsCreating] = useState(false);
 
   const handleAddTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags([...tags, newTag.trim()]);
+    const t = coerceTrimmedString(newTag, '');
+    if (t && !tags.includes(t)) {
+      setTags([...tags, t]);
       setNewTag('');
     }
   };
@@ -54,18 +62,19 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
   };
 
   const handleCreateProject = async () => {
-    if (!projectName.trim()) return;
+    const name = coerceTrimmedString(projectName, '');
+    if (!name) return;
 
     setIsCreating(true);
     try {
       await onCreateProject({
-        name: projectName.trim(),
-        description: projectDescription.trim(),
+        name,
+        description: coerceTrimmedString(projectDescription, ''),
         priority,
         tags,
-        initialGuidelines: guidelines.filter(g => g.trim())
+        initialGuidelines: guidelines.map((g) => coerceTrimmedString(g, '')).filter(Boolean),
       });
-      
+
       // Reset form
       setProjectName('');
       setProjectDescription('');
@@ -84,7 +93,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
   const canProceed = () => {
     switch (step) {
       case 1:
-        return projectName.trim().length > 0;
+        return coerceTrimmedString(projectName, '').length > 0;
       case 2:
         return true;
       case 3:
@@ -111,14 +120,14 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[var(--z-modal-backdrop)] p-4"
           onClick={onClose}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+            className="relative z-[var(--z-modal)] bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -204,7 +213,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                       </label>
                       <select
                         value={priority}
-                        onChange={(e) => setPriority(e.target.value as any)}
+                        onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="low">낮음</option>
@@ -222,7 +231,12 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                           type="text"
                           value={newTag}
                           onChange={(e) => setNewTag(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTag();
+                            }
+                          }}
                           placeholder="태그를 입력하고 Enter를 누르세요"
                           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         />
@@ -269,7 +283,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                       <p className="text-sm text-gray-600 mb-4">
                         AI가 이 프로젝트에서 따라야 할 지침들을 설정하세요.
                       </p>
-                      
+
                       {guidelines.map((guideline, index) => (
                         <div key={index} className="flex space-x-2 mb-3">
                           <input
@@ -289,7 +303,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                           )}
                         </div>
                       ))}
-                      
+
                       <button
                         onClick={handleAddGuideline}
                         className="flex items-center space-x-2 text-purple-600 hover:text-purple-700"
@@ -311,7 +325,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
               >
                 {step > 1 ? '이전' : '취소'}
               </button>
-              
+
               <div className="flex space-x-3">
                 {step < 3 ? (
                   <button
@@ -323,7 +337,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                   </button>
                 ) : (
                   <button
-                    onClick={handleCreateProject}
+                    onClick={() => void handleCreateProject()}
                     disabled={!canProceed() || isCreating}
                     className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >

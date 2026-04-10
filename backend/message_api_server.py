@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -87,17 +89,17 @@ async def test_message_generation():
         test_cases = [
             {
                 "context": "시공사 평가에 대해 논의해보고 싶습니다",
-                "room_id": "개포우성7차",
+                "room_id": "demo_room",
                 "style": "professional"
             },
             {
                 "context": "공사비 분담금이 걱정됩니다",
-                "room_id": "개포우성7차",
+                "room_id": "demo_room",
                 "style": "casual"
             },
             {
                 "context": "설계 품질을 어떻게 평가할까요?",
-                "room_id": "개포우성7차",
+                "room_id": "demo_room",
                 "style": "formal"
             }
         ]
@@ -129,10 +131,11 @@ async def test_message_generation():
 
 if __name__ == "__main__":
     try:
+        _p = int(os.environ.get("MESSAGE_API_SERVER_PORT", os.environ.get("PORT", "8002")))
         print("🚀 메시지 생성 API 서버 시작 중...")
-        print("📍 서버 주소: http://localhost:8002")
-        print("📚 API 문서: http://localhost:8002/docs")
-        uvicorn.run(app, host="0.0.0.0", port=8002)
+        print(f"📍 서버 주소: http://localhost:{_p}")
+        print(f"📚 API 문서: http://localhost:{_p}/docs")
+        uvicorn.run(app, host="0.0.0.0", port=_p)
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")
         import traceback

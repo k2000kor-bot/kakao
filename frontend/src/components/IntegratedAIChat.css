@@ -1,0 +1,97 @@
+.integrated-chat-scroll {
+  padding: 0;
+}
+
+.integrated-chat-empty {
+  text-align: center;
+  margin-top: var(--spacing-2xl);
+}
+
+.integrated-chat-empty-title,
+.integrated-chat-empty-desc {
+  color: var(--text-secondary);
+}
+
+.integrated-chat-empty-desc {
+  margin-top: var(--spacing-sm);
+}
+
+.integrated-chat-row {
+  display: flex;
+  margin-bottom: var(--spacing-md);
+}
+
+.integrated-chat-row.user {
+  justify-content: flex-end;
+}
+
+.integrated-chat-row.ai {
+  justify-content: flex-start;
+}
+
+.integrated-chat-card {
+  max-width: 70%;
+}
+
+.integrated-chat-card.user {
+  background: var(--accent-info);
+  color: var(--on-accent);
+}
+
+.integrated-chat-card.ai {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.integrated-chat-card-content {
+  padding-bottom: var(--spacing-sm) !important;
+}
+
+.integrated-chat-time {
+  opacity: 0.7;
+  display: block;
+  margin-top: var(--spacing-sm);
+}
+
+.integrated-chat-analysis {
+  margin-top: var(--spacing-md);
+}
+
+.integrated-chat-analysis-divider {
+  margin-bottom: var(--spacing-sm);
+}
+
+.integrated-chat-analysis-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.integrated-chat-confidence-chip {
+  font-size: 0.7rem;
+}
+
+.integrated-chat-keywords {
+  margin-top: var(--spacing-sm);
+}
+
+.integrated-chat-keywords-text {
+  color: var(--text-secondary);
+}
+
+.integrated-chat-loading-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: var(--spacing-md);
+}
+
+.integrated-chat-loading-card {
+  background: var(--bg-tertiary);
+}
+
+.integrated-chat-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-sm);
+}

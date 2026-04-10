@@ -1,7 +1,8 @@
 import { EventEmitter } from 'events';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
-export interface CacheEntry<T = any> {
+export interface CacheEntry<T = unknown> {
     key: string;
     data: T;
     timestamp: Date;
@@ -37,7 +38,7 @@ export interface CacheConfig {
 }
 
 // AI 캐시 관리자 클래스
-class AICacheManager extends EventEmitter {
+export class AICacheManager extends EventEmitter {
     private cache: Map<string, CacheEntry> = new Map();
     private hitCount: number = 0;
     private missCount: number = 0;
@@ -61,7 +62,10 @@ class AICacheManager extends EventEmitter {
         };
 
         this.startCleanup();
-        console.log('🗄️ AI 캐시 관리자가 초기화되었습니다.');
+        errorLogger.info('AI 캐시 관리자가 초기화되었습니다', {
+            component: 'aiCacheManager',
+            action: 'constructor',
+        });
     }
 
     // 캐시 시작
@@ -70,7 +74,10 @@ class AICacheManager extends EventEmitter {
 
         this.isRunning = true;
         this.startCleanup();
-        console.log('🚀 AI 캐시 관리자가 시작되었습니다.');
+        errorLogger.info('AI 캐시 관리자가 시작되었습니다', {
+            component: 'aiCacheManager',
+            action: 'start',
+        });
     }
 
     // 캐시 중지
@@ -80,7 +87,10 @@ class AICacheManager extends EventEmitter {
             this.cleanupInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ AI 캐시 관리자가 중지되었습니다.');
+        errorLogger.info('AI 캐시 관리자가 중지되었습니다', {
+            component: 'aiCacheManager',
+            action: 'stop',
+        });
     }
 
     // 데이터 저장
@@ -120,10 +130,21 @@ class AICacheManager extends EventEmitter {
             this.cache.set(key, entry);
             this.emit('cache_set', { key, size, ttl });
 
-            console.log(`💾 캐시 저장: ${key} (${this.formatSize(size)})`);
+            errorLogger.info('캐시 저장', {
+                component: 'aiCacheManager',
+                action: 'set',
+                key,
+                size,
+                formattedSize: this.formatSize(size),
+            });
             return true;
         } catch (error) {
-            console.error('캐시 저장 오류:', error);
+            const err = toError(error);
+            errorLogger.error('캐시 저장 오류', err, {
+                component: 'aiCacheManager',
+                action: 'set',
+                key,
+            });
             return false;
         }
     }
@@ -162,7 +183,11 @@ class AICacheManager extends EventEmitter {
         if (entry) {
             this.cache.delete(key);
             this.emit('cache_delete', { key, size: entry.size });
-            console.log(`🗑️ 캐시 삭제: ${key}`);
+            errorLogger.info('캐시 삭제', {
+                component: 'aiCacheManager',
+                action: 'delete',
+                key,
+            });
             return true;
         }
         return false;
@@ -180,7 +205,12 @@ class AICacheManager extends EventEmitter {
             }
         }
 
-        console.log(`🏷️ 태그 '${tag}'로 ${deletedCount}개 항목 삭제`);
+        errorLogger.info('태그로 캐시 삭제', {
+            component: 'aiCacheManager',
+            action: 'deleteByTag',
+            tag,
+            deletedCount,
+        });
         return deletedCount;
     }
 
@@ -198,13 +228,17 @@ class AICacheManager extends EventEmitter {
         this.missCount = 0;
         this.evictionCount = 0;
         this.emit('cache_cleared', { cleared_entries: size });
-        console.log(`🧹 캐시 전체 삭제: ${size}개 항목`);
+        errorLogger.info('캐시 전체 삭제', {
+            component: 'aiCacheManager',
+            action: 'clear',
+            clearedEntries: size,
+        });
     }
 
     // 만료된 항목 정리
     public cleanup(): number {
         let cleanedCount = 0;
-        const now = new Date();
+        const _now = new Date();
 
         for (const [key, entry] of this.cache.entries()) {
             if (this.isExpired(entry)) {
@@ -215,7 +249,11 @@ class AICacheManager extends EventEmitter {
         }
 
         if (cleanedCount > 0) {
-            console.log(`🧽 만료된 캐시 정리: ${cleanedCount}개 항목`);
+            errorLogger.info('만료된 캐시 정리', {
+                component: 'aiCacheManager',
+                action: 'cleanup',
+                cleanedCount,
+            });
         }
 
         return cleanedCount;
@@ -230,7 +268,7 @@ class AICacheManager extends EventEmitter {
         const missRate = totalRequests > 0 ? this.missCount / totalRequests : 0;
 
         const timestamps = entries.map(e => e.timestamp);
-        const accessCounts = entries.map(e => e.access_count);
+        const _accessCounts = entries.map(e => e.access_count);
         const mostAccessedEntry = entries.reduce((max, entry) =>
             entry.access_count > (max?.access_count || 0) ? entry : max, entries[0] || null);
 
@@ -286,7 +324,10 @@ class AICacheManager extends EventEmitter {
 
     // 캐시 최적화
     public optimize(): void {
-        console.log('🔧 캐시 최적화 시작...');
+        errorLogger.info('캐시 최적화 시작', {
+            component: 'aiCacheManager',
+            action: 'optimize',
+        });
 
         // 만료된 항목 정리
         const expiredCount = this.cleanup();
@@ -295,7 +336,11 @@ class AICacheManager extends EventEmitter {
         const memoryUsage = this.getMemoryUsage();
 
         if (memoryUsage.percentage > 80) {
-            console.log(`⚠️ 메모리 사용량 높음: ${memoryUsage.percentage.toFixed(1)}%`);
+            errorLogger.warn('메모리 사용량 높음', {
+                component: 'aiCacheManager',
+                action: 'optimize',
+                memoryUsagePercent: memoryUsage.percentage.toFixed(1),
+            });
             this.evictEntries(0, Math.floor(this.cache.size * 0.2)); // 20% 제거
         }
 
@@ -307,12 +352,17 @@ class AICacheManager extends EventEmitter {
             stats
         });
 
-        console.log(`✅ 캐시 최적화 완료 - 효율성: ${stats.cache_efficiency.toFixed(1)}%`);
+        errorLogger.info('캐시 최적화 완료', {
+            component: 'aiCacheManager',
+            action: 'optimize',
+            cacheEfficiency: stats.cache_efficiency.toFixed(1),
+            expiredCleaned: expiredCount,
+        });
     }
 
     // 캐시 내보내기 (백업)
-    public export(): any {
-        const entries: any[] = [];
+    public export(): Record<string, unknown> {
+        const entries: Record<string, unknown>[] = [];
 
         for (const [key, entry] of this.cache.entries()) {
             if (!this.isExpired(entry)) {
@@ -339,7 +389,7 @@ class AICacheManager extends EventEmitter {
     }
 
     // 캐시 가져오기 (복원)
-    public import(data: any): boolean {
+    public import(data: Record<string, unknown>): boolean {
         try {
             this.clear();
 
@@ -363,16 +413,24 @@ class AICacheManager extends EventEmitter {
                 }
             }
 
-            console.log(`📥 캐시 가져오기 완료: ${this.cache.size}개 항목`);
+            errorLogger.info('캐시 가져오기 완료', {
+                component: 'aiCacheManager',
+                action: 'import',
+                entriesCount: this.cache.size,
+            });
             return true;
         } catch (error) {
-            console.error('캐시 가져오기 오류:', error);
+            const err = toError(error);
+            errorLogger.error('캐시 가져오기 오류', err, {
+                component: 'aiCacheManager',
+                action: 'import',
+            });
             return false;
         }
     }
 
     // 프리워밍 (자주 사용되는 데이터 미리 로드)
-    public prewarm(keys: string[], dataLoader: (key: string) => Promise<any>): Promise<number> {
+    public prewarm(keys: string[], dataLoader: (key: string) => Promise<unknown>): Promise<number> {
         return new Promise(async (resolve) => {
             let loadedCount = 0;
 
@@ -386,11 +444,20 @@ class AICacheManager extends EventEmitter {
                         }
                     }
                 } catch (error) {
-                    console.error(`프리워밍 오류 (${key}):`, error);
+                    const err = toError(error);
+                    errorLogger.error('프리워밍 오류', err, {
+                        component: 'aiCacheManager',
+                        action: 'prewarm',
+                        key,
+                    });
                 }
             }
 
-            console.log(`🔥 캐시 프리워밍 완료: ${loadedCount}개 항목`);
+            errorLogger.info('캐시 프리워밍 완료', {
+                component: 'aiCacheManager',
+                action: 'prewarm',
+                loadedCount,
+            });
             resolve(loadedCount);
         });
     }
@@ -448,7 +515,13 @@ class AICacheManager extends EventEmitter {
         }
 
         if (evictedCount > 0) {
-            console.log(`🗑️ 캐시 제거: ${evictedCount}개 항목 (${this.formatSize(evictedSize)})`);
+            errorLogger.info('캐시 제거', {
+                component: 'aiCacheManager',
+                action: 'evictEntries',
+                evictedCount,
+                evictedSize,
+                formattedSize: this.formatSize(evictedSize),
+            });
         }
     }
 
@@ -492,7 +565,10 @@ class AICacheManager extends EventEmitter {
         }
 
         this.emit('config_updated', this.config);
-        console.log('⚙️ 캐시 설정이 업데이트되었습니다.');
+        errorLogger.info('캐시 설정이 업데이트되었습니다', {
+            component: 'aiCacheManager',
+            action: 'updateConfig',
+        });
     }
 
     // 태그로 캐시 무효화
@@ -511,7 +587,12 @@ class AICacheManager extends EventEmitter {
         });
 
         if (keysToDelete.length > 0) {
-            console.log(`🏷️ 태그 "${tag}"로 ${keysToDelete.length}개 캐시 항목이 무효화되었습니다.`);
+            errorLogger.info('태그로 캐시 무효화', {
+                component: 'aiCacheManager',
+                action: 'invalidateByTag',
+                tag,
+                invalidatedCount: keysToDelete.length,
+            });
         }
     }
 
@@ -519,7 +600,10 @@ class AICacheManager extends EventEmitter {
     public shutdown(): void {
         this.stop();
         this.clear();
-        console.log('🔌 AI 캐시 관리자가 종료되었습니다.');
+        errorLogger.info('AI 캐시 관리자가 종료되었습니다', {
+            component: 'aiCacheManager',
+            action: 'shutdown',
+        });
     }
 }
 

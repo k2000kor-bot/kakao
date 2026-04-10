@@ -141,7 +141,7 @@ def classify_file_type(filename: str) -> str:
     image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
     video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv']
     audio_extensions = ['.mp3', '.wav', '.m4a', '.aac', '.flac']
-    document_extensions = ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.ppt', '.pptx']
+    document_extensions = ['.pdf', '.doc', '.docx', '.txt', '.md', '.csv', '.xls', '.xlsx', '.ppt', '.pptx']
     
     if ext in image_extensions:
         return 'image'
@@ -344,7 +344,7 @@ async def upload_media(file: UploadFile = File(...), chat_room_id: str = None):
 
 @app.get("/api/media-files/{chat_room_id}")
 async def get_media_files(chat_room_id: str):
-    """채팅방의 미디어 파일 조회"""
+    """대화방의 미디어 파일 조회"""
     try:
         conn = sqlite3.connect('media_system.db')
         cursor = conn.cursor()
@@ -500,10 +500,15 @@ async def get_media_stats():
 
 # 서버 시작
 if __name__ == "__main__":
+    _p = int(
+        os.environ.get(
+            "MEDIA_MANAGEMENT_SERVER_PORT", os.environ.get("PORT", "8006")
+        )
+    )
     print("🚀 미디어 관리 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8006")
-    print("📖 API 문서: http://localhost:8006/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 엔드포인트:")
     print("   POST /api/upload-media - 미디어 업로드")
     print("   GET /api/media-files/{id} - 미디어 파일 조회")
@@ -518,7 +523,7 @@ if __name__ == "__main__":
         
         # 서버 시작
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8006, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=_p, log_level="info")
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

@@ -3,10 +3,14 @@ interface SpeechRecognition extends EventTarget {
     continuous: boolean;
     interimResults: boolean;
     lang: string;
-    onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-    onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-    onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+    maxAlternatives?: number;
+    onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+    onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
+    onend: ((this: SpeechRecognition, ev: Event) => void) | null;
+    onnomatch?: () => void;
+    onspeechstart?: () => void;
+    onspeechend?: () => void;
     start(): void;
     stop(): void;
     abort(): void;
@@ -40,10 +44,12 @@ interface SpeechRecognitionErrorEvent extends Event {
     message: string;
 }
 
+/* eslint-disable @typescript-eslint/no-redeclare -- type (interface) and value (var) use same name by design */
 declare var SpeechRecognition: {
     prototype: SpeechRecognition;
     new(): SpeechRecognition;
 };
+/* eslint-enable @typescript-eslint/no-redeclare */
 
 declare var webkitSpeechRecognition: {
     prototype: SpeechRecognition;

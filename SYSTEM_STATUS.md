@@ -1,7 +1,7 @@
 # 시스템 상태 보고서
 
 **작성일**: 2025년 1월 27일  
-**프로젝트**: CORBU AI  
+**프로젝트**: CORBU.AI  
 **버전**: 1.0.0  
 **상태**: ✅ **완전히 구동 가능**
 
@@ -9,7 +9,7 @@
 
 ## 🎯 시스템 개요
 
-CORBU AI는 ChatGPT 스타일 인터페이스와 실제 LLM 연동을 지원하는 종합 AI 어시스턴트 시스템입니다.
+CORBU.AI는 ChatGPT 스타일 인터페이스와 실제 LLM 연동을 지원하는 종합 AI 어시스턴트 시스템입니다.
 
 ---
 
@@ -25,7 +25,7 @@ CORBU AI는 ChatGPT 스타일 인터페이스와 실제 LLM 연동을 지원하�
 ### 2. 백엔드 API ✅
 - **총 엔드포인트**: 34개
 - **인증 시스템**: 7개 엔드포인트
-- **채팅 API**: 1개 엔드포인트 (긴 글 생성 지원)
+- **대화 API**: 1개 엔드포인트 (긴 글 생성 지원)
 - **보안 시스템**: 5개 엔드포인트
 - **사용자 관리**: 4개 엔드포인트
 - **프로젝트 관리**: 5개 엔드포인트
@@ -74,8 +74,10 @@ CORBU AI는 ChatGPT 스타일 인터페이스와 실제 LLM 연동을 지원하�
 
 ### 포트 설정
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:5001
-- **API 문서**: http://localhost:5001/docs
+- **백엔드 API**: http://localhost:5002
+- **API 문서**: http://localhost:5002/api/docs
+
+기본값을 바꿀 때: 백엔드 `BACKEND_PORT` / `API_PORT` / `PORT`, 프론트 `REACT_APP_API_URL`·`src/config/api.ts` — **`docs/PORTS.md`**, **`env.example`** 참고.
 
 ### 실행 방법
 ```bash
@@ -95,7 +97,7 @@ npm start                 # 프론트엔드
 kakao-frontend/
 ├── src/
 │   ├── components/
-│   │   └── ChatGPTInterface.tsx  # 메인 채팅 인터페이스
+│   │   └── ChatGPTInterface.tsx  # 메인 대화 인터페이스
 │   └── App.tsx
 ├── backend/
 │   ├── app.py                    # 메인 API 서버
@@ -157,7 +159,7 @@ kakao-frontend/
 ## ✅ 테스트 상태
 
 ### 기능 테스트
-- ✅ 채팅 기능
+- ✅ 대화 기능
 - ✅ 프로젝트 관리
 - ✅ LLM 연동
 - ✅ 긴 글 생성

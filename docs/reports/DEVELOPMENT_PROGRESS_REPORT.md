@@ -1,4 +1,4 @@
-# 🚀 CORBU AI 시스템 개발 진행 보고서
+# 🚀 CORBU.AI 시스템 개발 진행 보고서
 
 ## 📅 개발 완료 일시
 
@@ -29,11 +29,11 @@
   - AI 메시지 생성 엔드포인트 업그레이드
   - 더 정교한 에러 처리 및 로깅
 
-#### 3. **프론트엔드 AI 채팅 인터페이스**
+#### 3. **프론트엔드 AI 대화 인터페이스**
 
 - **파일**: `src/components/ChatInterface.tsx`
 - **새로운 기능**:
-  - AI 채팅 모드와 파일 분석 모드 토글
+  - AI 대화 모드와 파일 분석 모드 토글
   - 실시간 AI 응답 표시
   - 대화 초기화 및 요약 기능
   - 개선된 파일 업로드 인터페이스
@@ -43,7 +43,7 @@
 
 - **파일**: `src/services/advancedMessageAPI.ts`
 - **새로운 메서드**:
-  - `sendChatMessage()` - AI 채팅 메시지 전송
+  - `sendChatMessage()` - AI 대화 메시지 전송
   - `getChatSummary()` - 대화 요약 조회
   - `clearChatHistory()` - 대화 히스토리 초기화
 
@@ -69,10 +69,10 @@ context_info = {
 }
 ```
 
-### 3. **실시간 채팅 모드**
+### 3. **실시간 대화 모드**
 
 ```typescript
-// AI 채팅 모드와 파일 분석 모드 분리
+// AI 대화 모드와 파일 분석 모드 분리
 const [chatMode, setChatMode] = useState<'ai' | 'file'>('ai');
 ```
 
@@ -81,7 +81,7 @@ const [chatMode, setChatMode] = useState<'ai' | 'file'>('ai');
 ### ✅ API 테스트 성공
 
 ```bash
-# AI 채팅 테스트
+# AI 대화 테스트
 curl -X POST "http://localhost:8001/api/v8/chat" \
   -H "Content-Type: application/json" \
   -d '{"message": "안녕하세요!", "context": {"project_type": "general"}}'
@@ -96,7 +96,7 @@ curl -X GET "http://localhost:8001/api/v8/chat/summary"
 
 ### ✅ 프론트엔드 통합
 
-- AI 채팅 모드와 파일 분석 모드 간 전환
+- AI 대화 모드와 파일 분석 모드 간 전환
 - 실시간 응답 표시
 - 대화 히스토리 관리
 - 파일 업로드 기능 유지
@@ -105,7 +105,7 @@ curl -X GET "http://localhost:8001/api/v8/chat/summary"
 
 ### 1. **직관적인 인터페이스**
 
-- AI 채팅과 파일 분석 모드를 명확히 구분
+- AI 대화과 파일 분석 모드를 명확히 구분
 - 실시간 연결 상태 표시
 - 로딩 상태 및 오류 메시지 개선
 
@@ -131,7 +131,7 @@ curl -X GET "http://localhost:8001/api/v8/chat/summary"
 
 ### ✅ 기능별 상태
 
-- **AI 채팅**: 정상 작동 ✅
+- **AI 대화**: 정상 작동 ✅
 - **파일 업로드**: 정상 작동 ✅
 - **프로젝트 관리**: 정상 작동 ✅
 - **실시간 통신**: 정상 작동 ✅
@@ -172,12 +172,12 @@ curl -X GET "http://localhost:8001/api/v8/chat/summary"
 
 ## 🎉 개발 완료 선언
 
-**CORBU AI 시스템**의 핵심 기능 개발이 성공적으로 완료되었습니다!
+**CORBU.AI 시스템**의 핵심 기능 개발이 성공적으로 완료되었습니다!
 
 ### 주요 성과 요약
 
 1. ✅ **완전한 이단 레이아웃** 구현
-2. ✅ **고급 AI 채팅 시스템** 구축
+2. ✅ **고급 AI 대화 시스템** 구축
 3. ✅ **실시간 WebSocket 통신** 구현
 4. ✅ **프로젝트 기반 구조** 완성
 5. ✅ **모던 UI/UX** 적용
@@ -192,4 +192,4 @@ curl -X GET "http://localhost:8001/api/v8/chat/summary"
 
 **개발 완료! 🎉**
 
-CORBU AI 시스템이 성공적으로 구축되었으며, 사용자가 즉시 활용할 수 있는 상태입니다.
+CORBU.AI 시스템이 성공적으로 구축되었으며, 사용자가 즉시 활용할 수 있는 상태입니다.

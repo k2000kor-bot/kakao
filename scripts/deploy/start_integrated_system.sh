@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# CORBU AI 통합 시스템 시작 스크립트
-echo "🚀 CORBU AI 통합 시스템을 시작합니다..."
+# CORBU.AI 통합 시스템 시작 스크립트
+echo "🚀 CORBU.AI 통합 시스템을 시작합니다..."
 
 # 색상 정의
 RED='\033[0;31m'
@@ -29,34 +29,37 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Python 가상환경 확인 및 생성
-if [ ! -d "venv" ]; then
-    print_status "Python 가상환경을 생성합니다..."
-    python3 -m venv venv
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
 
-# 가상환경 활성화
-print_status "가상환경을 활성화합니다..."
-source venv/bin/activate
+if ! backend_venv_activate "$REPO_ROOT"; then
+    print_status "표준 venv 없음. backend/.venv 생성 시도..."
+    ( cd "$REPO_ROOT/backend" && python3 -m venv .venv && .venv/bin/pip install -q -r requirements-core.txt ) || true
+    backend_venv_activate "$REPO_ROOT" || { print_error "가상환경을 활성화할 수 없습니다."; exit 1; }
+fi
 
 # 의존성 설치
 print_status "Python 의존성을 설치합니다..."
-pip install -r requirements.txt
+pip install -r "$REPO_ROOT/backend/requirements.txt" 2>/dev/null || pip install -r "$REPO_ROOT/backend/requirements-core.txt" 2>/dev/null || true
 
 # Node.js 의존성 설치
 print_status "Node.js 의존성을 설치합니다..."
 npm install
 
-# 백엔드 서버 시작 (백그라운드)
-print_status "통합 백엔드 서버를 시작합니다..."
-python integrated_master_api.py &
+# 백엔드: main_server + uvicorn (npm run restart:backend 와 동일 스택)
+BACKEND_PORT="${BACKEND_PORT:-5002}"
+print_status "통합 백엔드 서버를 시작합니다 (main_server:$BACKEND_PORT)..."
+( cd "$REPO_ROOT/backend" && python3 -m uvicorn main_server:app --host 0.0.0.0 --port "$BACKEND_PORT" ) &
 BACKEND_PID=$!
 
 # 백엔드 서버 시작 대기
 sleep 3
 
 # 백엔드 서버 상태 확인
-if curl -s http://localhost:8000/api/status > /dev/null; then
+if curl -s "http://localhost:${BACKEND_PORT}/api/status" > /dev/null; then
     print_success "백엔드 서버가 성공적으로 시작되었습니다 (PID: $BACKEND_PID)"
 else
     print_warning "백엔드 서버 시작에 문제가 있을 수 있습니다. 계속 진행합니다..."
@@ -71,12 +74,12 @@ FRONTEND_PID=$!
 print_status "서버 상태를 모니터링합니다..."
 echo ""
 echo "=========================================="
-echo "🎉 CORBU AI 통합 시스템이 시작되었습니다!"
+echo "🎉 CORBU.AI 통합 시스템이 시작되었습니다!"
 echo "=========================================="
 echo ""
 echo -e "${GREEN}📱 프론트엔드:${NC} http://localhost:3000"
-echo -e "${GREEN}🔧 백엔드 API:${NC} http://localhost:8000"
-echo -e "${GREEN}📚 API 문서:${NC} http://localhost:8000/docs"
+echo -e "${GREEN}🔧 백엔드 API:${NC} http://localhost:${BACKEND_PORT}"
+echo -e "${GREEN}📚 API 문서:${NC} http://localhost:${BACKEND_PORT}/api/docs"
 echo ""
 echo -e "${YELLOW}💡 사용 가능한 기능:${NC}"
 echo "• ChatGPT 스타일 대화 인터페이스"
@@ -115,9 +118,9 @@ while true; do
     sleep 10
     
     # 백엔드 서버 상태 확인
-    if ! curl -s http://localhost:8000/api/status > /dev/null; then
+    if ! curl -s "http://localhost:${BACKEND_PORT}/api/status" > /dev/null; then
         print_warning "백엔드 서버에 연결할 수 없습니다. 재시작을 시도합니다..."
-        python integrated_master_api.py &
+        ( cd "$REPO_ROOT/backend" && python3 -m uvicorn main_server:app --host 0.0.0.0 --port "$BACKEND_PORT" ) &
         BACKEND_PID=$!
         sleep 3
     fi

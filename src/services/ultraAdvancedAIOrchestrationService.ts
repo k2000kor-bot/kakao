@@ -1,13 +1,13 @@
 import { EventEmitter } from 'events';
-import { ultraAdvancedAIService } from './ultraAdvancedAIService';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface AIOrchestrationTask {
     id: string;
     type: 'analysis' | 'optimization' | 'learning' | 'prediction' | 'synthesis';
     priority: 'low' | 'medium' | 'high' | 'critical';
     status: 'pending' | 'running' | 'completed' | 'failed';
-    input: any;
-    output?: any;
+    input: unknown;
+    output?: unknown;
     metadata: {
         created_at: Date;
         started_at?: Date;
@@ -76,7 +76,10 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
         super();
         this.initializeService();
         this.isInitialized = true;
-        console.log('🎼 고도화된 AI 오케스트레이션 서비스가 초기화되었습니다.');
+        errorLogger.info('🎼 고도화된 AI 오케스트레이션 서비스가 초기화되었습니다', {
+            component: 'ultraAdvancedAIOrchestrationService',
+            action: 'constructor',
+        });
     }
 
     private initializeService(): void {
@@ -98,7 +101,7 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
 
     public async createTask(
         type: AIOrchestrationTask['type'],
-        input: any,
+        input: unknown,
         priority: AIOrchestrationTask['priority'] = 'medium',
         dependencies: string[] = []
     ): Promise<string> {
@@ -256,7 +259,7 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
         this.removeFromQueue(task.id);
     }
 
-    private async processTaskByType(task: AIOrchestrationTask): Promise<any> {
+    private async processTaskByType(task: AIOrchestrationTask): Promise<Record<string, unknown>> {
         switch (task.type) {
             case 'analysis':
                 return await this.performAnalysis(task.input);
@@ -273,33 +276,36 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
         }
     }
 
-    private async performAnalysis(input: any): Promise<any> {
+    private async performAnalysis(input: unknown): Promise<Record<string, unknown>> {
         // 입력 데이터 검증 강화
+        let normalized: Record<string, unknown> = { type: 'default', data: {}, text: '' };
         try {
-            if (!input || typeof input !== 'object') {
-                input = { type: 'default', data: {} };
-            }
-
-            if (!input.type) {
-                input.type = 'default';
-            }
-
-            if (!input.data) {
-                input.data = {};
+            if (input && typeof input === 'object') {
+                const obj = input as Record<string, unknown>;
+                normalized = {
+                    type: obj.type ?? 'default',
+                    data: obj.data ?? {},
+                    text: obj.text ?? ''
+                };
             }
         } catch (error) {
-            console.warn('performAnalysis 입력 검증 중 오류:', error);
-            input = { type: 'default', data: {} };
+            const err = toError(error);
+            errorLogger.warn('performAnalysis 입력 검증 중 오류', {
+                component: 'ultraAdvancedAIOrchestrationService',
+                action: 'performAnalysis',
+                error: err.message,
+            });
         }
 
+        const text = String(normalized.text ?? '');
         // 고도화된 분석 수행
         const analysis = {
-            sentiment: this.analyzeSentiment(input.text || ''),
-            intent: this.detectIntent(input.text || ''),
-            entities: this.extractEntities(input.text || ''),
-            topics: this.extractTopics(input.text || ''),
-            complexity: this.analyzeComplexity(input.text || ''),
-            recommendations: this.generateRecommendations(input),
+            sentiment: this.analyzeSentiment(text),
+            intent: this.detectIntent(text),
+            entities: this.extractEntities(text),
+            topics: this.extractTopics(text),
+            complexity: this.analyzeComplexity(text),
+            recommendations: this.generateRecommendations(normalized),
             confidence: Math.random() * 0.3 + 0.7
         };
 
@@ -315,23 +321,19 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
         };
     }
 
-    private async performOptimization(input: any): Promise<any> {
+    private async performOptimization(input: unknown): Promise<Record<string, unknown>> {
         // 입력 데이터 검증 강화
         try {
             if (!input || typeof input !== 'object') {
-                input = { type: 'default', data: {} };
-            }
-
-            if (!input.type) {
-                input.type = 'default';
-            }
-
-            if (!input.data) {
-                input.data = {};
+                void 0;
             }
         } catch (error) {
-            console.warn('performOptimization 입력 검증 중 오류:', error);
-            input = { type: 'default', data: {} };
+            const err = toError(error);
+            errorLogger.warn('performOptimization 입력 검증 중 오류', {
+                component: 'ultraAdvancedAIOrchestrationService',
+                action: 'performOptimization',
+                error: err.message,
+            });
         }
 
         // 시스템 최적화 수행
@@ -356,23 +358,19 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
         };
     }
 
-    private async performLearning(input: any): Promise<any> {
+    private async performLearning(input: unknown): Promise<Record<string, unknown>> {
         // 입력 데이터 검증 강화
         try {
             if (!input || typeof input !== 'object') {
-                input = { type: 'default', data: {} };
-            }
-
-            if (!input.type) {
-                input.type = 'default';
-            }
-
-            if (!input.data) {
-                input.data = {};
+                void 0;
             }
         } catch (error) {
-            console.warn('performLearning 입력 검증 중 오류:', error);
-            input = { type: 'default', data: {} };
+            const err = toError(error);
+            errorLogger.warn('performLearning 입력 검증 중 오류', {
+                component: 'ultraAdvancedAIOrchestrationService',
+                action: 'performLearning',
+                error: err.message,
+            });
         }
 
         // 적응형 학습 수행
@@ -397,26 +395,29 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
         };
     }
 
-    private async performPrediction(input: any): Promise<any> {
+    private async performPrediction(input: unknown): Promise<Record<string, unknown>> {
         // 입력 데이터 검증 강화
+        let normalized: Record<string, unknown> = { type: 'default', data: {} };
         try {
             // input이 null, undefined, 또는 객체가 아닌 경우 기본값 설정
-            if (!input || typeof input !== 'object' || input === null) {
-                input = { type: 'default', data: {} };
+            if (input && typeof input === 'object' && input !== null) {
+                const obj = input as Record<string, unknown>;
+                normalized = {
+                    type: obj.type ?? 'default',
+                    data: obj.data ?? {}
+                };
             }
-
-            // type 속성이 없는 경우 기본값 설정
-            if (!input || !input.type) {
-                input = { ...input, type: 'default' };
-            }
-
-            // data 속성이 없는 경우 기본값 설정
-            if (!input || !input.data) {
-                input = { ...input, data: {} };
+            if (!normalized.data) {
+                normalized.data = {};
             }
         } catch (error) {
-            console.warn('performPrediction 입력 검증 중 오류:', error);
-            input = { type: 'default', data: {} };
+            const err = toError(error);
+            errorLogger.warn('performPrediction 입력 검증 중 오류', {
+                component: 'ultraAdvancedAIOrchestrationService',
+                action: 'performPrediction',
+                error: err.message,
+            });
+            normalized = { type: 'default', data: {} };
         }
 
         // 예측 분석 수행
@@ -441,23 +442,19 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
         };
     }
 
-    private async performSynthesis(input: any): Promise<any> {
+    private async performSynthesis(input: unknown): Promise<Record<string, unknown>> {
         // 입력 데이터 검증 강화
         try {
             if (!input || typeof input !== 'object') {
-                input = { type: 'default', data: {} };
-            }
-
-            if (!input.type) {
-                input.type = 'default';
-            }
-
-            if (!input.data) {
-                input.data = {};
+                void 0;
             }
         } catch (error) {
-            console.warn('performSynthesis 입력 검증 중 오류:', error);
-            input = { type: 'default', data: {} };
+            const err = toError(error);
+            errorLogger.warn('performSynthesis 입력 검증 중 오류', {
+                component: 'ultraAdvancedAIOrchestrationService',
+                action: 'performSynthesis',
+                error: err.message,
+            });
         }
 
         // 정보 종합 및 생성
@@ -556,7 +553,7 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
         return Math.min(1, (avgWordLength * sentenceCount) / 100);
     }
 
-    private generateRecommendations(input: any): string[] {
+    private generateRecommendations(_input: unknown): string[] {
         const recommendations = [
             '실시간 모니터링 활성화',
             'AI 모델 최적화',
@@ -576,7 +573,7 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
             synthesis: { cpu: 0.6, memory: 0.7, gpu: 0.4 }
         };
 
-        const usage = (baseUsage as Record<string, any>)[taskType] || baseUsage.analysis;
+        const usage = (baseUsage as Record<string, { cpu: number; memory: number; gpu: number }>)[taskType] ?? baseUsage.analysis;
         return {
             cpu: usage.cpu + Math.random() * 0.2,
             memory: usage.memory + Math.random() * 0.2,
@@ -586,7 +583,7 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
 
     private processWorkflowNextStep(completedTask: AIOrchestrationTask): void {
         // 워크플로우에서 완료된 작업 찾기
-        for (const [workflowId, workflow] of this.workflows) {
+        for (const [_workflowId, workflow] of this.workflows) {
             const taskIndex = workflow.steps.findIndex(step => step.id === completedTask.id);
 
             if (taskIndex !== -1) {
@@ -610,7 +607,7 @@ class UltraAdvancedAIOrchestrationService extends EventEmitter {
 
     private handleWorkflowFailure(failedTask: AIOrchestrationTask): void {
         // 워크플로우에서 실패한 작업 찾기
-        for (const [workflowId, workflow] of this.workflows) {
+        for (const [_workflowId, workflow] of this.workflows) {
             const taskIndex = workflow.steps.findIndex(step => step.id === failedTask.id);
 
             if (taskIndex !== -1) {

@@ -1,6 +1,8 @@
 // 고도화된 AI 학습 서비스
 // 지속적 학습, 모델 최적화, 지식 그래프 구축, 적응형 응답 시스템
 
+import { errorLogger } from '../utils/errorLogger';
+
 export interface LearningData {
     id: string;
     timestamp: string;
@@ -361,7 +363,7 @@ class AdvancedLearningService {
     }
 
     // 응답 품질 패턴 분석
-    private async analyzeResponseQualityPattern(data: LearningData): Promise<LearningPattern | null> {
+    private async analyzeResponseQualityPattern(_data: LearningData): Promise<LearningPattern | null> {
         const recentData = this.learningData.slice(-50);
         const highQualityResponses = recentData.filter(d => d.feedback.rating >= 4);
         
@@ -434,7 +436,7 @@ class AdvancedLearningService {
     }
 
     // 모델 최적화 검토
-    private async reviewModelOptimization(data: LearningData): Promise<void> {
+    private async reviewModelOptimization(_data: LearningData): Promise<void> {
         const recentData = this.learningData.slice(-100);
         
         if (recentData.length >= 50) {
@@ -688,7 +690,13 @@ class AdvancedLearningService {
             const avgRating = recentData.reduce((sum, d) => sum + d.feedback.rating, 0) / recentData.length;
             const avgResponseTime = recentData.reduce((sum, d) => sum + d.metadata.responseTime, 0) / recentData.length;
             
-            console.log(`모델 성능 평가 - 평균 평점: ${avgRating.toFixed(2)}, 평균 응답 시간: ${avgResponseTime.toFixed(2)}ms`);
+            errorLogger.info('모델 성능 평가', {
+                component: 'advancedLearningService',
+                action: 'evaluateModelPerformance',
+                avgRating: parseFloat(avgRating.toFixed(2)),
+                avgResponseTime: parseFloat(avgResponseTime.toFixed(2)),
+                dataPoints: recentData.length,
+            });
         }
     }
 
@@ -802,3 +810,4 @@ class AdvancedLearningService {
 }
 
 export const advancedLearningService = new AdvancedLearningService();
+export default advancedLearningService;

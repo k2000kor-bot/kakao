@@ -1,8 +1,9 @@
 // 실시간 지식 베이스 업데이트 및 학습 시스템
 import { clientFileProcessor, FileAnalysisResult } from './clientFileProcessor';
-import { learningFeedbackSystem } from './learningFeedbackSystem';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
-interface RealTimeKnowledgeUpdate {
+export interface RealTimeKnowledgeUpdate {
     projectId: string;
     timestamp: string;
     updateType: 'knowledge' | 'writing' | 'analysis' | 'learning';
@@ -10,7 +11,7 @@ interface RealTimeKnowledgeUpdate {
     confidence: number;
 }
 
-interface KnowledgeSyncStatus {
+export interface KnowledgeSyncStatus {
     projectId: string;
     lastSync: string;
     syncStatus: 'synced' | 'pending' | 'failed';
@@ -63,7 +64,7 @@ export interface ConversationContext {
         attachments?: Array<{
             fileId: string;
             fileName: string;
-            analysis: any; // FileAnalysisResult | MediaAnalysisResult;
+            analysis: FileAnalysisResult | Record<string, unknown>;
         }>;
     }>;
     activeKnowledge: {
@@ -118,7 +119,7 @@ export class RealTimeKnowledgeSystem {
         smartConnections: SmartKnowledgeConnection[];
     }> {
         const sessionId = sessionIdParam || `session_${Date.now()}`;
-        const context = this.conversationContexts.get(sessionId);
+        const _context = this.conversationContexts.get(sessionId);
 
         try {
             // 1. 파일 분석 및 분류
@@ -147,8 +148,15 @@ export class RealTimeKnowledgeSystem {
             };
 
         } catch (error) {
-            console.error('실시간 파일 처리 실패:', error);
-            throw new Error(`파일 처리 중 오류: ${error}`);
+            const err = toError(error);
+            errorLogger.error('실시간 파일 처리 실패', err, {
+                component: 'realTimeKnowledgeSystem',
+                action: 'processNewFile',
+                projectId,
+                sessionId,
+                fileName: file.name,
+            });
+            throw new Error(`파일 처리 중 오류: ${err.message}`);
         }
     }
 
@@ -162,7 +170,7 @@ export class RealTimeKnowledgeSystem {
 
         try {
             // 1. 첨부 파일 처리 (있는 경우)
-            const attachmentAnalyses: Array<any> = []; // FileAnalysisResult | MediaAnalysisResult;
+            const attachmentAnalyses: Array<FileAnalysisResult | Record<string, unknown>> = [];
             if (attachedFiles && attachedFiles.length > 0) {
                 for (const file of attachedFiles) {
                     const result = await this.processNewFile(file, projectId, sessionId);
@@ -196,7 +204,13 @@ export class RealTimeKnowledgeSystem {
             };
 
         } catch (error) {
-            console.error('지능형 응답 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('지능형 응답 생성 오류', err, {
+                component: 'realTimeKnowledgeSystem',
+                action: 'generateIntelligentResponse',
+                projectId,
+                sessionId,
+            });
 
             // 기본 응답 반환
             return {
@@ -237,13 +251,10 @@ export class RealTimeKnowledgeSystem {
     ): KnowledgeUpdateEvent {
 
         const isMedia = 'fileType' in analysis && ['image', 'video', 'audio'].includes(analysis.fileType);
-        const keyTopics = isMedia ?
-            (analysis as any).knowledgeExtraction.keyTopics : // MediaAnalysisResult
-            (analysis as any).keyTopics; // FileAnalysisResult
-
-        const entities = isMedia ?
-            (analysis as any).knowledgeExtraction.entities : // MediaAnalysisResult
-            (analysis as any).entities; // FileAnalysisResult
+        const a = analysis as unknown as Record<string, unknown> & { id?: string; fileName?: string; fileType?: string; confidence?: number };
+        const ke = a.knowledgeExtraction as Record<string, unknown> | undefined;
+        const keyTopics = (isMedia ? ke?.keyTopics : a.keyTopics) as string[] | undefined ?? [];
+        const entities = (isMedia ? ke?.entities : a.entities) as Record<string, string[]> | undefined ?? {};
 
         return {
             id: `update_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -259,8 +270,8 @@ export class RealTimeKnowledgeSystem {
                 addedTopics: keyTopics,
                 updatedEntities: entities,
                 newInsights: isMedia ?
-                    (analysis as any).knowledgeExtraction.insights : // MediaAnalysisResult
-                    [`${analysis.fileName}에서 ${keyTopics.length}개 주제 발견`],
+                    (ke?.insights as string[] | undefined) ?? [] :
+                    [`${String(analysis.fileName ?? '')}에서 ${keyTopics.length}개 주제 발견`],
                 connectedKnowledge: []
             },
             impact: {
@@ -281,13 +292,10 @@ export class RealTimeKnowledgeSystem {
 
         // 기존 지식과의 연결점 탐지
         const isMedia = 'fileType' in newAnalysis && ['image', 'video', 'audio'].includes(newAnalysis.fileType);
-        const newTopics = isMedia ?
-            (newAnalysis as any).knowledgeExtraction.keyTopics : // MediaAnalysisResult
-            (newAnalysis as any).keyTopics; // FileAnalysisResult
-
-        const newEntities = isMedia ?
-            (newAnalysis as any).knowledgeExtraction.entities : // MediaAnalysisResult
-            (newAnalysis as any).entities; // FileAnalysisResult
+        const na = newAnalysis as unknown as Record<string, unknown>;
+        const ne = na.knowledgeExtraction as Record<string, unknown> | undefined;
+        const newTopics = (isMedia ? ne?.keyTopics : na.keyTopics) as string[] | undefined ?? [];
+        const newEntities = (isMedia ? ne?.entities : na.entities) as Record<string, string[] | undefined> ?? {};
 
         // 1. 주제 유사성 기반 연결
         const topicConnections = this.findTopicSimilarityConnections(newAnalysis, newTopics, projectId);
@@ -334,7 +342,7 @@ export class RealTimeKnowledgeSystem {
         if (commonTopics.length > 0) {
             connections.push({
                 id: `topic_sim_${Date.now()}`,
-                sourceFiles: [newAnalysis.id],
+                sourceFiles: [String((newAnalysis as unknown as Record<string, unknown>).id ?? '')],
                 connectionType: 'topic_similarity',
                 strength: commonTopics.length / Math.max(newTopics.length, 1),
                 description: `공통 주제: ${commonTopics.join(', ')}`,
@@ -349,21 +357,21 @@ export class RealTimeKnowledgeSystem {
 
     private findEntityOverlapConnections(
         newAnalysis: FileAnalysisResult,
-        newEntities: any,
-        projectId: string
+        newEntities: Record<string, string[] | undefined>,
+        _projectId: string
     ): SmartKnowledgeConnection[] {
 
         const connections: SmartKnowledgeConnection[] = [];
 
         // 엔티티 중복 검사 로직 (간단화)
-        const peopleCount = newEntities.people?.length || 0;
-        const orgCount = newEntities.organizations?.length || 0;
-        const locationCount = newEntities.locations?.length || 0;
+        const peopleCount = (newEntities.people as string[] | undefined)?.length ?? 0;
+        const orgCount = (newEntities.organizations as string[] | undefined)?.length ?? 0;
+        const locationCount = (newEntities.locations as string[] | undefined)?.length ?? 0;
 
         if (peopleCount > 0 || orgCount > 0 || locationCount > 0) {
             connections.push({
                 id: `entity_overlap_${Date.now()}`,
-                sourceFiles: [newAnalysis.id],
+                sourceFiles: [String((newAnalysis as unknown as Record<string, unknown>).id ?? '')],
                 connectionType: 'entity_overlap',
                 strength: Math.min(1.0, (peopleCount + orgCount + locationCount) / 10),
                 description: `엔티티 정보: 인물 ${peopleCount}명, 조직 ${orgCount}개, 장소 ${locationCount}개`,
@@ -378,19 +386,21 @@ export class RealTimeKnowledgeSystem {
 
     private findTemporalConnections(
         newAnalysis: FileAnalysisResult,
-        projectId: string
+        _projectId: string
     ): SmartKnowledgeConnection[] {
 
         const connections: SmartKnowledgeConnection[] = [];
 
         // 업로드 시간 기반 연결 (간단화)
         const recentThreshold = Date.now() - (24 * 60 * 60 * 1000); // 24시간
-        const uploadTime = (newAnalysis as any).uploadTime || (newAnalysis as any).analysisTime;
+        const u = newAnalysis as unknown as Record<string, unknown>;
+        const uploadTime = (u.uploadTime as Date | number | undefined) ?? (u.analysisTime as Date | number | undefined);
 
-        if (uploadTime && uploadTime.getTime() > recentThreshold) {
+        const uploadMs = uploadTime instanceof Date ? uploadTime.getTime() : typeof uploadTime === 'number' ? uploadTime : 0;
+        if (uploadMs && uploadMs > recentThreshold) {
             connections.push({
                 id: `temporal_${Date.now()}`,
-                sourceFiles: [newAnalysis.id],
+                sourceFiles: [String((newAnalysis as unknown as Record<string, unknown>).id ?? '')],
                 connectionType: 'temporal_sequence',
                 strength: 0.6,
                 description: '최근 24시간 내 업로드된 파일',
@@ -409,7 +419,7 @@ export class RealTimeKnowledgeSystem {
         attachment: {
             fileId: string;
             fileName: string;
-            analysis: any; // FileAnalysisResult | MediaAnalysisResult;
+            analysis: FileAnalysisResult | Record<string, unknown>;
         }
     ) {
         let context = this.conversationContexts.get(sessionId);
@@ -435,12 +445,13 @@ export class RealTimeKnowledgeSystem {
         }
 
         // 활성 지식 업데이트
-        context.activeKnowledge.relevantFiles.push(attachment.fileId);
+        context.activeKnowledge.relevantFiles.push(typeof attachment.fileId === 'string' ? attachment.fileId : String(attachment.fileId));
 
-        const isMedia = 'fileType' in attachment.analysis && ['image', 'video', 'audio'].includes(attachment.analysis.fileType);
-        const topics = isMedia ?
-            (attachment.analysis as any).knowledgeExtraction.keyTopics : // MediaAnalysisResult
-            (attachment.analysis as any).keyTopics; // FileAnalysisResult
+        const isMedia = 'fileType' in attachment.analysis && ['image', 'video', 'audio'].includes(String((attachment.analysis as { fileType?: unknown }).fileType ?? ''));
+        const att = attachment.analysis as unknown as Record<string, unknown>;
+        const attKe = att.knowledgeExtraction as Record<string, unknown> | undefined;
+        const rawTopics = isMedia ? attKe?.keyTopics : att.keyTopics;
+        const topics: string[] = Array.isArray(rawTopics) ? (rawTopics as string[]) : [];
 
         topics.forEach((topic: string) => {
             if (!context!.activeKnowledge.keyTopics.includes(topic)) {
@@ -460,7 +471,7 @@ export class RealTimeKnowledgeSystem {
         const writingMaterials = clientFileProcessor.getWritingMaterials(projectId);
         // const mediaContext = mediaAnalysisService.getConversationContext(projectId); // mediaAnalysisService 제거
 
-        const relevantFiles: any[] = [];
+        const relevantFiles: Array<{ fileId: string; fileName: string }> = [];
         const relevantInsights: string[] = [];
         const relevantTopics: string[] = [];
 
@@ -495,9 +506,9 @@ export class RealTimeKnowledgeSystem {
 
     private async generateContextualResponse(
         userMessage: string,
-        relevantKnowledge: any,
+        relevantKnowledge: { files: unknown[]; insights: string[]; topics: string[]; writingMaterials?: unknown[] },
         conversationContext: ConversationContext | undefined,
-        attachmentAnalyses: Array<any> // FileAnalysisResult | MediaAnalysisResult
+        attachmentAnalyses: Array<FileAnalysisResult | Record<string, unknown>>
     ): Promise<Omit<IntelligentResponse, 'learningFeedback'>> {
 
         // 컨텍스트 기반 응답 생성
@@ -511,15 +522,16 @@ export class RealTimeKnowledgeSystem {
         if (attachmentAnalyses.length > 0) {
             response += `업로드하신 ${attachmentAnalyses.length}개 파일을 분석했습니다.\n\n`;
 
-            attachmentAnalyses.forEach((analysis, index) => {
-                const isMedia = 'fileType' in analysis && ['image', 'video', 'audio'].includes(analysis.fileType);
-                const fileName = analysis.fileName;
-                const summary = isMedia ? (analysis as any).contextualSummary : (analysis as any).knowledgeSummary; // MediaAnalysisResult
+            attachmentAnalyses.forEach((analysis, _index) => {
+                const an = analysis as unknown as Record<string, unknown>;
+                const isMedia = ['image', 'video', 'audio'].includes(String(an.fileType ?? ''));
+                const fileName = String(an.fileName ?? '');
+                const summary = String(isMedia ? an.contextualSummary ?? '' : an.knowledgeSummary ?? '');
 
                 response += `📁 **${fileName}**\n${summary}\n\n`;
 
                 sourceFiles.push({
-                    fileId: analysis.id,
+                    fileId: String(an.id ?? ''),
                     fileName,
                     relevanceScore: 0.9,
                     usedSections: ['전체 내용']
@@ -530,7 +542,7 @@ export class RealTimeKnowledgeSystem {
         // 2. 기존 지식 기반 응답
         if (relevantKnowledge.insights.length > 0) {
             response += '관련된 기존 지식을 찾았습니다:\n\n';
-            relevantKnowledge.insights.slice(0, 3).forEach((insight: string) => {
+            relevantKnowledge.insights.forEach((insight: string) => {
                 response += `💡 ${insight}\n`;
                 knowledgeInsights.push(insight);
             });
@@ -539,16 +551,16 @@ export class RealTimeKnowledgeSystem {
 
         // 3. 주제 기반 응답
         if (relevantKnowledge.topics.length > 0) {
-            response += `이 내용은 다음 주제들과 관련이 있습니다: ${relevantKnowledge.topics.slice(0, 5).join(', ')}\n\n`;
+            response += `이 내용은 다음 주제들과 관련이 있습니다: ${relevantKnowledge.topics.join(', ')}\n\n`;
         }
 
         // 4. 대화 컨텍스트 활용
         if (conversationContext && conversationContext.activeKnowledge.keyTopics.length > 0) {
-            response += `현재 대화에서 다루고 있는 주제들: ${conversationContext.activeKnowledge.keyTopics.slice(0, 3).join(', ')}\n\n`;
+            response += `현재 대화에서 다루고 있는 주제들: ${conversationContext.activeKnowledge.keyTopics.join(', ')}\n\n`;
         }
 
         // 5. 기본 응답 (관련 정보가 없는 경우)
-        if (!response.trim()) {
+        if (!coerceTrimmedString(response, '')) {
             response = '요청하신 내용을 검토해보겠습니다. ';
 
             if (userMessage.includes('분석') || userMessage.includes('검토')) {
@@ -580,7 +592,7 @@ export class RealTimeKnowledgeSystem {
         if (conversationContext?.activeKnowledge.keyTopics.length) confidence += 0.1;
 
         return {
-            response: response.trim(),
+            response: coerceTrimmedString(response, ''),
             confidence: Math.min(1.0, confidence),
             sourceFiles,
             knowledgeInsights,
@@ -592,7 +604,7 @@ export class RealTimeKnowledgeSystem {
     private processLearningFeedback(
         userMessage: string,
         response: Omit<IntelligentResponse, 'learningFeedback'>,
-        projectId: string
+        _projectId: string
     ) {
         // 학습 피드백 처리 (간단화)
         return {
@@ -606,7 +618,7 @@ export class RealTimeKnowledgeSystem {
         sessionId: string,
         userMessage: string,
         aiResponse: string,
-        attachments: Array<any> // FileAnalysisResult | MediaAnalysisResult
+        attachments: Array<FileAnalysisResult | Record<string, unknown>>
     ) {
         const context = this.conversationContexts.get(sessionId);
         if (!context) return;
@@ -617,11 +629,14 @@ export class RealTimeKnowledgeSystem {
             content: userMessage,
             sender: 'user',
             timestamp: new Date(),
-            attachments: attachments.map(analysis => ({
-                fileId: analysis.id,
-                fileName: analysis.fileName,
-                analysis
-            }))
+            attachments: attachments.map(analysis => {
+                const a = analysis as unknown as Record<string, unknown>;
+                return {
+                    fileId: String(a.id ?? ''),
+                    fileName: String(a.fileName ?? ''),
+                    analysis
+                };
+            })
         });
 
         // AI 응답 추가

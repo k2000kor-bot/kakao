@@ -1,0 +1,95 @@
+---
+description: Figma Brainwave AI UI Kit 기반 디자인 구현 규칙. theme.css·.bw-* 클래스 사용, Figma node 7-3·323-168775 기준.
+globs: ["src/**/*.tsx", "src/**/*.jsx", "src/**/*.css"]
+alwaysApply: false
+---
+
+# Figma 디자인 시스템 규칙 (Brainwave AI UI Kit)
+
+## Figma 단일 소스
+
+- **디자인 기준**: [Brainwave AI UI Kit](https://www.figma.com/design/9ZrEa3dcS8zb0O6Nr5lT8m/Brainwave-AI-UI-Kit?node-id=7-3&m=dev)
+  - 전체 UI: node-id=323-168775
+  - 레이아웃 상세: node-id=7-3
+- **적용 원칙**: 모든 기능이 이 Kit과 동일한 디자인 범위에 들어가야 함.
+
+---
+
+## Figma MCP 연동 필수 흐름 (건너뛰지 말 것)
+
+1. `get_design_context(fileKey, nodeId)`로 노드 구조·스펙 조회
+2. 응답이 잘리면 `get_metadata`로 노드 맵 확인 후 개별 `get_design_context`로 재조회
+3. `get_screenshot(fileKey, nodeId)`로 시각적 기준 확보
+4. 두 결과 확인 후 에셋 다운로드 및 구현 시작
+5. Figma MCP 출력(React+Tailwind)을 이 프로젝트 컨벤션으로 변환
+6. 스크린샷 기준으로 1:1 검증
+
+---
+
+## 디자인 토큰 (theme.css)
+
+- **위치**: `src/styles/theme.css`
+- **사용**: `var(--*)`만 사용. 절대 `#hex`, `rgb(...)` 하드코딩 금지 (theme.css 정의 제외).
+
+| 용도 | CSS 변수 예시 |
+|------|---------------|
+| 배경 | `--bg-primary`, `--bg-secondary`, `--bg-tertiary` |
+| 텍스트 | `--text-primary`, `--text-secondary`, `--text-tertiary` |
+| 강조/CTA | `--accent-info`, `--accent-info-hover`, `--accent-primary`, `--accent-secondary` |
+| 에러/경고 | `--accent-error`, `--accent-warning`, `--accent-error-muted` |
+| 레이아웃 | `--layout-sidebar-width`, `--layout-main-padding` |
+| 사이드바 다크 | `--sidebar-dark-bg`, `--sidebar-dark-hover`, `--sidebar-dark-border` |
+
+---
+
+## 전역 컴포넌트 클래스 (brainwave-global.css)
+
+- **위치**: `src/styles/brainwave-global.css`
+- **사용**: Tailwind 색상 클래스(`text-gray-*`, `bg-blue-*`) 대신 `.bw-*` 사용.
+
+| 컴포넌트 | 클래스 |
+|----------|--------|
+| 카드 | `.bw-card`, `.bw-card-secondary` |
+| 버튼 | `.bw-btn-primary`, `.bw-btn-secondary`, `.bw-btn-ghost`, `.bw-btn-danger` |
+| 입력 | `.bw-input`, `.bw-select` |
+| 알림 | `.bw-alert-error`, `.bw-alert-warning`, `.bw-badge`, `.bw-badge-info` 등 |
+| 빈 상태 | `.bw-empty`, `.bw-empty-title`, `.bw-spinner` |
+| 모달 | `.bw-modal-overlay`, `.bw-modal-panel` |
+| 진행바 | `.bw-progress-bar` |
+| 타이포 | `.bw-heading-1`, `.bw-heading-2`, `.bw-text-primary`, `.bw-text-muted` |
+
+---
+
+## 구현 규칙
+
+- Figma MCP 출력은 디자인·동작 표현일 뿐, 최종 코드 스타일이 아님.
+- Tailwind 유틸리티 → 이 프로젝트의 `theme.css` 변수·`.bw-*`로 대체.
+- 기존 `src/components/` 컴포넌트가 있으면 재사용. 새 컴포넌트는 `brainwave-global.css` 클래스 사용.
+- 새 UI 컴포넌트는 `src/components/` 하위에 배치.
+- 레이아웃·간격·브레이크포인트는 [Figma node 7-3](https://www.figma.com/design/9ZrEa3dcS8zb0O6Nr5lT8m?node-id=7-3&m=dev) Dev Mode 기준.
+
+---
+
+## 에셋 처리
+
+- Figma MCP가 localhost 에셋 URL을 주면 그대로 사용.
+- 새 아이콘 패키지 추가 금지. Figma 페이로드에서 제공하는 에셋만 사용.
+- 로드 순서: `theme.css` → `brainwave-global.css` → 해당 컴포넌트 CSS.
+
+---
+
+## 검증 체크리스트
+
+- [ ] 레이아웃·간격·정렬이 Figma와 일치하는가
+- [ ] 타이포·색상이 Figma와 일치하는가
+- [ ] `#hex`, `rgb(...)`, `text-gray-*`, `bg-blue-*` 등 하드코딩이 없는가
+- [ ] `.bw-*` 또는 `var(--*)`만 사용하는가
+- [ ] 접근성(WCAG) 준수
+
+---
+
+## 참고 문서
+
+- `docs/BRAINWAVE-UI.md` — Figma↔CSS 매핑, 적용 완료 목록
+- `src/styles/theme.css` — 토큰 정의
+- `src/styles/brainwave-global.css` — 전역 컴포넌트 스타일

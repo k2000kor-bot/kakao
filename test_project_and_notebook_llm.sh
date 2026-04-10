@@ -12,8 +12,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 백엔드 URL
-BACKEND_URL="http://localhost:5001"
+# 백엔드 URL (통합 main_server 기본 5002)
+BACKEND_URL="${BACKEND_URL:-http://localhost:5002}"
 
 # 테스트 결과 추적
 PASSED=0
@@ -58,9 +58,9 @@ test_endpoint "프로젝트 목록 조회" "GET" "/api/projects"
 test_endpoint "프로젝트 생성" "POST" "/api/projects" '{"name": "테스트 프로젝트", "description": "테스트용 프로젝트입니다"}'
 echo ""
 
-# 2. 채팅 API 테스트 (프로젝트 포함)
-echo "📋 2. 채팅 API 테스트 (프로젝트 컨텍스트)"
-test_endpoint "프로젝트 컨텍스트 채팅" "POST" "/api/chat" '{
+# 2. 대화 API 테스트 (프로젝트 포함)
+echo "📋 2. 대화 API 테스트 (프로젝트 컨텍스트)"
+test_endpoint "프로젝트 컨텍스트 대화" "POST" "/api/chat" '{
     "message": "안녕하세요",
     "quality": "enhanced",
     "conversation_id": "test-project-123"

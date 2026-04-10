@@ -945,11 +945,13 @@ async def test_endpoint():
 
 
 if __name__ == "__main__":
+    import os
+    _p = int(os.environ.get("ULTIMATE_MESSAGE_INTEGRATION_PORT", os.environ.get("PORT", "8002")))
     print("🚀 궁극적 메시지 통합 시스템 시작 중...")
     uvicorn.run(
         "ultimate_message_integration:app",
         host="0.0.0.0",
-        port=8002,
+        port=_p,
         reload=False,
         log_level="info"
     ) 

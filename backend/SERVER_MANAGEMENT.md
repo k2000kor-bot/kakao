@@ -5,7 +5,7 @@
 ### 방법 1: 자동 시작 및 확인 스크립트 (권장)
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 bash start_and_check_server.sh
 ```
 
@@ -19,14 +19,14 @@ bash start_and_check_server.sh
 ### 방법 2: 직접 실행
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 start_simple_integrated_server.py
 ```
 
 ### 방법 3: 백그라운드 실행
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 start_simple_integrated_server.py > /tmp/integrated_server.log 2>&1 &
 echo $! > /tmp/integrated_server.pid
 ```
@@ -36,7 +36,7 @@ echo $! > /tmp/integrated_server.pid
 ### 상태 확인 스크립트
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 bash server_status.sh
 ```
 
@@ -44,10 +44,10 @@ bash server_status.sh
 
 ```bash
 # 헬스 체크
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 
 # 시스템 상태
-curl http://localhost:8000/api/integrated/status
+curl http://localhost:5002/api/integrated/status
 
 # 프로세스 확인
 lsof -ti:8000
@@ -59,7 +59,7 @@ ps aux | grep start_simple_integrated_server
 ### 중지 스크립트
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 bash stop_server.sh
 ```
 
@@ -76,9 +76,9 @@ kill $(cat /tmp/integrated_server.pid)
 ## 📝 서버 정보
 
 - **포트**: 8000
-- **헬스 체크**: <http://localhost:8000/api/integrated/health>
-- **API 문서**: <http://localhost:8000/api/docs>
-- **통합 API**: <http://localhost:8000/api/integrated>
+- **헬스 체크**: <http://localhost:5002/api/integrated/health>
+- **API 문서**: <http://localhost:5002/api/docs>
+- **통합 API**: <http://localhost:5002/api/integrated>
 - **로그 파일**: /tmp/integrated_server.log (백그라운드 실행 시)
 - **PID 파일**: /tmp/integrated_server.pid (백그라운드 실행 시)
 
@@ -115,7 +115,7 @@ kill $(cat /tmp/integrated_server.pid)
 2. 헬스 체크:
 
    ```bash
-   curl http://localhost:8000/api/integrated/health
+   curl http://localhost:5002/api/integrated/health
    ```
 
 3. 서버 재시작:

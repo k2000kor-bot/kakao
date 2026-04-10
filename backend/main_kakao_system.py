@@ -5,6 +5,7 @@
 - 실시간 대화 처리 및 현실적인 응답 생성
 """
 
+import os
 import asyncio
 import json
 import logging
@@ -304,7 +305,7 @@ async def test_system():
 @app.post("/api/v1/summarize")
 async def generate_summary(request: Dict[str, Any]):
     """대화 요약 생성"""
-    chat_file = request.get("chat_file", "../chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt")
+    chat_file = request.get("chat_file", "../chat_rooms/sample_room/sample_export.txt")
     start_date = request.get("start_date")
     end_date = request.get("end_date")
     start_datetime = request.get("start_datetime")
@@ -362,11 +363,11 @@ async def batch_process(requests: List[MainKakaoRequest]):
     }
 
 if __name__ == "__main__":
-    # 서버 시작
+    _p = int(os.environ.get("MAIN_KAKAO_SYSTEM_PORT", os.environ.get("PORT", "8004")))
     uvicorn.run(
         "main_kakao_system:app",
         host="0.0.0.0",
-        port=8004,
+        port=_p,
         reload=True,
         log_level="info"
     ) 

@@ -1,0 +1,24 @@
+/** AI 엔진 모니터 — CORBU.AI Brainwave 테마 (모달) */
+.aem-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-backdrop);
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.aem-panel { background: var(--bg-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-modal); width: 100%; max-width: 896px; height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+.aem-header { display: flex; align-items: center; justify-content: space-between; padding: var(--spacing-lg); border-bottom: var(--border-width) solid var(--border-color); }
+.aem-tabs { display: flex; border-bottom: var(--border-width) solid var(--border-color); }
+.aem-tab { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md) var(--spacing-lg); border-bottom: 2px solid transparent; font-size: var(--font-size-sm); font-weight: 500; background: none; border-top: none; border-left: none; border-right: none; color: var(--text-secondary); cursor: pointer; transition: color var(--transition-base), border-color var(--transition-base); }
+.aem-tab:hover { color: var(--text-primary); }
+.aem-tab.active { border-bottom-color: var(--accent-info); color: var(--accent-info); }
+.aem-stat-card { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--spacing-md); }
+.aem-metric-value { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); }

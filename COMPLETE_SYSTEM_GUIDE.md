@@ -10,7 +10,7 @@
 - ✅ 포트 8000에서 실행 중
 - ✅ 통합 API 엔드포인트: `/api/integrated`
 - ✅ 헬스 체크: healthy
-- ✅ API 문서: http://localhost:8000/api/docs
+- ✅ API 문서: http://localhost:5002/api/docs
 
 ### 프론트엔드
 - ✅ 포트 3000에서 실행 중
@@ -23,7 +23,7 @@
 ### 1. 백엔드 서버 시작
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 
 # 서버 상태 확인
 bash server_status.sh
@@ -35,7 +35,7 @@ bash start_and_check_server.sh
 ### 2. 프론트엔드 시작
 
 ```bash
-cd /Users/aD/kakao-frontend/frontend
+cd /path/to/kakao-frontend/kakao-frontend/frontend
 
 # 환경 변수 확인
 cat .env
@@ -51,15 +51,15 @@ npm start
 ### 브라우저에서 접속
 
 1. **프론트엔드**: http://localhost:3000
-   - 🤖 CORBU AI 채팅 탭
+   - 🤖 CORBU.AI 대화 탭
    - 🚀 통합 API 탭
    - 테스트 탭
 
-2. **백엔드 API 문서**: http://localhost:8000/api/docs
+2. **백엔드 API 문서**: http://localhost:5002/api/docs
    - Swagger UI로 모든 API 확인
    - 직접 테스트 가능
 
-3. **헬스 체크**: http://localhost:8000/api/integrated/health
+3. **헬스 체크**: http://localhost:5002/api/integrated/health
 
 ### 통합 API 사용
 
@@ -151,7 +151,7 @@ kakao-frontend/
     ├── src/
     │   ├── App.tsx                    # 메인 앱 (통합 API 탭 포함)
     │   ├── components/
-    │   │   ├── SimpleChatInterface.tsx # 채팅 인터페이스
+    │   │   ├── SimpleChatInterface.tsx # 대화 인터페이스
     │   │   └── IntegratedAPIDemo.tsx # 통합 API 데모
     │   ├── hooks/
     │   │   └── useIntegratedAPI.ts   # React Hook
@@ -168,12 +168,12 @@ kakao-frontend/
    ```bash
    cd frontend
    cat .env
-   # REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated
+   # REACT_APP_INTEGRATED_API_URL=http://localhost:5002/api/integrated
    ```
 
 2. **백엔드 서버 확인**:
    ```bash
-   curl http://localhost:8000/api/integrated/health
+   curl http://localhost:5002/api/integrated/health
    ```
 
 3. **CORS 확인**:
@@ -216,10 +216,10 @@ tail -f /tmp/integrated_server.log
 
 ```bash
 # 헬스 체크
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 
 # 메시지 분석 테스트
-curl -X POST http://localhost:8000/api/integrated/analyze \
+curl -X POST http://localhost:5002/api/integrated/analyze \
   -H "Content-Type: application/json" \
   -d '{"message": "안녕하세요!"}'
 ```

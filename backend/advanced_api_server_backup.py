@@ -39,7 +39,9 @@ from conversation_learner import ConversationLearner
 # 정치인 스타일 API
 from political_style_api import political_router, set_integrated_system
 
-# 개포우성7차 분석기
+from cors_config import get_cors_allow_origins
+
+# 샘플 프로젝트 분석기
 from gaeposung_analyzer import gaeposung_analyzer
 from gaeposung_project_api import gaeposung_project_api
 
@@ -386,7 +388,7 @@ app = FastAPI(title="고도화된 카카오 AI API 서버 v7.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -416,7 +418,7 @@ def init_database():
     conn = sqlite3.connect('chat_system.db')
     cursor = conn.cursor()
     
-    # 채팅방 테이블
+    # 대화방 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS chat_rooms (
             id TEXT PRIMARY KEY,
@@ -525,7 +527,7 @@ def classify_media_files(chat_room_path):
         'images': ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
         'videos': ['.mp4', '.avi', '.mov', '.mkv'],
         'audios': ['.mp3', '.wav', '.m4a'],
-        'documents': ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx']
+        'documents': ['.pdf', '.doc', '.docx', '.txt', '.md', '.csv', '.xls', '.xlsx']
     }
     
     for root, dirs, files in os.walk(media_path):
@@ -566,12 +568,12 @@ def classify_media_files(chat_room_path):
     
     return media_files
 
-# 채팅방 동기화
+# 대화방 동기화
 def sync_chat_rooms():
-    """채팅방 자동 동기화"""
+    """대화방 자동 동기화"""
     chat_rooms_path = 'chat_rooms'
     if not os.path.exists(chat_rooms_path):
-        logger.warning(f"채팅방 폴더가 없습니다: {chat_rooms_path}")
+        logger.warning(f"대화방 폴더가 없습니다: {chat_rooms_path}")
         return []
     
     conn = sqlite3.connect('chat_system.db')
@@ -579,23 +581,23 @@ def sync_chat_rooms():
     
     synced_rooms = []
     
-    # 모든 채팅방 폴더 스캔
+    # 모든 대화방 폴더 스캔
     for room_folder in os.listdir(chat_rooms_path):
         room_path = os.path.join(chat_rooms_path, room_folder)
         if not os.path.isdir(room_path):
             continue
         
-        # 채팅방 ID 생성
+        # 대화방 ID 생성
         room_id = room_folder
         
-        # 채팅 파일 찾기 (개선된 검색)
+        # 대화 파일 찾기 (개선된 검색)
         chat_files = []
         for file in os.listdir(room_path):
             if file.endswith('.txt'):
                 chat_files.append(os.path.join(room_path, file))
         
         if not chat_files:
-            logger.warning(f"채팅 파일이 없습니다: {room_path}")
+            logger.warning(f"대화 파일이 없습니다: {room_path}")
             continue
         
         # 가장 최근 파일 사용
@@ -614,7 +616,7 @@ def sync_chat_rooms():
         existing_room = cursor.fetchone()
         
         if existing_room:
-            # 기존 채팅방 업데이트 확인
+            # 기존 대화방 업데이트 확인
             last_update = existing_room[3]
             if last_update and os.path.getmtime(latest_chat_file) <= datetime.fromisoformat(last_update).timestamp():
                 # 변경사항 없음
@@ -632,7 +634,7 @@ def sync_chat_rooms():
                 })
                 continue
         
-        # 새로운 채팅방 또는 업데이트
+        # 새로운 대화방 또는 업데이트
         messages, participants = parse_kakao_chat(latest_chat_file)
         
         # 미디어 파일 분류
@@ -642,7 +644,7 @@ def sync_chat_rooms():
         now = datetime.now().isoformat()
         
         if existing_room:
-            # 기존 채팅방 업데이트
+            # 기존 대화방 업데이트
             cursor.execute('''
                 UPDATE chat_rooms 
                 SET message_count = ?, last_activity = ?, updated_at = ?
@@ -658,7 +660,7 @@ def sync_chat_rooms():
                 VALUES (?, ?, ?, ?)
             ''', ('update', room_id, f'Updated {len(messages)} messages', now))
         else:
-            # 새로운 채팅방 추가
+            # 새로운 대화방 추가
             cursor.execute('''
                 INSERT INTO chat_rooms (id, name, message_count, last_activity, participants, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -697,7 +699,7 @@ def sync_chat_rooms():
             'participants': participants
         })
         
-        logger.info(f"채팅방 동기화 완료: {room_id} ({len(messages)}개 메시지, {len(media_files)}개 미디어)")
+        logger.info(f"대화방 동기화 완료: {room_id} ({len(messages)}개 메시지, {len(media_files)}개 미디어)")
     
     conn.commit()
     conn.close()
@@ -706,7 +708,7 @@ def sync_chat_rooms():
 
 
 def auto_detect_new_chat_rooms():
-    """새로운 채팅방 자동 감지"""
+    """새로운 대화방 자동 감지"""
     chat_rooms_path = 'chat_rooms'
     if not os.path.exists(chat_rooms_path):
         return []
@@ -714,7 +716,7 @@ def auto_detect_new_chat_rooms():
     conn = sqlite3.connect('chat_system.db')
     cursor = conn.cursor()
     
-    # 기존 채팅방 목록 조회
+    # 기존 대화방 목록 조회
     cursor.execute('SELECT id FROM chat_rooms')
     existing_rooms = {row[0] for row in cursor.fetchall()}
     
@@ -726,7 +728,7 @@ def auto_detect_new_chat_rooms():
             continue
         
         if room_folder not in existing_rooms:
-            # 새로운 채팅방 발견
+            # 새로운 대화방 발견
             chat_files = [f for f in os.listdir(room_path) if f.endswith('.txt')]
             if chat_files:
                 new_rooms.append({
@@ -735,7 +737,7 @@ def auto_detect_new_chat_rooms():
                     'path': room_path,
                     'chat_files': chat_files
                 })
-                logger.info(f"새로운 채팅방 발견: {room_folder}")
+                logger.info(f"새로운 대화방 발견: {room_folder}")
     
     conn.close()
     return new_rooms
@@ -851,7 +853,7 @@ async def get_status():
 @app.get("/api/v7/chat-rooms")
 @cache_result(ttl=300)  # 5분 캐시
 async def get_chat_rooms():
-    """채팅방 목록 조회"""
+    """대화방 목록 조회"""
     try:
         # 동기화 실행
         synced_rooms = sync_chat_rooms()
@@ -862,7 +864,7 @@ async def get_chat_rooms():
             "sync_time": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"채팅방 조회 오류: {e}")
+        logger.error(f"대화방 조회 오류: {e}")
         return {
             "success": False,
             "error": str(e),
@@ -872,17 +874,17 @@ async def get_chat_rooms():
 @app.get("/api/v7/chat-messages/{chat_room_id}")
 @cache_result(ttl=180)  # 3분 캐시
 async def get_chat_messages(chat_room_id: str):
-    """채팅 메시지 조회"""
+    """대화 메시지 조회"""
     try:
         logger.info(f"메시지 조회 시작: {chat_room_id}")
         
-        # 채팅방 ID를 실제 폴더명으로 매핑 (URL 디코딩 포함)
+        # 대화방 ID를 실제 폴더명으로 매핑 (URL 디코딩 포함)
         import urllib.parse
         decoded_room_id = urllib.parse.unquote(chat_room_id)
         
-        # 동적 채팅방 매핑 시스템
+        # 동적 대화방 매핑 시스템
         def find_chat_room_file(room_id: str) -> tuple[str, str]:
-            """채팅방 파일을 동적으로 찾는 함수"""
+            """대화방 파일을 동적으로 찾는 함수"""
             chat_rooms_path = "../chat_rooms"
             
             # 1. 정확한 매칭 시도
@@ -895,7 +897,7 @@ async def get_chat_messages(chat_room_id: str):
             if os.path.exists(room_folder) and os.path.isdir(room_folder):
                 txt_files = [f for f in os.listdir(room_folder) if f.endswith('.txt')]
                 if txt_files:
-                    # 가장 큰 파일 선택 (메인 채팅 파일)
+                    # 가장 큰 파일 선택 (메인 대화 파일)
                     largest_file = max(txt_files, key=lambda f: os.path.getsize(os.path.join(room_folder, f)))
                     return room_id, os.path.join(room_folder, largest_file)
             
@@ -917,8 +919,8 @@ async def get_chat_messages(chat_room_id: str):
         
         # 기존 매핑 (하위 호환성)
         room_mapping = {
-            "[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화": "[인증]행복한소유☆개포우성7차",
-            "[인증]행복한소유☆개포우성|차 110 님과 카카오톡 대화": "[인증]행복한소유☆개포우성7차",
+            "sample_chat_room 110 님과 카카오톡 대화": "sample_chat_room",
+            "[데모] 샘플 대화보내기 110 님과 카카오톡 대화": "sample_chat_room",
             "테스트 카카오톡 대화 파일 님과 카카오톡 대화": "테스트 카카오톡 대화 파일"
         }
         
@@ -934,18 +936,18 @@ async def get_chat_messages(chat_room_id: str):
                 chat_file_path = found_path
                 logger.info(f"동적 매핑 성공: {decoded_room_id} -> {actual_room_name}")
             else:
-                logger.error(f"채팅 파일을 찾을 수 없습니다: {decoded_room_id}")
+                logger.error(f"대화 파일을 찾을 수 없습니다: {decoded_room_id}")
                 return {
                     "success": False,
-                    "error": f"채팅 파일을 찾을 수 없습니다: {decoded_room_id}",
+                    "error": f"대화 파일을 찾을 수 없습니다: {decoded_room_id}",
                     "messages": []
                 }
         
         if not os.path.exists(chat_file_path):
-            logger.error(f"채팅 파일을 찾을 수 없습니다: {chat_file_path}")
+            logger.error(f"대화 파일을 찾을 수 없습니다: {chat_file_path}")
             return {
                 "success": False,
-                "error": f"채팅 파일을 찾을 수 없습니다: {chat_file_path}",
+                "error": f"대화 파일을 찾을 수 없습니다: {chat_file_path}",
                 "messages": []
             }
         
@@ -964,7 +966,7 @@ async def get_chat_messages(chat_room_id: str):
                 'is_duplicate': msg.is_duplicate
             })
         
-        logger.info(f"채팅방 {chat_room_id}의 메시지 수: {len(messages)}")
+        logger.info(f"대화방 {chat_room_id}의 메시지 수: {len(messages)}")
         
         return {
             "success": True,
@@ -1092,9 +1094,9 @@ async def get_sync_status():
 
 @app.post("/api/v7/auto-sync")
 async def auto_sync_chat_rooms():
-    """자동 채팅방 동기화"""
+    """자동 대화방 동기화"""
     try:
-        # 새로운 채팅방 감지
+        # 새로운 대화방 감지
         new_rooms = auto_detect_new_chat_rooms()
         
         # 동기화 실행
@@ -1117,7 +1119,7 @@ async def auto_sync_chat_rooms():
 
 @app.get("/api/v7/chat-rooms/discover")
 async def discover_chat_rooms():
-    """새로운 채팅방 탐지"""
+    """새로운 대화방 탐지"""
     try:
         new_rooms = auto_detect_new_chat_rooms()
         
@@ -1128,7 +1130,7 @@ async def discover_chat_rooms():
             "discovery_time": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"채팅방 탐지 오류: {e}")
+        logger.error(f"대화방 탐지 오류: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -1137,7 +1139,7 @@ async def discover_chat_rooms():
 
 @app.get("/api/v7/chat-rooms/{room_id}/info")
 async def get_chat_room_info(room_id: str):
-    """채팅방 상세 정보 조회"""
+    """대화방 상세 정보 조회"""
     try:
         import urllib.parse
         decoded_room_id = urllib.parse.unquote(room_id)
@@ -1155,7 +1157,7 @@ async def get_chat_room_info(room_id: str):
         if not room_data:
             return {
                 "success": False,
-                "error": f"채팅방을 찾을 수 없습니다: {decoded_room_id}"
+                "error": f"대화방을 찾을 수 없습니다: {decoded_room_id}"
             }
         
         # 미디어 파일 수 조회
@@ -1194,7 +1196,7 @@ async def get_chat_room_info(room_id: str):
             }
         }
     except Exception as e:
-        logger.error(f"채팅방 정보 조회 오류: {e}")
+        logger.error(f"대화방 정보 조회 오류: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -1635,9 +1637,9 @@ async def analyze_conversation_data_api(request: dict):
 
 @app.get("/api/v7/conversation-statistics/{chat_room_id}")
 async def get_conversation_statistics(chat_room_id: str):
-    """특정 채팅방의 통계 정보 조회"""
+    """특정 대화방의 통계 정보 조회"""
     try:
-        # 채팅방 메시지 조회
+        # 대화방 메시지 조회
         conn = sqlite3.connect('chat_system.db')
         cursor = conn.cursor()
         
@@ -1677,7 +1679,7 @@ async def get_conversation_statistics(chat_room_id: str):
         }
         
     except Exception as e:
-        logger.error(f"채팅방 통계 조회 실패: {str(e)}")
+        logger.error(f"대화방 통계 조회 실패: {str(e)}")
         return {
             "success": False,
             "error": str(e)
@@ -2210,7 +2212,7 @@ app = FastAPI(title="고도화된 카카오 AI API 서버 v7.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -2240,7 +2242,7 @@ def init_database():
     conn = sqlite3.connect('chat_system.db')
     cursor = conn.cursor()
     
-    # 채팅방 테이블
+    # 대화방 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS chat_rooms (
             id TEXT PRIMARY KEY,
@@ -2349,7 +2351,7 @@ def classify_media_files(chat_room_path):
         'images': ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
         'videos': ['.mp4', '.avi', '.mov', '.mkv'],
         'audios': ['.mp3', '.wav', '.m4a'],
-        'documents': ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx']
+        'documents': ['.pdf', '.doc', '.docx', '.txt', '.md', '.csv', '.xls', '.xlsx']
     }
     
     for root, dirs, files in os.walk(media_path):
@@ -2390,12 +2392,12 @@ def classify_media_files(chat_room_path):
     
     return media_files
 
-# 채팅방 동기화
+# 대화방 동기화
 def sync_chat_rooms():
-    """채팅방 자동 동기화"""
+    """대화방 자동 동기화"""
     chat_rooms_path = 'chat_rooms'
     if not os.path.exists(chat_rooms_path):
-        logger.warning(f"채팅방 폴더가 없습니다: {chat_rooms_path}")
+        logger.warning(f"대화방 폴더가 없습니다: {chat_rooms_path}")
         return []
     
     conn = sqlite3.connect('chat_system.db')
@@ -2403,23 +2405,23 @@ def sync_chat_rooms():
     
     synced_rooms = []
     
-    # 모든 채팅방 폴더 스캔
+    # 모든 대화방 폴더 스캔
     for room_folder in os.listdir(chat_rooms_path):
         room_path = os.path.join(chat_rooms_path, room_folder)
         if not os.path.isdir(room_path):
             continue
         
-        # 채팅방 ID 생성
+        # 대화방 ID 생성
         room_id = room_folder
         
-        # 채팅 파일 찾기 (개선된 검색)
+        # 대화 파일 찾기 (개선된 검색)
         chat_files = []
         for file in os.listdir(room_path):
             if file.endswith('.txt'):
                 chat_files.append(os.path.join(room_path, file))
         
         if not chat_files:
-            logger.warning(f"채팅 파일이 없습니다: {room_path}")
+            logger.warning(f"대화 파일이 없습니다: {room_path}")
             continue
         
         # 가장 최근 파일 사용
@@ -2438,7 +2440,7 @@ def sync_chat_rooms():
         existing_room = cursor.fetchone()
         
         if existing_room:
-            # 기존 채팅방 업데이트 확인
+            # 기존 대화방 업데이트 확인
             last_update = existing_room[3]
             if last_update and os.path.getmtime(latest_chat_file) <= datetime.fromisoformat(last_update).timestamp():
                 # 변경사항 없음
@@ -2456,7 +2458,7 @@ def sync_chat_rooms():
                 })
                 continue
         
-        # 새로운 채팅방 또는 업데이트
+        # 새로운 대화방 또는 업데이트
         messages, participants = parse_kakao_chat(latest_chat_file)
         
         # 미디어 파일 분류
@@ -2466,7 +2468,7 @@ def sync_chat_rooms():
         now = datetime.now().isoformat()
         
         if existing_room:
-            # 기존 채팅방 업데이트
+            # 기존 대화방 업데이트
             cursor.execute('''
                 UPDATE chat_rooms 
                 SET message_count = ?, last_activity = ?, updated_at = ?
@@ -2482,7 +2484,7 @@ def sync_chat_rooms():
                 VALUES (?, ?, ?, ?)
             ''', ('update', room_id, f'Updated {len(messages)} messages', now))
         else:
-            # 새로운 채팅방 추가
+            # 새로운 대화방 추가
             cursor.execute('''
                 INSERT INTO chat_rooms (id, name, message_count, last_activity, participants, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -2521,7 +2523,7 @@ def sync_chat_rooms():
             'participants': participants
         })
         
-        logger.info(f"채팅방 동기화 완료: {room_id} ({len(messages)}개 메시지, {len(media_files)}개 미디어)")
+        logger.info(f"대화방 동기화 완료: {room_id} ({len(messages)}개 메시지, {len(media_files)}개 미디어)")
     
     conn.commit()
     conn.close()
@@ -2530,7 +2532,7 @@ def sync_chat_rooms():
 
 
 def auto_detect_new_chat_rooms():
-    """새로운 채팅방 자동 감지"""
+    """새로운 대화방 자동 감지"""
     chat_rooms_path = 'chat_rooms'
     if not os.path.exists(chat_rooms_path):
         return []
@@ -2538,7 +2540,7 @@ def auto_detect_new_chat_rooms():
     conn = sqlite3.connect('chat_system.db')
     cursor = conn.cursor()
     
-    # 기존 채팅방 목록 조회
+    # 기존 대화방 목록 조회
     cursor.execute('SELECT id FROM chat_rooms')
     existing_rooms = {row[0] for row in cursor.fetchall()}
     
@@ -2550,7 +2552,7 @@ def auto_detect_new_chat_rooms():
             continue
         
         if room_folder not in existing_rooms:
-            # 새로운 채팅방 발견
+            # 새로운 대화방 발견
             chat_files = [f for f in os.listdir(room_path) if f.endswith('.txt')]
             if chat_files:
                 new_rooms.append({
@@ -2559,7 +2561,7 @@ def auto_detect_new_chat_rooms():
                     'path': room_path,
                     'chat_files': chat_files
                 })
-                logger.info(f"새로운 채팅방 발견: {room_folder}")
+                logger.info(f"새로운 대화방 발견: {room_folder}")
     
     conn.close()
     return new_rooms
@@ -2675,7 +2677,7 @@ async def get_status():
 @app.get("/api/v7/chat-rooms")
 @cache_result(ttl=300)  # 5분 캐시
 async def get_chat_rooms():
-    """채팅방 목록 조회"""
+    """대화방 목록 조회"""
     try:
         # 동기화 실행
         synced_rooms = sync_chat_rooms()
@@ -2686,7 +2688,7 @@ async def get_chat_rooms():
             "sync_time": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"채팅방 조회 오류: {e}")
+        logger.error(f"대화방 조회 오류: {e}")
         return {
             "success": False,
             "error": str(e),
@@ -2696,17 +2698,17 @@ async def get_chat_rooms():
 @app.get("/api/v7/chat-messages/{chat_room_id}")
 @cache_result(ttl=180)  # 3분 캐시
 async def get_chat_messages(chat_room_id: str):
-    """채팅 메시지 조회"""
+    """대화 메시지 조회"""
     try:
         logger.info(f"메시지 조회 시작: {chat_room_id}")
         
-        # 채팅방 ID를 실제 폴더명으로 매핑 (URL 디코딩 포함)
+        # 대화방 ID를 실제 폴더명으로 매핑 (URL 디코딩 포함)
         import urllib.parse
         decoded_room_id = urllib.parse.unquote(chat_room_id)
         
-        # 동적 채팅방 매핑 시스템
+        # 동적 대화방 매핑 시스템
         def find_chat_room_file(room_id: str) -> tuple[str, str]:
-            """채팅방 파일을 동적으로 찾는 함수"""
+            """대화방 파일을 동적으로 찾는 함수"""
             chat_rooms_path = "../chat_rooms"
             
             # 1. 정확한 매칭 시도
@@ -2719,7 +2721,7 @@ async def get_chat_messages(chat_room_id: str):
             if os.path.exists(room_folder) and os.path.isdir(room_folder):
                 txt_files = [f for f in os.listdir(room_folder) if f.endswith('.txt')]
                 if txt_files:
-                    # 가장 큰 파일 선택 (메인 채팅 파일)
+                    # 가장 큰 파일 선택 (메인 대화 파일)
                     largest_file = max(txt_files, key=lambda f: os.path.getsize(os.path.join(room_folder, f)))
                     return room_id, os.path.join(room_folder, largest_file)
             
@@ -2741,8 +2743,8 @@ async def get_chat_messages(chat_room_id: str):
         
         # 기존 매핑 (하위 호환성)
         room_mapping = {
-            "[인증]행복한소유☆개포우성7차 110 님과 카카오톡 대화": "[인증]행복한소유☆개포우성7차",
-            "[인증]행복한소유☆개포우성|차 110 님과 카카오톡 대화": "[인증]행복한소유☆개포우성7차",
+            "sample_chat_room 110 님과 카카오톡 대화": "sample_chat_room",
+            "[데모] 샘플 대화보내기 110 님과 카카오톡 대화": "sample_chat_room",
             "테스트 카카오톡 대화 파일 님과 카카오톡 대화": "테스트 카카오톡 대화 파일"
         }
         
@@ -2758,18 +2760,18 @@ async def get_chat_messages(chat_room_id: str):
                 chat_file_path = found_path
                 logger.info(f"동적 매핑 성공: {decoded_room_id} -> {actual_room_name}")
             else:
-                logger.error(f"채팅 파일을 찾을 수 없습니다: {decoded_room_id}")
+                logger.error(f"대화 파일을 찾을 수 없습니다: {decoded_room_id}")
                 return {
                     "success": False,
-                    "error": f"채팅 파일을 찾을 수 없습니다: {decoded_room_id}",
+                    "error": f"대화 파일을 찾을 수 없습니다: {decoded_room_id}",
                     "messages": []
                 }
         
         if not os.path.exists(chat_file_path):
-            logger.error(f"채팅 파일을 찾을 수 없습니다: {chat_file_path}")
+            logger.error(f"대화 파일을 찾을 수 없습니다: {chat_file_path}")
             return {
                 "success": False,
-                "error": f"채팅 파일을 찾을 수 없습니다: {chat_file_path}",
+                "error": f"대화 파일을 찾을 수 없습니다: {chat_file_path}",
                 "messages": []
             }
         
@@ -2788,7 +2790,7 @@ async def get_chat_messages(chat_room_id: str):
                 'is_duplicate': msg.is_duplicate
             })
         
-        logger.info(f"채팅방 {chat_room_id}의 메시지 수: {len(messages)}")
+        logger.info(f"대화방 {chat_room_id}의 메시지 수: {len(messages)}")
         
         return {
             "success": True,
@@ -2916,9 +2918,9 @@ async def get_sync_status():
 
 @app.post("/api/v7/auto-sync")
 async def auto_sync_chat_rooms():
-    """자동 채팅방 동기화"""
+    """자동 대화방 동기화"""
     try:
-        # 새로운 채팅방 감지
+        # 새로운 대화방 감지
         new_rooms = auto_detect_new_chat_rooms()
         
         # 동기화 실행
@@ -2941,7 +2943,7 @@ async def auto_sync_chat_rooms():
 
 @app.get("/api/v7/chat-rooms/discover")
 async def discover_chat_rooms():
-    """새로운 채팅방 탐지"""
+    """새로운 대화방 탐지"""
     try:
         new_rooms = auto_detect_new_chat_rooms()
         
@@ -2952,7 +2954,7 @@ async def discover_chat_rooms():
             "discovery_time": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"채팅방 탐지 오류: {e}")
+        logger.error(f"대화방 탐지 오류: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -2961,7 +2963,7 @@ async def discover_chat_rooms():
 
 @app.get("/api/v7/chat-rooms/{room_id}/info")
 async def get_chat_room_info(room_id: str):
-    """채팅방 상세 정보 조회"""
+    """대화방 상세 정보 조회"""
     try:
         import urllib.parse
         decoded_room_id = urllib.parse.unquote(room_id)
@@ -2979,7 +2981,7 @@ async def get_chat_room_info(room_id: str):
         if not room_data:
             return {
                 "success": False,
-                "error": f"채팅방을 찾을 수 없습니다: {decoded_room_id}"
+                "error": f"대화방을 찾을 수 없습니다: {decoded_room_id}"
             }
         
         # 미디어 파일 수 조회
@@ -3018,7 +3020,7 @@ async def get_chat_room_info(room_id: str):
             }
         }
     except Exception as e:
-        logger.error(f"채팅방 정보 조회 오류: {e}")
+        logger.error(f"대화방 정보 조회 오류: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -3459,9 +3461,9 @@ async def analyze_conversation_data_api(request: dict):
 
 @app.get("/api/v7/conversation-statistics/{chat_room_id}")
 async def get_conversation_statistics(chat_room_id: str):
-    """특정 채팅방의 통계 정보 조회"""
+    """특정 대화방의 통계 정보 조회"""
     try:
-        # 채팅방 메시지 조회
+        # 대화방 메시지 조회
         conn = sqlite3.connect('chat_system.db')
         cursor = conn.cursor()
         
@@ -3501,7 +3503,7 @@ async def get_conversation_statistics(chat_room_id: str):
         }
         
     except Exception as e:
-        logger.error(f"채팅방 통계 조회 실패: {str(e)}")
+        logger.error(f"대화방 통계 조회 실패: {str(e)}")
         return {
             "success": False,
             "error": str(e)
@@ -4116,7 +4118,7 @@ async def analyze_conversation_enhanced(request: Dict[str, Any]):
         if not chat_file_path:
             return {
                 "success": False,
-                "error": "채팅 파일 경로가 필요합니다."
+                "error": "대화 파일 경로가 필요합니다."
             }
         
         # 향상된 대화 분석 실행
@@ -4253,7 +4255,7 @@ async def get_conversation_insights():
 # 파일 업로드 엔드포인트
 @app.post("/api/v7/upload-chat")
 async def upload_chat_file(file: UploadFile = File(...)):
-    """카카오톡 채팅 파일 업로드"""
+    """카카오톡 대화 파일 업로드"""
     try:
         if not file.filename.endswith('.txt'):
             return {
@@ -4269,14 +4271,14 @@ async def upload_chat_file(file: UploadFile = File(...)):
         lines = content_str.split('\n')
         room_name = None
         for line in lines[:10]:  # 첫 10줄에서 방 이름 찾기
-            if "님과 카카오톡 대화" in line or "님과의 채팅" in line:
+            if "님과 카카오톡 대화" in line or "님과의 대화" in line:
                 room_name = line.strip()
                 break
         
         if not room_name:
             room_name = file.filename.replace('.txt', '')
         
-        # 채팅방 디렉토리 생성
+        # 대화방 디렉토리 생성
         import os
         room_dir = f"chat_rooms/{room_name}"
         os.makedirs(room_dir, exist_ok=True)
@@ -4371,7 +4373,7 @@ async def export_messages(request: dict):
             # 텍스트 형식으로 내보내기
             lines = [
                 f"카카오톡 AI 생성 메시지 내보내기",
-                f"채팅방: {room_name}",
+                f"대화방: {room_name}",
                 f"내보낸 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                 f"총 메시지 수: {len(messages)}",
                 "=" * 50,
@@ -6604,7 +6606,7 @@ class ProjectKnowledgeManager:
                 "owner": project_data.get("owner", "system"),
                 "status": "active",
                 
-                # 채팅방 관리
+                # 대화방 관리
                 "chat_rooms": {},
                 
                 # 지식 베이스
@@ -6673,7 +6675,7 @@ class ProjectKnowledgeManager:
             return {"success": False, "error": str(e)}
     
     def add_chat_room(self, project_id: str, chat_data: dict) -> dict:
-        """프로젝트에 채팅방 추가"""
+        """프로젝트에 대화방 추가"""
         try:
             if project_id not in self.projects:
                 return {"success": False, "error": "프로젝트를 찾을 수 없습니다"}
@@ -6683,7 +6685,7 @@ class ProjectKnowledgeManager:
             
             chat_room = {
                 "id": chat_room_id,
-                "name": chat_data.get("name", "새 채팅방"),
+                "name": chat_data.get("name", "새 대화방"),
                 "description": chat_data.get("description", ""),
                 "file_path": chat_data.get("file_path", ""),
                 "participants": chat_data.get("participants", []),
@@ -6707,11 +6709,11 @@ class ProjectKnowledgeManager:
             return {
                 "success": True,
                 "chat_room": chat_room,
-                "message": "채팅방이 프로젝트에 추가되었습니다"
+                "message": "대화방이 프로젝트에 추가되었습니다"
             }
             
         except Exception as e:
-            logger.error(f"채팅방 추가 오류: {e}")
+            logger.error(f"대화방 추가 오류: {e}")
             return {"success": False, "error": str(e)}
     
     def add_knowledge_document(self, project_id: str, doc_data: dict) -> dict:
@@ -6862,7 +6864,7 @@ class ProjectKnowledgeManager:
             return {"success": False, "error": str(e)}
     
     def _extract_knowledge_from_chat(self, project_id: str, chat_room_id: str, chat_data: dict):
-        """채팅에서 자동 지식 추출"""
+        """대화에서 자동 지식 추출"""
         # 간단한 키워드 기반 지식 추출 (실제로는 더 정교한 NLP 사용)
         keywords = {
             "부동산": ["아파트", "시세", "매매", "전세", "분양"],
@@ -7065,12 +7067,12 @@ async def get_project(project_id: str):
 
 @app.post("/api/v7/projects/{project_id}/chat-rooms")
 async def add_chat_room_to_project(project_id: str, request: dict):
-    """프로젝트에 채팅방 추가"""
+    """프로젝트에 대화방 추가"""
     try:
         result = project_manager.add_chat_room(project_id, request)
         return result
     except Exception as e:
-        logger.error(f"채팅방 추가 오류: {e}")
+        logger.error(f"대화방 추가 오류: {e}")
         return {"success": False, "error": str(e)}
 
 @app.post("/api/v7/projects/{project_id}/documents")
@@ -7083,11 +7085,11 @@ async def add_document_to_project(project_id: str, request: dict):
         logger.error(f"문서 추가 오류: {e}")
         return {"success": False, "error": str(e)}
 
-# 개포우성7차 특화 분석 API 엔드포인트들
+# 샘플 프로젝트 특화 분석 API 엔드포인트들
 
 @app.get("/api/v7/gaeposung/analysis/{room_id}")
 async def get_gaeposung_analysis(room_id: str):
-    """개포우성7차 프로젝트 분석"""
+    """샘플 프로젝트 프로젝트 분석"""
     try:
         analysis_result = gaeposung_analyzer.analyze_project(room_id)
         return {
@@ -7096,12 +7098,12 @@ async def get_gaeposung_analysis(room_id: str):
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"개포우성7차 분석 오류: {e}")
+        logger.error(f"샘플 프로젝트 분석 오류: {e}")
         return {"success": False, "error": str(e)}
 
 @app.get("/api/v7/gaeposung/sentiment/{room_id}")
 async def get_gaeposung_sentiment(room_id: str):
-    """개포우성7차 감정 분석"""
+    """샘플 프로젝트 감정 분석"""
     try:
         analysis_result = gaeposung_analyzer.analyze_project(room_id)
         return {
@@ -7111,12 +7113,12 @@ async def get_gaeposung_sentiment(room_id: str):
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"개포우성7차 감정 분석 오류: {e}")
+        logger.error(f"샘플 프로젝트 감정 분석 오류: {e}")
         return {"success": False, "error": str(e)}
 
 @app.get("/api/v7/gaeposung/speakers/{room_id}")
 async def get_gaeposung_speakers(room_id: str):
-    """개포우성7차 주요 발언자 분석"""
+    """샘플 프로젝트 주요 발언자 분석"""
     try:
         analysis_result = gaeposung_analyzer.analyze_project(room_id)
         return {
@@ -7125,12 +7127,12 @@ async def get_gaeposung_speakers(room_id: str):
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"개포우성7차 발언자 분석 오류: {e}")
+        logger.error(f"샘플 프로젝트 발언자 분석 오류: {e}")
         return {"success": False, "error": str(e)}
 
 @app.get("/api/v7/gaeposung/topics/{room_id}")
 async def get_gaeposung_topics(room_id: str):
-    """개포우성7차 주요 주제 분석"""
+    """샘플 프로젝트 주요 주제 분석"""
     try:
         analysis_result = gaeposung_analyzer.analyze_project(room_id)
         return {
@@ -7139,12 +7141,12 @@ async def get_gaeposung_topics(room_id: str):
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"개포우성7차 주제 분석 오류: {e}")
+        logger.error(f"샘플 프로젝트 주제 분석 오류: {e}")
         return {"success": False, "error": str(e)}
 
 @app.get("/api/v7/gaeposung/timeline/{room_id}")
 async def get_gaeposung_timeline(room_id: str):
-    """개포우성7차 타임라인 분석"""
+    """샘플 프로젝트 타임라인 분석"""
     try:
         analysis_result = gaeposung_analyzer.analyze_project(room_id)
         return {
@@ -7153,10 +7155,10 @@ async def get_gaeposung_timeline(room_id: str):
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"개포우성7차 타임라인 분석 오류: {e}")
+        logger.error(f"샘플 프로젝트 타임라인 분석 오류: {e}")
         return {"success": False, "error": str(e)}
 
-# 개포우성7차 프로젝트 관리 API 엔드포인트들
+# 샘플 프로젝트 프로젝트 관리 API 엔드포인트들
 
 @app.get("/api/v7/gaeposung/project/overview/{room_id}")
 async def get_project_overview(room_id: str):
@@ -7323,10 +7325,16 @@ async def generate_message(request: dict):
 if __name__ == "__main__":
     try:
         import uvicorn
+
+        _bk = int(
+            os.environ.get(
+                "ADVANCED_API_BACKUP_PORT", os.environ.get("PORT", "8000")
+            )
+        )
         print("🚀 고급 API 서버 시작 중...")
-        print("📍 서버 주소: http://localhost:8000")
-        print("📚 API 문서: http://localhost:8000/docs")
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+        print(f"📍 서버 주소: http://localhost:{_bk}")
+        print(f"📚 API 문서: http://localhost:{_bk}/docs")
+        uvicorn.run(app, host="0.0.0.0", port=_bk)
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")
         import traceback

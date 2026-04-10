@@ -1,8 +1,5 @@
 import { EventEmitter } from 'events';
-import { ultraAdvancedAIService } from './ultraAdvancedAIService';
-import ultraAdvancedAIOrchestrationService from './ultraAdvancedAIOrchestrationService';
-import ultraAdvancedAIIntegrationManager from './ultraAdvancedAIIntegrationManager';
-import ultraAdvancedAIPredictiveAnalyticsSystem from './ultraAdvancedAIPredictiveAnalyticsSystem';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface AutomationRule {
     id: string;
@@ -13,12 +10,12 @@ export interface AutomationRule {
     priority: 'low' | 'medium' | 'high' | 'critical';
     conditions: {
         event_type: string;
-        conditions: Record<string, any>;
+        conditions: Record<string, unknown>;
         threshold: number;
     };
     actions: {
         action_type: string;
-        parameters: Record<string, any>;
+        parameters: Record<string, unknown>;
         target_service: string;
     }[];
     created_at: Date;
@@ -61,7 +58,7 @@ export interface AutomationStep {
     id: string;
     name: string;
     type: 'ai_analysis' | 'data_processing' | 'decision' | 'notification' | 'integration' | 'prediction';
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     dependencies: string[];
     timeout: number;
     retry_count: number;
@@ -78,7 +75,7 @@ export interface AutomationExecution {
     total_steps: number;
     execution_time: number;
     error_message?: string;
-    results: Record<string, any>;
+    results: Record<string, unknown>;
 }
 
 export interface AutomationConfig {
@@ -126,7 +123,7 @@ export interface AutomationMetrics {
     };
 }
 
-class UltraAdvancedAIAutomationSystem extends EventEmitter {
+export class UltraAdvancedAIAutomationSystem extends EventEmitter {
     private rules: Map<string, AutomationRule> = new Map();
     private workflows: Map<string, AutomationWorkflow> = new Map();
     private executions: Map<string, AutomationExecution> = new Map();
@@ -181,7 +178,10 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         super();
         this.initializeSystem();
         this._isInitialized = true;
-        console.log('🤖 고도화된 AI 자동화 시스템이 초기화되었습니다.');
+        errorLogger.info('🤖 고도화된 AI 자동화 시스템이 초기화되었습니다.', {
+            component: 'ultraAdvancedAIAutomationSystem',
+            action: 'constructor',
+        });
     }
 
     private async initializeSystem(): Promise<void> {
@@ -367,7 +367,11 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
             this.emit('system_initialized', this.metrics);
 
         } catch (error) {
-            console.error('AI 자동화 시스템 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('AI 자동화 시스템 초기화 실패', err, {
+                component: 'ultraAdvancedAIAutomationSystem',
+                action: 'initializeSystem',
+            });
             this.emit('initialization_error', error);
         }
     }
@@ -384,7 +388,12 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
             this.updateMetrics();
 
         } catch (error) {
-            console.error(`규칙 생성 실패 (${ruleConfig.id}):`, error);
+            const err = toError(error);
+            errorLogger.error(`규칙 생성 실패 (${ruleConfig.id})`, err, {
+                component: 'ultraAdvancedAIAutomationSystem',
+                action: 'createRule',
+                ruleId: ruleConfig.id,
+            });
             this.emit('rule_creation_error', ruleConfig.id, error);
         }
     }
@@ -401,12 +410,24 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
             this.updateMetrics();
 
         } catch (error) {
-            console.error(`워크플로우 생성 실패 (${workflowConfig.id}):`, error);
+            const err = toError(error);
+            errorLogger.error(`워크플로우 생성 실패 (${workflowConfig.id})`, err, {
+                component: 'ultraAdvancedAIAutomationSystem',
+                action: 'createWorkflow',
+                workflowId: workflowConfig.id,
+            });
             this.emit('workflow_creation_error', workflowConfig.id, error);
         }
     }
 
-    public async executeWorkflow(workflowId: string, inputData?: any): Promise<AutomationExecution> {
+    /**
+     * 지정된 워크플로우를 실행합니다.
+     * @param workflowId - 실행할 워크플로우 ID
+     * @param inputData - (선택) 단계에 전달할 입력 데이터
+     * @returns 실행 결과 (AutomationExecution)
+     * @throws 워크플로우가 없거나 활성 상태가 아닐 때
+     */
+    public async executeWorkflow(workflowId: string, inputData?: unknown): Promise<AutomationExecution> {
         const workflow = this.workflows.get(workflowId);
         if (!workflow) {
             throw new Error(`워크플로우 ${workflowId}를 찾을 수 없습니다.`);
@@ -464,8 +485,8 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         return execution;
     }
 
-    private async executeWorkflowSteps(workflow: AutomationWorkflow, execution: AutomationExecution, inputData?: any): Promise<void> {
-        const stepResults: Record<string, any> = {};
+    private async executeWorkflowSteps(workflow: AutomationWorkflow, execution: AutomationExecution, inputData?: unknown): Promise<void> {
+        const stepResults: Record<string, unknown> = {};
 
         for (let i = 0; i < workflow.steps.length; i++) {
             const step = workflow.steps[i];
@@ -503,8 +524,8 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         workflow.execution_history.push(execution);
     }
 
-    private async executeStep(step: AutomationStep, previousResults: Record<string, any>, inputData?: any): Promise<any> {
-        const startTime = Date.now();
+    private async executeStep(step: AutomationStep, previousResults: Record<string, unknown>, inputData?: unknown): Promise<Record<string, unknown>> {
+        void Date.now(); // startTime reserved for future metrics
 
         try {
             switch (step.type) {
@@ -537,7 +558,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         }
     }
 
-    private async executeAIAnalysis(step: AutomationStep, previousResults: Record<string, any>, inputData?: any): Promise<any> {
+    private async executeAIAnalysis(step: AutomationStep, _previousResults: Record<string, unknown>, _inputData?: unknown): Promise<Record<string, unknown>> {
         // AI 분석 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
 
@@ -553,7 +574,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         };
     }
 
-    private async executeDataProcessing(step: AutomationStep, previousResults: Record<string, any>, inputData?: any): Promise<any> {
+    private async executeDataProcessing(step: AutomationStep, _previousResults: Record<string, unknown>, _inputData?: unknown): Promise<Record<string, unknown>> {
         // 데이터 처리 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 
@@ -565,7 +586,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         };
     }
 
-    private async executeDecision(step: AutomationStep, previousResults: Record<string, any>, inputData?: any): Promise<any> {
+    private async executeDecision(_step: AutomationStep, _previousResults: Record<string, unknown>, _inputData?: unknown): Promise<Record<string, unknown>> {
         // 의사결정 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
 
@@ -577,7 +598,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         };
     }
 
-    private async executeNotification(step: AutomationStep, previousResults: Record<string, any>, inputData?: any): Promise<any> {
+    private async executeNotification(step: AutomationStep, _previousResults: Record<string, unknown>, _inputData?: unknown): Promise<Record<string, unknown>> {
         // 알림 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -589,7 +610,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         };
     }
 
-    private async executeIntegration(step: AutomationStep, previousResults: Record<string, any>, inputData?: any): Promise<any> {
+    private async executeIntegration(step: AutomationStep, _previousResults: Record<string, unknown>, _inputData?: unknown): Promise<Record<string, unknown>> {
         // 통합 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 
@@ -601,15 +622,16 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         };
     }
 
-    private async executePrediction(step: AutomationStep, previousResults: Record<string, any>, inputData?: any): Promise<any> {
+    private async executePrediction(step: AutomationStep, _previousResults: Record<string, unknown>, _inputData?: unknown): Promise<Record<string, unknown>> {
         // 예측 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 4000));
+        const horizon = Number(step.parameters.prediction_horizon) || 5;
 
         return {
             model_used: step.parameters.model,
-            prediction_horizon: step.parameters.prediction_horizon,
-            predictions: Array.from({ length: step.parameters.prediction_horizon }, () => Math.random() * 100),
-            confidence_intervals: Array.from({ length: step.parameters.prediction_horizon }, () => ({
+            prediction_horizon: horizon,
+            predictions: Array.from({ length: horizon }, () => Math.random() * 100),
+            confidence_intervals: Array.from({ length: horizon }, () => ({
                 lower: Math.random() * 50,
                 upper: Math.random() * 50 + 50
             })),
@@ -617,7 +639,7 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         };
     }
 
-    public async triggerRule(ruleId: string, eventData?: any): Promise<void> {
+    public async triggerRule(ruleId: string, eventData?: unknown): Promise<void> {
         const rule = this.rules.get(ruleId);
         if (!rule) {
             throw new Error(`규칙 ${ruleId}를 찾을 수 없습니다.`);
@@ -654,12 +676,12 @@ class UltraAdvancedAIAutomationSystem extends EventEmitter {
         }
     }
 
-    private evaluateConditions(conditions: any, eventData?: any): boolean {
+    private evaluateConditions(_conditions: Record<string, unknown>, _eventData?: unknown): boolean {
         // 조건 평가 시뮬레이션
         return Math.random() > 0.3; // 70% 확률로 실행
     }
 
-    private async executeAction(action: any, eventData?: any): Promise<void> {
+    private async executeAction(action: { action_type: string; parameters: Record<string, unknown>; target_service: string }, eventData?: unknown): Promise<void> {
         // 액션 실행 시뮬레이션
         await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 

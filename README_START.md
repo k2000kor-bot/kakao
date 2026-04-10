@@ -1,93 +1,75 @@
 # 🚀 서버 실행 가이드
 
-## 전체 시스템 재실행
+**실행 위치**: 아래 모든 명령은 **`package.json`이 있는 폴더**에서 실행하세요.  
+(이 파일과 같은 폴더 = `kakao-frontend/kakao-frontend`)
 
-### 방법 1: 통합 스크립트 사용 (권장)
+---
+
+## 1. 한 번에 실행 (권장)
 
 ```bash
-# 모든 서버 시작
+cd kakao-frontend/kakao-frontend   # 또는 이미 이 폴더에 있다면 생략
+chmod +x start_all.sh
 ./start_all.sh
-
-# 모든 서버 종료
-./stop_all.sh
 ```
 
-### 방법 2: 개별 서버 실행
+- 백엔드(5002)를 백그라운드로 띄운 뒤 프론트(3000)를 실행합니다.
+- 브라우저에서 **http://localhost:3000** 접속.
+- `Ctrl+C`로 프론트만 종료. 백엔드는 계속 동작(종료 시 `kill $(lsof -ti :5002)` 또는 새 터미널에서 `npm run restart:backend`로 재시작).
 
-#### 1. 백엔드 API 서버 (포트 8000)
+---
+
+## 2. 터미널 두 개로 실행
+
+**터미널 1 – 백엔드 (5002)**  
 ```bash
-cd backend
-python3 -m uvicorn advanced_api_server:app --host 0.0.0.0 --port 8000 --reload
+cd kakao-frontend/kakao-frontend
+npm run restart:backend
 ```
+→ `Uvicorn running on http://0.0.0.0:5002` 확인.
 
-#### 2. 백엔드 Node.js 서버 (포트 5000/5001) - 선택사항
+**터미널 2 – 프론트 (3000)**  
 ```bash
-cd backend
-node server.js
-```
-
-#### 3. 프론트엔드 서버 (포트 3000)
-```bash
+cd kakao-frontend/kakao-frontend
 npm start
 ```
+→ `Compiled successfully!` / `Local: http://localhost:3000` 확인 후 브라우저에서 **http://localhost:3000** 접속.
 
-## 서버 주소
+---
 
-- **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:8000
-- **백엔드 Node.js**: http://localhost:5000 (선택사항)
+## 3. 접속 주소
 
-## 문제 해결
+| 서비스        | 주소 |
+|---------------|------|
+| 프론트엔드    | http://localhost:3000 |
+| 백엔드 API    | http://localhost:5002 |
+| API 문서      | http://localhost:5002/api/docs |
+| Health 체크   | http://localhost:5002/api/health |
 
-### 포트가 이미 사용 중인 경우
+---
 
-스크립트가 자동으로 기존 프로세스를 종료하고 재시작합니다. 수동으로 종료하려면:
-
-```bash
-# 특정 포트의 프로세스 확인
-lsof -i :8000
-lsof -i :3000
-lsof -i :5000
-
-# 프로세스 종료
-kill -9 <PID>
-```
-
-### 로그 확인
-
-모든 서버 로그는 `logs/` 디렉토리에 저장됩니다:
-
-- `logs/frontend.log` - 프론트엔드 로그
-- `logs/backend_api.log` - 백엔드 API 로그
-- `logs/backend_node.log` - 백엔드 Node.js 로그
-
-### Python 가상환경
-
-프로젝트에 `venv` 또는 `gemini-env` 디렉토리가 있으면 자동으로 활성화됩니다.
-
-## 프로세스 관리
-
-### PID 파일
-
-실행 중인 서버의 PID는 `.pids/` 디렉토리에 저장됩니다:
-
-- `.pids/frontend.pid`
-- `.pids/backend_api.pid`
-- `.pids/backend_node.pid`
-
-### 수동 종료
+## 4. 접속 확인
 
 ```bash
-# PID 파일을 통한 종료
-kill $(cat .pids/frontend.pid)
-kill $(cat .pids/backend_api.pid)
-kill $(cat .pids/backend_node.pid)
+cd kakao-frontend/kakao-frontend
+npm run check:access
 ```
 
-## 개발 모드
+- 프론트(3000)·백(5002) 응답 코드가 출력됩니다.
 
-모든 서버는 개발 모드로 실행되며, 파일 변경 시 자동으로 재시작됩니다.
+---
 
-- **백엔드 API**: `--reload` 옵션으로 자동 재시작
-- **프론트엔드**: React 개발 서버의 핫 리로드
+## 5. 문제 해결
 
+- **`ENOENT (package.json)`**  
+  상위 폴더에서 실행한 경우입니다. 반드시 **`kakao-frontend/kakao-frontend`** 로 이동한 뒤 명령을 실행하세요.
+
+- **백엔드가 안 뜨는 경우**  
+  - 가상환경 생성: `cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements-core.txt`
+  - 그 다음: `npm run restart:backend`
+
+- **프론트만 켜고 싶을 때**  
+  `npm start` 또는 `npm run restart`  
+  (대화 등 API는 백엔드 5002가 떠 있어야 동작합니다.)
+
+- **자세한 로컬 접속/방화벽/포트**: [docs/LOCAL_ACCESS_GUIDE.md](docs/LOCAL_ACCESS_GUIDE.md)

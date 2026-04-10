@@ -1,7 +1,10 @@
 /**
- * CORBU AI 성능 모니터링 서비스
+ * CORBU.AI 성능 모니터링 서비스
  * 실시간 성능 지표 수집 및 최적화
  */
+
+import { API_PATH_IN_URL_MARKER } from '../config/api';
+import { errorLogger } from '../utils/errorLogger';
 
 interface PerformanceMetrics {
     responseTime: number;
@@ -30,7 +33,7 @@ interface UserInteraction {
     timestamp: Date;
 }
 
-class PerformanceMonitoringService {
+export class PerformanceMonitoringService {
     private metrics: PerformanceMetrics[] = [];
     private apiPerformance: ApiPerformance[] = [];
     private userInteractions: UserInteraction[] = [];
@@ -80,7 +83,7 @@ class PerformanceMonitoringService {
 
             case 'resource':
                 const resourceEntry = entry as PerformanceResourceTiming;
-                if (resourceEntry.name.includes('/api/')) {
+                if (resourceEntry.name.includes(API_PATH_IN_URL_MARKER)) {
                     this.recordApiPerformance({
                         endpoint: resourceEntry.name,
                         method: 'GET', // Default, should be enhanced
@@ -99,8 +102,8 @@ class PerformanceMonitoringService {
      */
     private getMemoryUsage(): number {
         if ('memory' in performance) {
-            const memory = (performance as any).memory;
-            return memory.usedJSHeapSize / memory.totalJSHeapSize;
+            const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number } }).memory;
+            return memory ? memory.usedJSHeapSize / memory.totalJSHeapSize : 0;
         }
         return 0;
     }
@@ -220,7 +223,12 @@ class PerformanceMonitoringService {
      * 성능 경고 트리거
      */
     private triggerPerformanceAlert(type: string, value: number): void {
-        console.warn(`🚨 성능 경고: ${type} - 값: ${value}`);
+        errorLogger.warn('성능 경고', {
+            component: 'performanceMonitoringService',
+            action: 'triggerPerformanceAlert',
+            alertType: type,
+            value,
+        });
 
         // 사용자에게 알림 (옵션)
         this.showPerformanceNotification(type, value);
@@ -232,7 +240,7 @@ class PerformanceMonitoringService {
     private showPerformanceNotification(type: string, value: number): void {
         // 실제 구현에서는 Toast 알림이나 다른 UI 컴포넌트 사용
         if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('CORBU AI 성능 알림', {
+            new Notification('CORBU.AI 성능 알림', {
                 body: `${type} 감지됨 (${value.toFixed(2)})`,
                 icon: '/favicon.ico'
             });
@@ -356,22 +364,22 @@ class PerformanceMonitoringService {
     /**
      * 성능 개선 권장사항 생성
      */
-    private generateRecommendations(summary: any): string[] {
+    private generateRecommendations(summary: { avgResponseTime?: number; avgMemoryUsage?: number; errorRate?: number; userSatisfaction?: number }): string[] {
         const recommendations: string[] = [];
 
-        if (summary.avgResponseTime > 1000) {
+        if ((summary.avgResponseTime ?? 0) > 1000) {
             recommendations.push('응답 시간이 느립니다. API 최적화를 고려해보세요.');
         }
 
-        if (summary.avgMemoryUsage > 0.7) {
+        if ((summary.avgMemoryUsage ?? 0) > 0.7) {
             recommendations.push('메모리 사용량이 높습니다. 메모리 정리를 고려해보세요.');
         }
 
-        if (summary.errorRate > 0.1) {
+        if ((summary.errorRate ?? 0) > 0.1) {
             recommendations.push('오류율이 높습니다. 에러 핸들링을 개선해보세요.');
         }
 
-        if (summary.userSatisfaction < 0.8) {
+        if ((summary.userSatisfaction ?? 0) < 0.8) {
             recommendations.push('사용자 만족도가 낮습니다. UX 개선을 고려해보세요.');
         }
 

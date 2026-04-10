@@ -698,8 +698,8 @@ if __name__ == "__main__":
     
     # 테스트 프로젝트 생성
     project_id = pm.create_project(
-        name="개포우성7차 건설 프로젝트",
-        description="개포우성7차 아파트 건설 관리 프로젝트",
+        name="샘플 프로젝트 건설 프로젝트",
+        description="샘플 아파트 건설 관리 프로젝트",
         project_type="construction"
     )
     

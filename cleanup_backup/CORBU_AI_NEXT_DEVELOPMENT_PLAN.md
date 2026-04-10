@@ -154,7 +154,7 @@ interface TeamCollaboration {
   projectManagement: () => Promise<void>;
   // 파일 공유 및 버전 관리
   fileSharingAndVersioning: () => Promise<void>;
-  // 팀 채팅 및 화상회의
+  // 팀 대화 및 화상회의
   teamChatAndVideoCall: () => Promise<void>;
 }
 ```

@@ -1,4 +1,21 @@
+import {
+  API_BASE_URL,
+  API_PERSISTENT_SESSION_ARCHIVE_SEGMENT,
+  API_PERSISTENT_SESSION_MESSAGES_SEGMENT,
+  API_PERSISTENT_SESSION_RESTORE_SEGMENT,
+  API_PERSISTENT_SESSIONS_LIST_QUERY_ACTIVE_LIMIT_100,
+  API_PERSISTENT_SESSIONS_PATH,
+  FALLBACK_API_ORIGIN,
+  joinApiHealthCheckUrl,
+} from '../config/api';
 import { ChatSession, Message, ChatMessage } from '../types/chat';
+import {
+  coerceTrimmedString,
+  conversationListTitleFromUserMessage,
+  isAssistantGenerationPlaceholder,
+  STORED_ASSISTANT_INCOMPLETE_NOTICE,
+} from '../utils/chatInputUtils';
+import { PERSISTENT_CHAT_SESSIONS_STORAGE_KEY } from './persistentChatSessionStorageKeys';
 
 export interface PersistentChatConfig {
     maxSessions: number;
@@ -44,6 +61,18 @@ interface BackendMessage {
     is_bookmarked: boolean;
 }
 
+/** PERSISTENT_CHAT_SESSIONS_STORAGE_KEY에 해당하는 JSON. 루트는 세션 id → ChatSession 맵(객체)이어야 한다. */
+export function parsePersistentChatSessionsJson(raw: string): Record<string, ChatSession> {
+    try {
+        const parsed = JSON.parse(raw) as unknown;
+        if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return {};
+        }
+        return parsed as Record<string, ChatSession>;
+    } catch {
+        return {};
+    }
+}
 
 export class PersistentChatSessionService {
     private static instance: PersistentChatSessionService;
@@ -58,7 +87,7 @@ export class PersistentChatSessionService {
             autoArchive: true,
             enableHistory: true,
             maxMessageHistory: 1000,
-            backendUrl: 'http://localhost:8001'
+            backendUrl: API_BASE_URL || FALLBACK_API_ORIGIN
         };
         this.loadSessionsFromStorage();
         this.startSessionCleanup();
@@ -72,23 +101,28 @@ export class PersistentChatSessionService {
     }
 
     /**
-     * 새로운 지속적 채팅 세션 생성
+     * 새로운 지속적 대화 세션 생성
      */
     public async createPersistentChatSession(
         title: string,
         initialMessage?: string,
         tags: string[] = []
     ): Promise<ChatSession> {
+        const trimmedIn = coerceTrimmedString(title, '');
+        const resolvedTitle = trimmedIn
+            ? conversationListTitleFromUserMessage(trimmedIn)
+            : `지속적 대화 ${++this.sessionCounter}`;
+
         try {
             // 백엔드에 세션 생성 요청
-            const response = await fetch(`${this.config.backendUrl}/api/persistent-sessions`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.config.backendUrl, API_PERSISTENT_SESSIONS_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    title: title || `지속적 채팅 ${++this.sessionCounter}`,
-                    description: initialMessage ? `초기 메시지: ${initialMessage.substring(0, 100)}...` : undefined,
+                    title: resolvedTitle,
+                    description: initialMessage ? `초기 메시지: ${initialMessage}` : undefined,
                     tags: [...tags, 'persistent'],
                     metadata: {
                         conversationDepth: 0,
@@ -136,7 +170,7 @@ export class PersistentChatSessionService {
             this.saveSessionToStorage(newSession);
             this.cleanupOldSessions();
 
-            console.log(`🔄 새로운 지속적 채팅 세션 생성: ${title} (ID: ${backendSession.id})`);
+            console.log(`🔄 새로운 지속적 대화 세션 생성: ${resolvedTitle} (ID: ${backendSession.id})`);
             return newSession;
 
         } catch (error) {
@@ -144,11 +178,11 @@ export class PersistentChatSessionService {
 
             // 백엔드 실패 시 로컬 세션 생성
             const now = new Date();
-            const sessionId = `persistent_${Date.now()}_${++this.sessionCounter}`;
+            const sessionId = `persistent_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
             const newSession: ChatSession = {
                 id: sessionId,
-                title: title || `지속적 채팅 ${this.sessionCounter}`,
+                title: resolvedTitle,
                 messages: [],
                 createdAt: now.toISOString(),
                 updatedAt: now.toISOString(),
@@ -189,13 +223,13 @@ export class PersistentChatSessionService {
             this.saveSessionToStorage(newSession);
             this.cleanupOldSessions();
 
-            console.log(`🔄 로컬 지속적 채팅 세션 생성: ${title} (ID: ${sessionId})`);
+            console.log(`🔄 로컬 지속적 대화 세션 생성: ${resolvedTitle} (ID: ${sessionId})`);
             return newSession;
         }
     }
 
     /**
-     * 기존 채팅 세션을 지속적 세션으로 변환
+     * 기존 대화 세션을 지속적 세션으로 변환
      */
     public convertToPersistentSession(sessionId: string): ChatSession | null {
         const session = this.sessions.get(sessionId);
@@ -218,7 +252,7 @@ export class PersistentChatSessionService {
         this.sessions.set(sessionId, updatedSession);
         this.saveSessionToStorage(updatedSession);
 
-        console.log(`🔄 채팅 세션을 지속적 세션으로 변환: ${session.title}`);
+        console.log(`🔄 대화 세션을 지속적 세션으로 변환: ${session.title}`);
         return updatedSession;
     }
 
@@ -235,20 +269,26 @@ export class PersistentChatSessionService {
     ): Promise<Message | null> {
         try {
             // 백엔드에 메시지 추가 요청
-            const response = await fetch(`${this.config.backendUrl}/api/persistent-sessions/${sessionId}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.config.backendUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}${API_PERSISTENT_SESSION_MESSAGES_SEGMENT}`,
+                ),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: message.content,
+                        role: message.role,
+                        sender: message.role,
+                        metadata: {
+                            isBookmarked: message.isBookmarked || false
+                        }
+                    }),
                 },
-                body: JSON.stringify({
-                    content: message.content,
-                    role: message.role,
-                    sender: message.role,
-                    metadata: {
-                        isBookmarked: message.isBookmarked || false
-                    }
-                })
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`백엔드 메시지 추가 실패: ${response.statusText}`);
@@ -355,11 +395,11 @@ export class PersistentChatSessionService {
         if (status === 'deleted') {
             this.sessions.delete(sessionId);
             this.removeSessionFromStorage(sessionId);
-            console.log(`🗑️ 채팅 세션 삭제: ${session.title}`);
+            console.log(`🗑️ 대화 세션 삭제: ${session.title}`);
         } else {
             this.sessions.set(sessionId, session);
             this.saveSessionToStorage(session);
-            console.log(`📝 채팅 세션 상태 변경: ${session.title} -> ${status}`);
+            console.log(`📝 대화 세션 상태 변경: ${session.title} -> ${status}`);
         }
 
         return true;
@@ -371,9 +411,13 @@ export class PersistentChatSessionService {
     public async archiveSession(sessionId: string): Promise<boolean> {
         try {
             // 백엔드에 세션 아카이브 요청
-            const response = await fetch(`${this.config.backendUrl}/api/persistent-sessions/${sessionId}/archive`, {
-                method: 'POST'
-            });
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.config.backendUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}${API_PERSISTENT_SESSION_ARCHIVE_SEGMENT}`,
+                ),
+                { method: 'POST' },
+            );
 
             if (!response.ok) {
                 throw new Error(`백엔드 세션 아카이브 실패: ${response.statusText}`);
@@ -394,9 +438,13 @@ export class PersistentChatSessionService {
     public async restoreSession(sessionId: string): Promise<boolean> {
         try {
             // 백엔드에 세션 복원 요청
-            const response = await fetch(`${this.config.backendUrl}/api/persistent-sessions/${sessionId}/restore`, {
-                method: 'POST'
-            });
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.config.backendUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}${API_PERSISTENT_SESSION_RESTORE_SEGMENT}`,
+                ),
+                { method: 'POST' },
+            );
 
             if (!response.ok) {
                 throw new Error(`백엔드 세션 복원 실패: ${response.statusText}`);
@@ -422,9 +470,13 @@ export class PersistentChatSessionService {
     public async deleteSession(sessionId: string): Promise<boolean> {
         try {
             // 백엔드에 세션 삭제 요청
-            const response = await fetch(`${this.config.backendUrl}/api/persistent-sessions/${sessionId}`, {
-                method: 'DELETE'
-            });
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.config.backendUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}`,
+                ),
+                { method: 'DELETE' },
+            );
 
             if (!response.ok) {
                 throw new Error(`백엔드 세션 삭제 실패: ${response.statusText}`);
@@ -434,7 +486,7 @@ export class PersistentChatSessionService {
             this.sessions.delete(sessionId);
             this.removeSessionFromStorage(sessionId);
 
-            console.log(`🗑️ 채팅 세션 삭제 완료: ${sessionId}`);
+            console.log(`🗑️ 대화 세션 삭제 완료: ${sessionId}`);
             return true;
 
         } catch (error) {
@@ -492,7 +544,6 @@ export class PersistentChatSessionService {
 
         const mostActiveTopics = Array.from(topicFrequency.entries())
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
             .map(([topic]) => topic);
 
         return {
@@ -511,7 +562,12 @@ export class PersistentChatSessionService {
     public async getActiveSessions(): Promise<ChatSession[]> {
         try {
             // 백엔드에서 활성 세션 목록 가져오기
-            const response = await fetch(`${this.config.backendUrl}/api/persistent-sessions?status=active&limit=100`);
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.config.backendUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}?${API_PERSISTENT_SESSIONS_LIST_QUERY_ACTIVE_LIMIT_100}`,
+                ),
+            );
 
             if (!response.ok) {
                 throw new Error(`백엔드 세션 목록 조회 실패: ${response.statusText}`);
@@ -638,18 +694,47 @@ export class PersistentChatSessionService {
         });
     }
 
+    private parsePersistentSessionsRecord(raw: string): Record<string, ChatSession> {
+        return parsePersistentChatSessionsJson(raw);
+    }
+
     /**
      * 세션을 로컬 스토리지에 저장
      */
     private saveSessionToStorage(session: ChatSession): void {
         try {
-            const stored = localStorage.getItem('persistent_chat_sessions');
-            const sessions = stored ? JSON.parse(stored) : {};
+            const stored = localStorage.getItem(PERSISTENT_CHAT_SESSIONS_STORAGE_KEY);
+            const sessions = stored ? this.parsePersistentSessionsRecord(stored) : {};
             sessions[session.id] = session;
-            localStorage.setItem('persistent_chat_sessions', JSON.stringify(sessions));
+            localStorage.setItem(PERSISTENT_CHAT_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
         } catch (error) {
             console.error('세션 저장 실패:', error);
         }
+    }
+
+    private sanitizeLoadedMessage(m: Message): Message {
+        const assistantLike =
+            m.role === 'assistant' ||
+            m.sender?.toLowerCase() === 'ai' ||
+            m.sender?.toLowerCase() === 'assistant' ||
+            m.type === 'ai_response';
+        if (
+            assistantLike &&
+            typeof m.content === 'string' &&
+            isAssistantGenerationPlaceholder(m.content)
+        ) {
+            return { ...m, content: STORED_ASSISTANT_INCOMPLETE_NOTICE };
+        }
+        return m;
+    }
+
+    private sanitizeLoadedSession(session: ChatSession): ChatSession {
+        return {
+            ...session,
+            messages: Array.isArray(session.messages)
+                ? session.messages.map((msg) => this.sanitizeLoadedMessage(msg))
+                : [],
+        };
     }
 
     /**
@@ -657,12 +742,12 @@ export class PersistentChatSessionService {
      */
     private loadSessionsFromStorage(): void {
         try {
-            const stored = localStorage.getItem('persistent_chat_sessions');
+            const stored = localStorage.getItem(PERSISTENT_CHAT_SESSIONS_STORAGE_KEY);
             if (stored) {
-                const sessions = JSON.parse(stored) as Record<string, ChatSession>;
+                const sessions = this.parsePersistentSessionsRecord(stored);
                 Object.values(sessions).forEach((session: ChatSession) => {
                     if (session.status !== 'deleted') {
-                        this.sessions.set(session.id, session);
+                        this.sessions.set(session.id, this.sanitizeLoadedSession(session));
                     }
                 });
             }
@@ -676,11 +761,11 @@ export class PersistentChatSessionService {
      */
     private removeSessionFromStorage(sessionId: string): void {
         try {
-            const stored = localStorage.getItem('persistent_chat_sessions');
+            const stored = localStorage.getItem(PERSISTENT_CHAT_SESSIONS_STORAGE_KEY);
             if (stored) {
-                const sessions = JSON.parse(stored);
+                const sessions = this.parsePersistentSessionsRecord(stored);
                 delete sessions[sessionId];
-                localStorage.setItem('persistent_chat_sessions', JSON.stringify(sessions));
+                localStorage.setItem(PERSISTENT_CHAT_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
             }
         } catch (error) {
             console.error('세션 제거 실패:', error);
@@ -701,7 +786,7 @@ export class PersistentChatSessionService {
      */
     public updateConfig(newConfig: Partial<PersistentChatConfig>): void {
         this.config = { ...this.config, ...newConfig };
-        console.log('⚙️ 지속적 채팅 설정 업데이트:', newConfig);
+        console.log('⚙️ 지속적 대화 설정 업데이트:', newConfig);
     }
 
     /**
@@ -711,5 +796,7 @@ export class PersistentChatSessionService {
         return { ...this.config };
     }
 }
+
+export { PERSISTENT_CHAT_SESSIONS_STORAGE_KEY } from './persistentChatSessionStorageKeys';
 
 export default PersistentChatSessionService;

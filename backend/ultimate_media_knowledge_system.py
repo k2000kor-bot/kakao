@@ -11,6 +11,8 @@ import os
 import json
 import logging
 import sqlite3
+import subprocess
+import tempfile
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from pathlib import Path
@@ -1117,7 +1119,30 @@ class UltimateMediaKnowledgeSystem:
         self._save_knowledge_to_db(project_id, knowledge)
         self._save_learning_event_to_db(project_id, knowledge)
 
-    # 미완성 메서드들 (실제 구현 필요)
+    def _transcribe_audio_bytes(self, audio_bytes: bytes, mime: str = "audio/wav") -> Optional[str]:
+        """오디오 바이트에서 텍스트 추출 (Whisper). 미설치 시 None."""
+        try:
+            import whisper
+        except ImportError:
+            logger.debug("Whisper 미설치, 오디오 텍스트 추출 스킵")
+            return None
+        suffix = ".wav" if "wav" in mime else ".mp3"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+            f.write(audio_bytes)
+            path = f.name
+        try:
+            model = whisper.load_model("base")
+            result = model.transcribe(path, language="ko", fp16=False)
+            return (result.get("text") or "").strip() or None
+        except Exception as e:
+            logger.debug("Whisper transcribe 실패: %s", e)
+            return None
+        finally:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
     def _extract_video_frames(self, file_path: str) -> List[np.ndarray]:
         """비디오에서 프레임 추출"""
         frames = []
@@ -1137,14 +1162,58 @@ class UltimateMediaKnowledgeSystem:
         return frames
 
     async def _extract_audio_from_video(self, file_path: str) -> str:
-        """비디오에서 오디오 추출"""
-        # 실제 구현 필요
-        return "비디오에서 추출된 오디오 텍스트"
+        """비디오에서 오디오 추출 후 텍스트 변환 (ffmpeg + Whisper)"""
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                out_path = tmp.name
+            try:
+                proc = subprocess.run(
+                    [
+                        "ffmpeg", "-y", "-i", file_path,
+                        "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+                        out_path,
+                    ],
+                    capture_output=True,
+                    timeout=120,
+                )
+                if proc.returncode != 0 or not os.path.exists(out_path):
+                    logger.warning("ffmpeg 오디오 추출 실패: %s", proc.stderr.decode(errors="ignore")[:200])
+                    return "비디오에서 추출된 오디오 텍스트"
+                with open(out_path, "rb") as f:
+                    audio_bytes = f.read()
+                text = self._transcribe_audio_bytes(audio_bytes, "audio/wav")
+                return text if text else "비디오에서 추출된 오디오 텍스트"
+            finally:
+                try:
+                    os.unlink(out_path)
+                except OSError:
+                    pass
+        except FileNotFoundError:
+            logger.debug("ffmpeg 미설치")
+            return "비디오에서 추출된 오디오 텍스트"
+        except subprocess.TimeoutExpired:
+            logger.warning("ffmpeg 타임아웃")
+            return "비디오에서 추출된 오디오 텍스트"
+        except Exception as e:
+            logger.warning("비디오 오디오 추출 실패: %s", e)
+            return "비디오에서 추출된 오디오 텍스트"
 
     async def _extract_audio_text(self, file_path: str) -> str:
-        """오디오에서 텍스트 추출"""
-        # 실제 구현 필요
-        return "오디오에서 추출된 텍스트"
+        """오디오에서 텍스트 추출 (Whisper)"""
+        try:
+            ext = Path(file_path).suffix.lower()
+            mime_map = {
+                ".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4",
+                ".flac": "audio/flac", ".ogg": "audio/ogg", ".webm": "audio/webm",
+            }
+            mime = mime_map.get(ext, "audio/wav")
+            with open(file_path, "rb") as f:
+                audio_bytes = f.read()
+            text = self._transcribe_audio_bytes(audio_bytes, mime)
+            return text if text else "오디오에서 추출된 텍스트"
+        except Exception as e:
+            logger.warning("오디오 텍스트 추출 실패: %s", e)
+            return "오디오에서 추출된 텍스트"
 
     async def _extract_document_text(self, file_path: str) -> str:
         """문서에서 텍스트 추출 (txt/pdf/docx 기본 지원)"""
@@ -1183,6 +1252,49 @@ class UltimateMediaKnowledgeSystem:
                 except Exception as e:
                     logger.warning(f"DOCX 텍스트 추출 실패: {e}")
 
+            # PPTX
+            if ext in {".pptx", ".ppt"}:
+                try:
+                    from pptx import Presentation  # python-pptx
+
+                    prs = Presentation(file_path)
+                    parts = []
+                    for i, slide in enumerate(prs.slides):
+                        for shape in slide.shapes:
+                            if hasattr(shape, "text") and shape.text:
+                                parts.append(shape.text)
+                    return "\n".join(parts) if parts else ""
+                except ImportError:
+                    logger.debug("python-pptx 미설치")
+                except Exception as e:
+                    logger.warning(f"PPTX 텍스트 추출 실패: {e}")
+
+            # CSV (텍스트로 직접 읽기)
+            if ext == ".csv":
+                try:
+                    return Path(file_path).read_text(encoding="utf-8", errors="ignore")
+                except Exception:
+                    return Path(file_path).read_text(encoding="cp949", errors="ignore")
+
+            # XLSX
+            if ext == ".xlsx":
+                try:
+                    import openpyxl  # type: ignore
+
+                    wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+                    parts = []
+                    for sheet in wb.worksheets:
+                        for row in sheet.iter_rows(values_only=True):
+                            cells = [str(c) for c in row if c is not None and str(c).strip()]
+                            if cells:
+                                parts.append(" ".join(cells))
+                    wb.close()
+                    return "\n".join(parts) if parts else ""
+                except ImportError:
+                    logger.debug("openpyxl 미설치")
+                except Exception as e:
+                    logger.warning(f"엑셀 텍스트 추출 실패: {e}")
+
             # 기타는 텍스트 시도로 폴백
             try:
                 return Path(file_path).read_text(encoding="utf-8", errors="ignore")
@@ -1196,16 +1308,14 @@ class UltimateMediaKnowledgeSystem:
     async def _process_presentation(
         self, file_path: str, filename: str
     ) -> ExtractedKnowledge:
-        """프레젠테이션 처리"""
-        # 실제 구현 필요
+        """프레젠테이션 처리 (pptx 슬라이드 텍스트 추출)"""
         text = await self._extract_document_text(file_path)
         return await self._extract_knowledge_from_text(text, "presentation")
 
     async def _process_spreadsheet(
         self, file_path: str, filename: str
     ) -> ExtractedKnowledge:
-        """스프레드시트 처리"""
-        # 실제 구현 필요
+        """스프레드시트 처리 (xlsx/csv 텍스트 추출)"""
         text = await self._extract_document_text(file_path)
         return await self._extract_knowledge_from_text(text, "spreadsheet")
 
@@ -1561,4 +1671,10 @@ async def persuasion_from_text(payload: Dict[str, Any] = Body(...)):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    _port = int(
+        os.environ.get(
+            "ULTIMATE_MEDIA_PORT",
+            os.environ.get("MEDIA_KNOWLEDGE_PORT", os.environ.get("PORT", "8001")),
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_port)

@@ -127,7 +127,7 @@ class AdvancedMessageDatabase:
         self.image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff'}
         self.video_extensions = {'.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv'}
         self.audio_extensions = {'.mp3', '.wav', '.aac', '.ogg', '.m4a', '.flac'}
-        self.document_extensions = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.hwp'}
+        self.document_extensions = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.ppt', '.pptx', '.txt', '.md', '.hwp'}
         
     def _init_database(self):
         """데이터베이스 초기화"""
@@ -135,7 +135,7 @@ class AdvancedMessageDatabase:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             
-            # 채팅방 테이블
+            # 대화방 테이블
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chat_rooms (
                     room_id TEXT PRIMARY KEY,
@@ -418,8 +418,8 @@ class AdvancedMessageDatabase:
         
         # 임시 로직: 미디어 폴더에서 파일 검색
         media_folders = [
-            "../chat_rooms/[인증]행복한소유☆개포우성7차/미디어",
-            "../chat_rooms/[인증]행복한소유☆개포우성7차/문서"
+            "../chat_rooms/sample_chat_room/미디어",
+            "../chat_rooms/sample_chat_room/문서"
         ]
         
         for folder in media_folders:
@@ -533,6 +533,17 @@ class AdvancedMessageDatabase:
             if file_ext == '.txt':
                 with open(file_path, 'r', encoding='utf-8') as f:
                     return f.read()
+            elif file_ext == '.md':
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            elif file_ext == '.csv':
+                raw = Path(file_path).read_bytes()
+                for enc in ('utf-8-sig', 'utf-8', 'cp949', 'euc-kr'):
+                    try:
+                        return raw.decode(enc)
+                    except UnicodeDecodeError:
+                        continue
+                return raw.decode('utf-8', errors='replace')
             elif file_ext == '.pdf':
                 # PyPDF2 또는 pdfplumber 사용
                 return "PDF 텍스트 추출 (구현 필요)"

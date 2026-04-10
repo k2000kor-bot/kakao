@@ -1,6 +1,6 @@
 {
-  "name": "CORBU AI - 지능형 프로젝트 관리 시스템",
-  "short_name": "CORBU AI",
+  "name": "CORBU.AI - 지능형 프로젝트 관리 시스템",
+  "short_name": "CORBU.AI",
   "description": "AI 기반 프로젝트 관리, 음성 채팅, 데이터 시각화를 제공하는 차세대 협업 플랫폼",
   "start_url": "/",
   "display": "standalone",

@@ -1,4 +1,7 @@
 // 고급 AI 기능들을 위한 핵심 함수들
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+import { AI_LEARNING_DATA_STORAGE_KEY } from './aiLearningDataStorageKeys';
 
 // 답변 품질 평가
 export const evaluateAnswerQuality = (content: string, question: string) => {
@@ -25,7 +28,7 @@ export const evaluateAnswerQuality = (content: string, question: string) => {
     metrics.completeness = Math.min(100, (content.length / 500) * 50 + (hasStructure ? 25 : 0) + (hasMultipleSections ? 25 : 0));
 
     // 명확성 평가 (가독성, 문장 구조)
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = content.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
     const avgSentenceLength = sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length;
     metrics.clarity = Math.max(0, 100 - Math.abs(avgSentenceLength - 80) * 2);
 
@@ -91,7 +94,7 @@ export const improveAnswerContent = async (content: string, question: string, me
         improvedContent += `\n\n💡 **핵심 요약**\n`;
         const keyPoints = content.match(/\*\*[^*]+\*\*/g) || [];
         if (keyPoints.length > 0) {
-            improvedContent += keyPoints.slice(0, 3).map(point => `• ${point.replace(/\*\*/g, '')}`).join('\n');
+            improvedContent += keyPoints.map(point => `• ${point.replace(/\*\*/g, '')}`).join('\n');
         }
     }
 
@@ -146,7 +149,7 @@ export const generateIntegratedAIResponse = async (question: string): Promise<st
         const sampleData = [85, 92, 78, 95, 88, 91, 87, 93, 89, 90];
         const statisticalAnalysis = performStatisticalAnalysis({ data: sampleData });
 
-        let response = `🎓 **CORBU AI 박사 수준 종합 분석 결과**\n\n`;
+        let response = `🎓 **CORBU.AI 박사 수준 종합 분석 결과**\n\n`;
 
         // 고급 언어 이해 결과 추가
         response += generateContextAwareResponse(question, languageAnalysis);
@@ -229,7 +232,7 @@ export const generateIntegratedAIResponse = async (question: string): Promise<st
         response += `• AI 시스템 최적화 연구 논문 (IEEE, 2024)\n`;
         response += `• 사용자 경험 설계 가이드라인 (UXPA, 2024)\n`;
         response += `• 비즈니스 프로세스 최적화 사례 연구 (MIT, 2024)\n`;
-        response += `• CORBU AI 플랫폼 기술 문서 (v2.1, 2024)\n`;
+        response += `• CORBU.AI 플랫폼 기술 문서 (v2.1, 2024)\n`;
 
         // 한국어 최적화 적용
         response = generateKoreanOptimizedResponse(response, koreanAnalysis);
@@ -237,8 +240,13 @@ export const generateIntegratedAIResponse = async (question: string): Promise<st
         return response;
 
     } catch (error) {
-        console.error('통합 AI 응답 생성 중 오류:', error);
-        return `❌ **오류 발생**\n\n죄송합니다. 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.\n\n오류 내용: ${error instanceof Error ? error.message : '알 수 없는 오류'}`;
+        const err = toError(error);
+        errorLogger.error('통합 AI 응답 생성 중 오류', err, {
+            component: 'advancedAIFunctions',
+            action: 'generateIntegratedAIResponse',
+            question: question,
+        });
+        return `❌ **오류 발생**\n\n죄송합니다. 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.\n\n오류 내용: ${err.message}`;
     }
 };
 
@@ -389,7 +397,7 @@ export const analyzeKoreanLanguage = (text: string) => {
 };
 
 // 수학적 분석 수행
-export const performMathematicalAnalysis = (question: string, context: string) => {
+export const performMathematicalAnalysis = (question: string, _context: string) => {
     const analyses = [];
 
     // 비용 분석
@@ -428,7 +436,7 @@ export const performMathematicalAnalysis = (question: string, context: string) =
 };
 
 // 통계적 분석 수행
-export const performStatisticalAnalysis = (data: Record<string, unknown>) => {
+export const performStatisticalAnalysis = (_data: Record<string, unknown>) => {
     const sampleSize = Math.min(1000, Math.max(100, Math.floor(Math.random() * 1000)));
     const confidence = 0.95;
     const marginOfError = Math.round((1.96 * Math.sqrt(0.5 * 0.5 / sampleSize)) * 100);
@@ -536,11 +544,11 @@ export const generateFollowUpQuestions = (requirements: Record<string, unknown>)
 };
 
 // 응답 생성 함수들
-export const generateGaeposungResponse = (question: string): string => {
+export const generateGaeposungResponse = (_question: string): string => {
     return `🎯 **프로젝트 종합 분석**
 
 **📊 프로젝트 개요**
-• 위치: 서울시 강남구 개포동 123-45번지
+• 위치: 서울시 강남구 ○○동 123-45번지 (데모)
 • 규모: 총 1,200세대 (기존 800세대 대비 50% 증가)
 • 부지면적: 45,000㎡ (약 13,600평)
 • 건축면적: 18,000㎡
@@ -568,7 +576,7 @@ export const generateGaeposungResponse = (question: string): string => {
 • 친환경 건축 자재 (100% 재활용 가능)`;
 };
 
-export const generateAISystemResponse = (question: string): string => {
+export const generateAISystemResponse = (_question: string): string => {
     return `🤖 **AI 시스템 최적화 종합 분석 보고서**
 
 **📊 성능 개선 지표**
@@ -597,7 +605,7 @@ export const generateAISystemResponse = (question: string): string => {
 • 개발 효율성: 배포 시간 60% 단축`;
 };
 
-export const generateAIPsychologyResponse = (question: string): string => {
+export const generateAIPsychologyResponse = (_question: string): string => {
     return `🧠 **AI 심리학 및 사용자 경험 최적화 분석**
 
 **🎭 감정 인식 및 반응 시스템**
@@ -631,7 +639,7 @@ export const generateAIPsychologyResponse = (question: string): string => {
 • **사용자 유지율**: 6개월 사용자 유지율 65%`;
 };
 
-export const generateBusinessResponse = (question: string): string => {
+export const generateBusinessResponse = (_question: string): string => {
     return `💼 **비즈니스 워크플로우 최적화 종합 분석 보고서**
 
 **📊 핵심 성과 지표 (KPI)**
@@ -672,11 +680,11 @@ export const generateBusinessResponse = (question: string): string => {
 • **고객 충성도**: 고객 유지율 78% → 89%`;
 };
 
-export const generateGeneralResponse = (question: string): string => {
-    return `🌟 **CORBU AI 통합 플랫폼 종합 소개**
+export const generateGeneralResponse = (_question: string): string => {
+    return `🌟 **CORBU.AI 통합 플랫폼 종합 소개**
 
 **🎯 플랫폼 개요 및 비전**
-• **CORBU AI**: 고급 AI 분석과 최적화를 제공하는 차세대 통합 플랫폼
+• **CORBU.AI**: 고급 AI 분석과 최적화를 제공하는 차세대 통합 플랫폼
 • **비전**: AI 기술을 통해 인간의 창의성과 생산성을 극대화
 • **미션**: 복잡한 문제를 단순화하고, 데이터를 인사이트로 전환
 • **핵심 가치**: 혁신, 신뢰성, 지속가능성, 사용자 중심
@@ -697,7 +705,7 @@ export const generateGeneralResponse = (question: string): string => {
 
 **🔄 프로젝트 관리 및 협업 기능**
 • **프로젝트 관리**: 일정 관리, 리소스 할당, 진행 상황 추적
-• **실시간 협업**: 동시 편집, 실시간 채팅, 화상 회의 통합
+• **실시간 협업**: 동시 편집, 실시간 대화, 화상 회의 통합
 • **버전 관리**: 파일 버전 관리, 변경 이력 추적, 롤백 기능
 • **권한 관리**: 역할 기반 접근 제어, 보안 정책 적용
 • **워크플로우**: 자동화된 프로세스, 승인 워크플로우
@@ -735,7 +743,7 @@ export const updateSystemLearning = (question: string, response: string, feedbac
             quality: feedback === 'positive' ? 'good' : 'needs_improvement'
         };
 
-        const existingData = localStorage.getItem('ai_learning_data');
+        const existingData = localStorage.getItem(AI_LEARNING_DATA_STORAGE_KEY);
         const allData = existingData ? JSON.parse(existingData) : [];
         allData.push(learningData);
 
@@ -744,15 +752,23 @@ export const updateSystemLearning = (question: string, response: string, feedbac
             allData.splice(0, allData.length - 100);
         }
 
-        localStorage.setItem('ai_learning_data', JSON.stringify(allData));
+        localStorage.setItem(AI_LEARNING_DATA_STORAGE_KEY, JSON.stringify(allData));
     } catch (error) {
-        console.log('학습 데이터 저장 실패:', error);
+        const err = toError(error);
+        errorLogger.error('학습 데이터 저장 실패', err, {
+            component: 'advancedAIFunctions',
+            action: 'saveLearningData',
+        });
     }
 };
 
 // 딥러닝 모델 학습 시작
 export const startModelTraining = async (modelId: string): Promise<void> => {
-    console.log(`🚀 모델 학습 시작: ${modelId}`);
+    errorLogger.info('🚀 모델 학습 시작', {
+        component: 'advancedAIFunctions',
+        action: 'startModelTraining',
+        modelId,
+    });
     // 실제 구현에서는 API 호출
 };
 
@@ -762,7 +778,10 @@ export const detectDataDrift = (): boolean => {
     const hasDrift = Math.random() < 0.1; // 10% 확률로 드리프트 발생
 
     if (hasDrift) {
-        console.log('⚠️ 데이터 드리프트 감지됨 - 자동 재학습 시작');
+        errorLogger.warn('⚠️ 데이터 드리프트 감지됨 - 자동 재학습 시작', {
+            component: 'advancedAIFunctions',
+            action: 'detectDataDrift',
+        });
     }
 
     return hasDrift;
@@ -770,6 +789,12 @@ export const detectDataDrift = (): boolean => {
 
 // 하이퍼파라미터 최적화
 export const optimizeHyperparameters = async (modelId: string): Promise<void> => {
-    console.log(`🔧 하이퍼파라미터 최적화 시작: ${modelId}`);
+    errorLogger.info('🔧 하이퍼파라미터 최적화 시작', {
+        component: 'advancedAIFunctions',
+        action: 'optimizeHyperparameters',
+        modelId,
+    });
     // 실제 구현에서는 API 호출
 };
+
+export { AI_LEARNING_DATA_STORAGE_KEY } from './aiLearningDataStorageKeys';

@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // AI 프로젝트 관리 최적화 인터페이스 정의
 export interface ProjectManagement {
@@ -89,7 +90,7 @@ export interface ProjectOptimization {
     type: 'schedule' | 'resource' | 'risk' | 'quality' | 'cost';
     status: 'pending' | 'in-progress' | 'completed' | 'failed';
     algorithm: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     results: OptimizationResult[];
     recommendations: OptimizationRecommendation[];
     timestamp: number;
@@ -206,12 +207,18 @@ export class AIProjectManagementOptimizationSystem {
     };
 
     constructor() {
-        console.log('📋 AI 프로젝트 관리 최적화 시스템 초기화 중...');
+        errorLogger.info('AI 프로젝트 관리 최적화 시스템 초기화 중', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'constructor',
+        });
     }
 
     public start(): void {
         if (this.isRunning) {
-            console.log('⚠️ AI 프로젝트 관리 최적화 시스템이 이미 실행 중입니다.');
+            errorLogger.warn('AI 프로젝트 관리 최적화 시스템이 이미 실행 중입니다', {
+                component: 'aiProjectManagementOptimizationSystem',
+                action: 'start',
+            });
             return;
         }
 
@@ -220,32 +227,68 @@ export class AIProjectManagementOptimizationSystem {
         this.createInitialProjects();
         this.startOptimizationMonitoring();
 
-        console.log('✅ AI 프로젝트 관리 최적화 시스템이 시작되었습니다.');
+        errorLogger.info('AI 프로젝트 관리 최적화 시스템이 시작되었습니다', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'start',
+        });
         realTimeAIAlertSystem.sendAlert('info', 'AI 프로젝트 관리 최적화 시스템이 시작되었습니다.');
     }
 
     public stop(): void {
         if (!this.isRunning) {
-            console.log('⚠️ AI 프로젝트 관리 최적화 시스템이 실행 중이 아닙니다.');
+            errorLogger.warn('AI 프로젝트 관리 최적화 시스템이 실행 중이 아닙니다', {
+                component: 'aiProjectManagementOptimizationSystem',
+                action: 'stop',
+            });
             return;
         }
 
         this.isRunning = false;
         this.cleanupData();
 
-        console.log('🛑 AI 프로젝트 관리 최적화 시스템이 중지되었습니다.');
+        errorLogger.info('AI 프로젝트 관리 최적화 시스템이 중지되었습니다', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'stop',
+        });
         realTimeAIAlertSystem.sendAlert('info', 'AI 프로젝트 관리 최적화 시스템이 중지되었습니다.');
     }
 
     private initializeSystem(): void {
-        console.log('🔧 프로젝트 관리 최적화 시스템 초기화 중...');
+        errorLogger.info('프로젝트 관리 최적화 시스템 초기화 중', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'initializeSystem',
+        });
 
-        console.log('📅 스케줄 최적화 엔진 초기화 완료');
-        console.log('💰 비용 관리 시스템 초기화 완료');
-        console.log('🎯 품질 관리 시스템 초기화 완료');
-        console.log('⚠️ 리스크 관리 시스템 초기화 완료');
-        console.log('👥 리소스 최적화 엔진 초기화 완료');
-        console.log('📊 성과 분석 시스템 초기화 완료');
+        errorLogger.info('스케줄 최적화 엔진 초기화 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'initializeSystem',
+            subsystem: 'scheduleOptimizationEngine',
+        });
+        errorLogger.info('비용 관리 시스템 초기화 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'initializeSystem',
+            subsystem: 'costManagementSystem',
+        });
+        errorLogger.info('품질 관리 시스템 초기화 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'initializeSystem',
+            subsystem: 'qualityManagementSystem',
+        });
+        errorLogger.info('리스크 관리 시스템 초기화 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'initializeSystem',
+            subsystem: 'riskManagementSystem',
+        });
+        errorLogger.info('리소스 최적화 엔진 초기화 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'initializeSystem',
+            subsystem: 'resourceOptimizationEngine',
+        });
+        errorLogger.info('성과 분석 시스템 초기화 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'initializeSystem',
+            subsystem: 'performanceAnalysisSystem',
+        });
     }
 
     private createInitialProjects(): void {
@@ -454,7 +497,11 @@ export class AIProjectManagementOptimizationSystem {
 
         this.projects.set(project1.projectId, project1);
         this.optimizeProject(project1.projectId);
-        console.log('📋 초기 프로젝트 생성 완료');
+        errorLogger.info('초기 프로젝트 생성 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'createInitialProjects',
+            projectId: project1.projectId,
+        });
     }
 
     public createProject(project: Omit<ProjectManagement, 'projectId' | 'optimization' | 'performance' | 'recommendations' | 'timestamp'>): ProjectManagement {
@@ -493,7 +540,11 @@ export class AIProjectManagementOptimizationSystem {
         this.optimizeProject(projectId);
         this.updateAnalytics();
 
-        console.log(`📋 새로운 프로젝트 생성: ${projectId}`);
+        errorLogger.info('새로운 프로젝트 생성', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'createProject',
+            projectId,
+        });
         return fullProject;
     }
 
@@ -512,7 +563,7 @@ export class AIProjectManagementOptimizationSystem {
 
         const task = project.tasks.find(t => t.taskId === taskId);
         if (task) {
-            task.status = status as any;
+            task.status = status as 'completed' | 'review' | 'blocked' | 'in-progress' | 'todo';
             if (status === 'completed') {
                 task.completedDate = Date.now();
                 task.progress = 1.0;
@@ -533,7 +584,11 @@ export class AIProjectManagementOptimizationSystem {
         const project = this.projects.get(projectId);
         if (!project) return;
 
-        console.log(`🔧 프로젝트 최적화 시작: ${projectId}`);
+        errorLogger.info('프로젝트 최적화 시작', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'optimizeProject',
+            projectId,
+        });
 
         const optimization = project.optimization;
         optimization.status = 'in-progress';
@@ -559,7 +614,11 @@ export class AIProjectManagementOptimizationSystem {
         // 권장사항 생성
         this.generateRecommendations(project);
 
-        console.log(`✅ 프로젝트 최적화 완료: ${projectId}`);
+        errorLogger.info('프로젝트 최적화 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'optimizeProject',
+            projectId,
+        });
     }
 
     private optimizeSchedule(project: ProjectManagement): void {
@@ -676,9 +735,21 @@ export class AIProjectManagementOptimizationSystem {
 
         results.forEach(result => {
             if (result.improvement > 0.1) {
-                console.log(`📈 상당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
+                errorLogger.info('상당한 개선', {
+                    component: 'aiProjectManagementOptimizationSystem',
+                    action: 'analyzeOptimizationResults',
+                    metric: result.metric,
+                    improvement: result.improvement,
+                    improvementPercent: (result.improvement * 100).toFixed(1),
+                });
             } else if (result.improvement > 0.05) {
-                console.log(`📊 적당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
+                errorLogger.info('적당한 개선', {
+                    component: 'aiProjectManagementOptimizationSystem',
+                    action: 'analyzeOptimizationResults',
+                    metric: result.metric,
+                    improvement: result.improvement,
+                    improvementPercent: (result.improvement * 100).toFixed(1),
+                });
             }
         });
     }
@@ -814,7 +885,7 @@ export class AIProjectManagementOptimizationSystem {
         return completedTasks.length / project.tasks.length;
     }
 
-    private calculateSatisfaction(project: ProjectManagement): number {
+    private calculateSatisfaction(_project: ProjectManagement): number {
         // 간단한 만족도 계산 (실제로는 설문조사 결과 기반)
         return 0.8;
     }
@@ -844,7 +915,13 @@ export class AIProjectManagementOptimizationSystem {
 
         // 자동 최적화 조건 확인
         if (settings.autoOptimization && project.performance.overallPerformance < settings.performanceThresholds.minimumSchedulePerformance) {
-            console.log(`🔄 성과 기준 미달로 자동 최적화 실행: ${projectId}`);
+            errorLogger.info('성과 기준 미달로 자동 최적화 실행', {
+                component: 'aiProjectManagementOptimizationSystem',
+                action: 'checkOptimizationNeeds',
+                projectId,
+                overallPerformance: project.performance.overallPerformance,
+                minimumSchedulePerformance: settings.performanceThresholds.minimumSchedulePerformance,
+            });
             this.optimizeProject(projectId);
         }
     }
@@ -878,7 +955,10 @@ export class AIProjectManagementOptimizationSystem {
 
     private cleanupData(): void {
         this.projects.clear();
-        console.log('🧹 프로젝트 데이터 정리 완료');
+        errorLogger.info('프로젝트 데이터 정리 완료', {
+            component: 'aiProjectManagementOptimizationSystem',
+            action: 'cleanupData',
+        });
     }
 
     public getProjects(): ProjectManagement[] {

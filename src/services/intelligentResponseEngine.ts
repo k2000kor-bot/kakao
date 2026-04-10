@@ -3,6 +3,9 @@
  * 질문을 정확히 파악하고 실제 답변을 생성하는 고도화된 시스템
  */
 
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface QuestionContext {
     originalQuestion: string;
     processedQuestion: string;
@@ -61,9 +64,9 @@ export interface IntelligentResponse {
 
 export class IntelligentResponseEngine {
     private questionPatterns: Map<string, RegExp[]>;
-    private domainKnowledge: Map<string, any>;
+    private domainKnowledge: Map<string, Record<string, unknown>>;
     private responseTemplates: Map<string, string>;
-    private learningHistory: any[];
+    private learningHistory: unknown[];
 
     constructor() {
         this.questionPatterns = new Map();
@@ -264,7 +267,7 @@ export class IntelligentResponseEngine {
     async generateIntelligentResponse(
         context: QuestionContext,
         strategy: ResponseStrategy,
-        additionalData?: any
+        additionalData?: Record<string, unknown>
     ): Promise<IntelligentResponse> {
         try {
             // 1. 기본 응답 생성
@@ -297,15 +300,21 @@ export class IntelligentResponseEngine {
                 qualityMetrics
             };
         } catch (error) {
-            console.error('지능형 응답 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('지능형 응답 생성 실패', err, {
+                component: 'intelligentResponseEngine',
+                action: 'generateIntelligentResponse',
+                questionType: context.questionType,
+                complexity: context.complexity,
+                domain: context.domain,
+            });
             return this.generateFallbackResponse(context);
         }
     }
 
     private preprocessQuestion(question: string): string {
         // 질문 전처리 (정규화, 노이즈 제거 등)
-        return question
-            .trim()
+        return coerceTrimmedString(question, '')
             .replace(/\s+/g, ' ')
             .replace(/[^\w\s가-힣?!.,]/g, '')
             .toLowerCase();
@@ -347,8 +356,8 @@ export class IntelligentResponseEngine {
         const domains: string[] = [];
 
         for (const [domain, knowledge] of Array.from(this.domainKnowledge.entries())) {
-            const keywords = knowledge.keywords || [];
-            const concepts = knowledge.concepts || [];
+            const keywords = Array.isArray(knowledge.keywords) ? knowledge.keywords : [];
+            const concepts = Array.isArray(knowledge.concepts) ? knowledge.concepts : [];
             const allTerms = [...keywords, ...concepts];
 
             if (allTerms.some((term: string) => question.includes(term.toLowerCase()))) {
@@ -512,7 +521,7 @@ export class IntelligentResponseEngine {
         return questions;
     }
 
-    private async generateBaseContent(context: QuestionContext, strategy: ResponseStrategy): Promise<string> {
+    private async generateBaseContent(context: QuestionContext, _strategy: ResponseStrategy): Promise<string> {
         // 기본 응답 생성 로직
         const template = this.responseTemplates.get(context.questionType) || this.responseTemplates.get('factual')!;
 
@@ -550,7 +559,7 @@ export class IntelligentResponseEngine {
         return this.generateGeneralContent(context);
     }
 
-    private generateRealEstateContent(context: QuestionContext): string {
+    private generateRealEstateContent(_context: QuestionContext): string {
         return `
 • **현재 상황**: 원베일리 아파트의 하자 문제가 지속적으로 제기되고 있습니다.
 • **주요 이슈**: 구조적 결함, 시공 품질 문제, 입주민 불만 등이 주요 쟁점입니다.
@@ -559,7 +568,7 @@ export class IntelligentResponseEngine {
         `;
     }
 
-    private generateTechnologyContent(context: QuestionContext): string {
+    private generateTechnologyContent(_context: QuestionContext): string {
         return `
 • **기술 동향**: 최신 기술 트렌드와 발전 방향을 분석합니다.
 • **구현 방안**: 실제 적용 가능한 구체적인 방법을 제시합니다.
@@ -568,7 +577,7 @@ export class IntelligentResponseEngine {
         `;
     }
 
-    private generateGeneralContent(context: QuestionContext): string {
+    private generateGeneralContent(_context: QuestionContext): string {
         return `
 • **핵심 포인트**: 질문의 핵심 내용에 대한 명확한 답변을 제공합니다.
 • **상세 설명**: 추가적인 배경 정보와 맥락을 설명합니다.
@@ -590,7 +599,9 @@ export class IntelligentResponseEngine {
 
         if (domainInfo.length > 0) {
             const additionalInfo = domainInfo.map(info => {
-                return `\n**🔍 관련 키워드**: ${info.keywords?.slice(0, 5).join(', ')}\n`;
+                if (!info) return '';
+                const kw = Array.isArray(info.keywords) ? info.keywords : [];
+                return `\n**🔍 관련 키워드**: ${kw.join(', ')}\n`;
             }).join('');
 
             return content + additionalInfo;
@@ -599,15 +610,17 @@ export class IntelligentResponseEngine {
         return content;
     }
 
-    private async enhanceWithRealTimeData(content: string, context: QuestionContext, additionalData?: any): Promise<string> {
+    private async enhanceWithRealTimeData(content: string, context: QuestionContext, additionalData?: Record<string, unknown>): Promise<string> {
         // 실시간 데이터로 콘텐츠 강화
         if (additionalData?.newsResults) {
-            const newsInfo = `\n**📰 최신 뉴스 정보**:\n${additionalData.newsResults.slice(0, 3).map((news: any) => `• ${news.title}`).join('\n')}\n`;
+            const newsResults = (additionalData.newsResults as Array<{ title?: string }>) ?? [];
+            const newsInfo = `\n**📰 최신 뉴스 정보**:\n${newsResults.map((news) => `• ${news.title ?? ''}`).join('\n')}\n`;
             content += newsInfo;
         }
 
         if (additionalData?.webSearchResults) {
-            const webInfo = `\n**🌐 웹 검색 결과**:\n${additionalData.webSearchResults.slice(0, 3).map((result: any) => `• ${result.title}`).join('\n')}\n`;
+            const webResults = (additionalData.webSearchResults as Array<{ title?: string }>) ?? [];
+            const webInfo = `\n**🌐 웹 검색 결과**:\n${webResults.map((result) => `• ${result.title ?? ''}`).join('\n')}\n`;
             content += webInfo;
         }
 
@@ -636,7 +649,7 @@ export class IntelligentResponseEngine {
 
     private summarizeContent(content: string): string {
         // 콘텐츠 요약
-        const lines = content.split('\n').filter(line => line.trim());
+        const lines = content.split('\n').filter((line) => coerceTrimmedString(line, ''));
         const importantLines = lines.filter(line =>
             line.includes('**') ||
             line.includes('•') ||
@@ -644,7 +657,7 @@ export class IntelligentResponseEngine {
             line.includes('중요')
         );
 
-        return importantLines.slice(0, 10).join('\n');
+        return importantLines.join('\n');
     }
 
     private structureContent(content: string, strategy: ResponseStrategy): string {
@@ -693,7 +706,7 @@ export class IntelligentResponseEngine {
         return Math.min(1.0, confidence);
     }
 
-    private identifySources(context: QuestionContext, additionalData?: any): string[] {
+    private identifySources(context: QuestionContext, additionalData?: Record<string, unknown>): string[] {
         const sources: string[] = ['내부 지식 베이스'];
 
         if (additionalData?.newsResults) {
@@ -736,8 +749,9 @@ export class IntelligentResponseEngine {
 
         context.domain.forEach(domain => {
             const knowledge = this.domainKnowledge.get(domain);
-            if (knowledge?.concepts) {
-                topics.push(...knowledge.concepts.slice(0, 3));
+            const concepts = knowledge && Array.isArray(knowledge.concepts) ? knowledge.concepts : [];
+            if (concepts.length > 0) {
+                topics.push(...concepts);
             }
         });
 
@@ -802,7 +816,7 @@ export class IntelligentResponseEngine {
         if (content.length > 100 && content.length < 2000) score += 0.2;
 
         // 문장 구조
-        const sentences = content.split(/[.!?]/).filter(s => s.trim());
+        const sentences = content.split(/[.!?]/).filter((s) => coerceTrimmedString(s, ''));
         const avgSentenceLength = content.length / sentences.length;
         if (avgSentenceLength < 100) score += 0.1; // 너무 긴 문장 방지
 

@@ -1,26 +1,24 @@
 #!/bin/bash
 
-# CORBU AI Ultimate System 중지 스크립트
-echo "🛑 CORBU AI Ultimate System을 중지합니다..."
+# CORBU.AI Ultimate System 중지 스크립트
+echo "🛑 CORBU.AI Ultimate System을 중지합니다..."
 
-# Node.js 프로세스 중지
 echo "🎨 프론트엔드 서버를 중지합니다..."
-pkill -f "npm start"
-pkill -f "react-scripts"
+pkill -f "npm start" 2>/dev/null || true
+pkill -f "react-scripts" 2>/dev/null || true
 
-# Python 프로세스 중지
 echo "🔧 백엔드 서버를 중지합니다..."
-pkill -f "python main_server.py"
-pkill -f "uvicorn"
+pkill -f "python3 main_server.py" 2>/dev/null || true
+pkill -f "python main_server.py" 2>/dev/null || true
+pkill -f "uvicorn" 2>/dev/null || true
 
-# 포트 3000과 8000 사용 프로세스 중지
-echo "🔌 포트를 정리합니다..."
+echo "🔌 포트 정리 (3000, 5002, 8000)..."
 lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+lsof -ti:5002 | xargs kill -9 2>/dev/null || true
 lsof -ti:8000 | xargs kill -9 2>/dev/null || true
 
-    echo ""
-echo "✅ CORBU AI Ultimate System이 성공적으로 중지되었습니다!"
-    echo ""
-echo "📊 시스템이 완전히 종료되었습니다."
-echo "🔄 다시 시작하려면 ./start_ultimate_system.sh를 실행하세요."
-        echo ""
+echo ""
+echo "✅ CORBU.AI Ultimate System이 중지되었습니다."
+echo "📊 시스템이 종료되었습니다."
+echo "🔄 다시 시작: ./start_ultimate_system.sh 또는 npm run restart:backend"
+echo ""

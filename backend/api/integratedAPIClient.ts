@@ -1,10 +1,10 @@
 /**
  * 통합 API 클라이언트
  * 프론트엔드에서 사용할 수 있는 TypeScript 클라이언트
+ * 메인 백엔드(main_server.py, 포트 5002)에 통합된 /api/integrated 엔드포인트 사용
  */
-
 const INTEGRATED_API_BASE_URL =
-  process.env.REACT_APP_INTEGRATED_API_URL || "http://localhost:8000/api/integrated";
+  process.env.REACT_APP_INTEGRATED_API_URL || "http://localhost:5002/api/integrated";
 
 export interface AnalyzeRequest {
   message: string;

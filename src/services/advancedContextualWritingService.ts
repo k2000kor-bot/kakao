@@ -1,4 +1,12 @@
-import enhancedWritingService from './enhancedWritingService';
+import {
+    API_BASE_URL,
+    API_SESSION_ADVANCED_CONTEXTUAL_WRITING_SEGMENT,
+    API_SESSION_DEEP_CONTEXT_ANALYSIS_SEGMENT,
+    API_SESSIONS_LIST_PATH,
+    FALLBACK_API_ORIGIN,
+    joinApiHealthCheckUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface AdvancedWritingRequest {
     writingType: 'contextual' | 'semantic' | 'knowledge' | 'insight';
@@ -8,8 +16,8 @@ export interface AdvancedWritingRequest {
     length: 'short' | 'medium' | 'long' | 'comprehensive';
     keywords: string[];
     context: string;
-    fileContexts: any[];
-    semanticAnalysis?: any;
+    fileContexts: Record<string, unknown>[];
+    semanticAnalysis?: Record<string, unknown>;
 }
 
 export interface AdvancedWritingResponse {
@@ -51,7 +59,7 @@ class AdvancedContextualWritingService {
     private baseUrl: string;
 
     constructor() {
-        this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8008';
+        this.baseUrl = process.env.REACT_APP_API_URL || API_BASE_URL || FALLBACK_API_ORIGIN;
     }
 
     /**
@@ -62,13 +70,19 @@ class AdvancedContextualWritingService {
         request: AdvancedWritingRequest
     ): Promise<AdvancedWritingResponse> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/advanced-contextual-writing`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_SESSIONS_LIST_PATH}/${encodeURIComponent(sessionId)}${API_SESSION_ADVANCED_CONTEXTUAL_WRITING_SEGMENT}`,
+                ),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
                 },
-                body: JSON.stringify(request),
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -77,7 +91,15 @@ class AdvancedContextualWritingService {
             const result = await response.json();
             return result;
         } catch (error) {
-            console.error('고도화된 문맥 글쓰기 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('고도화된 문맥 글쓰기 생성 실패', err, {
+                component: 'advancedContextualWritingService',
+                action: 'generateAdvancedWriting',
+                writingType: request.writingType,
+                targetAudience: request.targetAudience,
+                writingGoal: request.writingGoal,
+                contextLength: request.context.length,
+            });
             return {
                 success: false,
                 content: '',
@@ -102,16 +124,22 @@ class AdvancedContextualWritingService {
      */
     async analyzeDeepContext(
         sessionId: string,
-        fileContexts: any[]
+        fileContexts: Record<string, unknown>[]
     ): Promise<{ success: boolean; deepAnalysis?: DeepContextAnalysis[]; error?: string }> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/deep-context-analysis`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_SESSIONS_LIST_PATH}/${encodeURIComponent(sessionId)}${API_SESSION_DEEP_CONTEXT_ANALYSIS_SEGMENT}`,
+                ),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ fileContexts }),
                 },
-                body: JSON.stringify({ fileContexts }),
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -120,7 +148,13 @@ class AdvancedContextualWritingService {
             const result = await response.json();
             return result;
         } catch (error) {
-            console.error('심층 문맥 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('심층 문맥 분석 실패', err, {
+                component: 'advancedContextualWritingService',
+                action: 'analyzeDeepContext',
+                sessionId,
+                fileContextsCount: fileContexts.length,
+            });
             return {
                 success: false,
                 error: error instanceof Error ? error.message : '알 수 없는 오류'
@@ -131,14 +165,14 @@ class AdvancedContextualWritingService {
     /**
      * 문맥 관련성 계산
      */
-    calculateContextRelevance(fileContexts: any[], userRequest: string): number {
+    calculateContextRelevance(fileContexts: Record<string, unknown>[], userRequest: string): number {
         if (fileContexts.length === 0) return 0;
 
         let totalRelevance = 0;
         const userKeywords = this.extractKeywords(userRequest);
 
         for (const context of fileContexts) {
-            const contextKeywords = context.keywords || [];
+            const contextKeywords = (context.keywords as string[] | undefined) || [];
             const keywordOverlap = userKeywords.filter(keyword =>
                 contextKeywords.some((ck: string) => ck.toLowerCase().includes(keyword.toLowerCase()))
             ).length;
@@ -153,7 +187,7 @@ class AdvancedContextualWritingService {
     /**
      * 지식 통합도 계산
      */
-    calculateKnowledgeIntegration(fileContexts: any[]): number {
+    calculateKnowledgeIntegration(fileContexts: Record<string, unknown>[]): number {
         if (fileContexts.length === 0) return 0;
 
         let totalIntegration = 0;
@@ -161,9 +195,11 @@ class AdvancedContextualWritingService {
         const allConnections = new Set<string>();
 
         for (const context of fileContexts) {
-            const knowledgeGraph = context.knowledgeGraph || {};
-            knowledgeGraph.concepts?.forEach((concept: string) => allConcepts.add(concept));
-            knowledgeGraph.connections?.forEach((connection: string) => allConnections.add(connection));
+            const knowledgeGraph = (context.knowledgeGraph || {}) as Record<string, unknown>;
+            const concepts = (knowledgeGraph.concepts as string[] | undefined) || [];
+            const connections = (knowledgeGraph.connections as string[] | undefined) || [];
+            concepts.forEach((concept: string) => allConcepts.add(concept));
+            connections.forEach((connection: string) => allConnections.add(connection));
         }
 
         const conceptDiversity = allConcepts.size / Math.max(fileContexts.length * 3, 1);
@@ -176,12 +212,13 @@ class AdvancedContextualWritingService {
     /**
      * 시맨틱 일관성 계산
      */
-    calculateSemanticCoherence(fileContexts: any[]): number {
+    calculateSemanticCoherence(fileContexts: Record<string, unknown>[]): number {
         if (fileContexts.length === 0) return 0;
 
-        const tones = fileContexts.map(context => context.semanticAnalysis?.tone || 'neutral');
-        const themes = fileContexts.flatMap(context => context.semanticAnalysis?.themes || []);
-        const topics = fileContexts.flatMap(context => context.semanticAnalysis?.topics || []);
+        const sem = (c: Record<string, unknown>) => (c.semanticAnalysis || {}) as Record<string, unknown>;
+        const tones = fileContexts.map(context => String(sem(context).tone || 'neutral'));
+        const themes = fileContexts.flatMap(context => (sem(context).themes as string[] | undefined) || []);
+        const topics = fileContexts.flatMap(context => (sem(context).topics as string[] | undefined) || []);
 
         // 톤 일관성
         const toneConsistency = this.calculateConsistency(tones);
@@ -268,7 +305,7 @@ class AdvancedContextualWritingService {
     /**
      * 문맥 기반 인사이트 생성
      */
-    generateContextualInsights(fileContexts: any[]): string[] {
+    generateContextualInsights(fileContexts: Record<string, unknown>[]): string[] {
         const insights: string[] = [];
 
         if (fileContexts.length === 0) {
@@ -276,24 +313,27 @@ class AdvancedContextualWritingService {
         }
 
         // 주제별 그룹화
-        const topicGroups = fileContexts.reduce((acc, context) => {
-            const topics = context.semanticAnalysis?.topics || [];
-            topics.forEach((topic: string) => {
+        const topicGroups = fileContexts.reduce((acc: Record<string, Record<string, unknown>[]>, context: Record<string, unknown>) => {
+            const sem = (context.semanticAnalysis || {}) as Record<string, unknown>;
+            const topics = (sem.topics as string[] | undefined) || [];
+            topics.forEach((t: unknown) => {
+                const topic = String(t ?? '');
                 if (!acc[topic]) acc[topic] = [];
                 acc[topic].push(context);
             });
             return acc;
-        }, {} as Record<string, any[]>);
+        }, {} as Record<string, Record<string, unknown>[]>);
 
         // 주요 주제별 인사이트
         Object.entries(topicGroups).forEach(([topic, contexts]) => {
-            if ((contexts as any[]).length > 1) {
-                insights.push(`"${topic}" 관련 파일이 ${(contexts as any[]).length}개 발견되어 이 주제에 대한 깊이 있는 분석이 가능합니다.`);
+            if (contexts.length > 1) {
+                insights.push(`"${topic}" 관련 파일이 ${contexts.length}개 발견되어 이 주제에 대한 깊이 있는 분석이 가능합니다.`);
             }
         });
 
         // 감정 분석 인사이트
-        const sentiments = fileContexts.map(context => context.semanticAnalysis?.tone || 'neutral');
+        const semTone = (c: Record<string, unknown>) => String(((c.semanticAnalysis || {}) as Record<string, unknown>).tone || 'neutral');
+        const sentiments = fileContexts.map(context => semTone(context));
         const positiveCount = sentiments.filter(s => s === 'positive').length;
         const negativeCount = sentiments.filter(s => s === 'negative').length;
 
@@ -304,7 +344,8 @@ class AdvancedContextualWritingService {
         }
 
         // 복잡도 분석
-        const complexities = fileContexts.map(context => context.semanticAnalysis?.complexity || 0.5);
+        const semComplexity = (c: Record<string, unknown>) => Number(((c.semanticAnalysis || {}) as Record<string, unknown>).complexity) || 0.5;
+        const complexities = fileContexts.map(context => semComplexity(context));
         const avgComplexity = complexities.reduce((sum, c) => sum + c, 0) / complexities.length;
 
         if (avgComplexity > 0.7) {

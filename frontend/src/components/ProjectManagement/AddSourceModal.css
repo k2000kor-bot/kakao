@@ -1,0 +1,170 @@
+/**
+ * 소스 추가 모달 — 프로젝트 플로우 (PROJECT_PAGE_DESIGN_SPEC, 참조 디자인)
+ * theme.css 변수 사용.
+ */
+.add-source-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-backdrop);
+  padding: max(var(--spacing-lg), env(safe-area-inset-top, 0px))
+    max(var(--spacing-lg), env(safe-area-inset-right, 0px))
+    max(var(--spacing-lg), env(safe-area-inset-bottom, 0px))
+    max(var(--spacing-lg), env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  backdrop-filter: var(--blur-sm, blur(4px));
+}
+
+.add-source-modal-panel {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  width: 100%;
+  max-width: 28rem;
+  max-height: min(90vh, calc(100dvh - 32px));
+  margin: auto;
+  flex-shrink: 0;
+  border: var(--border-width) solid var(--border-color);
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.add-source-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.add-source-modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.add-source-modal-close {
+  padding: var(--spacing-sm);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.add-source-modal-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.add-source-modal-close:focus-visible {
+  outline: var(--focus-ring-figma, var(--focus-ring));
+  outline-offset: 2px;
+}
+
+.add-source-modal-dropzone {
+  margin: var(--spacing-xl);
+  padding: var(--spacing-2xl);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  min-height: 140px;
+  transition: border-color var(--transition-base), background var(--transition-base);
+}
+
+.add-source-modal-dropzone.is-drag-over {
+  border-color: var(--accent-info-figma, var(--accent-info));
+  background: var(--accent-info-muted);
+}
+
+.add-source-modal-dropzone-icon {
+  font-size: 2rem;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.add-source-modal-dropzone-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.add-source-modal-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-xl) var(--spacing-xl);
+}
+
+.add-source-modal-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg) var(--spacing-sm);
+  background: var(--bg-secondary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+
+.add-source-modal-action-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-hover);
+}
+
+.add-source-modal-action-btn:focus-visible {
+  outline: var(--focus-ring-figma, var(--focus-ring));
+  outline-offset: 2px;
+}
+
+.add-source-modal-action-btn svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.add-source-modal-drive-icon,
+.add-source-modal-slack-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Google Drive: 삼각형 형태 대신 아이콘 영역 */
+.add-source-modal-drive-icon {
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 50%, #fbbc05 100%);
+  border-radius: 4px;
+}
+
+.add-source-modal-slack-icon {
+  background: var(--accent-secondary);
+  border-radius: 4px;
+}
+
+.add-source-modal-file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}

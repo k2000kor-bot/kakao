@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-CORBU AI 성능 모니터링 시스템
+CORBU.AI 성능 모니터링 시스템
 실시간 성능 지표 수집 및 최적화 제안
 """
 
+import os
 import psutil
 import time
 import json
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Performance Monitor API",
-    description="Real-time performance monitoring for CORBU AI system",
+    description="Real-time performance monitoring for CORBU.AI system",
     version="1.0.0",
 )
 
@@ -354,4 +355,5 @@ if __name__ == "__main__":
     monitor_thread.start()
     
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8013)
+    _p = int(os.environ.get("PERFORMANCE_MONITOR_PORT", os.environ.get("PORT", "8013")))
+    uvicorn.run(app, host="0.0.0.0", port=_p)

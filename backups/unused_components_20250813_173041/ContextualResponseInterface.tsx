@@ -205,7 +205,7 @@ const ContextualResponseInterface: React.FC<ContextualResponseInterfaceProps> = 
           setConversationId(newConversationId);
 
           // 환영 메시지
-          addMessage('안녕하세요! 저는 맥락을 파악하여 정확한 답변을 제공하는 CORBU AI입니다. 🤖\n\n✨ 맥락 기반 기능:\n• 🧠 사용자 의도 분석\n• 🤔 확인 질문 생성\n• ✅ 정확한 답변 제공\n• 📚 참고 자료 제시\n• 🎯 신뢰도 표시\n\n무엇을 도와드릴까요?', 'ai', 'text', {
+          addMessage('안녕하세요! 저는 맥락을 파악하여 정확한 답변을 제공하는 CORBU.AI입니다. 🤖\n\n✨ 맥락 기반 기능:\n• 🧠 사용자 의도 분석\n• 🤔 확인 질문 생성\n• ✅ 정확한 답변 제공\n• 📚 참고 자료 제시\n• 🎯 신뢰도 표시\n\n무엇을 도와드릴까요?', 'ai', 'text', {
             confidence: 0.95,
             processingTime: 0,
             intent: { type: 'greeting', confidence: 0.95 }

@@ -3,11 +3,20 @@
 통합 API 테스트 스크립트
 """
 
+import os
 import requests
 import json
 from typing import Dict, Any
 
-BASE_URL = "http://localhost:8000/api/integrated"
+# 호스트만 넣거나 전체 베이스를 넣을 수 있음 (이중 /api/integrated 방지)
+_api_port = os.environ.get("API_PORT") or os.environ.get("BACKEND_PORT") or "5002"
+_raw = os.environ.get(
+    "CORBU_INTEGRATED_TEST_BASE", f"http://localhost:{_api_port}"
+).rstrip("/")
+if _raw.endswith("/api/integrated"):
+    BASE_URL = _raw
+else:
+    BASE_URL = f"{_raw}/api/integrated"
 
 
 def test_endpoint(

@@ -670,11 +670,13 @@ async def test_endpoint():
 
 
 if __name__ == "__main__":
+    import os
+    _p = int(os.environ.get("PROMOTIONAL_CONTENT_SYSTEM_PORT", os.environ.get("PORT", "8006")))
     print("🚀 홍보물 및 전달 시스템 시작 중...")
     uvicorn.run(
         "promotional_content_system:app",
         host="0.0.0.0",
-        port=8006,
+        port=_p,
         reload=False,
         log_level="info"
     ) 

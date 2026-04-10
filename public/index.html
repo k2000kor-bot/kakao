@@ -3,20 +3,29 @@
 
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <link rel="icon" href="/favicon.ico" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#667eea" />
-  <meta name="description" content="CORBU AI Ultimate System - 고도화된 AI 플랫폼" />
-  <meta name="keywords" content="AI, 인공지능, 분석, 플랫폼, CORBU" />
-  <meta name="author" content="CORBU AI Team" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#3478F6" />
+  <!-- CORBU.AI UI Kit: Inter (Figma node-id=7-3) - 비블로킹 로드로 FCP 개선 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- LCP 개선: 폰트 preload로 초기 텍스트(CORBU.AI) 페인트 가속. font-display=swap으로 FOUT 허용 -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" fetchpriority="high" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
+  <meta name="description" content="CORBU.AI - AI UI Kit 기반 고도화된 AI 플랫폼" />
+  <meta name="keywords" content="AI, 인공지능, CORBU.AI, 분석, 플랫폼" />
+  <meta name="author" content="CORBU.AI Team" />
 
   <!-- PWA 관련 메타 태그 -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="CORBU AI" />
-  <meta name="application-name" content="CORBU AI" />
-  <meta name="msapplication-TileColor" content="#667eea" />
+  <meta name="apple-mobile-web-app-title" content="CORBU.AI" />
+  <meta name="application-name" content="CORBU.AI" />
+  <meta name="msapplication-TileColor" content="#3478F6" />
   <meta name="msapplication-tap-highlight" content="no" />
 
   <!-- 아이콘 -->
@@ -43,12 +52,39 @@
     media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="/icons/apple-splash-640-1136.jpg"
     media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <title>CORBU AI Ultimate System - 고도화된 AI 플랫폼</title>
+  <title>CORBU.AI - AI 플랫폼</title>
+  <!-- 번들 CSS보다 먼저 페인트되는 화면용 레이어(토큰과 동일 스케일: --z-popover 초과) -->
+  <style>:root { --z-splash: 110000; }</style>
 </head>
 
-<body>
-  <noscript>You need to enable JavaScript to run this app.</noscript>
-  <div id="root"></div>
+<body style="margin:0;min-height:100vh;background:#FEFEFE;color:#141718;font-family:Inter,-apple-system,sans-serif;">
+  <!-- 서버 접속 확인: 이 글이 보이면 개발 서버(3000)에 접속된 것. 캐시 없이 보이도록 인라인 스타일만 사용 -->
+  <div id="first-paint" role="status" aria-live="polite" aria-label="앱 로딩 중" style="position:fixed;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#0d0d1a;z-index:var(--z-splash);padding:20px;">
+    <div style="background:#16213e;padding:48px;border-radius:16px;max-width:560px;border:3px solid #00d26a;box-shadow:0 0 40px rgba(0,210,106,0.2);">
+      <p style="margin:0 0 16px;font-size:14px;color:#00d26a;font-weight:700;letter-spacing:0.05em;">접속됨</p>
+      <h1 style="margin:0 0 16px;font-size:28px;color:#fff;">CORBU.AI</h1>
+      <p style="margin:0 0 8px;font-size:16px;color:#a0a0a0;">서버에 접속되었습니다. React 앱을 불러오는 중...</p>
+      <p style="margin:16px 0 0;font-size:14px;color:#666;">계속 이 화면만 보이면 <a href="/standalone.html" style="color:#00d26a;">standalone.html</a> 을 열어 보세요.</p>
+    </div>
+  </div>
+  <noscript>JavaScript를 켜 주세요. 이 앱은 JavaScript가 필요합니다.</noscript>
+  <div id="root">
+    <div id="root-loading" role="status" aria-live="polite" aria-label="불러오는 중" style="padding:32px;font-family:sans-serif;text-align:center;max-width:480px;margin:60px auto;background:#fff;border-radius:12px;color:#333;">
+      <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0084FF;">CORBU.AI</p>
+      <p style="margin:0 0 4px;font-size:16px;">불러오는 중...</p>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var fp = document.getElementById('first-paint');
+      if (!fp) return;
+      setTimeout(function(){
+        var inner = fp.querySelector('div');
+        if (inner) inner.innerHTML = '<p style="margin:0 0 16px;font-size:14px;color:#00d26a;font-weight:700;">접속됨</p><h1 style="margin:0 0 16px;font-size:28px;color:#fff;">CORBU.AI</h1><p style="margin:0 0 8px;font-size:16px;color:#a0a0a0;">로딩이 오래 걸립니다.</p><p style="margin:16px 0 0;font-size:14px;color:#888;">F12 → Console·Network 탭에서 오류·main.*.js 로드 여부를 확인하세요.</p><p style="margin:12px 0 0;"><a href="/standalone.html" style="color:#00d26a;">standalone.html</a> · <button onclick="location.reload()" style="padding:8px 16px;cursor:pointer;font-size:14px;background:#00d26a;color:#000;border:none;border-radius:8px;">새로고침</button></p>';
+      }, 5000);
+      setTimeout(function(){ fp.style.display = 'none'; }, 10000);
+    })();
+  </script>
 
   <!-- Service Worker 등록 (개발 모드에서는 완전 비활성화) -->
   <script>
@@ -56,7 +92,9 @@
       // 개발 모드에서는 Service Worker를 완전히 제거하고 등록하지 않음
       const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
-      if (isDevelopment) {
+      // E2E PWA 테스트: ?sw=1 또는 ?pwa=1 이면 localhost에서도 SW 등록 허용
+      const pwaTestMode = window.location.search.includes('sw=1') || window.location.search.includes('pwa=1');
+      if (isDevelopment && !pwaTestMode) {
         // 개발 모드: 기존 Service Worker 완전 제거
         navigator.serviceWorker.getRegistrations().then((registrations) => {
           registrations.forEach((registration) => {
@@ -80,6 +118,43 @@
         });
       }
     }
+  </script>
+  <script>
+    // 10초 후에도 #root에 실제 컨텐츠가 없으면 연결/로딩 안내 표시
+    (function() {
+      var deadline = Date.now() + 10000;
+      function check() {
+        var root = document.getElementById('root');
+        var loading = document.getElementById('root-loading');
+        if (!root || Date.now() < deadline) return;
+        var first = root.firstElementChild;
+        if (!first || (first.id === 'root-loading' && root.childNodes.length === 1)) {
+          root.innerHTML = '<div style="padding:24px;font-family:-apple-system,sans-serif;max-width:560px;margin:0 auto;">' +
+            '<h1>연결할 수 없거나 로딩이 멈춤</h1>' +
+            '<p>다음을 확인한 뒤 <strong>새로고침</strong> 해 보세요.</p>' +
+            '<ul style="text-align:left;">' +
+            '<li>개발 서버 실행 여부: 터미널에서 <code>npm start</code> 또는 <code>npm run restart</code></li>' +
+            '<li>접속 주소: <code>http://localhost:3000</code></li>' +
+            '<li>방화벽/백신이 3000 포트를 막지 않는지</li>' +
+            '</ul>' +
+            '<p><button onclick="window.location.reload()" style="padding:10px 20px;cursor:pointer;font-size:16px;">새로고침</button></p>' +
+            '</div>';
+        }
+      }
+      setTimeout(check, 10000);
+    })();
+  </script>
+  <script>
+    (function(){
+      window.addEventListener('load', function(){
+        setTimeout(function(){
+          var loading = document.getElementById('root-loading');
+          if (loading && document.getElementById('root') && document.getElementById('root').firstElementChild === loading) {
+            loading.innerHTML = '<p style="margin:0 0 8px 0;font-size:22px;font-weight:700;color:#0084FF;">CORBU.AI</p><p style="margin:0 0 4px 0;font-size:16px;color:#333;">로딩이 오래 걸립니다.</p><p style="margin:12px 0 0 0;font-size:14px;color:#666;">F12 → Console 탭에서 오류를 확인한 뒤 새로고침해 보세요.</p><p style="margin:12px 0 0 0;"><button onclick="location.reload()" style="padding:10px 20px;cursor:pointer;font-size:14px;">새로고침</button></p>';
+          }
+        }, 5000);
+      });
+    })();
   </script>
 </body>
 

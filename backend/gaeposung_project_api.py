@@ -120,7 +120,7 @@ class GaepoSungProjectAPI:
         return None
 
     def get_tasks_by_room(self, room_id: str) -> List[Dict[str, Any]]:
-        """채팅방별 작업 목록 조회"""
+        """대화방별 작업 목록 조회"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -216,7 +216,7 @@ class GaepoSungProjectAPI:
         return None
 
     def get_milestones_by_room(self, room_id: str) -> List[Dict[str, Any]]:
-        """채팅방별 마일스톤 목록 조회"""
+        """대화방별 마일스톤 목록 조회"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -307,7 +307,7 @@ class GaepoSungProjectAPI:
         return None
 
     def get_recommendations_by_room(self, room_id: str) -> List[Dict[str, Any]]:
-        """채팅방별 AI 추천 목록 조회"""
+        """대화방별 AI 추천 목록 조회"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         

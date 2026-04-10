@@ -24,7 +24,7 @@
 #### 주요 구성 요소
 
 - **사이드바**: AI 기능, 최근 대화, 네비게이션
-- **메인 채팅 영역**: 대화 메시지 표시
+- **메인 대화 영역**: 대화 메시지 표시
 - **입력 영역**: 텍스트 입력, 파일 첨부, 음성 입력
 - **빠른 프롬프트**: 원클릭 기능 접근
 
@@ -168,7 +168,7 @@ def generate_hybrid_ai_response(message, session_id, processing_mode='auto'):
 
 - **`/`**: 새로운 현대적 인터페이스 (`modern_ai_interface.html`)
 - **`/legacy`**: 기존 인터페이스 (`modern_chat_interface.html`)
-- **`/api/chat`**: 통합된 채팅 API (모든 글쓰기 모드 자동 적용)
+- **`/api/chat`**: 통합된 대화 API (모든 글쓰기 모드 자동 적용)
 - **`/api/natural-writing`**: 자연스러운 글쓰기 전용 API
 - **`/api/persuasion-writing`**: 설득 글쓰기 전용 API
 - **`/api/multi-stage-processing`**: 다단계 처리 전용 API
@@ -209,7 +209,7 @@ def generate_hybrid_ai_response(message, session_id, processing_mode='auto'):
 
 ### 2. 통합된 사용자 경험
 
-- **단일 인터페이스**: 모든 기능이 하나의 채팅 인터페이스에 통합
+- **단일 인터페이스**: 모든 기능이 하나의 대화 인터페이스에 통합
 - **자연스러운 대화**: 별도 설정 없이 자연스러운 대화로 모든 기능 접근
 - **즉시 응답**: 요청 분석 후 즉시 적절한 엔진으로 처리
 

@@ -118,10 +118,10 @@ class IntegratedAISystem:
             logger.error(f"❌ 시스템 초기화 실패: {e}")
             
     def _learn_from_chat_rooms(self):
-        """카카오톡 채팅방에서 학습"""
+        """카카오톡 대화방에서 학습"""
         
         if not os.path.exists(self.chat_rooms_path):
-            logger.warning(f"채팅방 폴더 없음: {self.chat_rooms_path}")
+            logger.warning(f"대화방 폴더 없음: {self.chat_rooms_path}")
             return
             
         chat_files = []
@@ -130,7 +130,7 @@ class IntegratedAISystem:
                 if file.endswith('.txt') and not file.startswith('.'):
                     chat_files.append(os.path.join(root, file))
                     
-        logger.info(f"발견된 채팅방 파일: {len(chat_files)}개")
+        logger.info(f"발견된 대화방 파일: {len(chat_files)}개")
         
         for chat_file in chat_files:
             try:

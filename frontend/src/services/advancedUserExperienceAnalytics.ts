@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { errorLogger } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface UserBehaviorPattern {
@@ -107,7 +108,7 @@ export interface UserExperienceInsight {
     priority: 'low' | 'medium' | 'high' | 'critical';
     actionable: boolean;
     recommendations: string[];
-    data_points: any[];
+    data_points: unknown[];
     generated_at: Date;
 }
 
@@ -155,7 +156,10 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
             this.performComprehensiveAnalysis();
         }, 30000); // 30초마다 분석
 
-        console.log('🧠 고급 사용자 경험 분석이 시작되었습니다.');
+        errorLogger.info('🧠 고급 사용자 경험 분석이 시작되었습니다.', {
+            component: 'advancedUserExperienceAnalytics',
+            action: 'startAnalysis',
+        });
     }
 
     // 분석 중지
@@ -165,11 +169,14 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
             this.analysisInterval = null;
         }
         this.isAnalyzing = false;
-        console.log('⏹️ 사용자 경험 분석이 중지되었습니다.');
+        errorLogger.info('⏹️ 사용자 경험 분석이 중지되었습니다.', {
+            component: 'advancedUserExperienceAnalytics',
+            action: 'stopAnalysis',
+        });
     }
 
     // 사용자 행동 패턴 분석
-    public analyzeUserBehavior(userId: string, sessionId: string, interactionData: any): UserBehaviorPattern {
+    public analyzeUserBehavior(userId: string, sessionId: string, interactionData: Record<string, unknown>): UserBehaviorPattern {
         const key = `${userId}-${sessionId}`;
 
         // 기존 패턴 가져오기 또는 새로 생성
@@ -206,35 +213,40 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 행동 패턴 업데이트
-    private updateBehaviorPattern(pattern: UserBehaviorPattern, data: any): UserBehaviorPattern {
+    private updateBehaviorPattern(pattern: UserBehaviorPattern, data: Record<string, unknown>): UserBehaviorPattern {
         // 세션 지속 시간 분석
-        if (data.session_duration) {
+        const sessionDuration = Number(data.session_duration);
+        if (sessionDuration > 0) {
             pattern.characteristics.session_duration =
-                (pattern.characteristics.session_duration + data.session_duration) / 2;
+                (pattern.characteristics.session_duration + sessionDuration) / 2;
         }
 
         // 상호작용 빈도 분석
-        if (data.interaction_count && data.session_duration) {
+        const interactionCount = Number(data.interaction_count);
+        if (interactionCount > 0 && sessionDuration > 0) {
             pattern.characteristics.interaction_frequency =
-                data.interaction_count / (data.session_duration / 60); // 분당 상호작용
+                interactionCount / (sessionDuration / 60); // 분당 상호작용
         }
 
         // 응답 시간 선호도 분석
-        if (data.response_times) {
-            const avgResponseTime = data.response_times.reduce((sum: number, time: number) => sum + time, 0) / data.response_times.length;
+        const responseTimes = Array.isArray(data.response_times) ? (data.response_times as number[]) : [];
+        if (responseTimes.length > 0) {
+            const avgResponseTime = responseTimes.reduce((sum: number, time: number) => sum + time, 0) / responseTimes.length;
             pattern.characteristics.response_time_preference = avgResponseTime;
         }
 
         // 복잡도 선호도 분석
-        if (data.complexity_scores) {
+        const complexityScores = Array.isArray(data.complexity_scores) ? (data.complexity_scores as number[]) : [];
+        if (complexityScores.length > 0) {
             pattern.characteristics.complexity_preference =
-                data.complexity_scores.reduce((sum: number, score: number) => sum + score, 0) / data.complexity_scores.length;
+                complexityScores.reduce((sum: number, score: number) => sum + score, 0) / complexityScores.length;
         }
 
         // 주제 다양성 분석
-        if (data.topics) {
-            pattern.characteristics.topic_diversity = data.topics.length;
-            pattern.preferences.preferred_topics = data.topics.slice(0, 5);
+        const topics = Array.isArray(data.topics) ? data.topics : [];
+        if (topics.length > 0) {
+            pattern.characteristics.topic_diversity = topics.length;
+            pattern.preferences.preferred_topics = topics.slice(0, 5) as string[];
         }
 
         // 패턴 타입 분류
@@ -246,8 +258,12 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 행동 패턴 분류
-    private classifyBehaviorPattern(characteristics: any): 'casual' | 'problem_solving' | 'learning' | 'efficiency' | 'social' | 'exploration' {
-        const { session_duration, interaction_frequency, complexity_preference, topic_diversity } = characteristics;
+    private classifyBehaviorPattern(characteristics: Record<string, unknown>): 'casual' | 'problem_solving' | 'learning' | 'efficiency' | 'social' | 'exploration' {
+        const c = characteristics as Record<string, number>;
+        const session_duration = c.session_duration ?? 0;
+        const interaction_frequency = c.interaction_frequency ?? 0;
+        const complexity_preference = c.complexity_preference ?? 0;
+        const topic_diversity = c.topic_diversity ?? 0;
 
         if (session_duration > 30 && interaction_frequency > 5 && complexity_preference > 7) {
             return 'learning';
@@ -265,20 +281,21 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 패턴 신뢰도 계산
-    private calculatePatternConfidence(characteristics: any): number {
+    private calculatePatternConfidence(characteristics: Record<string, unknown>): number {
+        const c = characteristics as Record<string, number>;
         const factors = [
-            characteristics.session_duration > 0 ? 1 : 0,
-            characteristics.interaction_frequency > 0 ? 1 : 0,
-            characteristics.response_time_preference > 0 ? 1 : 0,
-            characteristics.complexity_preference > 0 ? 1 : 0,
-            characteristics.topic_diversity > 0 ? 1 : 0
+            (c.session_duration ?? 0) > 0 ? 1 : 0,
+            (c.interaction_frequency ?? 0) > 0 ? 1 : 0,
+            (c.response_time_preference ?? 0) > 0 ? 1 : 0,
+            (c.complexity_preference ?? 0) > 0 ? 1 : 0,
+            (c.topic_diversity ?? 0) > 0 ? 1 : 0
         ];
 
         return factors.reduce((sum, factor) => sum + factor, 0) / factors.length;
     }
 
     // 사용자 참여도 분석
-    public analyzeUserEngagement(userId: string, sessionId: string, engagementData: any): UserEngagementMetrics {
+    public analyzeUserEngagement(userId: string, sessionId: string, engagementData: Record<string, unknown>): UserEngagementMetrics {
         const key = `${userId}-${sessionId}`;
 
         let engagement = this.userEngagementData.get(key) || {
@@ -316,22 +333,22 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 참여도 메트릭 업데이트
-    private updateEngagementMetrics(engagement: UserEngagementMetrics, data: any): UserEngagementMetrics {
+    private updateEngagementMetrics(engagement: UserEngagementMetrics, data: Record<string, unknown>): UserEngagementMetrics {
         // 기본 메트릭 업데이트
-        if (data.session_duration) {
-            engagement.metrics.session_duration = data.session_duration;
+        if (data.session_duration !== undefined) {
+            engagement.metrics.session_duration = Number(data.session_duration);
         }
-        if (data.interaction_count) {
-            engagement.metrics.interaction_count = data.interaction_count;
+        if (data.interaction_count !== undefined) {
+            engagement.metrics.interaction_count = Number(data.interaction_count);
         }
-        if (data.response_time) {
-            engagement.metrics.response_time = data.response_time;
+        if (data.response_time !== undefined) {
+            engagement.metrics.response_time = Number(data.response_time);
         }
-        if (data.topic_switches) {
-            engagement.metrics.topic_switches = data.topic_switches;
+        if (data.topic_switches !== undefined) {
+            engagement.metrics.topic_switches = Number(data.topic_switches);
         }
-        if (data.satisfaction_score) {
-            engagement.metrics.satisfaction_score = data.satisfaction_score;
+        if (data.satisfaction_score !== undefined) {
+            engagement.metrics.satisfaction_score = Number(data.satisfaction_score);
         }
 
         // 깊이 분석
@@ -350,60 +367,60 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 탐색 깊이 계산
-    private calculateExplorationDepth(data: any): number {
+    private calculateExplorationDepth(data: Record<string, unknown>): number {
         const factors = [
-            data.topic_switches || 0,
-            data.follow_up_questions || 0,
-            data.detailed_responses || 0,
-            data.research_requests || 0
+            Number(data.topic_switches) || 0,
+            Number(data.follow_up_questions) || 0,
+            Number(data.detailed_responses) || 0,
+            Number(data.research_requests) || 0
         ];
 
         return factors.reduce((sum, factor) => sum + factor, 0) / factors.length;
     }
 
     // 완료율 계산
-    private calculateCompletionRate(data: any): number {
-        const started = data.started_tasks || 0;
-        const completed = data.completed_tasks || 0;
+    private calculateCompletionRate(data: Record<string, unknown>): number {
+        const started = Number(data.started_tasks) || 0;
+        const completed = Number(data.completed_tasks) || 0;
 
         return started > 0 ? (completed / started) * 100 : 0;
     }
 
     // 좌절 신호 감지
-    private detectFrustrationSignals(data: any): number {
+    private detectFrustrationSignals(data: Record<string, unknown>): number {
         const signals = [
-            data.repeated_questions || 0,
-            data.negative_feedback || 0,
-            data.rapid_topic_switches || 0,
-            data.short_responses || 0
+            Number(data.repeated_questions) || 0,
+            Number(data.negative_feedback) || 0,
+            Number(data.rapid_topic_switches) || 0,
+            Number(data.short_responses) || 0
         ];
 
         return signals.reduce((sum, signal) => sum + signal, 0);
     }
 
     // 피크 활동 시간 분석
-    private analyzePeakActivityHours(data: any): string[] {
+    private analyzePeakActivityHours(_data: Record<string, unknown>): string[] {
         // 시뮬레이션 - 실제로는 시간대별 활동 데이터가 필요
         return ['09:00-11:00', '14:00-16:00', '20:00-22:00'];
     }
 
     // 선호 세션 길이 계산
-    private calculatePreferredSessionLength(data: any): number {
-        return data.session_duration || 15; // 기본값 15분
+    private calculatePreferredSessionLength(data: Record<string, unknown>): number {
+        return Number(data.session_duration) || 15; // 기본값 15분
     }
 
     // 일반적인 사용 사례 식별
-    private identifyCommonUseCases(data: any): string[] {
-        return data.use_cases || ['learning', 'problem_solving', 'exploration'];
+    private identifyCommonUseCases(data: Record<string, unknown>): string[] {
+        return (Array.isArray(data.use_cases) ? data.use_cases : ['learning', 'problem_solving', 'exploration']) as string[];
     }
 
     // 이탈 지점 식별
-    private identifyDropOffPoints(data: any): string[] {
-        return data.drop_off_points || ['complex_questions', 'long_responses', 'technical_topics'];
+    private identifyDropOffPoints(data: Record<string, unknown>): string[] {
+        return (Array.isArray(data.drop_off_points) ? data.drop_off_points : ['complex_questions', 'long_responses', 'technical_topics']) as string[];
     }
 
     // 사용자 만족도 분석
-    public analyzeUserSatisfaction(userId: string, sessionId: string, satisfactionData: any): UserSatisfactionAnalysis {
+    public analyzeUserSatisfaction(userId: string, sessionId: string, satisfactionData: Record<string, unknown>): UserSatisfactionAnalysis {
         const key = `${userId}-${sessionId}`;
 
         let satisfaction = this.userSatisfactionData.get(key) || {
@@ -435,17 +452,17 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 만족도 분석 업데이트
-    private updateSatisfactionAnalysis(satisfaction: UserSatisfactionAnalysis, data: any): UserSatisfactionAnalysis {
+    private updateSatisfactionAnalysis(satisfaction: UserSatisfactionAnalysis, data: Record<string, unknown>): UserSatisfactionAnalysis {
         // 전체 만족도 업데이트
-        if (data.overall_satisfaction) {
-            satisfaction.overall_satisfaction = data.overall_satisfaction;
+        if (data.overall_satisfaction !== undefined) {
+            satisfaction.overall_satisfaction = Number(data.overall_satisfaction);
         }
 
         // 만족도 요인 업데이트
-        if (data.satisfaction_factors) {
+        if (data.satisfaction_factors && typeof data.satisfaction_factors === 'object') {
             satisfaction.satisfaction_factors = {
                 ...satisfaction.satisfaction_factors,
-                ...data.satisfaction_factors
+                ...(data.satisfaction_factors as Record<string, number>)
             };
         }
 
@@ -453,8 +470,8 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
         satisfaction.satisfaction_trend = this.analyzeSatisfactionTrend(satisfaction.overall_satisfaction);
 
         // 고통 지점 및 긍정적 경험 식별
-        satisfaction.pain_points = this.identifyPainPoints(data);
-        satisfaction.positive_experiences = this.identifyPositiveExperiences(data);
+        satisfaction.pain_points = this.identifyPainPoints(data) as string[];
+        satisfaction.positive_experiences = this.identifyPositiveExperiences(data) as string[];
 
         // 개선 권장사항 생성
         satisfaction.recommendations = this.generateSatisfactionRecommendations(satisfaction);
@@ -472,7 +489,7 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 고통 지점 식별
-    private identifyPainPoints(data: any): string[] {
+    private identifyPainPoints(data: Record<string, unknown>): string[] {
         const painPoints = [];
 
         if (data.slow_responses) painPoints.push('느린 응답 시간');
@@ -485,7 +502,7 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 긍정적 경험 식별
-    private identifyPositiveExperiences(data: any): string[] {
+    private identifyPositiveExperiences(data: Record<string, unknown>): string[] {
         const positiveExperiences = [];
 
         if (data.fast_responses) positiveExperiences.push('빠른 응답');
@@ -515,7 +532,7 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 학습 효과성 분석
-    public analyzeLearningEffectiveness(userId: string, sessionId: string, learningData: any): LearningEffectivenessMetrics {
+    public analyzeLearningEffectiveness(userId: string, sessionId: string, learningData: Record<string, unknown>): LearningEffectivenessMetrics {
         const key = `${userId}-${sessionId}`;
 
         let learning = this.learningEffectivenessData.get(key) || {
@@ -557,16 +574,16 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 학습 효과성 업데이트
-    private updateLearningEffectiveness(learning: LearningEffectivenessMetrics, data: any): LearningEffectivenessMetrics {
+    private updateLearningEffectiveness(learning: LearningEffectivenessMetrics, data: Record<string, unknown>): LearningEffectivenessMetrics {
         // 학습 결과 업데이트
-        if (data.knowledge_retention) {
-            learning.learning_outcomes.knowledge_retention = data.knowledge_retention;
+        if (data.knowledge_retention !== undefined) {
+            learning.learning_outcomes.knowledge_retention = Number(data.knowledge_retention);
         }
-        if (data.skill_improvement) {
-            learning.learning_outcomes.skill_improvement = data.skill_improvement;
+        if (data.skill_improvement !== undefined) {
+            learning.learning_outcomes.skill_improvement = Number(data.skill_improvement);
         }
-        if (data.confidence_level) {
-            learning.learning_outcomes.confidence_level = data.confidence_level;
+        if (data.confidence_level !== undefined) {
+            learning.learning_outcomes.confidence_level = Number(data.confidence_level);
         }
 
         // 학습 패턴 업데이트
@@ -577,47 +594,49 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
         learning.learning_patterns.strengths = this.identifyStrengths(data);
 
         // 진행 상황 업데이트
-        learning.progress_tracking = this.updateProgressTracking(learning.progress_tracking, data);
+        learning.progress_tracking = this.updateProgressTracking(learning.progress_tracking, data) as LearningEffectivenessMetrics['progress_tracking'];
 
         learning.last_updated = new Date();
         return learning;
     }
 
     // 최적 학습 시간 계산
-    private calculateOptimalLearningTime(data: any): number {
-        return data.optimal_learning_time || 25; // 기본값 25분
+    private calculateOptimalLearningTime(data: Record<string, unknown>): number {
+        return Number(data.optimal_learning_time) || 25; // 기본값 25분
     }
 
     // 선호 학습 방법 식별
-    private identifyPreferredLearningMethods(data: any): string[] {
-        return data.preferred_methods || ['interactive', 'visual', 'practical'];
+    private identifyPreferredLearningMethods(data: Record<string, unknown>): string[] {
+        return (Array.isArray(data.preferred_methods) ? data.preferred_methods : ['interactive', 'visual', 'practical']) as string[];
     }
 
     // 효과적인 피드백 유형 식별
-    private identifyEffectiveFeedbackTypes(data: any): string[] {
-        return data.effective_feedback || ['immediate', 'detailed', 'encouraging'];
+    private identifyEffectiveFeedbackTypes(data: Record<string, unknown>): string[] {
+        return (Array.isArray(data.effective_feedback) ? data.effective_feedback : ['immediate', 'detailed', 'encouraging']) as string[];
     }
 
     // 지식 격차 식별
-    private identifyKnowledgeGaps(data: any): string[] {
-        return data.knowledge_gaps || ['advanced_concepts', 'practical_applications'];
+    private identifyKnowledgeGaps(data: Record<string, unknown>): string[] {
+        return (Array.isArray(data.knowledge_gaps) ? data.knowledge_gaps : ['advanced_concepts', 'practical_applications']) as string[];
     }
 
     // 강점 식별
-    private identifyStrengths(data: any): string[] {
-        return data.strengths || ['concept_understanding', 'problem_solving'];
+    private identifyStrengths(data: Record<string, unknown>): string[] {
+        return (Array.isArray(data.strengths) ? data.strengths : ['concept_understanding', 'problem_solving']) as string[];
     }
 
     // 진행 상황 업데이트
-    private updateProgressTracking(progress: any, data: any): any {
-        if (data.current_level) {
-            progress.current_level = data.current_level;
+    private updateProgressTracking(progress: Record<string, unknown>, data: Record<string, unknown>): Record<string, unknown> {
+        if (data.current_level != null) {
+            progress.current_level = Number(data.current_level);
         }
-        if (data.milestones_achieved) {
-            progress.milestones_achieved = data.milestones_achieved;
+        if (data.milestones_achieved != null) {
+            progress.milestones_achieved = Number(data.milestones_achieved);
         }
 
-        progress.progress_rate = (progress.milestones_achieved / progress.total_milestones) * 100;
+        const achieved = Number(progress.milestones_achieved ?? 0);
+        const total = Number(progress.total_milestones ?? 1);
+        progress.progress_rate = total > 0 ? (achieved / total) * 100 : 0;
 
         return progress;
     }
@@ -641,7 +660,7 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
         this.insights = [];
 
         // 행동 패턴 인사이트
-        this.userBehaviorPatterns.forEach((pattern, key) => {
+        this.userBehaviorPatterns.forEach((pattern, _key) => {
             if (pattern.confidence > 0.7) {
                 this.insights.push({
                     insight_id: `insight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -660,7 +679,7 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
         });
 
         // 참여도 인사이트
-        this.userEngagementData.forEach((engagement, key) => {
+        this.userEngagementData.forEach((engagement, _key) => {
             if (engagement.metrics.frustration_signals > 3) {
                 this.insights.push({
                     insight_id: `insight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -740,7 +759,7 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 사용자별 데이터 가져오기
-    public getUserData(userId: string, sessionId: string): any {
+    public getUserData(userId: string, sessionId: string): Record<string, unknown> {
         const key = `${userId}-${sessionId}`;
 
         return {
@@ -768,7 +787,7 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
     }
 
     // 통계 정보 가져오기
-    public getStatistics(): any {
+    public getStatistics(): Record<string, unknown> {
         return {
             total_users: this.userBehaviorPatterns.size,
             total_insights: this.insights.length,
@@ -821,7 +840,10 @@ class AdvancedUserExperienceAnalytics extends EventEmitter {
         this.learningEffectivenessData.clear();
         this.insights = [];
         this.optimizationRecommendations = [];
-        console.log('🔌 고급 사용자 경험 분석 서비스가 종료되었습니다.');
+        errorLogger.info('🔌 고급 사용자 경험 분석 서비스가 종료되었습니다.', {
+            component: 'advancedUserExperienceAnalytics',
+            action: 'shutdown',
+        });
     }
 }
 

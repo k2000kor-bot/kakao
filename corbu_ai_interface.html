@@ -230,7 +230,7 @@
             font-size: 14px;
         }
 
-        /* 채팅 영역 */
+        /* 대화 영역 */
         .chat-container {
             flex: 1;
             display: flex;
@@ -600,7 +600,7 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
-                    새 채팅
+                    새 대화
                 </button>
             </div>
 
@@ -614,7 +614,7 @@
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                         </div>
-                        일반 채팅
+                        일반 대화
                     </div>
                     <div class="nav-item" onclick="switchMode('coding')">
                         <div class="nav-item-icon">
@@ -717,7 +717,7 @@
                 </div>
             </div>
 
-            <!-- 채팅 영역 -->
+            <!-- 대화 영역 -->
             <div class="chat-container">
                 <div class="chat-messages" id="chat-messages">
                     <!-- 메시지들이 여기에 동적으로 추가됨 -->
@@ -1082,7 +1082,7 @@
 
 ## 🎮 사용 방법
 
-### **기본 채팅**
+### **기본 대화**
 1. 하단 입력창에 질문 입력
 2. Enter 키 또는 전송 버튼 클릭
 3. AI의 답변 확인
@@ -1098,7 +1098,7 @@
 - 자주 사용하는 질문들을 빠르게 선택
 
 ## ⌨️ 키보드 단축키
-- **Ctrl/Cmd + K**: 새 채팅
+- **Ctrl/Cmd + K**: 새 대화
 - **Ctrl/Cmd + /**: 도움말
 - **Enter**: 메시지 전송
 - **Shift + Enter**: 줄바꿈
@@ -1307,7 +1307,7 @@
             typingIndicator.classList.remove('show');
         }
 
-        // 새 채팅 시작
+        // 새 대화 시작
         function startNewChat() {
             chatMessages.innerHTML = '';
             conversationHistory = [];
@@ -1335,7 +1335,7 @@
 
             // 모드별 환영 메시지
             const modeMessages = {
-                chat: '일반 채팅 모드입니다. 무엇이든 물어보세요!',
+                chat: '일반 대화 모드입니다. 무엇이든 물어보세요!',
                 coding: '코딩 파트너 모드로 전환했습니다! 프로그래밍 관련 질문을 해주세요.',
                 analysis: '텍스트 분석 모드로 전환했습니다! 분석하고 싶은 텍스트를 입력해주세요.'
             };

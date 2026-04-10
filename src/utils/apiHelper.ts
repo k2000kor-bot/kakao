@@ -4,8 +4,17 @@
  */
 
 import { errorLogger } from './errorLogger';
+import {
+    API_BASE_URL,
+    API_FORM_FIELD_FILE,
+    API_STATUS_PATH,
+    API_UPLOAD_CHAT_PATH,
+    API_V7_CHAT_MESSAGES_PATH_PREFIX,
+    API_V7_CHAT_ROOMS_PATH,
+    joinApiHealthCheckUrl,
+} from '../config/api';
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
     success: boolean;
     data?: T;
     error?: string;
@@ -13,10 +22,10 @@ interface ApiResponse<T = any> {
 
 export class ApiHelper {
     private static baseUrls = {
-        main: 'http://localhost:5001',
-        advanced: 'http://localhost:5001',
-        message: 'http://localhost:5001',
-        upload: 'http://localhost:5001'
+        main: API_BASE_URL,
+        advanced: API_BASE_URL,
+        message: API_BASE_URL,
+        upload: API_BASE_URL
     };
 
     /**
@@ -55,27 +64,28 @@ export class ApiHelper {
                 success: true,
                 data
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
             errorLogger.error(`API 호출 실패: ${url}`, error instanceof Error ? error : new Error(String(error)), {
                 component: 'apiHelper',
                 action: 'safeFetch',
                 url,
             });
 
+            const message = error instanceof Error ? (error.message || '알 수 없는 오류') : '알 수 없는 오류';
             return {
                 success: false,
-                error: error?.message || '알 수 없는 오류'
+                error: message
             };
         }
     }
 
     /**
- * 채팅방 목록 조회
+ * 대화방 목록 조회
  */
     static async getChatRooms(): Promise<ApiResponse> {
         try {
-            const url = `${this.baseUrls.advanced}/api/v7/chat-rooms`;
-            errorLogger.info('채팅방 목록 조회 URL', {
+            const url = joinApiHealthCheckUrl(this.baseUrls.advanced, API_V7_CHAT_ROOMS_PATH);
+            errorLogger.info('대화방 목록 조회 URL', {
                 component: 'apiHelper',
                 action: 'getChatRooms',
                 url,
@@ -83,33 +93,37 @@ export class ApiHelper {
             const result = await this.safeFetch(url);
 
             if (result.success && result.data) {
-                errorLogger.info(`채팅방 목록 조회 성공: ${result.data.chat_rooms?.length || 0}개`, {
+                const data = result.data as { chat_rooms?: unknown[] };
+                errorLogger.info(`대화방 목록 조회 성공: ${data.chat_rooms?.length || 0}개`, {
                     component: 'apiHelper',
                     action: 'getChatRooms',
-                    count: result.data.chat_rooms?.length || 0,
+                    count: data.chat_rooms?.length || 0,
                 });
             }
 
             return result;
-        } catch (error: any) {
-            errorLogger.error('채팅방 목록 조회 중 오류', error instanceof Error ? error : new Error(String(error)), {
+        } catch (error: unknown) {
+            errorLogger.error('대화방 목록 조회 중 오류', error instanceof Error ? error : new Error(String(error)), {
                 component: 'apiHelper',
                 action: 'getChatRooms',
             });
             return {
                 success: false,
-                error: error?.message || '채팅방 목록 조회 중 오류가 발생했습니다.'
+                error: (error instanceof Error ? error.message : String(error)) || '대화방 목록 조회 중 오류가 발생했습니다.'
             };
         }
     }
 
     /**
- * 채팅방 메시지 조회
+ * 대화방 메시지 조회
  */
     static async getChatMessages(roomId: string): Promise<ApiResponse> {
         try {
             const encodedRoomId = encodeURIComponent(roomId);
-            const url = `${this.baseUrls.advanced}/api/v7/chat-messages/${encodedRoomId}`;
+            const url = joinApiHealthCheckUrl(
+                this.baseUrls.advanced,
+                `${API_V7_CHAT_MESSAGES_PATH_PREFIX}/${encodedRoomId}`,
+            );
             errorLogger.info('메시지 조회 URL', {
                 component: 'apiHelper',
                 action: 'getChatMessages',
@@ -119,16 +133,17 @@ export class ApiHelper {
             const result = await this.safeFetch(url);
 
             if (result.success && result.data) {
-                errorLogger.info(`메시지 조회 성공: ${result.data.messages?.length || 0}개`, {
+                const data = result.data as { messages?: unknown[] };
+                errorLogger.info(`메시지 조회 성공: ${data.messages?.length || 0}개`, {
                     component: 'apiHelper',
                     action: 'getChatMessages',
-                    count: result.data.messages?.length || 0,
+                    count: data.messages?.length || 0,
                     roomId,
                 });
             }
 
             return result;
-        } catch (error: any) {
+        } catch (error: unknown) {
             errorLogger.error('메시지 조회 중 오류', error instanceof Error ? error : new Error(String(error)), {
                 component: 'apiHelper',
                 action: 'getChatMessages',
@@ -136,7 +151,7 @@ export class ApiHelper {
             });
             return {
                 success: false,
-                error: error?.message || '메시지 조회 중 오류가 발생했습니다.'
+                error: (error instanceof Error ? error.message : String(error)) || '메시지 조회 중 오류가 발생했습니다.'
             };
         }
     }
@@ -154,9 +169,9 @@ export class ApiHelper {
             });
 
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append(API_FORM_FIELD_FILE, file);
 
-            const response = await fetch(`${this.baseUrls.upload}/api/upload-chat`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrls.upload, API_UPLOAD_CHAT_PATH), {
                 method: 'POST',
                 body: formData,
                 mode: 'cors'
@@ -177,7 +192,7 @@ export class ApiHelper {
                 success: true,
                 data
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
             errorLogger.error('파일 업로드 실패', error instanceof Error ? error : new Error(String(error)), {
                 component: 'apiHelper',
                 action: 'uploadChatFile',
@@ -186,7 +201,7 @@ export class ApiHelper {
 
             return {
                 success: false,
-                error: error?.message || '파일 업로드 중 오류가 발생했습니다.'
+                error: (error instanceof Error ? error.message : String(error)) || '파일 업로드 중 오류가 발생했습니다.'
             };
         }
     }
@@ -196,10 +211,10 @@ export class ApiHelper {
      */
     static async checkServerHealth(): Promise<Record<string, boolean>> {
         const servers = [
-            { name: 'main', url: `${this.baseUrls.main}/api/health` },
-            { name: 'advanced', url: `${this.baseUrls.advanced}/api/v7/chat-rooms` },
-            { name: 'message', url: `${this.baseUrls.message}/api/status` },
-            { name: 'upload', url: `${this.baseUrls.upload}/` }
+            { name: 'main', url: joinApiHealthCheckUrl(this.baseUrls.main) },
+            { name: 'advanced', url: joinApiHealthCheckUrl(this.baseUrls.advanced, API_V7_CHAT_ROOMS_PATH) },
+            { name: 'message', url: joinApiHealthCheckUrl(this.baseUrls.message, API_STATUS_PATH) },
+            { name: 'upload', url: joinApiHealthCheckUrl(this.baseUrls.upload, '/') },
         ];
 
         const results: Record<string, boolean> = {};

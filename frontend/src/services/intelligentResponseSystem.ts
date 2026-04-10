@@ -1,9 +1,38 @@
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
+/** 대화 메시지 (히스토리 항목) */
+interface ConversationMessage {
+  response?: string;
+  technicalTerms?: string[];
+  emotionalExpressions?: string[];
+  topics?: string[];
+}
+
+/** 업로드된 파일 항목 */
+interface UploadedFileRecord {
+  type?: string;
+}
+
+/** 사용자 선호도 */
+export interface UserPreferences {
+  prefersDetailed?: boolean;
+  prefersTechnical?: boolean;
+  prefersEmotional?: boolean;
+}
+
+/** 컨텍스트 입력 (generateSmartResponse 등에 전달) */
+export interface IntelligentContextInput {
+  conversationHistory?: ConversationMessage[];
+  uploadedFiles?: UploadedFileRecord[];
+  projectContext?: Record<string, unknown>;
+}
+
 export interface IntelligentContext {
   userMessage: string;
-  conversationHistory: any[];
-  uploadedFiles: any[];
-  userPreferences: any;
-  projectContext: any;
+  conversationHistory: ConversationMessage[];
+  uploadedFiles: UploadedFileRecord[];
+  userPreferences: UserPreferences;
+  projectContext: Record<string, unknown>;
   detectedIntent: string;
   detectedEmotion: string;
   confidence: number;
@@ -30,8 +59,8 @@ export interface DetailedAnswer {
 
 class IntelligentResponseSystem {
   private static instance: IntelligentResponseSystem;
-  private contextMemory: Map<string, any> = new Map();
-  private userPatterns: Map<string, any> = new Map();
+  private contextMemory: Map<string, unknown> = new Map();
+  private userPatterns: Map<string, unknown> = new Map();
 
   private constructor() {}
 
@@ -43,7 +72,7 @@ class IntelligentResponseSystem {
   }
 
   // 메인 응답 생성
-  async generateSmartResponse(userMessage: string, context: any): Promise<SmartResponse> {
+  async generateSmartResponse(userMessage: string, context: IntelligentContextInput): Promise<SmartResponse> {
     // 1. 컨텍스트 분석
     const intelligentContext = await this.analyzeIntelligentContext(userMessage, context);
     
@@ -86,11 +115,11 @@ class IntelligentResponseSystem {
   }
 
   // 지능형 컨텍스트 분석
-  private async analyzeIntelligentContext(message: string, context: any): Promise<IntelligentContext> {
-    const conversationHistory = context.conversationHistory || [];
-    const uploadedFiles = context.uploadedFiles || [];
+  private async analyzeIntelligentContext(message: string, context: IntelligentContextInput): Promise<IntelligentContext> {
+    const conversationHistory = context.conversationHistory ?? [];
+    const uploadedFiles = context.uploadedFiles ?? [];
     const userPreferences = this.extractUserPreferences(conversationHistory);
-    const projectContext = context.projectContext || {};
+    const projectContext = context.projectContext ?? {};
     
     // 의도 파악
     const detectedIntent = this.detectIntent(message, { conversationHistory, uploadedFiles });
@@ -118,7 +147,7 @@ class IntelligentResponseSystem {
   }
 
   // 의도 파악 (자연스러운 표현 포함)
-  private detectIntent(message: string, context: any): string {
+  private detectIntent(message: string, _context: IntelligentContext | { conversationHistory: ConversationMessage[]; uploadedFiles: UploadedFileRecord[] }): string {
     const message_lower = message.toLowerCase();
     
     // 다양한 표현 패턴 매칭
@@ -310,10 +339,10 @@ class IntelligentResponseSystem {
     // 업로드된 파일 기반
     if (context.uploadedFiles.length > 0) {
       const fileTypes = context.uploadedFiles.map(file => file.type);
-      if (fileTypes.some(type => type.includes('image'))) {
+      if (fileTypes.some(type => type?.includes('image'))) {
         requirements.push('이미지 분석 결과 활용');
       }
-      if (fileTypes.some(type => type.includes('document'))) {
+      if (fileTypes.some(type => type?.includes('document'))) {
         requirements.push('문서 내용 기반 답변');
       }
     }
@@ -322,15 +351,16 @@ class IntelligentResponseSystem {
   }
 
   // 암시적 요구사항 추출
-  private extractImplicitRequirements(message: string, context: IntelligentContext): string[] {
+  private extractImplicitRequirements(message: string, _context: IntelligentContext): string[] {
     const requirements: string[] = [];
     
     // 질문 형태에서 추출
     if (message.includes('?')) {
       const questionParts = message.split('?');
       questionParts.forEach(part => {
-        if (part.trim().length > 0) {
-          requirements.push(`"${part.trim()}"에 대한 답변`);
+        const p = coerceTrimmedString(part, '');
+        if (p.length > 0) {
+          requirements.push(`"${p}"에 대한 답변`);
         }
       });
     }
@@ -412,7 +442,7 @@ class IntelligentResponseSystem {
   }
 
   // 정보 요청 응답
-  private async generateInformationResponse(message: string, context: IntelligentContext): Promise<string> {
+  private async generateInformationResponse(message: string, _context: IntelligentContext): Promise<string> {
     return `말씀해 주신 내용에 대해 자세히 알아보겠습니다. 
     
 제가 이해한 바로는 ${this.extractKeyPoints(message)}에 대해 궁금해 하시는 것 같아요.
@@ -428,7 +458,7 @@ class IntelligentResponseSystem {
   }
 
   // 분석 요청 응답
-  private async generateAnalysisResponse(message: string, context: IntelligentContext): Promise<string> {
+  private async generateAnalysisResponse(message: string, _context: IntelligentContext): Promise<string> {
     return `좋은 질문이네요! ${this.extractKeyPoints(message)}에 대해 체계적으로 분석해 보겠습니다.
 
 분석을 위해 다음과 같은 관점에서 살펴보겠습니다:
@@ -443,7 +473,7 @@ class IntelligentResponseSystem {
   }
 
   // 생성 요청 응답
-  private async generateCreationResponse(message: string, context: IntelligentContext): Promise<string> {
+  private async generateCreationResponse(message: string, _context: IntelligentContext): Promise<string> {
     return `네, ${this.extractKeyPoints(message)}에 대한 아이디어나 방안을 함께 생각해 보겠습니다!
 
 다음과 같은 접근 방법으로 도움을 드릴 수 있습니다:
@@ -457,7 +487,7 @@ class IntelligentResponseSystem {
   }
 
   // 비교 요청 응답
-  private async generateComparisonResponse(message: string, context: IntelligentContext): Promise<string> {
+  private async generateComparisonResponse(message: string, _context: IntelligentContext): Promise<string> {
     return `좋은 질문입니다! ${this.extractKeyPoints(message)}에 대한 비교 분석을 해보겠습니다.
 
 다음과 같은 기준으로 체계적으로 비교해 보겠습니다:
@@ -472,7 +502,7 @@ class IntelligentResponseSystem {
   }
 
   // 문제 해결 응답
-  private async generateProblemSolvingResponse(message: string, context: IntelligentContext): Promise<string> {
+  private async generateProblemSolvingResponse(message: string, _context: IntelligentContext): Promise<string> {
     return `아, ${this.extractKeyPoints(message)}에 대한 어려움이 있으시군요. 걱정하지 마세요, 함께 해결해 보겠습니다!
 
 문제 해결을 위해 다음과 같은 단계로 접근해 보겠습니다:
@@ -487,7 +517,7 @@ class IntelligentResponseSystem {
   }
 
   // 감정적 응답
-  private async generateEmotionalResponse(message: string, context: IntelligentContext): Promise<string> {
+  private async generateEmotionalResponse(message: string, _context: IntelligentContext): Promise<string> {
     return `그런 마음이 드시는군요. ${this.extractKeyPoints(message)}에 대한 감정을 이해합니다.
 
 감정에 따라 다음과 같은 도움을 드릴 수 있습니다:
@@ -502,7 +532,7 @@ class IntelligentResponseSystem {
   }
 
   // 일상적 대화 응답
-  private async generateCasualResponse(message: string, context: IntelligentContext): Promise<string> {
+  private async generateCasualResponse(message: string, _context: IntelligentContext): Promise<string> {
     return `안녕하세요! 반갑습니다 😊
 
 ${this.extractKeyPoints(message)}에 대해 이야기해 주셨네요.
@@ -518,7 +548,7 @@ ${this.extractKeyPoints(message)}에 대해 이야기해 주셨네요.
   }
 
   // 일반 응답
-  private async generateGeneralResponse(message: string, context: IntelligentContext): Promise<string> {
+  private async generateGeneralResponse(message: string, _context: IntelligentContext): Promise<string> {
     return `안녕하세요! ${this.extractKeyPoints(message)}에 대해 말씀해 주셨네요.
 
 제가 도움을 드릴 수 있는 방법은 다음과 같습니다:
@@ -546,7 +576,7 @@ ${requirements.map((req, index) => `${index + 1}. ${req}`).join('\n')}
   }
 
   // 자연스러운 마무리
-  private generateNaturalClosing(intent: string, emotion: string): string {
+  private generateNaturalClosing(intent: string, _emotion: string): string {
     const closings = {
       information: '더 궁금한 점이 있으시면 언제든 물어보세요!',
       analysis: '분석 결과에 대해 추가 질문이 있으시면 말씀해 주세요!',
@@ -573,7 +603,7 @@ ${requirements.map((req, index) => `${index + 1}. ${req}`).join('\n')}
   }
 
   // 단일 상세 답변 생성
-  private async generateSingleDetailedAnswer(requirement: string, context: IntelligentContext): Promise<DetailedAnswer> {
+  private async generateSingleDetailedAnswer(requirement: string, _context: IntelligentContext): Promise<DetailedAnswer> {
     // 실제 구현에서는 AI 모델을 사용하여 답변 생성
     const answer = `"${requirement}"에 대한 상세한 답변입니다.
 
@@ -596,7 +626,7 @@ ${requirements.map((req, index) => `${index + 1}. ${req}`).join('\n')}
   }
 
   // 후속 질문 생성
-  private generateFollowUpQuestions(intent: string, requirements: string[], context: IntelligentContext): string[] {
+  private generateFollowUpQuestions(intent: string, _requirements: string[], _context: IntelligentContext): string[] {
     const questions: string[] = [];
 
     switch (intent) {
@@ -631,7 +661,7 @@ ${requirements.map((req, index) => `${index + 1}. ${req}`).join('\n')}
   }
 
   // 제안 액션 생성
-  private generateSuggestedActions(intent: string, requirements: string[], context: IntelligentContext): string[] {
+  private generateSuggestedActions(intent: string, _requirements: string[], _context: IntelligentContext): string[] {
     const actions: string[] = [];
 
     switch (intent) {
@@ -666,7 +696,7 @@ ${requirements.map((req, index) => `${index + 1}. ${req}`).join('\n')}
   }
 
   // 관련 주제 추천
-  private suggestRelatedTopics(intent: string, requirements: string[], context: IntelligentContext): string[] {
+  private suggestRelatedTopics(intent: string, requirements: string[], _context: IntelligentContext): string[] {
     const topics: string[] = [];
 
     // 의도 기반 주제
@@ -691,10 +721,10 @@ ${requirements.map((req, index) => `${index + 1}. ${req}`).join('\n')}
     // 요구사항 기반 주제
     requirements.forEach(req => {
       const keywords = req.match(/[가-힣a-zA-Z]+/g) || [];
-      topics.push(...keywords.slice(0, 3));
+      topics.push(...keywords);
     });
 
-    return Array.from(new Set(topics)).slice(0, 10);
+    return Array.from(new Set(topics));
   }
 
   // 신뢰도 계산
@@ -734,13 +764,13 @@ ${requirements.map((req, index) => `${index + 1}. ${req}`).join('\n')}
   // 키 포인트 추출
   private extractKeyPoints(message: string): string {
     const keywords = message.match(/[가-힣a-zA-Z]+/g) || [];
-    const importantKeywords = keywords.filter(word => word.length > 1).slice(0, 3);
+    const importantKeywords = keywords.filter(word => word.length > 1);
     return importantKeywords.join(', ') || '말씀해 주신 내용';
   }
 
   // 사용자 선호도 추출
-  private extractUserPreferences(conversationHistory: any[]): any {
-    const preferences: any = {};
+  private extractUserPreferences(conversationHistory: ConversationMessage[]): UserPreferences {
+    const preferences: UserPreferences = {};
     
     if (conversationHistory.length === 0) return preferences;
 
@@ -760,7 +790,7 @@ ${requirements.map((req, index) => `${index + 1}. ${req}`).join('\n')}
   }
 
   // 컨텍스트 신뢰도 계산
-  private calculateContextConfidence(message: string, conversationHistory: any[], uploadedFiles: any[]): number {
+  private calculateContextConfidence(message: string, conversationHistory: ConversationMessage[], uploadedFiles: UploadedFileRecord[]): number {
     let confidence = 0.5;
 
     // 메시지 길이에 따른 조정

@@ -13,8 +13,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 백엔드 URL
-BACKEND_URL="http://localhost:5001"
+# 백엔드 URL (통합 main_server 기본 5002)
+BACKEND_URL="${BACKEND_URL:-http://localhost:5002}"
 
 # 테스트 결과 추적
 PASSED=0
@@ -58,8 +58,8 @@ test_llm_endpoint() {
     fi
 }
 
-# 1. 기본 채팅 테스트
-echo "📋 1. 기본 채팅 테스트"
+# 1. 기본 대화 테스트
+echo "📋 1. 기본 대화 테스트"
 test_llm_endpoint "기본 인사" "안녕하세요" "test-001"
 test_llm_endpoint "질문 테스트" "Python이란 무엇인가요?" "test-002"
 test_llm_endpoint "대화 연속성" "그럼 JavaScript는요?" "test-002"

@@ -4,9 +4,6 @@ import {
     Filter,
     X,
     ChevronDown,
-    ChevronUp,
-    Calendar,
-    Tag,
     FileText,
     MessageSquare,
     Settings,
@@ -14,13 +11,15 @@ import {
     Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import './AdvancedSearch.css';
+import { coerceTrimmedString } from '../../utils/chatInputUtils';
 
 interface SearchFilter {
     id: string;
     type: 'text' | 'date' | 'select' | 'multi-select' | 'range';
     field: string;
     label: string;
-    value: any;
+    value: unknown;
     operator: 'equals' | 'contains' | 'starts_with' | 'ends_with' | 'greater_than' | 'less_than' | 'between' | 'in' | 'not_in';
     options?: Array<{ value: string; label: string }>;
 }
@@ -35,7 +34,7 @@ interface SearchResult {
         projectName?: string;
         timestamp?: Date;
         tags?: string[];
-        [key: string]: any;
+        [key: string]: unknown;
     };
     score: number;
     highlights: Array<{
@@ -48,7 +47,7 @@ interface AdvancedSearchProps {
     onSearch: (query: string, filters: SearchFilter[]) => void;
     onFilterChange: (filters: SearchFilter[]) => void;
     onSaveSearch?: (name: string, filters: SearchFilter[]) => void;
-    onLoadSearch?: (savedSearch: any) => void;
+    onLoadSearch?: (savedSearch: unknown) => void;
     savedSearches?: Array<{
         id: string;
         name: string;
@@ -75,11 +74,11 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
     isLoading = false,
     placeholder = "고급 검색...",
     searchTypes = [
-        { value: 'all', label: '전체', icon: <Search className="h-4 w-4" /> },
-        { value: 'projects', label: '프로젝트', icon: <FileText className="h-4 w-4" /> },
-        { value: 'messages', label: '메시지', icon: <MessageSquare className="h-4 w-4" /> },
-        { value: 'files', label: '파일', icon: <FileText className="h-4 w-4" /> },
-        { value: 'guidelines', label: '지침', icon: <Settings className="h-4 w-4" /> }
+        { value: 'all', label: '전체', icon: <Search size={16} aria-hidden /> },
+        { value: 'projects', label: '프로젝트', icon: <FileText size={16} aria-hidden /> },
+        { value: 'messages', label: '메시지', icon: <MessageSquare size={16} aria-hidden /> },
+        { value: 'files', label: '파일', icon: <FileText size={16} aria-hidden /> },
+        { value: 'guidelines', label: '지침', icon: <Settings size={16} aria-hidden /> }
     ]
 }) => {
     const [query, setQuery] = useState('');
@@ -93,8 +92,9 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
 
     // 검색 실행
     const handleSearch = () => {
-        if (query.trim() || filters.length > 0) {
-            onSearch(query, filters);
+        const q = coerceTrimmedString(query, '');
+        if (q || filters.length > 0) {
+            onSearch(q, filters);
         }
     };
 
@@ -129,8 +129,9 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
 
     // 검색 저장
     const handleSaveSearch = () => {
-        if (saveSearchName.trim() && onSaveSearch) {
-            onSaveSearch(saveSearchName.trim(), filters);
+        const name = coerceTrimmedString(saveSearchName, '');
+        if (name && onSaveSearch) {
+            onSaveSearch(name, filters);
             setSaveSearchName('');
             setShowSaveDialog(false);
         }
@@ -150,6 +151,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [query, filters]);
 
     const getOperatorOptions = (type: string) => {
@@ -194,7 +196,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
         { value: 'priority', label: '우선순위' }
     ];
 
-    const getTypeOptions = () => [
+    const _getTypeOptions = () => [
         { value: 'text', label: '텍스트' },
         { value: 'date', label: '날짜' },
         { value: 'select', label: '선택' },
@@ -203,16 +205,15 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
     ];
 
     return (
-        <div className="w-full">
-            {/* 검색 입력 */}
-            <div className="relative">
-                <div className="flex items-center space-x-2">
-                    {/* 검색 타입 선택 */}
-                    <div className="relative">
+        <div className="adv-search-root">
+            <div style={{ position: 'relative' }}>
+                <div className="adv-search-row">
+                    <div style={{ position: 'relative' }}>
                         <select
                             value={selectedSearchType}
                             onChange={(e) => setSelectedSearchType(e.target.value)}
-                            className="appearance-none bg-white border border-gray-300 rounded-l-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="adv-search-select"
+                            aria-label="검색 타입 선택"
                         >
                             {searchTypes.map(type => (
                                 <option key={type.value} value={type.value}>
@@ -220,89 +221,61 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                                 </option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                        <ChevronDown size={16} className="adv-search-icon" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} aria-hidden />
                     </div>
 
-                    {/* 검색 입력창 */}
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <div className="adv-search-input-wrap">
+                        <Search size={16} className="adv-search-icon" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} aria-hidden />
                         <input
                             ref={searchInputRef}
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder={placeholder}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="adv-search-input bw-input"
+                            aria-label="검색어 입력 (Ctrl+K 단축키)"
                         />
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">
-                            Ctrl+K
-                        </div>
+                        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>Ctrl+K</span>
                     </div>
 
-                    {/* 검색 버튼 */}
                     <button
-                        onClick={handleSearch}
-                        disabled={isLoading}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-r-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                        type="button"
+                        onClick={() => handleSearch()}
+                        disabled={isLoading || (!coerceTrimmedString(query, '') && filters.length === 0)}
+                        className="adv-search-btn"
+                        aria-label="검색 실행"
                     >
-                        {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Search className="h-4 w-4" />
-                        )}
+                        {isLoading ? <Loader2 size={16} className="adv-search-spin" aria-hidden /> : <Search size={16} aria-hidden />}
                     </button>
 
-                    {/* 필터 토글 */}
                     <button
+                        type="button"
                         onClick={() => setShowFilters(!showFilters)}
-                        className={`p-2 rounded-lg transition-colors ${filters.length > 0
-                                ? 'bg-purple-100 text-purple-700'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
+                        className={`adv-search-filter-btn ${filters.length > 0 ? 'active' : ''}`}
+                        aria-label={showFilters ? '필터 숨기기' : '필터 표시'}
+                        aria-expanded={showFilters}
                     >
-                        <Filter className="h-4 w-4" />
-                        {filters.length > 0 && (
-                            <span className="ml-1 text-xs font-medium">{filters.length}</span>
-                        )}
+                        <Filter size={16} aria-hidden />
+                        {filters.length > 0 && <span style={{ marginLeft: 4, fontSize: 'var(--font-size-xs)', fontWeight: 500 }}>{filters.length}</span>}
                     </button>
 
-                    {/* 저장된 검색 */}
                     {savedSearches.length > 0 && (
-                        <button
-                            onClick={() => setShowSavedSearches(!showSavedSearches)}
-                            className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-                        >
-                            <Save className="h-4 w-4" />
+                        <button type="button" onClick={() => setShowSavedSearches(!showSavedSearches)} className="adv-search-saved-btn" aria-label={showSavedSearches ? '저장된 검색 숨기기' : '저장된 검색 표시'}>
+                            <Save size={16} aria-hidden />
                         </button>
                     )}
                 </div>
 
-                {/* 저장된 검색 드롭다운 */}
                 <AnimatePresence>
                     {showSavedSearches && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
-                        >
-                            <div className="p-2">
-                                <h4 className="text-sm font-medium text-gray-900 mb-2">저장된 검색</h4>
-                                <div className="space-y-1">
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="adv-search-dropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, zIndex: 'var(--z-dropdown)' }}>
+                            <div style={{ padding: 'var(--spacing-sm)' }}>
+                                <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--text-primary)', marginBottom: 'var(--spacing-sm)' }}>저장된 검색</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                     {savedSearches.map(savedSearch => (
-                                        <button
-                                            key={savedSearch.id}
-                                            onClick={() => {
-                                                setFilters(savedSearch.filters);
-                                                onLoadSearch?.(savedSearch);
-                                                setShowSavedSearches(false);
-                                            }}
-                                            className="w-full text-left p-2 hover:bg-gray-100 rounded text-sm"
-                                        >
-                                            <div className="font-medium text-gray-900">{savedSearch.name}</div>
-                                            <div className="text-xs text-gray-500">
-                                                {savedSearch.filters.length}개 필터 • {savedSearch.createdAt.toLocaleDateString()}
-                                            </div>
+                                        <button key={savedSearch.id} type="button" onClick={() => { setFilters(savedSearch.filters); onLoadSearch?.(savedSearch); setShowSavedSearches(false); }} className="adv-search-result-card" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', border: 'none' }}>
+                                            <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{savedSearch.name}</div>
+                                            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>{savedSearch.filters.length}개 필터 • {savedSearch.createdAt.toLocaleDateString()}</div>
                                         </button>
                                     ))}
                                 </div>
@@ -312,141 +285,72 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                 </AnimatePresence>
             </div>
 
-            {/* 필터 패널 */}
             <AnimatePresence>
                 {showFilters && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-4 bg-gray-50 rounded-lg p-4"
-                    >
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-medium text-gray-900">필터</h3>
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={addFilter}
-                                    className="text-sm text-purple-600 hover:text-purple-700 font-medium"
-                                >
-                                    + 필터 추가
-                                </button>
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="adv-search-filter-panel" style={{ marginTop: 'var(--spacing-md)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--spacing-md)' }}>
+                            <h3 style={{ fontWeight: 500, color: 'var(--text-primary)' }}>필터</h3>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                                <button type="button" onClick={addFilter} style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--accent-info)', background: 'none', border: 'none', cursor: 'pointer' }}>+ 필터 추가</button>
                                 {filters.length > 0 && (
-                                    <button
-                                        onClick={() => {
-                                            setFilters([]);
-                                            onFilterChange([]);
-                                        }}
-                                        className="text-sm text-red-600 hover:text-red-700 font-medium"
-                                    >
-                                        모두 지우기
-                                    </button>
+                                    <button type="button" onClick={() => { setFilters([]); onFilterChange([]); }} style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--accent-error)', background: 'none', border: 'none', cursor: 'pointer' }}>모두 지우기</button>
                                 )}
                             </div>
                         </div>
 
-                        {/* 필터 목록 */}
-                        <div className="space-y-3">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
                             {filters.map((filter) => (
-                                <div key={filter.id} className="flex items-center space-x-3 p-3 bg-white rounded border">
-                                    {/* 필드 선택 */}
-                                    <select
-                                        value={filter.field}
-                                        onChange={(e) => updateFilter(filter.id, { field: e.target.value })}
-                                        className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    >
+                                <div key={filter.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', padding: 'var(--spacing-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                                    <select value={filter.field} onChange={(e) => updateFilter(filter.id, { field: e.target.value })} className="adv-search-input bw-input" style={{ flex: '0 0 auto', minWidth: 100 }}>
                                         {getFieldOptions().map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
+                                            <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
                                     </select>
-
-                                    {/* 연산자 선택 */}
-                                    <select
-                                        value={filter.operator}
-                                        onChange={(e) => updateFilter(filter.id, { operator: e.target.value as any })}
-                                        className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    >
+                                    <select value={filter.operator} onChange={(e) => updateFilter(filter.id, { operator: e.target.value as SearchFilter['operator'] })} className="adv-search-input bw-input" style={{ flex: '0 0 auto', minWidth: 90 }}>
                                         {getOperatorOptions(filter.type).map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
+                                            <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
                                     </select>
-
-                                    {/* 값 입력 */}
-                                    <input
-                                        type={filter.type === 'date' ? 'date' : 'text'}
-                                        value={filter.value}
-                                        onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
-                                        placeholder="값 입력..."
-                                        className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    />
-
-                                    {/* 필터 제거 */}
-                                    <button
-                                        onClick={() => removeFilter(filter.id)}
-                                        className="p-1 text-red-500 hover:text-red-700"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
+                                    <input type={filter.type === 'date' ? 'date' : 'text'} value={typeof filter.value === 'string' || typeof filter.value === 'number' ? filter.value : ''} onChange={(e) => updateFilter(filter.id, { value: e.target.value })} placeholder="값 입력..." className="adv-search-input bw-input" style={{ flex: 1 }} />
+                                    <button type="button" onClick={() => removeFilter(filter.id)} style={{ padding: 'var(--spacing-xs)', color: 'var(--accent-error)', background: 'none', border: 'none', cursor: 'pointer' }} aria-label="필터 제거"><X size={16} aria-hidden /></button>
                                 </div>
                             ))}
                         </div>
 
-                        {/* 검색 저장 */}
                         {filters.length > 0 && onSaveSearch && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                <button
-                                    onClick={() => setShowSaveDialog(true)}
-                                    className="text-sm text-purple-600 hover:text-purple-700 font-medium"
-                                >
-                                    이 검색 저장
-                                </button>
+                            <div style={{ marginTop: 'var(--spacing-md)', paddingTop: 'var(--spacing-md)', borderTop: '1px solid var(--border-color)' }}>
+                                <button type="button" onClick={() => setShowSaveDialog(true)} style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--accent-info)', background: 'none', border: 'none', cursor: 'pointer' }}>이 검색 저장</button>
                             </div>
                         )}
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* 검색 결과 */}
             {searchResults.length > 0 && (
-                <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-gray-900">
-                            검색 결과 ({searchResults.length}개)
-                        </h3>
-                    </div>
-                    <div className="space-y-2">
+                <div style={{ marginTop: 'var(--spacing-md)' }}>
+                    <h3 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 'var(--spacing-sm)' }}>검색 결과 ({searchResults.length}개)</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
                         {searchResults.map((result) => (
-                            <div key={result.id} className="p-3 bg-white rounded border hover:bg-gray-50 transition-colors">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-2 mb-1">
-                                            <span className="text-sm font-medium text-gray-900">{result.title}</span>
-                                            <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                                                {result.type}
-                                            </span>
+                            <div key={result.id} className="adv-search-result-card">
+                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 4, flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--text-primary)' }}>{result.title}</span>
+                                            <span className="adv-search-tag">{result.type}</span>
                                             {result.metadata.projectName && (
-                                                <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
-                                                    {result.metadata.projectName}
-                                                </span>
+                                                <span className="adv-search-tag" style={{ background: 'var(--accent-info-muted)', color: 'var(--accent-info)' }}>{result.metadata.projectName}</span>
                                             )}
                                         </div>
-                                        <p className="text-sm text-gray-600 mb-2">{result.content}</p>
+                                        <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-sm)' }}>{result.content}</p>
                                         {result.highlights.length > 0 && (
-                                            <div className="text-xs text-gray-500">
+                                            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>
                                                 {result.highlights.map((highlight, index) => (
-                                                    <span key={index} className="bg-yellow-200 px-1 rounded">
-                                                        {highlight.snippet}
-                                                    </span>
+                                                    <span key={index} className="adv-search-highlight">{highlight.snippet}</span>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="text-xs text-gray-400">
-                                        {result.score.toFixed(2)}
-                                    </div>
+                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>{result.score.toFixed(2)}</span>
                                 </div>
                             </div>
                         ))}
@@ -454,42 +358,19 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                 </div>
             )}
 
-            {/* 검색 저장 다이얼로그 */}
             <AnimatePresence>
                 {showSaveDialog && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                        onClick={() => setShowSaveDialog(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white rounded-lg p-6 w-96"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">검색 저장</h3>
-                            <input
-                                type="text"
-                                value={saveSearchName}
-                                onChange={(e) => setSaveSearchName(e.target.value)}
-                                placeholder="검색 이름을 입력하세요"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-4"
-                            />
-                            <div className="flex items-center justify-end space-x-3">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bw-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowSaveDialog(false)} role="dialog" aria-modal aria-labelledby="save-search-title">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bw-modal-panel" style={{ width: 384, padding: 'var(--spacing-lg)' }} onClick={(e) => e.stopPropagation()}>
+                            <h3 id="save-search-title" style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--spacing-md)' }}>검색 저장</h3>
+                            <input type="text" value={saveSearchName} onChange={(e) => setSaveSearchName(e.target.value)} placeholder="검색 이름을 입력하세요" className="bw-input" style={{ width: '100%', marginBottom: 'var(--spacing-md)' }} />
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-md)' }}>
+                                <button type="button" onClick={() => setShowSaveDialog(false)} className="bw-btn-secondary">취소</button>
                                 <button
-                                    onClick={() => setShowSaveDialog(false)}
-                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                                >
-                                    취소
-                                </button>
-                                <button
-                                    onClick={handleSaveSearch}
-                                    disabled={!saveSearchName.trim()}
-                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                                    type="button"
+                                    onClick={() => handleSaveSearch()}
+                                    disabled={!coerceTrimmedString(saveSearchName, '')}
+                                    className="bw-btn-primary"
                                 >
                                     저장
                                 </button>

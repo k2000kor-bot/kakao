@@ -51,12 +51,12 @@ export interface Condition {
 
 export interface Action {
   type: 'generate_response' | 'apply_template' | 'use_guideline' | 'call_api' | 'set_variable';
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
 }
 
 export interface MessageGenerationRequest {
   context: string;
-  selectedMessage?: any;
+  selectedMessage?: unknown;
   knowledgeBaseId: string;
   guidelines?: string[];
   logicRules?: string[];

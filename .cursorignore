@@ -1,0 +1,28 @@
+# Cursor 인덱싱·메모리 부하 완화 (크래시 코드 5 방지)
+# 로컬 JDK·권한 제한 폴더 (npm run sync:frontend-src 제외와 동일)
+src/components/Oracle_JDK-24.jdk/
+src/components/OpenJDK-24.jdk/
+src/components/Security/
+src/components/backup/
+
+node_modules/
+build/
+backup/
+corbu-ai/
+.pytest_cache/
+.ruff_cache/
+*.db
+.env
+.env.*
+.venv/
+venv/
+coverage/
+.git/
+
+backups/
+docs/reports/
+*.sqlite
+*.log
+.DS_Store
+corbu-ai/
+frontend/node_modules/

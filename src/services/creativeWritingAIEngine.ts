@@ -1,7 +1,13 @@
 /**
- * CORBU AI 창의적 글쓰기 AI 엔진
+ * CORBU.AI 창의적 글쓰기 AI 엔진
  * 예술적, 창의적, 상상력이 풍부한 글쓰기를 위한 고도화된 AI 시스템
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    coerceTrimmedString,
+    ASSISTANT_GENERATION_STEP_LABELS_DEFAULT,
+} from '../utils/chatInputUtils';
 
 export interface CreativeRequest {
     type: 'story' | 'poem' | 'song' | 'script' | 'novel' | 'essay' | 'speech' | 'manifesto';
@@ -111,15 +117,96 @@ export interface ArtisticVision {
     cultural_commentary: string[];
 }
 
+// Internal types for options, synthesis, and method signatures
+interface CreativeOptions {
+    iterative_refinement?: boolean;
+    collaborative_mode?: boolean;
+    experimentation_level?: 'conservative' | 'moderate' | 'experimental' | 'avant_garde';
+    cultural_sensitivity?: boolean;
+}
+
+interface InspirationSourceAnalysis {
+    source_id?: string;
+    extractable_elements?: string[];
+    vision_alignment?: unknown;
+    innovation_potential?: unknown;
+    integration_strategy?: unknown;
+    [key: string]: unknown;
+}
+
+interface InspirationSynthesisResult {
+    primary_influences: InspirationSourceAnalysis[];
+    fusion_opportunities: string[];
+    innovative_combinations: unknown[];
+    cultural_bridges: unknown[];
+}
+
+interface BasicStructure {
+    [section: string]: string;
+}
+
+interface CreativeAnalysisResult {
+    originality_score: number;
+    emotional_impact: number;
+    artistic_merit: number;
+    technical_execution: number;
+    thematic_depth: number;
+}
+
+interface StyleSignatureResult {
+    distinctive_elements: string[];
+    literary_devices: string[];
+    rhythm_pattern: string;
+    voice_characteristics: string[];
+}
+
+interface PersonalApproach {
+    approach_style: string;
+    encouragement_level: number;
+    technical_detail: number;
+}
+
+interface CollaborationFrameworkResult {
+    ai_role: string;
+    user_role: string;
+    interaction_style: string;
+    feedback_approach: string;
+}
+
+interface SessionPlanResult {
+    phases: string[];
+    milestones: string[];
+    flexibility_points: string[];
+}
+
+interface BlockAnalysisResult {
+    type: string;
+    underlying_causes: string[];
+    severity: number;
+    impact_assessment: string;
+}
+
+interface StyleExperimentConfig {
+    dimension?: string;
+    variation?: string;
+    [key: string]: unknown;
+}
+
+interface ParticipantLike {
+    id: string;
+    role?: string;
+    [key: string]: unknown;
+}
+
 export class CreativeWritingAIEngine {
-    private creativeTechniques: Map<string, any> = new Map();
-    private literaryDevices: Map<string, any> = new Map();
-    private inspirationSources: Map<string, any> = new Map();
-    private styleLibrary: Map<string, any> = new Map();
-    private emotionalPalettes: Map<string, any> = new Map();
-    private narrativeStructures: Map<string, any> = new Map();
-    private characterArchetypes: Map<string, any> = new Map();
-    private languagePatterns: Map<string, any> = new Map();
+    private creativeTechniques: Map<string, Record<string, unknown>> = new Map();
+    private literaryDevices: Map<string, Record<string, unknown>> = new Map();
+    private inspirationSources: Map<string, Record<string, unknown>> = new Map();
+    private styleLibrary: Map<string, Record<string, unknown>> = new Map();
+    private emotionalPalettes: Map<string, Record<string, unknown>> = new Map();
+    private narrativeStructures: Map<string, Record<string, unknown>> = new Map();
+    private characterArchetypes: Map<string, Record<string, unknown>> = new Map();
+    private languagePatterns: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializeCreativeTechniques();
@@ -150,10 +237,12 @@ export class CreativeWritingAIEngine {
         iterations?: CreativeOutput[];
     }> {
         try {
-            console.log('🎨 창의적 글쓰기 생성 시작...', {
+            errorLogger.info('🎨 창의적 글쓰기 생성 시작', {
+                component: 'creativeWritingAIEngine',
+                action: 'generateCreativeWriting',
                 type: request.type,
                 genre: request.genre,
-                style: request.style
+                style: request.style,
             });
 
             // 1. 예술적 비전 구축
@@ -216,7 +305,12 @@ export class CreativeWritingAIEngine {
             };
 
         } catch (error) {
-            console.error('❌ 창의적 글쓰기 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 창의적 글쓰기 생성 실패', err, {
+                component: 'creativeWritingAIEngine',
+                action: 'generateCreativeWriting',
+                type: request.type,
+            });
             throw new Error('창의적 글쓰기 생성에 실패했습니다.');
         }
     }
@@ -249,7 +343,11 @@ export class CreativeWritingAIEngine {
         };
     }> {
         try {
-            console.log('🤝 대화형 창작 세션 시작...', { type: initialRequest.type });
+            errorLogger.info('🤝 대화형 창작 세션 시작', {
+                component: 'creativeWritingAIEngine',
+                action: 'startInteractiveCreationSession',
+                type: initialRequest.type,
+            });
 
             const sessionId = this.generateSessionId();
 
@@ -294,7 +392,12 @@ export class CreativeWritingAIEngine {
             };
 
         } catch (error) {
-            console.error('❌ 대화형 창작 세션 시작 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 대화형 창작 세션 시작 실패', err, {
+                component: 'creativeWritingAIEngine',
+                action: 'startInteractiveCreationSession',
+                type: initialRequest.type,
+            });
             throw new Error('대화형 창작 세션 시작에 실패했습니다.');
         }
     }
@@ -340,7 +443,12 @@ export class CreativeWritingAIEngine {
         };
     }> {
         try {
-            console.log('🚧 창의적 블록 해결 시작...', { blockType, mood: context.user_mood });
+            errorLogger.info('🚧 창의적 블록 해결 시작', {
+                component: 'creativeWritingAIEngine',
+                action: 'resolveCreativeBlock',
+                blockType,
+                mood: context.user_mood,
+            });
 
             // 블록 분석
             const blockAnalysis = await this.analyzeCreativeBlock(
@@ -371,13 +479,18 @@ export class CreativeWritingAIEngine {
 
             return {
                 block_analysis: blockAnalysis,
-                resolution_strategies: resolutionStrategies,
-                immediate_exercises: immediateExercises,
-                inspiration_boost: inspirationBoost
+                resolution_strategies: resolutionStrategies as Array<{ technique: string; description: string; steps: string[]; expected_outcome: string; time_required: string; effectiveness_rating: number }>,
+                immediate_exercises: immediateExercises as Array<{ exercise: string; purpose: string; instructions: string[]; duration: string }>,
+                inspiration_boost: inspirationBoost as { prompts: string[]; references: string[]; techniques: string[]; mindset_shifts: string[] }
             };
 
         } catch (error) {
-            console.error('❌ 창의적 블록 해결 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 창의적 블록 해결 실패', err, {
+                component: 'creativeWritingAIEngine',
+                action: 'resolveCreativeBlock',
+                blockType,
+            });
             throw new Error('창의적 블록 해결에 실패했습니다.');
         }
     }
@@ -419,7 +532,11 @@ export class CreativeWritingAIEngine {
         };
     }> {
         try {
-            console.log('🔬 스타일 실험 시작...', { experimentCount: targetExperiments.length });
+            errorLogger.info('🔬 스타일 실험 시작', {
+                component: 'creativeWritingAIEngine',
+                action: 'experimentWithStyles',
+                experimentCount: targetExperiments.length,
+            });
 
             const experiments = [];
 
@@ -460,12 +577,17 @@ export class CreativeWritingAIEngine {
 
             return {
                 experiments,
-                synthesis_opportunities: synthesisOpportunities,
+                synthesis_opportunities: synthesisOpportunities as Array<{ combination: string[]; potential_effect: string; implementation_notes: string[]; }>,
                 recommendations
             };
 
         } catch (error) {
-            console.error('❌ 스타일 실험 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 스타일 실험 실패', err, {
+                component: 'creativeWritingAIEngine',
+                action: 'experimentWithStyles',
+                experimentCount: targetExperiments.length,
+            });
             throw new Error('스타일 실험에 실패했습니다.');
         }
     }
@@ -513,7 +635,11 @@ export class CreativeWritingAIEngine {
         };
     }> {
         try {
-            console.log('👥 창의적 협업 촉진 시작...', { participantCount: participants.length });
+            errorLogger.info('👥 창의적 협업 촉진 시작', {
+                component: 'creativeWritingAIEngine',
+                action: 'facilitateCreativeCollaboration',
+                participantCount: participants.length,
+            });
 
             // 협업 프레임워크 설계
             const collaborationFramework = await this.designCollaborationFramework(
@@ -540,14 +666,19 @@ export class CreativeWritingAIEngine {
             );
 
             return {
-                collaboration_framework: collaborationFramework,
-                task_distribution: taskDistribution,
-                creative_exercises: creativeExercises,
-                quality_assurance: qualityAssurance
+                collaboration_framework: collaborationFramework as { workflow_design: string[]; communication_protocols: string[]; creative_synchronization: string[]; conflict_resolution: string[]; },
+                task_distribution: taskDistribution as Array<{ participant_id: string; assigned_tasks: string[]; creative_responsibilities: string[]; timeline_commitments: string[]; }>,
+                creative_exercises: creativeExercises as Array<{ exercise_name: string; purpose: string; participants: string[]; instructions: string[]; expected_outcomes: string[]; }>,
+                quality_assurance: qualityAssurance as { review_stages: string[]; criteria: string[]; feedback_mechanisms: string[]; }
             };
 
         } catch (error) {
-            console.error('❌ 창의적 협업 촉진 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 창의적 협업 촉진 실패', err, {
+                component: 'creativeWritingAIEngine',
+                action: 'facilitateCreativeCollaboration',
+                participantCount: participants.length,
+            });
             throw new Error('창의적 협업 촉진에 실패했습니다.');
         }
     }
@@ -871,7 +1002,7 @@ export class CreativeWritingAIEngine {
 
     private async constructArtisticVision(
         request: CreativeRequest,
-        options: any
+        options: CreativeOptions
     ): Promise<ArtisticVision> {
         // 중심 은유 개발
         const centralMetaphor = await this.developCentralMetaphor(request);
@@ -904,7 +1035,7 @@ export class CreativeWritingAIEngine {
     private async designCreativeProcess(
         request: CreativeRequest,
         vision: ArtisticVision,
-        options: any
+        options: CreativeOptions
     ): Promise<CreativeProcess> {
         const experimentation = options.experimentation_level || 'moderate';
 
@@ -943,13 +1074,13 @@ export class CreativeWritingAIEngine {
     private async synthesizeInspiration(
         inspirationSources: InspirationSource[],
         vision: ArtisticVision,
-        options: any
-    ): Promise<any> {
-        const synthesis = {
-            primary_influences: [] as any[],
-            fusion_opportunities: [] as any[],
-            innovative_combinations: [] as any[],
-            cultural_bridges: [] as any[]
+        options: CreativeOptions
+    ): Promise<InspirationSynthesisResult> {
+        const synthesis: InspirationSynthesisResult = {
+            primary_influences: [],
+            fusion_opportunities: [],
+            innovative_combinations: [],
+            cultural_bridges: []
         };
 
         // 각 영감 소스 분석
@@ -983,8 +1114,8 @@ export class CreativeWritingAIEngine {
     private async createInitialDraft(
         request: CreativeRequest,
         vision: ArtisticVision,
-        inspirationSynthesis: any,
-        process: CreativeProcess
+        inspirationSynthesis: InspirationSynthesisResult,
+        _process: CreativeProcess
     ): Promise<CreativeOutput> {
         // 기본 구조 생성
         const structure = await this.generateBasicStructure(request, vision);
@@ -1123,7 +1254,7 @@ export class CreativeWritingAIEngine {
         return ['변화', '성장', '연결'];
     }
 
-    private async getCulturalSymbols(request: CreativeRequest): Promise<string[]> {
+    private async getCulturalSymbols(_request: CreativeRequest): Promise<string[]> {
         // 한국 문화적 상징 (예시)
         return ['소나무', '한강', '계절의 변화', '가족의 끈'];
     }
@@ -1144,7 +1275,7 @@ export class CreativeWritingAIEngine {
         return basePattern;
     }
 
-    private async selectAestheticElements(request: CreativeRequest, options: any): Promise<string[]> {
+    private async selectAestheticElements(request: CreativeRequest, _options: CreativeOptions): Promise<string[]> {
         const elements = [];
 
         // 스타일 기반 미적 요소
@@ -1181,7 +1312,7 @@ export class CreativeWritingAIEngine {
         return philosophicalThemes[request.type] || ['인간다움', '연결', '의미 찾기'];
     }
 
-    private async integrateCulturalCommentary(request: CreativeRequest, options: any): Promise<string[]> {
+    private async integrateCulturalCommentary(request: CreativeRequest, options: CreativeOptions): Promise<string[]> {
         if (!options.cultural_sensitivity) return [];
 
         return [
@@ -1221,7 +1352,7 @@ export class CreativeWritingAIEngine {
         return techniques.slice(0, 5);
     }
 
-    private determinePrimaryFocus(request: CreativeRequest, vision: ArtisticVision): string {
+    private determinePrimaryFocus(request: CreativeRequest, _vision: ArtisticVision): string {
         if (request.characters && request.characters.length > 0) {
             return 'character_development';
         } else if (request.setting) {
@@ -1235,7 +1366,7 @@ export class CreativeWritingAIEngine {
 
     private async planNextSteps(
         request: CreativeRequest,
-        vision: ArtisticVision,
+        _vision: ArtisticVision,
         currentPhase: CreativeProcess['phase']
     ): Promise<string[]> {
         const phaseProgression = {
@@ -1243,13 +1374,13 @@ export class CreativeWritingAIEngine {
             ideation: ['초안 작성', '캐릭터 개발', '장면 구성'],
             drafting: ['내용 확장', '대화 개선', '묘사 강화'],
             refinement: ['구조 조정', '문체 정리', '논리 검토'],
-            polish: ['최종 검토', '세부 조정', '완성도 향상']
+            polish: [ASSISTANT_GENERATION_STEP_LABELS_DEFAULT[4], '세부 조정', '완성도 향상']
         };
 
         return phaseProgression[currentPhase] || ['창작 진행', '품질 향상', '완성도 제고'];
     }
 
-    private async identifyCreativeChallenges(request: CreativeRequest, vision: ArtisticVision): Promise<string[]> {
+    private async identifyCreativeChallenges(request: CreativeRequest, _vision: ArtisticVision): Promise<string[]> {
         const challenges = [];
 
         // 장르별 도전과제
@@ -1291,7 +1422,7 @@ export class CreativeWritingAIEngine {
     }
 
     // 영감 합성 메서드들
-    private async analyzeInspirationSource(source: InspirationSource, vision: ArtisticVision): Promise<any> {
+    private async analyzeInspirationSource(source: InspirationSource, vision: ArtisticVision): Promise<InspirationSourceAnalysis> {
         return {
             source_id: source.reference,
             extractable_elements: await this.extractElementsFromSource(source),
@@ -1316,12 +1447,12 @@ export class CreativeWritingAIEngine {
         return elementMap[source.type] || ['general_inspiration', 'creative_spark', 'new_perspective'];
     }
 
-    private async assessVisionAlignment(source: InspirationSource, vision: ArtisticVision): Promise<number> {
+    private async assessVisionAlignment(_source: InspirationSource, _vision: ArtisticVision): Promise<number> {
         // 비전과의 정렬도 평가 (0-1)
         return 0.8; // 간략화
     }
 
-    private async assessInnovationPotential(source: InspirationSource): Promise<number> {
+    private async assessInnovationPotential(_source: InspirationSource): Promise<number> {
         // 혁신 잠재력 평가 (0-1)
         return 0.7; // 간략화
     }
@@ -1340,23 +1471,15 @@ export class CreativeWritingAIEngine {
         return strategies[source.type] || '창의적 융합';
     }
 
-    private async identifyFusionOpportunities(influences: any[]): Promise<any[]> {
+    private async identifyFusionOpportunities(_influences: InspirationSourceAnalysis[]): Promise<string[]> {
         // 영향들 간의 융합 기회 식별
         return [
-            {
-                combination: ['literary_technique', 'visual_imagery'],
-                fusion_type: 'synaesthetic_writing',
-                potential: 0.9
-            },
-            {
-                combination: ['musical_rhythm', 'emotional_flow'],
-                fusion_type: 'lyrical_prose',
-                potential: 0.8
-            }
+            'literary_technique + visual_imagery → synaesthetic_writing (potential: 0.9)',
+            'musical_rhythm + emotional_flow → lyrical_prose (potential: 0.8)'
         ];
     }
 
-    private async exploreInnovativeCombinations(influences: any[], vision: ArtisticVision): Promise<any[]> {
+    private async exploreInnovativeCombinations(_influences: InspirationSourceAnalysis[], _vision: ArtisticVision): Promise<unknown[]> {
         // 혁신적 조합 탐색
         return [
             {
@@ -1368,7 +1491,7 @@ export class CreativeWritingAIEngine {
         ];
     }
 
-    private async buildCulturalBridges(influences: any[], vision: ArtisticVision): Promise<any[]> {
+    private async buildCulturalBridges(_influences: InspirationSourceAnalysis[], _vision: ArtisticVision): Promise<unknown[]> {
         // 문화적 다리 구축
         return [
             {
@@ -1380,8 +1503,8 @@ export class CreativeWritingAIEngine {
     }
 
     // 콘텐츠 생성 메서드들
-    private async generateBasicStructure(request: CreativeRequest, vision: ArtisticVision): Promise<any> {
-        const structureTypes: Record<string, any> = {
+    private async generateBasicStructure(request: CreativeRequest, _vision: ArtisticVision): Promise<BasicStructure> {
+        const structureTypes: Record<string, BasicStructure> = {
             story: { beginning: '도입', middle: '전개', end: '결말' },
             poem: { opening: '발단', development: '전개', closure: '마무리' },
             song: { verse: '절', chorus: '후렴', bridge: '다리', outro: '마무리' },
@@ -1398,8 +1521,8 @@ export class CreativeWritingAIEngine {
     private async generatePrimaryContent(
         request: CreativeRequest,
         vision: ArtisticVision,
-        structure: any,
-        inspirationSynthesis: any
+        _structure: BasicStructure,
+        _inspirationSynthesis: InspirationSynthesisResult
     ): Promise<string> {
         // 실제 콘텐츠 생성 로직 (현재는 예시)
         const contentTemplates: Record<string, string> = {
@@ -1433,7 +1556,7 @@ export class CreativeWritingAIEngine {
 
         for (let i = 0; i < count; i++) {
             // 다른 접근 방식으로 콘텐츠 생성
-            const altVision = { ...vision };
+            const _altVision = { ...vision };
             if (i === 0) {
                 // 더 실험적인 버전
                 alternatives.push(`[실험적 접근] ${primaryContent.replace(/니다/g, '네요')}`);
@@ -1446,16 +1569,16 @@ export class CreativeWritingAIEngine {
         return alternatives;
     }
 
-    private async generateExcerpts(primaryContent: string, request: CreativeRequest): Promise<string[]> {
-        const sentences = primaryContent.split(/[.!?]/).filter(s => s.trim().length > 0);
-        return sentences.slice(0, 3).map(s => s.trim() + '.');
+    private async generateExcerpts(primaryContent: string, _request: CreativeRequest): Promise<string[]> {
+        const sentences = primaryContent.split(/[.!?]/).filter(s => coerceTrimmedString(s, '').length > 0);
+        return sentences.slice(0, 3).map(s => `${coerceTrimmedString(s, '')}.`);
     }
 
     private async performCreativeAnalysis(
         content: string,
         request: CreativeRequest,
         vision: ArtisticVision
-    ): Promise<any> {
+    ): Promise<CreativeAnalysisResult> {
         return {
             originality_score: this.calculateOriginalityScore(content, request),
             emotional_impact: this.calculateEmotionalImpact(content, vision),
@@ -1476,7 +1599,7 @@ export class CreativeWritingAIEngine {
         return Math.min(score, 1.0);
     }
 
-    private calculateEmotionalImpact(content: string, vision: ArtisticVision): number {
+    private calculateEmotionalImpact(content: string, _vision: ArtisticVision): number {
         // 감정적 임팩트 계산
         let score = 0.6;
 
@@ -1499,7 +1622,7 @@ export class CreativeWritingAIEngine {
         return Math.min(score, 1.0);
     }
 
-    private calculateTechnicalExecution(content: string, request: CreativeRequest): number {
+    private calculateTechnicalExecution(content: string, _request: CreativeRequest): number {
         // 기술적 실행도 계산
         let score = 0.8;
 
@@ -1518,7 +1641,7 @@ export class CreativeWritingAIEngine {
         return Math.min(score, 1.0);
     }
 
-    private async extractStyleSignature(content: string, request: CreativeRequest): Promise<any> {
+    private async extractStyleSignature(content: string, request: CreativeRequest): Promise<StyleSignatureResult> {
         return {
             distinctive_elements: await this.identifyDistinctiveElements(content),
             literary_devices: await this.identifyLiteraryDevices(content),
@@ -1555,7 +1678,7 @@ export class CreativeWritingAIEngine {
     }
 
     private async analyzeRhythmPattern(content: string): Promise<string> {
-        const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = content.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const avgLength = sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length;
 
         if (avgLength < 30) return '간결한 리듬';
@@ -1579,7 +1702,7 @@ export class CreativeWritingAIEngine {
         return characteristics;
     }
 
-    private async generateEnhancementSuggestions(content: string, analysis: any): Promise<any> {
+    private async generateEnhancementSuggestions(content: string, analysis: CreativeAnalysisResult): Promise<CreativeOutput['enhancement_suggestions']> {
         return {
             imagery: analysis.emotional_impact < 0.7 ? ['더 생생한 감각적 묘사 추가'] : [],
             character_development: ['캐릭터의 내적 갈등 심화'],
@@ -1588,7 +1711,7 @@ export class CreativeWritingAIEngine {
         };
     }
 
-    private async identifyInspirationConnections(content: string, synthesis: any): Promise<any> {
+    private async identifyInspirationConnections(_content: string, _synthesis: InspirationSynthesisResult): Promise<CreativeOutput['inspiration_connections']> {
         return {
             detected_influences: ['한국 전통 정서', '현대적 감수성'],
             innovative_elements: ['전통과 현대의 융합'],
@@ -1601,7 +1724,7 @@ export class CreativeWritingAIEngine {
         output: CreativeOutput,
         request: CreativeRequest,
         vision: ArtisticVision,
-        process: CreativeProcess
+        _process: CreativeProcess
     ): Promise<CreativeOutput> {
         // 콘텐츠 개선
         const refinedContent = await this.refineContent(output.content.primary, output.creative_analysis);
@@ -1619,7 +1742,7 @@ export class CreativeWritingAIEngine {
         };
     }
 
-    private async refineContent(content: string, analysis: any): Promise<string> {
+    private async refineContent(content: string, analysis: CreativeAnalysisResult): Promise<string> {
         let refined = content;
 
         // 감정적 임팩트가 낮으면 감정적 요소 강화
@@ -1639,10 +1762,10 @@ export class CreativeWritingAIEngine {
         output: CreativeOutput,
         request: CreativeRequest,
         vision: ArtisticVision,
-        options: any
+        options: CreativeOptions
     ): Promise<CreativeOutput> {
         // 최종 품질 검사
-        const finalQualityCheck = await this.performFinalQualityCheck(output);
+        const _finalQualityCheck = await this.performFinalQualityCheck(output);
 
         // 문화적 민감성 검토
         if (options.cultural_sensitivity) {
@@ -1674,12 +1797,15 @@ export class CreativeWritingAIEngine {
         );
     }
 
-    private async performCulturalSensitivityReview(output: CreativeOutput): Promise<void> {
+    private async performCulturalSensitivityReview(_output: CreativeOutput): Promise<void> {
         // 문화적 민감성 검토 로직
-        console.log('문화적 민감성 검토 완료');
+        errorLogger.info('문화적 민감성 검토 완료', {
+            component: 'creativeWritingAIEngine',
+            action: 'performCulturalSensitivityReview',
+        });
     }
 
-    private async applyFinalTouches(content: string, request: CreativeRequest, vision: ArtisticVision): Promise<string> {
+    private async applyFinalTouches(content: string, request: CreativeRequest, _vision: ArtisticVision): Promise<string> {
         // 최종 마무리 작업
         let final = content;
 
@@ -1698,21 +1824,24 @@ export class CreativeWritingAIEngine {
 
     private async updateCreativeProcess(
         process: CreativeProcess,
-        output: CreativeOutput,
-        iterations: CreativeOutput[]
+        _output: CreativeOutput,
+        _iterations: CreativeOutput[]
     ): Promise<CreativeProcess> {
         return {
             ...process,
             phase: 'polish',
             current_focus: 'completion',
-            next_steps: ['최종 검토', '발표 준비'],
+            next_steps: [ASSISTANT_GENERATION_STEP_LABELS_DEFAULT[4], '발표 준비'],
             creative_challenges: process.creative_challenges.filter(c => !c.includes('초기')),
             breakthrough_opportunities: ['독자 반응 분석', '후속 작품 계획']
         };
     }
 
     // 기타 필요한 메서드들은 간략화하여 구현...
-    private async personalizeCreativeApproach(userProfile: any, request: CreativeRequest): Promise<any> {
+    private async personalizeCreativeApproach(
+        userProfile: { writing_experience?: string; [key: string]: unknown },
+        _request: CreativeRequest
+    ): Promise<PersonalApproach> {
         return {
             approach_style: userProfile.writing_experience === 'beginner' ? 'guided' : 'collaborative',
             encouragement_level: 0.8,
@@ -1720,7 +1849,10 @@ export class CreativeWritingAIEngine {
         };
     }
 
-    private async establishCollaborationFramework(userProfile: any, approach: any): Promise<any> {
+    private async establishCollaborationFramework(
+        _userProfile: Record<string, unknown>,
+        approach: PersonalApproach
+    ): Promise<CollaborationFrameworkResult> {
         return {
             ai_role: 'creative_partner',
             user_role: 'primary_creator',
@@ -1729,7 +1861,7 @@ export class CreativeWritingAIEngine {
         };
     }
 
-    private async generateInitialSuggestions(request: CreativeRequest, approach: any): Promise<string[]> {
+    private async generateInitialSuggestions(request: CreativeRequest, _approach: PersonalApproach): Promise<string[]> {
         return [
             `${request.type} 장르의 특성을 살린 구조를 고려해보세요`,
             `${request.mood} 분위기를 효과적으로 표현할 방법을 생각해보세요`,
@@ -1737,7 +1869,11 @@ export class CreativeWritingAIEngine {
         ];
     }
 
-    private async generateCreativePrompts(request: CreativeRequest, userProfile: any, approach: any): Promise<string[]> {
+    private async generateCreativePrompts(
+        _request: CreativeRequest,
+        _userProfile: Record<string, unknown>,
+        _approach: PersonalApproach
+    ): Promise<string[]> {
         return [
             '가장 인상깊었던 순간을 떠올려보세요',
             '만약 시간을 되돌릴 수 있다면 무엇을 하고 싶나요?',
@@ -1745,7 +1881,11 @@ export class CreativeWritingAIEngine {
         ];
     }
 
-    private async createSessionPlan(request: CreativeRequest, userProfile: any, framework: any): Promise<any> {
+    private async createSessionPlan(
+        _request: CreativeRequest,
+        _userProfile: Record<string, unknown>,
+        _framework: CollaborationFrameworkResult
+    ): Promise<SessionPlanResult> {
         return {
             phases: ['아이디어 발전', '초안 작성', '개선 및 완성'],
             milestones: ['핵심 아이디어 확정', '초안 완료', '최종 작품 완성'],
@@ -1754,7 +1894,11 @@ export class CreativeWritingAIEngine {
     }
 
     // 창의적 블록 해결 관련 메서드들 (간략화)
-    private async analyzeCreativeBlock(currentWork: string, blockType: string, context: any): Promise<any> {
+    private async analyzeCreativeBlock(
+        _currentWork: string,
+        blockType: string,
+        _context: Record<string, unknown>
+    ): Promise<BlockAnalysisResult> {
         return {
             type: blockType,
             underlying_causes: ['완벽주의', '아이디어 부족', '자신감 저하'],
@@ -1763,7 +1907,10 @@ export class CreativeWritingAIEngine {
         };
     }
 
-    private async developBlockResolutionStrategies(analysis: any, context: any): Promise<any[]> {
+    private async developBlockResolutionStrategies(
+        _analysis: BlockAnalysisResult,
+        _context: Record<string, unknown>
+    ): Promise<unknown[]> {
         return [{
             technique: '자유쓰기',
             description: '5분간 멈추지 말고 써보기',
@@ -1774,7 +1921,11 @@ export class CreativeWritingAIEngine {
         }];
     }
 
-    private async createImmediateExercises(blockType: string, analysis: any, context: any): Promise<any[]> {
+    private async createImmediateExercises(
+        _blockType: string,
+        _analysis: BlockAnalysisResult,
+        _context: Record<string, unknown>
+    ): Promise<unknown[]> {
         return [{
             exercise: '단어 연상',
             purpose: '창의적 사고 자극',
@@ -1783,7 +1934,11 @@ export class CreativeWritingAIEngine {
         }];
     }
 
-    private async generateInspirationBoost(blockType: string, currentWork: string, context: any): Promise<any> {
+    private async generateInspirationBoost(
+        _blockType: string,
+        _currentWork: string,
+        _context: Record<string, unknown>
+    ): Promise<{ prompts: string[]; references: string[]; techniques: string[]; mindset_shifts: string[] }> {
         return {
             prompts: ['다른 관점에서 바라보면 어떨까요?', '가장 예상치 못한 전개는?'],
             references: ['좋아하는 작가의 작품', '인상깊은 영화나 음악'],
@@ -1793,7 +1948,7 @@ export class CreativeWritingAIEngine {
     }
 
     // 스타일 실험 관련 메서드들도 간략화...
-    private async performStyleTransformation(baseContent: string, experiment: any): Promise<string> {
+    private async performStyleTransformation(baseContent: string, experiment: StyleExperimentConfig): Promise<string> {
         let transformed = baseContent;
 
         if (experiment.dimension === 'voice') {
@@ -1807,7 +1962,16 @@ export class CreativeWritingAIEngine {
         return transformed;
     }
 
-    private async analyzeStyleExperiment(baseContent: string, transformedContent: string, experiment: any): Promise<any> {
+    private async analyzeStyleExperiment(
+        _baseContent: string,
+        _transformedContent: string,
+        _experiment: StyleExperimentConfig
+    ): Promise<{
+        creativity_score: number;
+        readability_impact: number;
+        emotional_shift: string[];
+        stylistic_innovations: string[];
+    }> {
         return {
             creativity_score: 0.8,
             readability_impact: 0.7,
@@ -1816,7 +1980,11 @@ export class CreativeWritingAIEngine {
         };
     }
 
-    private async generateComparisonNotes(baseContent: string, transformedContent: string, experiment: any): Promise<string[]> {
+    private async generateComparisonNotes(
+        _baseContent: string,
+        _transformedContent: string,
+        _experiment: StyleExperimentConfig
+    ): Promise<string[]> {
         return [
             '문체의 격식성이 변화함',
             '독자와의 거리감 조절됨',
@@ -1824,7 +1992,7 @@ export class CreativeWritingAIEngine {
         ];
     }
 
-    private async identifySynthesisOpportunities(experiments: any[]): Promise<any[]> {
+    private async identifySynthesisOpportunities(_experiments: unknown[]): Promise<unknown[]> {
         return [{
             combination: ['voice_variation', 'mood_adjustment'],
             potential_effect: '독특하면서도 접근하기 쉬운 문체',
@@ -1832,7 +2000,12 @@ export class CreativeWritingAIEngine {
         }];
     }
 
-    private async generateExperimentRecommendations(experiments: any[]): Promise<any> {
+    private async generateExperimentRecommendations(experiments: { experiment_id?: string }[]): Promise<{
+        most_innovative: string;
+        most_accessible: string;
+        most_impactful: string;
+        further_exploration: string[];
+    }> {
         return {
             most_innovative: experiments[0]?.experiment_id || '',
             most_accessible: experiments[1]?.experiment_id || '',
@@ -1842,16 +2015,22 @@ export class CreativeWritingAIEngine {
     }
 
     // 협업 관련 메서드들도 간략화...
-    private async designCollaborationFramework(participants: any[], goal: any): Promise<any> {
+    private async designCollaborationFramework(
+        _participants: ParticipantLike[],
+        _goal: Record<string, unknown>
+    ): Promise<Record<string, unknown>> {
         return {
             workflow_design: ['아이디어 공유', '역할 분담', '피드백 순환'],
-            communication_protocols: ['정기 회의', '문서 공유', '실시간 채팅'],
+            communication_protocols: ['정기 회의', '문서 공유', '실시간 대화'],
             creative_synchronization: ['공통 비전 확인', '스타일 가이드', '품질 기준'],
             conflict_resolution: ['중재자 지정', '투표 시스템', '타협안 모색']
         };
     }
 
-    private async distributeCreativeTasks(participants: any[], goal: any): Promise<any[]> {
+    private async distributeCreativeTasks(
+        participants: ParticipantLike[],
+        _goal: Record<string, unknown>
+    ): Promise<unknown[]> {
         return participants.map(p => ({
             participant_id: p.id,
             assigned_tasks: ['아이디어 제안', '초안 작성', '피드백 제공'],
@@ -1860,7 +2039,10 @@ export class CreativeWritingAIEngine {
         }));
     }
 
-    private async designCollaborativeExercises(participants: any[], goal: any): Promise<any[]> {
+    private async designCollaborativeExercises(
+        participants: ParticipantLike[],
+        _goal: Record<string, unknown>
+    ): Promise<unknown[]> {
         return [{
             exercise_name: '집단 브레인스토밍',
             purpose: '아이디어 발굴',
@@ -1870,7 +2052,10 @@ export class CreativeWritingAIEngine {
         }];
     }
 
-    private async establishQualityAssurance(participants: any[], goal: any): Promise<any> {
+    private async establishQualityAssurance(
+        _participants: ParticipantLike[],
+        _goal: Record<string, unknown>
+    ): Promise<Record<string, unknown>> {
         return {
             review_stages: ['초안 검토', '중간 점검', '최종 평가'],
             criteria: ['창의성', '완성도', '목표 달성도'],

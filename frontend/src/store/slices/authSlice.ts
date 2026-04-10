@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { CORBU_AUTH_TOKEN_STORAGE_KEY } from '../../services/authStorageKeys';
 
 interface User {
     id: string;
@@ -26,7 +27,7 @@ const initialState: AuthState = {
     isAuthenticated: false,
     loading: false,
     error: null,
-    token: localStorage.getItem('corbu_token'),
+    token: localStorage.getItem(CORBU_AUTH_TOKEN_STORAGE_KEY),
 };
 
 // 비동기 액션들
@@ -41,7 +42,7 @@ export const loginUser = createAsyncThunk(
             const user: User = {
                 id: '1',
                 email: credentials.email,
-                name: 'CORBU 사용자',
+                name: 'CORBU.AI 사용자',
                 role: 'admin',
                 preferences: {
                     theme: 'light',
@@ -51,7 +52,7 @@ export const loginUser = createAsyncThunk(
             };
 
             const token = 'mock_jwt_token_' + Date.now();
-            localStorage.setItem('corbu_token', token);
+            localStorage.setItem(CORBU_AUTH_TOKEN_STORAGE_KEY, token);
 
             return { user, token };
         } catch (error) {
@@ -64,7 +65,7 @@ export const logoutUser = createAsyncThunk(
     'auth/logoutUser',
     async (_, { rejectWithValue }) => {
         try {
-            localStorage.removeItem('corbu_token');
+            localStorage.removeItem(CORBU_AUTH_TOKEN_STORAGE_KEY);
             return null;
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Logout failed');
@@ -90,7 +91,7 @@ export const verifyToken = createAsyncThunk(
             const user: User = {
                 id: '1',
                 email: 'user@corbu.ai',
-                name: 'CORBU 사용자',
+                name: 'CORBU.AI 사용자',
                 role: 'admin',
                 preferences: {
                     theme: 'light',
@@ -101,7 +102,7 @@ export const verifyToken = createAsyncThunk(
 
             return user;
         } catch (error) {
-            localStorage.removeItem('corbu_token');
+            localStorage.removeItem(CORBU_AUTH_TOKEN_STORAGE_KEY);
             return rejectWithValue(error instanceof Error ? error.message : 'Token verification failed');
         }
     }

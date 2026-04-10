@@ -1,5 +1,12 @@
 import { Project, ProjectFile as BaseProjectFile, Guideline as BaseGuideline } from '../types/project';
-import { ChatSession, Message } from '../types/chat';
+import { ChatSession } from '../types/chat';
+import { conversationListTitleFromUserMessage } from '../utils/chatInputUtils';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { CHAT_SESSIONS_STORAGE_KEY } from './chatSessionStorageKeys';
+import {
+  PROJECTS_STORAGE_KEY,
+  PROJECT_CHAT_STRUCTURE_SESSIONS_STORAGE_KEY,
+} from './projectStorageKeys';
 
 // 프로젝트 하위 구조 타입 정의
 export interface ProjectStructure {
@@ -24,8 +31,6 @@ export interface ProjectGuideline extends BaseGuideline {
 export class ProjectChatStructureService {
     private static instance: ProjectChatStructureService;
 
-    constructor() { }
-
     public static getInstance(): ProjectChatStructureService {
         if (!ProjectChatStructureService.instance) {
             ProjectChatStructureService.instance = new ProjectChatStructureService();
@@ -38,25 +43,25 @@ export class ProjectChatStructureService {
         return date.toISOString();
     }
 
-    // 채팅 제목 생성
+    // 대화 제목 생성 (명시 제목 라벨 우선, 없으면 30자 축약)
     private generateChatTitle(userMessage: string): string {
-        return userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
+        return conversationListTitleFromUserMessage(userMessage);
     }
 
-    // 채팅 세션 저장
+    // 대화 세션 저장
     private saveChatSession(chat: ChatSession): void {
         const chats = this.getChatSessions();
         chats.push(chat);
-        localStorage.setItem('chatSessions', JSON.stringify(chats));
+        localStorage.setItem(PROJECT_CHAT_STRUCTURE_SESSIONS_STORAGE_KEY, JSON.stringify(chats));
     }
 
-    // 채팅 세션 목록 조회
+    // 대화 세션 목록 조회
     private getChatSessions(): ChatSession[] {
-        const stored = localStorage.getItem('chatSessions');
+        const stored = localStorage.getItem(PROJECT_CHAT_STRUCTURE_SESSIONS_STORAGE_KEY);
         return stored ? JSON.parse(stored) : [];
     }
 
-    // 첫 화면에서 입력 시작 시 자동 채팅 생성
+    // 첫 화면에서 입력 시작 시 자동 대화 생성
     public createInitialChat(userMessage: string): ChatSession {
         const now = new Date();
         const newChat: ChatSession = {
@@ -82,7 +87,7 @@ export class ProjectChatStructureService {
             ],
             createdAt: this.toISOString(now),
             updatedAt: this.toISOString(now),
-            projectId: undefined, // 프로젝트 없이 독립적인 채팅
+            projectId: undefined, // 프로젝트 없이 독립적인 대화
             isActive: true,
             messageCount: 1,
             participants: [],
@@ -125,7 +130,7 @@ export class ProjectChatStructureService {
         return newProject;
     }
 
-    // 프로젝트에 파일 추가 및 하위 채팅 생성
+    // 프로젝트에 파일 추가 및 하위 대화 생성
     public addFileToProject(projectId: string, file: ProjectFile): { file: ProjectFile; chat: ChatSession } {
         const project = this.getProject(projectId);
         if (!project) {
@@ -149,10 +154,10 @@ export class ProjectChatStructureService {
         project.files.push(baseFile);
         this.saveProject(project);
 
-        // 파일 관련 하위 채팅 생성
+        // 파일 관련 하위 대화 생성
         const fileChat: ChatSession = {
             id: `chat_file_${Date.now()}`,
-            title: `📄 ${file.name} 관련 채팅`,
+            title: `📄 ${file.name} 관련 대화`,
             messages: [
                 {
                     id: `msg_${Date.now()}`,
@@ -186,7 +191,7 @@ export class ProjectChatStructureService {
             isPersistent: true
         };
 
-        // 파일과 채팅 연결
+        // 파일과 대화 연결
         const savedFile = { ...file, id: baseFile.id, associatedChatId: fileChat.id };
         this.saveProject(project);
         this.saveChatSession(fileChat);
@@ -194,7 +199,7 @@ export class ProjectChatStructureService {
         return { file: savedFile, chat: fileChat };
     }
 
-    // 프로젝트에 지침 추가 및 하위 채팅 생성
+    // 프로젝트에 지침 추가 및 하위 대화 생성
     public addGuidelineToProject(projectId: string, guideline: ProjectGuideline): { guideline: ProjectGuideline; chat: ChatSession } {
         const project = this.getProject(projectId);
         if (!project) {
@@ -219,10 +224,10 @@ export class ProjectChatStructureService {
         project.guidelines = project.guidelines + '\n' + baseGuideline.content;
         this.saveProject(project);
 
-        // 지침 관련 하위 채팅 생성
+        // 지침 관련 하위 대화 생성
         const guidelineChat: ChatSession = {
             id: `chat_guideline_${Date.now()}`,
-            title: `📋 ${guideline.title} 관련 채팅`,
+            title: `📋 ${guideline.title} 관련 대화`,
             messages: [
                 {
                     id: `msg_${Date.now()}`,
@@ -256,7 +261,7 @@ export class ProjectChatStructureService {
             isPersistent: true
         };
 
-        // 지침과 채팅 연결
+        // 지침과 대화 연결
         const savedGuideline = { ...guideline, id: baseGuideline.id, associatedChatId: guidelineChat.id };
         this.saveProject(project);
         this.saveChatSession(guidelineChat);
@@ -281,7 +286,7 @@ export class ProjectChatStructureService {
 
         // BaseGuideline을 ProjectGuideline로 변환
         const guidelines: ProjectGuideline[] = Array.isArray(project.guidelines)
-            ? project.guidelines.map((baseGuideline: any) => ({
+            ? project.guidelines.map((baseGuideline: BaseGuideline) => ({
                 ...baseGuideline,
                 createdDate: new Date(baseGuideline.createdAt),
                 lastUpdated: new Date(baseGuideline.updatedAt),
@@ -297,16 +302,21 @@ export class ProjectChatStructureService {
         };
     }
 
-    // 프로젝트별 하위 채팅 목록 가져오기
+    // 프로젝트별 하위 대화 목록 가져오기
     public getChatSessionsByProject(projectId: string): ChatSession[] {
         try {
-            const stored = localStorage.getItem('corbu_chat_sessions');
+            const stored = localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY);
             if (!stored) return [];
 
             const allChats: ChatSession[] = JSON.parse(stored);
             return allChats.filter(chat => chat.projectId === projectId);
         } catch (error) {
-            console.error('프로젝트 채팅 세션 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('프로젝트 대화 세션 로드 실패', err, {
+                component: 'projectChatStructureService',
+                action: 'getChatSessions',
+                projectId,
+            });
             return [];
         }
     }
@@ -315,7 +325,7 @@ export class ProjectChatStructureService {
     // 프로젝트 저장
     private saveProject(project: Project): void {
         try {
-            const stored = localStorage.getItem('projects');
+            const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
             const projects: Project[] = stored ? JSON.parse(stored) : [];
 
             const existingIndex = projects.findIndex(p => p.id === project.id);
@@ -325,22 +335,32 @@ export class ProjectChatStructureService {
                 projects.push(project);
             }
 
-            localStorage.setItem('projects', JSON.stringify(projects));
+            localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
         } catch (error) {
-            console.error('프로젝트 저장 실패:', error);
+            const err = toError(error);
+            errorLogger.error('프로젝트 저장 실패', err, {
+                component: 'projectChatStructureService',
+                action: 'saveProject',
+                projectId: project.id,
+            });
         }
     }
 
     // 프로젝트 가져오기
     private getProject(projectId: string): Project | null {
         try {
-            const stored = localStorage.getItem('projects');
+            const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
             if (!stored) return null;
 
             const projects: Project[] = JSON.parse(stored);
             return projects.find(p => p.id === projectId) || null;
         } catch (error) {
-            console.error('프로젝트 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('프로젝트 로드 실패', err, {
+                component: 'projectChatStructureService',
+                action: 'getProject',
+                projectId,
+            });
             return null;
         }
     }
@@ -349,27 +369,35 @@ export class ProjectChatStructureService {
     // 모든 프로젝트 구조 가져오기
     public getAllProjectStructures(): ProjectStructure[] {
         try {
-            const stored = localStorage.getItem('projects');
+            const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
             if (!stored) return [];
 
             const projects: Project[] = JSON.parse(stored);
             return projects.map(project => this.getProjectStructure(project.id)).filter(Boolean) as ProjectStructure[];
         } catch (error) {
-            console.error('프로젝트 구조 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('프로젝트 구조 로드 실패', err, {
+                component: 'projectChatStructureService',
+                action: 'getAllProjectStructures',
+            });
             return [];
         }
     }
 
-    // 독립적인 채팅 세션 가져오기 (프로젝트 없는 채팅)
+    // 독립적인 대화 세션 가져오기 (프로젝트 없는 대화)
     public getIndependentChatSessions(): ChatSession[] {
         try {
-            const stored = localStorage.getItem('corbu_chat_sessions');
+            const stored = localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY);
             if (!stored) return [];
 
             const allChats: ChatSession[] = JSON.parse(stored);
             return allChats.filter(chat => !chat.projectId);
         } catch (error) {
-            console.error('독립 채팅 세션 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('독립 대화 세션 로드 실패', err, {
+                component: 'projectChatStructureService',
+                action: 'getIndependentChatSessions',
+            });
             return [];
         }
     }
@@ -384,39 +412,63 @@ export class ProjectChatStructureService {
             };
 
             this.saveProject(projectToUpdate);
-            console.log('프로젝트 업데이트 완료:', projectToUpdate.name);
+            errorLogger.info('프로젝트 업데이트 완료', {
+                component: 'projectChatStructureService',
+                action: 'updateProject',
+                projectId: projectToUpdate.id,
+                projectName: projectToUpdate.name,
+            });
         } catch (error) {
-            console.error('프로젝트 업데이트 실패:', error);
-            throw error;
+            const err = toError(error);
+            errorLogger.error('프로젝트 업데이트 실패', err, {
+                component: 'projectChatStructureService',
+                action: 'updateProject',
+                projectId: updatedProject.id,
+            });
+            throw err;
         }
     }
 
     // 프로젝트 삭제
     public deleteProject(projectId: string): boolean {
         try {
-            const stored = localStorage.getItem('projects');
+            const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
             if (!stored) return false;
 
             const projects: Project[] = JSON.parse(stored);
             const filteredProjects = projects.filter(p => p.id !== projectId);
 
-            localStorage.setItem('projects', JSON.stringify(filteredProjects));
+            localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(filteredProjects));
 
-            // 관련 채팅 세션도 삭제
-            const chatStored = localStorage.getItem('corbu_chat_sessions');
+            // 관련 대화 세션도 삭제
+            const chatStored = localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY);
             if (chatStored) {
                 const chats: ChatSession[] = JSON.parse(chatStored);
                 const filteredChats = chats.filter(c => c.projectId !== projectId);
-                localStorage.setItem('corbu_chat_sessions', JSON.stringify(filteredChats));
+                localStorage.setItem(CHAT_SESSIONS_STORAGE_KEY, JSON.stringify(filteredChats));
             }
 
-            console.log('프로젝트 삭제 완료:', projectId);
+            errorLogger.info('프로젝트 삭제 완료', {
+                component: 'projectChatStructureService',
+                action: 'deleteProject',
+                projectId,
+            });
             return true;
         } catch (error) {
-            console.error('프로젝트 삭제 실패:', error);
+            const err = toError(error);
+            errorLogger.error('프로젝트 삭제 실패', err, {
+                component: 'projectChatStructureService',
+                action: 'deleteProject',
+                projectId,
+            });
             return false;
         }
     }
 }
+
+export {
+  PROJECTS_STORAGE_KEY,
+  PROJECT_CHAT_STRUCTURE_SESSIONS_STORAGE_KEY,
+} from './projectStorageKeys';
 
 export default ProjectChatStructureService;

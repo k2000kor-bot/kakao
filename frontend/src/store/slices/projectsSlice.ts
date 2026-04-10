@@ -17,6 +17,8 @@ interface Project {
         temperature: number;
         maxTokens: number;
     };
+    /** 노트북 LLM 소스 개수 (Google NotebookLM 스타일) */
+    source_count?: number;
 }
 
 interface ProjectsState {
@@ -64,7 +66,7 @@ export const createProject = createAsyncThunk(
         name: string;
         description: string;
         tags?: string[];
-        settings?: any;
+        settings?: Record<string, unknown>;
     }, { rejectWithValue }) => {
         try {
             const project = await api.createProject(projectData);

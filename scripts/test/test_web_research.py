@@ -3,15 +3,21 @@
 웹 연구 기능 테스트 스크립트
 """
 
+import os
 import requests
 import json
+
+_API_PORT = os.environ.get("API_PORT") or os.environ.get("BACKEND_PORT") or "5002"
+_BASE = os.environ.get(
+    "CORBU_TEST_API_BASE", f"http://localhost:{_API_PORT}"
+).rstrip("/")
 
 def test_web_research():
     """웹 연구 API 테스트"""
     
     # 테스트 데이터
     test_data = {
-        "question": "개포우성 재개발 프로젝트의 현재 진행 상황과 향후 전망을 분석해주세요.",
+        "question": "샘플 재개발 프로젝트의 현재 진행 상황과 향후 전망을 분석해주세요.",
         "context": {
             "project_id": "gaeposung_project",
             "user_id": "test_user",
@@ -23,7 +29,7 @@ def test_web_research():
     try:
         # API 호출
         response = requests.post(
-            "http://localhost:5001/api/analysis/web-research",
+            f"{_BASE}/api/analysis/web-research",
             json=test_data,
             headers={"Content-Type": "application/json"},
             timeout=30

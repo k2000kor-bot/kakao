@@ -298,9 +298,9 @@ const UnifiedAdvancedInterface: React.FC = () => {
         },
         {
             id: '2',
-            name: '개포우성',
+            name: '샘플 프로젝트',
             type: 'project',
-            subItems: ['대화요약', '개포우성7차']
+            subItems: ['대화요약', '프로젝트 A']
         }
     ];
 
@@ -1054,7 +1054,7 @@ ${advancedResponse.nextActions.slice(0, 2).map(action => `• ${action}`).join('
                     <div className="flex items-center space-x-3">
                         <Bot className="h-8 w-8 text-purple-600" />
                         <div>
-                            <h1 className="text-lg font-bold text-gray-900">CORBU AI</h1>
+                            <h1 className="text-lg font-bold text-gray-900">CORBU.AI</h1>
                             <p className="text-sm text-gray-500">통합 고도화 시스템</p>
                         </div>
                     </div>
@@ -2558,7 +2558,7 @@ ${advancedResponse.nextActions.slice(0, 2).map(action => `• ${action}`).join('
                         {/* 면책 조항 */}
                         <div className="chatgpt-disclaimer mt-4">
                             <p className="text-xs text-gray-500 text-center">
-                                CORBU AI는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+                                CORBU.AI는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
                             </p>
                         </div>
                     </div>

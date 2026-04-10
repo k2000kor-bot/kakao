@@ -163,7 +163,7 @@ export class AIAnalysisEngine {
         id: `low_engagement_${Date.now()}`,
         type: 'engagement',
         title: '참여도 개선 필요',
-        description: `채팅당 평균 메시지 수가 ${avgMessagesPerChat.toFixed(1)}개로 낮습니다.`,
+        description: `대화당 평균 메시지 수가 ${avgMessagesPerChat.toFixed(1)}개로 낮습니다.`,
         severity: 'medium',
         confidence: 0.7,
         actionable: true,
@@ -175,7 +175,7 @@ export class AIAnalysisEngine {
         metrics: {
           current: avgMessagesPerChat,
           target: 10,
-          unit: '메시지/채팅'
+          unit: '메시지/대화'
         }
       });
     }
@@ -248,7 +248,7 @@ export class AIAnalysisEngine {
     const insights: ProjectInsight[] = [];
 
     const totalChats = chats.length;
-    const activeChats = chats.filter(chat => (chat as any).status === 'active').length;
+    const activeChats = chats.filter(chat => (chat as { status?: string }).status === 'active').length;
     const completionRate = totalChats > 0 ? (totalChats - activeChats) / totalChats : 0;
 
     if (completionRate < 0.3 && totalChats > 5) {
@@ -256,7 +256,7 @@ export class AIAnalysisEngine {
         id: `low_completion_${Date.now()}`,
         type: 'productivity',
         title: '완료율 개선 필요',
-        description: `채팅 완료율이 ${(completionRate * 100).toFixed(1)}%로 낮습니다.`,
+        description: `대화 완료율이 ${(completionRate * 100).toFixed(1)}%로 낮습니다.`,
         severity: 'high',
         confidence: 0.8,
         actionable: true,
@@ -297,7 +297,7 @@ export class AIAnalysisEngine {
   private analyzeCollaboration(chats: Chat[], messages: Message[]): ProjectInsight[] {
     const insights: ProjectInsight[] = [];
 
-    const conversationPatterns = this.findConversationPatterns(messages);
+    const _conversationPatterns = this.findConversationPatterns(messages);
     const collaborationScore = this.calculateCollaborationScore(messages);
 
     if (collaborationScore < 0.5) {
@@ -529,7 +529,7 @@ export class AIAnalysisEngine {
 
   private calculateProductivityScore(chats: Chat[], messages: Message[]): number {
     const avgMessagesPerChat = messages.length / Math.max(chats.length, 1);
-    const completionRate = chats.filter(c => (c as any).status !== 'active').length / Math.max(chats.length, 1);
+    const completionRate = chats.filter(c => (c as { status?: string }).status !== 'active').length / Math.max(chats.length, 1);
 
     return Math.min(100, (avgMessagesPerChat * 5) + (completionRate * 50));
   }

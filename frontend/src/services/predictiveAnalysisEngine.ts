@@ -1,5 +1,7 @@
-import { ChatSession, Message } from '../types/chat';
+import { ChatSession } from '../types/chat';
 import { Project, Guideline } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 interface PredictionModel {
   id: string;
@@ -13,7 +15,7 @@ interface PredictionModel {
 interface PredictionResult {
   type: 'trend' | 'behavior' | 'recommendation' | 'risk';
   confidence: number;
-  value: any;
+  value: unknown;
   description: string;
   actionable: boolean;
   priority: 'high' | 'medium' | 'low';
@@ -349,7 +351,7 @@ class PredictiveAnalysisEngine {
     sessions.forEach(session => {
       session.messages.forEach(msg => {
         if (msg.isUser && msg.content.includes('?')) {
-          const question = msg.content.trim();
+          const question = coerceTrimmedString(msg.content, '');
           questions[question] = (questions[question] || 0) + 1;
         }
       });
@@ -389,9 +391,9 @@ class PredictiveAnalysisEngine {
   private calculateCompletionRate(sessions: ChatSession[]): number {
     const completedSessions = sessions.filter(s =>
       s.messages.length > 2 &&
-      s.messages[s.messages.length - 1].content.includes('감사') ||
+      (s.messages[s.messages.length - 1].content.includes('감사') ||
       s.messages[s.messages.length - 1].content.includes('해결') ||
-      s.messages[s.messages.length - 1].content.includes('완료')
+      s.messages[s.messages.length - 1].content.includes('완료'))
     ).length;
 
     return sessions.length > 0 ? completedSessions / sessions.length : 0;
@@ -434,7 +436,11 @@ class PredictiveAnalysisEngine {
       };
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
-      console.error('예측 분석 데이터 저장 오류:', error);
+      const err = toError(error);
+      errorLogger.error('예측 분석 데이터 저장 오류', err, {
+        component: 'predictiveAnalysisEngine',
+        action: 'saveData',
+      });
     }
   }
 
@@ -456,7 +462,11 @@ class PredictiveAnalysisEngine {
         }
       }
     } catch (error) {
-      console.error('예측 분석 데이터 로드 오류:', error);
+      const err = toError(error);
+      errorLogger.error('예측 분석 데이터 로드 오류', err, {
+        component: 'predictiveAnalysisEngine',
+        action: 'loadData',
+      });
     }
   }
 

@@ -49,7 +49,7 @@ def test_detailed_conversation_analysis():
         print("=" * 60)
         
         response = requests.post(
-            "http://localhost:8000/api/v7/ai-assistant/conversation",
+            "http://localhost:5002/api/v7/ai-assistant/conversation",
             json=conversation_data,
             headers={"Content-Type": "application/json"}
         )
@@ -230,7 +230,7 @@ def test_practical_insights():
         
         try:
             response = requests.post(
-                "http://localhost:8000/api/v7/ai-assistant/monitor",
+                "http://localhost:5002/api/v7/ai-assistant/monitor",
                 json=monitoring_data,
                 headers={"Content-Type": "application/json"}
             )

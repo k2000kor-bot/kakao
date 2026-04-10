@@ -4,6 +4,8 @@
 카카오톡 성향분석, 시공사 편향 분석, 여론 분석을 통합 제공
 """
 
+import os
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,9 +20,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+LISTEN_PORT = int(
+    os.environ.get("INTEGRATED_ANALYSIS_API_PORT", os.environ.get("PORT", "8006"))
+)
+
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI 통합 분석 API",
+    title="CORBU.AI 통합 분석 API",
     description="카카오톡 성향분석, 시공사 편향 분석, 여론 분석 통합 서버",
     version="2.0.0"
 )
@@ -67,7 +73,7 @@ class AnalysisResult(BaseModel):
 @app.get("/")
 async def root():
     return {
-        "service": "CORBU AI 통합 분석 API",
+        "service": "CORBU.AI 통합 분석 API",
         "version": "2.0.0",
         "status": "운영중",
         "features": [
@@ -381,10 +387,11 @@ def generate_recommendations(analysis_results: Dict[str, Any]) -> List[str]:
 
 # 서버 시작
 if __name__ == "__main__":
-    print("🚀 CORBU AI 통합 분석 API 서버 시작")
+    _p = LISTEN_PORT
+    print("🚀 CORBU.AI 통합 분석 API 서버 시작")
     print("=" * 60)
-    print("📍 서버 주소: http://localhost:8006")
-    print("📖 API 문서: http://localhost:8006/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 기능:")
     print("   🔍 통합 분석: POST /api/v1/integrated-analysis")
     print("   📊 성향 분석: POST /api/v1/kakao-tendency")
@@ -395,7 +402,7 @@ if __name__ == "__main__":
     print("")
     
     try:
-        uvicorn.run(app, host="0.0.0.0", port=8006, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=LISTEN_PORT, log_level="info")
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")
         import traceback

@@ -143,6 +143,33 @@ class TestProjectAPI:
         get_response = client.get(f"/api/projects/{project_id}")
         assert get_response.status_code == 404
 
+    def test_get_project_analytics(self, client, cleanup_test_data):
+        """GET /api/projects/{id}/analytics — 프로젝트별 사용 통계 (세션·메시지·소스 수)"""
+        project_data = {"name": "분석 테스트 프로젝트", "description": "분석 테스트용"}
+        create_res = client.post("/api/projects", json=project_data)
+        assert create_res.status_code == 200
+        project_id = create_res.json()["data"]["id"]
+
+        res = client.get(f"/api/projects/{project_id}/analytics")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert "data" in data
+        d = data["data"]
+        assert d["project_id"] == project_id
+        assert d["project_name"] == project_data["name"]
+        assert "session_count" in d
+        assert "total_messages" in d
+        assert "source_count" in d
+        assert isinstance(d["session_count"], int)
+        assert isinstance(d["total_messages"], int)
+        assert isinstance(d["source_count"], int)
+
+    def test_get_project_analytics_nonexistent_returns_404(self, client):
+        """GET /api/projects/없는id/analytics → 404"""
+        res = client.get("/api/projects/nonexistent-analytics-999/analytics")
+        assert res.status_code == 404
+
 
 @pytest.mark.api
 @pytest.mark.skipif(not APP_AVAILABLE, reason="main_server를 사용할 수 없습니다")
@@ -322,8 +349,8 @@ class TestProjectNotebookContext:
     def test_chat_with_project_context_returns_200(self, client, cleanup_test_data):
         """프로젝트 생성 후 context.projectId를 넣고 POST /api/chat 호출 시 200 및 응답 본문 존재."""
         project_data = {
-            "name": "채팅 컨텍스트 검증 프로젝트",
-            "description": "이 프로젝트는 채팅 시 컨텍스트 검증용입니다.",
+            "name": "대화 컨텍스트 검증 프로젝트",
+            "description": "이 프로젝트는 대화 시 컨텍스트 검증용입니다.",
             "tags": ["검증"],
             "initial_guidelines": ["답변은 한 문장으로 끝낸다."],
         }

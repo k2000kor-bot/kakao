@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
-import aiHealthMonitor from './aiHealthMonitor';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface SecurityThreat {
@@ -12,7 +12,7 @@ export interface SecurityThreat {
     session_id?: string;
     timestamp: Date;
     description: string;
-    evidence: any;
+    evidence: Record<string, unknown>;
     status: 'detected' | 'investigating' | 'mitigated' | 'resolved';
     mitigation_actions: string[];
     risk_score: number; // 0-100
@@ -34,13 +34,13 @@ export interface SecurityRule {
 export interface SecurityCondition {
     field: string;
     operator: 'equals' | 'contains' | 'regex' | 'greater_than' | 'less_than' | 'in_range';
-    value: any;
+    value: unknown;
     logical_operator?: 'and' | 'or';
 }
 
 export interface SecurityAction {
     type: 'block' | 'alert' | 'log' | 'rate_limit' | 'quarantine' | 'notify_admin';
-    parameters?: any;
+    parameters?: Record<string, unknown>;
 }
 
 export interface UserSession {
@@ -55,7 +55,7 @@ export interface UserSession {
     is_suspicious: boolean;
     risk_score: number;
     permissions: string[];
-    metadata?: any;
+    metadata?: Record<string, unknown>;
 }
 
 export interface AccessAttempt {
@@ -99,7 +99,10 @@ class AdvancedAISecuritySystem extends EventEmitter {
     constructor() {
         super();
         this.initializeSecurityRules();
-        console.log('🔒 고급 AI 보안 시스템이 초기화되었습니다.');
+        errorLogger.info('🔒 고급 AI 보안 시스템이 초기화되었습니다', {
+            component: 'advancedAISecuritySystem',
+            action: 'constructor',
+        });
     }
 
     // 보안 시스템 시작
@@ -108,7 +111,10 @@ class AdvancedAISecuritySystem extends EventEmitter {
 
         this.isRunning = true;
         this.startMonitoring();
-        console.log('🚀 고급 AI 보안 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 고급 AI 보안 시스템이 시작되었습니다', {
+            component: 'advancedAISecuritySystem',
+            action: 'start',
+        });
     }
 
     // 보안 시스템 중지
@@ -118,7 +124,10 @@ class AdvancedAISecuritySystem extends EventEmitter {
             this.monitoringInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ 고급 AI 보안 시스템이 중지되었습니다.');
+        errorLogger.info('⏹️ 고급 AI 보안 시스템이 중지되었습니다', {
+            component: 'advancedAISecuritySystem',
+            action: 'stop',
+        });
     }
 
     // 요청 보안 검증
@@ -219,7 +228,14 @@ class AdvancedAISecuritySystem extends EventEmitter {
             };
 
         } catch (error) {
-            console.error('보안 검증 오류:', error);
+            const err = toError(error);
+            errorLogger.error('보안 검증 오류', err, {
+                component: 'advancedAISecuritySystem',
+                action: 'validateRequest',
+                actionType: request.action,
+                resource: request.resource,
+                userId: request.user_id,
+            });
             return { allowed: false, reason: '보안 검증 실패', risk_score: 100 };
         }
     }
@@ -279,7 +295,7 @@ class AdvancedAISecuritySystem extends EventEmitter {
             /(\bINSERT\b.*\bINTO\b)/i,
             /(\bDELETE\b.*\bFROM\b)/i,
             /(\bUPDATE\b.*\bSET\b)/i,
-            /(--|\#|\/\*|\*\/)/,
+            /(--|#|\/\*|\*\/)/,
             /(\bOR\b.*=.*\bOR\b)/i,
             /(\bAND\b.*=.*\bAND\b)/i
         ];
@@ -395,7 +411,7 @@ class AdvancedAISecuritySystem extends EventEmitter {
     }
 
     // 이상 행동 감지
-    private async detectAnomalies(request: any): Promise<{ risk_score: number; risk_factors?: string[] }> {
+    private async detectAnomalies(request: Record<string, unknown>): Promise<{ risk_score: number; risk_factors?: string[] }> {
         const riskFactors: string[] = [];
         let riskScore = 0;
 
@@ -411,7 +427,7 @@ class AdvancedAISecuritySystem extends EventEmitter {
             'bot', 'crawler', 'spider', 'scraper', 'curl', 'wget', 'python', 'java'
         ];
 
-        if (suspiciousUserAgents.some(ua => request.user_agent.toLowerCase().includes(ua))) {
+        if (suspiciousUserAgents.some(ua => String(request.user_agent).toLowerCase().includes(ua))) {
             riskFactors.push('suspicious_user_agent');
             riskScore += 20;
         }
@@ -419,7 +435,7 @@ class AdvancedAISecuritySystem extends EventEmitter {
         // 지리적 이상 감지 (간단한 구현)
         // 실제로는 IP 지리적 위치 서비스를 사용
         const knownSuspiciousIPs = ['127.0.0.1', '0.0.0.0'];
-        if (knownSuspiciousIPs.includes(request.ip_address)) {
+        if (knownSuspiciousIPs.includes(String(request.ip_address))) {
             riskFactors.push('suspicious_geolocation');
             riskScore += 30;
         }
@@ -428,7 +444,7 @@ class AdvancedAISecuritySystem extends EventEmitter {
     }
 
     // 보안 규칙 적용
-    private async applySecurityRules(request: any, riskScore: number): Promise<{ allowed: boolean; reason?: string }> {
+    private async applySecurityRules(request: Record<string, unknown>, riskScore: number): Promise<{ allowed: boolean; reason?: string }> {
         for (const rule of this.rules.values()) {
             if (!rule.enabled) continue;
 
@@ -454,7 +470,7 @@ class AdvancedAISecuritySystem extends EventEmitter {
     }
 
     // 보안 조건 평가
-    private evaluateSecurityConditions(request: any, conditions: SecurityCondition[], riskScore: number): boolean {
+    private evaluateSecurityConditions(request: Record<string, unknown>, conditions: SecurityCondition[], riskScore: number): boolean {
         for (const condition of conditions) {
             const value = condition.field === 'risk_score' ? riskScore :
                 this.getNestedValue(request, condition.field);
@@ -466,28 +482,29 @@ class AdvancedAISecuritySystem extends EventEmitter {
     }
 
     // 단일 보안 조건 평가
-    private evaluateSecurityCondition(value: any, condition: SecurityCondition): boolean {
+    private evaluateSecurityCondition(value: unknown, condition: SecurityCondition): boolean {
+        const cv = condition.value;
         switch (condition.operator) {
             case 'equals':
-                return value === condition.value;
+                return value === cv;
             case 'contains':
-                return typeof value === 'string' && value.includes(condition.value);
+                return typeof value === 'string' && typeof cv === 'string' && value.includes(cv);
             case 'regex':
-                return typeof value === 'string' && new RegExp(condition.value).test(value);
+                return typeof value === 'string' && (cv instanceof RegExp ? cv.test(value) : typeof cv === 'string' && new RegExp(cv).test(value));
             case 'greater_than':
-                return typeof value === 'number' && value > condition.value;
+                return typeof value === 'number' && typeof cv === 'number' && value > cv;
             case 'less_than':
-                return typeof value === 'number' && value < condition.value;
+                return typeof value === 'number' && typeof cv === 'number' && value < cv;
             case 'in_range':
-                return typeof value === 'number' &&
-                    value >= condition.value.min && value <= condition.value.max;
+                return typeof value === 'number' && cv !== null && typeof cv === 'object' && 'min' in cv && 'max' in cv &&
+                    value >= (cv as { min: number; max: number }).min && value <= (cv as { min: number; max: number }).max;
             default:
                 return false;
         }
     }
 
     // 보안 액션 실행
-    private async executeSecurityAction(action: SecurityAction, request: any, rule: SecurityRule): Promise<void> {
+    private async executeSecurityAction(action: SecurityAction, request: Record<string, unknown>, rule: SecurityRule): Promise<void> {
         switch (action.type) {
             case 'block':
                 // 요청 차단 (상위에서 처리)
@@ -504,7 +521,7 @@ class AdvancedAISecuritySystem extends EventEmitter {
                 // 비율 제한 적용
                 break;
             case 'quarantine':
-                this.quarantineIP(request.ip_address, action.parameters?.duration || 3600);
+                this.quarantineIP(String(request.ip_address), Number((action.parameters as Record<string, unknown>)?.duration) || 3600);
                 break;
             case 'notify_admin':
                 // 관리자 알림
@@ -529,7 +546,15 @@ class AdvancedAISecuritySystem extends EventEmitter {
         // 자동 대응
         await this.autoMitigateThreat(threat);
 
-        console.log(`🚨 보안 위협 감지: ${threat.type} (${threat.severity})`);
+        errorLogger.info('🚨 보안 위협 감지', {
+            component: 'advancedAISecuritySystem',
+            action: 'detectThreat',
+            threatId,
+            threatType: threat.type,
+            severity: threat.severity,
+            sourceIp: threat.source_ip,
+            riskScore: threat.risk_score,
+        });
         return threatId;
     }
 
@@ -566,10 +591,19 @@ class AdvancedAISecuritySystem extends EventEmitter {
 
         setTimeout(() => {
             this.blockedIPs.delete(ipAddress);
-            console.log(`🔓 IP 격리 해제: ${ipAddress}`);
+            errorLogger.info('🔓 IP 격리 해제', {
+                component: 'advancedAISecuritySystem',
+                action: 'quarantineIP',
+                ipAddress,
+            });
         }, duration * 1000);
 
-        console.log(`🔒 IP 격리: ${ipAddress} (${duration}초)`);
+        errorLogger.info('🔒 IP 격리', {
+            component: 'advancedAISecuritySystem',
+            action: 'quarantineIP',
+            ipAddress,
+            durationSeconds: duration,
+        });
     }
 
     // 위협 유형 분류
@@ -606,8 +640,8 @@ class AdvancedAISecuritySystem extends EventEmitter {
     }
 
     // 중첩된 객체에서 값 가져오기
-    private getNestedValue(obj: any, path: string): any {
-        return path.split('.').reduce((current, key) => current?.[key], obj);
+    private getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+        return path.split('.').reduce((current: unknown, key: string) => (current as Record<string, unknown>)?.[key], obj);
     }
 
     // 보안 메트릭 조회
@@ -773,7 +807,11 @@ class AdvancedAISecuritySystem extends EventEmitter {
         }
 
         if (cleanedCount > 0) {
-            console.log(`🧹 만료된 세션 정리: ${cleanedCount}개`);
+            errorLogger.info('🧹 만료된 세션 정리', {
+                component: 'advancedAISecuritySystem',
+                action: 'cleanupExpiredSessions',
+                cleanedCount,
+            });
         }
     }
 
@@ -786,7 +824,10 @@ class AdvancedAISecuritySystem extends EventEmitter {
         this.accessAttempts = [];
         this.blockedIPs.clear();
         this.suspiciousPatterns.clear();
-        console.log('🔌 고급 AI 보안 시스템이 종료되었습니다.');
+        errorLogger.info('🔌 고급 AI 보안 시스템이 종료되었습니다', {
+            component: 'advancedAISecuritySystem',
+            action: 'shutdown',
+        });
     }
 }
 

@@ -47,7 +47,7 @@
 ## ✅ 기능 체크리스트
 
 ### 백엔드 기능
-- [x] 채팅 API (`/api/chat`)
+- [x] 대화 API (`/api/chat`)
 - [x] 인증 API (회원가입, 로그인, 로그아웃)
 - [x] 보안 API (이벤트, 메트릭, 설정)
 - [x] 사용자 관리 API (프로필, 설정)
@@ -135,8 +135,8 @@ npm start
 
 **접속**:
 - 프론트엔드: http://localhost:3000
-- 백엔드: http://localhost:5001
-- API 문서: http://localhost:5001/docs
+- 백엔드: http://localhost:5002
+- API 문서: http://localhost:5002/api/docs
 
 ---
 

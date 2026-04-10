@@ -3,7 +3,13 @@
 # 🚀 Kakao AI 시스템 성능 최적화 스크립트
 # 이 스크립트는 시스템 성능을 최적화하고 응답 속도를 개선합니다.
 
-echo "🔧 Kakao AI 시스템 성능 최적화 시작..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
+
+echo "🔧 Kakao AI 시스템 성능 최적화 시작... (루트: $REPO_ROOT)"
 echo "=================================================="
 
 # 1. 불필요한 프로세스 정리
@@ -43,19 +49,19 @@ df -h . 2>/dev/null
 echo "CPU 사용률:"
 top -l 1 | head -10 2>/dev/null || top -bn1 | head -10 2>/dev/null || echo "CPU 정보를 확인할 수 없습니다."
 
-# 5. Python 가상환경 최적화
+# 5. Python 가상환경 최적화 (backend/venv → backend/.venv → 루트 venv/.venv)
 echo "🐍 Python 환경 최적화 중..."
-if [ -d ".venv" ]; then
-    echo "가상환경이 존재합니다."
-    source .venv/bin/activate
+if backend_venv_activate "$REPO_ROOT"; then
+    echo "표준 경로 가상환경 사용"
     pip install --upgrade pip
     pip install --upgrade setuptools wheel
 else
-    echo "가상환경이 없습니다. 생성 중..."
-    python3 -m venv .venv
-    source .venv/bin/activate
-    pip install --upgrade pip
-    pip install fastapi uvicorn openai aiohttp beautifulsoup4
+    echo "표준 venv 없음 — backend/.venv 생성 시도..."
+    if ( cd "$REPO_ROOT/backend" && python3 -m venv .venv && .venv/bin/pip install -q -r requirements-core.txt ); then
+        backend_venv_activate "$REPO_ROOT" && pip install --upgrade pip setuptools wheel
+    else
+        echo "⚠️  venv 생성/활성화 실패 — pip 단계 건너뜀"
+    fi
 fi
 
 # 6. Node.js 의존성 최적화
@@ -129,9 +135,9 @@ EOF
 echo "✅ 성능 최적화 완료!"
 echo "=================================================="
 echo "🎯 다음 단계:"
-echo "1. 백엔드 서버 시작: cd backend && source ../.venv/bin/activate && python advanced_api_server.py &"
+echo "1. 백엔드: npm run restart:backend 또는 bash scripts/start-api-5002.sh"
 echo "2. 프론트엔드 서버 시작: npm start"
-echo "3. 성능 모니터링: python performance_monitor.py"
+echo "3. 성능 모니터링: python3 performance_monitor.py"
 echo "4. 웹 브라우저에서 http://localhost:3000 접속"
 echo "=================================================="
 

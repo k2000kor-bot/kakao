@@ -1,5 +1,6 @@
 import { ChatSession, Message } from '../types/chat';
 import { Project, Guideline } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 interface Pattern {
     id: string;
@@ -10,7 +11,7 @@ interface Pattern {
     frequency: number;
     firstSeen: Date;
     lastSeen: Date;
-    data: any;
+    data: unknown;
 }
 
 interface ConversationPattern {
@@ -22,28 +23,28 @@ interface ConversationPattern {
 
 interface BehavioralPattern {
     type: 'timing' | 'preference' | 'engagement' | 'satisfaction';
-    pattern: any;
+    pattern: unknown;
     confidence: number;
     impact: 'positive' | 'negative' | 'neutral';
 }
 
 interface ProjectPattern {
     type: 'file_usage' | 'guideline_following' | 'progress_tracking' | 'collaboration';
-    pattern: any;
+    pattern: unknown;
     confidence: number;
     efficiency: number;
 }
 
 interface TemporalPattern {
     type: 'daily' | 'weekly' | 'monthly' | 'seasonal';
-    pattern: any;
+    pattern: unknown;
     confidence: number;
     predictability: number;
 }
 
 interface SemanticPattern {
     type: 'topic_clustering' | 'sentiment_progression' | 'intent_evolution' | 'knowledge_gaps';
-    pattern: any;
+    pattern: unknown;
     confidence: number;
     insights: string[];
 }
@@ -810,7 +811,12 @@ class PatternRecognitionEngine {
             const data = Object.fromEntries(this.patterns);
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
         } catch (error) {
-            console.error('패턴 데이터 저장 오류:', error);
+            const err = toError(error);
+            errorLogger.error('패턴 데이터 저장 오류', err, {
+                component: 'patternRecognitionEngine',
+                action: 'savePatterns',
+                patternsCount: this.patterns.size,
+            });
         }
     }
 
@@ -823,7 +829,11 @@ class PatternRecognitionEngine {
                 this.patterns = new Map(Object.entries(data));
             }
         } catch (error) {
-            console.error('패턴 데이터 로드 오류:', error);
+            const err = toError(error);
+            errorLogger.error('패턴 데이터 로드 오류', err, {
+                component: 'patternRecognitionEngine',
+                action: 'loadPatterns',
+            });
         }
     }
 

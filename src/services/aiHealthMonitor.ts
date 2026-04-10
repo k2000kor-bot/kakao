@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface ServiceHealth {
@@ -13,7 +14,7 @@ export interface ServiceHealth {
     cpu_usage: number; // percentage
     active_connections: number;
     queue_size: number;
-    custom_metrics?: Record<string, any>;
+    custom_metrics?: Record<string, unknown>;
 }
 
 export interface SystemHealth {
@@ -37,7 +38,7 @@ export interface HealthCheckResult {
     response_time: number;
     error_message?: string;
     timestamp: Date;
-    metrics?: Record<string, any>;
+    metrics?: Record<string, unknown>;
 }
 
 export interface HealthThreshold {
@@ -61,7 +62,10 @@ export class AIHealthMonitor extends EventEmitter {
     constructor() {
         super();
         this.initializeDefaultThresholds();
-        console.log('🏥 AI 시스템 헬스 모니터가 초기화되었습니다.');
+        errorLogger.info('AI 시스템 헬스 모니터가 초기화되었습니다', {
+            component: 'aiHealthMonitor',
+            action: 'constructor',
+        });
     }
 
     // 모니터링 시작
@@ -70,7 +74,10 @@ export class AIHealthMonitor extends EventEmitter {
 
         this.isRunning = true;
         this.startHealthChecks();
-        console.log('🚀 AI 시스템 헬스 모니터가 시작되었습니다.');
+        errorLogger.info('AI 시스템 헬스 모니터가 시작되었습니다', {
+            component: 'aiHealthMonitor',
+            action: 'start',
+        });
     }
 
     // 모니터링 중지
@@ -80,7 +87,10 @@ export class AIHealthMonitor extends EventEmitter {
             this.healthCheckInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ AI 시스템 헬스 모니터가 중지되었습니다.');
+        errorLogger.info('AI 시스템 헬스 모니터가 중지되었습니다', {
+            component: 'aiHealthMonitor',
+            action: 'stop',
+        });
     }
 
     // 서비스 등록
@@ -102,7 +112,11 @@ export class AIHealthMonitor extends EventEmitter {
         this.services.set(serviceName, service);
         this.healthHistory.set(serviceName, []);
         this.emit('service_registered', service);
-        console.log(`📝 서비스 등록: ${serviceName}`);
+        errorLogger.info('서비스 등록', {
+            component: 'aiHealthMonitor',
+            action: 'registerService',
+            serviceName,
+        });
     }
 
     // 서비스 해제
@@ -112,7 +126,11 @@ export class AIHealthMonitor extends EventEmitter {
             this.services.delete(serviceName);
             this.healthHistory.delete(serviceName);
             this.emit('service_unregistered', service);
-            console.log(`🗑️ 서비스 해제: ${serviceName}`);
+            errorLogger.info('서비스 해제', {
+                component: 'aiHealthMonitor',
+                action: 'unregisterService',
+                serviceName,
+            });
             return true;
         }
         return false;
@@ -301,7 +319,11 @@ export class AIHealthMonitor extends EventEmitter {
     public setThreshold(serviceName: string, threshold: HealthThreshold): void {
         this.thresholds.set(serviceName, threshold);
         this.emit('threshold_updated', { service_name: serviceName, threshold });
-        console.log(`⚙️ 임계값 설정: ${serviceName}`);
+        errorLogger.info('임계값 설정', {
+            component: 'aiHealthMonitor',
+            action: 'setThreshold',
+            serviceName,
+        });
     }
 
     // 임계값 조회
@@ -312,7 +334,11 @@ export class AIHealthMonitor extends EventEmitter {
     // 서비스 재시작
     public async restartService(serviceName: string): Promise<boolean> {
         try {
-            console.log(`🔄 서비스 재시작 시도: ${serviceName}`);
+            errorLogger.info('서비스 재시작 시도', {
+                component: 'aiHealthMonitor',
+                action: 'restartService',
+                serviceName,
+            });
 
             // 서비스별 재시작 로직
             switch (serviceName) {
@@ -330,16 +356,25 @@ export class AIHealthMonitor extends EventEmitter {
             await this.performHealthCheck(serviceName);
 
             this.emit('service_restarted', { service_name: serviceName });
-            console.log(`✅ 서비스 재시작 완료: ${serviceName}`);
+            errorLogger.info('서비스 재시작 완료', {
+                component: 'aiHealthMonitor',
+                action: 'restartService',
+                serviceName,
+            });
             return true;
         } catch (error) {
-            console.error(`❌ 서비스 재시작 실패: ${serviceName}`, error);
+            const err = toError(error);
+            errorLogger.error('서비스 재시작 실패', err, {
+                component: 'aiHealthMonitor',
+                action: 'restartService',
+                serviceName,
+            });
             return false;
         }
     }
 
     // 서비스 통계
-    public getServiceStats(serviceName: string): any {
+    public getServiceStats(serviceName: string): { service_name: string; current_status: string; uptime: number; avg_response_time: number; success_rate: number; error_count: number; last_check?: Date; memory_usage?: number; cpu_usage?: number } | null {
         const history = this.getHealthHistory(serviceName);
         const service = this.getServiceHealth(serviceName);
 
@@ -432,12 +467,13 @@ export class AIHealthMonitor extends EventEmitter {
         }, 30000); // 30초마다
     }
 
-    // 서비스별 헬스 체크 메서드들
+    // 서비스별 헬스 체크 메서드들 (stub: 추후 실제 호출 시 catch 도달)
+    /* eslint-disable no-unreachable */
     private async checkIntegratedAIService(): Promise<boolean> {
         try {
             // 통합 AI 서비스 헬스 체크 로직
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -446,7 +482,7 @@ export class AIHealthMonitor extends EventEmitter {
         try {
             // AI 심리학 엔진 헬스 체크 로직
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -455,7 +491,7 @@ export class AIHealthMonitor extends EventEmitter {
         try {
             // AI 예측 분석 헬스 체크 로직
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -464,7 +500,7 @@ export class AIHealthMonitor extends EventEmitter {
         try {
             // 성능 모니터 헬스 체크 로직
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -473,7 +509,7 @@ export class AIHealthMonitor extends EventEmitter {
         try {
             // 캐시 매니저 헬스 체크 로직
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -482,19 +518,20 @@ export class AIHealthMonitor extends EventEmitter {
         try {
             // 알림 시스템 헬스 체크 로직
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
 
-    private async checkGenericService(serviceName: string): Promise<boolean> {
+    private async checkGenericService(_serviceName: string): Promise<boolean> {
         try {
             // 일반적인 서비스 헬스 체크 로직
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
+    /* eslint-enable no-unreachable */
 
     // 헬스 체크 결과 저장
     private saveHealthCheckResult(serviceName: string, result: HealthCheckResult): void {
@@ -631,7 +668,10 @@ export class AIHealthMonitor extends EventEmitter {
         this.services.clear();
         this.thresholds.clear();
         this.healthHistory.clear();
-        console.log('🔌 AI 시스템 헬스 모니터가 종료되었습니다.');
+        errorLogger.info('AI 시스템 헬스 모니터가 종료되었습니다', {
+            component: 'aiHealthMonitor',
+            action: 'shutdown',
+        });
     }
 }
 

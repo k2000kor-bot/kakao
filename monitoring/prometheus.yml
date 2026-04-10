@@ -7,7 +7,7 @@ rule_files:
   # - "second_rules.yml"
 
 scrape_configs:
-  # CORBU AI 메인 애플리케이션 모니터링
+  # CORBU.AI 메인 애플리케이션 모니터링
   - job_name: 'corbu-ai-main'
     static_configs:
       - targets: ['corbu-ai:8001']

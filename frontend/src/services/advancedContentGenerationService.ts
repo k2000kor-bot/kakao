@@ -1,7 +1,8 @@
-import { Project, Chat, Message } from '../types/project';
+import { DEMO_SIM_EXAMPLE_ARTICLE_1_URL, DEMO_SIM_EXAMPLE_ARTICLE_2_URL } from '../config/api';
 import { projectKnowledgeService } from './projectKnowledgeService';
 import { collaborationService } from './collaborationService';
-import { advancedAnalyticsService } from './advancedAnalyticsService';
+import { errorLogger } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface ContentResearchData {
   id: string;
@@ -130,7 +131,7 @@ class AdvancedContentGenerationService {
     const knowledgeSources = await this.searchKnowledgeBase(query, projectId);
     researchData.sources.push(...knowledgeSources);
 
-    // 1.3 채팅 히스토리 분석
+    // 1.3 대화 히스토리 분석
     const chatSources = await this.analyzeChatHistory(query, projectId);
     researchData.sources.push(...chatSources);
 
@@ -280,40 +281,80 @@ class AdvancedContentGenerationService {
     projectId: string,
     config: ContentGenerationConfig
   ): Promise<GeneratedContent> {
-    console.log('🚀 고도화된 콘텐츠 생성 파이프라인 시작...');
+    errorLogger.info('고도화된 콘텐츠 생성 파이프라인 시작', {
+      component: 'advancedContentGenerationService',
+      action: 'generateHighQualityContent',
+      query: query,
+      projectId,
+    });
 
     // 1단계: 기초 조사
-    console.log('📚 1단계: 종합적인 기초 조사 수행 중...');
+    errorLogger.info('1단계: 종합적인 기초 조사 수행 중', {
+      component: 'advancedContentGenerationService',
+      action: 'generateHighQualityContent',
+      step: 1,
+      query: query,
+      projectId,
+    });
     const researchData = await this.conductComprehensiveResearch(query, projectId);
 
     // 2단계: AI 분석
-    console.log('🤖 2단계: AI 기반 콘텐츠 요구사항 분석 중...');
+    errorLogger.info('2단계: AI 기반 콘텐츠 요구사항 분석 중', {
+      component: 'advancedContentGenerationService',
+      action: 'generateHighQualityContent',
+      step: 2,
+      query: query,
+      projectId,
+    });
     const analysis = await this.analyzeContentRequirements(query, researchData);
 
     // 3단계: 구조 설계
-    console.log('📐 3단계: 수학적 로직을 활용한 콘텐츠 구조 설계 중...');
+    errorLogger.info('3단계: 수학적 로직을 활용한 콘텐츠 구조 설계 중', {
+      component: 'advancedContentGenerationService',
+      action: 'generateHighQualityContent',
+      step: 3,
+      query: query,
+      projectId,
+    });
     const structure = await this.designContentStructure(analysis, config);
 
     // 4단계: 콘텐츠 생성
-    console.log('✍️ 4단계: 머신러닝 기반 고품질 콘텐츠 생성 중...');
+    errorLogger.info('4단계: 머신러닝 기반 고품질 콘텐츠 생성 중', {
+      component: 'advancedContentGenerationService',
+      action: 'generateHighQualityContent',
+      step: 4,
+      query: query,
+      projectId,
+    });
     const content = await this.generateAdvancedContent(query, researchData, analysis, structure, config);
 
     // 5단계: 검수 및 최적화
-    console.log('🔍 5단계: AI 기반 검수 및 최적화 수행 중...');
+    errorLogger.info('5단계: AI 기반 검수 및 최적화 수행 중', {
+      component: 'advancedContentGenerationService',
+      action: 'generateHighQualityContent',
+      step: 5,
+      query: query,
+      projectId,
+    });
     const optimizedContent = await this.reviewAndOptimizeContent(content, analysis);
 
-    console.log('✅ 고도화된 콘텐츠 생성 완료!');
+    errorLogger.info('고도화된 콘텐츠 생성 완료', {
+      component: 'advancedContentGenerationService',
+      action: 'generateHighQualityContent',
+      query: query,
+      projectId,
+    });
     return optimizedContent;
   }
 
   // 유틸리티 메서드들
-  private async simulateWebSearch(query: string): Promise<ResearchSource[]> {
+  private async simulateWebSearch(_query: string): Promise<ResearchSource[]> {
     // 웹 검색 시뮬레이션
     const mockSources: ResearchSource[] = [
       {
         id: this.generateId(),
         type: 'web',
-        url: 'https://example.com/article1',
+        url: DEMO_SIM_EXAMPLE_ARTICLE_1_URL,
         title: '관련 기술 문서',
         content: '최신 기술 트렌드와 관련된 상세한 정보...',
         credibility: 0.85,
@@ -323,7 +364,7 @@ class AdvancedContentGenerationService {
       {
         id: this.generateId(),
         type: 'web',
-        url: 'https://example.com/article2',
+        url: DEMO_SIM_EXAMPLE_ARTICLE_2_URL,
         title: '실무 가이드',
         content: '실무에서 활용할 수 있는 구체적인 방법론...',
         credibility: 0.78,
@@ -350,10 +391,10 @@ class AdvancedContentGenerationService {
 
   private async analyzeChatHistory(query: string, projectId: string): Promise<ResearchSource[]> {
     const chats = collaborationService.getProjectComments(projectId);
-    return chats.slice(0, 5).map(chat => ({
+    return chats.map(chat => ({
       id: this.generateId(),
       type: 'chat_history',
-      title: `채팅 기록 - ${chat.authorId || 'Unknown'}`,
+      title: `대화 기록 - ${chat.authorId || 'Unknown'}`,
       content: chat.content,
       credibility: 0.7,
       freshness: 0.6,
@@ -367,7 +408,7 @@ class AdvancedContentGenerationService {
     const sourceWords = sources.flatMap(s => s.content.toLowerCase().split(/\s+/));
 
     // 간단한 키워드 추출 (실제로는 NLP 라이브러리 사용)
-    return [...new Set([...words, ...sourceWords.slice(0, 10)])];
+    return [...new Set([...words, ...sourceWords])];
   }
 
   private analyzeSentiment(sources: ResearchSource[]): 'positive' | 'negative' | 'neutral' {
@@ -391,7 +432,7 @@ class AdvancedContentGenerationService {
 
   private extractTopic(query: string): string {
     // 주제 추출 로직
-    return query.split(' ').slice(0, 3).join(' ');
+    return query.split(/\s+/).filter(Boolean).join(' ');
   }
 
   private determineComplexity(query: string, researchData: ContentResearchData): 'basic' | 'intermediate' | 'advanced' | 'expert' {
@@ -405,7 +446,7 @@ class AdvancedContentGenerationService {
   }
 
   private identifyTargetAudience(query: string, researchData: ContentResearchData): string[] {
-    const audiences = ['일반 사용자', '전문가', '학생', '관리자'];
+    const _audiences = ['일반 사용자', '전문가', '학생', '관리자'];
     const complexity = this.determineComplexity(query, researchData);
 
     switch (complexity) {
@@ -416,7 +457,7 @@ class AdvancedContentGenerationService {
     }
   }
 
-  private extractKeyInsights(researchData: ContentResearchData): string[] {
+  private extractKeyInsights(_researchData: ContentResearchData): string[] {
     return [
       '주요 인사이트 1: 핵심 개념과 원리',
       '주요 인사이트 2: 실무 적용 방법',
@@ -437,7 +478,7 @@ class AdvancedContentGenerationService {
     };
   }
 
-  private calculateReadabilityScore(researchData: ContentResearchData): number {
+  private calculateReadabilityScore(_researchData: ContentResearchData): number {
     // 가독성 점수 계산 (Flesch-Kincaid 기반)
     return 0.82;
   }
@@ -448,12 +489,12 @@ class AdvancedContentGenerationService {
     return Math.min(keywordDensity * 100, 95);
   }
 
-  private predictEngagement(researchData: ContentResearchData): number {
+  private predictEngagement(_researchData: ContentResearchData): number {
     // 참여도 예측
     return 0.78;
   }
 
-  private generateRecommendations(analysis: ContentAnalysis): string[] {
+  private generateRecommendations(_analysis: ContentAnalysis): string[] {
     return [
       '구체적인 예시 추가 권장',
       '시각적 자료 포함 고려',
@@ -539,7 +580,7 @@ class AdvancedContentGenerationService {
     }));
   }
 
-  private generateOptimizedTitle(query: string, analysis: ContentAnalysis, config: ContentGenerationConfig): string {
+  private generateOptimizedTitle(query: string, analysis: ContentAnalysis, _config: ContentGenerationConfig): string {
     const baseTitle = query;
     const complexity = analysis.complexity;
     const audience = analysis.targetAudience[0];
@@ -591,14 +632,14 @@ class AdvancedContentGenerationService {
     }
   }
 
-  private generatePointContent(point: string, researchData: ContentResearchData, style: string, tone: string): string {
+  private generatePointContent(point: string, researchData: ContentResearchData, _style: string, _tone: string): string {
     const relevantSources = researchData.sources.filter(s =>
       s.content.includes(point) || s.title.includes(point)
     );
 
     if (relevantSources.length > 0) {
       const source = relevantSources[0];
-      return `${source.content.substring(0, 200)}... (출처: ${source.title})`;
+      return `${source.content} (출처: ${source.title})`;
     }
 
     return `${point}에 대한 상세한 설명과 분석을 제공합니다. 관련 연구 결과와 실무 경험을 바탕으로 한 구체적인 가이드를 제시합니다.`;
@@ -616,19 +657,19 @@ class AdvancedContentGenerationService {
     return combinedContent;
   }
 
-  private applyStructuralOptimization(content: string, structure: ContentStructure): string {
+  private applyStructuralOptimization(content: string, _structure: ContentStructure): string {
     // 구조적 최적화 적용
     return content;
   }
 
-  private applyStyleOptimization(content: string, config: ContentGenerationConfig): string {
+  private applyStyleOptimization(content: string, _config: ContentGenerationConfig): string {
     // 스타일 최적화 적용
     return content;
   }
 
-  private generateSummary(content: string, analysis: ContentAnalysis): string {
-    const sentences = content.split('.').slice(0, 3);
-    return sentences.join('. ') + '.';
+  private generateSummary(content: string, _analysis: ContentAnalysis): string {
+    const parts = content.split('.').map((s) => coerceTrimmedString(s, '')).filter(Boolean);
+    return parts.length > 0 ? `${parts.join('. ')}.` : coerceTrimmedString(content, '');
   }
 
   private generateMetadata(content: GeneratedContent, researchData: ContentResearchData, analysis: ContentAnalysis): ContentMetadata {
@@ -661,22 +702,22 @@ class AdvancedContentGenerationService {
     return content;
   }
 
-  private async verifyLogicalConsistency(content: string, analysis: ContentAnalysis): Promise<string> {
+  private async verifyLogicalConsistency(content: string, _analysis: ContentAnalysis): Promise<string> {
     // 논리적 일관성 검증
     return content;
   }
 
-  private async optimizeReadability(content: string, analysis: ContentAnalysis): Promise<string> {
+  private async optimizeReadability(content: string, _analysis: ContentAnalysis): Promise<string> {
     // 가독성 최적화
     return content;
   }
 
-  private async optimizeForSEO(content: string, analysis: ContentAnalysis): Promise<string> {
+  private async optimizeForSEO(content: string, _analysis: ContentAnalysis): Promise<string> {
     // SEO 최적화
     return content;
   }
 
-  private async adjustEmotionalTone(content: string, analysis: ContentAnalysis): Promise<string> {
+  private async adjustEmotionalTone(content: string, _analysis: ContentAnalysis): Promise<string> {
     // 감정 톤 조정
     return content;
   }

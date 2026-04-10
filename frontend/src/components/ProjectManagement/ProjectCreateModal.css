@@ -1,0 +1,245 @@
+/**
+ * 프로젝트 만들기 모달 — Brainwave AI UI Kit (theme.css, .bw-*)
+ * Figma node 7-3 기준. PROJECT_PAGE_DESIGN_SPEC.md 참고.
+ */
+.bw-project-create-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-backdrop);
+  padding: max(var(--spacing-lg), env(safe-area-inset-top, 0px))
+    max(var(--spacing-lg), env(safe-area-inset-right, 0px))
+    max(var(--spacing-lg), env(safe-area-inset-bottom, 0px))
+    max(var(--spacing-lg), env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  backdrop-filter: var(--blur-sm, blur(4px));
+}
+.bw-project-create-panel {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  width: 100%;
+  max-width: 32rem;
+  max-height: min(90vh, calc(100dvh - 32px));
+  margin: auto;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: var(--border-width) solid var(--border-color);
+}
+.bw-project-create-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  border-bottom: var(--border-width) solid var(--border-color);
+}
+.bw-project-create-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+.bw-project-create-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.bw-project-create-header-btn {
+  padding: var(--spacing-sm);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+.bw-project-create-header-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.bw-project-create-header-btn:focus-visible {
+  outline: var(--focus-ring-figma, var(--focus-ring));
+  outline-offset: var(--focus-ring-offset);
+}
+
+.bw-project-create-body {
+  padding: var(--spacing-2xl);
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+.bw-project-create-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+.bw-project-create-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+.bw-project-create-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.bw-project-create-name-icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  background: var(--accent-info-muted);
+  color: var(--accent-info);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+.bw-project-create-input {
+  flex: 1;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-input-figma, var(--radius-xl));
+  font-size: var(--font-size-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+.bw-project-create-input::placeholder {
+  color: var(--text-secondary);
+}
+.bw-project-create-input:focus {
+  outline: none;
+  border-color: var(--accent-info-figma);
+  box-shadow: 0 0 0 3px var(--accent-info-figma-muted, var(--accent-info-muted));
+}
+.bw-project-create-input:focus-visible {
+  outline: var(--focus-ring-figma, var(--focus-ring));
+  outline-offset: var(--focus-ring-offset);
+}
+
+.bw-project-create-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+.bw-project-create-category-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  border: var(--border-width) solid var(--border-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+.bw-project-create-category-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+.bw-project-create-category-btn[aria-pressed="true"] {
+  background: var(--accent-info-figma, var(--accent-info));
+  border-color: var(--accent-info-figma, var(--accent-info));
+  color: var(--on-accent);
+}
+.bw-project-create-category-btn[aria-pressed="true"]:hover {
+  background: var(--accent-info-figma-hover, var(--accent-info-hover));
+  border-color: var(--accent-info-figma-hover, var(--accent-info-hover));
+  color: var(--on-accent);
+}
+.bw-project-create-category-btn:focus-visible {
+  outline: var(--focus-ring-figma, var(--focus-ring));
+  outline-offset: var(--focus-ring-offset);
+}
+
+.bw-project-create-memory-block {
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  border: var(--border-width) solid var(--border-color);
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+.bw-project-create-memory-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+.bw-project-create-memory-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+.bw-project-create-memory-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  cursor: pointer;
+}
+.bw-project-create-memory-option input {
+  margin-top: 4px;
+  accent-color: var(--accent-info-figma, var(--accent-info));
+}
+.bw-project-create-memory-option-title {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+.bw-project-create-memory-option-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin: var(--spacing-2xs) 0 0 0;
+}
+.bw-project-create-memory-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--accent-warning);
+  background: var(--accent-warning-subtle);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+}
+
+.bw-project-create-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-xl);
+  background: var(--accent-warning-subtle);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+.bw-project-create-info-box svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent-warning);
+}
+
+.bw-project-create-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  border-top: var(--border-width) solid var(--border-color);
+}
+.bw-project-create-submit {
+  min-width: 10rem;
+}

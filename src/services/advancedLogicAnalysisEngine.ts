@@ -1,8 +1,11 @@
 /**
- * CORBU AI 고도화된 논리 및 어조 분석 엔진
+ * CORBU.AI 고도화된 논리 및 어조 분석 엔진
  * 텍스트의 논리적 구조, 추론 패턴, 어조 변화, 감정 흐름을 정밀 분석하여
  * 동일한 논리 체계와 어조로 새로운 주제의 글을 생성할 수 있는 시스템
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface LogicalStructure {
   // 논리적 구성 요소
@@ -139,7 +142,7 @@ export interface RepetitionStrategy {
 
 export interface AdvancedStyleProfile {
   // 기본 스타일 정보
-  basicStyle: any; // StyleProfile from previous engine
+  basicStyle: Record<string, unknown>; // StyleProfile from previous engine
 
   // 논리적 구조
   logicalStructure: LogicalStructure;
@@ -246,7 +249,7 @@ class AdvancedLogicAnalysisEngine {
       const cognitivePatterns = await this.analyzeCognitivePatterns(text);
 
       return {
-        basicStyle: null, // Will be filled by styleAnalysisEngine
+        basicStyle: {} as Record<string, unknown>, // Will be filled by styleAnalysisEngine
         logicalStructure,
         tonalProgression,
         argumentativeFramework,
@@ -255,7 +258,12 @@ class AdvancedLogicAnalysisEngine {
       };
 
     } catch (error) {
-      console.error('고도화된 스타일 분석 실패:', error);
+      const err = toError(error);
+      errorLogger.error('고도화된 스타일 분석 실패', err, {
+        component: 'advancedLogicAnalysisEngine',
+        action: 'analyzeAdvancedStyle',
+        textLength: text.length,
+      });
       throw new Error('고도화된 스타일 분석에 실패했습니다.');
     }
   }
@@ -620,7 +628,7 @@ class AdvancedLogicAnalysisEngine {
    * 유틸리티 메서드들
    */
   private splitIntoSentences(text: string): string[] {
-    return text.split(/[.!?。！？]/).filter(s => s.trim().length > 0);
+    return text.split(/[.!?。！？]/).filter((s) => coerceTrimmedString(s, '').length > 0);
   }
 
   private countPatterns(text: string, patterns: string[]): number {
@@ -840,7 +848,7 @@ class AdvancedLogicAnalysisEngine {
   }
 
   // 나머지 메서드들도 유사하게 구현...
-  private analyzeEvidenceIntegration(text: string): ArgumentativeFramework['evidenceIntegration'] {
+  private analyzeEvidenceIntegration(_text: string): ArgumentativeFramework['evidenceIntegration'] {
     return 'distributed'; // 임시 구현
   }
 
@@ -861,7 +869,7 @@ class AdvancedLogicAnalysisEngine {
     return 'mixed';
   }
 
-  private analyzeIdeaDevelopment(text: string): ArgumentativeFramework['ideaDevelopment'] {
+  private analyzeIdeaDevelopment(_text: string): ArgumentativeFramework['ideaDevelopment'] {
     return 'linear'; // 임시 구현
   }
 
@@ -946,11 +954,11 @@ class AdvancedLogicAnalysisEngine {
     };
   }
 
-  private analyzeVocabularyPreferences(text: string): VocabularyPreference[] {
+  private analyzeVocabularyPreferences(_text: string): VocabularyPreference[] {
     return []; // 임시 구현
   }
 
-  private analyzeSyntacticPatterns(text: string): SyntacticPattern[] {
+  private analyzeSyntacticPatterns(_text: string): SyntacticPattern[] {
     return []; // 임시 구현
   }
 
@@ -974,7 +982,7 @@ class AdvancedLogicAnalysisEngine {
     };
   }
 
-  private extractStylisticMarkers(text: string): StylisticMarker[] {
+  private extractStylisticMarkers(_text: string): StylisticMarker[] {
     return []; // 임시 구현
   }
 
@@ -1211,8 +1219,8 @@ class AdvancedLogicAnalysisEngine {
       let match;
       while ((match = pattern.exec(text)) !== null) {
         chains.push({
-          cause: match[1].trim(),
-          effect: match[3] ? match[3].trim() : match[2].trim(),
+          cause: coerceTrimmedString(match[1], ''),
+          effect: coerceTrimmedString(match[3] ? match[3] : match[2], ''),
           strength: 'moderate',
           certainty: 'probable',
           intermediateSteps: []
@@ -1234,7 +1242,7 @@ class AdvancedLogicAnalysisEngine {
         const positions = this.findConnectorPositions(sentences, connector);
 
         connectors.push({
-          type: type as any,
+          type: type as 'therefore' | 'however' | 'moreover' | 'nevertheless' | 'consequently' | 'similarly',
           frequency: count,
           position: this.determineAveragePosition(positions),
           contextPattern: this.extractContextPattern(text, connector)

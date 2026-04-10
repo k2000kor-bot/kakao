@@ -218,7 +218,7 @@
             font-weight: 600;
         }
 
-        /* 채팅 영역 */
+        /* 대화 영역 */
         .chat-container {
             flex: 1;
             display: flex;
@@ -606,7 +606,7 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
-                    새 채팅
+                    새 대화
                 </button>
             </div>
 
@@ -620,7 +620,7 @@
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                         </div>
-                        일반 채팅
+                        일반 대화
                     </div>
                     <div class="nav-item">
                         <div class="nav-item-icon">
@@ -1073,7 +1073,7 @@ if __name__ == '__main__':
             typingIndicator.classList.remove('show');
         }
 
-        // 새 채팅 시작
+        // 새 대화 시작
         function startNewChat() {
             chatMessages.innerHTML = '';
             conversationHistory = [];

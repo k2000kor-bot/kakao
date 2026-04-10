@@ -3,6 +3,10 @@
  * 여러 사용자가 동시에 프로젝트를 편집하고 협업할 수 있는 기능
  */
 
+import { resolveCollaborationWebSocketUrl } from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { COLLABORATION_USERNAME_STORAGE_KEY } from './realTimeCollaborationStorageKeys';
+
 export interface CollaborationUser {
     userId: string;
     username: string;
@@ -26,7 +30,7 @@ export interface CollaborationEvent {
     type: 'join' | 'leave' | 'cursor_move' | 'text_change' | 'file_upload' | 'comment';
     userId: string;
     timestamp: Date;
-    data: any;
+    data: unknown;
 }
 
 export interface SharedDocument {
@@ -60,10 +64,14 @@ export class RealTimeCollaborationService {
      */
     private initializeWebSocket(): void {
         try {
-            this.websocket = new WebSocket('ws://localhost:5000/ws/collaboration');
+            this.websocket = new WebSocket(resolveCollaborationWebSocketUrl());
 
             this.websocket.onopen = () => {
-                console.log('협업 WebSocket 연결 성공');
+                errorLogger.info('협업 WebSocket 연결 성공', {
+                    component: 'realTimeCollaborationService',
+                    action: 'initializeWebSocket',
+                    userId: this.currentUserId,
+                });
                 this.reconnectAttempts = 0;
                 this.broadcastUserStatus('online');
             };
@@ -73,16 +81,30 @@ export class RealTimeCollaborationService {
             };
 
             this.websocket.onclose = () => {
-                console.log('협업 WebSocket 연결 종료');
+                errorLogger.info('협업 WebSocket 연결 종료', {
+                    component: 'realTimeCollaborationService',
+                    action: 'initializeWebSocket',
+                    userId: this.currentUserId,
+                });
                 this.broadcastUserStatus('offline');
                 this.attemptReconnect();
             };
 
             this.websocket.onerror = (error) => {
-                console.error('협업 WebSocket 오류:', error);
+                const err = toError(error);
+                errorLogger.error('협업 WebSocket 오류', err, {
+                    component: 'realTimeCollaborationService',
+                    action: 'initializeWebSocket',
+                    userId: this.currentUserId,
+                });
             };
         } catch (error) {
-            console.error('WebSocket 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('WebSocket 초기화 실패', err, {
+                component: 'realTimeCollaborationService',
+                action: 'initializeWebSocket',
+                userId: this.currentUserId,
+            });
         }
     }
 
@@ -117,7 +139,12 @@ export class RealTimeCollaborationService {
             // 이벤트 리스너들에게 알림
             this.notifyEventListeners(event);
         } catch (error) {
-            console.error('WebSocket 메시지 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('WebSocket 메시지 처리 실패', err, {
+                component: 'realTimeCollaborationService',
+                action: 'handleWebSocketMessage',
+                userId: this.currentUserId,
+            });
         }
     }
 
@@ -125,19 +152,20 @@ export class RealTimeCollaborationService {
      * 사용자 참가 처리
      */
     private handleUserJoin(event: CollaborationEvent): void {
+        const data = event.data as { username?: string; avatar?: string; activity?: string; sessionId?: string };
         const user: CollaborationUser = {
             userId: event.userId,
-            username: event.data.username,
-            avatar: event.data.avatar,
+            username: data.username ?? 'Unknown',
+            avatar: data.avatar,
             isOnline: true,
             lastSeen: new Date(),
-            currentActivity: event.data.activity || '프로젝트 참여'
+            currentActivity: data.activity ?? '프로젝트 참여'
         };
 
         this.users.set(event.userId, user);
 
-        if (event.data.sessionId) {
-            const session = this.sessions.get(event.data.sessionId);
+        if (data.sessionId) {
+            const session = this.sessions.get(data.sessionId);
             if (session) {
                 session.users.push(user);
                 session.lastActivity = new Date();
@@ -168,7 +196,8 @@ export class RealTimeCollaborationService {
     private handleCursorMove(event: CollaborationEvent): void {
         const user = this.users.get(event.userId);
         if (user) {
-            user.cursorPosition = event.data.position;
+            const data = event.data as { position?: { x: number; y: number } };
+            user.cursorPosition = data.position;
             user.lastSeen = new Date();
         }
     }
@@ -177,7 +206,9 @@ export class RealTimeCollaborationService {
      * 텍스트 변경 처리
      */
     private handleTextChange(event: CollaborationEvent): void {
-        const { documentId, content, version } = event.data;
+        const data = event.data as { documentId?: string; content?: string; version?: number };
+        const { documentId, content, version } = data;
+        if (!documentId || content === undefined || version === undefined) return;
         const document = this.documents.get(documentId);
 
         if (document && version > document.version) {
@@ -193,7 +224,12 @@ export class RealTimeCollaborationService {
      */
     private handleFileUpload(event: CollaborationEvent): void {
         // 파일 업로드 이벤트 처리
-        console.log('파일 업로드:', event.data);
+        errorLogger.info('파일 업로드', {
+            component: 'realTimeCollaborationService',
+            action: 'handleFileUpload',
+            userId: event.userId,
+            timestamp: event.timestamp.toISOString(),
+        });
     }
 
     /**
@@ -201,7 +237,12 @@ export class RealTimeCollaborationService {
      */
     private handleComment(event: CollaborationEvent): void {
         // 댓글 이벤트 처리
-        console.log('댓글:', event.data);
+        errorLogger.info('댓글', {
+            component: 'realTimeCollaborationService',
+            action: 'handleComment',
+            userId: event.userId,
+            timestamp: event.timestamp.toISOString(),
+        });
     }
 
     /**
@@ -388,7 +429,13 @@ export class RealTimeCollaborationService {
                 try {
                     callback(event);
                 } catch (error) {
-                    console.error('이벤트 리스너 오류:', error);
+                    const err = toError(error);
+                    errorLogger.error('이벤트 리스너 오류', err, {
+                        component: 'realTimeCollaborationService',
+                        action: 'notifyEventListeners',
+                        eventType: event.type,
+                        userId: event.userId,
+                    });
                 }
             });
         }
@@ -401,7 +448,13 @@ export class RealTimeCollaborationService {
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
             this.websocket.send(JSON.stringify(event));
         } else {
-            console.warn('WebSocket이 연결되지 않았습니다.');
+            errorLogger.warn('WebSocket이 연결되지 않았습니다', {
+                component: 'realTimeCollaborationService',
+                action: 'sendWebSocketMessage',
+                eventType: event.type,
+                userId: event.userId,
+                websocketState: this.websocket?.readyState,
+            });
         }
     }
 
@@ -429,11 +482,22 @@ export class RealTimeCollaborationService {
             const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
 
             setTimeout(() => {
-                console.log(`재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+                errorLogger.info('재연결 시도', {
+                    component: 'realTimeCollaborationService',
+                    action: 'attemptReconnect',
+                    userId: this.currentUserId,
+                    reconnectAttempts: this.reconnectAttempts,
+                    maxReconnectAttempts: this.maxReconnectAttempts,
+                });
                 this.initializeWebSocket();
             }, delay);
         } else {
-            console.error('최대 재연결 시도 횟수 초과');
+            errorLogger.error('최대 재연결 시도 횟수 초과', new Error('최대 재연결 시도 횟수 초과'), {
+                component: 'realTimeCollaborationService',
+                action: 'attemptReconnect',
+                userId: this.currentUserId,
+                maxReconnectAttempts: this.maxReconnectAttempts,
+            });
         }
     }
 
@@ -461,7 +525,7 @@ export class RealTimeCollaborationService {
     }
 
     private getCurrentUsername(): string {
-        return localStorage.getItem('username') || '익명 사용자';
+        return localStorage.getItem(COLLABORATION_USERNAME_STORAGE_KEY) || '익명 사용자';
     }
 
     /**
@@ -480,6 +544,8 @@ export class RealTimeCollaborationService {
         this.eventListeners.clear();
     }
 }
+
+export { COLLABORATION_USERNAME_STORAGE_KEY } from './realTimeCollaborationStorageKeys';
 
 // 싱글톤 인스턴스
 export const realTimeCollaborationService = new RealTimeCollaborationService();

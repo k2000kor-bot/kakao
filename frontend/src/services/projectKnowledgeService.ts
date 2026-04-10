@@ -1,5 +1,6 @@
-import { Project, ProjectFile } from '../types/project';
-import { projectService } from './projectService';
+import { ProjectFile } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface KnowledgeEntry {
   id: string;
@@ -8,7 +9,7 @@ export interface KnowledgeEntry {
   source: 'web_search' | 'chat_extraction' | 'manual' | 'file_upload';
   sourceUrl?: string;
   tags: string[];
-  category: 'technical' | 'business' | 'research' | 'reference' | 'tutorial' | 'news';
+  category: 'technical' | 'business' | 'research' | 'reference' | 'tutorial' | 'news' | 'bylaws';
   confidence: number; // 0-1, 정보의 신뢰도
   createdAt: Date;
   updatedAt: Date;
@@ -76,12 +77,12 @@ class ProjectKnowledgeService {
   }
 
   // 웹 검색 결과를 지식베이스에 추가
-  async addWebSearchResults(projectId: string, searchQuery: string, searchResults: any[], chatId?: string, messageId?: string): Promise<KnowledgeEntry[]> {
+  async addWebSearchResults(projectId: string, searchQuery: string, searchResults: Record<string, unknown>[], chatId?: string, messageId?: string): Promise<KnowledgeEntry[]> {
     const addedEntries: KnowledgeEntry[] = [];
 
     for (const result of searchResults) {
       // 중복 검사
-      const existing = this.findSimilarKnowledge(projectId, result.title, result.snippet);
+      const existing = this.findSimilarKnowledge(projectId, String(result.title ?? ''), String(result.snippet ?? ''));
       if (existing) {
         // 기존 엔트리 업데이트
         existing.updatedAt = new Date();
@@ -92,13 +93,16 @@ class ProjectKnowledgeService {
       }
 
       // 새로운 지식 엔트리 생성
+      const link = result.link as string | undefined;
+      const titleStr = String(result.title ?? '웹 검색 결과');
+      const snippetStr = String(result.snippet ?? '');
       const entry = this.addKnowledgeEntry(projectId, {
-        title: result.title || '웹 검색 결과',
+        title: titleStr,
         content: this.extractContentFromWebResult(result),
         source: 'web_search',
-        sourceUrl: result.link,
-        tags: this.extractTagsFromContent(result.title + ' ' + result.snippet),
-        category: this.categorizeContent(result.title + ' ' + result.snippet),
+        sourceUrl: link,
+        tags: this.extractTagsFromContent(titleStr + ' ' + snippetStr),
+        category: this.categorizeContent(titleStr + ' ' + snippetStr),
         confidence: this.calculateConfidence(result),
         relatedProjectId: projectId,
         extractedFrom: chatId && messageId ? {
@@ -107,11 +111,11 @@ class ProjectKnowledgeService {
           timestamp: new Date()
         } : undefined,
         metadata: {
-          author: result.author,
-          publicationDate: result.date,
-          domain: result.link ? new URL(result.link).hostname : undefined,
+          author: result.author as string | undefined,
+          publicationDate: result.date as string | undefined,
+          domain: link ? new URL(link).hostname : undefined,
           language: 'ko', // 기본값, 실제로는 언어 감지 필요
-          wordCount: (result.title + ' ' + result.snippet).split(' ').length
+          wordCount: (titleStr + ' ' + snippetStr).split(' ').length
         }
       });
 
@@ -121,7 +125,7 @@ class ProjectKnowledgeService {
     return addedEntries;
   }
 
-  // 채팅 메시지에서 지식 추출 및 추가
+  // 대화 메시지에서 지식 추출 및 추가
   async extractKnowledgeFromChat(projectId: string, chatId: string, messageId: string, messageContent: string, isAIResponse: boolean = false): Promise<KnowledgeEntry[]> {
     const extractedEntries: KnowledgeEntry[] = [];
 
@@ -170,7 +174,7 @@ class ProjectKnowledgeService {
   }
 
   // 지식 검색
-  searchKnowledge(projectId: string, query: string, limit: number = 10): KnowledgeSearchResult[] {
+  searchKnowledge(projectId: string, query: string, limit?: number): KnowledgeSearchResult[] {
     const knowledge = this.getProjectKnowledge(projectId);
     const results: KnowledgeSearchResult[] = [];
 
@@ -189,9 +193,8 @@ class ProjectKnowledgeService {
       }
     }
 
-    return results
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, limit);
+    const sorted = results.sort((a, b) => b.relevanceScore - a.relevanceScore);
+    return limit !== undefined ? sorted.slice(0, limit) : sorted;
   }
 
   // 지식베이스 업데이트
@@ -224,13 +227,11 @@ class ProjectKnowledgeService {
       sourceDistribution[entry.source] = (sourceDistribution[entry.source] || 0) + 1;
     });
 
-    const mostAccessedEntries = [...knowledge]
-      .sort((a, b) => b.accessCount - a.accessCount)
-      .slice(0, 5);
+    const mostAccessedEntries = [...knowledge].sort((a, b) => b.accessCount - a.accessCount);
 
-    const recentAdditions = [...knowledge]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5);
+    const recentAdditions = [...knowledge].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     // 지식 성장 추이 (최근 30일)
     const knowledgeGrowth = this.calculateKnowledgeGrowth(knowledge);
@@ -243,6 +244,33 @@ class ProjectKnowledgeService {
       recentAdditions,
       knowledgeGrowth
     };
+  }
+
+  /** 프로젝트별 정관 관련 지식 엔트리 삭제 (정관 삭제 시 연동) */
+  removeBylawsEntries(projectId: string): void {
+    const knowledge = this.getProjectKnowledge(projectId);
+    const filtered = knowledge.filter((e) => e.category !== 'bylaws');
+    if (filtered.length < knowledge.length) {
+      this.saveProjectKnowledge(projectId, filtered);
+    }
+  }
+
+  /** 조합 정관 분석 결과를 프로젝트 지식베이스에 추가 (정관 업로드 시 연동) */
+  addBylawsToKnowledge(
+    projectId: string,
+    payload: { siteName: string; combinationName: string; summary: string; keyPoints: string[] }
+  ): KnowledgeEntry {
+    const content = `${payload.summary}\n\n${payload.keyPoints.join('\n')}`;
+    return this.addKnowledgeEntry(projectId, {
+      title: `${payload.combinationName} 조합 정관 요약`,
+      content,
+      source: 'file_upload',
+      tags: ['조합정관', payload.siteName, '시공사선정', '총회', '분담금', '분양'],
+      category: 'bylaws',
+      confidence: 0.85,
+      relatedProjectId: projectId,
+      metadata: { domain: '도시정비', wordCount: content.split(/\s+/).length },
+    });
   }
 
   // 프로젝트 파일을 지식베이스에 추가
@@ -301,10 +329,7 @@ class ProjectKnowledgeService {
       }
     }
 
-    return recommendations
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-      .map(r => r.entry);
+    return recommendations.sort((a, b) => b.score - a.score).map(r => r.entry);
   }
 
   // 지식베이스 내보내기
@@ -319,7 +344,12 @@ class ProjectKnowledgeService {
       const knowledge: KnowledgeEntry[] = JSON.parse(data);
       this.saveProjectKnowledge(projectId, knowledge);
     } catch (error) {
-      console.error('지식베이스 가져오기 실패:', error);
+      const err = toError(error);
+      errorLogger.error('지식베이스 가져오기 실패', err, {
+        component: 'projectKnowledgeService',
+        action: 'importKnowledge',
+        projectId,
+      });
     }
   }
 
@@ -333,8 +363,8 @@ class ProjectKnowledgeService {
     localStorage.setItem(key, JSON.stringify(knowledge));
   }
 
-  private extractContentFromWebResult(result: any): string {
-    return `${result.title}\n\n${result.snippet}`;
+  private extractContentFromWebResult(result: Record<string, unknown>): string {
+    return `${result.title ?? ''}\n\n${result.snippet ?? ''}`;
   }
 
   private extractTagsFromContent(content: string): string[] {
@@ -345,12 +375,14 @@ class ProjectKnowledgeService {
       !['the', 'and', 'for', 'with', 'this', 'that', 'are', 'was', 'were', 'will', 'can', 'has', 'have', 'had'].includes(word)
     );
 
-    return Array.from(new Set(tagCandidates)).slice(0, 5);
+    return Array.from(new Set(tagCandidates));
   }
 
   private categorizeContent(content: string): KnowledgeEntry['category'] {
     const lowerContent = content.toLowerCase();
+    const hasBylaws = /정관|조합정관|조합의 정관|이사회|대의원회|시공자 선정|분담금|분양 절차/.test(content);
 
+    if (hasBylaws) return 'bylaws';
     if (lowerContent.includes('api') || lowerContent.includes('code') || lowerContent.includes('프로그래밍')) {
       return 'technical';
     } else if (lowerContent.includes('비즈니스') || lowerContent.includes('마케팅') || lowerContent.includes('전략')) {
@@ -366,12 +398,13 @@ class ProjectKnowledgeService {
     }
   }
 
-  private calculateConfidence(result: any): number {
+  private calculateConfidence(result: Record<string, unknown>): number {
     // 웹 검색 결과의 신뢰도 계산
     let confidence = 0.5; // 기본값
 
-    if (result.link) {
-      const domain = new URL(result.link).hostname;
+    const link = result.link as string | undefined;
+    if (link) {
+      const domain = new URL(link).hostname;
       if (domain.includes('github.com') || domain.includes('stackoverflow.com')) {
         confidence += 0.2;
       }
@@ -380,7 +413,7 @@ class ProjectKnowledgeService {
       }
     }
 
-    if (result.snippet && result.snippet.length > 100) {
+    if (typeof result.snippet === 'string' && result.snippet.length > 100) {
       confidence += 0.1;
     }
 
@@ -391,17 +424,17 @@ class ProjectKnowledgeService {
     const snippets: Array<{ title: string; content: string; confidence: number }> = [];
 
     // 문장 단위로 분리
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const sentences = content.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 20);
 
     for (const sentence of sentences) {
       // 지식으로 추출할 만한 문장인지 판단
       if (this.isKnowledgeWorthy(sentence)) {
-        const title = sentence.substring(0, 50) + '...';
+        const trimmed = coerceTrimmedString(sentence, '');
         const confidence = this.calculateSentenceConfidence(sentence);
 
         snippets.push({
-          title,
-          content: sentence.trim(),
+          title: trimmed,
+          content: trimmed,
           confidence
         });
       }
@@ -486,11 +519,11 @@ class ProjectKnowledgeService {
     for (const sentence of sentences) {
       const sentenceLower = sentence.toLowerCase();
       if (queryTerms.some(term => sentenceLower.includes(term))) {
-        return sentence.trim();
+        return coerceTrimmedString(sentence, '');
       }
     }
 
-    return entry.content.substring(0, 100) + '...';
+    return entry.content;
   }
 
   private calculateSimilarity(text1: string, text2: string): number {
@@ -533,9 +566,6 @@ class ProjectKnowledgeService {
 
   private async extractFileContent(file: ProjectFile): Promise<string> {
     // ProjectFile 타입에 content 속성이 없으므로 기본값 반환
-    return `파일: ${file.name} (${file.type})`;
-
-    // 파일 타입별 내용 추출 로직
     switch (file.type) {
       case 'document':
         return `문서 파일: ${file.name}`;
@@ -544,7 +574,7 @@ class ProjectKnowledgeService {
       case 'code':
         return `코드 파일: ${file.name}`;
       default:
-        return `파일: ${file.name}`;
+        return `파일: ${file.name} (${file.type})`;
     }
   }
 }

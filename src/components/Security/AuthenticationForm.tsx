@@ -4,7 +4,6 @@ import {
     Card,
     CardContent,
     Typography,
-    TextField,
     Button,
     Alert,
     AlertTitle,
@@ -20,7 +19,6 @@ import {
     Divider,
     FormControlLabel,
     Checkbox,
-    Grid
 } from '@mui/material';
 import {
     Visibility,
@@ -66,7 +64,7 @@ interface AuthenticationFormProps {
     onAuthenticated?: () => void;
 }
 
-const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated }) => {
+const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated: _onAuthenticated }) => {
     const [activeTab, setActiveTab] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -184,8 +182,8 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            minHeight: 'var(--app-vh-min)',
+            background: 'linear-gradient(135deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
             p: 2
         }}>
             <Card sx={{
@@ -196,7 +194,7 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
                 <CardContent sx={{ p: 0 }}>
                     {/* 헤더 */}
                     <Box sx={{
-                        background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                        background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                         color: 'white',
                         p: 3,
                         textAlign: 'center'
@@ -306,7 +304,7 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
                                     fullWidth
                                     disabled={isLoading}
                                     sx={{
-                                        background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                                        background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                                         py: 1.5,
                                         fontSize: '1.1rem'
                                     }}
@@ -460,7 +458,7 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
                                     fullWidth
                                     disabled={isLoading}
                                     sx={{
-                                        background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                                        background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                                         py: 1.5,
                                         fontSize: '1.1rem'
                                     }}
@@ -502,7 +500,7 @@ const AuthenticationForm: React.FC<AuthenticationFormProps> = ({ onAuthenticated
                                     fullWidth
                                     disabled={isLoading}
                                     sx={{
-                                        background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                                        background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                                         py: 1.5,
                                         fontSize: '1.1rem'
                                     }}

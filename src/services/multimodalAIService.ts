@@ -1,4 +1,6 @@
 import { NLPAnalysisResult } from './advancedNLPEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface MultimodalInput {
     type: 'text' | 'image' | 'document' | 'code' | 'audio' | 'video';
@@ -260,7 +262,7 @@ class MultimodalAIService {
     // 멀티모달 입력 처리
     async processMultimodalInput(
         inputs: MultimodalInput[],
-        context?: any
+        _context?: Record<string, unknown>
     ): Promise<MultimodalResponse> {
         const startTime = Date.now();
         const analysisResults: MultimodalResponse['analysis_results'] = {};
@@ -275,11 +277,11 @@ class MultimodalAIService {
                 if (result.status === 'fulfilled') {
                     const inputType = inputs[index].type;
                     if (inputType === 'image') {
-                        analysisResults.image = result.value as ImageAnalysisResult;
+                        analysisResults.image = result.value as unknown as ImageAnalysisResult;
                     } else if (inputType === 'document') {
-                        analysisResults.document = result.value as DocumentAnalysisResult;
+                        analysisResults.document = result.value as unknown as DocumentAnalysisResult;
                     } else if (inputType === 'code') {
-                        analysisResults.code = result.value as CodeAnalysisResult;
+                        analysisResults.code = result.value as unknown as CodeAnalysisResult;
                     }
                 }
             });
@@ -302,22 +304,26 @@ class MultimodalAIService {
             };
 
         } catch (error) {
-            console.error('Multimodal processing error:', error);
-            return this.generateErrorResponse(error as Error, Date.now() - startTime);
+            const err = toError(error);
+            errorLogger.error('Multimodal processing error', err, {
+                component: 'multimodalAIService',
+                action: 'processMultimodalInput',
+            });
+            return this.generateErrorResponse(err, Date.now() - startTime);
         }
     }
 
     // 개별 입력 처리
-    private async processInput(input: MultimodalInput): Promise<any> {
+    private async processInput(input: MultimodalInput): Promise<Record<string, unknown>> {
         switch (input.type) {
             case 'image':
-                return await this.analyzeImage(input);
+                return (await this.analyzeImage(input)) as unknown as Record<string, unknown>;
             case 'document':
-                return await this.analyzeDocument(input);
+                return (await this.analyzeDocument(input)) as unknown as Record<string, unknown>;
             case 'code':
-                return await this.analyzeCode(input);
+                return (await this.analyzeCode(input)) as unknown as Record<string, unknown>;
             case 'text':
-                return await this.analyzeText(input);
+                return (await this.analyzeText(input)) as unknown as Record<string, unknown>;
             default:
                 throw new Error(`Unsupported input type: ${input.type}`);
         }
@@ -373,7 +379,7 @@ class MultimodalAIService {
     // 텍스트 분석 (기존 NLP 엔진 활용)
     private async analyzeText(input: MultimodalInput): Promise<NLPAnalysisResult> {
         // advancedNLPEngine 사용
-        const text = input.content as string;
+        const _text = input.content as string;
         // 실제로는 advancedNLPEngine.analyzeText(text) 호출
         return {
             intent: 'general',
@@ -401,18 +407,18 @@ class MultimodalAIService {
     }
 
     // 이미지에서 텍스트 추출 (OCR)
-    private extractTextFromImage(input: MultimodalInput): string {
+    private extractTextFromImage(_input: MultimodalInput): string {
         // 실제로는 OCR API 사용 (Google Vision API, AWS Textract 등)
         return "이미지에서 추출된 텍스트 내용입니다.";
     }
 
     // 장면 설명 생성
-    private generateSceneDescription(input: MultimodalInput): string {
+    private generateSceneDescription(_input: MultimodalInput): string {
         return "이미지는 개발 환경의 스크린샷으로 보이며, 코드 에디터와 여러 개발 도구들이 표시되어 있습니다.";
     }
 
     // 기술적 요소 감지
-    private detectTechnicalElements(input: MultimodalInput): TechnicalElement[] {
+    private detectTechnicalElements(_input: MultimodalInput): TechnicalElement[] {
         return [
             {
                 type: 'code_structure',
@@ -424,7 +430,7 @@ class MultimodalAIService {
     }
 
     // UI 요소 감지
-    private detectUIElements(input: MultimodalInput): UIElement[] {
+    private detectUIElements(_input: MultimodalInput): UIElement[] {
         return [
             {
                 type: 'button',
@@ -441,7 +447,7 @@ class MultimodalAIService {
     }
 
     // 이미지에서 코드 추출
-    private extractCodeFromImage(input: MultimodalInput): CodeSnippet[] {
+    private extractCodeFromImage(_input: MultimodalInput): CodeSnippet[] {
         return [
             {
                 language: 'javascript',
@@ -501,7 +507,7 @@ class MultimodalAIService {
         const lines = content.split('\n');
         const sections: DocumentSection[] = [];
 
-        lines.forEach((line, index) => {
+        lines.forEach((line, _index) => {
             if (line.startsWith('#')) {
                 const level = line.match(/^#+/)?.[0].length || 1;
                 const title = line.replace(/^#+\s*/, '');
@@ -526,7 +532,7 @@ class MultimodalAIService {
         let match;
         while ((match = tableRegex.exec(content)) !== null) {
             // 간단한 테이블 파싱 로직
-            const row = match[1].split('|').map(cell => cell.trim());
+            const row = match[1].split('|').map((cell) => coerceTrimmedString(cell, ''));
             if (tables.length === 0) {
                 tables.push({
                     headers: row,
@@ -582,7 +588,7 @@ class MultimodalAIService {
         while ((match = codeBlockRegex.exec(content)) !== null) {
             codeBlocks.push({
                 language: match[1] || 'text',
-                content: match[2].trim()
+                content: coerceTrimmedString(match[2], '')
             });
         }
 
@@ -620,14 +626,16 @@ class MultimodalAIService {
 
     // 핵심 포인트 추출
     private extractKeyPoints(content: string): string[] {
-        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        return sentences.slice(0, 5).map(s => s.trim());
+        const sentences = content
+          .split(/[.!?]+/)
+          .filter((s) => coerceTrimmedString(s, '').length > 0);
+        return sentences.map((s) => coerceTrimmedString(s, ''));
     }
 
     // 요약 생성
     private generateSummary(content: string): string {
-        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        return sentences.slice(0, 3).join('. ') + '.';
+        const sentences = content.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
+        return sentences.map((s) => coerceTrimmedString(s, '')).join('. ') + (sentences.length ? '.' : '');
     }
 
     // 주제 추출
@@ -642,7 +650,6 @@ class MultimodalAIService {
 
         return Object.entries(frequency)
             .sort(([, a], [, b]) => b - a)
-            .slice(0, 5)
             .map(([word]) => word);
     }
 
@@ -650,7 +657,7 @@ class MultimodalAIService {
     private extractEntities(content: string): string[] {
         // 대문자로 시작하는 단어들을 엔티티로 간주
         const entities = content.match(/\b[A-Z][a-z]+\b/g) || [];
-        return [...new Set(entities)].slice(0, 10);
+        return [...new Set(entities)];
     }
 
     // 실행 가능한 항목 추출
@@ -662,8 +669,7 @@ class MultimodalAIService {
             .filter(sentence =>
                 actionWords.some(word => sentence.toLowerCase().includes(word))
             )
-            .slice(0, 5)
-            .map(s => s.trim());
+            .map((s) => coerceTrimmedString(s, ''));
     }
 
     // 프로그래밍 언어 감지
@@ -719,7 +725,7 @@ class MultimodalAIService {
 
     // 복잡도 점수 계산
     private calculateComplexityScore(code: string): number {
-        const lines = code.split('\n').filter(line => line.trim().length > 0);
+        const lines = code.split('\n').filter((line) => coerceTrimmedString(line, '').length > 0);
         const functions = (code.match(/function|def |public |private /g) || []).length;
         const conditionals = (code.match(/if|else|switch|case|for|while/g) || []).length;
         const nesting = this.calculateNestingLevel(code);
@@ -757,7 +763,7 @@ class MultimodalAIService {
     // 유지보수성 계산
     private calculateMaintainability(code: string): number {
         const lines = code.split('\n').length;
-        const comments = (code.match(/\/\/|\/\*|\#/g) || []).length;
+        const comments = (code.match(/\/\/|\/\*|#/g) || []).length;
         const commentRatio = comments / lines;
 
         return Math.min(1.0, 0.5 + commentRatio * 0.5);
@@ -773,7 +779,7 @@ class MultimodalAIService {
     }
 
     // 성능 점수 계산
-    private calculatePerformance(code: string, language: string): number {
+    private calculatePerformance(code: string, _language: string): number {
         // 간단한 성능 패턴 분석
         const performanceIssues = [
             /for.*for/g, // 중첩 루프
@@ -790,7 +796,7 @@ class MultimodalAIService {
     }
 
     // 보안 점수 계산
-    private calculateSecurity(code: string, language: string): number {
+    private calculateSecurity(code: string, _language: string): number {
         const securityIssues = [
             /eval\(/g,
             /innerHTML/g,
@@ -808,7 +814,7 @@ class MultimodalAIService {
     }
 
     // 코드 이슈 감지
-    private detectCodeIssues(code: string, language: string): CodeIssue[] {
+    private detectCodeIssues(code: string, _language: string): CodeIssue[] {
         const issues: CodeIssue[] = [];
         const lines = code.split('\n');
 
@@ -840,7 +846,7 @@ class MultimodalAIService {
     }
 
     // 코드 제안 생성
-    private generateCodeSuggestions(code: string, language: string): CodeSuggestion[] {
+    private generateCodeSuggestions(code: string, _language: string): CodeSuggestion[] {
         const suggestions: CodeSuggestion[] = [];
 
         // 함수 길이 체크
@@ -871,7 +877,7 @@ class MultimodalAIService {
     }
 
     // 의존성 분석
-    private analyzeDependencies(code: string, language: string): Dependency[] {
+    private analyzeDependencies(code: string, _language: string): Dependency[] {
         const dependencies: Dependency[] = [];
 
         // import/require 문 분석
@@ -907,15 +913,15 @@ class MultimodalAIService {
     }
 
     // 함수 추출
-    private extractFunctions(code: string, language: string): FunctionInfo[] {
+    private extractFunctions(code: string, _language: string): FunctionInfo[] {
         const functions: FunctionInfo[] = [];
         const functionRegex = /function\s+(\w+)\s*\(([^)]*)\)/g;
 
         let match;
         while ((match = functionRegex.exec(code)) !== null) {
             const name = match[1];
-            const params = match[2].split(',').map(p => ({
-                name: p.trim(),
+            const params = match[2].split(',').map((p) => ({
+                name: coerceTrimmedString(p, ''),
                 type: undefined,
                 optional: false
             }));
@@ -932,7 +938,7 @@ class MultimodalAIService {
     }
 
     // 클래스 추출
-    private extractClasses(code: string, language: string): ClassInfo[] {
+    private extractClasses(code: string, _language: string): ClassInfo[] {
         const classes: ClassInfo[] = [];
         const classRegex = /class\s+(\w+)/g;
 
@@ -949,7 +955,7 @@ class MultimodalAIService {
     }
 
     // 모듈 추출
-    private extractModules(code: string, language: string): ModuleInfo[] {
+    private extractModules(code: string, _language: string): ModuleInfo[] {
         return [{
             name: 'main',
             exports: [],
@@ -1085,7 +1091,10 @@ class MultimodalAIService {
     // 모델 초기화
     private initializeModels(): void {
         // 실제 구현에서는 AI 모델 로딩
-        console.log('Multimodal AI models initialized');
+        errorLogger.info('Multimodal AI models initialized', {
+            component: 'multimodalAIService',
+            action: 'initializeModels',
+        });
     }
 
     // 공개 메서드들

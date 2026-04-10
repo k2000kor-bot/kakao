@@ -1,4 +1,4 @@
-# 🎬 CORBU AI 시스템 데모 가이드
+# 🎬 CORBU.AI 시스템 데모 가이드
 
 **데모 버전**: 1.0.0  
 **예상 소요 시간**: 15-20분  
@@ -8,7 +8,7 @@
 
 ## 🎯 데모 목표
 
-이 데모를 통해 CORBU AI 시스템의 모든 주요 기능을 체험하고 실제 사용 시나리오를 경험할 수 있습니다.
+이 데모를 통해 CORBU.AI 시스템의 모든 주요 기능을 체험하고 실제 사용 시나리오를 경험할 수 있습니다.
 
 ### 📋 데모 체크리스트
 
@@ -39,7 +39,7 @@ http://localhost:3000
 #### 1.3 시스템 상태 확인
 ```bash
 # 터미널에서 백엔드 상태 확인
-curl http://localhost:8000/health
+curl http://localhost:5002/api/health
 ```
 
 **예상 결과**:
@@ -76,7 +76,7 @@ curl http://localhost:8000/health
 - `test_document.txt` - 기본 테스트 문서
 - `emotion_test_document.txt` - 감정 분석 테스트
 - `test_document_advanced.txt` - 고급 기능 테스트
-- `corbu_test_document.txt` - CORBU AI 테스트
+- `corbu_test_document.txt` - CORBU.AI 테스트
 
 ---
 
@@ -132,8 +132,8 @@ curl http://localhost:8000/health
 2. 그리기 도구 사용
 3. 실시간 협업 확인
 
-#### 4.4 실시간 채팅
-1. 채팅 기능 활성화
+#### 4.4 실시간 대화
+1. 대화 기능 활성화
 2. 메시지 전송 테스트
 3. 파일 공유 기능 확인
 
@@ -188,10 +188,10 @@ curl http://localhost:8000/health
 
 #### 7.1 ChatGPT 분석 API 테스트
 ```bash
-curl -X POST "http://localhost:8000/api/v7/chatgpt/analyze" \
+curl -X POST "http://localhost:5002/api/v7/chatgpt/analyze" \
   -H "Content-Type: application/json" \
   -d '{
-    "content": "CORBU AI 시스템은 고급 파일 업로드, AI 학습, 실시간 협업 기능을 제공합니다.",
+    "content": "CORBU.AI 시스템은 고급 파일 업로드, AI 학습, 실시간 협업 기능을 제공합니다.",
     "room_id": "demo-room",
     "analysis_mode": "advanced",
     "ai_analysis": true
@@ -200,17 +200,17 @@ curl -X POST "http://localhost:8000/api/v7/chatgpt/analyze" \
 
 #### 7.2 감정 분석 API 테스트
 ```bash
-curl -X POST "http://localhost:8000/api/v7/analyze-emotion" \
+curl -X POST "http://localhost:5002/api/v7/analyze-emotion" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "CORBU AI 시스템이 정말 훌륭합니다!",
+    "text": "CORBU.AI 시스템이 정말 훌륭합니다!",
     "analysis_mode": "advanced"
   }'
 ```
 
 #### 7.3 이미지 분석 API 테스트
 ```bash
-curl -X POST "http://localhost:8000/api/v7/image/analyze-base64" \
+curl -X POST "http://localhost:5002/api/v7/image/analyze-base64" \
   -H "Content-Type: application/json" \
   -d '{
     "image_data": "base64_encoded_image_data",
@@ -273,7 +273,7 @@ curl -X POST "http://localhost:8000/api/v7/image/analyze-base64" \
 ### 기술 지원
 - **이메일**: support@corbu-ai.com
 - **전화**: 02-1234-5678
-- **온라인 채팅**: 시스템 내 지원 채팅
+- **온라인 대화**: 시스템 내 지원 대화
 
 ---
 

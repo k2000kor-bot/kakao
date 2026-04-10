@@ -1,3 +1,14 @@
+import {
+    API_ULTRA_EXTREME_PERSUASION_PATH,
+    API_ULTRA_HYBRID_NEURAL_ASSERTIVE_PATH,
+    API_ULTRA_NEURAL_BRAINWASH_PATH,
+    API_ULTRA_PSYCHOLOGICAL_PROFILING_PATH,
+    API_ULTRA_QUANTUM_CONVERSATION_PATH,
+    joinApiHealthCheckUrl,
+    resolveApiBaseUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+
 export interface BrainwashRequest {
     target_message: {
         id: string;
@@ -52,12 +63,12 @@ export interface PsychologicalProfile {
 }
 
 class AdvancedBrainwashAPI {
-    private baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    private baseURL = resolveApiBaseUrl();
 
     // 고도화된 신경망 기반 브레인워시 메시지 생성
     async generateNeuralBrainwash(request: BrainwashRequest): Promise<BrainwashResponse> {
         try {
-            const response = await fetch(`${this.baseURL}/api/ultra/neural_brainwash`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_ULTRA_NEURAL_BRAINWASH_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -97,7 +108,13 @@ class AdvancedBrainwashAPI {
             const data = await response.json();
             return this.formatBrainwashResponse(data);
         } catch (error) {
-            console.error('신경망 브레인워시 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('신경망 브레인워시 생성 실패', err, {
+                component: 'advancedBrainwashAPI',
+                action: 'generateNeuralBrainwash',
+                targetMessageId: request.target_message.id,
+                influenceLevel: request.influence_level,
+            });
             return this.generateFallbackResponse(request);
         }
     }
@@ -109,7 +126,7 @@ class AdvancedBrainwashAPI {
         }
 
         try {
-            const response = await fetch(`${this.baseURL}/api/ultra/extreme_persuasion`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_ULTRA_EXTREME_PERSUASION_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -139,7 +156,13 @@ class AdvancedBrainwashAPI {
             const data = await response.json();
             return this.formatExtremeResponse(data);
         } catch (error) {
-            console.error('극도 설득 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('극도 설득 생성 실패', err, {
+                component: 'advancedBrainwashAPI',
+                action: 'generateExtremePressure',
+                targetMessageId: request.target_message.id,
+                influenceLevel: request.influence_level,
+            });
             throw error;
         }
     }
@@ -147,7 +170,7 @@ class AdvancedBrainwashAPI {
     // 양자 컴퓨팅 기반 대화 조작
     async generateQuantumManipulation(request: BrainwashRequest): Promise<BrainwashResponse> {
         try {
-            const response = await fetch(`${this.baseURL}/api/ultra/quantum_conversation`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_ULTRA_QUANTUM_CONVERSATION_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -180,7 +203,13 @@ class AdvancedBrainwashAPI {
             const data = await response.json();
             return this.formatQuantumResponse(data);
         } catch (error) {
-            console.error('양자 조작 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('양자 조작 생성 실패', err, {
+                component: 'advancedBrainwashAPI',
+                action: 'generateQuantumManipulation',
+                targetMessageId: request.target_message.id,
+                influenceLevel: request.influence_level,
+            });
             return this.generateFallbackResponse(request);
         }
     }
@@ -188,7 +217,7 @@ class AdvancedBrainwashAPI {
     // 하이브리드 멀티 엔진 브레인워시
     async generateHybridBrainwash(request: BrainwashRequest): Promise<BrainwashResponse> {
         try {
-            const response = await fetch(`${this.baseURL}/api/ultra/hybrid_neural_assertive`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_ULTRA_HYBRID_NEURAL_ASSERTIVE_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -229,7 +258,13 @@ class AdvancedBrainwashAPI {
             const data = await response.json();
             return this.formatHybridResponse(data);
         } catch (error) {
-            console.error('하이브리드 브레인워시 실패:', error);
+            const err = toError(error);
+            errorLogger.error('하이브리드 브레인워시 실패', err, {
+                component: 'advancedBrainwashAPI',
+                action: 'generateHybridBrainwash',
+                targetMessageId: request.target_message.id,
+                influenceLevel: request.influence_level,
+            });
             return this.generateFallbackResponse(request);
         }
     }
@@ -237,7 +272,7 @@ class AdvancedBrainwashAPI {
     // 심리적 프로파일링 및 취약점 분석
     async analyzePsychologicalProfile(targetMessage: string, conversationHistory: string[]): Promise<PsychologicalProfile> {
         try {
-            const response = await fetch(`${this.baseURL}/api/ultra/psychological_profiling`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_ULTRA_PSYCHOLOGICAL_PROFILING_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -258,27 +293,37 @@ class AdvancedBrainwashAPI {
             const data = await response.json();
             return data.psychological_profile;
         } catch (error) {
-            console.error('심리 프로파일링 실패:', error);
+            const err = toError(error);
+            errorLogger.error('심리 프로파일링 실패', err, {
+                component: 'advancedBrainwashAPI',
+                action: 'analyzePsychologicalProfile',
+                targetMessageLength: targetMessage.length,
+                conversationHistoryLength: conversationHistory.length,
+            });
             return this.generateFallbackProfile();
         }
     }
 
     // 응답 포맷터들
-    private formatBrainwashResponse(apiData: any): BrainwashResponse {
+    private formatBrainwashResponse(apiData: Record<string, unknown>): BrainwashResponse {
+        const neuralMsg = apiData.neural_message as Record<string, unknown> | undefined;
+        const genMeta = apiData.generation_metadata as Record<string, unknown> | undefined;
+        const manipAnalysis = apiData.manipulation_analysis as Record<string, unknown> | undefined;
+        const effPred = Number(apiData.effectiveness_prediction) || 85;
         return {
             success: true,
             generated_messages: [
                 {
                     id: 'neural_1',
-                    content: apiData.neural_message?.full_message || '신경망 기반 메시지가 생성되었습니다.',
-                    confidence: apiData.effectiveness_prediction || 85,
+                    content: String(neuralMsg?.full_message || '신경망 기반 메시지가 생성되었습니다.'),
+                    confidence: effPred,
                     type: 'neural',
                     psychological_metrics: {
-                        persuasion_potential: apiData.generation_metadata?.persuasion_potential || 0.8,
-                        emotional_impact: apiData.generation_metadata?.emotional_impact || 0.7,
-                        cognitive_load: apiData.generation_metadata?.cognitive_load_estimate || 0.6,
-                        neural_activation: apiData.generation_metadata?.neural_confidence || 0.75,
-                        manipulation_score: apiData.manipulation_analysis?.total_score || 0.65
+                        persuasion_potential: Number(genMeta?.persuasion_potential) || 0.8,
+                        emotional_impact: Number(genMeta?.emotional_impact) || 0.7,
+                        cognitive_load: Number(genMeta?.cognitive_load_estimate) || 0.6,
+                        neural_activation: Number(genMeta?.neural_confidence) || 0.75,
+                        manipulation_score: Number(manipAnalysis?.total_score) || 0.65
                     },
                     safety_score: 0.8,
                     generation_engine: 'neural_network'
@@ -289,26 +334,28 @@ class AdvancedBrainwashAPI {
             generation_metadata: {
                 processing_time: 2000,
                 engines_used: ['neural'],
-                confidence_score: apiData.effectiveness_prediction || 85
+                confidence_score: effPred
             }
         };
     }
 
-    private formatExtremeResponse(apiData: any): BrainwashResponse {
+    private formatExtremeResponse(apiData: Record<string, unknown>): BrainwashResponse {
+        const effAnalysis = apiData.effectiveness_analysis as Record<string, unknown> | undefined;
+        const predRate = Number(effAnalysis?.predicted_success_rate) || 95;
         return {
             success: true,
             generated_messages: [
                 {
                     id: 'extreme_1',
-                    content: apiData.extreme_message || '극도 설득 메시지가 생성되었습니다.',
-                    confidence: apiData.effectiveness_analysis?.predicted_success_rate || 95,
+                    content: String(apiData.extreme_message || '극도 설득 메시지가 생성되었습니다.'),
+                    confidence: predRate,
                     type: 'extreme',
                     psychological_metrics: {
                         persuasion_potential: 0.95,
                         emotional_impact: 0.9,
                         cognitive_load: 0.8,
                         neural_activation: 0.85,
-                        manipulation_score: apiData.manipulation_score || 0.9
+                        manipulation_score: Number(apiData.manipulation_score) || 0.9
                     },
                     safety_score: 0.2, // 매우 위험
                     generation_engine: 'extreme_pressure'
@@ -323,22 +370,24 @@ class AdvancedBrainwashAPI {
             generation_metadata: {
                 processing_time: 3000,
                 engines_used: ['extreme_pressure', 'psychological_warfare'],
-                confidence_score: apiData.effectiveness_analysis?.predicted_success_rate || 95
+                confidence_score: predRate
             }
         };
     }
 
-    private formatQuantumResponse(apiData: any): BrainwashResponse {
+    private formatQuantumResponse(apiData: Record<string, unknown>): BrainwashResponse {
+        const qConf = Number(apiData.quantum_confidence) || 0.88;
+        const confScore = Math.round(qConf * 100) || 88;
         return {
             success: true,
             generated_messages: [
                 {
                     id: 'quantum_1',
-                    content: apiData.response_text || '양자 기반 조작 메시지가 생성되었습니다.',
-                    confidence: Math.round(apiData.quantum_confidence * 100) || 88,
+                    content: String(apiData.response_text || '양자 기반 조작 메시지가 생성되었습니다.'),
+                    confidence: confScore,
                     type: 'quantum',
                     psychological_metrics: {
-                        persuasion_potential: apiData.quantum_confidence || 0.88,
+                        persuasion_potential: qConf,
                         emotional_impact: 0.75,
                         cognitive_load: 0.7,
                         neural_activation: 0.8,
@@ -353,26 +402,27 @@ class AdvancedBrainwashAPI {
             generation_metadata: {
                 processing_time: 2500,
                 engines_used: ['quantum'],
-                confidence_score: Math.round(apiData.quantum_confidence * 100) || 88
+                confidence_score: confScore
             }
         };
     }
 
-    private formatHybridResponse(apiData: any): BrainwashResponse {
+    private formatHybridResponse(apiData: Record<string, unknown>): BrainwashResponse {
+        const manipAnalysis = apiData.manipulation_analysis as Record<string, unknown> | undefined;
         return {
             success: true,
             generated_messages: [
                 {
                     id: 'hybrid_1',
-                    content: apiData.hybrid_message || '하이브리드 브레인워시 메시지가 생성되었습니다.',
-                    confidence: apiData.hybrid_effectiveness || 92,
+                    content: String(apiData.hybrid_message || '하이브리드 브레인워시 메시지가 생성되었습니다.'),
+                    confidence: Number(apiData.hybrid_effectiveness) || 92,
                     type: 'neural',
                     psychological_metrics: {
                         persuasion_potential: 0.9,
                         emotional_impact: 0.85,
                         cognitive_load: 0.75,
                         neural_activation: 0.88,
-                        manipulation_score: apiData.manipulation_analysis?.total_score || 0.8
+                        manipulation_score: Number(manipAnalysis?.total_score) || 0.8
                     },
                     safety_score: 0.4,
                     generation_engine: 'hybrid_neural_assertive'
@@ -383,30 +433,33 @@ class AdvancedBrainwashAPI {
             generation_metadata: {
                 processing_time: 3500,
                 engines_used: ['neural', 'assertive'],
-                confidence_score: apiData.hybrid_effectiveness || 92
+                confidence_score: Number(apiData.hybrid_effectiveness) || 92
             }
         };
     }
 
-    private extractPsychologicalProfile(apiData: any): PsychologicalProfile {
+    private extractPsychologicalProfile(apiData: Record<string, unknown>): PsychologicalProfile {
+        const psych = (apiData.psychological_analysis || {}) as Record<string, unknown>;
         return {
-            emotional_state: apiData.psychological_analysis?.emotional_state || '분석 중',
-            cognitive_biases: apiData.psychological_analysis?.cognitive_biases || ['확증 편향'],
-            vulnerability_factors: apiData.psychological_analysis?.vulnerability_factors || ['경제적 압박'],
-            resistance_level: apiData.psychological_analysis?.resistance_level || 0.6,
-            optimal_approach: apiData.psychological_analysis?.optimal_approach || '정보 제공 중심',
-            manipulation_susceptibility: apiData.psychological_analysis?.manipulation_susceptibility || 0.7
+            emotional_state: String(psych.emotional_state || '분석 중'),
+            cognitive_biases: (Array.isArray(psych.cognitive_biases) ? psych.cognitive_biases : ['확증 편향']) as string[],
+            vulnerability_factors: (Array.isArray(psych.vulnerability_factors) ? psych.vulnerability_factors : ['경제적 압박']) as string[],
+            resistance_level: Number(psych.resistance_level) || 0.6,
+            optimal_approach: String(psych.optimal_approach || '정보 제공 중심'),
+            manipulation_susceptibility: Number(psych.manipulation_susceptibility) || 0.7
         };
     }
 
-    private generateSafetyWarnings(apiData: any): string[] {
-        const warnings = [];
+    private generateSafetyWarnings(apiData: Record<string, unknown>): string[] {
+        const warnings: string[] = [];
+        const manipScore = Number(apiData.manipulation_score) || 0;
+        const effPred = Number(apiData.effectiveness_prediction) || 0;
 
-        if (apiData.manipulation_score > 0.8) {
+        if (manipScore > 0.8) {
             warnings.push('⚠️ 높은 수준의 심리적 조작 요소가 감지되었습니다.');
         }
 
-        if (apiData.effectiveness_prediction > 90) {
+        if (effPred > 90) {
             warnings.push('⚠️ 매우 강력한 설득 효과가 예상됩니다. 신중하게 사용하세요.');
         }
 

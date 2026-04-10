@@ -1,4 +1,5 @@
-import { Project, Chat, Message } from '../types/project';
+import { Message } from '../types/project';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface NLPAnalysisResult {
     intent: string;
@@ -60,7 +61,7 @@ export interface UserPreferences {
 
 export interface LearnedPattern {
     pattern_type: string;
-    pattern_data: any;
+    pattern_data: Record<string, unknown>;
     frequency: number;
     confidence: number;
     last_observed: Date;
@@ -68,8 +69,8 @@ export interface LearnedPattern {
 
 class AdvancedNLPEngine {
     private conversationMemories: Map<string, ConversationMemory> = new Map();
-    private domainKnowledge: Map<string, any> = new Map();
-    private languageModels: Map<string, any> = new Map();
+    private domainKnowledge: Map<string, Record<string, unknown>> = new Map();
+    private languageModels: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializeDomainKnowledge();
@@ -77,7 +78,7 @@ class AdvancedNLPEngine {
     }
 
     // 고급 자연어 분석
-    async analyzeText(text: string, userId?: string, context?: any): Promise<NLPAnalysisResult> {
+    async analyzeText(text: string, userId?: string, context?: Record<string, unknown>): Promise<NLPAnalysisResult> {
         const language = this.detectLanguage(text);
         const intent = await this.extractIntent(text, language);
         const entities = await this.extractEntities(text, language);
@@ -164,7 +165,7 @@ class AdvancedNLPEngine {
     }
 
     // 엔티티 추출
-    private async extractEntities(text: string, language: string): Promise<Entity[]> {
+    private async extractEntities(text: string, _language: string): Promise<Entity[]> {
         const entities: Entity[] = [];
 
         // 기술 관련 엔티티
@@ -254,7 +255,7 @@ class AdvancedNLPEngine {
 
     // 복잡도 계산
     private calculateComplexity(text: string): number {
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const words = text.split(/\s+/).filter(w => w.length > 0);
         const avgWordsPerSentence = words.length / sentences.length;
 
@@ -277,7 +278,7 @@ class AdvancedNLPEngine {
     }
 
     // 주제 추출
-    private async extractTopics(text: string, language: string): Promise<string[]> {
+    private async extractTopics(text: string, _language: string): Promise<string[]> {
         const topicKeywords = {
             programming: ['코드', '프로그래밍', '개발', 'code', 'programming', 'development', 'software'],
             web_development: ['웹', '프론트엔드', '백엔드', 'web', 'frontend', 'backend', 'HTML', 'CSS', 'JavaScript'],
@@ -329,12 +330,11 @@ class AdvancedNLPEngine {
         // 빈도순 정렬하여 상위 키워드 반환
         return Object.entries(wordFreq)
             .sort(([, a], [, b]) => b - a)
-            .slice(0, 10)
             .map(([word]) => word);
     }
 
     // 컨텍스트 분석
-    private async analyzeContext(text: string, userId?: string, context?: any): Promise<ContextAnalysis> {
+    private async analyzeContext(text: string, userId?: string, _context?: Record<string, unknown>): Promise<ContextAnalysis> {
         const memory = userId ? this.conversationMemories.get(userId) : null;
 
         // 사용자 전문성 수준 판단
@@ -459,7 +459,7 @@ class AdvancedNLPEngine {
     // 응답 전략 결정
     private determineResponseStrategy(
         intent: string,
-        sentiment: any,
+        sentiment: Record<string, unknown>,
         context: ContextAnalysis,
         complexity: number
     ): ResponseStrategy {
@@ -592,7 +592,7 @@ class AdvancedNLPEngine {
         this.conversationMemories.delete(userId);
     }
 
-    getAnalyticsData(): any {
+    getAnalyticsData(): Record<string, unknown> {
         return {
             total_users: this.conversationMemories.size,
             total_conversations: Array.from(this.conversationMemories.values())
@@ -602,7 +602,7 @@ class AdvancedNLPEngine {
         };
     }
 
-    private getLanguageDistribution(): any {
+    private getLanguageDistribution(): Record<string, unknown> {
         const distribution: { [key: string]: number } = {};
         this.conversationMemories.forEach(memory => {
             const lang = memory.user_preferences.preferred_language;
@@ -611,7 +611,7 @@ class AdvancedNLPEngine {
         return distribution;
     }
 
-    private getDomainDistribution(): any {
+    private getDomainDistribution(): Record<string, unknown> {
         const distribution: { [key: string]: number } = {};
         this.conversationMemories.forEach(memory => {
             memory.user_preferences.expertise_domains.forEach(domain => {

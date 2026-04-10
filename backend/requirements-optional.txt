@@ -1,0 +1,22 @@
+# CORBU.AI - 선택적 플러그인/기능용 패키지
+# 필요한 기능에 따라 설치: pip install -r requirements-optional.txt
+# 또는 개별 설치: pip install yt-dlp
+
+# 수치 계산 (일부 API에서 사용)
+numpy>=1.24.0
+
+# YouTube/영상 음성 추출 (TTS, 노트북 LLM 학습)
+# - ffmpeg 시스템 설치 필요: brew install ffmpeg
+yt-dlp>=2024.1.0
+
+# OCR 이미지 텍스트 추출
+# - Tesseract 시스템 설치 필요: brew install tesseract
+pytesseract>=0.3.10
+
+# 음성→텍스트 (Whisper, 영상 자막 추출)
+# - 용량 큼 (~1GB), torch 의존성
+# openai-whisper>=20231117
+
+# ultimate_media PPTX/XLSX 텍스트 추출
+python-pptx>=0.6.21
+openpyxl>=3.1.0

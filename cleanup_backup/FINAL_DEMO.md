@@ -66,7 +66,7 @@ curl -s http://localhost:8003/api/ultimate/status
 
 4. **프로젝트 상세 확인**
    - 프로젝트 상세 버튼 클릭
-   - 파일, 지침, 채팅 탭 확인
+   - 파일, 지침, 대화 탭 확인
 
 ### 시나리오 3: 파일 첨부 및 문서 참조
 **목표**: 파일 기반 AI 분석 기능 시연
@@ -157,7 +157,7 @@ curl -s http://localhost:8003/api/ultimate/status
 
 ### 키보드 단축키
 ```
-Ctrl+K: 새 채팅
+Ctrl+K: 새 대화
 Ctrl+Enter: 메시지 전송
 Ctrl+/: 사이드바 토글
 Ctrl+A: 분석 대시보드

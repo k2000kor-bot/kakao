@@ -3,6 +3,8 @@
  * 사용자 상호작용을 통해 AI의 응답 품질을 지속적으로 개선하는 시스템
  */
 
+import { errorLogger } from '../utils/errorLogger';
+
 export interface FeedbackData {
     messageId: string;
     userMessage: string;
@@ -35,7 +37,7 @@ export interface ConversationPattern {
 class LearningFeedbackSystem {
     private feedbackHistory = new Map<string, FeedbackData[]>(); // projectId -> feedbacks
     private conversationPatterns = new Map<string, ConversationPattern>();
-    private learningInsights = new Map<string, any>(); // projectId -> insights
+    private learningInsights = new Map<string, Record<string, unknown>>(); // projectId -> insights
 
     // 피드백 저장
     recordFeedback(feedback: FeedbackData) {
@@ -47,7 +49,14 @@ class LearningFeedbackSystem {
         this.updateLearningInsights(feedback);
         this.updateConversationPatterns(feedback);
 
-        console.log('📊 학습 피드백 기록됨:', feedback.userFeedback);
+        errorLogger.info('학습 피드백 기록됨', {
+            component: 'learningFeedbackSystem',
+            action: 'recordFeedback',
+            messageId: feedback.messageId,
+            userFeedback: feedback.userFeedback,
+            projectId: feedback.projectId,
+            sessionId: feedback.sessionId,
+        });
     }
 
     // 학습 메트릭 계산
@@ -213,7 +222,8 @@ class LearningFeedbackSystem {
 
     // 학습 인사이트 업데이트
     private updateLearningInsights(feedback: FeedbackData) {
-        const projectInsights = this.learningInsights.get(feedback.projectId) || {
+        type ProjectInsight = { responseQualityTrend: Array<{ timestamp: Date; score: number; messageType: string }>; userPreferences: Record<string, { totalCount: number; positiveCount: number; preferredResponseLength: string; preferredDetailLevel: string } | undefined>; successfulPatterns: string[]; improvementAreas: string[] };
+        const projectInsights: ProjectInsight = (this.learningInsights.get(feedback.projectId) as ProjectInsight | undefined) || {
             responseQualityTrend: [],
             userPreferences: {},
             successfulPatterns: [],
@@ -234,7 +244,7 @@ class LearningFeedbackSystem {
         }
 
         // 사용자 선호도 학습
-        this.updateUserPreferences(projectInsights.userPreferences, feedback);
+        this.updateUserPreferences(projectInsights.userPreferences as Record<string, { totalCount: number; positiveCount: number; preferredResponseLength: string; preferredDetailLevel: string } | undefined>, feedback);
 
         this.learningInsights.set(feedback.projectId, projectInsights);
     }
@@ -250,30 +260,33 @@ class LearningFeedbackSystem {
     }
 
     // 사용자 선호도 업데이트
-    private updateUserPreferences(preferences: any, feedback: FeedbackData) {
+    private updateUserPreferences(preferences: Record<string, { totalCount: number; positiveCount: number; preferredResponseLength: string; preferredDetailLevel: string } | undefined>, feedback: FeedbackData) {
         const messageType = this.classifyMessageType(feedback.userMessage);
 
-        if (!preferences[messageType]) {
-            preferences[messageType] = {
+        let prefs = preferences[messageType];
+        if (!prefs) {
+            prefs = {
                 totalCount: 0,
                 positiveCount: 0,
                 preferredResponseLength: 'medium',
                 preferredDetailLevel: 'moderate'
             };
+            preferences[messageType] = prefs;
         }
+        if (!prefs) return;
 
-        preferences[messageType].totalCount += 1;
+        prefs.totalCount += 1;
         if (feedback.userFeedback === 'helpful') {
-            preferences[messageType].positiveCount += 1;
+            prefs.positiveCount += 1;
         }
 
         // 응답 길이 선호도 추론
         const responseLength = feedback.aiResponse.length;
         if (feedback.userFeedback === 'helpful') {
             if (responseLength < 200) {
-                preferences[messageType].preferredResponseLength = 'short';
+                prefs.preferredResponseLength = 'short';
             } else if (responseLength > 800) {
-                preferences[messageType].preferredResponseLength = 'long';
+                prefs.preferredResponseLength = 'long';
             }
         }
     }
@@ -290,11 +303,12 @@ class LearningFeedbackSystem {
             suggestions.push(`이 유형의 질문에 대해서는 더 구체적인 정보를 제공해 주세요.`);
         }
 
-        if (insights && insights.userPreferences[messageType]) {
-            const prefs = insights.userPreferences[messageType];
-            if (prefs.preferredResponseLength === 'short') {
+        const userPrefs = insights?.userPreferences as Record<string, { totalCount: number; positiveCount: number; preferredResponseLength: string; preferredDetailLevel: string } | undefined> | undefined;
+        if (insights && userPrefs?.[messageType]) {
+            const prefs = userPrefs[messageType];
+            if (prefs?.preferredResponseLength === 'short') {
                 suggestions.push('간결한 답변을 선호하시는 것 같습니다.');
-            } else if (prefs.preferredResponseLength === 'long') {
+            } else if (prefs?.preferredResponseLength === 'long') {
                 suggestions.push('상세한 답변을 선호하시는 것 같습니다.');
             }
         }
@@ -312,7 +326,7 @@ class LearningFeedbackSystem {
 
         return {
             metrics,
-            recentTrend: insights?.responseQualityTrend?.slice(-10) || [],
+            recentTrend: (insights && Array.isArray(insights.responseQualityTrend) ? insights.responseQualityTrend.slice(-10) : []) as Array<{ timestamp: Date; score: number; messageType: string }>,
             topPatterns: patterns.slice(0, 5),
             totalInteractions: this.feedbackHistory.get(projectId)?.length || 0
         };

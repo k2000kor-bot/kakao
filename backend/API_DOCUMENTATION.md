@@ -1,13 +1,13 @@
-# CORBU AI Backend API 문서
+# CORBU.AI Backend API 문서
 
 ## 개요
 
-CORBU AI Backend API는 인증, 보안, 사용자 관리 시스템을 제공하는 FastAPI 기반 RESTful API입니다.
+CORBU.AI Backend API는 인증, 보안, 사용자 관리 시스템을 제공하는 FastAPI 기반 RESTful API입니다.
 
 - **버전**: 1.0.0
-- **기본 URL**: `http://localhost:5001`
-- **문서**: `http://localhost:5001/docs` (Swagger UI)
-- **ReDoc**: `http://localhost:5001/redoc`
+- **기본 URL**: `http://localhost:5002` (`API_PORT` / `BACKEND_PORT`, 기본 5002)
+- **문서**: `http://localhost:5002/api/docs` (Swagger UI)
+- **ReDoc**: `http://localhost:5002/api/redoc`
 
 ## 주요 기능
 
@@ -304,7 +304,8 @@ Authorization: Bearer {accessToken}
 
 다음 환경 변수를 설정할 수 있습니다:
 
-- `API_PORT`: API 포트 (기본값: 5001)
+- `BACKEND_PORT` 또는 `PORT`: API 포트 (기본값: **5002**, 통합 백엔드)
+- `API_PORT`: 하위 호환 (미설정 시 `BACKEND_PORT` 사용)
 - `API_HOST`: API 호스트 (기본값: 0.0.0.0)
 - `DEBUG`: 디버그 모드 (기본값: false)
 - `RELOAD`: 자동 리로드 (기본값: true)
@@ -319,7 +320,7 @@ python app.py
 또는 환경 변수와 함께:
 
 ```bash
-API_PORT=5001 API_HOST=0.0.0.0 python app.py
+BACKEND_PORT=5002 API_HOST=0.0.0.0 python app.py
 ```
 
 ## 의존성

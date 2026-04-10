@@ -191,7 +191,7 @@ class RealEstateMarketAnalysisService {
 
         // 트렌드 분석
         const risingCount = filteredPrices.filter(p => p.marketTrend === 'rising').length;
-        const stableCount = filteredPrices.filter(p => p.marketTrend === 'stable').length;
+        const _stableCount = filteredPrices.filter(p => p.marketTrend === 'stable').length;
         const fallingCount = filteredPrices.filter(p => p.marketTrend === 'falling').length;
 
         const totalCount = filteredPrices.length;
@@ -851,7 +851,14 @@ class RealEstateMarketAnalysisService {
         return recommendations;
     }
 
-    private generateDefaultAnalysis(region: string, propertyType: string, budget: number): any {
+    private generateDefaultAnalysis(_region: string, _propertyType: string, _budget: number): {
+        investmentScore: number;
+        recommendation: 'strong_buy' | 'buy' | 'hold' | 'avoid';
+        expectedReturn: { oneYear: number; threeYear: number; fiveYear: number };
+        riskAssessment: { level: 'low' | 'medium' | 'high'; factors: string[]; mitigation: string[] };
+        optimalStrategy: { timing: string; holdingPeriod: number; exitStrategy: string };
+        alternatives: { region: string; type: string; score: number; reason: string }[];
+    } {
         return {
             investmentScore: 60,
             recommendation: 'hold' as const,
@@ -908,7 +915,7 @@ class RealEstateMarketAnalysisService {
         }
     }
 
-    private findAlternatives(region: string, propertyType: string, budget: number): any[] {
+    private findAlternatives(region: string, propertyType: string, _budget: number): { region: string; type: string; score: number; reason: string }[] {
         return this.investmentAnalyses
             .filter(a => a.region !== region || a.propertyType !== propertyType)
             .sort((a, b) => b.investmentScore - a.investmentScore)
@@ -941,7 +948,7 @@ class RealEstateMarketAnalysisService {
         return drivers;
     }
 
-    private identifyRiskFactors(region: string): string[] {
+    private identifyRiskFactors(_region: string): string[] {
         return [
             '금리 상승 위험',
             '정책 변화',
@@ -951,7 +958,7 @@ class RealEstateMarketAnalysisService {
         ];
     }
 
-    private generateScenarios(region: string, timeframe: string): MarketForecast['scenarioAnalysis'] {
+    private generateScenarios(_region: string, _timeframe: string): MarketForecast['scenarioAnalysis'] {
         return [
             {
                 scenario: '낙관적 시나리오',

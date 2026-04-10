@@ -355,7 +355,7 @@ const AdvancedDashboard: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Typography variant="h4" component="h1" gutterBottom>
-                        🚀 CORBU AI 비즈니스 대시보드
+                        🚀 CORBU.AI 비즈니스 대시보드
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
                         업무 효율성과 생산성을 한눈에 확인하세요
@@ -962,7 +962,7 @@ const AdvancedDashboard: React.FC = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
                         <Typography variant="h4" fontWeight="bold" gutterBottom>
-                            CORBU AI 대시보드
+                            CORBU.AI 대시보드
                         </Typography>
                         <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
                             {dashboardData.userProfile.name || '사용자'}님의 학습 현황

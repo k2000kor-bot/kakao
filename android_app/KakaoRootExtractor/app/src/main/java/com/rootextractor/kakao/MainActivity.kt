@@ -42,7 +42,8 @@ class MainActivity : AppCompatActivity() {
     private val kakaoDbPath = "/data/data/com.kakao.talk/databases/KakaoTalk.db"
     private val kakaoDb2Path = "/data/data/com.kakao.talk/databases/KakaoTalk2.db"
     
-    // 서버 주소 (실제 PC의 IP 주소로 변경 필요)
+    // 루팅 추출 수신 전용: backend/rooted_kakao_extractor.py 기본 포트 8005 (PC LAN IP로 변경)
+    // CORBU 웹·대화 통합 API는 별도 main_server 포트 5002 — 이 URL과 다릅니다.
     private val serverUrl = "http://192.168.1.100:8005"
     
     companion object {
@@ -157,7 +158,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 updateStatus("📊 전체 데이터 추출 중...")
                 
-                // 채팅방 정보 추출
+                // 대화방 정보 추출
                 val chatRooms = extractChatRooms()
                 if (chatRooms.isNotEmpty()) {
                     sendChatRoomsToServer(chatRooms)
@@ -175,7 +176,7 @@ class MainActivity : AppCompatActivity() {
                 
                 withContext(Dispatchers.Main) {
                     val roomFilter = if (selectedChatRooms.isEmpty()) "전체" else "${selectedChatRooms.size}개 선택된"
-                    updateStatus("✅ 전체 데이터 추출 완료 (채팅방: ${chatRooms.size}, 메시지: ${messages.size}, $roomFilter 대화방)")
+                    updateStatus("✅ 전체 데이터 추출 완료 (대화방: ${chatRooms.size}, 메시지: ${messages.size}, $roomFilter 대화방)")
                 }
                 
             } catch (e: Exception) {
@@ -259,7 +260,7 @@ class MainActivity : AppCompatActivity() {
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "채팅방 추출 실패", e)
+            Log.e(TAG, "대화방 추출 실패", e)
         }
         
         return chatRooms
@@ -483,20 +484,20 @@ class MainActivity : AppCompatActivity() {
             
             httpClient.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    Log.e(TAG, "채팅방 전송 실패", e)
+                    Log.e(TAG, "대화방 전송 실패", e)
                 }
                 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
-                        Log.d(TAG, "채팅방 전송 성공: ${chatRooms.size}개")
+                        Log.d(TAG, "대화방 전송 성공: ${chatRooms.size}개")
                     } else {
-                        Log.e(TAG, "채팅방 전송 실패: ${response.code}")
+                        Log.e(TAG, "대화방 전송 실패: ${response.code}")
                     }
                 }
             })
             
         } catch (e: Exception) {
-            Log.e(TAG, "채팅방 전송 오류", e)
+            Log.e(TAG, "대화방 전송 오류", e)
         }
     }
     

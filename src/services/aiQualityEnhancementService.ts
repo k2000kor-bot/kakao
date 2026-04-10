@@ -3,6 +3,8 @@
  * 응답의 정확도, 관련성, 창의성을 평가하고 개선합니다.
  */
 
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 interface QualityMetrics {
     accuracy: number;      // 정확도 (0-1)
     relevance: number;     // 관련성 (0-1)
@@ -26,8 +28,8 @@ interface EnhancementRule {
     id: string;
     name: string;
     description: string;
-    condition: (text: string, context: any) => boolean;
-    enhancement: (text: string, context: any) => string;
+    condition: (text: string, context?: Record<string, unknown>) => boolean;
+    enhancement: (text: string, context?: Record<string, unknown>) => string;
     priority: number;
     category: 'grammar' | 'style' | 'content' | 'structure' | 'engagement';
 }
@@ -75,7 +77,7 @@ export class AIQualityEnhancementService {
                 id: 'professional-tone',
                 name: '전문적 어조 적용',
                 description: '비즈니스 및 전문적 맥락에서 적절한 어조를 사용합니다',
-                condition: (text: string, context: any) => context?.professional && !this.hasProfessionalTone(text),
+                condition: (text: string, context?: Record<string, unknown>) => (context as { professional?: boolean })?.professional === true && !this.hasProfessionalTone(text),
                 enhancement: (text: string) => this.applyProfessionalTone(text),
                 priority: 8,
                 category: 'style'
@@ -85,7 +87,7 @@ export class AIQualityEnhancementService {
                 name: '구체적 예시 추가',
                 description: '추상적인 설명에 구체적인 예시를 추가합니다',
                 condition: (text: string) => this.needsExamples(text),
-                enhancement: (text: string, context: any) => this.addRelevantExamples(text, context),
+                enhancement: (text: string, context?: Record<string, unknown>) => this.addRelevantExamples(text, context ?? {}),
                 priority: 7,
                 category: 'content'
             },
@@ -120,8 +122,8 @@ export class AIQualityEnhancementService {
                 id: 'personalization',
                 name: '개인화 적용',
                 description: '사용자의 선호도와 맥락에 맞게 응답을 조정합니다',
-                condition: (text: string, context: any) => context?.user && this.canPersonalize(text, context),
-                enhancement: (text: string, context: any) => this.personalizeResponse(text, context),
+                condition: (text: string, context?: Record<string, unknown>) => (context as { user?: unknown })?.user !== undefined && this.canPersonalize(text, context ?? {}),
+                enhancement: (text: string, context?: Record<string, unknown>) => this.personalizeResponse(text, context ?? {}),
                 priority: 7,
                 category: 'content'
             }
@@ -134,7 +136,7 @@ export class AIQualityEnhancementService {
     public analyzeResponseQuality(
         response: string,
         query: string,
-        context?: any
+        context?: Record<string, unknown>
     ): ResponseAnalysis {
         const metrics = this.calculateQualityMetrics(response, query, context);
         const analysis = this.generateQualityAnalysis(response, metrics, context);
@@ -155,7 +157,7 @@ export class AIQualityEnhancementService {
     private calculateQualityMetrics(
         response: string,
         query: string,
-        context?: any
+        context?: Record<string, unknown>
     ): QualityMetrics {
         const accuracy = this.measureAccuracy(response, query, context);
         const relevance = this.measureRelevance(response, query);
@@ -181,7 +183,7 @@ export class AIQualityEnhancementService {
     /**
      * 정확도 측정
      */
-    private measureAccuracy(response: string, query: string, context?: any): number {
+    private measureAccuracy(response: string, query: string, context?: Record<string, unknown>): number {
         let score = 0.7; // 기본 점수
 
         // 키워드 매칭
@@ -312,7 +314,7 @@ export class AIQualityEnhancementService {
     public enhanceResponse(
         response: string,
         query: string,
-        context?: any
+        context?: Record<string, unknown>
     ): {
         enhancedResponse: string;
         appliedRules: string[];
@@ -444,7 +446,7 @@ export class AIQualityEnhancementService {
             /개념|이론|방법|전략/.test(text);
     }
 
-    private addRelevantExamples(text: string, context: any): string {
+    private addRelevantExamples(text: string, _context: Record<string, unknown>): string {
         // 맥락에 따른 예시 추가 로직
         if (text.includes('부동산')) {
             return text + '\n\n예를 들어, 강남지역의 재개발 사업의 경우...';
@@ -453,28 +455,28 @@ export class AIQualityEnhancementService {
     }
 
     private hasStructuralIssues(text: string): boolean {
-        const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
         return sentences.length > 5 &&
             !text.includes('\n') &&
             !/첫째|둘째|셋째|먼저|다음으로|마지막으로/.test(text);
     }
 
     private improveTextStructure(text: string): string {
-        const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
         if (sentences.length <= 3) return text;
 
-        let structured = sentences[0] + '.\n\n';
+        let structured = coerceTrimmedString(sentences[0], '') + '.\n\n';
 
         for (let i = 1; i < sentences.length - 1; i++) {
             if (i === 1) structured += '먼저, ';
             else if (i === sentences.length - 2) structured += '마지막으로, ';
             else structured += '또한, ';
 
-            structured += sentences[i].trim() + '.\n\n';
+            structured += coerceTrimmedString(sentences[i], '') + '.\n\n';
         }
 
         if (sentences.length > 1) {
-            structured += sentences[sentences.length - 1].trim() + '.';
+            structured += coerceTrimmedString(sentences[sentences.length - 1], '') + '.';
         }
 
         return structured;
@@ -499,16 +501,16 @@ export class AIQualityEnhancementService {
     }
 
     // 기타 유틸리티 메서드들...
-    private hasFactualConsistency(text: string): boolean { return true; }
-    private isContextAppropriate(text: string, context: any): boolean { return true; }
-    private measureIntentMatch(query: string, response: string): number { return 0.8; }
+    private hasFactualConsistency(_text: string): boolean { return true; }
+    private isContextAppropriate(_text: string, _context: Record<string, unknown>): boolean { return true; }
+    private measureIntentMatch(_query: string, _response: string): number { return 0.8; }
     private hasCreativeExpressions(text: string): boolean { return /비유|마치|것처럼/.test(text); }
     private hasMultiplePerspectives(text: string): boolean { return /반면|한편|다른 관점/.test(text); }
     private hasCreativeExamples(text: string): boolean { return /상상해보세요|생각해보면/.test(text); }
-    private identifyQueryAspects(query: string): string[] { return []; }
-    private identifyAddressedAspects(response: string, aspects: string[]): string[] { return aspects; }
-    private evaluateResponseLength(response: string, query: string): number { return 0.8; }
-    private analyzeSentenceComplexity(text: string): number { return 0.6; }
+    private identifyQueryAspects(_query: string): string[] { return []; }
+    private identifyAddressedAspects(_response: string, aspects: string[]): string[] { return aspects; }
+    private evaluateResponseLength(_response: string, _query: string): number { return 0.8; }
+    private analyzeSentenceComplexity(_text: string): number { return 0.6; }
     private explainsTechnicalTerms(text: string): boolean { return /즉|다시 말해|\(.*\)/.test(text); }
     private hasLogicalFlow(text: string): boolean { return /따라서|그러므로|결론적으로/.test(text); }
     private hasInteractiveElements(text: string): boolean { return text.includes('?'); }
@@ -517,12 +519,15 @@ export class AIQualityEnhancementService {
     private hasProfessionalTone(text: string): boolean { return /다고 할 수 있습니다|것으로 판단됩니다/.test(text); }
     private needsFactVerification(text: string): boolean { return /통계|연구|조사/.test(text) && !/출처|자료/.test(text); }
     private addFactualSupport(text: string): string { return text + '\n\n* 관련 통계나 연구 자료는 공신력 있는 기관의 데이터를 참고하시기 바랍니다.'; }
-    private canPersonalize(text: string, context: any): boolean { return context?.user?.preferences; }
-    private personalizeResponse(text: string, context: any): string { return text; }
-    private isLowAccuracy(text: string): boolean { return false; }
-    private isLowRelevance(text: string): boolean { return false; }
-    private isLowClarity(text: string): boolean { return false; }
-    private updateEnhancementRules(data: LearningData): void { }
+    private canPersonalize(_text: string, context: Record<string, unknown>): boolean {
+        const u = context?.user as { preferences?: unknown } | undefined;
+        return u?.preferences !== undefined;
+    }
+    private personalizeResponse(text: string, _context: Record<string, unknown>): string { return text; }
+    private isLowAccuracy(_text: string): boolean { return false; }
+    private isLowRelevance(_text: string): boolean { return false; }
+    private isLowClarity(_text: string): boolean { return false; }
+    private updateEnhancementRules(_data: LearningData): void { }
     private loadLearningHistory(): void { }
     private saveLearningHistory(): void { }
 
@@ -532,7 +537,7 @@ export class AIQualityEnhancementService {
     private generateQualityAnalysis(
         response: string,
         metrics: QualityMetrics,
-        context?: any
+        _context?: Record<string, unknown>
     ): {
         strengths: string[];
         weaknesses: string[];

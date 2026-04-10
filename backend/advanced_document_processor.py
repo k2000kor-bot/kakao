@@ -7,6 +7,7 @@
 - 세부 내용 보존
 - 처리 속도 최적화
 """
+import os
 import re
 import json
 import sqlite3
@@ -1085,4 +1086,10 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8005)
+
+    _p = int(
+        os.environ.get(
+            "ADVANCED_DOCUMENT_PROCESSOR_PORT", os.environ.get("PORT", "8005")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p)

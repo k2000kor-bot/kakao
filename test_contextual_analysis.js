@@ -1,6 +1,6 @@
 // 문맥 분석 기능 테스트
 const testContextualAnalysis = async () => {
-  const testMessage = `삼성물산의 개포우성7차 재개발 프로젝트에서 시공사 홍보 활동이 논란이 되고 있습니다. 
+  const testMessage = `삼성물산의 샘플 프로젝트 재개발 프로젝트에서 시공사 홍보 활동이 논란이 되고 있습니다. 
   조합원들이 불법 홍보에 대한 신고를 요구하고 있으며, GS건설과 비교하여 삼성물산의 홍보 수위가 낮다는 의견도 있습니다. 
   이 문제를 분석해주고 카드뉴스 형식으로 작성해줘.`;
 
@@ -27,7 +27,7 @@ const testContextualAnalysis = async () => {
     console.log('🧪 문맥 분석 테스트 시작...');
     console.log('📝 테스트 메시지:', testMessage);
     
-    const response = await fetch('http://localhost:8003/api/v7/contextual-analysis', {
+    const response = await fetch('http://localhost:5002/api/v7/contextual-analysis', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

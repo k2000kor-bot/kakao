@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -20,8 +22,10 @@ async def health_check():
 
 @app.get("/api/status")
 async def get_status():
-    return {"status": "online", "server": "strategy", "port": 8008}
+    p = int(os.environ.get("STRATEGY_SERVER_PORT", os.environ.get("PORT", "8008")))
+    return {"status": "online", "server": "strategy", "port": p}
 
 if __name__ == "__main__":
-    print("🚀 전략 서버 시작 (포트 8008)")
-    uvicorn.run(app, host="0.0.0.0", port=8008)
+    _p = int(os.environ.get("STRATEGY_SERVER_PORT", os.environ.get("PORT", "8008")))
+    print(f"🚀 전략 서버 시작 (포트 {_p})")
+    uvicorn.run(app, host="0.0.0.0", port=_p)

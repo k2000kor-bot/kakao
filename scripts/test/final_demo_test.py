@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-CORBU AI 대화형 품질 보증 시스템 - 최종 데모 테스트
+CORBU.AI 대화형 품질 보증 시스템 - 최종 데모 테스트
 """
 
 import requests
@@ -35,7 +35,7 @@ class QualityAssuranceDemo:
             return False
     
     def test_chat_api(self, message):
-        """채팅 API 테스트"""
+        """대화 API 테스트"""
         try:
             response = requests.post(
                 f"{self.base_url}/api/chat",
@@ -110,14 +110,14 @@ class QualityAssuranceDemo:
     
     def run_conversational_demo(self):
         """대화형 데모 실행"""
-        print("🚀 CORBU AI 대화형 품질 보증 시스템 데모 시작")
+        print("🚀 CORBU.AI 대화형 품질 보증 시스템 데모 시작")
         print("=" * 60)
         
         # 테스트 시나리오
         test_scenarios = [
             {
                 'name': '시스템 소개',
-                'message': 'CORBU AI 품질 보증 시스템에 대해 알려주세요',
+                'message': 'CORBU.AI 품질 보증 시스템에 대해 알려주세요',
                 'expected_type': 'quality_assurance'
             },
             {
@@ -247,7 +247,7 @@ class QualityAssuranceDemo:
     
     def run_full_demo(self):
         """전체 데모 실행"""
-        print("🎯 CORBU AI 대화형 품질 보증 시스템 - 최종 데모")
+        print("🎯 CORBU.AI 대화형 품질 보증 시스템 - 최종 데모")
         print("=" * 60)
         
         # 1. API 헬스 체크
@@ -265,7 +265,7 @@ class QualityAssuranceDemo:
         demo_success = self.generate_demo_report()
         
         if demo_success:
-            print("\n🎉 데모 성공! CORBU AI 대화형 품질 보증 시스템이 정상적으로 작동합니다.")
+            print("\n🎉 데모 성공! CORBU.AI 대화형 품질 보증 시스템이 정상적으로 작동합니다.")
             print("\n📱 사용 방법:")
             print("• 웹 브라우저: http://localhost:3001")
             print("• API 서버: http://localhost:5000")

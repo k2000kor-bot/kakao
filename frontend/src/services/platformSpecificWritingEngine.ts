@@ -1,7 +1,9 @@
 /**
- * CORBU AI 플랫폼별 맞춤 글쓰기 엔진
+ * CORBU.AI 플랫폼별 맞춤 글쓰기 엔진
  * 각 소셜 미디어 플랫폼의 특성과 알고리즘에 최적화된 글쓰기 시스템
  */
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface PlatformProfile {
     name: string;
@@ -38,7 +40,7 @@ export interface PlatformWritingRequest {
     audience: {
         primary: string[];
         secondary: string[];
-        demographics: any;
+        demographics: Record<string, unknown>;
     };
     brandVoice: {
         personality: string[];
@@ -98,11 +100,71 @@ export interface CrossPlatformStrategy {
     };
 }
 
+// Internal types for analysis results and method signatures
+interface PlatformRequirementsMap {
+    [platform: string]: {
+        contentRequirements: PlatformProfile['characteristics'];
+        algorithmFactors: PlatformProfile['algorithm'];
+        bestPractices: PlatformProfile['bestPractices'];
+        culturalConsiderations: PlatformProfile['culturalNorms'];
+    };
+}
+
+interface ContentAnalysisResult {
+    length: number;
+    tone: string;
+    structure: string;
+    keyMessages: string[];
+    emotionalElements: string[];
+    brandAlignment: number;
+    adaptationPotential: number;
+}
+
+interface SWOTResult {
+    strengths: string[];
+    weaknesses: string[];
+    opportunities: string[];
+    threats: string[];
+}
+
+interface ActionRecommendationsResult {
+    immediate: string[];
+    shortTerm: string[];
+    longTerm: string[];
+}
+
+interface PlatformPerformanceMetrics {
+    platform: string;
+    metrics: { reach: number; engagement: number; shares: number; comments: number; saves: number };
+    efficiency: number;
+    roi: number;
+}
+
+interface PlatformRecommendationsResult {
+    posting: string[];
+    engagement: string[];
+    optimization: string[];
+}
+
+interface TrendAnalysisResult {
+    hotTrends: Record<string, string[]>;
+    opportunities: Record<string, string[]>;
+    risks: Record<string, string[]>;
+}
+
+interface TrendOptimizedItem {
+    platform: string;
+    content: string;
+    trendsApplied: string[];
+    viralPotential: number;
+    timing: string;
+}
+
 class PlatformSpecificWritingEngine {
     private platformProfiles: Map<string, PlatformProfile> = new Map();
-    private adaptationRules: Map<string, any> = new Map();
-    private crossPlatformStrategies: Map<string, any> = new Map();
-    private performanceOptimizers: Map<string, any> = new Map();
+    private adaptationRules: Map<string, Record<string, unknown>> = new Map();
+    private crossPlatformStrategies: Map<string, Record<string, unknown>> = new Map();
+    private performanceOptimizers: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializePlatformProfiles();
@@ -132,9 +194,11 @@ class PlatformSpecificWritingEngine {
         };
     }> {
         try {
-            console.log('🎯 플랫폼별 글쓰기 최적화 시작...', {
+            errorLogger.info('🎯 플랫폼별 글쓰기 최적화 시작...', {
+                component: 'platformSpecificWritingEngine',
+                action: 'optimizeForPlatforms',
                 platforms: request.targetPlatform.length,
-                goal: request.writingGoal
+                goal: request.writingGoal,
             });
 
             // 1. 각 플랫폼별 프로필 분석
@@ -180,7 +244,11 @@ class PlatformSpecificWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ 플랫폼별 글쓰기 최적화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 플랫폼별 글쓰기 최적화 실패', err, {
+                component: 'platformSpecificWritingEngine',
+                action: 'optimizeForPlatforms',
+            });
             throw new Error('플랫폼별 글쓰기 최적화에 실패했습니다.');
         }
     }
@@ -223,7 +291,13 @@ class PlatformSpecificWritingEngine {
         };
     }> {
         try {
-            console.log('📊 실시간 플랫폼 성능 분석...', { platforms: platforms.length, timeframe });
+            errorLogger.info('📊 실시간 플랫폼 성능 분석...', {
+                component: 'platformSpecificWritingEngine',
+                action: 'analyzePlatformPerformance',
+                platforms: platforms.length,
+                timeframe,
+                contentId,
+            });
 
             // 플랫폼별 성능 데이터 수집
             const performanceData = await Promise.all(
@@ -253,7 +327,12 @@ class PlatformSpecificWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ 플랫폼 성능 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 플랫폼 성능 분석 실패', err, {
+                component: 'platformSpecificWritingEngine',
+                action: 'analyzePlatformPerformance',
+                contentId,
+            });
             throw new Error('플랫폼 성능 분석에 실패했습니다.');
         }
     }
@@ -264,7 +343,7 @@ class PlatformSpecificWritingEngine {
     public async optimizeWithTrends(
         baseContent: string,
         platforms: string[],
-        trendData: { [platform: string]: any }
+        trendData: Record<string, { hot?: string[]; opportunities?: string[]; risks?: string[] }>
     ): Promise<{
         trendOptimizedContent: {
             platform: string;
@@ -285,7 +364,11 @@ class PlatformSpecificWritingEngine {
         };
     }> {
         try {
-            console.log('🔥 트렌드 기반 콘텐츠 최적화...', { platforms: platforms.length });
+            errorLogger.info('🔥 트렌드 기반 콘텐츠 최적화...', {
+                component: 'platformSpecificWritingEngine',
+                action: 'optimizeWithTrends',
+                platforms: platforms.length,
+            });
 
             // 플랫폼별 트렌드 분석
             const trendAnalysis = await this.analyzePlatformTrends(trendData, platforms);
@@ -315,7 +398,11 @@ class PlatformSpecificWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ 트렌드 기반 최적화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 트렌드 기반 최적화 실패', err, {
+                component: 'platformSpecificWritingEngine',
+                action: 'optimizeWithTrends',
+            });
             throw new Error('트렌드 기반 최적화에 실패했습니다.');
         }
     }
@@ -355,7 +442,12 @@ class PlatformSpecificWritingEngine {
         };
     }> {
         try {
-            console.log('🧪 플랫폼 A/B 테스트 설계...', { platforms: platforms.length, duration });
+            errorLogger.info('🧪 플랫폼 A/B 테스트 설계...', {
+                component: 'platformSpecificWritingEngine',
+                action: 'setupPlatformABTests',
+                platforms: platforms.length,
+                duration,
+            });
 
             // 플랫폼별 테스트 구성 생성
             const testConfigurations = await Promise.all(
@@ -382,7 +474,11 @@ class PlatformSpecificWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ A/B 테스트 설계 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ A/B 테스트 설계 실패', err, {
+                component: 'platformSpecificWritingEngine',
+                action: 'setupPlatformABTests',
+            });
             throw new Error('A/B 테스트 설계에 실패했습니다.');
         }
     }
@@ -698,13 +794,13 @@ class PlatformSpecificWritingEngine {
     // 핵심 분석 메서드들
     // ============================
 
-    private async analyzePlatformRequirements(platforms: string[]): Promise<any> {
-        const requirements = {};
+    private async analyzePlatformRequirements(platforms: string[]): Promise<PlatformRequirementsMap> {
+        const requirements: PlatformRequirementsMap = {};
 
         for (const platform of platforms) {
             const profile = this.platformProfiles.get(platform);
             if (profile) {
-                (requirements as any)[platform] = {
+                requirements[platform] = {
                     contentRequirements: profile.characteristics,
                     algorithmFactors: profile.algorithm,
                     bestPractices: profile.bestPractices,
@@ -716,7 +812,7 @@ class PlatformSpecificWritingEngine {
         return requirements;
     }
 
-    private async analyzeBaseContent(content: string, brandVoice: any): Promise<any> {
+    private async analyzeBaseContent(content: string, brandVoice: PlatformWritingRequest['brandVoice']): Promise<ContentAnalysisResult> {
         return {
             length: content.length,
             tone: this.detectContentTone(content),
@@ -732,7 +828,7 @@ class PlatformSpecificWritingEngine {
         content: string,
         platform: string,
         request: PlatformWritingRequest,
-        contentAnalysis: any
+        contentAnalysis: ContentAnalysisResult
     ): Promise<PlatformAdaptation> {
         const platformProfile = this.platformProfiles.get(platform);
         if (!platformProfile) {
@@ -810,7 +906,7 @@ class PlatformSpecificWritingEngine {
     private async developCrossPlatformStrategy(
         request: PlatformWritingRequest,
         adaptations: PlatformAdaptation[],
-        platformAnalysis: any
+        _platformAnalysis: PlatformRequirementsMap
     ): Promise<CrossPlatformStrategy> {
         // 마스터 메시지 추출
         const masterMessage = await this.extractMasterMessage(request.content, adaptations);
@@ -833,7 +929,7 @@ class PlatformSpecificWritingEngine {
         };
     }
 
-    private async performSWOTAnalysis(adaptations: PlatformAdaptation[], request: PlatformWritingRequest): Promise<any> {
+    private async performSWOTAnalysis(adaptations: PlatformAdaptation[], _request: PlatformWritingRequest): Promise<SWOTResult> {
         const strengths = [];
         const weaknesses = [];
         const opportunities = [];
@@ -860,7 +956,7 @@ class PlatformSpecificWritingEngine {
         }
 
         // 기회 분석
-        const platformProfiles = adaptations.map(a => this.platformProfiles.get(a.platform));
+        const _platformProfiles = adaptations.map(a => this.platformProfiles.get(a.platform));
         opportunities.push('다중 플랫폼 시너지 효과');
         opportunities.push('크로스 프로모션 기회');
 
@@ -874,10 +970,10 @@ class PlatformSpecificWritingEngine {
     }
 
     private async generateActionRecommendations(
-        strategy: CrossPlatformStrategy,
-        adaptations: PlatformAdaptation[],
-        insights: any
-    ): Promise<any> {
+        _strategy: CrossPlatformStrategy,
+        _adaptations: PlatformAdaptation[],
+        _insights: SWOTResult
+    ): Promise<ActionRecommendationsResult> {
         const immediate = [];
         const shortTerm = [];
         const longTerm = [];
@@ -901,7 +997,7 @@ class PlatformSpecificWritingEngine {
     // 콘텐츠 적응 메서드들
     // ============================
 
-    private async adaptContentLength(content: string, targetLength: any, analysis: any): Promise<string> {
+    private async adaptContentLength(content: string, targetLength: { min: number; max: number; optimal: number }, analysis: ContentAnalysisResult): Promise<string> {
         const currentLength = content.length;
         const { min, max, optimal } = targetLength;
 
@@ -918,9 +1014,10 @@ class PlatformSpecificWritingEngine {
         }
     }
 
-    private async expandContent(content: string, targetLength: number, analysis: any): Promise<string> {
+    private async expandContent(content: string, targetLength: number, analysis: ContentAnalysisResult): Promise<string> {
         let expanded = content;
-        const expansionMethods = this.adaptationRules.get('length_adjustment')?.expand?.methods || [];
+        const lengthRules = this.adaptationRules.get('length_adjustment') as { expand?: { methods?: string[] } } | undefined;
+        const expansionMethods = lengthRules?.expand?.methods ?? [];
 
         for (const method of expansionMethods) {
             if (expanded.length >= targetLength) break;
@@ -944,9 +1041,10 @@ class PlatformSpecificWritingEngine {
         return expanded;
     }
 
-    private async condenseContent(content: string, targetLength: number, analysis: any): Promise<string> {
+    private async condenseContent(content: string, targetLength: number, analysis: ContentAnalysisResult): Promise<string> {
         let condensed = content;
-        const condenseMethods = this.adaptationRules.get('length_adjustment')?.condense?.methods || [];
+        const lengthRulesCondense = this.adaptationRules.get('length_adjustment') as { condense?: { methods?: string[] } } | undefined;
+        const condenseMethods = lengthRulesCondense?.condense?.methods ?? [];
 
         for (const method of condenseMethods) {
             if (condensed.length <= targetLength) break;
@@ -970,7 +1068,7 @@ class PlatformSpecificWritingEngine {
         return condensed;
     }
 
-    private async adaptContentTone(content: string, platformTones: string[], brandVoice: any): Promise<string> {
+    private async adaptContentTone(content: string, platformTones: string[], brandVoice: PlatformWritingRequest['brandVoice']): Promise<string> {
         const currentTone = this.detectContentTone(content);
         const targetTone = this.selectOptimalTone(platformTones, brandVoice);
 
@@ -1019,7 +1117,7 @@ class PlatformSpecificWritingEngine {
     }
 
     private extractKeyMessages(content: string): string[] {
-        return content.split(/[.!?]/).filter(s => s.trim().length > 20).slice(0, 3);
+        return content.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 20).slice(0, 3);
     }
 
     private detectEmotionalElements(content: string): string[] {
@@ -1030,7 +1128,7 @@ class PlatformSpecificWritingEngine {
         return emotions;
     }
 
-    private assessBrandAlignment(content: string, brandVoice: any): number {
+    private assessBrandAlignment(content: string, brandVoice: PlatformWritingRequest['brandVoice']): number {
         let score = 70; // 기본 점수
 
         // 브랜드 성격과 일치도 체크
@@ -1068,42 +1166,45 @@ class PlatformSpecificWritingEngine {
     }
 
     // 길이 조정 헬퍼 메서드들
-    private addContext(content: string, analysis: any): string {
+    private addContext(content: string, analysis: ContentAnalysisResult): string {
         return `배경: ${analysis.keyMessages[0] || '이 주제에 대해'} 더 자세히 설명하면, ${content}`;
     }
 
-    private includeExamples(content: string, analysis: any): string {
+    private includeExamples(content: string, _analysis: ContentAnalysisResult): string {
         return `${content} 예를 들어, 실제 사례를 보면 이러한 접근법이 효과적임을 확인할 수 있습니다.`;
     }
 
-    private addStorytelling(content: string, analysis: any): string {
+    private addStorytelling(content: string, _analysis: ContentAnalysisResult): string {
         return `한 가지 인상적인 이야기가 있습니다. ${content} 이는 많은 사람들에게 공감을 불러일으킬 것입니다.`;
     }
 
-    private includeStatistics(content: string, analysis: any): string {
+    private includeStatistics(content: string, _analysis: ContentAnalysisResult): string {
         return `${content} 관련 연구에 따르면, 이러한 접근법은 85%의 효과를 보인다고 합니다.`;
     }
 
-    private extractKeyPoints(content: string, analysis: any): string {
-        const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 10);
+    private extractKeyPoints(content: string, _analysis: ContentAnalysisResult): string {
+        const sentences = content.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 10);
         return sentences.slice(0, 2).join('. ') + '.';
     }
 
     private removeExamples(content: string): string {
-        return content.replace(/예를 들어[^.]*\./g, '').replace(/\s+/g, ' ').trim();
+        return coerceTrimmedString(
+          content.replace(/예를 들어[^.]*\./g, '').replace(/\s+/g, ' '),
+          ''
+        );
     }
 
     private convertToBullets(content: string): string {
-        const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 10);
-        return sentences.map((s, i) => `${i + 1}. ${s.trim()}`).join('\n');
+        const sentences = content.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 10);
+        return sentences.map((s, i) => `${i + 1}. ${coerceTrimmedString(s, '')}`).join('\n');
     }
 
-    private focusCoreMessage(content: string, analysis: any): string {
+    private focusCoreMessage(content: string, analysis: ContentAnalysisResult): string {
         return analysis.keyMessages[0] || content.split(/[.!?]/)[0] + '.';
     }
 
     // 톤 조정 메서드들
-    private selectOptimalTone(platformTones: string[], brandVoice: any): string {
+    private selectOptimalTone(platformTones: string[], brandVoice: PlatformWritingRequest['brandVoice']): string {
         // 브랜드 보이스와 플랫폼 톤의 교집합 찾기
         const brandTones = brandVoice.tone || [];
         const intersection = platformTones.filter(tone => brandTones.includes(tone));
@@ -1135,7 +1236,7 @@ class PlatformSpecificWritingEngine {
 
     // 구조 조정 메서드들
     private determineOptimalStructure(platform: string, platformProfile: PlatformProfile): string {
-        const features = (platformProfile as any).features || [];
+        const features = platformProfile.characteristics.features || [];
 
         if (features.includes('threads') && platform === 'twitter') {
             return 'thread_format';
@@ -1164,8 +1265,8 @@ class PlatformSpecificWritingEngine {
     }
 
     private convertToThread(content: string): string {
-        const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 10);
-        return sentences.map((s, i) => `${i + 1}/ ${s.trim()}`).join('\n\n');
+        const sentences = content.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 10);
+        return sentences.map((s, i) => `${i + 1}/ ${coerceTrimmedString(s, '')}`).join('\n\n');
     }
 
     private convertToStorySequence(content: string): string {
@@ -1194,7 +1295,7 @@ class PlatformSpecificWritingEngine {
         platformProfile: PlatformProfile,
         request: PlatformWritingRequest
     ): Promise<string[]> {
-        const { min, max, optimal } = platformProfile.bestPractices.hashtags;
+        const { optimal } = platformProfile.bestPractices.hashtags;
         const hashtags = [];
 
         // 콘텐츠 기반 해시태그
@@ -1213,7 +1314,7 @@ class PlatformSpecificWritingEngine {
         return hashtags.slice(0, optimal);
     }
 
-    private async generateMentions(content: string, platform: string, audience: any): Promise<string[]> {
+    private async generateMentions(content: string, platform: string, audience: PlatformWritingRequest['audience']): Promise<string[]> {
         const mentions = [];
 
         // 오디언스 기반 멘션
@@ -1257,7 +1358,7 @@ class PlatformSpecificWritingEngine {
         platform: string,
         platformProfile: PlatformProfile,
         request: PlatformWritingRequest
-    ): Promise<any> {
+    ): Promise<PlatformAdaptation['performance']> {
         let baseScore = 50;
 
         // 콘텐츠 품질 점수
@@ -1290,7 +1391,7 @@ class PlatformSpecificWritingEngine {
         let score = 50;
 
         // 길이 적절성
-        const { min, max, optimal } = platformProfile.characteristics.optimalLength;
+        const { min, max } = platformProfile.characteristics.optimalLength;
         if (content.length >= min && content.length <= max) score += 20;
 
         // 참여 유도 요소
@@ -1329,7 +1430,7 @@ class PlatformSpecificWritingEngine {
         return isOptimalTime ? 80 : 60;
     }
 
-    private assessAudienceMatch(content: string, audience: any, platformProfile: PlatformProfile): number {
+    private assessAudienceMatch(content: string, audience: PlatformWritingRequest['audience'], platformProfile: PlatformProfile): number {
         let score = 50;
 
         // 오디언스와 플랫폼 특성 매치
@@ -1348,8 +1449,8 @@ class PlatformSpecificWritingEngine {
         content: string,
         platform: string,
         platformProfile: PlatformProfile,
-        performance: any
-    ): Promise<any> {
+        performance: PlatformAdaptation['performance']
+    ): Promise<PlatformRecommendationsResult> {
         const posting = [];
         const engagement = [];
         const optimization = [];
@@ -1386,7 +1487,7 @@ class PlatformSpecificWritingEngine {
         return commonElements[0] || originalContent.split('.')[0] + '.';
     }
 
-    private async optimizeTimingSequence(adaptations: PlatformAdaptation[], request: PlatformWritingRequest): Promise<any> {
+    private async optimizeTimingSequence(adaptations: PlatformAdaptation[], _request: PlatformWritingRequest): Promise<CrossPlatformStrategy['timeline']> {
         // 성능 예상 순으로 정렬
         const sortedAdaptations = adaptations.sort((a, b) =>
             b.performance.expectedEngagement - a.performance.expectedEngagement
@@ -1405,7 +1506,7 @@ class PlatformSpecificWritingEngine {
         };
     }
 
-    private async identifyCrossPlatformSynergies(adaptations: PlatformAdaptation[], request: PlatformWritingRequest): Promise<any> {
+    private async identifyCrossPlatformSynergies(adaptations: PlatformAdaptation[], _request: PlatformWritingRequest): Promise<CrossPlatformStrategy['synergies']> {
         return {
             crossReferences: adaptations.map(a => `${a.platform}에서 다른 플랫폼 언급`),
             amplification: ['unified_campaign_hashtag', 'coordinated_posting_schedule'],
@@ -1413,7 +1514,7 @@ class PlatformSpecificWritingEngine {
         };
     }
 
-    private async developMonitoringPlan(adaptations: PlatformAdaptation[], request: PlatformWritingRequest): Promise<any> {
+    private async developMonitoringPlan(_adaptations: PlatformAdaptation[], _request: PlatformWritingRequest): Promise<CrossPlatformStrategy['monitoring']> {
         const kpis = ['reach', 'engagement_rate', 'shares', 'comments', 'brand_mentions'];
         const triggers = ['performance_threshold_alerts', 'negative_sentiment_alerts', 'viral_opportunity_alerts'];
         const adjustments = ['content_optimization', 'timing_adjustment', 'audience_retargeting'];
@@ -1441,7 +1542,7 @@ class PlatformSpecificWritingEngine {
     }
 
     // 성능 분석 관련 메서드들 (간략화)
-    private async collectPlatformMetrics(contentId: string, platform: string, timeframe: string): Promise<any> {
+    private async collectPlatformMetrics(contentId: string, platform: string, _timeframe: string): Promise<PlatformPerformanceMetrics> {
         // 실제로는 각 플랫폼 API 호출
         return {
             platform,
@@ -1457,7 +1558,12 @@ class PlatformSpecificWritingEngine {
         };
     }
 
-    private async performComparativeAnalysis(performanceData: any[]): Promise<any> {
+    private async performComparativeAnalysis(performanceData: PlatformPerformanceMetrics[]): Promise<{
+        bestPerforming: string;
+        leastPerforming: string;
+        surprises: string[];
+        patterns: string[];
+    }> {
         const sorted = performanceData.sort((a, b) => b.efficiency - a.efficiency);
 
         return {
@@ -1468,7 +1574,11 @@ class PlatformSpecificWritingEngine {
         };
     }
 
-    private async identifyOptimizationOpportunities(performanceData: any[], platforms: string[]): Promise<any[]> {
+    private async identifyOptimizationOpportunities(performanceData: PlatformPerformanceMetrics[], _platforms: string[]): Promise<{
+        platform: string;
+        opportunities: string[];
+        expectedImpact: number;
+    }[]> {
         return performanceData.map(data => ({
             platform: data.platform,
             opportunities: [
@@ -1479,7 +1589,10 @@ class PlatformSpecificWritingEngine {
         }));
     }
 
-    private async generatePerformanceActions(performanceData: any[], opportunities: any[]): Promise<any> {
+    private async generatePerformanceActions(
+        _performanceData: PlatformPerformanceMetrics[],
+        _opportunities: { platform: string; opportunities: string[]; expectedImpact: number }[]
+    ): Promise<{ immediate: string[]; tactical: string[]; strategic: string[] }> {
         return {
             immediate: ['boost_best_performing_content', 'engage_with_early_comments'],
             tactical: ['adjust_posting_times', 'optimize_hashtag_strategy'],
@@ -1488,7 +1601,10 @@ class PlatformSpecificWritingEngine {
     }
 
     // 트렌드 최적화 관련 메서드들 (간략화)
-    private async analyzePlatformTrends(trendData: any, platforms: string[]): Promise<any> {
+    private async analyzePlatformTrends(
+        trendData: Record<string, { hot?: string[]; opportunities?: string[]; risks?: string[] }>,
+        platforms: string[]
+    ): Promise<TrendAnalysisResult> {
         const analysis = {
             hotTrends: {} as { [key: string]: string[] },
             opportunities: {} as { [key: string]: string[] },
@@ -1507,9 +1623,9 @@ class PlatformSpecificWritingEngine {
     private async createTrendOptimizedContent(
         baseContent: string,
         platform: string,
-        platformTrends: any,
-        trendAnalysis: any
-    ): Promise<any> {
+        platformTrends: { hot?: string[]; opportunities?: string[]; risks?: string[] },
+        _trendAnalysis: TrendAnalysisResult
+    ): Promise<TrendOptimizedItem> {
         const trendsApplied = platformTrends.hot?.slice(0, 3) || ['#trending'];
         const optimizedContent = `${baseContent} ${trendsApplied.join(' ')}`;
 
@@ -1522,7 +1638,10 @@ class PlatformSpecificWritingEngine {
         };
     }
 
-    private async developTrendCoordination(trendOptimizedContent: any[], trendAnalysis: any): Promise<any> {
+    private async developTrendCoordination(
+        _trendOptimizedContent: TrendOptimizedItem[],
+        _trendAnalysis: TrendAnalysisResult
+    ): Promise<{ sequencing: string[]; crossPromotion: string[]; monitoring: string[] }> {
         return {
             sequencing: ['highest_viral_potential_first', 'cascade_to_other_platforms'],
             crossPromotion: ['unified_trend_hashtags', 'cross_platform_trend_mentions'],
@@ -1535,8 +1654,13 @@ class PlatformSpecificWritingEngine {
         baseContent: string,
         platform: string,
         testingGoals: string[],
-        duration: string
-    ): Promise<any> {
+        _duration: string
+    ): Promise<{
+        platform: string;
+        variants: { id: string; content: string; hypothesis: string; expectedOutcome: string }[];
+        audience: { segmentation: string; allocation: number[] };
+        metrics: string[];
+    }> {
         const variants = testingGoals.map((goal, index) => ({
             id: `${platform}_variant_${index + 1}`,
             content: `${baseContent} [${goal} optimized version]`,
@@ -1555,7 +1679,10 @@ class PlatformSpecificWritingEngine {
         };
     }
 
-    private async developTestingPlan(testConfigurations: any[], duration: string): Promise<any> {
+    private async developTestingPlan(
+        _testConfigurations: { platform: string; variants: unknown[]; audience: unknown; metrics: string[] }[],
+        _duration: string
+    ): Promise<{ timeline: string[]; checkpoints: string[]; successCriteria: string[] }> {
         return {
             timeline: ['setup_phase', 'testing_phase', 'analysis_phase'],
             checkpoints: ['24_hour_check', '48_hour_check', 'weekly_review'],
@@ -1563,7 +1690,11 @@ class PlatformSpecificWritingEngine {
         };
     }
 
-    private async buildAnalysisFramework(testingGoals: string[]): Promise<any> {
+    private async buildAnalysisFramework(_testingGoals: string[]): Promise<{
+        statisticalTests: string[];
+        confidenceLevel: number;
+        significanceThreshold: number;
+    }> {
         return {
             statisticalTests: ['t_test', 'chi_square', 'anova'],
             confidenceLevel: 95,

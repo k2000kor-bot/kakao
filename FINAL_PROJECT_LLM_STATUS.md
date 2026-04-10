@@ -152,17 +152,17 @@ python app.py
 **프로젝트 API**:
 ```bash
 # 프로젝트 생성
-curl -X POST http://localhost:5001/api/projects \
+curl -X POST http://localhost:5002/api/projects \
   -H "Content-Type: application/json" \
   -d '{"name": "테스트 프로젝트", "description": "테스트"}'
 
 # 프로젝트 목록
-curl http://localhost:5001/api/projects
+curl http://localhost:5002/api/projects
 ```
 
-**채팅 API (프로젝트 컨텍스트)**:
+**대화 API (프로젝트 컨텍스트)**:
 ```bash
-curl -X POST http://localhost:5001/api/chat \
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "안녕하세요",

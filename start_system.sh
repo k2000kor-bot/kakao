@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# 궁극의 AI 시스템 시작 스크립트
+# 궁극의 AI 시스템 시작 스크립트 (레거시 — 저장소에 ultimate_ai_system.py 없을 수 있음)
+# CORBU 통합 대화·API: npm run restart:backend → http://localhost:5002
 
 echo "🚀 궁극의 AI 시스템을 시작합니다..."
 

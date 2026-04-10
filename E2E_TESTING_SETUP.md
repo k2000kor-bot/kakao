@@ -64,7 +64,7 @@ e2e/
 ├── lazyLoading.spec.ts      # 지연 로딩 E2E 테스트
 ├── pwa.spec.ts              # PWA 기능 E2E 테스트
 ├── performance.spec.ts      # 성능 모니터링 E2E 테스트
-├── chat.spec.ts             # 채팅 기능 E2E 테스트
+├── chat.spec.ts             # 대화 기능 E2E 테스트
 ├── projectManagement.spec.ts # 프로젝트 관리 E2E 테스트
 └── README.md                # E2E 테스트 가이드
 ```
@@ -117,7 +117,7 @@ e2e/
 2. ✅ 기본 E2E 테스트 작성 완료
 3. ✅ 나머지 스킵된 테스트를 E2E로 이동 완료
 4. ✅ 실제 앱 기능에 맞는 E2E 테스트 작성 완료
-   - 채팅 기능 테스트 (5개)
+   - 대화 기능 테스트 (5개)
    - 프로젝트 관리 테스트 (4개)
    - 지연 로딩 테스트 (4개)
    - PWA 테스트 (5개)

@@ -3,6 +3,8 @@
  * 사용자의 질문 패턴을 학습하고 더 나은 응답 제공
  */
 
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 interface ConversationRecord {
   id: string;
   timestamp: string;
@@ -11,7 +13,7 @@ interface ConversationRecord {
   analysisType?: string;
   userSatisfaction?: number;
   processingTime: number;
-  context: any;
+  context: Record<string, unknown>;
 }
 
 interface UserPattern {
@@ -122,8 +124,7 @@ class ConversationMemoryService {
     
     return words
       .filter(word => word.length > 1)
-      .filter(word => !stopWords.includes(word))
-      .slice(0, 10); // 상위 10개만
+      .filter(word => !stopWords.includes(word));
   }
 
   /**
@@ -189,25 +190,23 @@ class ConversationMemoryService {
 
     return Array.from(questionCounts.entries())
       .map(([question, count]) => ({ question, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .sort((a, b) => b.count - a.count);
   }
 
   /**
    * 질문 정규화
    */
   private normalizeQuestion(question: string): string {
-    return question
-      .toLowerCase()
-      .replace(/[?!.]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
+    return coerceTrimmedString(
+      question.toLowerCase().replace(/[?!.]/g, '').replace(/\s+/g, ' '),
+      ''
+    );
   }
 
   /**
    * 성능 통계
    */
-  getPerformanceStats(): any {
+    getPerformanceStats(): Record<string, unknown> | null {
     const totalConversations = this.conversations.length;
     if (totalConversations === 0) return null;
 
@@ -283,7 +282,7 @@ class ConversationMemoryService {
   /**
    * 학습 데이터 내보내기
    */
-  exportLearningData(): any {
+  exportLearningData(): Record<string, unknown> {
     return {
       conversations: this.conversations,
       userPatterns: Object.fromEntries(this.userPatterns),
@@ -295,9 +294,9 @@ class ConversationMemoryService {
   /**
    * 학습 데이터 가져오기
    */
-  importLearningData(data: any): void {
-    if (data.conversations) {
-      this.conversations = data.conversations;
+  importLearningData(data: Record<string, unknown>): void {
+    if (data.conversations && Array.isArray(data.conversations)) {
+      this.conversations = data.conversations as typeof this.conversations;
     }
     if (data.userPatterns) {
       this.userPatterns = new Map(Object.entries(data.userPatterns));

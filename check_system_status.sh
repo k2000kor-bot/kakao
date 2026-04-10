@@ -277,7 +277,7 @@ import json, sys
 try:
     data = json.load(sys.stdin)
     print(f\"  🔔 WebSocket 연결: {data.get('connected_clients', 0)}명\")
-    print(f\"  💬 활성 채팅방: {data.get('active_rooms', 0)}개\")
+    print(f\"  💬 활성 대화방: {data.get('active_rooms', 0)}개\")
 except:
     pass
 " 2>/dev/null)

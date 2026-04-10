@@ -2,16 +2,21 @@
 
 # 실시간 카카오톡 대화 대응 시스템 시작 스크립트
 # 모든 AGI 기능과 실제 카카오톡 데이터를 통합한 완전한 시스템
+# 💡 일반 CORBU 통합 API: npm run restart:backend (5002). 본 스크립트는 main_kakao_system.py (기본 8004) 전용.
 
 echo "실시간 카카오톡 대화 대응 시스템 시작 중..."
 
-# 가상환경 활성화
-if [ -d "../venv" ]; then
-    echo "가상환경 활성화 중..."
-    source ../venv/bin/activate
+BACKEND_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$BACKEND_DIR/.." && pwd)"
+# shellcheck source=../scripts/lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
+if backend_venv_activate "$REPO_ROOT"; then
+    echo "가상환경 활성화 중... 완료"
 else
     echo "가상환경이 없습니다. 시스템 Python을 사용합니다."
 fi
+cd "$BACKEND_DIR" || exit 1
 
 # 필요한 패키지 설치 확인
 echo "필요한 패키지 확인 중..."

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getInsightTypeColor, getStatusColor } from '../../styles/themeColors';
 import {
     Box,
     Card,
@@ -7,8 +8,6 @@ import {
     Grid,
     Chip,
     LinearProgress,
-    IconButton,
-    Tooltip,
     Alert,
     AlertTitle,
     List,
@@ -28,8 +27,7 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Avatar,
-    Badge
+    Avatar
 } from '@mui/material';
 import {
     Psychology,
@@ -42,10 +40,7 @@ import {
     Assessment,
     Lightbulb,
     Warning,
-    Refresh,
     Settings,
-    Visibility,
-    Download,
     Share
 } from '@mui/icons-material';
 import advancedAIIntelligenceService, {
@@ -55,17 +50,7 @@ import advancedAIIntelligenceService, {
     AdaptiveResponse
 } from '../../services/advancedAIIntelligenceService';
 import integratedSystemAPI from '../../services/integratedSystemAPI';
-import { errorLogger } from '../../utils/errorLogger';
-
-// Helper function to safely convert unknown error types to Error objects
-const toError = (err: unknown): Error => {
-    if (err instanceof Error) {
-        return err as Error;
-    }
-    // Error 생성자를 명시적으로 사용
-    const ErrorConstructor = globalThis.Error;
-    return new ErrorConstructor(String(err)) as Error;
-};
+import { errorLogger, toError } from '../../utils/errorLogger';
 
 interface DashboardMetrics {
     totalInsights: number;
@@ -79,7 +64,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
     const [insights, setInsights] = useState<AIInsight[]>([]);
     const [patterns, setPatterns] = useState<LearningPattern[]>([]);
     const [models, setModels] = useState<PredictiveModel[]>([]);
-    const [responses, setResponsive] = useState<AdaptiveResponse[]>([]);
+    const [, setResponsive] = useState<AdaptiveResponse[]>([]);
     const [metrics, setMetrics] = useState<DashboardMetrics>({
         totalInsights: 0,
         activeModels: 0,
@@ -99,6 +84,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
         // 실시간 데이터 업데이트
         const interval = setInterval(loadDashboardData, 10000);
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- loadDashboardData is stable
     }, []);
 
     const loadDashboardData = () => {
@@ -181,25 +167,6 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
         }
     };
 
-    const getInsightColor = (type: string) => {
-        switch (type) {
-            case 'pattern': return '#2196F3';
-            case 'anomaly': return '#FF9800';
-            case 'prediction': return '#4CAF50';
-            case 'recommendation': return '#9C27B0';
-            default: return '#9E9E9E';
-        }
-    };
-
-    const getImpactColor = (impact: string) => {
-        switch (impact) {
-            case 'high': return '#F44336';
-            case 'medium': return '#FF9800';
-            case 'low': return '#4CAF50';
-            default: return '#9E9E9E';
-        }
-    };
-
     const getModelTypeIcon = (type: string) => {
         switch (type) {
             case 'classification': return <Assessment />;
@@ -213,7 +180,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom sx={{
-                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -223,7 +190,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
             </Typography>
 
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                CORBU AI 시스템의 고급 지능 기능을 모니터링하고 관리합니다.
+                CORBU.AI 시스템의 고급 지능 기능을 모니터링하고 관리합니다.
             </Typography>
 
             {/* 메트릭 카드 */}
@@ -327,9 +294,9 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
                             onClick={handleAdvancedAnalysis}
                             disabled={isAnalyzing}
                             sx={{
-                                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                                background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                                 '&:hover': {
-                                    background: 'linear-gradient(45deg, #5a6fd8 0%, #6a4190 100%)'
+                                    background: 'linear-gradient(45deg, var(--accent-hover) 0%, var(--accent-secondary-hover) 100%)'
                                 }
                             }}
                         >
@@ -373,7 +340,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
                                             sx={{ cursor: 'pointer' }}
                                         >
                                             <ListItemIcon>
-                                                <Avatar sx={{ bgcolor: getInsightColor(insight.type) }}>
+                                                <Avatar sx={{ bgcolor: getInsightTypeColor(insight.type) }}>
                                                     {getInsightIcon(insight.type)}
                                                 </Avatar>
                                             </ListItemIcon>
@@ -388,7 +355,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
                                                                 insight.impact === 'medium' ? '보통' : '낮음'}
                                                             size="small"
                                                             sx={{
-                                                                bgcolor: getImpactColor(insight.impact),
+                                                                bgcolor: getStatusColor(insight.impact),
                                                                 color: 'white',
                                                                 fontSize: '0.7rem'
                                                             }}
@@ -480,7 +447,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
                     <>
                         <DialogTitle>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Avatar sx={{ bgcolor: getInsightColor(selectedInsight.type) }}>
+                                <Avatar sx={{ bgcolor: getInsightTypeColor(selectedInsight.type) }}>
                                     {getInsightIcon(selectedInsight.type)}
                                 </Avatar>
                                 {selectedInsight.title}
@@ -499,7 +466,7 @@ const AdvancedAIIntelligenceDashboard: React.FC = () => {
                                 <Chip
                                     label={`영향도: ${selectedInsight.impact}`}
                                     sx={{
-                                        bgcolor: getImpactColor(selectedInsight.impact),
+                                        bgcolor: getStatusColor(selectedInsight.impact),
                                         color: 'white'
                                     }}
                                 />

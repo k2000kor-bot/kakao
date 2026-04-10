@@ -56,7 +56,7 @@ python app.py
 ### API 호출
 
 ```bash
-curl -X POST http://localhost:5001/api/chat \
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "안녕하세요",

@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional
+import os
 import asyncio
 import json
 import logging
@@ -315,12 +316,11 @@ async def perform_background_learning():
 
 if __name__ == "__main__":
     import uvicorn
-    
-    # 서버 실행
+    _p = int(os.environ.get("AGI_API_SERVER_PORT", os.environ.get("PORT", "8010")))
     uvicorn.run(
         "agi_api_server:app",
         host="0.0.0.0",
-        port=8010,
+        port=_p,
         reload=True,
         log_level="info"
     ) 

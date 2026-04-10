@@ -1,12 +1,23 @@
-import AdvancedMessageProcessor, { ProcessedMessage, MessageContext, Task } from './advancedMessageProcessor';
+import AdvancedMessageProcessor, { ProcessedMessage, MessageContext } from './advancedMessageProcessor';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface ResponseContext {
   userMessage: string;
   processedMessage: ProcessedMessage;
-  uploadedFiles: any[];
-  conversationHistory: any[];
-  projectContext: any;
-  userPreferences: any;
+  uploadedFiles: unknown[];
+  conversationHistory: unknown[];
+  projectContext: Record<string, unknown>;
+  userPreferences: Record<string, unknown>;
+}
+
+/** Result of analyzeContext() */
+export interface ContextAnalysis {
+  fileContext: Record<string, unknown>;
+  conversationContext: Record<string, unknown>;
+  projectContext: Record<string, unknown>;
+  userIntent: Record<string, unknown>;
+  temporalContext: Record<string, unknown>;
+  topicRelevance: Record<string, unknown>;
 }
 
 export interface MultiRequirementResponse {
@@ -32,7 +43,7 @@ export interface VisualizationSuggestion {
   type: 'chart' | 'table' | 'diagram' | 'timeline' | 'mindmap';
   title: string;
   description: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 class AdvancedResponseGenerator {
@@ -50,7 +61,7 @@ class AdvancedResponseGenerator {
 
   // 종합적인 응답 생성
   async generateComprehensiveResponse(context: ResponseContext): Promise<MultiRequirementResponse> {
-    const { userMessage, processedMessage, uploadedFiles, conversationHistory, projectContext } = context;
+    const { userMessage, processedMessage, uploadedFiles: _uploadedFiles, conversationHistory: _conversationHistory, projectContext: _projectContext } = context;
 
     // 1. 요구사항 추출 및 분류
     const requirements = this.extractRequirements(userMessage);
@@ -112,11 +123,13 @@ class AdvancedResponseGenerator {
     });
 
     // 중복 제거 및 정리
-    return Array.from(new Set(requirements)).map(req => req.trim()).filter(req => req.length > 0);
+    return Array.from(new Set(requirements))
+      .map((req) => coerceTrimmedString(req, ''))
+      .filter((req) => req.length > 0);
   }
 
   // 문맥 분석
-  private analyzeContext(context: ResponseContext): any {
+  private analyzeContext(context: ResponseContext): ContextAnalysis {
     const { userMessage, uploadedFiles, conversationHistory, projectContext } = context;
     
     const analysis = {
@@ -133,66 +146,66 @@ class AdvancedResponseGenerator {
       userIntent: this.analyzeUserIntent(userMessage),
       
       // 시간적 컨텍스트
-      temporalContext: this.analyzeTemporalContext(conversationHistory),
+      temporalContext: this.analyzeTemporalContext(conversationHistory as Record<string, unknown>[]),
       
       // 주제 연관성
-      topicRelevance: this.analyzeTopicRelevance(userMessage, conversationHistory)
+      topicRelevance: this.analyzeTopicRelevance(userMessage, conversationHistory as Record<string, unknown>[])
     };
 
     return analysis;
   }
 
   // 파일 컨텍스트 분석
-  private analyzeFileContext(files: any[]): any {
+  private analyzeFileContext(files: unknown[]): Record<string, unknown> {
     if (!files || files.length === 0) return {};
 
-    const fileTypes = files.map(file => file.type || 'unknown');
-    const fileTopics = files.flatMap(file => file.topics || []);
-    const fileKeywords = files.flatMap(file => file.keywords || []);
+    const fileTypes = files.map((file: unknown) => (file as Record<string, unknown>).type ?? 'unknown');
+    const fileTopics = (files.flatMap((file: unknown) => ((file as Record<string, unknown>).topics as unknown[]) ?? []) as string[]);
+    const fileKeywords = (files.flatMap((file: unknown) => ((file as Record<string, unknown>).keywords as unknown[]) ?? []) as string[]);
 
     return {
       fileCount: files.length,
       fileTypes: Array.from(new Set(fileTypes)),
       commonTopics: this.findCommonElements(fileTopics),
       commonKeywords: this.findCommonElements(fileKeywords),
-      hasImages: fileTypes.some(type => type.includes('image')),
-      hasDocuments: fileTypes.some(type => type.includes('document')),
-      hasData: fileTypes.some(type => type.includes('spreadsheet'))
+      hasImages: fileTypes.some((type: unknown) => String(type).includes('image')),
+      hasDocuments: fileTypes.some((type: unknown) => String(type).includes('document')),
+      hasData: fileTypes.some((type: unknown) => String(type).includes('spreadsheet'))
     };
   }
 
   // 대화 히스토리 분석
-  private analyzeConversationContext(history: any[]): any {
+  private analyzeConversationContext(history: unknown[]): Record<string, unknown> {
     if (!history || history.length === 0) return {};
 
     const recentMessages = history.slice(-5); // 최근 5개 메시지
-    const allTopics = recentMessages.flatMap(msg => msg.topics || []);
-    const allKeywords = recentMessages.flatMap(msg => msg.keywords || []);
+    const allTopics = (recentMessages.flatMap((msg: unknown) => ((msg as Record<string, unknown>).topics as unknown[]) ?? []) as string[]);
+    const allKeywords = (recentMessages.flatMap((msg: unknown) => ((msg as Record<string, unknown>).keywords as unknown[]) ?? []) as string[]);
 
     return {
       messageCount: history.length,
       recentTopics: this.findCommonElements(allTopics),
       recentKeywords: this.findCommonElements(allKeywords),
-      conversationFlow: this.analyzeConversationFlow(recentMessages),
-      userPreferences: this.extractUserPreferences(history)
+      conversationFlow: this.analyzeConversationFlow(recentMessages as Record<string, unknown>[]),
+      userPreferences: this.extractUserPreferences(history as Record<string, unknown>[])
     };
   }
 
   // 프로젝트 컨텍스트 분석
-  private analyzeProjectContext(projectContext: any): any {
+  private analyzeProjectContext(projectContext: Record<string, unknown>): Record<string, unknown> {
     if (!projectContext) return {};
 
     return {
-      projectType: projectContext.type || 'general',
-      projectStage: projectContext.stage || 'planning',
-      projectGoals: projectContext.goals || [],
-      projectConstraints: projectContext.constraints || [],
-      projectTimeline: projectContext.timeline || 'flexible'
+      projectType: projectContext.type ?? 'general',
+      projectStage: projectContext.stage ?? 'planning',
+      projectGoals: projectContext.goals ?? [],
+      projectConstraints: projectContext.constraints ?? [],
+      projectTimeline: projectContext.timeline ?? 'flexible'
     };
   }
 
   // 사용자 의도 분석
-  private analyzeUserIntent(message: string): any {
+  private analyzeUserIntent(message: string): Record<string, unknown> {
     const intentPatterns = {
       information: /알려주세요|알고싶습니다|무엇인가요|어떤가요/g,
       analysis: /분석해주세요|검토해주세요|평가해주세요/g,
@@ -219,11 +232,11 @@ class AdvancedResponseGenerator {
   }
 
   // 시간적 컨텍스트 분석
-  private analyzeTemporalContext(history: any[]): any {
+  private analyzeTemporalContext(history: Record<string, unknown>[]): Record<string, unknown> {
     if (!history || history.length === 0) return {};
 
     const recentTime = new Date();
-    const messageTimestamps = history.map(msg => new Date(msg.timestamp || Date.now()));
+    const messageTimestamps = history.map(msg => new Date((msg as Record<string, unknown>).timestamp as number || Date.now()));
     const timeGaps = messageTimestamps.map((timestamp, index) => {
       if (index === 0) return 0;
       return (timestamp.getTime() - messageTimestamps[index - 1].getTime()) / (1000 * 60); // 분 단위
@@ -238,14 +251,14 @@ class AdvancedResponseGenerator {
   }
 
   // 주제 연관성 분석
-  private analyzeTopicRelevance(message: string, history: any[]): any {
+  private analyzeTopicRelevance(message: string, history: Record<string, unknown>[]): Record<string, unknown> {
     const messageKeywords = message.match(/[가-힣a-zA-Z]+/g) || [];
-    const historyKeywords = history.flatMap(msg => msg.keywords || []);
+    const historyKeywords = history.flatMap(msg => ((msg as Record<string, unknown>).keywords as unknown[]) ?? []);
     
     const commonKeywords = messageKeywords.filter(keyword => 
-      historyKeywords.some(histKeyword => 
-        histKeyword.toLowerCase().includes(keyword.toLowerCase()) ||
-        keyword.toLowerCase().includes(histKeyword.toLowerCase())
+      historyKeywords.some((histKeyword: unknown) => 
+        String(histKeyword).toLowerCase().includes(keyword.toLowerCase()) ||
+        keyword.toLowerCase().includes(String(histKeyword).toLowerCase())
       )
     );
 
@@ -258,7 +271,7 @@ class AdvancedResponseGenerator {
   }
 
   // 상세 응답 생성
-  private async generateDetailedResponses(requirements: string[], contextAnalysis: any): Promise<RequirementResponse[]> {
+  private async generateDetailedResponses(requirements: string[], contextAnalysis: ContextAnalysis): Promise<RequirementResponse[]> {
     const responses: RequirementResponse[] = [];
 
     for (const requirement of requirements) {
@@ -274,7 +287,7 @@ class AdvancedResponseGenerator {
   }
 
   // 단일 요구사항 응답 생성
-  private async generateSingleRequirementResponse(requirement: string, contextAnalysis: any): Promise<RequirementResponse> {
+  private async generateSingleRequirementResponse(requirement: string, contextAnalysis: ContextAnalysis): Promise<RequirementResponse> {
     // 요구사항 타입 분석
     const requirementType = this.analyzeRequirementType(requirement);
     
@@ -308,15 +321,15 @@ class AdvancedResponseGenerator {
   }
 
   // 메인 응답 생성
-  private async generateMainResponse(processedMessage: ProcessedMessage, detailedResponses: RequirementResponse[], contextAnalysis: any): Promise<string> {
+  private async generateMainResponse(processedMessage: ProcessedMessage, detailedResponses: RequirementResponse[], contextAnalysis: ContextAnalysis): Promise<string> {
     const { context } = processedMessage;
-    
+    const ctx = context as unknown as Record<string, unknown>;
     let mainResponse = `안녕하세요! 귀하의 요청을 종합적으로 분석한 결과를 말씀드리겠습니다.\n\n`;
 
     // 요약 정보
     mainResponse += `📋 **요청 분석 결과**\n`;
-    mainResponse += `• 요청 유형: ${context.type}\n`;
-    mainResponse += `• 복잡도: ${context.complexity}\n`;
+    mainResponse += `• 요청 유형: ${ctx.type ?? 'unknown'}\n`;
+    mainResponse += `• 복잡도: ${ctx.complexity ?? 'unknown'}\n`;
     mainResponse += `• 식별된 요구사항: ${detailedResponses.length}개\n`;
     mainResponse += `• 예상 소요 시간: ${detailedResponses.reduce((sum, resp) => sum + resp.estimatedTime, 0)}분\n\n`;
 
@@ -338,7 +351,7 @@ class AdvancedResponseGenerator {
   }
 
   // 요약 생성
-  private generateSummary(detailedResponses: RequirementResponse[], contextAnalysis: any): string {
+  private generateSummary(detailedResponses: RequirementResponse[], _contextAnalysis: ContextAnalysis): string {
     const totalRequirements = detailedResponses.length;
     const totalTime = detailedResponses.reduce((sum, resp) => sum + resp.estimatedTime, 0);
     const highPriorityCount = detailedResponses.filter(resp => resp.priority === 'high' || resp.priority === 'urgent').length;
@@ -349,7 +362,7 @@ class AdvancedResponseGenerator {
   }
 
   // 다음 액션 제안
-  private suggestNextActions(detailedResponses: RequirementResponse[], contextAnalysis: any): string[] {
+  private suggestNextActions(detailedResponses: RequirementResponse[], _contextAnalysis: ContextAnalysis): string[] {
     const actions: string[] = [];
 
     // 우선순위별 액션
@@ -374,7 +387,7 @@ class AdvancedResponseGenerator {
   }
 
   // 관련 주제 추천
-  private suggestRelatedTopics(requirements: string[], contextAnalysis: any): string[] {
+  private suggestRelatedTopics(requirements: string[], contextAnalysis: ContextAnalysis): string[] {
     const topics: string[] = [];
     
     // 요구사항에서 추출한 키워드 기반
@@ -393,18 +406,18 @@ class AdvancedResponseGenerator {
     }
 
     // 중복 제거 및 정리
-    return Array.from(new Set(topics)).slice(0, 10);
+    return Array.from(new Set(topics));
   }
 
   // 시각화 제안
-  private suggestVisualizations(detailedResponses: RequirementResponse[], contextAnalysis: any): VisualizationSuggestion[] {
+  private suggestVisualizations(detailedResponses: RequirementResponse[], _contextAnalysis: ContextAnalysis): VisualizationSuggestion[] {
     const visualizations: VisualizationSuggestion[] = [];
 
     // 우선순위별 차트
     const priorityData = detailedResponses.reduce((acc, resp) => {
       acc[resp.priority] = (acc[resp.priority] || 0) + 1;
       return acc;
-    }, {} as any);
+    }, {} as Record<string, number>);
 
     visualizations.push({
       type: 'chart',
@@ -417,7 +430,7 @@ class AdvancedResponseGenerator {
     const complexityData = detailedResponses.reduce((acc, resp) => {
       acc[resp.complexity] = (acc[resp.complexity] || 0) + 1;
       return acc;
-    }, {} as any);
+    }, {} as Record<string, number>);
 
     visualizations.push({
       type: 'chart',
@@ -438,7 +451,7 @@ class AdvancedResponseGenerator {
       type: 'timeline',
       title: '요구사항 처리 타임라인',
       description: '각 요구사항의 예상 처리 시간을 타임라인으로 표시합니다.',
-      data: timelineData
+      data: timelineData as unknown as Record<string, unknown>
     });
 
     return visualizations;
@@ -456,10 +469,10 @@ class AdvancedResponseGenerator {
       .map(([item, _]) => item);
   }
 
-  private analyzeConversationFlow(messages: any[]): string {
+  private analyzeConversationFlow(messages: Record<string, unknown>[]): string {
     if (messages.length < 2) return '단일 메시지';
     
-    const topics = messages.map(msg => msg.topics || []);
+    const topics = messages.map(msg => ((msg as Record<string, unknown>).topics as unknown[]) ?? []);
     const topicChanges = topics.filter((_, index) => 
       index > 0 && JSON.stringify(topics[index]) !== JSON.stringify(topics[index - 1])
     ).length;
@@ -469,15 +482,18 @@ class AdvancedResponseGenerator {
     return '다양한 주제 탐색';
   }
 
-  private extractUserPreferences(history: any[]): any {
-    const preferences: any = {};
+  private extractUserPreferences(history: Record<string, unknown>[]): Record<string, unknown> {
+    const preferences: Record<string, unknown> = {};
     
     // 응답 길이 선호도
-    const responseLengths = history.map(msg => msg.response?.length || 0);
-    preferences.prefersDetailed = responseLengths.reduce((sum, len) => sum + len, 0) / responseLengths.length > 500;
+    const responseLengths = history.map(msg => {
+      const r = (msg as Record<string, unknown>).response;
+      return typeof r === 'string' ? r.length : 0;
+    });
+    preferences.prefersDetailed = responseLengths.length > 0 && responseLengths.reduce((sum, len) => sum + len, 0) / responseLengths.length > 500;
     
     // 기술적 수준 선호도
-    const technicalTerms = history.flatMap(msg => msg.technicalTerms || []);
+    const technicalTerms = history.flatMap(msg => ((msg as Record<string, unknown>).technicalTerms as unknown[]) ?? []);
     preferences.prefersTechnical = technicalTerms.length > 5;
     
     return preferences;
@@ -510,14 +526,16 @@ class AdvancedResponseGenerator {
     return 'low';
   }
 
-  private calculateTopicContinuity(history: any[]): number {
+  private calculateTopicContinuity(history: Record<string, unknown>[]): number {
     if (history.length < 2) return 1;
     
-    const topics = history.map(msg => msg.topics || []);
+    const topics = history.map(msg => ((msg as Record<string, unknown>).topics as unknown[]) ?? []);
     let continuityCount = 0;
     
     for (let i = 1; i < topics.length; i++) {
-      const commonTopics = topics[i].filter((topic: string) => topics[i-1].includes(topic));
+      const prevTopics = topics[i - 1] as string[];
+      const currTopics = topics[i] as string[];
+      const commonTopics = currTopics.filter((topic: unknown) => prevTopics.includes(topic as string));
       if (commonTopics.length > 0) continuityCount++;
     }
     
@@ -535,7 +553,7 @@ class AdvancedResponseGenerator {
     return 'general';
   }
 
-  private analyzeRequirementComplexity(requirement: string, contextAnalysis: any): 'basic' | 'intermediate' | 'advanced' | 'expert' {
+  private analyzeRequirementComplexity(requirement: string, _contextAnalysis: ContextAnalysis): 'basic' | 'intermediate' | 'advanced' | 'expert' {
     const expertTerms = /전문가|박사|최고급|최첨단|최신/gi;
     const advancedTerms = /고급|심화|전문|고도화/gi;
     const basicTerms = /기초|간단|쉬운|기본/gi;
@@ -546,7 +564,7 @@ class AdvancedResponseGenerator {
     return 'intermediate';
   }
 
-  private analyzeRequirementPriority(requirement: string, contextAnalysis: any): 'low' | 'medium' | 'high' | 'urgent' {
+  private analyzeRequirementPriority(requirement: string, _contextAnalysis: ContextAnalysis): 'low' | 'medium' | 'high' | 'urgent' {
     const urgentTerms = /긴급|시급|즉시|바로|당장|마감|deadline/gi;
     const highTerms = /중요|핵심|필수|반드시|꼭/gi;
     
@@ -577,7 +595,7 @@ class AdvancedResponseGenerator {
     return Math.ceil(baseTime);
   }
 
-  private analyzeRequirementDependencies(requirement: string, contextAnalysis: any): string[] {
+  private analyzeRequirementDependencies(requirement: string, _contextAnalysis: ContextAnalysis): string[] {
     const dependencies: string[] = [];
     
     if (/참고|참조|출처|문헌|자료/.test(requirement)) {
@@ -591,7 +609,7 @@ class AdvancedResponseGenerator {
     return dependencies;
   }
 
-  private analyzeRequirementAlternatives(requirement: string, contextAnalysis: any): string[] {
+  private analyzeRequirementAlternatives(requirement: string, _contextAnalysis: ContextAnalysis): string[] {
     const alternatives: string[] = [];
     
     if (/또는|혹은|대안|대체/.test(requirement)) {
@@ -605,7 +623,7 @@ class AdvancedResponseGenerator {
     return alternatives;
   }
 
-  private async generateRequirementResponse(requirement: string, type: string, complexity: string, contextAnalysis: any): Promise<string> {
+  private async generateRequirementResponse(requirement: string, type: string, complexity: string, _contextAnalysis: ContextAnalysis): Promise<string> {
     // 실제 구현에서는 AI 모델을 사용하여 응답 생성
     // 여기서는 템플릿 기반 응답 생성
     
@@ -654,7 +672,7 @@ class AdvancedResponseGenerator {
     return response;
   }
 
-  private generateOverallApproach(context: MessageContext, responses: RequirementResponse[], contextAnalysis: any): string {
+  private generateOverallApproach(context: MessageContext, responses: RequirementResponse[], _contextAnalysis: ContextAnalysis): string {
     let approach = '';
     
     // 우선순위별 접근

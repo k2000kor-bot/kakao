@@ -1,0 +1,12 @@
+# Netlify 배포 설정 (프론트엔드 빌드 결과물)
+# 환경 변수: 대시보드에서 REACT_APP_API_URL, REACT_APP_WS_URL 설정
+
+[build]
+  command = "npm run build"
+  publish = "build"
+
+# SPA: 모든 경로를 index.html로 폴백
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -4,13 +4,15 @@
 각 서버가 항상 동일한 포트에서 실행되도록 설정
 """
 
+import os
+
 # 고정 포트 설정
 FIXED_PORTS = {
-    # 메인 서버 - 기본 API 및 상태 관리
-    'main_server': {
-        'port': 8001,
-        'host': '0.0.0.0',
-        'description': '메인 API 서버 - 기본 기능 제공'
+    # 통합 main_server — 프론트·프록시 기본 5002 (BACKEND_PORT와 맞출 것)
+    "main_server": {
+        "port": int(os.environ.get("BACKEND_PORT", "5002")),
+        "host": "0.0.0.0",
+        "description": "통합 API 서버 (main_server.py)",
     },
     
     # 고급 API 서버 - 카카오톡 분석 전용

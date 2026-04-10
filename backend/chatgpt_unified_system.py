@@ -3,6 +3,7 @@
 ChatGPT 스타일 통합 대화형 시스템 - 간소화 버전
 """
 
+import os
 import uuid
 import logging
 from datetime import datetime
@@ -23,9 +24,17 @@ from construction_company_analyzer import ConstructionCompanyAnalyzer
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# 웹 스크래퍼 연동 (단독 web_scraper_service.py 기본 8013)
+_SCRAPER_PORT = int(
+    os.environ.get("WEB_SCRAPER_SERVICE_PORT", os.environ.get("PORT", "8013"))
+)
+WEB_SCRAPER_BASE_URL = (
+    os.environ.get("CORBU_WEB_SCRAPER_BASE", f"http://localhost:{_SCRAPER_PORT}")
+).rstrip("/")
+
 # FastAPI 앱 초기화
 app = FastAPI(
-    title="CORBU AI 통합 채팅 시스템",
+    title="CORBU.AI 통합 대화 시스템",
     description="ChatGPT 스타일의 통합 대화형 AI 시스템",
     version="1.0.0"
 )
@@ -91,7 +100,7 @@ async def generate_response(message: str) -> str:
     # 인사말
     if any(word in message_lower for word in ["안녕", "hello", "hi", "하이"]):
         logger.info("인사말 감지됨")
-        return "안녕하세요! CORBU AI 통합 채팅 시스템입니다. 무엇을 도와드릴까요?"
+        return "안녕하세요! CORBU.AI 통합 대화 시스템입니다. 무엇을 도와드릴까요?"
 
     # 웹 스크래핑 요청 감지
     scraping_keywords = [
@@ -151,7 +160,7 @@ async def handle_web_scraping_request(message: str) -> str:
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                'http://localhost:8013/scrape',
+                f"{WEB_SCRAPER_BASE_URL}/scrape",
                 json={
                     'query': search_query,
                     'search_type': 'negative_comments',
@@ -434,7 +443,7 @@ async def health_check():
 @app.post("/chat", response_model=ChatResponse)
 @error_handler
 async def chat_endpoint(request: ChatMessage):
-    """메인 채팅 엔드포인트"""
+    """메인 대화 엔드포인트"""
     try:
         # 입력 검증
         message = sanitize_text(request.message)
@@ -480,10 +489,10 @@ async def chat_endpoint(request: ChatMessage):
         )
 
     except Exception as e:
-        logger.error(f"채팅 처리 오류: {e}")
+        logger.error(f"대화 처리 오류: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"채팅 처리 중 오류가 발생했습니다: {str(e)}"
+            detail=f"대화 처리 중 오류가 발생했습니다: {str(e)}"
         )
 
 
@@ -528,10 +537,13 @@ async def get_session_messages(session_id: str, limit: int = 50):
 # 메인 실행
 if __name__ == "__main__":
     logger.info("🚀 ChatGPT 스타일 통합 대화형 시스템 시작 중...")
+    _cup = int(
+        os.environ.get("CHATGPT_UNIFIED_SYSTEM_PORT", os.environ.get("PORT", "8001"))
+    )
     uvicorn.run(
         "chatgpt_unified_system:app",
         host="0.0.0.0",
-        port=8001,
+        port=_cup,
         reload=False,
-        log_level="info"
+        log_level="info",
     )

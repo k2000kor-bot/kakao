@@ -1,0 +1,16 @@
+/** 워크플로우 자동화 — CORBU.AI Brainwave 테마 */
+.wfa-root { max-width: 1100px; margin: 0 auto; }
+.wfa-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: var(--spacing-lg); margin-bottom: var(--spacing-xl); }
+.wfa-title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); }
+.wfa-desc { font-size: var(--font-size-sm); color: var(--text-secondary); margin-top: var(--spacing-xs); }
+.wfa-tabs { border-bottom: var(--border-width) solid var(--border-color); }
+.wfa-tab { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md) var(--spacing-xs); border-bottom: 2px solid transparent; font-size: var(--font-size-sm); font-weight: 500; background: none; border-top: none; border-left: none; border-right: none; color: var(--text-secondary); cursor: pointer; transition: color var(--transition-base), border-color var(--transition-base); }
+.wfa-tab:hover { color: var(--text-primary); }
+.wfa-tab.active { border-bottom-color: var(--accent-info); color: var(--accent-info); }
+.wfa-card { background: var(--bg-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); border: var(--border-width) solid var(--border-color); }
+.wfa-row { padding: var(--spacing-lg); border-top: var(--border-width) solid var(--border-color); transition: background var(--transition-base); }
+.wfa-row:hover { background: var(--bg-hover); }
+.wfa-row:first-child { border-top: none; }
+.wfa-badge { padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-xs); font-weight: 500; border-radius: 9999px; }
+.wfa-icon-wrap { width: 48px; height: 48px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--accent-info-muted); color: var(--accent-info); }
+.wfa-tag { padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-xs); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: var(--radius-md); }

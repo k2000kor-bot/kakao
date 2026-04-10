@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ProcessedChatFile:
-    """처리된 채팅 파일 정보"""
+    """처리된 대화 파일 정보"""
     original_path: str
     processed_path: str
     chat_room_name: str
@@ -50,7 +50,7 @@ class MediaFile:
 
 
 class ChatFileProcessor:
-    """카카오톡 채팅 파일 통합 처리기"""
+    """카카오톡 대화 파일 통합 처리기"""
     
     def __init__(self, base_dir: str = "chat_rooms", db_path: str = "processed_kakao_chat.db"):
         self.base_dir = Path(base_dir)
@@ -63,7 +63,7 @@ class ChatFileProcessor:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # 채팅방 테이블
+        # 대화방 테이블
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS chat_rooms (
                 id TEXT PRIMARY KEY,
@@ -129,15 +129,15 @@ class ChatFileProcessor:
         conn.close()
     
     def process_new_chat_file(self, file_path: str) -> ProcessedChatFile:
-        """새로운 채팅 파일 처리"""
+        """새로운 대화 파일 처리"""
         try:
-            logger.info(f"새 채팅 파일 처리 시작: {file_path}")
+            logger.info(f"새 대화 파일 처리 시작: {file_path}")
             
             # 1. 파일 존재 확인
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다: {file_path}")
             
-            # 2. 채팅방 정보 추출
+            # 2. 대화방 정보 추출
             chat_room_info = self._extract_chat_room_info(file_path)
             
             # 3. 기존 폴더 구조 확인 및 생성
@@ -187,7 +187,7 @@ class ChatFileProcessor:
             )
     
     def _extract_chat_room_info(self, file_path: str) -> Dict[str, Any]:
-        """채팅 파일에서 채팅방 정보 추출"""
+        """대화 파일에서 대화방 정보 추출"""
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
@@ -195,7 +195,7 @@ class ChatFileProcessor:
         content = content.lstrip('\ufeff')
         lines = content.split('\n')
         
-        # 채팅방 이름 추출 (첫 번째 줄에서)
+        # 대화방 이름 추출 (첫 번째 줄에서)
         room_name = ""
         for line in lines[:10]:  # 처음 10줄에서 찾기
             if "대화" in line or "채팅" in line or "☆" in line:
@@ -431,9 +431,9 @@ class ChatFileProcessor:
             return 'pdf'
         elif suffix in ['.doc', '.docx']:
             return 'word'
-        elif suffix in ['.xls', '.xlsx']:
+        elif suffix in ['.xls', '.xlsx', '.csv']:
             return 'excel'
-        elif suffix in ['.txt']:
+        elif suffix in ['.txt', '.md']:
             return 'text'
         else:
             return 'other'
@@ -472,7 +472,7 @@ class ChatFileProcessor:
         cursor = conn.cursor()
         
         try:
-            # 채팅방 정보 저장
+            # 대화방 정보 저장
             cursor.execute('''
                 INSERT OR REPLACE INTO chat_rooms 
                 (id, name, processed_file_path, message_count, participant_count, 

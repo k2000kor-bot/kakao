@@ -55,25 +55,25 @@ class SimpleWebResearchEngine:
         # 시뮬레이션된 검색 결과
         sources = [
             {
-                'url': 'https://example.com/gaeposung-analysis',
-                'title': f'개포우성 재개발 프로젝트 분석 - {question[:20]}...',
-                'content': f'개포우성 재개발 프로젝트에 대한 종합적인 분석 결과입니다. {question}에 대한 상세한 정보를 제공합니다.',
+                'url': 'https://example.com/project-analysis',
+                'title': f'재개발·정비 프로젝트 분석(예시) - {question[:20]}...',
+                'content': f'프로젝트에 대한 종합 분석 결과(시뮬레이션)입니다. {question}에 대한 상세 정보를 제공합니다.',
                 'domain': 'example.com',
                 'credibility_score': 0.8,
                 'source_type': 'news'
             },
             {
-                'url': 'https://blog.naver.com/gaeposung-info',
-                'title': f'개포우성 재개발 최신 정보 - {question[:20]}...',
-                'content': f'개포우성 재개발 프로젝트의 최신 동향과 {question}에 대한 분석입니다.',
+                'url': 'https://blog.naver.com/sample-project-info',
+                'title': f'프로젝트 최신 정보(예시) - {question[:20]}...',
+                'content': f'프로젝트 최신 동향과 {question}에 대한 분석(시뮬레이션)입니다.',
                 'domain': 'blog.naver.com',
                 'credibility_score': 0.6,
                 'source_type': 'community'
             },
             {
-                'url': 'https://cafe.daum.net/gaeposung-community',
-                'title': f'개포우성 주민 커뮤니티 - {question[:20]}...',
-                'content': f'개포우성 재개발에 대한 주민들의 의견과 {question}에 대한 토론입니다.',
+                'url': 'https://cafe.daum.net/sample-community',
+                'title': f'이해관계자 커뮤니티(예시) - {question[:20]}...',
+                'content': f'프로젝트 관련 의견과 {question}에 대한 토론(시뮬레이션)입니다.',
                 'domain': 'cafe.daum.net',
                 'credibility_score': 0.5,
                 'source_type': 'community'
@@ -142,8 +142,8 @@ class SimpleWebResearchEngine:
         """핵심 키워드 추출"""
         keywords = []
         
-        if '개포우성' in question:
-            keywords.extend(['개포우성', '개포동', '강남구'])
+        if any(word in question for word in ['단지', '조합', '아파트', '재건축']):
+            keywords.extend(['재건축', '정비', '주거'])
         
         if any(word in question for word in ['재개발', '개발', '투자']):
             keywords.extend(['재개발', '도시개발', '투자'])
@@ -348,7 +348,7 @@ def set_project_context():
     """프로젝트 컨텍스트 설정"""
     try:
         data = request.get_json()
-        project_name = data.get('project_name', '개포우성')
+        project_name = data.get('project_name', '데모 프로젝트')
         description = data.get('description', '')
         settings = data.get('settings', {})
         
@@ -766,7 +766,7 @@ def internal_error(error):
     return jsonify({'error': '내부 서버 오류가 발생했습니다'}), 500
 
 if __name__ == '__main__':
-    print("개포우성 분석 API 서버를 시작합니다...")
+    print("레거시 Flask 분석 API 서버를 시작합니다... (GAEPO_ANALYSIS_PORT)")
     print(f"업로드 폴더: {UPLOAD_FOLDER}")
     print("API 엔드포인트:")
     print("  - GET  /api/health : 헬스 체크")
@@ -778,4 +778,7 @@ if __name__ == '__main__':
     print("  - POST /api/analysis/quick : 빠른 분석")
     print("  - POST /api/project/context : 프로젝트 컨텍스트 설정")
     
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    _port = int(
+        os.environ.get("GAEPO_ANALYSIS_PORT", os.environ.get("PORT", "5001"))
+    )
+    app.run(host="0.0.0.0", port=_port, debug=True)

@@ -58,6 +58,25 @@ def test_analyze_media_text_file(tmp_path):
 @pytest.mark.skipif(
     not APP_AVAILABLE, reason="ultimate_media_knowledge_system not available"
 )
+def test_analyze_media_csv_file(tmp_path):
+    """CSV 파일 분석 (선택 의존성 없이 _extract_document_text 동작 검증)"""
+    csv_file = tmp_path / "data.csv"
+    csv_file.write_text("name,value\ntest,100\nsample,200", encoding="utf-8")
+
+    with open(csv_file, "rb") as f:
+        files = {"file": (csv_file.name, f, "text/csv")}
+        data = {"project_id": "test_project"}
+        res = client.post("/api/v1/analyze-media", files=files, data=data)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["file_analysis"]["media_type"] == "spreadsheet"
+    assert "extracted_knowledge" in data
+
+
+@pytest.mark.skipif(
+    not APP_AVAILABLE, reason="ultimate_media_knowledge_system not available"
+)
 def test_knowledge_base_and_learning_history_flow():
     project_id = "test_project"
 
@@ -83,6 +102,25 @@ def test_persuasion_from_text():
     assert res.status_code == 200
     data = res.json()
     assert "persuasive_content" in data
+    assert "extracted_knowledge" in data
+
+
+@pytest.mark.skipif(
+    not APP_AVAILABLE, reason="ultimate_media_knowledge_system not available"
+)
+def test_analyze_media_csv_file(tmp_path):
+    """CSV 파일 분석 (선택 의존성 없이 동작)"""
+    sample = tmp_path / "sample.csv"
+    sample.write_text("이름,나이,직업\n김철수,30,개발자\n이영희,28,디자이너", encoding="utf-8")
+
+    with open(sample, "rb") as f:
+        files = {"file": (sample.name, f, "text/csv")}
+        data = {"project_id": "test_project"}
+        res = client.post("/api/v1/analyze-media", files=files, data=data)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["file_analysis"]["media_type"] == "spreadsheet"
     assert "extracted_knowledge" in data
 
 

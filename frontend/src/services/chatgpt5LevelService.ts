@@ -1,4 +1,12 @@
+import {
+  API_BASE_URL,
+  API_V10_GENERATE_RESPONSE_PATH,
+  FALLBACK_API_ORIGIN,
+  joinApiHealthCheckUrl,
+} from '../config/api';
 import { Message } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface ChatGPT5Request {
   input: string;
@@ -137,8 +145,8 @@ export interface ResponseMetadata {
   learningInsights: string[];
 }
 
-class ChatGPT5LevelService {
-  private baseUrl = 'http://localhost:8006/api/v10';
+export class ChatGPT5LevelService {
+  private readonly apiOrigin = API_BASE_URL || FALLBACK_API_ORIGIN;
   private modelVersion = 'gpt-5-phd-level-v1.0';
   private expertiseDomains = new Map<string, DomainExpertise>();
 
@@ -217,7 +225,11 @@ class ChatGPT5LevelService {
         metadata: this.generateMetadata(request, analysis, processingTime)
       };
     } catch (error) {
-      console.error('ChatGPT 5 레벨 서비스 오류:', error);
+      const err = toError(error);
+      errorLogger.error('ChatGPT 5 레벨 서비스 오류', err, {
+        component: 'chatgpt5LevelService',
+        action: 'processRequest',
+      });
       return this.createFallbackResponse(request);
     }
   }
@@ -254,7 +266,7 @@ class ChatGPT5LevelService {
   }
 
   private analyzeSentenceStructure(input: string): number {
-    const sentences = input.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = input.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
     const avgSentenceLength = sentences.reduce((sum, sentence) => 
       sum + sentence.split(/\s+/).length, 0) / sentences.length;
     
@@ -420,7 +432,7 @@ class ChatGPT5LevelService {
     contextAnalysis: ContextAnalysis
   ): Promise<string> {
     // 실제로는 고급 AI 모델 API 호출
-    const response = await fetch(`${this.baseUrl}/generate-response`, {
+    const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, API_V10_GENERATE_RESPONSE_PATH), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -443,7 +455,7 @@ class ChatGPT5LevelService {
   private generateFallbackResponse(
     request: ChatGPT5Request, 
     inputAnalysis: InputAnalysis, 
-    contextAnalysis: ContextAnalysis
+    _contextAnalysis: ContextAnalysis
   ): string {
     const complexity = inputAnalysis.complexity;
     const domain = inputAnalysis.domain;
@@ -518,7 +530,6 @@ class ChatGPT5LevelService {
     
     return Array.from(wordFreq.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
       .map(([word]) => word);
   }
 
@@ -544,7 +555,7 @@ class ChatGPT5LevelService {
       }
     }
     
-    return relationships.slice(0, 5);
+    return relationships;
   }
 
   private determineRelationship(concept1: string, concept2: string, text: string): string {
@@ -565,7 +576,7 @@ class ChatGPT5LevelService {
     return 'association';
   }
 
-  private analyzeImplications(input: string, response: string): string[] {
+  private analyzeImplications(_input: string, _response: string): string[] {
     const implications = [
       '이 접근법은 장기적 관점에서 지속가능성을 고려해야 합니다.',
       '실무 적용 시 조직의 문화와 구조를 고려해야 합니다.',
@@ -574,10 +585,10 @@ class ChatGPT5LevelService {
       '경제적 효율성과 사회적 가치의 균형이 중요합니다.'
     ];
     
-    return implications.slice(0, 3);
+    return implications;
   }
 
-  private findContradictions(input: string, response: string): string[] {
+  private findContradictions(_input: string, _response: string): string[] {
     return []; // 실제로는 더 정교한 논리 분석 필요
   }
 
@@ -606,7 +617,7 @@ class ChatGPT5LevelService {
     return Math.min(count / 3, 1);
   }
 
-  private extractPremises(input: string, response: string): string[] {
+  private extractPremises(_input: string, _response: string): string[] {
     return [
       '기존 연구 결과와 이론적 기반이 존재합니다.',
       '실무적 경험과 사례가 검증되었습니다.',
@@ -614,7 +625,7 @@ class ChatGPT5LevelService {
     ];
   }
 
-  private extractConclusions(input: string, response: string): string[] {
+  private extractConclusions(_input: string, _response: string): string[] {
     return [
       '체계적 접근이 필요합니다.',
       '지속적인 모니터링과 평가가 중요합니다.',
@@ -622,7 +633,7 @@ class ChatGPT5LevelService {
     ];
   }
 
-  private extractAssumptions(input: string, response: string): string[] {
+  private extractAssumptions(_input: string, _response: string): string[] {
     return [
       '현재 기술 수준이 유지된다고 가정합니다.',
       '자원과 시간이 충분히 확보된다고 가정합니다.',
@@ -630,11 +641,11 @@ class ChatGPT5LevelService {
     ];
   }
 
-  private identifyFallacies(input: string, response: string): string[] {
+  private identifyFallacies(_input: string, _response: string): string[] {
     return []; // 실제로는 논리적 오류 분석 필요
   }
 
-  private identifyStrengths(input: string, response: string): string[] {
+  private identifyStrengths(_input: string, _response: string): string[] {
     return [
       '체계적이고 논리적인 접근',
       '실무 적용 가능성',
@@ -642,7 +653,7 @@ class ChatGPT5LevelService {
     ];
   }
 
-  private identifyWeaknesses(input: string, response: string): string[] {
+  private identifyWeaknesses(_input: string, _response: string): string[] {
     return [
       '초기 비용과 시간 투자 필요',
       '학습 곡선 존재',
@@ -650,7 +661,7 @@ class ChatGPT5LevelService {
     ];
   }
 
-  private identifyLimitations(input: string, response: string): string[] {
+  private identifyLimitations(_input: string, _response: string): string[] {
     return [
       '특정 환경에서만 적용 가능',
       '지속적인 업데이트 필요',
@@ -658,7 +669,7 @@ class ChatGPT5LevelService {
     ];
   }
 
-  private suggestAlternatives(input: string, response: string): string[] {
+  private suggestAlternatives(_input: string, _response: string): string[] {
     return [
       '점진적 도입 방식',
       '하이브리드 접근법',
@@ -697,8 +708,8 @@ class ChatGPT5LevelService {
   }
 
   private async generateRecommendations(
-    request: ChatGPT5Request, 
-    analysis: AdvancedAnalysis
+    _request: ChatGPT5Request, 
+    _analysis: AdvancedAnalysis
   ): Promise<Recommendation[]> {
     const recommendations: Recommendation[] = [];
     
@@ -846,7 +857,7 @@ def advanced_analysis(data, features):
     };
   }
 
-  private createFallbackResponse(request: ChatGPT5Request): ChatGPT5Response {
+  private createFallbackResponse(_request: ChatGPT5Request): ChatGPT5Response {
     return {
       response: '죄송합니다. 현재 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
       analysis: {
@@ -900,7 +911,7 @@ interface DomainExpertise {
 // 고급 AI 분석 서비스
 export const advancedAIAnalysisService = {
   // 기술적 분석
-  async analyzeTechnicalArchitecture(projectData: any) {
+  async analyzeTechnicalArchitecture(_projectData: Record<string, unknown>) {
     return {
       type: 'technical_analysis',
       title: '기술적 아키텍처 분석',
@@ -939,7 +950,7 @@ export const advancedAIAnalysisService = {
   },
 
   // 보안 분석
-  async analyzeSecurityVulnerabilities(projectData: any) {
+  async analyzeSecurityVulnerabilities(_projectData: Record<string, unknown>) {
     return {
       type: 'security_analysis',
       title: '보안 취약점 분석',
@@ -974,7 +985,7 @@ export const advancedAIAnalysisService = {
   },
 
   // 성능 최적화
-  async analyzePerformanceOptimization(projectData: any) {
+  async analyzePerformanceOptimization(_projectData: Record<string, unknown>) {
     return {
       type: 'performance_analysis',
       title: '성능 최적화 분석',
@@ -1014,7 +1025,7 @@ export const advancedAIAnalysisService = {
   },
 
   // 머신러닝 모델 분석
-  async analyzeMachineLearningModels(projectData: any) {
+  async analyzeMachineLearningModels(_projectData: Record<string, unknown>) {
     return {
       type: 'ml_analysis',
       title: '머신러닝 모델 분석',
@@ -1055,14 +1066,14 @@ export const advancedAIAnalysisService = {
   },
 
   // 실시간 협업 분석
-  async analyzeCollaborationFeatures(projectData: any) {
+  async analyzeCollaborationFeatures(_projectData: Record<string, unknown>) {
     return {
       type: 'collaboration_analysis',
       title: '실시간 협업 기능 분석',
       content: `프로젝트의 협업 기능을 종합적으로 분석한 결과입니다:
 
 ## 👥 현재 협업 기능
-- **실시간 채팅**: WebSocket 기반 즉시 메시징
+- **실시간 대화**: WebSocket 기반 즉시 메시징
 - **파일 공유**: 프로젝트 내 파일 업로드 및 공유
 - **프로젝트 관리**: 팀 기반 프로젝트 구성
 - **권한 관리**: 역할 기반 접근 제어

@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
-import aiHealthMonitor from './aiHealthMonitor';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface QualityTestSuite {
@@ -21,8 +21,8 @@ export interface QualityTestCase {
     name: string;
     description: string;
     test_type: 'unit' | 'integration' | 'system' | 'acceptance' | 'regression' | 'stress' | 'functional' | 'performance' | 'security' | 'usability' | 'reliability' | 'compatibility';
-    input_data: any;
-    expected_output: any;
+    input_data: unknown;
+    expected_output: unknown;
     validation_rules: ValidationRule[];
     timeout_ms: number;
     retry_count: number;
@@ -47,7 +47,7 @@ export interface QualityTestResult {
     timestamp: Date;
     status: 'passed' | 'failed' | 'skipped' | 'error';
     execution_time_ms: number;
-    actual_output: any;
+    actual_output: unknown;
     validation_results: ValidationResult[];
     error_message?: string;
     performance_metrics: PerformanceMetrics;
@@ -58,8 +58,8 @@ export interface ValidationResult {
     rule_id: string;
     rule_name: string;
     status: 'passed' | 'failed' | 'warning';
-    actual_value: any;
-    expected_value: any;
+    actual_value: unknown;
+    expected_value: unknown;
     deviation: number;
     message: string;
 }
@@ -147,7 +147,10 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     constructor() {
         super();
         this.initializeTestSuites();
-        console.log('🔍 고급 AI 품질 보증 및 테스트 자동화 시스템이 초기화되었습니다.');
+        errorLogger.info('🔍 고급 AI 품질 보증 및 테스트 자동화 시스템이 초기화되었습니다', {
+            component: 'advancedAIQualityAssuranceSystem',
+            action: 'constructor',
+        });
     }
 
     // 시스템 시작
@@ -157,7 +160,10 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
         this.isRunning = true;
         this.startAutomatedTesting();
         this.startMetricsCollection();
-        console.log('🚀 고급 AI 품질 보증 및 테스트 자동화 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 고급 AI 품질 보증 및 테스트 자동화 시스템이 시작되었습니다', {
+            component: 'advancedAIQualityAssuranceSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
@@ -171,7 +177,10 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
             this.metricsInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ 고급 AI 품질 보증 및 테스트 자동화 시스템이 중지되었습니다.');
+        errorLogger.info('⏹️ 고급 AI 품질 보증 및 테스트 자동화 시스템이 중지되었습니다', {
+            component: 'advancedAIQualityAssuranceSystem',
+            action: 'stop',
+        });
     }
 
     // 테스트 스위트 실행
@@ -182,7 +191,13 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
                 throw new Error(`테스트 스위트를 찾을 수 없습니다: ${testSuiteId}`);
             }
 
-            console.log(`🧪 테스트 스위트 실행 시작: ${testSuite.name}`);
+            errorLogger.info('🧪 테스트 스위트 실행 시작', {
+                component: 'advancedAIQualityAssuranceSystem',
+                action: 'executeTestSuite',
+                testSuiteId,
+                testSuiteName: testSuite.name,
+                testCasesCount: testSuite.test_cases.length,
+            });
 
             const execution: AutomatedTestExecution = {
                 id: `execution-${Date.now()}`,
@@ -223,7 +238,15 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
                     execution.summary.completed_tests++;
 
                 } catch (error) {
-                    console.error(`테스트 케이스 실행 오류: ${testCase.name}`, error);
+                    const err = toError(error);
+                    errorLogger.error('테스트 케이스 실행 오류', err, {
+                        component: 'advancedAIQualityAssuranceSystem',
+                        action: 'executeTestSuite',
+                        testSuiteId,
+                        testCaseId: testCase.id,
+                        testCaseName: testCase.name,
+                        executionId: execution.id,
+                    });
                     execution.summary.failed_tests++;
                 }
 
@@ -255,12 +278,26 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
                 await this.createQualityAlert(execution, testSuite);
             }
 
-            console.log(`✅ 테스트 스위트 실행 완료: ${testSuite.name} (품질 점수: ${execution.summary.quality_score.toFixed(2)})`);
+            errorLogger.info('✅ 테스트 스위트 실행 완료', {
+                component: 'advancedAIQualityAssuranceSystem',
+                action: 'executeTestSuite',
+                testSuiteId,
+                testSuiteName: testSuite.name,
+                executionId: execution.id,
+                qualityScore: execution.summary.quality_score,
+                passedTests: execution.summary.passed_tests,
+                failedTests: execution.summary.failed_tests,
+            });
 
             return execution;
 
         } catch (error) {
-            console.error('❌ 테스트 스위트 실행 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 테스트 스위트 실행 오류', err, {
+                component: 'advancedAIQualityAssuranceSystem',
+                action: 'executeTestSuite',
+                testSuiteId,
+            });
             throw error;
         }
     }
@@ -270,7 +307,13 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
         const startTime = Date.now();
 
         try {
-            console.log(`🔬 테스트 케이스 실행: ${testCase.name}`);
+            errorLogger.info('🔬 테스트 케이스 실행', {
+                component: 'advancedAIQualityAssuranceSystem',
+                action: 'executeTestCase',
+                testCaseId: testCase.id,
+                testCaseName: testCase.name,
+                executionId,
+            });
 
             // 테스트 실행 (실제로는 AI 서비스 호출)
             const actualOutput = await this.runTest(testCase);
@@ -298,7 +341,15 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
 
             this.testResults.set(result.id, result);
 
-            console.log(`📊 테스트 케이스 완료: ${testCase.name} (${result.status})`);
+            errorLogger.info('📊 테스트 케이스 완료', {
+                component: 'advancedAIQualityAssuranceSystem',
+                action: 'executeTestCase',
+                testCaseId: testCase.id,
+                testCaseName: testCase.name,
+                executionId,
+                status: result.status,
+                qualityScore: result.quality_score,
+            });
 
             return result;
 
@@ -326,14 +377,21 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
             };
 
             this.testResults.set(result.id, result);
-            console.error(`❌ 테스트 케이스 오류: ${testCase.name}`, error);
+            const err = toError(error);
+            errorLogger.error('❌ 테스트 케이스 오류', err, {
+                component: 'advancedAIQualityAssuranceSystem',
+                action: 'executeTestCase',
+                testCaseId: testCase.id,
+                testCaseName: testCase.name,
+                executionId,
+            });
 
             return result;
         }
     }
 
     // 테스트 실행
-    private async runTest(testCase: QualityTestCase): Promise<any> {
+    private async runTest(testCase: QualityTestCase): Promise<unknown> {
         // 실제로는 AI 서비스에 요청을 보내고 응답을 받음
         // 여기서는 모의 데이터 반환
 
@@ -356,7 +414,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 기능 테스트 실행
-    private async runFunctionalTest(testCase: QualityTestCase): Promise<any> {
+    private async runFunctionalTest(_testCase: QualityTestCase): Promise<unknown> {
         // AI 서비스의 기능적 정확성 테스트
         return {
             response: "테스트 응답",
@@ -367,7 +425,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 성능 테스트 실행
-    private async runPerformanceTest(testCase: QualityTestCase): Promise<any> {
+    private async runPerformanceTest(_testCase: QualityTestCase): Promise<unknown> {
         // AI 서비스의 성능 테스트
         const delay = Math.random() * 1000 + 200; // 200-1200ms
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -380,7 +438,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 보안 테스트 실행
-    private async runSecurityTest(testCase: QualityTestCase): Promise<any> {
+    private async runSecurityTest(_testCase: QualityTestCase): Promise<unknown> {
         // AI 서비스의 보안 테스트
         return {
             vulnerability_score: Math.random() * 0.3,
@@ -391,7 +449,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 사용성 테스트 실행
-    private async runUsabilityTest(testCase: QualityTestCase): Promise<any> {
+    private async runUsabilityTest(_testCase: QualityTestCase): Promise<unknown> {
         // AI 서비스의 사용성 테스트
         return {
             user_satisfaction: 0.85 + Math.random() * 0.1,
@@ -401,7 +459,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 신뢰성 테스트 실행
-    private async runReliabilityTest(testCase: QualityTestCase): Promise<any> {
+    private async runReliabilityTest(_testCase: QualityTestCase): Promise<unknown> {
         // AI 서비스의 신뢰성 테스트
         return {
             uptime: 0.99 + Math.random() * 0.009,
@@ -411,7 +469,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 호환성 테스트 실행
-    private async runCompatibilityTest(testCase: QualityTestCase): Promise<any> {
+    private async runCompatibilityTest(_testCase: QualityTestCase): Promise<unknown> {
         // AI 서비스의 호환성 테스트
         return {
             browser_compatibility: 0.95,
@@ -421,7 +479,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 성능 메트릭 수집
-    private async collectPerformanceMetrics(testCase: QualityTestCase): Promise<PerformanceMetrics> {
+    private async collectPerformanceMetrics(_testCase: QualityTestCase): Promise<PerformanceMetrics> {
         // 실제로는 시스템 모니터링 도구에서 수집
         return {
             response_time_ms: 200 + Math.random() * 300,
@@ -434,7 +492,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 결과 검증
-    private async validateResults(testCase: QualityTestCase, actualOutput: any): Promise<ValidationResult[]> {
+    private async validateResults(testCase: QualityTestCase, actualOutput: unknown): Promise<ValidationResult[]> {
         const results: ValidationResult[] = [];
 
         for (const rule of testCase.validation_rules) {
@@ -446,62 +504,73 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 개별 규칙 검증
-    private async validateRule(rule: ValidationRule, actualOutput: any, expectedOutput: any): Promise<ValidationResult> {
+    private async validateRule(rule: ValidationRule, actualOutput: unknown, expectedOutput: unknown): Promise<ValidationResult> {
+        const actual = actualOutput as Record<string, unknown>;
+        const expected = expectedOutput as Record<string, unknown>;
         try {
-            let actualValue: any;
-            let expectedValue: any;
+            let actualValue: unknown;
+            let expectedValue: unknown;
             let status: 'passed' | 'failed' | 'warning' = 'passed';
             let deviation = 0;
             let message = '';
 
             switch (rule.rule_type) {
-                case 'accuracy':
-                    actualValue = actualOutput.accuracy || 0;
+                case 'accuracy': {
+                    const acc = Number(actual.accuracy) || 0;
+                    actualValue = acc;
                     expectedValue = rule.threshold;
-                    deviation = Math.abs(actualValue - expectedValue);
-                    status = actualValue >= expectedValue ? 'passed' : 'failed';
-                    message = `정확도: ${actualValue.toFixed(3)} (기준: ${expectedValue})`;
+                    deviation = Math.abs(acc - rule.threshold);
+                    status = acc >= rule.threshold ? 'passed' : 'failed';
+                    message = `정확도: ${acc.toFixed(3)} (기준: ${rule.threshold})`;
                     break;
+                }
 
-                case 'response_time':
-                    actualValue = actualOutput.response_time || 0;
+                case 'response_time': {
+                    const rt = Number(actual.response_time) || 0;
+                    actualValue = rt;
                     expectedValue = rule.threshold;
-                    deviation = actualValue - expectedValue;
-                    status = actualValue <= expectedValue ? 'passed' : 'failed';
-                    message = `응답 시간: ${actualValue}ms (기준: ${expectedValue}ms 이하)`;
+                    deviation = rt - rule.threshold;
+                    status = rt <= rule.threshold ? 'passed' : 'failed';
+                    message = `응답 시간: ${rt}ms (기준: ${rule.threshold}ms 이하)`;
                     break;
+                }
 
                 case 'format':
                     actualValue = typeof actualOutput;
                     expectedValue = 'object';
                     status = actualValue === expectedValue ? 'passed' : 'failed';
-                    message = `형식 검증: ${actualValue} (기준: ${expectedValue})`;
+                    message = `형식 검증: ${String(actualValue)} (기준: ${expectedValue})`;
                     break;
 
-                case 'content':
-                    actualValue = actualOutput.response || '';
-                    expectedValue = expectedOutput.response || '';
-                    const similarity = this.calculateSimilarity(actualValue, expectedValue);
+                case 'content': {
+                    actualValue = actual.response ?? '';
+                    expectedValue = expected.response ?? '';
+                    const similarity = this.calculateSimilarity(String(actualValue), String(expectedValue));
                     deviation = 1 - similarity;
                     status = similarity >= rule.threshold ? 'passed' : 'failed';
                     message = `내용 유사도: ${(similarity * 100).toFixed(1)}% (기준: ${(rule.threshold * 100).toFixed(1)}%)`;
                     break;
+                }
 
-                case 'security':
-                    actualValue = actualOutput.vulnerability_score || 0;
+                case 'security': {
+                    const vuln = Number(actual.vulnerability_score) || 0;
+                    actualValue = vuln;
                     expectedValue = rule.threshold;
-                    deviation = actualValue - expectedValue;
-                    status = actualValue <= expectedValue ? 'passed' : 'failed';
-                    message = `보안 취약점: ${actualValue.toFixed(3)} (기준: ${expectedValue} 이하)`;
+                    deviation = vuln - rule.threshold;
+                    status = vuln <= rule.threshold ? 'passed' : 'failed';
+                    message = `보안 취약점: ${vuln.toFixed(3)} (기준: ${rule.threshold} 이하)`;
                     break;
+                }
 
-                case 'compliance':
-                    actualValue = actualOutput.compliance_score || 0;
+                case 'compliance': {
+                    const comp = Number(actual.compliance_score) || 0;
+                    actualValue = comp;
                     expectedValue = rule.threshold;
-                    deviation = Math.abs(actualValue - expectedValue);
-                    status = actualValue >= expectedValue ? 'passed' : 'failed';
-                    message = `준수율: ${(actualValue * 100).toFixed(1)}% (기준: ${(expectedValue * 100).toFixed(1)}%)`;
+                    deviation = Math.abs(comp - rule.threshold);
+                    status = comp >= rule.threshold ? 'passed' : 'failed';
+                    message = `준수율: ${(comp * 100).toFixed(1)}% (기준: ${(rule.threshold * 100).toFixed(1)}%)`;
                     break;
+                }
 
                 default:
                     actualValue = actualOutput;
@@ -681,7 +750,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 품질 트렌드 생성
-    private async generateQualityTrends(testSuiteId: string): Promise<QualityTrend[]> {
+    private async generateQualityTrends(_testSuiteId: string): Promise<QualityTrend[]> {
         const trends: QualityTrend[] = [];
 
         // 최근 7일간의 트렌드 생성 (모의 데이터)
@@ -702,7 +771,7 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     }
 
     // 커버리지 계산
-    private calculateCoverage(execution: AutomatedTestExecution): number {
+    private calculateCoverage(_execution: AutomatedTestExecution): number {
         // 실제로는 코드 커버리지 도구에서 수집
         return 85 + Math.random() * 10; // 85-95%
     }
@@ -925,7 +994,13 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
                     try {
                         await this.executeTestSuite(suiteId);
                     } catch (error) {
-                        console.error(`자동 테스트 실행 오류: ${suite.name}`, error);
+                        const err = toError(error);
+                        errorLogger.error('자동 테스트 실행 오류', err, {
+                            component: 'advancedAIQualityAssuranceSystem',
+                            action: 'startAutomatedTesting',
+                            suiteId,
+                            suiteName: suite.name,
+                        });
                     }
                 }
             }
@@ -1011,7 +1086,14 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
     // 테스트 스위트 추가
     public addTestSuite(testSuite: QualityTestSuite): void {
         this.testSuites.set(testSuite.id, testSuite);
-        console.log(`📋 새로운 테스트 스위트 추가: ${testSuite.name}`);
+        errorLogger.info('📋 새로운 테스트 스위트 추가', {
+            component: 'advancedAIQualityAssuranceSystem',
+            action: 'addTestSuite',
+            testSuiteId: testSuite.id,
+            testSuiteName: testSuite.name,
+            category: testSuite.category,
+            priority: testSuite.priority,
+        });
     }
 
     // 테스트 스위트 업데이트
@@ -1019,7 +1101,12 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
         const suite = this.testSuites.get(suiteId);
         if (suite) {
             Object.assign(suite, updates);
-            console.log(`📝 테스트 스위트 업데이트: ${suite.name}`);
+            errorLogger.info('📝 테스트 스위트 업데이트', {
+                component: 'advancedAIQualityAssuranceSystem',
+                action: 'updateTestSuite',
+                suiteId,
+                suiteName: suite.name,
+            });
         }
     }
 
@@ -1028,7 +1115,12 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
         const suite = this.testSuites.get(suiteId);
         if (suite) {
             this.testSuites.delete(suiteId);
-            console.log(`🗑️ 테스트 스위트 삭제: ${suite.name}`);
+            errorLogger.info('🗑️ 테스트 스위트 삭제', {
+                component: 'advancedAIQualityAssuranceSystem',
+                action: 'removeTestSuite',
+                suiteId,
+                suiteName: suite.name,
+            });
         }
     }
 
@@ -1068,7 +1160,10 @@ class AdvancedAIQualityAssuranceSystem extends EventEmitter {
         this.qualityReports.clear();
         this.activeExecutions.clear();
         this.qualityMetrics = null;
-        console.log('🔌 고급 AI 품질 보증 및 테스트 자동화 시스템이 종료되었습니다.');
+        errorLogger.info('🔌 고급 AI 품질 보증 및 테스트 자동화 시스템이 종료되었습니다', {
+            component: 'advancedAIQualityAssuranceSystem',
+            action: 'shutdown',
+        });
     }
 }
 

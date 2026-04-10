@@ -1,6 +1,12 @@
 import { EventEmitter } from 'events';
+import {
+    AI_PROCESS_PATH,
+    API_AI_CAPABILITIES_PATH,
+    API_PSYCHOLOGY_EMOTIONS_PATH,
+    API_SECURITY_VALIDATE_PATH,
+} from '../config/api';
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
-import aiHealthMonitor from './aiHealthMonitor';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface APIDocumentation {
@@ -34,34 +40,34 @@ export interface APIParameter {
     type: 'string' | 'number' | 'boolean' | 'object' | 'array';
     required: boolean;
     description: string;
-    default_value?: any;
-    example?: any;
+    default_value?: unknown;
+    example?: unknown;
     validation_rules?: string[];
 }
 
 export interface APIRequestBody {
     content_type: string;
-    schema: any;
+    schema: unknown;
     required: boolean;
     description: string;
-    example?: any;
+    example?: unknown;
 }
 
 export interface APIResponse {
     status_code: number;
     description: string;
     content_type: string;
-    schema: any;
-    example?: any;
+    schema: unknown;
+    example?: unknown;
 }
 
 export interface APISchema {
     name: string;
     type: 'object' | 'array' | 'string' | 'number' | 'boolean';
-    properties?: Record<string, any>;
+    properties?: Record<string, unknown>;
     required?: string[];
     description: string;
-    example?: any;
+    example?: unknown;
 }
 
 export interface APIExample {
@@ -73,12 +79,12 @@ export interface APIExample {
         method: string;
         url: string;
         headers: Record<string, string>;
-        body?: any;
+        body?: unknown;
     };
     response: {
         status_code: number;
         headers: Record<string, string>;
-        body: any;
+        body: unknown;
     };
     language: 'javascript' | 'python' | 'curl' | 'typescript';
     tags: string[];
@@ -125,7 +131,10 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
     constructor() {
         super();
         this.initializeDocumentation();
-        console.log('📚 고급 AI 문서화 및 API 시스템이 초기화되었습니다.');
+        errorLogger.info('📚 고급 AI 문서화 및 API 시스템이 초기화되었습니다', {
+            component: 'advancedAIDocumentationAPISystem',
+            action: 'constructor',
+        });
     }
 
     // 시스템 시작
@@ -135,7 +144,10 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
         this.isRunning = true;
         this.startDocumentationUpdates();
         this.startMetricsCollection();
-        console.log('🚀 고급 AI 문서화 및 API 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 고급 AI 문서화 및 API 시스템이 시작되었습니다', {
+            component: 'advancedAIDocumentationAPISystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
@@ -149,13 +161,20 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
             this.metricsInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ 고급 AI 문서화 및 API 시스템이 중지되었습니다.');
+        errorLogger.info('⏹️ 고급 AI 문서화 및 API 시스템이 중지되었습니다', {
+            component: 'advancedAIDocumentationAPISystem',
+            action: 'stop',
+        });
     }
 
     // API 문서화 생성
     public async generateAPIDocumentation(serviceName: string): Promise<APIDocumentation> {
         try {
-            console.log(`📝 ${serviceName} API 문서화 생성 중...`);
+            errorLogger.info('📝 API 문서화 생성 중', {
+                component: 'advancedAIDocumentationAPISystem',
+                action: 'generateAPIDocumentation',
+                serviceName,
+            });
 
             const documentation: APIDocumentation = {
                 id: `api-doc-${serviceName}-${Date.now()}`,
@@ -175,11 +194,22 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
             // 문서화 품질 알림
             await this.checkDocumentationQuality(serviceName, documentation);
 
-            console.log(`✅ ${serviceName} API 문서화 생성 완료`);
+            errorLogger.info('✅ API 문서화 생성 완료', {
+                component: 'advancedAIDocumentationAPISystem',
+                action: 'generateAPIDocumentation',
+                serviceName,
+                documentationId: documentation.id,
+                version: documentation.version,
+            });
             return documentation;
 
         } catch (error) {
-            console.error(`❌ ${serviceName} API 문서화 생성 오류:`, error);
+            const err = toError(error);
+            errorLogger.error('❌ API 문서화 생성 오류', err, {
+                component: 'advancedAIDocumentationAPISystem',
+                action: 'generateAPIDocumentation',
+                serviceName,
+            });
             throw error;
         }
     }
@@ -193,7 +223,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
                 endpoints.push(
                     {
                         id: 'process-ai-request',
-                        path: '/api/ai/process',
+                        path: AI_PROCESS_PATH,
                         method: 'POST',
                         description: 'AI 요청 처리 및 응답 생성',
                         parameters: [
@@ -268,7 +298,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
                     },
                     {
                         id: 'get-ai-capabilities',
-                        path: '/api/ai/capabilities',
+                        path: API_AI_CAPABILITIES_PATH,
                         method: 'GET',
                         description: 'AI 시스템의 현재 기능 및 제한사항 조회',
                         parameters: [],
@@ -299,7 +329,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
                 endpoints.push(
                     {
                         id: 'analyze-emotional-state',
-                        path: '/api/psychology/emotions',
+                        path: API_PSYCHOLOGY_EMOTIONS_PATH,
                         method: 'POST',
                         description: '사용자의 감정 상태 분석',
                         parameters: [
@@ -349,7 +379,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
                 endpoints.push(
                     {
                         id: 'validate-security',
-                        path: '/api/security/validate',
+                        path: API_SECURITY_VALIDATE_PATH,
                         method: 'POST',
                         description: '요청의 보안 검증 수행',
                         parameters: [],
@@ -395,7 +425,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
     }
 
     // 스키마 생성
-    private async generateSchemas(serviceName: string): Promise<APISchema[]> {
+    private async generateSchemas(_serviceName: string): Promise<APISchema[]> {
         const schemas: APISchema[] = [];
 
         // 공통 스키마
@@ -437,7 +467,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
     }
 
     // 예제 생성
-    private async generateExamples(serviceName: string): Promise<APIExample[]> {
+    private async generateExamples(_serviceName: string): Promise<APIExample[]> {
         const examples: APIExample[] = [];
 
         examples.push(
@@ -448,7 +478,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
                 endpoint_id: 'process-ai-request',
                 request: {
                     method: 'POST',
-                    url: '/api/ai/process',
+                    url: AI_PROCESS_PATH,
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer your-token-here'
@@ -500,7 +530,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
     }
 
     // 변경 로그 생성
-    private async generateChangelog(serviceName: string): Promise<APIChange[]> {
+    private async generateChangelog(_serviceName: string): Promise<APIChange[]> {
         const changelog: APIChange[] = [];
 
         changelog.push(
@@ -549,7 +579,12 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
             });
         }
 
-        console.log(`📊 ${serviceName} 문서화 품질 점수: ${(qualityScore * 100).toFixed(1)}%`);
+        errorLogger.info('📊 문서화 품질 점수', {
+            component: 'advancedAIDocumentationAPISystem',
+            action: 'checkDocumentationQuality',
+            serviceName,
+            qualityScore,
+        });
     }
 
     // 문서화 품질 계산
@@ -595,7 +630,7 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
         const stats: APIUsageStats[] = [];
 
         // 실제로는 실제 API 로그에서 수집
-        for (const [serviceName, documentation] of this.apiDocumentation.entries()) {
+        for (const [_serviceName, documentation] of this.apiDocumentation.entries()) {
             documentation.endpoints.forEach(endpoint => {
                 stats.push({
                     endpoint_id: endpoint.id,
@@ -626,7 +661,6 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
         const usageStats = await this.collectAPIUsageStats();
         const popularEndpoints = usageStats
             .sort((a, b) => b.total_requests - a.total_requests)
-            .slice(0, 5)
             .map(stat => stat.endpoint_id);
 
         const metrics: DocumentationMetrics = {
@@ -731,7 +765,10 @@ class AdvancedAIDocumentationAPISystem extends EventEmitter {
         this.stop();
         this.apiDocumentation.clear();
         this.documentationMetrics = null;
-        console.log('🔌 고급 AI 문서화 및 API 시스템이 종료되었습니다.');
+        errorLogger.info('🔌 고급 AI 문서화 및 API 시스템이 종료되었습니다', {
+            component: 'advancedAIDocumentationAPISystem',
+            action: 'shutdown',
+        });
     }
 }
 

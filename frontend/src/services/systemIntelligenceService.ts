@@ -1,4 +1,5 @@
 import { Project, Chat, Message } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface SystemHealthMetrics {
     cpuUsage: number;
@@ -57,14 +58,14 @@ export interface SystemIntelligenceReport {
     optimizations: AutoOptimizationAction[];
 }
 
-class SystemIntelligenceService {
+export class SystemIntelligenceService {
     private healthHistory: SystemHealthMetrics[] = [];
     private anomalies: SystemAnomaly[] = [];
     private insights: PredictiveInsight[] = [];
     private optimizations: AutoOptimizationAction[] = [];
 
     // 시스템 건강도 분석
-    analyzeSystemHealth(projects: Project[], chats: Chat[], messages: Message[]): SystemHealthMetrics {
+    analyzeSystemHealth(_projects: Project[], _chats: Chat[], _messages: Message[]): SystemHealthMetrics {
         // 실제 구현에서는 시스템 리소스 모니터링 API 사용
         const cpuUsage = Math.random() * 100;
         const memoryUsage = Math.random() * 100;
@@ -357,7 +358,12 @@ class SystemIntelligenceService {
 
             return true;
         } catch (error) {
-            console.error('최적화 실행 실패:', error);
+            const err = toError(error);
+            errorLogger.error('최적화 실행 실패', err, {
+                component: 'systemIntelligenceService',
+                action: 'executeOptimization',
+                actionId: action.id,
+            });
             return false;
         }
     }

@@ -1,5 +1,6 @@
 import { ConversationMemory } from './advancedConversationMemoryService';
 import { LearningExperience } from './personalizedLearningExperienceService';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface PerformanceAnalyticsRequest {
     user_id: string;
@@ -117,8 +118,8 @@ export interface PerformanceInsight {
 
 class AdvancedPerformanceAnalyticsService {
     private performanceHistory: Map<string, PerformanceAnalyticsResult[]> = new Map();
-    private predictionModels: Map<string, any> = new Map();
-    private benchmarkData: Map<string, any> = new Map();
+    private predictionModels: Map<string, Record<string, unknown>> = new Map();
+    private benchmarkData: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializeBenchmarkData();
@@ -170,11 +171,24 @@ class AdvancedPerformanceAnalyticsService {
             // 성과 히스토리 저장
             this.savePerformanceHistory(request.user_id, result);
 
-            console.log(`Performance analysis completed in ${Date.now() - startTime}ms`);
+            const processingTime = Date.now() - startTime;
+            errorLogger.info('Performance analysis completed', {
+                component: 'advancedPerformanceAnalyticsService',
+                action: 'analyzePerformance',
+                userId: request.user_id,
+                sessionId: request.session_id,
+                processingTime,
+            });
             return result;
 
         } catch (error) {
-            console.error('Performance analysis error:', error);
+            const err = toError(error);
+            errorLogger.error('Performance analysis error', err, {
+                component: 'advancedPerformanceAnalyticsService',
+                action: 'analyzePerformance',
+                userId: request.user_id,
+                sessionId: request.session_id,
+            });
             return this.generateFallbackResult();
         }
     }
@@ -288,7 +302,7 @@ class AdvancedPerformanceAnalyticsService {
     // 기술 격차 식별
     private async identifySkillGaps(request: PerformanceAnalyticsRequest, metrics: PerformanceMetrics): Promise<SkillGap[]> {
         const memory = request.conversation_memory;
-        const learningExp = request.learning_experience;
+        const _learningExp = request.learning_experience;
         const gaps: SkillGap[] = [];
 
         // 프로그래밍 기술 격차
@@ -411,7 +425,7 @@ class AdvancedPerformanceAnalyticsService {
         request: PerformanceAnalyticsRequest,
         metrics: PerformanceMetrics,
         patterns: LearningPattern[],
-        skillGaps: SkillGap[]
+        _skillGaps: SkillGap[]
     ): Promise<PerformanceInsight[]> {
         const insights: PerformanceInsight[] = [];
 
@@ -531,7 +545,7 @@ class AdvancedPerformanceAnalyticsService {
 
     private calculateMasteryLevel(memory: ConversationMemory, learningExp: LearningExperience): number {
         const completionRate = learningExp?.current_learning_path?.completion_percentage || 0;
-        const satisfactionScore = (memory.interaction_stats as any).average_satisfaction || 3;
+        const satisfactionScore = (memory.interaction_stats as { average_satisfaction?: number })?.average_satisfaction ?? 3;
 
         return (completionRate * 0.6 + satisfactionScore * 8) / 10;
     }
@@ -700,11 +714,11 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     // 패턴 분석 헬퍼 메서드들
-    private calculatePatternEffectiveness(entries: any[]): number {
+    private calculatePatternEffectiveness(entries: Array<Record<string, unknown> | { user_feedback?: { rating?: number }; timestamp?: unknown; context?: { current_topic?: string }; understanding_result?: { confidence_score?: number } }>): number {
         if (entries.length === 0) return 0;
 
         const satisfactionScores = entries
-            .map(entry => entry.user_feedback?.rating || 3)
+            .map(entry => ((entry as Record<string, unknown>).user_feedback as { rating?: number } | undefined)?.rating || 3)
             .filter(score => score > 0);
 
         return satisfactionScores.length > 0
@@ -712,10 +726,13 @@ class AdvancedPerformanceAnalyticsService {
             : 0.6;
     }
 
-    private calculatePreferredTime(entries: any[]): string {
+    private calculatePreferredTime(entries: Array<Record<string, unknown> | { timestamp?: unknown }>): string {
         if (entries.length === 0) return 'unknown';
 
-        const hours = entries.map(entry => new Date(entry.timestamp).getHours());
+        const hours = entries.map(entry => {
+            const ts = (entry as Record<string, unknown>).timestamp;
+            return new Date(typeof ts === 'number' || typeof ts === 'string' ? ts : Date.now()).getHours();
+        });
         const avgHour = hours.reduce((a, b) => a + b, 0) / hours.length;
 
         if (avgHour < 12) return 'morning';
@@ -723,32 +740,37 @@ class AdvancedPerformanceAnalyticsService {
         return 'evening';
     }
 
-    private calculateAverageSessionLength(entries: any[]): number {
+    private calculateAverageSessionLength(entries: Array<Record<string, unknown> | { timestamp?: unknown }>): number {
         if (entries.length < 2) return 0;
 
-        const firstEntry = entries[0];
-        const lastEntry = entries[entries.length - 1];
+        const firstEntry = entries[0] as { timestamp?: unknown };
+        const lastEntry = entries[entries.length - 1] as { timestamp?: unknown };
 
-        return (new Date(lastEntry.timestamp).getTime() - new Date(firstEntry.timestamp).getTime()) / (1000 * 60);
+        const ts1 = firstEntry.timestamp;
+        const ts2 = lastEntry.timestamp;
+        const t1 = typeof ts1 === 'number' || typeof ts1 === 'string' ? new Date(ts1).getTime() : 0;
+        const t2 = typeof ts2 === 'number' || typeof ts2 === 'string' ? new Date(ts2).getTime() : 0;
+        return (t2 - t1) / (1000 * 60);
     }
 
-    private extractTopics(entries: any[]): string[] {
+    private extractTopics(entries: Array<Record<string, unknown> | { context?: { current_topic?: string } }>): string[] {
         const topics = new Set<string>();
 
         entries.forEach(entry => {
-            if (entry.context?.current_topic) {
-                topics.add(entry.context.current_topic);
+            const ctx = (entry as Record<string, unknown>).context as { current_topic?: string } | undefined;
+            if (ctx?.current_topic) {
+                topics.add(ctx.current_topic);
             }
         });
 
         return Array.from(topics);
     }
 
-    private calculateConfidenceBoost(entries: any[]): number {
+    private calculateConfidenceBoost(entries: Array<Record<string, unknown> | { understanding_result?: { confidence_score?: number } }>): number {
         if (entries.length === 0) return 0;
 
         const confidenceScores = entries
-            .map(entry => entry.understanding_result?.confidence_score || 0.5)
+            .map(entry => ((entry as Record<string, unknown>).understanding_result as { confidence_score?: number } | undefined)?.confidence_score || 0.5)
             .filter(score => score > 0);
 
         return confidenceScores.length > 0
@@ -757,7 +779,7 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     // 기술 격차 분석 메서드들
-    private analyzeProgrammingSkillGap(memory: ConversationMemory, metrics: PerformanceMetrics): SkillGap {
+    private analyzeProgrammingSkillGap(memory: ConversationMemory, _metrics: PerformanceMetrics): SkillGap {
         const programmingEntries = memory.conversation_history.filter(entry =>
             entry.understanding_result?.semantic_analysis?.domain_classification?.primary_domain === 'programming'
         );
@@ -778,7 +800,7 @@ class AdvancedPerformanceAnalyticsService {
         };
     }
 
-    private analyzeWebDevelopmentSkillGap(memory: ConversationMemory, metrics: PerformanceMetrics): SkillGap {
+    private analyzeWebDevelopmentSkillGap(memory: ConversationMemory, _metrics: PerformanceMetrics): SkillGap {
         const webDevEntries = memory.conversation_history.filter(entry =>
             entry.understanding_result?.semantic_analysis?.domain_classification?.primary_domain === 'web_development'
         );
@@ -800,7 +822,7 @@ class AdvancedPerformanceAnalyticsService {
     }
 
     private analyzeProblemSolvingSkillGap(memory: ConversationMemory, metrics: PerformanceMetrics): SkillGap {
-        const problemSolvingEntries = memory.conversation_history.filter(entry =>
+        const _problemSolvingEntries = memory.conversation_history.filter(entry =>
             entry.understanding_result?.intent_clarification?.primary_intent === 'problem_solving'
         );
 
@@ -955,7 +977,7 @@ class AdvancedPerformanceAnalyticsService {
         ) * 100;
     }
 
-    private calculateLearningEfficiency(metrics: PerformanceMetrics, patterns: LearningPattern[]): number {
+    private calculateLearningEfficiency(metrics: PerformanceMetrics, _patterns: LearningPattern[]): number {
         const retentionWeight = 0.3;
         const applicationWeight = 0.3;
         const complexityWeight = 0.2;

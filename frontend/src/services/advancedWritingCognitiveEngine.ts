@@ -1,7 +1,10 @@
 /**
- * CORBU AI 고도화된 글쓰기 인지 엔진
+ * CORBU.AI 고도화된 글쓰기 인지 엔진
  * 인간의 글쓰기 인지 과정을 모방하여 더욱 자연스럽고 지능적인 텍스트 생성
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
+import { ASSISTANT_GENERATION_STEP_LABELS_DEFAULT } from '../utils/chatInputUtils';
 
 export interface CognitiveWritingProfile {
     // 인지적 스타일
@@ -109,6 +112,108 @@ export interface EmotionalIntelligenceWriting {
     empathyBuilding: string[];
 }
 
+// Internal types for strategy/element results and method signatures
+interface CognitiveStrategyResult {
+    approach: string;
+    depth: string;
+    creativity: string;
+    social: string;
+}
+
+interface CreativeElementsResult {
+    originalityScore: number;
+    metaphoricalThinking: MetaphorResult;
+    narrativeStructure: NarrativeStructureResult;
+    rhetoricalDevices: RhetoricalDeviceItem[];
+}
+
+interface EmotionalStrategyResult {
+    emotionalIntelligence: number;
+    empathyLevel: number;
+    emotionalProgression: EmotionalProgressionStage[];
+    pathosStrategy: string;
+}
+
+interface MetaphorResult {
+    count: number;
+    sophistication: string;
+    domains: string[];
+}
+
+interface NarrativeStructureResult {
+    type: string;
+    complexity: string;
+    engagement: string;
+}
+
+interface RhetoricalDeviceItem {
+    device: string;
+    effectiveness: number;
+}
+
+interface EmotionalProgressionStage {
+    stage: string;
+    emotion: string;
+    intensity: number;
+    purpose: string;
+}
+
+interface QualityMetricsResult {
+    cognitiveCoherence: number;
+    creativeOriginality: number;
+    emotionalResonance: number;
+    socialAppropriate: number;
+    overallQuality: number;
+}
+
+interface PerspectiveResultItem {
+    perspective: string;
+    content: string;
+    reasoning: string;
+    cognitiveProfile?: CognitiveWritingProfile;
+}
+
+interface CognitiveWritingAnalysis {
+    cognitiveLevel: number;
+    complexity: string;
+    quality: number;
+}
+
+interface ReadabilityPsychologyResult {
+    readingEase: number;
+    cognitiveProcessing: string;
+    comprehensionLevel: string;
+    mentalEffort: string;
+}
+
+interface EmotionalResonanceResult {
+    emotionalIntensity: number;
+    empathyTrigger: string;
+    emotionalMemory: string;
+    affectiveResponse: string;
+}
+
+interface PersuasionPsychologyResult {
+    credibilitySignals: number;
+    authorityMarkers: number;
+    trustBuilding: number;
+    complianceTriggers: number;
+}
+
+interface MemoryOptimizationResult {
+    memoryAids: number;
+    retentionFactors: number;
+    recallTriggers: number;
+    mnemonicElements: number;
+}
+
+interface AttentionEngagementResult {
+    attentionGrabbers: number;
+    focusMaintenance: number;
+    cognitiveStickiness: number;
+    engagementLevel: number;
+}
+
 class AdvancedWritingCognitiveEngine {
     private cognitiveModels: Map<string, CognitiveWritingProfile> = new Map();
     private contextDatabase: Map<string, DeepWritingContext> = new Map();
@@ -125,13 +230,33 @@ class AdvancedWritingCognitiveEngine {
         deepContext: DeepWritingContext
     ): Promise<{
         content: string;
-        cognitiveAnalysis: any;
-        creativeElements: any;
-        emotionalMapping: any;
-        qualityMetrics: any;
+        cognitiveAnalysis: {
+            strategy: CognitiveStrategyResult;
+            thinkingProcess: string;
+            complexityLevel: number;
+            innovationScore: number;
+        };
+        creativeElements: {
+            originalityScore: number;
+            metaphoricalDepth: MetaphorResult;
+            narrativeStructure: NarrativeStructureResult;
+            rhetoricalSophistication: RhetoricalDeviceItem[];
+        };
+        emotionalMapping: {
+            emotionalIntelligence: number;
+            empathyLevel: number;
+            emotionalProgression: EmotionalProgressionStage[];
+            persuasivePower: number;
+        };
+        qualityMetrics: QualityMetricsResult;
     }> {
         try {
-            console.log('🧠 고도화된 인지적 글쓰기 시작...', { topic, style });
+            errorLogger.info('고도화된 인지적 글쓰기 시작', {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'generateCognitiveWriting',
+                topic: topic.substring(0, 100),
+                style,
+            });
 
             // 1. 인지적 계획 수립
             const cognitiveStrategy = await this.planCognitiveStrategy(topic, cognitiveProfile, deepContext);
@@ -188,7 +313,13 @@ class AdvancedWritingCognitiveEngine {
             };
 
         } catch (error) {
-            console.error('❌ 고도화된 인지적 글쓰기 실패:', error);
+            const err = toError(error);
+            errorLogger.error('고도화된 인지적 글쓰기 실패', err, {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'generateCognitiveWriting',
+                topic: topic.substring(0, 100),
+                style,
+            });
             throw new Error('고도화된 인지적 글쓰기에 실패했습니다.');
         }
     }
@@ -207,9 +338,15 @@ class AdvancedWritingCognitiveEngine {
         insightGeneration: string[];
     }> {
         try {
-            console.log('🔄 다중 관점 글쓰기 생성...', { topic, perspectives, synthesisMode });
+            errorLogger.info('다중 관점 글쓰기 생성', {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'generateMultiPerspectiveWriting',
+                topic: topic.substring(0, 100),
+                perspectivesCount: perspectives.length,
+                synthesisMode,
+            });
 
-            const perspectiveResults = [];
+            const perspectiveResults: PerspectiveResultItem[] = [];
 
             // 각 관점별 글쓰기 생성
             for (const perspective of perspectives) {
@@ -248,7 +385,14 @@ class AdvancedWritingCognitiveEngine {
             };
 
         } catch (error) {
-            console.error('❌ 다중 관점 글쓰기 실패:', error);
+            const err = toError(error);
+            errorLogger.error('다중 관점 글쓰기 실패', err, {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'generateMultiPerspectiveWriting',
+                topic: topic.substring(0, 100),
+                perspectivesCount: perspectives.length,
+                synthesisMode,
+            });
             throw new Error('다중 관점 글쓰기에 실패했습니다.');
         }
     }
@@ -269,7 +413,12 @@ class AdvancedWritingCognitiveEngine {
         motivationalFeedback: string;
     }> {
         try {
-            console.log('👨‍🏫 실시간 글쓰기 코칭 시작...', { writingGoal });
+            errorLogger.info('실시간 글쓰기 코칭 시작', {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'provideWritingCoaching',
+                writingGoal: writingGoal.substring(0, 100),
+                textLength: currentText.length,
+            });
 
             // 현재 텍스트 분석
             const currentAnalysis = await this.analyzeCognitiveWriting(currentText, writerProfile);
@@ -302,7 +451,12 @@ class AdvancedWritingCognitiveEngine {
             };
 
         } catch (error) {
-            console.error('❌ 글쓰기 코칭 실패:', error);
+            const err = toError(error);
+            errorLogger.error('글쓰기 코칭 실패', err, {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'provideWritingCoaching',
+                writingGoal: writingGoal.substring(0, 100),
+            });
             throw new Error('글쓰기 코칭에 실패했습니다.');
         }
     }
@@ -323,7 +477,13 @@ class AdvancedWritingCognitiveEngine {
         implementationPlan: string;
     }> {
         try {
-            console.log('💡 창의적 글쓰기 브레인스토밍...', { seedIdea, creativity });
+            errorLogger.info('창의적 글쓰기 브레인스토밍', {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'brainstormCreativeWriting',
+                seedIdea: seedIdea.substring(0, 100),
+                creativity,
+                domainCount: domain.length,
+            });
 
             // 개념 확장
             const concepts = await this.expandConcepts(seedIdea, creativity, domain);
@@ -353,7 +513,13 @@ class AdvancedWritingCognitiveEngine {
             };
 
         } catch (error) {
-            console.error('❌ 창의적 브레인스토밍 실패:', error);
+            const err = toError(error);
+            errorLogger.error('창의적 브레인스토밍 실패', err, {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'brainstormCreativeWriting',
+                seedIdea: seedIdea.substring(0, 100),
+                creativity,
+            });
             throw new Error('창의적 브레인스토밍에 실패했습니다.');
         }
     }
@@ -365,14 +531,18 @@ class AdvancedWritingCognitiveEngine {
         text: string
     ): Promise<{
         cognitiveLoad: number;
-        readabilityPsychology: any;
-        emotionalResonance: any;
-        persuasionPsychology: any;
-        memoryOptimization: any;
-        attentionEngagement: any;
+        readabilityPsychology: ReadabilityPsychologyResult;
+        emotionalResonance: EmotionalResonanceResult;
+        persuasionPsychology: PersuasionPsychologyResult;
+        memoryOptimization: MemoryOptimizationResult;
+        attentionEngagement: AttentionEngagementResult;
     }> {
         try {
-            console.log('🧠 심리언어학적 분석 시작...', { textLength: text.length });
+            errorLogger.info('심리언어학적 분석 시작', {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'analyzePsycholinguisticWriting',
+                textLength: text.length,
+            });
 
             // 인지 부하 분석
             const cognitiveLoad = this.calculateCognitiveLoad(text);
@@ -402,7 +572,12 @@ class AdvancedWritingCognitiveEngine {
             };
 
         } catch (error) {
-            console.error('❌ 심리언어학적 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('심리언어학적 분석 실패', err, {
+                component: 'advancedWritingCognitiveEngine',
+                action: 'analyzePsycholinguisticWriting',
+                textLength: text.length,
+            });
             throw new Error('심리언어학적 분석에 실패했습니다.');
         }
     }
@@ -415,7 +590,7 @@ class AdvancedWritingCognitiveEngine {
         topic: string, 
         profile: CognitiveWritingProfile, 
         context: DeepWritingContext
-    ): Promise<any> {
+    ): Promise<CognitiveStrategyResult> {
         return {
             approach: this.selectCognitiveApproach(profile.thinkingPattern),
             depth: this.determineCognitiveDepth(profile.processLevel),
@@ -428,7 +603,7 @@ class AdvancedWritingCognitiveEngine {
         topic: string, 
         style: string, 
         profile: CognitiveWritingProfile
-    ): Promise<any> {
+    ): Promise<CreativeElementsResult> {
         return {
             originalityScore: profile.originalityLevel,
             metaphoricalThinking: this.generateMetaphors(topic, profile.divergentThinking),
@@ -441,7 +616,7 @@ class AdvancedWritingCognitiveEngine {
         topic: string, 
         context: DeepWritingContext, 
         profile: CognitiveWritingProfile
-    ): Promise<any> {
+    ): Promise<EmotionalStrategyResult> {
         return {
             emotionalIntelligence: profile.empathyLevel,
             empathyLevel: profile.socialAwareness,
@@ -452,9 +627,9 @@ class AdvancedWritingCognitiveEngine {
 
     private async constructLayeredContent(
         topic: string,
-        strategy: any,
-        creative: any,
-        emotional: any
+        strategy: CognitiveStrategyResult,
+        creative: CreativeElementsResult,
+        emotional: EmotionalStrategyResult
     ): Promise<string> {
         // 다층적 콘텐츠 구성 로직
         const layers = [
@@ -514,7 +689,7 @@ class AdvancedWritingCognitiveEngine {
         return `사회적 맥락 고려: ${context.join(', ')}`;
     }
 
-    private generateMetaphors(topic: string, level: number): any {
+    private generateMetaphors(topic: string, level: number): MetaphorResult {
         return {
             count: Math.floor(level / 20),
             sophistication: level > 70 ? 'high' : level > 40 ? 'medium' : 'low',
@@ -522,7 +697,7 @@ class AdvancedWritingCognitiveEngine {
         };
     }
 
-    private selectNarrativeStructure(style: string, pattern: string): any {
+    private selectNarrativeStructure(style: string, pattern: string): NarrativeStructureResult {
         return {
             type: 'progressive',
             complexity: pattern === 'systemic' ? 'high' : 'medium',
@@ -530,7 +705,7 @@ class AdvancedWritingCognitiveEngine {
         };
     }
 
-    private selectRhetoricalDevices(style: string, fluency: number): any[] {
+    private selectRhetoricalDevices(style: string, fluency: number): RhetoricalDeviceItem[] {
         const devices = [];
         if (fluency > 70) devices.push({ device: '고급 수사법', effectiveness: 90 });
         if (fluency > 50) devices.push({ device: '중급 수사법', effectiveness: 70 });
@@ -538,7 +713,7 @@ class AdvancedWritingCognitiveEngine {
         return devices;
     }
 
-    private planEmotionalProgression(topic: string, context: DeepWritingContext): any[] {
+    private planEmotionalProgression(_topic: string, _context: DeepWritingContext): EmotionalProgressionStage[] {
         return [
             { stage: '도입', emotion: '호기심', intensity: 60, purpose: '관심 유발' },
             { stage: '전개', emotion: '공감', intensity: 80, purpose: '몰입 유도' },
@@ -547,33 +722,33 @@ class AdvancedWritingCognitiveEngine {
         ];
     }
 
-    private selectPathosStrategy(psychology: any): string {
+    private selectPathosStrategy(_psychology: DeepWritingContext['audiencePsychology']): string {
         return 'gradual'; // 점진적 감정 호소 전략
     }
 
     // 레이어 구성 메서드들
-    private constructSurfaceLayer(topic: string, strategy: any): string {
+    private constructSurfaceLayer(topic: string, strategy: CognitiveStrategyResult): string {
         return `${topic}에 대한 ${strategy.approach} 방식의 표면적 내용입니다.`;
     }
 
-    private constructSemanticLayer(topic: string, creative: any): string {
+    private constructSemanticLayer(topic: string, creative: CreativeElementsResult): string {
         return `${topic}의 의미적 차원에서 ${creative.originalityScore}% 창의성을 적용한 내용입니다.`;
     }
 
-    private constructEmotionalLayer(topic: string, emotional: any): string {
+    private constructEmotionalLayer(topic: string, emotional: EmotionalStrategyResult): string {
         return `${topic}에 대한 감정적 차원의 내용으로 ${emotional.emotionalIntelligence}% 감정 지능을 반영합니다.`;
     }
 
-    private constructPragmaticLayer(topic: string, strategy: any, creative: any, emotional: any): string {
+    private constructPragmaticLayer(topic: string, _strategy: CognitiveStrategyResult, _creative: CreativeElementsResult, _emotional: EmotionalStrategyResult): string {
         return `${topic}의 실용적 차원에서 전략, 창의성, 감정을 통합한 최종 메시지입니다.`;
     }
 
     private calculateAdvancedQualityMetrics(
         content: string,
         cognitive: CognitiveWritingProfile,
-        creative: any,
-        emotional: any
-    ): any {
+        creative: CreativeElementsResult,
+        emotional: EmotionalStrategyResult
+    ): QualityMetricsResult {
         return {
             cognitiveCoherence: 92,
             creativeOriginality: creative.originalityScore,
@@ -592,16 +767,16 @@ class AdvancedWritingCognitiveEngine {
         return Math.floor(content.length / 10); // 간단한 복잡도 계산
     }
 
-    private measureInnovation(creative: any): number {
+    private measureInnovation(creative: CreativeElementsResult): number {
         return creative.originalityScore;
     }
 
-    private assessPersuasivePower(emotional: any): number {
+    private assessPersuasivePower(emotional: EmotionalStrategyResult): number {
         return emotional.emotionalIntelligence;
     }
 
     // 추가 구현해야 할 메서드들...
-    private generatePerspectiveProfile(perspective: string): CognitiveWritingProfile {
+    private generatePerspectiveProfile(_perspective: string): CognitiveWritingProfile {
         return {
             thinkingPattern: 'linear',
             processLevel: 'analytical',
@@ -644,16 +819,16 @@ class AdvancedWritingCognitiveEngine {
         };
     }
 
-    private async synthesizePerspectives(perspectives: any[], mode: string): Promise<string> {
+    private async synthesizePerspectives(perspectives: PerspectiveResultItem[], mode: string): Promise<string> {
         const synthesis = perspectives.map(p => `${p.perspective}: ${p.content.substring(0, 100)}...`).join('\n\n');
         return `${mode} 방식으로 통합된 관점:\n\n${synthesis}`;
     }
 
-    private async performMetaAnalysis(perspectives: any[], synthesis: string): Promise<string> {
+    private async performMetaAnalysis(perspectives: PerspectiveResultItem[], _synthesis: string): Promise<string> {
         return `다중 관점 메타 분석: ${perspectives.length}개 관점의 패턴과 차이점을 분석한 결과입니다.`;
     }
 
-    private async generateInsights(perspectives: any[], metaAnalysis: string): Promise<string[]> {
+    private async generateInsights(_perspectives: PerspectiveResultItem[], _metaAnalysis: string): Promise<string[]> {
         return [
             '관점별 차이점에서 도출된 통찰 1',
             '공통점에서 발견된 통찰 2', 
@@ -662,53 +837,57 @@ class AdvancedWritingCognitiveEngine {
     }
 
     // 나머지 메서드들도 유사하게 구현...
-    private async analyzeCognitiveWriting(text: string, profile: CognitiveWritingProfile): Promise<any> {
+    private async analyzeCognitiveWriting(_text: string, _profile: CognitiveWritingProfile): Promise<CognitiveWritingAnalysis> {
         return { cognitiveLevel: 75, complexity: 'medium', quality: 85 };
     }
 
-    private identifyWritingStrengths(analysis: any, profile: CognitiveWritingProfile): string[] {
+    private identifyWritingStrengths(_analysis: CognitiveWritingAnalysis, _profile: CognitiveWritingProfile): string[] {
         return ['명확한 논리 구조', '적절한 어휘 선택', '일관된 어조'];
     }
 
-    private identifyImprovementAreas(analysis: any, goal: string, profile: CognitiveWritingProfile): string[] {
+    private identifyImprovementAreas(_analysis: CognitiveWritingAnalysis, _goal: string, _profile: CognitiveWritingProfile): string[] {
         return ['감정적 호소력 강화', '구체적 사례 추가', '결론 부분 보완'];
     }
 
-    private async generateSpecificSuggestions(text: string, improvements: string[], profile: CognitiveWritingProfile): Promise<string[]> {
+    private async generateSpecificSuggestions(_text: string, improvements: string[], _profile: CognitiveWritingProfile): Promise<string[]> {
         return improvements.map(imp => `${imp}를 위한 구체적 제안사항`);
     }
 
-    private provideCognitiveGuidance(profile: CognitiveWritingProfile, improvements: string[]): string[] {
+    private provideCognitiveGuidance(profile: CognitiveWritingProfile, _improvements: string[]): string[] {
         return [`${profile.thinkingPattern} 사고방식을 활용한 개선 방향`];
     }
 
-    private planNextWritingSteps(analysis: any, goal: string, profile: CognitiveWritingProfile): string[] {
-        return ['1단계: 구조 보완', '2단계: 내용 강화', '3단계: 최종 검토'];
+    private planNextWritingSteps(_analysis: CognitiveWritingAnalysis, _goal: string, _profile: CognitiveWritingProfile): string[] {
+        return [
+            '1단계: 구조 보완',
+            '2단계: 내용 강화',
+            `3단계: ${ASSISTANT_GENERATION_STEP_LABELS_DEFAULT[4]}`,
+        ];
     }
 
-    private generateMotivationalFeedback(strengths: string[], improvements: string[], profile: CognitiveWritingProfile): string {
+    private generateMotivationalFeedback(strengths: string[], improvements: string[], _profile: CognitiveWritingProfile): string {
         return `훌륭한 ${strengths[0]}를 보여주셨습니다! ${improvements[0]} 부분을 조금 더 발전시키면 완벽할 것 같습니다.`;
     }
 
     // 창의적 브레인스토밍 관련 메서드들
-    private async expandConcepts(seed: string, creativity: string, domain: string[]): Promise<string[]> {
+    private async expandConcepts(seed: string, creativity: string, _domain: string[]): Promise<string[]> {
         const expansionLevel = creativity === 'radical' ? 10 : creativity === 'adventurous' ? 7 : 5;
         return Array.from({ length: expansionLevel }, (_, i) => `${seed} 확장 개념 ${i + 1}`);
     }
 
-    private async exploreMetaphors(seed: string, concepts: string[], creativity: string): Promise<string[]> {
+    private async exploreMetaphors(_seed: string, concepts: string[], _creativity: string): Promise<string[]> {
         return concepts.map(concept => `${concept}에 대한 은유적 표현`);
     }
 
-    private async generateNarrativeArcs(seed: string, concepts: string[], creativity: string): Promise<string[]> {
+    private async generateNarrativeArcs(_seed: string, _concepts: string[], _creativity: string): Promise<string[]> {
         return ['영웅의 여정 구조', '문제-해결 구조', '순환적 구조'];
     }
 
-    private async exploreStylesticApproaches(seed: string, creativity: string): Promise<string[]> {
+    private async exploreStylesticApproaches(_seed: string, _creativity: string): Promise<string[]> {
         return ['서정적 접근', '논리적 접근', '체험적 접근'];
     }
 
-    private async generateInnovativeElements(seed: string, creativity: string): Promise<string[]> {
+    private async generateInnovativeElements(_seed: string, _creativity: string): Promise<string[]> {
         return ['혁신적 관점 1', '독창적 표현 기법', '새로운 구조 실험'];
     }
 
@@ -728,7 +907,7 @@ class AdvancedWritingCognitiveEngine {
         return 45; // 낮은 인지 부하
     }
 
-    private analyzeReadabilityPsychology(text: string): any {
+    private analyzeReadabilityPsychology(_text: string): ReadabilityPsychologyResult {
         return {
             readingEase: 75,
             cognitiveProcessing: 'efficient',
@@ -737,7 +916,7 @@ class AdvancedWritingCognitiveEngine {
         };
     }
 
-    private analyzeEmotionalResonance(text: string): any {
+    private analyzeEmotionalResonance(_text: string): EmotionalResonanceResult {
         return {
             emotionalIntensity: 70,
             empathyTrigger: 'high',
@@ -746,7 +925,7 @@ class AdvancedWritingCognitiveEngine {
         };
     }
 
-    private analyzePersuasionPsychology(text: string): any {
+    private analyzePersuasionPsychology(_text: string): PersuasionPsychologyResult {
         return {
             credibilitySignals: 80,
             authorityMarkers: 70,
@@ -755,7 +934,7 @@ class AdvancedWritingCognitiveEngine {
         };
     }
 
-    private analyzeMemoryOptimization(text: string): any {
+    private analyzeMemoryOptimization(_text: string): MemoryOptimizationResult {
         return {
             memoryAids: 65,
             retentionFactors: 70,
@@ -764,7 +943,7 @@ class AdvancedWritingCognitiveEngine {
         };
     }
 
-    private analyzeAttentionEngagement(text: string): any {
+    private analyzeAttentionEngagement(_text: string): AttentionEngagementResult {
         return {
             attentionGrabbers: 80,
             focusMaintenance: 75,
@@ -774,11 +953,11 @@ class AdvancedWritingCognitiveEngine {
     }
 
     // 기타 유틸리티 메서드들
-    private applyMetacognitiveRefinement(content: string, profile: CognitiveWritingProfile): string {
+    private applyMetacognitiveRefinement(content: string, _profile: CognitiveWritingProfile): string {
         return `[메타인지적 개선 적용] ${content}`;
     }
 
-    private adjustForSocialContext(content: string, context: DeepWritingContext): string {
+    private adjustForSocialContext(content: string, _context: DeepWritingContext): string {
         return `[사회적 맥락 조정] ${content}`;
     }
 }

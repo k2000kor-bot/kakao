@@ -1,14 +1,21 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
+if ! backend_venv_activate "$REPO_ROOT"; then
+    echo "[ERROR] 가상환경을 찾을 수 없습니다."
+    exit 1
+fi
+
 echo "🚀 메시지 형태 서버 시작"
 echo "=================================================="
-echo "📍 프로젝트 루트: $(pwd)"
+echo "📍 프로젝트 루트: $REPO_ROOT"
 echo ""
 
-# 가상환경 활성화
-echo "[STEP] 가상환경 활성화 중..."
-source venv/bin/activate
-echo "[SUCCESS] 가상환경 활성화 완료"
+mkdir -p "$REPO_ROOT/logs"
 
 # 포트 확인 및 정리
 echo "[STEP] 포트 8011 상태 확인 중..."
@@ -18,16 +25,10 @@ if lsof -Pi :8011 -sTCP:LISTEN -t >/dev/null ; then
     sleep 1
 fi
 
-# 백엔드 디렉토리로 이동
-cd backend
-
-# 메시지 형태 서버 시작
 echo "[INFO] 메시지 형태 서버 시작 (포트 8011)..."
-python3 advanced_message_generation_server.py > ../logs/message_format_server.log 2>&1 &
+( cd "$REPO_ROOT/backend" && python3 advanced_message_generation_server.py > "$REPO_ROOT/logs/message_format_server.log" 2>&1 ) &
 MESSAGE_FORMAT_PID=$!
 echo "[SUCCESS] 메시지 형태 서버 시작됨 (PID: $MESSAGE_FORMAT_PID)"
-
-cd ..
 
 # 서버 상태 확인
 echo ""
@@ -58,12 +59,12 @@ echo "   - 맥락 정보 입력 (선택사항)"
 echo "   - '메시지 생성' 버튼 클릭"
 echo ""
 echo "🛑 서버 종료: kill $MESSAGE_FORMAT_PID"
-echo "📋 로그 확인: logs/message_format_server.log"
+echo "📋 로그 확인: $REPO_ROOT/logs/message_format_server.log"
 echo ""
 echo "🚀 메시지 형태 서버가 성공적으로 시작되었습니다!"
 
 # PID 저장
-echo "$MESSAGE_FORMAT_PID" > .message_format_server_pid
+echo "$MESSAGE_FORMAT_PID" > "$REPO_ROOT/.message_format_server_pid"
 
 # 백그라운드에서 실행 중인 프로세스 모니터링
 echo ""
@@ -72,11 +73,10 @@ while true; do
     sleep 30
     echo "[INFO] 서버 상태 확인 중... ($(date))"
     
-    # 서버 상태 확인
     if lsof -Pi :8011 -sTCP:LISTEN -t >/dev/null ; then
         echo "   ✅ 포트 8011: 정상"
     else
         echo "   ❌ 포트 8011: 중단됨"
     fi
     echo ""
-done 
+done

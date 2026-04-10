@@ -7,6 +7,7 @@
 - 실시간 이벤트 브로드캐스트
 """
 
+import os
 import asyncio
 import json
 import time
@@ -17,6 +18,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 
+from cors_config import get_cors_allow_origins
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,7 +29,7 @@ app = FastAPI(title="실시간 알림 서버 v1.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -322,11 +325,15 @@ async def test_notification():
 
 if __name__ == "__main__":
     import uvicorn
+
+    _p = int(
+        os.environ.get("NOTIFICATION_SERVER_PORT", os.environ.get("PORT", "8006"))
+    )
     print("🚀 실시간 알림 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8006")
-    print("📖 API 문서: http://localhost:8006/docs")
-    print("🔌 WebSocket: ws://localhost:8006/ws")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
+    print(f"🔌 WebSocket: ws://localhost:{_p}/ws")
     print("🎯 주요 기능:")
     print("   - 실시간 알림")
     print("   - WebSocket 브로드캐스트")
@@ -334,4 +341,4 @@ if __name__ == "__main__":
     print("   - 시스템 상태 모니터링")
     print("=" * 50)
     
-    uvicorn.run(app, host="0.0.0.0", port=8006) 
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

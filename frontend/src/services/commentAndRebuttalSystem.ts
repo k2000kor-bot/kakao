@@ -1,10 +1,10 @@
 /**
- * CORBU AI 댓글 생성 및 반박글 시스템
+ * CORBU.AI 댓글 생성 및 반박글 시스템
  * 게시글에 대한 다양한 형태의 댓글과 반박글을 생성하는 고도화된 시스템
  */
 
-import { socialMediaInteractionEngine } from './socialMediaInteractionEngine';
-import { advancedWritingCognitiveEngine } from './advancedWritingCognitiveEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface CommentGenerationRequest {
     originalPost: string;
@@ -75,11 +75,163 @@ export interface RebuttalAnalysis {
     };
 }
 
-class CommentAndRebuttalSystem {
-    private commentTemplates: Map<string, any> = new Map();
-    private rebuttalStrategies: Map<string, any> = new Map();
-    private platformGuidelines: Map<string, any> = new Map();
-    private personaProfiles: Map<string, any> = new Map();
+// Internal types for template/strategy maps and method signatures
+interface CommentTemplate {
+    openings: string[];
+    connectors: string[];
+    closings: string[];
+    tone_markers: Record<string, string[]>;
+}
+
+interface RebuttalStrategyTemplate {
+    structure: string[];
+    techniques: string[];
+    evidence_types: string[];
+    tone_guidelines: Record<string, string>;
+}
+
+interface PlatformGuideline {
+    comment_length: { min: number; optimal: number; max: number };
+    tone_preference: string;
+    engagement_features: string[];
+    cultural_norms: string[];
+    moderation_level: string;
+}
+
+interface PersonaProfileData {
+    vocabulary_level: string;
+    reference_points: string[];
+    communication_style: string;
+    values: string[];
+    typical_concerns: string[];
+}
+
+interface PostAnalysisForComment {
+    main_topic: string;
+    emotional_tone: string;
+    engagement_level: number;
+    controversy_level: number;
+    discussion_potential: number;
+    platform_context: PlatformGuideline;
+    key_points: string[];
+    target_audience: string[];
+}
+
+interface PostAnalysisForRebuttal {
+    mainClaims: string[];
+    logicalStructure: string[];
+    evidenceQuality: number;
+    emotionalContent: string[];
+    potentialWeaknesses: string[];
+}
+
+interface ActivePersona extends PersonaProfileData {
+    expertise?: string[];
+    personality?: string[];
+    custom_background?: string;
+}
+
+interface CommentChainItem {
+    participant: string;
+    comment: string;
+    timestamp: string;
+    responses_to: string | null;
+    engagement_tactics: string[];
+}
+
+interface CommentAnalysisItem {
+    comment: string;
+    sentiment: string;
+    intent: string;
+    engagement_value: number;
+    response_priority: number;
+}
+
+interface ConversationNarrative {
+    conversation_arc: string;
+    key_developments: string[];
+    resolution_points: string[];
+}
+
+interface ConversationInsights {
+    productive_elements: string[];
+    potential_improvements: string[];
+    community_impact: string;
+}
+
+interface QualityAnalysisResult {
+    appropriateness: number;
+    engagement_potential: number;
+    risk_level: number;
+    platform_optimization: number;
+}
+
+interface RebuttalEffectiveness {
+    persuasion_score: number;
+    logic_score: number;
+    evidence_score: number;
+    civility_score: number;
+}
+
+interface RebuttalStrategyResult {
+    primaryApproach: string;
+    keyArguments: string[];
+    evidenceToPresent: string[];
+    rhetoricalTechniques: string[];
+}
+
+interface StructuredRebuttalResult {
+    introduction: string;
+    arguments: string[];
+    evidence: string[];
+    conclusion: string;
+}
+
+interface RiskAssessmentResult {
+    controversyLevel: number;
+    backfireRisk: number;
+    misinterpretationRisk: number;
+    relationshipImpact: number;
+}
+
+interface PersonaVocabulary {
+    level: string;
+    references: string[];
+    style: string;
+}
+
+interface PlatformCommentSettings {
+    max_length: number;
+    optimal_length: number;
+    tone_preference: string;
+    features: string[];
+}
+
+interface EngagementSuggestionsResult {
+    timing: string;
+    engagement_tactics: string[];
+    follow_up_strategy: string;
+}
+
+interface StrategyAnalysisResult {
+    approach_rationale: string;
+    key_tactics: string[];
+    expected_responses: string[];
+    counter_preparations: string[];
+}
+
+interface OverallResponseStrategy {
+    engagement_approach: string;
+    key_messages: string[];
+    tone_guidance: string;
+    escalation_protocols: string[];
+}
+
+export class CommentAndRebuttalSystem {
+    private commentTemplates: Map<string, CommentTemplate> = new Map();
+    private rebuttalStrategies: Map<string, RebuttalStrategyTemplate> = new Map();
+    private platformGuidelines: Map<string, PlatformGuideline> = new Map();
+    private personaProfiles: Map<string, PersonaProfileData> = new Map();
 
     constructor() {
         this.initializeCommentTemplates();
@@ -110,9 +262,11 @@ class CommentAndRebuttalSystem {
         alternatives: string[];
     }> {
         try {
-            console.log('💬 고도화된 댓글 생성 시작...', { 
-                type: request.commentType, 
-                platform: request.platform 
+            errorLogger.info('고도화된 댓글 생성 시작', {
+                component: 'commentAndRebuttalSystem',
+                action: 'generateAdvancedComment',
+                commentType: request.commentType,
+                platform: request.platform,
             });
 
             // 원본 게시글 심층 분석
@@ -175,7 +329,13 @@ class CommentAndRebuttalSystem {
             };
 
         } catch (error) {
-            console.error('❌ 고도화된 댓글 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('고도화된 댓글 생성 실패', err, {
+                component: 'commentAndRebuttalSystem',
+                action: 'generateAdvancedComment',
+                commentType: request.commentType,
+                platform: request.platform,
+            });
             throw new Error('고도화된 댓글 생성에 실패했습니다.');
         }
     }
@@ -212,9 +372,11 @@ class CommentAndRebuttalSystem {
         };
     }> {
         try {
-            console.log('⚔️ 지능형 반박글 생성 시작...', { 
-                type: request.rebuttalType, 
-                strength: request.strength 
+            errorLogger.info('지능형 반박글 생성 시작', {
+                component: 'commentAndRebuttalSystem',
+                action: 'generateIntelligentRebuttal',
+                rebuttalType: request.rebuttalType,
+                strength: request.strength,
             });
 
             // 원본 게시글 논리 구조 분석
@@ -274,7 +436,13 @@ class CommentAndRebuttalSystem {
             };
 
         } catch (error) {
-            console.error('❌ 지능형 반박글 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('지능형 반박글 생성 실패', err, {
+                component: 'commentAndRebuttalSystem',
+                action: 'generateIntelligentRebuttal',
+                rebuttalType: request.rebuttalType,
+                strength: request.strength,
+            });
             throw new Error('지능형 반박글 생성에 실패했습니다.');
         }
     }
@@ -286,7 +454,7 @@ class CommentAndRebuttalSystem {
         originalPost: string,
         chainLength: number,
         conversationGoal: 'constructive_debate' | 'information_sharing' | 'community_building' | 'problem_solving',
-        participants: { name: string; persona: any; position: string }[]
+        participants: { name: string; persona: CommentGenerationRequest['persona']; position: string }[]
     ): Promise<{
         chain: {
             participant: string;
@@ -307,12 +475,14 @@ class CommentAndRebuttalSystem {
         };
     }> {
         try {
-            console.log('🔗 대화형 댓글 체인 생성...', { 
-                length: chainLength, 
-                goal: conversationGoal 
+            errorLogger.info('대화형 댓글 체인 생성', {
+                component: 'commentAndRebuttalSystem',
+                action: 'generateCommentChain',
+                chainLength,
+                conversationGoal,
             });
 
-            const chain: any[] = [];
+            const chain: CommentChainItem[] = [];
             let currentContext = originalPost;
 
             // 초기 댓글 생성
@@ -356,7 +526,13 @@ class CommentAndRebuttalSystem {
             };
 
         } catch (error) {
-            console.error('❌ 댓글 체인 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('댓글 체인 생성 실패', err, {
+                component: 'commentAndRebuttalSystem',
+                action: 'generateCommentChain',
+                chainLength,
+                conversationGoal,
+            });
             throw new Error('댓글 체인 생성에 실패했습니다.');
         }
     }
@@ -391,9 +567,11 @@ class CommentAndRebuttalSystem {
         };
     }> {
         try {
-            console.log('👁️ 실시간 댓글 모니터링...', { 
-                commentCount: incomingComments.length, 
-                strategy: responseStrategy 
+            errorLogger.info('실시간 댓글 모니터링', {
+                component: 'commentAndRebuttalSystem',
+                action: 'monitorAndSuggestResponses',
+                commentCount: incomingComments.length,
+                responseStrategy,
             });
 
             // 각 댓글 분석
@@ -454,7 +632,13 @@ class CommentAndRebuttalSystem {
             };
 
         } catch (error) {
-            console.error('❌ 댓글 모니터링 실패:', error);
+            const err = toError(error);
+            errorLogger.error('댓글 모니터링 실패', err, {
+                component: 'commentAndRebuttalSystem',
+                action: 'monitorAndSuggestResponses',
+                commentCount: incomingComments.length,
+                responseStrategy,
+            });
             throw new Error('댓글 모니터링에 실패했습니다.');
         }
     }
@@ -605,7 +789,7 @@ class CommentAndRebuttalSystem {
     // 핵심 분석 메서드들
     // ============================
 
-    private async analyzePostForComment(post: string, platform: string): Promise<any> {
+    private async analyzePostForComment(post: string, platform: string): Promise<PostAnalysisForComment> {
         return {
             main_topic: this.extractMainTopic(post),
             emotional_tone: await this.analyzeSentiment(post),
@@ -618,7 +802,7 @@ class CommentAndRebuttalSystem {
         };
     }
 
-    private async analyzePostForRebuttal(post: string): Promise<any> {
+    private async analyzePostForRebuttal(post: string): Promise<PostAnalysisForRebuttal> {
         return {
             mainClaims: this.extractMainClaims(post),
             logicalStructure: this.analyzeLogicalStructure(post),
@@ -628,13 +812,17 @@ class CommentAndRebuttalSystem {
         };
     }
 
-    private async applyPersona(persona: any, commentType: string): Promise<any> {
+    private async applyPersona(persona: CommentGenerationRequest['persona'], commentType: string): Promise<ActivePersona> {
         if (!persona) {
             return this.getDefaultPersona(commentType);
         }
 
         const profileKey = `${persona.age}_${persona.background}`;
         const baseProfile = this.personaProfiles.get(profileKey) || this.personaProfiles.get('30s_professional');
+
+        if (!baseProfile) {
+            return this.getDefaultPersona(commentType);
+        }
 
         return {
             ...baseProfile,
@@ -644,8 +832,14 @@ class CommentAndRebuttalSystem {
         };
     }
 
-    private getPlatformCommentGuidelines(platform: string): any {
-        return this.platformGuidelines.get(platform) || this.platformGuidelines.get('facebook');
+    private getPlatformCommentGuidelines(platform: string): PlatformGuideline {
+        return this.platformGuidelines.get(platform) ?? this.platformGuidelines.get('facebook') ?? {
+            comment_length: { min: 10, optimal: 100, max: 8000 },
+            tone_preference: 'friendly_conversational',
+            engagement_features: ['likes', 'replies', 'shares'],
+            cultural_norms: ['family_friendly', 'community_focused'],
+            moderation_level: 'moderate'
+        };
     }
 
     // ============================
@@ -654,27 +848,28 @@ class CommentAndRebuttalSystem {
 
     private async generateMainComment(
         request: CommentGenerationRequest,
-        postAnalysis: any,
-        persona: any,
-        platformSettings: any,
-        context?: ConversationContext
+        postAnalysis: PostAnalysisForComment,
+        persona: ActivePersona,
+        platformSettings: PlatformGuideline,
+        _context?: ConversationContext
     ): Promise<string> {
         // 댓글 템플릿 선택
         const template = this.commentTemplates.get(request.commentType) || this.commentTemplates.get('supportive');
+        const resolvedTemplate = template ?? this.commentTemplates.get('supportive')!;
         
         // 어조 마커 선택
-        const toneMarkers = template.tone_markers[request.tone] || template.tone_markers.casual;
+        const toneMarkers = (resolvedTemplate.tone_markers[request.tone] ?? resolvedTemplate.tone_markers.casual) ?? [];
         
         // 페르소나 기반 어휘 선택
         const vocabulary = this.selectPersonaVocabulary(persona, request.tone);
         
         // 플랫폼 최적화
-        const platformOptimized = this.optimizeForPlatformComment(request, platformSettings);
+        this.optimizeForPlatformComment(request, platformSettings);
         
         // 댓글 구성
-        const opening = this.selectAppropriateOpening(template.openings, postAnalysis, persona);
+        const opening = this.selectAppropriateOpening(resolvedTemplate.openings, postAnalysis, persona);
         const mainBody = await this.generateCommentBody(request, postAnalysis, persona, vocabulary);
-        const closing = this.selectAppropriateClosing(template.closings, request.engagement_goal);
+        const closing = this.selectAppropriateClosing(resolvedTemplate.closings, request.engagement_goal);
         
         // 길이 조정
         let comment = `${opening} ${mainBody} ${closing}`;
@@ -683,13 +878,13 @@ class CommentAndRebuttalSystem {
         // 어조 마커 적용
         comment = this.applyToneMarkers(comment, toneMarkers, request.tone);
         
-        return comment.trim();
+        return coerceTrimmedString(comment, '');
     }
 
     private async generateCommentVariations(
         mainComment: string,
         request: CommentGenerationRequest,
-        persona: any
+        persona: ActivePersona
     ): Promise<CommentVariations['variations']> {
         return {
             shorter: await this.createShorterVersion(mainComment, request),
@@ -702,7 +897,7 @@ class CommentAndRebuttalSystem {
 
     private async generateHashtagSuggestions(
         request: CommentGenerationRequest,
-        postAnalysis: any
+        postAnalysis: PostAnalysisForComment
     ): Promise<string[]> {
         const hashtags = [];
         
@@ -751,7 +946,7 @@ class CommentAndRebuttalSystem {
 
     private async generateFollowUpQuestions(
         request: CommentGenerationRequest,
-        postAnalysis: any
+        _postAnalysis: PostAnalysisForComment
     ): Promise<string[]> {
         const questions = [];
         
@@ -794,14 +989,19 @@ class CommentAndRebuttalSystem {
 
     private async developRebuttalStrategy(
         request: RebuttalRequest,
-        originalAnalysis: any,
-        context?: ConversationContext
-    ): Promise<any> {
-        const strategy = this.rebuttalStrategies.get(request.rebuttalType) || 
-                        this.rebuttalStrategies.get('logical_counter');
+        originalAnalysis: PostAnalysisForRebuttal,
+        _context?: ConversationContext
+    ): Promise<RebuttalStrategyResult> {
+        const strategy = this.rebuttalStrategies.get(request.rebuttalType) ??
+                        this.rebuttalStrategies.get('logical_counter') ?? {
+            structure: ['전제 검토', '논리적 허점 지적', '대안 논리 제시', '결론 도출'],
+            techniques: ['삼단논법 검증', '인과관계 분석'],
+            evidence_types: ['논리적 증명', '반박 사례'],
+            tone_guidelines: { respectful: '정중한 학술적 토론' }
+        };
         
         return {
-            primaryApproach: strategy.structure[0],
+            primaryApproach: strategy.structure[0] ?? '전제 검토',
             keyArguments: await this.identifyKeyRebuttalPoints(originalAnalysis, request),
             evidenceToPresent: this.selectRebuttalEvidence(request.supporting_evidence, request.rebuttalType),
             rhetoricalTechniques: this.selectRhetoricalTechniques(request.approach, request.strength)
@@ -810,10 +1010,10 @@ class CommentAndRebuttalSystem {
 
     private async generateStructuredRebuttal(
         request: RebuttalRequest,
-        originalAnalysis: any,
-        strategy: any
-    ): Promise<any> {
-        const structure = this.rebuttalStrategies.get(request.rebuttalType)?.structure || 
+        originalAnalysis: PostAnalysisForRebuttal,
+        strategy: RebuttalStrategyResult
+    ): Promise<StructuredRebuttalResult> {
+        const _structure = this.rebuttalStrategies.get(request.rebuttalType)?.structure || 
                          ['도입', '논증', '결론'];
         
         return {
@@ -824,7 +1024,7 @@ class CommentAndRebuttalSystem {
         };
     }
 
-    private async composeMainRebuttal(structuredRebuttal: any, request: RebuttalRequest): Promise<string> {
+    private async composeMainRebuttal(structuredRebuttal: StructuredRebuttalResult, request: RebuttalRequest): Promise<string> {
         let rebuttal = '';
         
         // 정중한 도입 (civility가 true인 경우)
@@ -849,13 +1049,13 @@ class CommentAndRebuttalSystem {
         // 결론
         rebuttal += structuredRebuttal.conclusion;
         
-        return rebuttal.trim();
+        return coerceTrimmedString(rebuttal, '');
     }
 
     private async generateRebuttalVariations(
         mainRebuttal: string,
         request: RebuttalRequest,
-        strategy: any
+        strategy: RebuttalStrategyResult
     ): Promise<string[]> {
         const variations = [];
         
@@ -882,9 +1082,9 @@ class CommentAndRebuttalSystem {
     private async analyzeCommentQuality(
         comment: string,
         request: CommentGenerationRequest,
-        postAnalysis: any,
-        platformSettings: any
-    ): Promise<any> {
+        postAnalysis: PostAnalysisForComment,
+        platformSettings: PlatformGuideline
+    ): Promise<QualityAnalysisResult> {
         return {
             appropriateness: this.calculateAppropriateness(comment, postAnalysis, platformSettings),
             engagement_potential: this.calculateEngagementPotential(comment, request),
@@ -897,7 +1097,7 @@ class CommentAndRebuttalSystem {
         rebuttal: string,
         originalPost: string,
         request: RebuttalRequest
-    ): Promise<any> {
+    ): Promise<RebuttalEffectiveness> {
         return {
             persuasion_score: this.calculatePersuasionScore(rebuttal, request),
             logic_score: this.calculateLogicScore(rebuttal, originalPost),
@@ -952,7 +1152,7 @@ class CommentAndRebuttalSystem {
     }
 
     private extractKeyPoints(post: string): string[] {
-        return post.split(/[.!?]/).filter(s => s.trim().length > 10).slice(0, 3);
+        return post.split(/[.!?]/).filter(s => coerceTrimmedString(s, '').length > 10).slice(0, 3);
     }
 
     private inferTargetAudience(post: string): string[] {
@@ -1021,11 +1221,21 @@ class CommentAndRebuttalSystem {
     }
 
     // 나머지 메서드들도 유사하게 구현...
-    private getDefaultPersona(commentType: string): any {
-        return this.personaProfiles.get('30s_professional');
+    private getDefaultPersona(_commentType: string): ActivePersona {
+        const profile = this.personaProfiles.get('30s_professional');
+        if (!profile) {
+            return {
+                vocabulary_level: 'professional_balanced',
+                reference_points: ['직장', '커리어'],
+                communication_style: 'practical_analytical',
+                values: ['성취', '안정'],
+                typical_concerns: ['승진', '육아']
+            };
+        }
+        return { ...profile };
     }
 
-    private selectPersonaVocabulary(persona: any, tone: string): any {
+    private selectPersonaVocabulary(persona: ActivePersona, _tone: string): PersonaVocabulary {
         return {
             level: persona.vocabulary_level || 'casual_modern',
             references: persona.reference_points || ['일반적인', '보편적인'],
@@ -1033,7 +1243,7 @@ class CommentAndRebuttalSystem {
         };
     }
 
-    private optimizeForPlatformComment(request: CommentGenerationRequest, settings: any): any {
+    private optimizeForPlatformComment(request: CommentGenerationRequest, settings: PlatformGuideline): PlatformCommentSettings {
         return {
             max_length: settings.comment_length.max,
             optimal_length: settings.comment_length.optimal,
@@ -1042,16 +1252,16 @@ class CommentAndRebuttalSystem {
         };
     }
 
-    private selectAppropriateOpening(openings: string[], postAnalysis: any, persona: any): string {
+    private selectAppropriateOpening(openings: string[], _postAnalysis: PostAnalysisForComment, _persona: ActivePersona): string {
         // 게시글 감정과 페르소나에 맞는 오프닝 선택
         return openings[0] || '안녕하세요!';
     }
 
     private async generateCommentBody(
         request: CommentGenerationRequest,
-        postAnalysis: any,
-        persona: any,
-        vocabulary: any
+        postAnalysis: PostAnalysisForComment,
+        persona: ActivePersona,
+        _vocabulary: PersonaVocabulary
     ): Promise<string> {
         let body = '';
         
@@ -1099,7 +1309,7 @@ class CommentAndRebuttalSystem {
         return goalClosings[engagementGoal as keyof typeof goalClosings] || closings[0] || '감사합니다!';
     }
 
-    private adjustCommentLength(comment: string, length: string, settings: any): string {
+    private adjustCommentLength(comment: string, length: string, settings: PlatformGuideline): string {
         const targetLengths = {
             short: Math.min(50, settings.comment_length.optimal / 2),
             medium: settings.comment_length.optimal,
@@ -1127,12 +1337,12 @@ class CommentAndRebuttalSystem {
     }
 
     // 변형 생성 메서드들
-    private async createShorterVersion(comment: string, request: CommentGenerationRequest): Promise<string> {
-        const sentences = comment.split(/[.!?]/).filter(s => s.trim());
+    private async createShorterVersion(comment: string, _request: CommentGenerationRequest): Promise<string> {
+        const sentences = comment.split(/[.!?]/).filter(s => coerceTrimmedString(s, ''));
         return sentences[0] + (sentences[0].endsWith('.') ? '' : '.');
     }
 
-    private async createLongerVersion(comment: string, request: CommentGenerationRequest, persona: any): Promise<string> {
+    private async createLongerVersion(comment: string, request: CommentGenerationRequest, persona: ActivePersona): Promise<string> {
         let longer = comment;
         
         // 개인 경험 추가
@@ -1167,7 +1377,7 @@ class CommentAndRebuttalSystem {
         return comment;
     }
 
-    private async changeAngle(comment: string, request: CommentGenerationRequest, persona: any): Promise<string> {
+    private async changeAngle(comment: string, request: CommentGenerationRequest, _persona: ActivePersona): Promise<string> {
         const angles = {
             supportive: '비판적 관점에서 보면,',
             critical: '긍정적인 측면도 있는데,',
@@ -1181,7 +1391,7 @@ class CommentAndRebuttalSystem {
         return newAngle + ' ' + comment;
     }
 
-    private async addPersonalTouch(comment: string, persona: any): Promise<string> {
+    private async addPersonalTouch(comment: string, persona: ActivePersona): Promise<string> {
         let personal = comment;
         
         if (persona.personality && persona.personality.length > 0) {
@@ -1210,17 +1420,19 @@ class CommentAndRebuttalSystem {
     }
 
     // 대화 체인 관련 메서드들
-    private determineCommentType(position: string, goal: string): CommentGenerationRequest['commentType'] {
+    private determineCommentType(position: string, _goal: string): CommentGenerationRequest['commentType'] {
         if (position.includes('지지') || position.includes('찬성')) return 'supportive';
         if (position.includes('반대') || position.includes('비판')) return 'critical';
         if (position.includes('질문') || position.includes('궁금')) return 'questioning';
         return 'informative';
     }
 
-    private determinePersonaTone(persona: any): CommentGenerationRequest['tone'] {
-        if (persona.communication_style?.includes('professional')) return 'formal';
-        if (persona.communication_style?.includes('passionate')) return 'passionate';
-        if (persona.communication_style?.includes('analytical')) return 'analytical';
+    private determinePersonaTone(persona: ActivePersona | CommentGenerationRequest['persona'] | undefined): CommentGenerationRequest['tone'] {
+        if (!persona || typeof persona !== 'object') return 'casual';
+        const style = 'communication_style' in persona ? persona.communication_style : undefined;
+        if (style?.includes('professional')) return 'formal';
+        if (style?.includes('passionate')) return 'passionate';
+        if (style?.includes('analytical')) return 'analytical';
         return 'casual';
     }
 
@@ -1232,19 +1444,19 @@ class CommentAndRebuttalSystem {
             problem_solving: 'offer_alternative'
         };
         
-        return (mapping as any)[goal] || 'start_discussion';
+        return (mapping as Record<string, CommentGenerationRequest['engagement_goal']>)[goal] ?? 'start_discussion';
     }
 
     // 분석 메서드들
-    private async analyzeConversationNarrative(chain: any[], goal: string): Promise<any> {
+    private async analyzeConversationNarrative(chain: CommentChainItem[], goal: string): Promise<ConversationNarrative> {
         return {
             conversation_arc: `${goal} 목표로 ${chain.length}개 댓글이 연결된 건설적 대화`,
-            key_developments: chain.map((comment, index) => `${index + 1}단계: ${comment.participant}의 ${comment.engagement_tactics[0] || '참여'}`),
+            key_developments: chain.map((comment: CommentChainItem, index: number) => `${index + 1}단계: ${comment.participant}의 ${comment.engagement_tactics[0] || '참여'}`),
             resolution_points: ['상호 이해 증진', '다양한 관점 공유', '건설적 결론 도출']
         };
     }
 
-    private async extractConversationInsights(chain: any[], narrative: any): Promise<any> {
+    private async extractConversationInsights(_chain: CommentChainItem[], _narrative: ConversationNarrative): Promise<ConversationInsights> {
         return {
             productive_elements: [
                 '정중한 의견 교환',
@@ -1261,7 +1473,7 @@ class CommentAndRebuttalSystem {
     }
 
     // 실시간 모니터링 관련 메서드들
-    private async analyzeCommentIntent(comment: string, originalPost: string): Promise<string> {
+    private async analyzeCommentIntent(comment: string, _originalPost: string): Promise<string> {
         if (comment.includes('?')) return 'questioning';
         if (comment.includes('동감') || comment.includes('좋아')) return 'supportive';
         if (comment.includes('반대') || comment.includes('문제')) return 'critical';
@@ -1269,7 +1481,7 @@ class CommentAndRebuttalSystem {
         return 'general_engagement';
     }
 
-    private async calculateEngagementValue(comment: string, originalPost: string): Promise<number> {
+    private async calculateEngagementValue(comment: string, _originalPost: string): Promise<number> {
         let value = 30;
         
         if (comment.length > 20) value += 20;
@@ -1300,7 +1512,7 @@ class CommentAndRebuttalSystem {
         return Math.min(priority, 100);
     }
 
-    private determineResponseType(analysis: any, strategy: string): string {
+    private determineResponseType(analysis: CommentAnalysisItem, strategy: string): string {
         if (analysis.sentiment === 'negative' && strategy === 'defensive') return 'clarification';
         if (analysis.intent === 'questioning') return 'informative';
         if (analysis.intent === 'supportive') return 'appreciation';
@@ -1309,10 +1521,10 @@ class CommentAndRebuttalSystem {
     }
 
     private async generateResponseSuggestion(
-        originalPost: string,
+        _originalPost: string,
         comment: string,
         responseType: string,
-        strategy: string
+        _strategy: string
     ): Promise<string> {
         const responses = {
             clarification: '오해가 있었던 것 같습니다. 명확히 설명드리면...',
@@ -1325,14 +1537,14 @@ class CommentAndRebuttalSystem {
         return responses[responseType as keyof typeof responses] || responses.general_engagement;
     }
 
-    private recommendResponseTiming(analysis: any): string {
+    private recommendResponseTiming(analysis: CommentAnalysisItem): string {
         if (analysis.engagement_value > 80) return '즉시 응답 권장';
         if (analysis.sentiment === 'negative') return '신중한 검토 후 응답';
         if (analysis.intent === 'questioning') return '24시간 내 응답';
         return '적절한 시점에 응답';
     }
 
-    private assessResponseRisk(analysis: any, responseType: string): number {
+    private assessResponseRisk(analysis: CommentAnalysisItem, responseType: string): number {
         let risk = 20; // 기본 리스크
         
         if (analysis.sentiment === 'negative') risk += 30;
@@ -1343,13 +1555,13 @@ class CommentAndRebuttalSystem {
     }
 
     private async developOverallResponseStrategy(
-        commentAnalysis: any[],
+        commentAnalysis: CommentAnalysisItem[],
         responseStrategy: string,
-        originalPost: string
-    ): Promise<any> {
+        _originalPost: string
+    ): Promise<OverallResponseStrategy> {
         const positiveCount = commentAnalysis.filter(c => c.sentiment === 'positive').length;
         const negativeCount = commentAnalysis.filter(c => c.sentiment === 'negative').length;
-        const questionCount = commentAnalysis.filter(c => c.intent === 'questioning').length;
+        const _questionCount = commentAnalysis.filter(c => c.intent === 'questioning').length;
         
         return {
             engagement_approach: responseStrategy === 'engage_all' ? '모든 댓글에 적극 응답' : '선별적 전략적 응답',
@@ -1368,7 +1580,7 @@ class CommentAndRebuttalSystem {
     }
 
     // 품질 점수 계산 메서드들
-    private calculateAppropriateness(comment: string, postAnalysis: any, platformSettings: any): number {
+    private calculateAppropriateness(comment: string, postAnalysis: PostAnalysisForComment, platformSettings: PlatformGuideline): number {
         let score = 70;
         
         // 길이 적절성
@@ -1397,7 +1609,7 @@ class CommentAndRebuttalSystem {
         return Math.min(score, 100);
     }
 
-    private calculateRiskLevel(comment: string, request: CommentGenerationRequest, postAnalysis: any): number {
+    private calculateRiskLevel(comment: string, request: CommentGenerationRequest, postAnalysis: PostAnalysisForComment): number {
         let risk = 10;
         
         if (request.commentType === 'critical') risk += 25;
@@ -1409,7 +1621,7 @@ class CommentAndRebuttalSystem {
         return Math.min(risk, 100);
     }
 
-    private calculatePlatformOptimization(comment: string, platform: string, settings: any): number {
+    private calculatePlatformOptimization(comment: string, platform: string, settings: PlatformGuideline): number {
         let score = 60;
         
         // 길이 최적화
@@ -1435,7 +1647,7 @@ class CommentAndRebuttalSystem {
         return Math.min(score, 100);
     }
 
-    private calculateLogicScore(rebuttal: string, originalPost: string): number {
+    private calculateLogicScore(rebuttal: string, _originalPost: string): number {
         let score = 60;
         
         if (rebuttal.includes('따라서') || rebuttal.includes('그러므로')) score += 15;
@@ -1467,7 +1679,7 @@ class CommentAndRebuttalSystem {
     }
 
     // 반박글 생성 세부 메서드들
-    private async identifyKeyRebuttalPoints(analysis: any, request: RebuttalRequest): Promise<string[]> {
+    private async identifyKeyRebuttalPoints(analysis: PostAnalysisForRebuttal, request: RebuttalRequest): Promise<string[]> {
         const points = [];
         
         // 약점 기반 반박점
@@ -1498,11 +1710,11 @@ class CommentAndRebuttalSystem {
         return points.slice(0, 3); // 최대 3개 핵심 포인트
     }
 
-    private selectRebuttalEvidence(evidence: string[] | undefined, rebuttalType: string): string[] {
+    private selectRebuttalEvidence(evidence: string[] | undefined, _rebuttalType: string): string[] {
         if (!evidence) return [];
         
         // 반박 유형에 맞는 증거 선별
-        const typePreferences = {
+        const _typePreferences = {
             logical_counter: ['논리적 증명', '반박 사례'],
             evidence_based: ['과학적 연구', '공식 통계'],
             experiential: ['개인 사례', '현장 경험'],
@@ -1541,7 +1753,7 @@ class CommentAndRebuttalSystem {
         return techniques;
     }
 
-    private async createRebuttalIntroduction(request: RebuttalRequest, analysis: any): Promise<string> {
+    private async createRebuttalIntroduction(request: RebuttalRequest, _analysis: PostAnalysisForRebuttal): Promise<string> {
         const introductions = {
             gentle_disagreement: '제시해 주신 의견을 주의깊게 읽어보았습니다. 몇 가지 다른 관점을 제시해보고 싶습니다.',
             moderate_opposition: '흥미로운 주장이지만, 다음과 같은 점에서 재고가 필요할 것 같습니다.',
@@ -1553,7 +1765,7 @@ class CommentAndRebuttalSystem {
     }
 
     private async createRebuttalArguments(keyArguments: string[], request: RebuttalRequest): Promise<string[]> {
-        return keyArguments.map((arg, index) => {
+        return keyArguments.map((arg, _index) => {
             const strengthPrefixes = {
                 gentle_disagreement: '고려해볼 점은',
                 moderate_opposition: '문제가 되는 부분은',
@@ -1578,7 +1790,7 @@ class CommentAndRebuttalSystem {
         });
     }
 
-    private async createRebuttalConclusion(request: RebuttalRequest, strategy: any): Promise<string> {
+    private async createRebuttalConclusion(request: RebuttalRequest, _strategy: RebuttalStrategyResult): Promise<string> {
         const conclusions = {
             gentle_disagreement: '이러한 점들을 함께 고려해보시면 어떨까요?',
             moderate_opposition: '따라서 더 신중한 접근이 필요하다고 생각합니다.',
@@ -1595,15 +1807,15 @@ class CommentAndRebuttalSystem {
         return conclusion;
     }
 
-    private async createStrongerRebuttal(mainRebuttal: string, request: RebuttalRequest): Promise<string> {
+    private async createStrongerRebuttal(mainRebuttal: string, _request: RebuttalRequest): Promise<string> {
         return mainRebuttal.replace(/고려해볼/g, '명백한').replace(/문제가 될 수 있는/g, '심각한 문제인');
     }
 
-    private async createGentlerRebuttal(mainRebuttal: string, request: RebuttalRequest): Promise<string> {
+    private async createGentlerRebuttal(mainRebuttal: string, _request: RebuttalRequest): Promise<string> {
         return '정중히 다른 의견을 제시하면, ' + mainRebuttal.replace(/명백한/g, '고려해볼').replace(/심각한/g, '검토가 필요한');
     }
 
-    private async createAlternativeApproachRebuttal(mainRebuttal: string, request: RebuttalRequest, strategy: any): Promise<string> {
+    private async createAlternativeApproachRebuttal(mainRebuttal: string, request: RebuttalRequest, _strategy: RebuttalStrategyResult): Promise<string> {
         const alternativeApproaches = {
             logical_counter: '감정적 관점에서 보면',
             evidence_based: '개인적 경험으로는',
@@ -1617,7 +1829,7 @@ class CommentAndRebuttalSystem {
         return `${alternative} ${mainRebuttal}`;
     }
 
-    private async assessRebuttalRisks(rebuttal: string, request: RebuttalRequest, context?: ConversationContext): Promise<any> {
+    private async assessRebuttalRisks(rebuttal: string, request: RebuttalRequest, context?: ConversationContext): Promise<RiskAssessmentResult> {
         let controversyLevel = 30;
         let backfireRisk = 20;
         let misinterpretationRisk = 25;
@@ -1654,7 +1866,7 @@ class CommentAndRebuttalSystem {
         };
     }
 
-    private async analyzeRebuttalStrategy(strategy: any, originalAnalysis: any, effectiveness: any): Promise<any> {
+    private async analyzeRebuttalStrategy(strategy: RebuttalStrategyResult, _originalAnalysis: PostAnalysisForRebuttal, _effectiveness: RebuttalEffectiveness): Promise<StrategyAnalysisResult> {
         return {
             approach_rationale: `${strategy.primaryApproach} 접근법을 통해 효과적인 반박을 구성했습니다.`,
             key_tactics: strategy.rhetoricalTechniques,
@@ -1673,9 +1885,9 @@ class CommentAndRebuttalSystem {
 
     private async generateEngagementSuggestions(
         request: CommentGenerationRequest,
-        postAnalysis: any,
-        qualityAnalysis: any
-    ): Promise<any> {
+        postAnalysis: PostAnalysisForComment,
+        qualityAnalysis: QualityAnalysisResult
+    ): Promise<EngagementSuggestionsResult> {
         return {
             timing: this.getOptimalCommentTiming(request.platform, postAnalysis),
             engagement_tactics: this.getEngagementTactics(request, qualityAnalysis),
@@ -1685,7 +1897,7 @@ class CommentAndRebuttalSystem {
 
     private async generateAlternativeComments(
         request: CommentGenerationRequest,
-        postAnalysis: any,
+        postAnalysis: PostAnalysisForComment,
         count: number
     ): Promise<string[]> {
         const alternatives = [];
@@ -1711,7 +1923,7 @@ class CommentAndRebuttalSystem {
     }
 
     // 유틸리티 메서드들
-    private getOptimalCommentTiming(platform: string, postAnalysis: any): string {
+    private getOptimalCommentTiming(platform: string, _postAnalysis: PostAnalysisForComment): string {
         const timings = {
             facebook: '게시 후 2-4시간 (높은 활동 시간대)',
             instagram: '게시 후 1-2시간 (빠른 반응)',
@@ -1724,7 +1936,7 @@ class CommentAndRebuttalSystem {
         return timings[platform as keyof typeof timings] || timings.community;
     }
 
-    private getEngagementTactics(request: CommentGenerationRequest, qualityAnalysis: any): string[] {
+    private getEngagementTactics(request: CommentGenerationRequest, qualityAnalysis: QualityAnalysisResult): string[] {
         const tactics = [];
         
         if (request.engagement_goal === 'start_discussion') {
@@ -1742,7 +1954,7 @@ class CommentAndRebuttalSystem {
         return tactics;
     }
 
-    private getFollowUpStrategy(request: CommentGenerationRequest, postAnalysis: any): string {
+    private getFollowUpStrategy(request: CommentGenerationRequest, postAnalysis: PostAnalysisForComment): string {
         if (postAnalysis.discussion_potential > 70) {
             return '활발한 토론이 예상되므로 지속적 참여 준비';
         } else if (request.commentType === 'questioning') {

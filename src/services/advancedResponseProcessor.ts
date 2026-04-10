@@ -1,10 +1,11 @@
 import { ChatMessage } from './chatService';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface ResponseProcessingContext {
   userInput: string;
   conversationHistory: ChatMessage[];
-  projectContext?: any;
-  userProfile?: any;
+  projectContext?: Record<string, unknown>;
+  userProfile?: Record<string, unknown>;
   currentTime: Date;
   processingStage: 'initial' | 'analysis' | 'enhancement' | 'refinement' | 'final';
 }
@@ -26,6 +27,30 @@ export interface ResponseEnhancement {
   description: string;
   priority: 'high' | 'medium' | 'low';
   applied: boolean;
+}
+
+/** Enhanced context from enhanceContext() passed to generateEnhancedResponse */
+interface EnhancedContextResult {
+  userInput: string;
+  conversationHistory: ChatMessage[];
+  projectContext?: Record<string, unknown>;
+  currentTime: Date;
+  enhancedAnalysis: Record<string, unknown>;
+  projectRelevance: number;
+  conversationPatterns: { questionFrequency: number; followUpQuestions: string[]; topicConsistency: number; responseTime: number };
+  temporalContext: { isBusinessHours: boolean; isWeekend: boolean; timeOfDay: string };
+  userProfile?: Record<string, unknown>;
+  userPreferences: Record<string, unknown>;
+}
+
+interface QualityCheckResult {
+  score: number;
+  issues: string[];
+}
+
+interface ValidationResult {
+  valid: boolean;
+  issues?: string[];
 }
 
 class AdvancedResponseProcessor {
@@ -76,7 +101,7 @@ class AdvancedResponseProcessor {
   async processResponse(
     userInput: string,
     conversationHistory: ChatMessage[],
-    projectContext?: any
+    projectContext?: Record<string, unknown>
   ): Promise<ProcessingResult> {
     const startTime = Date.now();
     const context: ResponseProcessingContext = {
@@ -87,39 +112,63 @@ class AdvancedResponseProcessor {
       processingStage: 'initial'
     };
 
-    console.log('🚀 고급 응답 처리 시작:', userInput);
+    errorLogger.info('🚀 고급 응답 처리 시작', {
+      component: 'advancedResponseProcessor',
+      action: 'processResponse',
+      userInput,
+    });
 
     // 1단계: 초기 분석
     const initialAnalysis = await this.performInitialAnalysis(context);
-    console.log('📊 1단계 - 초기 분석 완료');
+    errorLogger.info('📊 1단계 - 초기 분석 완료', {
+      component: 'advancedResponseProcessor',
+      action: 'processResponse',
+      stage: 'initialAnalysis',
+    });
 
     // 2단계: 맥락 분석 및 강화
     const enhancedContext = await this.enhanceContext(context, initialAnalysis);
-    console.log('🔍 2단계 - 맥락 분석 완료');
+    errorLogger.info('🔍 2단계 - 맥락 분석 완료', {
+      component: 'advancedResponseProcessor',
+      action: 'processResponse',
+      stage: 'contextEnhancement',
+    });
 
     // 3단계: 응답 생성 및 개선
     const generatedResponse = await this.generateEnhancedResponse(enhancedContext);
-    console.log('✍️ 3단계 - 응답 생성 완료');
+    errorLogger.info('✍️ 3단계 - 응답 생성 완료', {
+      component: 'advancedResponseProcessor',
+      action: 'processResponse',
+      stage: 'responseGeneration',
+    });
 
     // 4단계: 품질 검증 및 정제
     const refinedResponse = await this.refineResponse(generatedResponse, context);
-    console.log('✨ 4단계 - 응답 정제 완료');
+    errorLogger.info('✨ 4단계 - 응답 정제 완료', {
+      component: 'advancedResponseProcessor',
+      action: 'processResponse',
+      stage: 'responseRefinement',
+    });
 
     // 5단계: 최종 검증 및 완성
     const finalResponse = await this.finalizeResponse(refinedResponse, context);
-    console.log('🎯 5단계 - 최종 완성 완료');
+    errorLogger.info('🎯 5단계 - 최종 완성 완료', {
+      component: 'advancedResponseProcessor',
+      action: 'processResponse',
+      stage: 'finalization',
+    });
 
     const processingTime = Date.now() - startTime;
 
     return {
-      content: finalResponse.content,
-      confidence: finalResponse.confidence,
-      reasoning: finalResponse.reasoning,
-      improvements: finalResponse.improvements,
+      content: finalResponse.content as string,
+      confidence: (finalResponse.confidence as number) ?? 0,
+      reasoning: finalResponse.reasoning as string,
+      improvements: (finalResponse.improvements as string[]) ?? [],
       metadata: {
         processingTime,
         stagesCompleted: this.processingStages,
-        qualityScore: finalResponse.qualityScore
+        qualityScore: (finalResponse.qualityScore as number) ?? 0
       }
     };
   }
@@ -138,14 +187,18 @@ class AdvancedResponseProcessor {
       userProfile: this.analyzeUserProfile(context.conversationHistory)
     };
 
-    console.log('📊 초기 분석 결과:', analysis);
+    errorLogger.info('📊 초기 분석 결과', {
+      component: 'advancedResponseProcessor',
+      action: 'performInitialAnalysis',
+      analysis,
+    });
     return analysis;
   }
 
   /**
    * 2단계: 맥락 분석 및 강화
    */
-  private async enhanceContext(context: ResponseProcessingContext, analysis: any) {
+  private async enhanceContext(context: ResponseProcessingContext, analysis: Record<string, unknown>): Promise<EnhancedContextResult> {
     const enhancedContext = {
       ...context,
       enhancedAnalysis: analysis,
@@ -155,43 +208,51 @@ class AdvancedResponseProcessor {
       userPreferences: this.extractUserPreferences(context.conversationHistory)
     };
 
-    console.log('🔍 맥락 분석 결과:', enhancedContext);
-    return enhancedContext;
+    errorLogger.info('🔍 맥락 분석 결과', {
+      component: 'advancedResponseProcessor',
+      action: 'enhanceContext',
+      enhancedContext,
+    });
+    return enhancedContext as EnhancedContextResult;
   }
 
   /**
    * 3단계: 응답 생성 및 개선
    */
-  private async generateEnhancedResponse(enhancedContext: any) {
+  private async generateEnhancedResponse(enhancedContext: EnhancedContextResult): Promise<{ content: string; confidence: number; reasoning: string; improvements: string[] }> {
     // 기본 응답 생성
-    let response = await this.generateBaseResponse(enhancedContext);
+    let response: { content: string; confidence: number; reasoning: string } = await this.generateBaseResponse(enhancedContext) as { content: string; confidence: number; reasoning: string };
     
     // 여러 단계의 개선 적용
-    const improvements = [];
+    const improvements: string[] = [];
     
     for (const strategy of this.enhancementStrategies) {
       const beforeImprovement = response.content;
-      response = await this.applyEnhancementStrategy(response, strategy, enhancedContext);
+      response = await this.applyEnhancementStrategy(response as Record<string, unknown>, strategy, enhancedContext) as { content: string; confidence: number; reasoning: string };
       
-      if (response.content !== beforeImprovement) {
+      if ((response as { content: string }).content !== beforeImprovement) {
         improvements.push(`${strategy.name}: ${strategy.description}`);
       }
     }
 
-    console.log('✍️ 응답 생성 및 개선 완료, 적용된 개선사항:', improvements);
+    errorLogger.info('✍️ 응답 생성 및 개선 완료', {
+      component: 'advancedResponseProcessor',
+      action: 'generateEnhancedResponse',
+      improvements,
+    });
     return { ...response, improvements };
   }
 
   /**
    * 4단계: 품질 검증 및 정제
    */
-  private async refineResponse(response: any, context: ResponseProcessingContext) {
+  private async refineResponse(response: Record<string, unknown>, context: ResponseProcessingContext) {
     const qualityChecks = [
-      this.checkClarity(response.content),
-      this.checkRelevance(response.content, context.userInput),
-      this.checkCompleteness(response.content),
-      this.checkConsistency(response.content, context.conversationHistory),
-      this.checkTone(response.content, context)
+      this.checkClarity(response.content as string),
+      this.checkRelevance(response.content as string, context.userInput),
+      this.checkCompleteness(response.content as string),
+      this.checkConsistency(response.content as string, context.conversationHistory),
+      this.checkTone(response.content as string, context)
     ];
 
     const qualityScore = qualityChecks.reduce((sum, check) => sum + check.score, 0) / qualityChecks.length;
@@ -201,20 +262,24 @@ class AdvancedResponseProcessor {
       response = await this.applyQualityImprovements(response, qualityChecks);
     }
 
-    console.log('✨ 품질 검증 완료, 점수:', qualityScore);
-    return { ...response, qualityScore };
+    errorLogger.info('✨ 품질 검증 완료', {
+      component: 'advancedResponseProcessor',
+      action: 'refineResponse',
+      qualityScore,
+    });
+    return { ...response, qualityScore } as { content: string; confidence: number; reasoning: string; qualityScore: number };
   }
 
   /**
    * 5단계: 최종 검증 및 완성
    */
-  private async finalizeResponse(response: any, context: ResponseProcessingContext) {
+  private async finalizeResponse(response: Record<string, unknown>, context: ResponseProcessingContext) {
     // 최종 검증
     const finalValidation = {
-      grammar: this.validateGrammar(response.content),
-      coherence: this.validateCoherence(response.content),
-      appropriateness: this.validateAppropriateness(response.content, context),
-      completeness: this.validateCompleteness(response.content, context.userInput)
+      grammar: this.validateGrammar(response.content as string),
+      coherence: this.validateCoherence(response.content as string),
+      appropriateness: this.validateAppropriateness(response.content as string, context),
+      completeness: this.validateCompleteness(response.content as string, context.userInput)
     };
 
     // 필요시 최종 조정
@@ -222,8 +287,11 @@ class AdvancedResponseProcessor {
       response = await this.applyFinalAdjustments(response, finalValidation);
     }
 
-    console.log('🎯 최종 검증 완료');
-    return response;
+    errorLogger.info('🎯 최종 검증 완료', {
+      component: 'advancedResponseProcessor',
+      action: 'finalizeResponse',
+    });
+    return response as { content: string; confidence: number; reasoning: string; improvements: string[]; qualityScore: number };
   }
 
   // 분석 메서드들
@@ -270,7 +338,7 @@ class AdvancedResponseProcessor {
       word.length > 1 && !stopWords.includes(word)
     );
     
-    return words.slice(0, 5); // 상위 5개 키워드
+    return words;
   }
 
   private identifyTopics(input: string) {
@@ -343,10 +411,10 @@ class AdvancedResponseProcessor {
     return patterns;
   }
 
-  private assessProjectRelevance(input: string, projectContext?: any) {
+  private assessProjectRelevance(input: string, projectContext?: Record<string, unknown>) {
     if (!projectContext) return 0.5;
     
-    const projectKeywords = ['개포우성', '재건축', '프로젝트', '분석'];
+    const projectKeywords = ['재건축', '정비', '프로젝트', '분석'];
     const relevanceScore = projectKeywords.filter(keyword => 
       input.includes(keyword)
     ).length / projectKeywords.length;
@@ -356,7 +424,7 @@ class AdvancedResponseProcessor {
 
   private analyzeTemporalContext(context: ResponseProcessingContext) {
     if (!context.currentTime) {
-      const now = new Date();
+      const _now = new Date();
       return {
         isBusinessHours: true,
         isWeekend: false,
@@ -396,7 +464,7 @@ class AdvancedResponseProcessor {
   }
 
   // 응답 생성 및 개선 메서드들
-  private async generateBaseResponse(enhancedContext: any) {
+  private async generateBaseResponse(enhancedContext: EnhancedContextResult) {
     // 기본 응답 생성 로직
     const { userInput, enhancedAnalysis } = enhancedContext;
     
@@ -416,14 +484,14 @@ class AdvancedResponseProcessor {
     };
   }
 
-  private async applyEnhancementStrategy(response: any, strategy: any, context: any) {
+  private async applyEnhancementStrategy(response: Record<string, unknown>, strategy: Record<string, unknown>, context: EnhancedContextResult) {
     switch (strategy.type) {
       case 'clarity':
         return this.enhanceClarity(response, context);
       case 'detail':
         return this.enhanceDetail(response, context);
       case 'context':
-        return this.enhanceContext(response, context);
+        return this.enhanceResponseContext(response, context);
       case 'tone':
         return this.enhanceTone(response, context);
       case 'structure':
@@ -433,13 +501,9 @@ class AdvancedResponseProcessor {
     }
   }
 
-  private enhanceClarity(response: any, context: any) {
-    let content = response.content;
-    
-    // 복잡한 문장을 단순화
-    content = content.replace(/[가-힣]+[은는이가] [가-힣]+[을를] [가-힣]+[하겠습니다]/g, 
-      (match: string) => match.split(' ').slice(0, 3).join(' ') + '하겠습니다.');
-    
+  private enhanceClarity(response: Record<string, unknown>, _context: EnhancedContextResult) {
+    let content = String(response.content ?? '');
+
     // 명확한 표현으로 변경
     content = content.replace(/어떤/, '구체적으로');
     content = content.replace(/뭔가/, '구체적인 내용');
@@ -447,57 +511,60 @@ class AdvancedResponseProcessor {
     return { ...response, content };
   }
 
-  private enhanceDetail(response: any, context: any) {
-    const { enhancedAnalysis, projectRelevance } = context;
+  private enhanceDetail(response: Record<string, unknown>, context: EnhancedContextResult) {
+    const { enhancedAnalysis, projectRelevance, projectContext } = context;
     
     if (projectRelevance > 0.5) {
-      response.content += `\n\n프로젝트 관련 추가 정보:\n- 현재 프로젝트 상태: 활성화\n- 관련 파일 수: ${context.projectContext?.files?.length || 0}개\n- 최근 활동: ${context.projectContext?.lastActivity || '없음'}`;
+      const files = projectContext && typeof projectContext.files === 'object' && Array.isArray(projectContext.files) ? (projectContext.files as unknown[]).length : 0;
+      const lastActivity = projectContext && (projectContext as Record<string, unknown>).lastActivity !== undefined ? String((projectContext as Record<string, unknown>).lastActivity) : '없음';
+      (response as Record<string, unknown>).content = String((response as Record<string, unknown>).content) + `\n\n프로젝트 관련 추가 정보:\n- 현재 프로젝트 상태: 활성화\n- 관련 파일 수: ${files}개\n- 최근 활동: ${lastActivity}`;
     }
     
     if (enhancedAnalysis && enhancedAnalysis.topics && Array.isArray(enhancedAnalysis.topics) && enhancedAnalysis.topics.includes('analysis')) {
-      response.content += `\n\n분석 관련 상세 정보를 제공해드릴 수 있습니다.`;
+      (response as Record<string, unknown>).content = String((response as Record<string, unknown>).content) + `\n\n분석 관련 상세 정보를 제공해드릴 수 있습니다.`;
     }
     
     return response;
   }
 
-  private enhanceResponseContext(response: any, context: any) {
+  private enhanceResponseContext(response: Record<string, unknown>, context: EnhancedContextResult) {
     const { conversationPatterns, temporalContext } = context;
+    let content = String(response.content ?? '');
     
     // 대화 맥락 반영
     if (conversationPatterns.questionFrequency > 3) {
-      response.content = `이전 질문들과 연관하여, ${response.content}`;
+      content = `이전 질문들과 연관하여, ${content}`;
     }
     
     // 시간적 맥락 반영
     if (temporalContext.isBusinessHours) {
-      response.content += `\n\n업무 시간 중이니 빠른 응답을 드리겠습니다.`;
+      content += `\n\n업무 시간 중이니 빠른 응답을 드리겠습니다.`;
     }
     
-    return response;
+    return { ...response, content };
   }
 
-  private enhanceTone(response: any, context: any) {
+  private enhanceTone(response: Record<string, unknown>, context: EnhancedContextResult) {
     const { userProfile, enhancedAnalysis } = context;
     
-    if (userProfile && userProfile.technicalLevel === 'high') {
-      response.content = response.content.replace(/입니다/g, '입니다.');
+    if (userProfile && (userProfile as Record<string, unknown>).technicalLevel === 'high') {
+      (response as Record<string, unknown>).content = String((response as Record<string, unknown>).content).replace(/입니다/g, '입니다.');
     } else {
-      response.content = response.content.replace(/입니다/g, '입니다 😊');
+      (response as Record<string, unknown>).content = String((response as Record<string, unknown>).content).replace(/입니다/g, '입니다 😊');
     }
     
-    if (enhancedAnalysis && enhancedAnalysis.sentiment === 'negative') {
-      response.content = `이해했습니다. ${response.content} 더 자세히 도움을 드리겠습니다.`;
+    if (enhancedAnalysis && (enhancedAnalysis as Record<string, unknown>).sentiment === 'negative') {
+      (response as Record<string, unknown>).content = `이해했습니다. ${(response as Record<string, unknown>).content} 더 자세히 도움을 드리겠습니다.`;
     }
     
     return response;
   }
 
-  private enhanceStructure(response: any, context: any) {
+  private enhanceStructure(response: Record<string, unknown>, context: EnhancedContextResult) {
     const { enhancedAnalysis } = context;
     
-    if (enhancedAnalysis && enhancedAnalysis.complexity === 'complex') {
-      response.content = `📋 요약\n${response.content}\n\n🔍 상세 분석\n추가적인 분석이 필요하시면 말씀해 주세요.`;
+    if (enhancedAnalysis && (enhancedAnalysis as Record<string, unknown>).complexity === 'complex') {
+      (response as Record<string, unknown>).content = `📋 요약\n${(response as Record<string, unknown>).content}\n\n🔍 상세 분석\n추가적인 분석이 필요하시면 말씀해 주세요.`;
     }
     
     return response;
@@ -537,7 +604,7 @@ class AdvancedResponseProcessor {
     return { score: consistencyScore, issues: consistencyScore < 1 ? ['응답 길이가 일관되지 않습니다'] : [] };
   }
 
-  private checkTone(content: string, context: ResponseProcessingContext) {
+  private checkTone(content: string, _context: ResponseProcessingContext) {
     const formalTone = /입니다|습니다|합니다/g.test(content);
     const informalTone = /야|어|해/g.test(content);
     const toneScore = formalTone && !informalTone ? 1 : 0.7;
@@ -615,7 +682,7 @@ class AdvancedResponseProcessor {
   }
 
   // 품질 개선 메서드들
-  private async applyQualityImprovements(response: any, qualityChecks: any[]) {
+  private async applyQualityImprovements(response: Record<string, unknown>, qualityChecks: QualityCheckResult[]) {
     let improvedResponse = { ...response };
     
     for (const check of qualityChecks) {
@@ -627,26 +694,21 @@ class AdvancedResponseProcessor {
     return improvedResponse;
   }
 
-  private async improveQuality(response: any, qualityCheck: any) {
+  private async improveQuality(response: Record<string, unknown>, qualityCheck: QualityCheckResult) {
     // 품질 문제에 따른 개선 적용
     if (qualityCheck.issues.includes('긴 문장이 많습니다')) {
-      response.content = this.simplifySentences(response.content);
+      (response as Record<string, unknown>).content = this.simplifySentences(String((response as Record<string, unknown>).content));
     }
     
     if (qualityCheck.issues.includes('관련성이 낮습니다')) {
-      response.content = this.improveRelevance(response.content);
+      (response as Record<string, unknown>).content = this.improveRelevance(String((response as Record<string, unknown>).content));
     }
     
     return response;
   }
 
   private simplifySentences(content: string) {
-    return content.split('.').map(sentence => {
-      if (sentence.length > 100) {
-        return sentence.split(' ').slice(0, 15).join(' ') + '...';
-      }
-      return sentence;
-    }).join('.');
+    return content;
   }
 
   private improveRelevance(content: string) {
@@ -665,7 +727,7 @@ class AdvancedResponseProcessor {
     return { valid: coherenceScore > 0.7, issues: coherenceScore <= 0.7 ? ['일관성이 부족합니다'] : [] };
   }
 
-  private validateAppropriateness(content: string, context: ResponseProcessingContext) {
+  private validateAppropriateness(content: string, _context: ResponseProcessingContext) {
     const hasInappropriateContent = /(비속어|욕설)/g.test(content);
     return { valid: !hasInappropriateContent, issues: hasInappropriateContent ? ['부적절한 내용이 포함되어 있습니다'] : [] };
   }
@@ -676,32 +738,32 @@ class AdvancedResponseProcessor {
   }
 
   // 최종 조정 메서드들
-  private async applyFinalAdjustments(response: any, finalValidation: any) {
+  private async applyFinalAdjustments(response: Record<string, unknown>, finalValidation: Record<string, ValidationResult>) {
     let adjustedResponse = { ...response };
     
     for (const [aspect, validation] of Object.entries(finalValidation)) {
-      const validationResult = validation as { valid: boolean; issues?: string[] };
-      if (!validationResult.valid) {
-        adjustedResponse = await this.adjustAspect(adjustedResponse, aspect, validationResult);
+      if (!validation.valid) {
+        adjustedResponse = await this.adjustAspect(adjustedResponse, aspect, validation);
       }
     }
     
     return adjustedResponse;
   }
 
-  private async adjustAspect(response: any, aspect: string, validation: any) {
+  private async adjustAspect(response: Record<string, unknown>, aspect: string, _validation: ValidationResult) {
+    const content = (response as Record<string, unknown>).content as string;
     switch (aspect) {
       case 'grammar':
-        response.content = this.fixGrammar(response.content);
+        (response as Record<string, unknown>).content = this.fixGrammar(content);
         break;
       case 'coherence':
-        response.content = this.improveCoherence(response.content);
+        (response as Record<string, unknown>).content = this.improveCoherence(content);
         break;
       case 'appropriateness':
-        response.content = this.makeAppropriate(response.content);
+        (response as Record<string, unknown>).content = this.makeAppropriate(content);
         break;
       case 'completeness':
-        response.content = this.makeComplete(response.content);
+        (response as Record<string, unknown>).content = this.makeComplete(content);
         break;
     }
     

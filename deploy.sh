@@ -3,6 +3,24 @@
 
 set -e
 
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PROJECT_ROOT"
+
+# shellcheck source=scripts/lib-activate-backend-venv.sh
+source "$PROJECT_ROOT/scripts/lib-activate-backend-venv.sh"
+
+ensure_python_venv() {
+    if backend_venv_activate "$PROJECT_ROOT"; then
+        return 0
+    fi
+    log_warning "표준 venv 없음 — backend/.venv 생성 시도..."
+    if ( cd "$PROJECT_ROOT/backend" && python3 -m venv .venv && .venv/bin/pip install -q --upgrade pip && .venv/bin/pip install -q -r requirements-core.txt ); then
+        backend_venv_activate "$PROJECT_ROOT"
+    else
+        return 1
+    fi
+}
+
 echo "🚀 CORBU.AI 배포를 시작합니다..."
 
 # 색상 정의
@@ -68,13 +86,13 @@ setup_environment() {
 install_dependencies() {
     log_info "의존성 설치 중..."
     
-    # Python 가상환경 생성 및 활성화
-    if [ ! -d "venv" ]; then
-        python3 -m venv venv
+    if ! ensure_python_venv; then
+        log_error "Python 가상환경을 준비할 수 없습니다."
+        exit 1
     fi
     
-    source venv/bin/activate
-    pip install -r requirements.txt gunicorn
+    pip install -r "$PROJECT_ROOT/requirements.txt" gunicorn 2>/dev/null \
+        || pip install -r "$PROJECT_ROOT/backend/requirements.txt" gunicorn
     
     log_success "의존성 설치 완료"
 }
@@ -83,10 +101,10 @@ install_dependencies() {
 run_tests() {
     log_info "기본 테스트 실행 중..."
     
-    source venv/bin/activate
+    ensure_python_venv || exit 1
     
     # 서버 시작 테스트
-    python -c "from complete_server import app; print('✅ 서버 모듈 로드 성공')"
+    python3 -c "from complete_server import app; print('✅ 서버 모듈 로드 성공')"
     
     # 포트 확인
     if lsof -Pi :8080 -sTCP:LISTEN -t >/dev/null; then
@@ -131,7 +149,7 @@ deploy_service() {
 deploy_local() {
     log_info "로컬 환경에 배포 중..."
     
-    source venv/bin/activate
+    ensure_python_venv || exit 1
     
     # 기존 프로세스 종료
     pkill -f "python.*complete_server.py" || true

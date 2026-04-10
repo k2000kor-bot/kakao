@@ -22,7 +22,7 @@
 
 ### 3. 백엔드 통합 ✅
 - ✅ `app.py`에 LLM 서비스 통합
-- ✅ 채팅 API 개선
+- ✅ 대화 API 개선
 - ✅ `conversation_id` 지원
 - ✅ 에러 처리 강화
 
@@ -83,8 +83,8 @@
 
 4. **접속**
    - 프론트엔드: http://localhost:3000
-   - 백엔드: http://localhost:5001
-   - API 문서: http://localhost:5001/docs
+   - 백엔드: http://localhost:5002
+   - API 문서: http://localhost:5002/api/docs
 
 ---
 

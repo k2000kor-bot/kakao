@@ -8,7 +8,7 @@
 
 ```
 📍 파일 위치: 
-/Users/aD/kakao-frontend/android_app/KakaoRootExtractor/app/build/outputs/apk/debug/
+/path/to/kakao-frontend/kakao-frontend/android_app/KakaoRootExtractor/app/build/outputs/apk/debug/
 
 📁 파일명: app-debug.apk (생성 예정)
 📏 파일 크기: 약 15-20MB
@@ -65,6 +65,9 @@ adb install app-debug.apk
 4. **대화방 선택**: "대화방 선택" 버튼으로 모니터링할 방 선택
 
 #### 🌐 **네트워크 설정**
+
+> **포트 8005**는 `rooted_kakao_extractor.py` **루팅 데이터 수신 전용**입니다.  
+> CORBU 웹·대화 **통합 API**는 PC에서 **`npm run restart:backend`** → 기본 **5002** (`main_server`)이며, 이 APK의 `serverUrl`과 **다릅니다**.
 
 ```kotlin
 // MainActivity.kt에서 서버 주소 확인/수정:

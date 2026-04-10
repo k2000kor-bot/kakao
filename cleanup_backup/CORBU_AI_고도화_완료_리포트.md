@@ -114,11 +114,11 @@ src/
 │   ├── adaptiveLearningEngine.ts       # 적응형 학습 엔진
 │   └── projectKnowledgeService.ts      # 프로젝트 지식 서비스
 ├── components/
-│   ├── ChatInterface.tsx               # 고도화된 채팅 인터페이스
+│   ├── ChatInterface.tsx               # 고도화된 대화 인터페이스
 │   ├── Sidebar.tsx                     # 사이드바 컴포넌트
 │   └── ProjectContext.tsx              # 프로젝트 컨텍스트
 └── types/
-    ├── chat.ts                         # 채팅 타입 정의
+    ├── chat.ts                         # 대화 타입 정의
     └── project.ts                      # 프로젝트 타입 정의
 ```
 

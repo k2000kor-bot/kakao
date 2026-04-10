@@ -5,6 +5,7 @@
 - 복합적인 요구사항 파악
 - 지능형 응답 생성
 """
+import os
 import sqlite3
 import json
 import re
@@ -110,7 +111,7 @@ class ContextualAnalysisEngine:
         
         self.entity_patterns = {
             'companies': r'(?:삼성물산|GS건설|대우건설|현대건설|롯데건설|포스코건설)',
-            'locations': r'(?:개포우성|잠실우성|강남|서울|부산|대구|인천)',
+            'locations': r'(?:강남|서울|부산|대구|인천)',
             'names': r'(?:이재헌|박재우|박은진|정지혜|김철수|이영희)',
             'organizations': r'(?:조합|협회|단체|위원회|협의회)'
         }
@@ -538,4 +539,8 @@ async def root():
 if __name__ == "__main__":
     init_database()
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8003)
+
+    _p = int(
+        os.environ.get("CONTEXTUAL_AI_ENGINE_PORT", os.environ.get("PORT", "8003"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p)

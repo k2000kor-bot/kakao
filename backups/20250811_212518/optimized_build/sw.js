@@ -1,4 +1,4 @@
-// CORBU AI Progressive Web App Service Worker
+// CORBU.AI Progressive Web App Service Worker
 // 오프라인 지원, 캐싱, 백그라운드 동기화를 제공
 
 const CACHE_NAME = 'corbu-ai-v1.1.0';
@@ -127,7 +127,7 @@ async function networkFirst(request) {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>CORBU AI - 오프라인</title>
+          <title>CORBU.AI - 오프라인</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
@@ -170,7 +170,7 @@ async function networkFirst(request) {
         <body>
           <div class="offline-container">
             <div class="offline-icon">📡</div>
-            <div class="offline-title">CORBU AI</div>
+            <div class="offline-title">CORBU.AI</div>
             <div class="offline-message">
               인터넷 연결을 확인해주세요.<br>
               오프라인 상태에서도 일부 기능을 사용할 수 있습니다.
@@ -292,7 +292,7 @@ self.addEventListener('push', event => {
     }
 
     event.waitUntil(
-        self.registration.showNotification('CORBU AI', options)
+        self.registration.showNotification('CORBU.AI', options)
     );
 });
 
@@ -382,4 +382,4 @@ self.addEventListener('unhandledrejection', event => {
     event.preventDefault();
 });
 
-console.log('[SW] 🎉 CORBU AI Service Worker 로드 완료');
+console.log('[SW] 🎉 CORBU.AI Service Worker 로드 완료');

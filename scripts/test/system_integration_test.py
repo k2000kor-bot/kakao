@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-CORBU AI 시스템 통합 테스트
+CORBU.AI 시스템 통합 테스트
 백엔드 API와 프론트엔드 연동 테스트
 """
 
+import os
 import requests
 import json
 import time
 import sys
 from datetime import datetime
 
-# API 설정
-BASE_URL = "http://localhost:8001"
+# API 설정 — 레거시 v8 전용 서버(예: 8001). 통합 main_server(5002)는 scripts/test/api_test.py 권장.
+BASE_URL = os.environ.get("CORBU_V8_BASE_URL", "http://localhost:8001")
 API_VERSION = "v8"
 
 class SystemIntegrationTest:
@@ -86,7 +87,7 @@ class SystemIntegrationTest:
             return None
     
     def test_chat_sessions_api(self, project_id: str):
-        """채팅 세션 API 테스트"""
+        """대화 세션 API 테스트"""
         try:
             # 세션 목록 조회
             response = self.session.get(
@@ -96,13 +97,13 @@ class SystemIntegrationTest:
             
             if response.status_code == 200:
                 data = response.json()
-                self.log_test("채팅 세션 목록 조회", True, f"세션 수: {data.get('count', 0)}")
+                self.log_test("대화 세션 목록 조회", True, f"세션 수: {data.get('count', 0)}")
                 
                 # 새 세션 생성
                 new_session = {
                     "project_id": project_id,
                     "title": f"테스트 세션 {datetime.now().strftime('%H:%M:%S')}",
-                    "initial_message": "안녕하세요! CORBU AI 시스템 테스트입니다."
+                    "initial_message": "안녕하세요! CORBU.AI 시스템 테스트입니다."
                 }
                 
                 response = self.session.post(
@@ -113,16 +114,16 @@ class SystemIntegrationTest:
                 if response.status_code == 200:
                     data = response.json()
                     session_id = data.get('session', {}).get('id')
-                    self.log_test("채팅 세션 생성", True, f"세션 ID: {session_id}")
+                    self.log_test("대화 세션 생성", True, f"세션 ID: {session_id}")
                     return session_id
                 else:
-                    self.log_test("채팅 세션 생성", False, f"HTTP {response.status_code}")
+                    self.log_test("대화 세션 생성", False, f"HTTP {response.status_code}")
                     return None
             else:
-                self.log_test("채팅 세션 목록 조회", False, f"HTTP {response.status_code}")
+                self.log_test("대화 세션 목록 조회", False, f"HTTP {response.status_code}")
                 return None
         except Exception as e:
-            self.log_test("채팅 세션 API 테스트", False, str(e))
+            self.log_test("대화 세션 API 테스트", False, str(e))
             return None
     
     def test_database_stats(self):
@@ -162,7 +163,7 @@ class SystemIntegrationTest:
         """AI 메시지 생성 테스트"""
         try:
             ai_request = {
-                "prompt": "안녕하세요! CORBU AI 시스템입니다.",
+                "prompt": "안녕하세요! CORBU.AI 시스템입니다.",
                 "context": {
                     "project_type": "test",
                     "user_id": "test_user"
@@ -187,7 +188,7 @@ class SystemIntegrationTest:
     
     def run_all_tests(self):
         """모든 테스트 실행"""
-        print("🚀 CORBU AI 시스템 통합 테스트 시작")
+        print("🚀 CORBU.AI 시스템 통합 테스트 시작")
         print("=" * 50)
         
         # 1. 서버 상태 확인
@@ -201,10 +202,10 @@ class SystemIntegrationTest:
             print("❌ 프로젝트 API 테스트 실패")
             return False
         
-        # 3. 채팅 세션 API 테스트
+        # 3. 대화 세션 API 테스트
         session_id = self.test_chat_sessions_api(project_id)
         if not session_id:
-            print("❌ 채팅 세션 API 테스트 실패")
+            print("❌ 대화 세션 API 테스트 실패")
             return False
         
         # 4. 데이터베이스 통계 테스트

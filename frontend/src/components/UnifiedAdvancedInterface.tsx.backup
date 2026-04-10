@@ -298,9 +298,9 @@ const UnifiedAdvancedInterface: React.FC = () => {
         },
         {
             id: '2',
-            name: '개포우성',
+            name: '샘플 프로젝트',
             type: 'project',
-            subItems: ['대화요약', '개포우성7차']
+            subItems: ['대화요약', '프로젝트 A']
         }
     ];
 

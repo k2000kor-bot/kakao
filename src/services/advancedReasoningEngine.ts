@@ -243,10 +243,10 @@ export interface LearningInsight {
 }
 
 class AdvancedReasoningEngine {
-    private knowledgeBase: Map<string, any> = new Map();
+    private knowledgeBase: Map<string, Record<string, unknown>> = new Map();
     private reasoningMethods: ReasoningMethod[] = [];
-    private solutionTemplates: Map<string, any> = new Map();
-    private problemPatterns: Map<string, any> = new Map();
+    private solutionTemplates: Map<string, Record<string, unknown>> = new Map();
+    private problemPatterns: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializeReasoningMethods();
@@ -309,7 +309,7 @@ class AdvancedReasoningEngine {
     private async buildReasoningContext(
         problemStatement: string,
         partialContext: Partial<ReasoningContext>,
-        additionalData?: any
+        additionalData?: Record<string, unknown>
     ): Promise<ReasoningContext> {
         const domain = partialContext.domain || this.inferDomain(problemStatement, additionalData);
         const complexityLevel = partialContext.complexity_level || this.assessComplexity(problemStatement);
@@ -326,7 +326,7 @@ class AdvancedReasoningEngine {
     }
 
     // 도메인 추론
-    private inferDomain(problemStatement: string, additionalData?: any): string {
+    private inferDomain(problemStatement: string, _additionalData?: Record<string, unknown>): string {
         const domainKeywords = {
             'software_engineering': ['코드', '프로그래밍', '소프트웨어', '개발', 'bug', 'algorithm', 'database'],
             'business_strategy': ['비즈니스', '전략', '수익', '시장', 'business', 'strategy', 'market', 'revenue'],
@@ -534,7 +534,7 @@ class AdvancedReasoningEngine {
     }
 
     // 5 Why 분석
-    private performWhyAnalysis(problemStatement: string): string[] {
+    private performWhyAnalysis(_problemStatement: string): string[] {
         // 간단한 5 Why 분석 시뮬레이션
         const whys = [
             '표면적 증상이 나타남',
@@ -548,7 +548,7 @@ class AdvancedReasoningEngine {
     }
 
     // 이해관계자 식별
-    private identifyStakeholders(context: ReasoningContext): Stakeholder[] {
+    private identifyStakeholders(_context: ReasoningContext): Stakeholder[] {
         const stakeholders: Stakeholder[] = [
             {
                 name: '최종 사용자',
@@ -648,7 +648,7 @@ class AdvancedReasoningEngine {
     }
 
     // 유사 문제 찾기
-    private async findSimilarProblems(context: ReasoningContext): Promise<SimilarProblem[]> {
+    private async findSimilarProblems(_context: ReasoningContext): Promise<SimilarProblem[]> {
         // 지식 베이스에서 유사 문제 검색 시뮬레이션
         return [
             {
@@ -664,7 +664,7 @@ class AdvancedReasoningEngine {
     // 추론 체인 구성
     private async buildReasoningChain(
         context: ReasoningContext,
-        problemAnalysis: ProblemAnalysis
+        _problemAnalysis: ProblemAnalysis
     ): Promise<ReasoningStep[]> {
         const steps: ReasoningStep[] = [];
 
@@ -771,27 +771,27 @@ class AdvancedReasoningEngine {
     // 솔루션 생성
     private async generateSolutions(
         context: ReasoningContext,
-        problemAnalysis: ProblemAnalysis,
-        reasoningChain: ReasoningStep[]
+        _problemAnalysis: ProblemAnalysis,
+        _reasoningChain: ReasoningStep[]
     ): Promise<Solution[]> {
         const solutions: Solution[] = [];
 
         // 보수적 솔루션
-        solutions.push(await this.generateConservativeSolution(context, problemAnalysis));
+        solutions.push(await this.generateConservativeSolution(context, _problemAnalysis));
 
         // 혁신적 솔루션
-        solutions.push(await this.generateInnovativeSolution(context, problemAnalysis));
+        solutions.push(await this.generateInnovativeSolution(context, _problemAnalysis));
 
         // 균형적 솔루션
-        solutions.push(await this.generateBalancedSolution(context, problemAnalysis));
+        solutions.push(await this.generateBalancedSolution(context, _problemAnalysis));
 
         return solutions;
     }
 
     // 보수적 솔루션 생성
     private async generateConservativeSolution(
-        context: ReasoningContext,
-        problemAnalysis: ProblemAnalysis
+        _context: ReasoningContext,
+        _problemAnalysis: ProblemAnalysis
     ): Promise<Solution> {
         return {
             id: 'conservative-solution',
@@ -816,8 +816,8 @@ class AdvancedReasoningEngine {
 
     // 혁신적 솔루션 생성
     private async generateInnovativeSolution(
-        context: ReasoningContext,
-        problemAnalysis: ProblemAnalysis
+        _context: ReasoningContext,
+        _problemAnalysis: ProblemAnalysis
     ): Promise<Solution> {
         return {
             id: 'innovative-solution',
@@ -842,8 +842,8 @@ class AdvancedReasoningEngine {
 
     // 균형적 솔루션 생성
     private async generateBalancedSolution(
-        context: ReasoningContext,
-        problemAnalysis: ProblemAnalysis
+        _context: ReasoningContext,
+        _problemAnalysis: ProblemAnalysis
     ): Promise<Solution> {
         return {
             id: 'balanced-solution',
@@ -1113,13 +1113,13 @@ class AdvancedReasoningEngine {
     }
 
     // 목표 일치도 평가
-    private evaluateObjectiveAlignment(solution: Solution, objectives: Objective[]): number {
+    private evaluateObjectiveAlignment(_solution: Solution, _objectives: Objective[]): number {
         // 간단한 목표 일치도 계산
         return 0.8; // 기본값
     }
 
     // 리소스 효율성 평가
-    private evaluateResourceEfficiency(solution: Solution, availableResources: Resource[]): number {
+    private evaluateResourceEfficiency(_solution: Solution, _availableResources: Resource[]): number {
         // 간단한 리소스 효율성 계산
         return 0.7; // 기본값
     }
@@ -1142,8 +1142,8 @@ class AdvancedReasoningEngine {
 
     // 학습 인사이트 추출
     private async extractLearningInsights(
-        reasoningChain: ReasoningStep[],
-        solutions: Solution[]
+        _reasoningChain: ReasoningStep[],
+        _solutions: Solution[]
     ): Promise<LearningInsight[]> {
         return [
             {
@@ -1175,7 +1175,7 @@ class AdvancedReasoningEngine {
     }
 
     // 논리적 일관성 평가
-    private assessLogicalConsistency(reasoningChain: ReasoningStep[]): number {
+    private assessLogicalConsistency(_reasoningChain: ReasoningStep[]): number {
         // 추론 단계 간 논리적 연결성 평가
         return 0.8;
     }

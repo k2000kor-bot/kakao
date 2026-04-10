@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface PerformanceMetric {
     id: string;
@@ -9,7 +10,7 @@ export interface PerformanceMetric {
     unit: string;
     threshold: number;
     status: 'normal' | 'warning' | 'critical';
-    context?: any;
+    context?: Record<string, unknown>;
 }
 
 export interface OptimizationRule {
@@ -24,7 +25,7 @@ export interface OptimizationRule {
     };
     action: {
         type: 'scale' | 'throttle' | 'cache' | 'optimize' | 'alert';
-        parameters: any;
+        parameters: Record<string, unknown>;
     };
     enabled: boolean;
     priority: 'low' | 'medium' | 'high' | 'critical';
@@ -56,7 +57,7 @@ export interface OptimizationConfig {
     alert_channels: string[];
 }
 
-class AIPerformanceOptimizationService extends EventEmitter {
+export class AIPerformanceOptimizationService extends EventEmitter {
     private metrics: Map<string, PerformanceMetric[]> = new Map();
     private optimizationRules: Map<string, OptimizationRule> = new Map();
     private systemHealth: SystemHealth = {
@@ -98,7 +99,11 @@ class AIPerformanceOptimizationService extends EventEmitter {
             this.isInitialized = true;
             this.emit('system_initialized', { timestamp: new Date() });
         } catch (error) {
-            console.error('AI 성능 최적화 시스템 초기화 오류:', error);
+            const err = toError(error);
+            errorLogger.error('AI 성능 최적화 시스템 초기화 오류', err, {
+                component: 'aiPerformanceOptimizationService',
+                action: 'initializeSystem',
+            });
             this.emit('system_error', { error: error instanceof Error ? error.message : 'Unknown error' });
         }
     }
@@ -193,7 +198,11 @@ class AIPerformanceOptimizationService extends EventEmitter {
 
             this.emit('metrics_collected', { timestamp: new Date(), systems });
         } catch (error) {
-            console.error('메트릭 수집 오류:', error);
+            const err = toError(error);
+            errorLogger.error('메트릭 수집 오류', err, {
+                component: 'aiPerformanceOptimizationService',
+                action: 'collectMetrics',
+            });
         }
     }
 
@@ -277,8 +286,17 @@ class AIPerformanceOptimizationService extends EventEmitter {
         if (relevantMetrics.length === 0) return false;
 
         const recentMetrics = relevantMetrics.filter(metric => {
-            const timestamp = metric.timestamp instanceof Date ? metric.timestamp : new Date(metric.timestamp);
-            return Date.now() - timestamp.getTime() < condition.duration * 1000;
+            try {
+                const timestamp = metric.timestamp instanceof Date ? metric.timestamp : new Date(metric.timestamp);
+                return timestamp && timestamp.getTime && Date.now() - timestamp.getTime() < condition.duration * 1000;
+            } catch (error) {
+                errorLogger.warn('Invalid timestamp in metric', {
+                    component: 'aiPerformanceOptimizationService',
+                    action: 'checkRuleCondition',
+                    timestamp: String(metric.timestamp),
+                });
+                return false;
+            }
         });
 
         if (recentMetrics.length === 0) return false;
@@ -330,7 +348,13 @@ class AIPerformanceOptimizationService extends EventEmitter {
                 parameters: action.parameters
             });
         } catch (error) {
-            console.error(`최적화 액션 실행 오류 (${rule.id}):`, error);
+            const err = toError(error);
+            errorLogger.error('최적화 액션 실행 오류', err, {
+                component: 'aiPerformanceOptimizationService',
+                action: 'executeOptimizationAction',
+                ruleId: rule.id,
+                actionType: rule.action.type,
+            });
             this.emit('optimization_error', {
                 rule_id: rule.id,
                 error: error instanceof Error ? error.message : 'Unknown error'
@@ -338,28 +362,48 @@ class AIPerformanceOptimizationService extends EventEmitter {
         }
     }
 
-    private async performScaling(parameters: any): Promise<void> {
-        console.log(`스케일링 수행: ${JSON.stringify(parameters)}`);
+    private async performScaling(parameters: Record<string, unknown>): Promise<void> {
+        errorLogger.info('스케일링 수행', {
+            component: 'aiPerformanceOptimizationService',
+            action: 'performScaling',
+            parameters,
+        });
         // 실제 스케일링 로직 구현
     }
 
-    private async performThrottling(parameters: any): Promise<void> {
-        console.log(`스로틀링 수행: ${JSON.stringify(parameters)}`);
+    private async performThrottling(parameters: Record<string, unknown>): Promise<void> {
+        errorLogger.info('스로틀링 수행', {
+            component: 'aiPerformanceOptimizationService',
+            action: 'performThrottling',
+            parameters,
+        });
         // 실제 스로틀링 로직 구현
     }
 
-    private async performCaching(parameters: any): Promise<void> {
-        console.log(`캐싱 수행: ${JSON.stringify(parameters)}`);
+    private async performCaching(parameters: Record<string, unknown>): Promise<void> {
+        errorLogger.info('캐싱 수행', {
+            component: 'aiPerformanceOptimizationService',
+            action: 'performCaching',
+            parameters,
+        });
         // 실제 캐싱 로직 구현
     }
 
-    private async performOptimization(parameters: any): Promise<void> {
-        console.log(`최적화 수행: ${JSON.stringify(parameters)}`);
+    private async performOptimization(parameters: Record<string, unknown>): Promise<void> {
+        errorLogger.info('최적화 수행', {
+            component: 'aiPerformanceOptimizationService',
+            action: 'performOptimization',
+            parameters,
+        });
         // 실제 최적화 로직 구현
     }
 
-    private async sendAlert(parameters: any): Promise<void> {
-        console.log(`알림 전송: ${JSON.stringify(parameters)}`);
+    private async sendAlert(parameters: Record<string, unknown>): Promise<void> {
+        errorLogger.info('알림 전송', {
+            component: 'aiPerformanceOptimizationService',
+            action: 'sendAlert',
+            parameters,
+        });
         // 실제 알림 전송 로직 구현
     }
 
@@ -377,7 +421,7 @@ class AIPerformanceOptimizationService extends EventEmitter {
         }
 
         // 시스템별 상태 업데이트
-        const systems: { [key: string]: any } = {};
+        const systems: Record<string, { status: 'healthy' | 'degraded' | 'critical'; metrics: PerformanceMetric[]; last_updated: Date }> = {};
         for (const [systemName, systemMetrics] of this.metrics.entries()) {
             const criticalCount = systemMetrics.filter(m => m.status === 'critical').length;
             const warningCount = systemMetrics.filter(m => m.status === 'warning').length;
@@ -482,7 +526,7 @@ class AIPerformanceOptimizationService extends EventEmitter {
         this.emit('config_updated', this.config);
     }
 
-    public async performManualOptimization(optimizationType: string, parameters: any): Promise<void> {
+    public async performManualOptimization(optimizationType: string, parameters: Record<string, unknown>): Promise<void> {
         try {
             switch (optimizationType) {
                 case 'scale':
@@ -515,8 +559,8 @@ class AIPerformanceOptimizationService extends EventEmitter {
         }
     }
 
-    public getPerformanceReport(): any {
-        const allMetrics = this.getMetrics();
+    public getPerformanceReport(): Record<string, unknown> {
+        const _allMetrics = this.getMetrics();
         const systems = Array.from(this.metrics.keys());
 
         const report = {

@@ -1,7 +1,25 @@
-// CORBU AI 보안 서비스
+// CORBU.AI 보안 서비스
 // 인증, 권한 관리, 보안 모니터링을 담당하는 통합 보안 서비스
 
 import axios, { AxiosInstance } from 'axios';
+import {
+    API_BASE_URL,
+    API_QUERY_PARAM_LIMIT,
+    FALLBACK_API_ORIGIN,
+    IPIFY_PUBLIC_IP_JSON_URL,
+    AUTH_CHANGE_PASSWORD_PATH,
+    AUTH_LOGIN_PATH,
+    AUTH_LOGOUT_PATH,
+    AUTH_REFRESH_PATH,
+    AUTH_REGISTER_PATH,
+    AUTH_RESET_PASSWORD_PATH,
+    SECURITY_CONFIG_PATH,
+    SECURITY_EVENTS_PATH,
+    SECURITY_METRICS_PATH,
+    resolveAxiosHttpOriginBaseUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { AUTH_TOKEN_STORAGE_KEY, CURRENT_USER_STORAGE_KEY } from './securityStorageKeys';
 
 // ===== 보안 인터페이스 =====
 export interface User {
@@ -29,7 +47,7 @@ export interface SecurityEvent {
     ipAddress: string;
     userAgent: string;
     timestamp: Date;
-    details: any;
+    details: unknown;
     severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
@@ -59,7 +77,7 @@ class SecurityService {
     private config: SecurityConfig;
 
     constructor() {
-        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+        this.baseURL = resolveAxiosHttpOriginBaseUrl((API_BASE_URL || FALLBACK_API_ORIGIN).trim());
         this.api = axios.create({
             baseURL: this.baseURL,
             timeout: 30000,
@@ -127,22 +145,26 @@ class SecurityService {
 
     private loadStoredAuth(): void {
         try {
-            const storedToken = localStorage.getItem('authToken');
-            const storedUser = localStorage.getItem('currentUser');
+            const storedToken = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+            const storedUser = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
             
             if (storedToken && storedUser) {
                 this.authToken = JSON.parse(storedToken);
                 this.currentUser = JSON.parse(storedUser);
             }
         } catch (error) {
-            console.error('저장된 인증 정보 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('저장된 인증 정보 로드 실패', err, {
+                component: 'securityService',
+                action: 'loadStoredAuth',
+            });
             this.clearStoredAuth();
         }
     }
 
     private clearStoredAuth(): void {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('currentUser');
+        localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+        localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
         this.authToken = null;
         this.currentUser = null;
     }
@@ -150,7 +172,7 @@ class SecurityService {
     // ===== 인증 관련 메서드 =====
     async login(username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
         try {
-            const response = await this.api.post('/api/auth/login', {
+            const response = await this.api.post(AUTH_LOGIN_PATH, {
                 username,
                 password,
             });
@@ -160,8 +182,8 @@ class SecurityService {
                 this.currentUser = response.data.data.user;
                 
                 // 로컬 스토리지에 저장
-                localStorage.setItem('authToken', JSON.stringify(this.authToken));
-                localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, JSON.stringify(this.authToken));
+                localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(this.currentUser));
 
                 // 보안 이벤트 로깅
                 if (this.currentUser) {
@@ -188,13 +210,13 @@ class SecurityService {
 
                 return { success: false, error: response.data.error };
             }
-        } catch (error: any) {
-            // 네트워크 오류 등 로깅
+        } catch (error: unknown) {
+            const errMsg = error instanceof Error ? error.message : String(error);
             this.logSecurityEvent({
                 type: 'failed_login',
                 ipAddress: await this.getClientIP(),
                 userAgent: navigator.userAgent,
-                details: { username, error: error.message },
+                details: { username, error: errMsg },
                 severity: 'medium'
             });
 
@@ -205,7 +227,7 @@ class SecurityService {
     async logout(): Promise<void> {
         try {
             if (this.authToken) {
-                await this.api.post('/api/auth/logout', {
+                await this.api.post(AUTH_LOGOUT_PATH, {
                     refreshToken: this.authToken.refreshToken,
                 });
 
@@ -220,7 +242,12 @@ class SecurityService {
                 });
             }
         } catch (error) {
-            console.error('로그아웃 중 오류:', error);
+            const err = toError(error);
+            errorLogger.error('로그아웃 중 오류', err, {
+                component: 'securityService',
+                action: 'logout',
+                userId: this.currentUser?.id,
+            });
         } finally {
             this.clearStoredAuth();
         }
@@ -232,19 +259,23 @@ class SecurityService {
                 throw new Error('리프레시 토큰이 없습니다.');
             }
 
-            const response = await this.api.post('/api/auth/refresh', {
+            const response = await this.api.post(AUTH_REFRESH_PATH, {
                 refreshToken: this.authToken.refreshToken,
             });
 
             if (response.data.success) {
                 this.authToken = response.data.data.token;
-                localStorage.setItem('authToken', JSON.stringify(this.authToken));
+                localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, JSON.stringify(this.authToken));
                 return true;
             } else {
                 throw new Error('토큰 갱신 실패');
             }
         } catch (error) {
-            console.error('토큰 갱신 실패:', error);
+            const err = toError(error);
+            errorLogger.error('토큰 갱신 실패', err, {
+                component: 'securityService',
+                action: 'refreshToken',
+            });
             this.logout();
             return false;
         }
@@ -267,14 +298,14 @@ class SecurityService {
                 return { success: false, error: '비밀번호가 일치하지 않습니다.' };
             }
 
-            const response = await this.api.post('/api/auth/register', userData);
+            const response = await this.api.post(AUTH_REGISTER_PATH, userData);
 
             if (response.data.success) {
                 return { success: true, user: response.data.data.user };
             } else {
                 return { success: false, error: response.data.error };
             }
-        } catch (error: any) {
+        } catch {
             return { success: false, error: '회원가입 중 오류가 발생했습니다.' };
         }
     }
@@ -313,28 +344,46 @@ class SecurityService {
 
         // 서버에 전송
         try {
-            await this.api.post('/api/security/events', securityEvent);
+            await this.api.post(SECURITY_EVENTS_PATH, securityEvent);
         } catch (error) {
-            console.error('보안 이벤트 로깅 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 이벤트 로깅 실패', err, {
+                component: 'securityService',
+                action: 'logSecurityEvent',
+                eventType: securityEvent.type,
+                userId: securityEvent.userId,
+                severity: securityEvent.severity,
+            });
         }
     }
 
     async getSecurityEvents(limit: number = 100): Promise<SecurityEvent[]> {
         try {
-            const response = await this.api.get(`/api/security/events?limit=${limit}`);
+            const response = await this.api.get(SECURITY_EVENTS_PATH, {
+                params: { [API_QUERY_PARAM_LIMIT]: limit },
+            });
             return response.data.data || [];
         } catch (error) {
-            console.error('보안 이벤트 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 이벤트 조회 실패', err, {
+                component: 'securityService',
+                action: 'getSecurityEvents',
+                limit,
+            });
             return this.securityEvents.slice(-limit);
         }
     }
 
-    async getSecurityMetrics(): Promise<any> {
+    async getSecurityMetrics(): Promise<Record<string, unknown>> {
         try {
-            const response = await this.api.get('/api/security/metrics');
+            const response = await this.api.get(SECURITY_METRICS_PATH);
             return response.data.data;
         } catch (error) {
-            console.error('보안 메트릭 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 메트릭 조회 실패', err, {
+                component: 'securityService',
+                action: 'getSecurityMetrics',
+            });
             return {
                 totalEvents: this.securityEvents.length,
                 failedLogins: this.securityEvents.filter(e => e.type === 'failed_login').length,
@@ -346,25 +395,34 @@ class SecurityService {
     // ===== 보안 설정 =====
     async getSecurityConfig(): Promise<SecurityConfig> {
         try {
-            const response = await this.api.get('/api/security/config');
+            const response = await this.api.get(SECURITY_CONFIG_PATH);
             if (response.data.success) {
                 this.config = { ...this.config, ...response.data.data };
             }
         } catch (error) {
-            console.error('보안 설정 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 설정 조회 실패', err, {
+                component: 'securityService',
+                action: 'getSecurityConfig',
+            });
         }
         return this.config;
     }
 
     async updateSecurityConfig(config: Partial<SecurityConfig>): Promise<boolean> {
         try {
-            const response = await this.api.put('/api/security/config', config);
+            const response = await this.api.put(SECURITY_CONFIG_PATH, config);
             if (response.data.success) {
                 this.config = { ...this.config, ...config };
                 return true;
             }
         } catch (error) {
-            console.error('보안 설정 업데이트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 설정 업데이트 실패', err, {
+                component: 'securityService',
+                action: 'updateSecurityConfig',
+                updatedKeys: Object.keys(config),
+            });
         }
         return false;
     }
@@ -398,7 +456,7 @@ class SecurityService {
 
     private async getClientIP(): Promise<string> {
         try {
-            const response = await fetch('https://api.ipify.org?format=json');
+            const response = await fetch(IPIFY_PUBLIC_IP_JSON_URL);
             const data = await response.json();
             return data.ip;
         } catch (error) {
@@ -426,22 +484,22 @@ class SecurityService {
                 return { success: false, error: passwordValidation.error };
             }
 
-            const response = await this.api.post('/api/auth/change-password', {
+            const response = await this.api.post(AUTH_CHANGE_PASSWORD_PATH, {
                 currentPassword,
                 newPassword,
             });
 
             return { success: response.data.success, error: response.data.error };
-        } catch (error: any) {
+        } catch {
             return { success: false, error: '비밀번호 변경 중 오류가 발생했습니다.' };
         }
     }
 
     async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
         try {
-            const response = await this.api.post('/api/auth/reset-password', { email });
+            const response = await this.api.post(AUTH_RESET_PASSWORD_PATH, { email });
             return { success: response.data.success, error: response.data.error };
-        } catch (error: any) {
+        } catch {
             return { success: false, error: '비밀번호 재설정 중 오류가 발생했습니다.' };
         }
     }
@@ -461,6 +519,8 @@ class SecurityService {
         this.startSessionTimeout();
     }
 }
+
+export { AUTH_TOKEN_STORAGE_KEY, CURRENT_USER_STORAGE_KEY } from './securityStorageKeys';
 
 // 싱글톤 인스턴스 생성
 const securityService = new SecurityService();

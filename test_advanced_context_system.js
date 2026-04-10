@@ -5,7 +5,7 @@ const testAdvancedContextSystem = async () => {
     // 테스트 케이스 1: 긴 문서 처리
     console.log('📄 테스트 1: 긴 문서 처리 능력');
     const longDocumentTest = {
-        document_text: `삼성물산의 개포우성7차 재개발 프로젝트에서 시공사 홍보 활동이 논란이 되고 있습니다. 
+        document_text: `삼성물산의 샘플 프로젝트 재개발 프로젝트에서 시공사 홍보 활동이 논란이 되고 있습니다. 
     조합원들이 불법 홍보에 대한 신고를 요구하고 있으며, GS건설과 비교하여 삼성물산의 홍보 수위가 낮다는 의견도 있습니다. 
     이 문제를 분석해주고 카드뉴스 형식으로 작성해줘. 그리고 추가로 다른 시공사들과도 비교 분석해줘.
     또한 조합원들의 의견을 정리하고, 법적 검토도 포함해서 종합적인 보고서를 만들어줘.
@@ -13,7 +13,7 @@ const testAdvancedContextSystem = async () => {
         conversation_history: [
             {
                 id: '1',
-                content: '안녕하세요, 개포우성7차 재개발 관련 문의가 있습니다.',
+                content: '안녕하세요, 샘플 프로젝트 재개발 관련 문의가 있습니다.',
                 sender: 'user',
                 timestamp: '2024-01-01T10:00:00Z',
                 isUser: true,
@@ -21,7 +21,7 @@ const testAdvancedContextSystem = async () => {
             },
             {
                 id: '2',
-                content: '네, 개포우성7차 재개발에 대해 도움드리겠습니다. 어떤 부분이 궁금하신가요?',
+                content: '네, 샘플 프로젝트 재개발에 대해 도움드리겠습니다. 어떤 부분이 궁금하신가요?',
                 sender: 'ai',
                 timestamp: '2024-01-01T10:00:01Z',
                 isUser: false,

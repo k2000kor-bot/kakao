@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import './AIPerformanceMonitor.css';
+import { getHealthStyle, getModelStatusStyle, getAlertTypeStyle, getSeverityBadgeStyle } from '../../styles/themeColors';
 import {
     Activity,
     TrendingUp,
@@ -11,13 +13,7 @@ import {
     CheckCircle,
     XCircle,
     RefreshCw,
-    Settings,
     BarChart,
-    LineChart,
-    Gauge,
-    Thermometer,
-    Network,
-    Database,
     Server
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -90,9 +86,11 @@ interface AIPerformanceMonitorProps {
 
 const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
     onOptimize,
-    onAlert,
-    onModelUpdate
+    onAlert: _onAlert,
+    onModelUpdate: _onModelUpdate
 }) => {
+    void _onAlert; // Reserved for alert handling
+    void _onModelUpdate; // Reserved for model updates
     const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'alerts' | 'optimization'>('overview');
     const [isLoading, setIsLoading] = useState(false);
     const [autoRefresh, setAutoRefresh] = useState(true);
@@ -136,7 +134,7 @@ const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
         }
     });
 
-    const [aiModels, setAiModels] = useState<AIModel[]>([
+    const [aiModels, _setAiModels] = useState<AIModel[]>([
         {
             id: '1',
             name: 'GPT-4 Turbo',
@@ -183,7 +181,7 @@ const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
         }
     ]);
 
-    const [alerts, setAlerts] = useState<PerformanceAlert[]>([
+    const [alerts, _setAlerts] = useState<PerformanceAlert[]>([
         {
             id: '1',
             type: 'warning',
@@ -248,16 +246,6 @@ const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
         }, 1000);
     };
 
-    const getHealthColor = (health: string) => {
-        switch (health) {
-            case 'excellent': return 'text-green-600 bg-green-100';
-            case 'good': return 'text-blue-600 bg-blue-100';
-            case 'warning': return 'text-yellow-600 bg-yellow-100';
-            case 'critical': return 'text-red-600 bg-red-100';
-            default: return 'text-gray-600 bg-gray-100';
-        }
-    };
-
     const getHealthIcon = (health: string) => {
         switch (health) {
             case 'excellent': return <CheckCircle className="h-4 w-4" />;
@@ -269,11 +257,10 @@ const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
     };
 
     const getTrendIcon = (trend: string) => {
-        switch (trend) {
-            case 'improving': return <TrendingUp className="h-4 w-4 text-green-500" />;
-            case 'declining': return <TrendingDown className="h-4 w-4 text-red-500" />;
-            default: return <Activity className="h-4 w-4 text-yellow-500" />;
-        }
+        const s = trend === 'improving' ? 'var(--accent-success)' : trend === 'declining' ? 'var(--accent-error)' : 'var(--accent-warning)';
+        if (trend === 'improving') return <TrendingUp className="h-4 w-4" style={{ color: s }} aria-hidden />;
+        if (trend === 'declining') return <TrendingDown className="h-4 w-4" style={{ color: s }} aria-hidden />;
+        return <Activity className="h-4 w-4" style={{ color: s }} aria-hidden />;
     };
 
     const formatUptime = (seconds: number) => {
@@ -295,55 +282,36 @@ const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
         { id: 'models', name: 'AI 모델', icon: Cpu },
         { id: 'alerts', name: '알림', icon: AlertTriangle },
         { id: 'optimization', name: '최적화', icon: Zap }
-    ];
+    ] as const;
 
     return (
-        <div className="space-y-6">
+        <div className="apm-root" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
             {/* 헤더 */}
-            <div className="flex items-center justify-between">
+            <div className="apm-header">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">AI 성능 모니터링</h2>
-                    <p className="text-gray-600 mt-1">시스템 성능 및 AI 모델 상태를 실시간으로 모니터링하세요</p>
+                    <h2 className="apm-title">AI 성능 모니터링</h2>
+                    <p className="apm-desc">시스템 성능 및 AI 모델 상태를 실시간으로 모니터링하세요</p>
                 </div>
-                <div className="flex items-center space-x-3">
-                    <button
-                        onClick={() => setAutoRefresh(!autoRefresh)}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                            autoRefresh ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                        }`}
-                    >
-                        <RefreshCw className={`h-4 w-4 ${autoRefresh ? 'animate-spin' : ''}`} />
-                        <span className="text-sm font-medium">
-                            {autoRefresh ? '자동 새로고침' : '수동 새로고침'}
-                        </span>
+                <div className="apm-actions">
+                    <button type="button" onClick={() => setAutoRefresh(!autoRefresh)} className={`apm-btn-auto ${autoRefresh ? 'on' : 'off'}`}>
+                        <RefreshCw className={`h-4 w-4 ${autoRefresh ? 'animate-spin' : ''}`} aria-hidden />
+                        <span>{autoRefresh ? '자동 새로고침' : '수동 새로고침'}</span>
                     </button>
-                    <button
-                        onClick={refreshMetrics}
-                        disabled={isLoading}
-                        className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-                    >
-                        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    <button type="button" onClick={refreshMetrics} disabled={isLoading} className="bw-btn-primary">
+                        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} aria-hidden />
                         <span>새로고침</span>
                     </button>
                 </div>
             </div>
 
             {/* 탭 네비게이션 */}
-            <div className="border-b border-gray-200">
-                <nav className="flex space-x-8">
+            <div className="apm-tabs">
+                <nav style={{ display: 'flex', gap: 'var(--spacing-xl)' }}>
                     {tabs.map((tab) => {
                         const IconComponent = tab.icon;
                         return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                    activeTab === tab.id
-                                        ? 'border-purple-500 text-purple-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                }`}
-                            >
-                                <IconComponent className="h-4 w-4" />
+                            <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`apm-tab ${activeTab === tab.id ? 'active' : ''}`}>
+                                <IconComponent className="h-4 w-4" aria-hidden />
                                 <span>{tab.name}</span>
                             </button>
                         );
@@ -362,144 +330,110 @@ const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
                         className="space-y-6"
                     >
                         {/* 시스템 상태 카드 */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-                            >
-                                <div className="flex items-center justify-between">
+                        <div className="apm-grid-4">
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="apm-card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-600">시스템 상태</p>
-                                        <div className="flex items-center space-x-2 mt-2">
+                                        <p className="apm-label">시스템 상태</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-sm)' }}>
                                             {getHealthIcon(metrics.system.health)}
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getHealthColor(metrics.system.health)}`}>
-                                                {metrics.system.health === 'excellent' ? '우수' :
-                                                 metrics.system.health === 'good' ? '양호' :
-                                                 metrics.system.health === 'warning' ? '경고' : '위험'}
+                                            <span className="apm-badge" style={getHealthStyle(metrics.system.health)}>
+                                                {metrics.system.health === 'excellent' ? '우수' : metrics.system.health === 'good' ? '양호' : metrics.system.health === 'warning' ? '경고' : '위험'}
                                             </span>
                                         </div>
                                     </div>
-                                    <Server className="h-8 w-8 text-purple-600" />
+                                    <Server className="h-8 w-8" style={{ color: 'var(--accent-secondary)' }} aria-hidden />
                                 </div>
-                                <div className="mt-4 text-sm text-gray-500">
-                                    가동시간: {formatUptime(metrics.system.uptime)}
-                                </div>
+                                <div className="apm-meta" style={{ marginTop: 'var(--spacing-md)' }}>가동시간: {formatUptime(metrics.system.uptime)}</div>
                             </motion.div>
 
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-                            >
-                                <div className="flex items-center justify-between">
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="apm-card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-600">CPU 사용률</p>
-                                        <p className="text-2xl font-bold text-gray-900">{metrics.cpu.usage.toFixed(1)}%</p>
-                                        <p className="text-sm text-gray-500">{metrics.cpu.temperature}°C</p>
+                                        <p className="apm-label">CPU 사용률</p>
+                                        <p className="apm-value">{metrics.cpu.usage.toFixed(1)}%</p>
+                                        <p className="apm-meta">{metrics.cpu.temperature}°C</p>
                                     </div>
-                                    <Cpu className="h-8 w-8 text-blue-600" />
+                                    <Cpu className="h-8 w-8" style={{ color: 'var(--accent-info)' }} aria-hidden />
                                 </div>
-                                <div className="mt-4">
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div
-                                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                            style={{ width: `${metrics.cpu.usage}%` }}
-                                        />
+                                <div style={{ marginTop: 'var(--spacing-md)' }}>
+                                    <div className="apm-progress">
+                                        <div className="apm-progress-bar" style={{ width: `${metrics.cpu.usage}%`, background: 'var(--accent-info)' }} />
                                     </div>
                                 </div>
                             </motion.div>
 
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-                            >
-                                <div className="flex items-center justify-between">
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="apm-card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-600">메모리 사용률</p>
-                                        <p className="text-2xl font-bold text-gray-900">
-                                            {((metrics.memory.used / metrics.memory.total) * 100).toFixed(1)}%
-                                        </p>
-                                        <p className="text-sm text-gray-500">
-                                            {formatBytes(metrics.memory.used)} / {formatBytes(metrics.memory.total)}
-                                        </p>
+                                        <p className="apm-label">메모리 사용률</p>
+                                        <p className="apm-value">{((metrics.memory.used / metrics.memory.total) * 100).toFixed(1)}%</p>
+                                        <p className="apm-meta">{formatBytes(metrics.memory.used)} / {formatBytes(metrics.memory.total)}</p>
                                     </div>
-                                    <HardDrive className="h-8 w-8 text-green-600" />
+                                    <HardDrive className="h-8 w-8" style={{ color: 'var(--accent-success)' }} aria-hidden />
                                 </div>
-                                <div className="mt-4">
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div
-                                            className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                                            style={{ width: `${(metrics.memory.used / metrics.memory.total) * 100}%` }}
-                                        />
+                                <div style={{ marginTop: 'var(--spacing-md)' }}>
+                                    <div className="apm-progress">
+                                        <div className="apm-progress-bar" style={{ width: `${(metrics.memory.used / metrics.memory.total) * 100}%`, background: 'var(--accent-success)' }} />
                                     </div>
                                 </div>
                             </motion.div>
 
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-                            >
-                                <div className="flex items-center justify-between">
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="apm-card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-600">응답 시간</p>
-                                        <p className="text-2xl font-bold text-gray-900">{metrics.responseTime.average}ms</p>
-                                        <div className="flex items-center space-x-1 mt-1">
+                                        <p className="apm-label">응답 시간</p>
+                                        <p className="apm-value">{metrics.responseTime.average}ms</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', marginTop: 'var(--spacing-xs)' }}>
                                             {getTrendIcon(metrics.responseTime.trend)}
-                                            <span className="text-sm text-gray-500">
-                                                {metrics.responseTime.trend === 'improving' ? '개선 중' :
-                                                 metrics.responseTime.trend === 'declining' ? '악화 중' : '안정'}
+                                            <span className="apm-meta">
+                                                {metrics.responseTime.trend === 'improving' ? '개선 중' : metrics.responseTime.trend === 'declining' ? '악화 중' : '안정'}
                                             </span>
                                         </div>
                                     </div>
-                                    <Clock className="h-8 w-8 text-orange-600" />
+                                    <Clock className="h-8 w-8" style={{ color: 'var(--accent-orange)' }} aria-hidden />
                                 </div>
                             </motion.div>
                         </div>
 
                         {/* 성능 지표 */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">처리량</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">초당 요청</span>
-                                        <span className="font-medium">{metrics.throughput.requestsPerSecond}</span>
+                        <div className="apm-grid-2">
+                            <div className="apm-card">
+                                <h3 className="apm-card-title" style={{ marginBottom: 'var(--spacing-md)' }}>처리량</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="apm-label">초당 요청</span>
+                                        <span className="apm-value" style={{ fontSize: 'var(--font-size-base)' }}>{metrics.throughput.requestsPerSecond}</span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">총 요청</span>
-                                        <span className="font-medium">{metrics.throughput.totalRequests.toLocaleString()}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="apm-label">총 요청</span>
+                                        <span style={{ fontWeight: 500 }}>{metrics.throughput.totalRequests.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">성공률</span>
-                                        <span className="font-medium text-green-600">{metrics.throughput.successRate}%</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="apm-label">성공률</span>
+                                        <span style={{ fontWeight: 500, color: 'var(--accent-success)' }}>{metrics.throughput.successRate}%</span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">오류률</span>
-                                        <span className="font-medium text-red-600">{metrics.throughput.errorRate}%</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="apm-label">오류률</span>
+                                        <span style={{ fontWeight: 500, color: 'var(--accent-error)' }}>{metrics.throughput.errorRate}%</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 모델</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">활성 모델</span>
-                                        <span className="font-medium">{metrics.aiModels.active} / {metrics.aiModels.total}</span>
+                            <div className="apm-card">
+                                <h3 className="apm-card-title" style={{ marginBottom: 'var(--spacing-md)' }}>AI 모델</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="apm-label">활성 모델</span>
+                                        <span style={{ fontWeight: 500 }}>{metrics.aiModels.active} / {metrics.aiModels.total}</span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">평균 정확도</span>
-                                        <span className="font-medium text-green-600">{metrics.aiModels.accuracy}%</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="apm-label">평균 정확도</span>
+                                        <span style={{ fontWeight: 500, color: 'var(--accent-success)' }}>{metrics.aiModels.accuracy}%</span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">평균 지연시간</span>
-                                        <span className="font-medium">{metrics.aiModels.latency}ms</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="apm-label">평균 지연시간</span>
+                                        <span style={{ fontWeight: 500 }}>{metrics.aiModels.latency}ms</span>
                                     </div>
                                 </div>
                             </div>
@@ -508,174 +442,133 @@ const AIPerformanceMonitor: React.FC<AIPerformanceMonitorProps> = ({
                 )}
 
                 {activeTab === 'models' && (
-                    <motion.div
-                        key="models"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
-                    >
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-900">AI 모델 상태</h3>
+                    <motion.div key="models" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <div className="apm-card" style={{ padding: 0 }}>
+                            <div className="apm-card-header">
+                                <h3 className="apm-card-title">AI 모델 상태</h3>
                             </div>
-                            <div className="divide-y divide-gray-200">
-                                {aiModels.map((model) => (
-                                    <div key={model.id} className="p-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-4">
-                                                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                    <Cpu className="h-5 w-5 text-purple-600" />
+                            <div>
+                                {aiModels.map((model) => {
+                                    const statusStyle = getModelStatusStyle(model.status);
+                                    const iconStyle = { backgroundColor: 'var(--accent-info-muted)', color: 'var(--accent-info)' };
+                                    return (
+                                        <div key={model.id} className="apm-row">
+                                            <div className="apm-row-content">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                                                    <div className="apm-icon-wrap" style={iconStyle}>
+                                                        <Cpu className="h-5 w-5" aria-hidden />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="apm-value" style={{ fontSize: 'var(--font-size-base)' }}>{model.name}</h4>
+                                                        <p className="apm-label">{model.type}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-medium text-gray-900">{model.name}</h4>
-                                                    <p className="text-sm text-gray-600">{model.type}</p>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-lg)' }}>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <p className="apm-label">정확도</p>
+                                                        <p style={{ fontWeight: 500, color: 'var(--accent-success)' }}>{model.accuracy}%</p>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <p className="apm-label">지연시간</p>
+                                                        <p style={{ fontWeight: 500 }}>{model.latency}ms</p>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <p className="apm-label">요청</p>
+                                                        <p style={{ fontWeight: 500 }}>{model.requests.toLocaleString()}</p>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <p className="apm-label">오류</p>
+                                                        <p style={{ fontWeight: 500, color: 'var(--accent-error)' }}>{model.errors}</p>
+                                                    </div>
+                                                    <span className="apm-badge" style={statusStyle}>
+                                                        {model.status === 'active' ? '활성' : model.status === 'training' ? '학습 중' : model.status === 'error' ? '오류' : '비활성'}
+                                                    </span>
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center space-x-6">
-                                                <div className="text-center">
-                                                    <p className="text-sm text-gray-600">정확도</p>
-                                                    <p className="font-medium text-green-600">{model.accuracy}%</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-sm text-gray-600">지연시간</p>
-                                                    <p className="font-medium">{model.latency}ms</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-sm text-gray-600">요청</p>
-                                                    <p className="font-medium">{model.requests.toLocaleString()}</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-sm text-gray-600">오류</p>
-                                                    <p className="font-medium text-red-600">{model.errors}</p>
-                                                </div>
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    model.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                    model.status === 'training' ? 'bg-yellow-100 text-yellow-800' :
-                                                    model.status === 'error' ? 'bg-red-100 text-red-800' :
-                                                    'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                    {model.status === 'active' ? '활성' :
-                                                     model.status === 'training' ? '학습 중' :
-                                                     model.status === 'error' ? '오류' : '비활성'}
-                                                </span>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </motion.div>
                 )}
 
                 {activeTab === 'alerts' && (
-                    <motion.div
-                        key="alerts"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
-                    >
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-900">성능 알림</h3>
+                    <motion.div key="alerts" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <div className="apm-card" style={{ padding: 0 }}>
+                            <div className="apm-card-header">
+                                <h3 className="apm-card-title">성능 알림</h3>
                             </div>
-                            <div className="divide-y divide-gray-200">
-                                {alerts.map((alert) => (
-                                    <div key={alert.id} className="p-6">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-start space-x-3">
-                                                <div className={`p-2 rounded-lg ${
-                                                    alert.type === 'error' ? 'bg-red-100' :
-                                                    alert.type === 'warning' ? 'bg-yellow-100' :
-                                                    alert.type === 'success' ? 'bg-green-100' :
-                                                    'bg-blue-100'
-                                                }`}>
-                                                    {alert.type === 'error' ? <XCircle className="h-4 w-4 text-red-600" /> :
-                                                     alert.type === 'warning' ? <AlertTriangle className="h-4 w-4 text-yellow-600" /> :
-                                                     alert.type === 'success' ? <CheckCircle className="h-4 w-4 text-green-600" /> :
-                                                     <AlertTriangle className="h-4 w-4 text-blue-600" />}
+                            <div>
+                                {alerts.map((alert) => {
+                                    const typeStyle = getAlertTypeStyle(alert.type);
+                                    const sevStyle = getSeverityBadgeStyle(alert.severity);
+                                    const Icon = alert.type === 'error' ? XCircle : alert.type === 'success' ? CheckCircle : AlertTriangle;
+                                    return (
+                                        <div key={alert.id} className="apm-row">
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-md)' }}>
+                                                    <div className="apm-alert-icon" style={typeStyle}>
+                                                        <Icon className="h-4 w-4" aria-hidden />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="apm-value" style={{ fontSize: 'var(--font-size-base)' }}>{alert.title}</h4>
+                                                        <p className="apm-label" style={{ marginTop: 'var(--spacing-xs)' }}>{alert.message}</p>
+                                                        <p className="apm-meta" style={{ marginTop: 'var(--spacing-sm)' }}>{alert.timestamp.toLocaleString()}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-medium text-gray-900">{alert.title}</h4>
-                                                    <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
-                                                    <p className="text-xs text-gray-500 mt-2">
-                                                        {alert.timestamp.toLocaleString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center space-x-2">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    alert.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                                                    alert.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                                                    alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                    {alert.severity === 'critical' ? '치명적' :
-                                                     alert.severity === 'high' ? '높음' :
-                                                     alert.severity === 'medium' ? '보통' : '낮음'}
-                                                </span>
-                                                {alert.resolved && (
-                                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                                        해결됨
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                                                    <span className="apm-badge" style={sevStyle}>
+                                                        {alert.severity === 'critical' ? '치명적' : alert.severity === 'high' ? '높음' : alert.severity === 'medium' ? '보통' : '낮음'}
                                                     </span>
-                                                )}
+                                                    {alert.resolved && (
+                                                        <span className="apm-badge" style={{ color: 'var(--accent-success)', backgroundColor: 'var(--accent-success-muted)' }}>해결됨</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </motion.div>
                 )}
 
                 {activeTab === 'optimization' && (
-                    <motion.div
-                        key="optimization"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
-                    >
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">성능 최적화</h3>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <motion.div key="optimization" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <div className="apm-card">
+                            <h3 className="apm-card-title" style={{ marginBottom: 'var(--spacing-md)' }}>성능 최적화</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                                <div className="apm-opt-row">
                                     <div>
-                                        <h4 className="font-medium text-gray-900">자동 최적화</h4>
-                                        <p className="text-sm text-gray-600">시스템 성능을 자동으로 최적화합니다</p>
+                                        <h4 className="apm-value" style={{ fontSize: 'var(--font-size-base)' }}>자동 최적화</h4>
+                                        <p className="apm-label">시스템 성능을 자동으로 최적화합니다</p>
                                     </div>
-                                    <button
-                                        onClick={onOptimize}
-                                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                                    >
-                                        최적화 실행
-                                    </button>
+                                    <button type="button" onClick={onOptimize} className="bw-btn-primary">최적화 실행</button>
                                 </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-4 border border-gray-200 rounded-lg">
-                                        <h4 className="font-medium text-gray-900 mb-2">권장 사항</h4>
-                                        <ul className="text-sm text-gray-600 space-y-1">
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--spacing-md)' }}>
+                                    <div className="apm-opt-card">
+                                        <h4 className="apm-value" style={{ fontSize: 'var(--font-size-base)', marginBottom: 'var(--spacing-sm)' }}>권장 사항</h4>
+                                        <ul className="apm-label" style={{ paddingLeft: 'var(--spacing-md)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
                                             <li>• CPU 사용률이 높습니다. 불필요한 프로세스를 종료하세요.</li>
                                             <li>• 메모리 사용률이 정상 범위입니다.</li>
                                             <li>• 응답 시간이 개선되고 있습니다.</li>
                                         </ul>
                                     </div>
-                                    <div className="p-4 border border-gray-200 rounded-lg">
-                                        <h4 className="font-medium text-gray-900 mb-2">최적화 상태</h4>
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600">CPU 최적화</span>
-                                                <span className="text-sm font-medium text-green-600">완료</span>
+                                    <div className="apm-opt-card">
+                                        <h4 className="apm-value" style={{ fontSize: 'var(--font-size-base)', marginBottom: 'var(--spacing-sm)' }}>최적화 상태</h4>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span className="apm-label">CPU 최적화</span>
+                                                <span style={{ fontWeight: 500, color: 'var(--accent-success)' }}>완료</span>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600">메모리 최적화</span>
-                                                <span className="text-sm font-medium text-green-600">완료</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span className="apm-label">메모리 최적화</span>
+                                                <span style={{ fontWeight: 500, color: 'var(--accent-success)' }}>완료</span>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600">네트워크 최적화</span>
-                                                <span className="text-sm font-medium text-yellow-600">진행 중</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span className="apm-label">네트워크 최적화</span>
+                                                <span style={{ fontWeight: 500, color: 'var(--accent-warning)' }}>진행 중</span>
                                             </div>
                                         </div>
                                     </div>

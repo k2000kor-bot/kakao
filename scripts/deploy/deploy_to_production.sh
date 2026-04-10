@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# CORBU AI 시스템 프로덕션 배포 스크립트
+# CORBU.AI 시스템 프로덕션 배포 스크립트
 # 버전: 2.0.0 (고급 품질 향상 버전)
 
-echo "🚀 CORBU AI 시스템 프로덕션 배포 시작..."
+echo "🚀 CORBU.AI 시스템 프로덕션 배포 시작..."
 echo "=================================================="
 
 # 색상 정의
@@ -69,6 +69,13 @@ print_info "프로덕션 빌드 시작..."
 if [ -d "build" ]; then
     rm -rf build
     print_info "기존 빌드 폴더 삭제 완료"
+fi
+
+# Jest 테스트 import (빌드 전)
+print_info "Jest 테스트 import 패턴 검사..."
+if ! npm run check:test-imports; then
+    print_error "check:test-imports 실패"
+    exit 1
 fi
 
 # 새 빌드 실행
@@ -274,7 +281,7 @@ show_deployment_info() {
     echo "-------------------"
     
     print_info "프로젝트 정보:"
-    echo "  - 프로젝트명: CORBU AI 시스템"
+    echo "  - 프로젝트명: CORBU.AI 시스템"
     echo "  - 버전: 2.0.0 (고급 품질 향상 버전)"
     echo "  - 빌드 크기: $BUILD_SIZE"
     echo "  - Node.js 버전: $NODE_VERSION"
@@ -310,7 +317,7 @@ show_deployment_info() {
 echo ""
 echo "🎉 배포 프로세스 완료!"
 echo "=================================================="
-print_success "CORBU AI 시스템이 성공적으로 배포 준비되었습니다!"
+print_success "CORBU.AI 시스템이 성공적으로 배포 준비되었습니다!"
 print_info "시스템이 완전히 준비되어 즉시 사용 가능한 상태입니다."
 
 echo ""
@@ -321,4 +328,4 @@ echo "3. API 키 설정 (Gemini, OpenAI, Claude)"
 echo "4. 사용자 가이드 참조"
 
 echo ""
-echo "🏆 CORBU AI 시스템 프로덕션 배포 완료!"
+echo "🏆 CORBU.AI 시스템 프로덕션 배포 완료!"

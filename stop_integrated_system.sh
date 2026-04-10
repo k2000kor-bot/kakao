@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# CORBU AI 통합 자동 학습 시스템 중지 스크립트
+# CORBU.AI 통합 자동 학습 시스템 중지 스크립트
 
-echo "🛑 CORBU AI 통합 자동 학습 시스템을 중지합니다..."
+echo "🛑 CORBU.AI 통합 자동 학습 시스템을 중지합니다..."
 
 # PID 파일에서 프로세스 ID 읽기
 if [ -f ".integrated_backend.pid" ]; then

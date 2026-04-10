@@ -1,9 +1,5 @@
 import { EventEmitter } from 'events';
-import { ultraAdvancedAIService } from './ultraAdvancedAIService';
-import ultraAdvancedAIOrchestrationService from './ultraAdvancedAIOrchestrationService';
-import ultraAdvancedAIIntegrationManager from './ultraAdvancedAIIntegrationManager';
-import ultraAdvancedAIPredictiveAnalyticsSystem from './ultraAdvancedAIPredictiveAnalyticsSystem';
-import ultraAdvancedAIAutomationSystem from './ultraAdvancedAIAutomationSystem';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface EthicsPolicy {
     id: string;
@@ -33,12 +29,12 @@ export interface EthicsRule {
     conditions: {
         field: string;
         operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'regex' | 'custom';
-        value: any;
+        value: unknown;
         logic: 'AND' | 'OR';
     }[];
     actions: {
         action_type: string;
-        parameters: Record<string, any>;
+        parameters: Record<string, unknown>;
         severity: 'info' | 'warning' | 'error' | 'critical';
     }[];
     enabled: boolean;
@@ -214,7 +210,10 @@ class UltraAdvancedAIEthicsAndGovernanceSystem extends EventEmitter {
         super();
         this.initializeSystem();
         this._isInitialized = true;
-        console.log('⚖️ 고도화된 AI 윤리 및 거버넌스 시스템이 초기화되었습니다.');
+        errorLogger.info('⚖️ 고도화된 AI 윤리 및 거버넌스 시스템이 초기화되었습니다.', {
+            component: 'ultraAdvancedAIEthicsAndGovernanceSystem',
+            action: 'constructor',
+        });
     }
 
     private async initializeSystem(): Promise<void> {
@@ -429,7 +428,11 @@ class UltraAdvancedAIEthicsAndGovernanceSystem extends EventEmitter {
             this.emit('system_initialized', this.metrics);
 
         } catch (error) {
-            console.error('AI 윤리 및 거버넌스 시스템 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('AI 윤리 및 거버넌스 시스템 초기화 실패', err, {
+                component: 'ultraAdvancedAIEthicsAndGovernanceSystem',
+                action: 'initializeSystem',
+            });
             this.emit('initialization_error', error);
         }
     }
@@ -446,7 +449,12 @@ class UltraAdvancedAIEthicsAndGovernanceSystem extends EventEmitter {
             this.updateMetrics();
 
         } catch (error) {
-            console.error(`정책 생성 실패 (${policyConfig.id}):`, error);
+            const err = toError(error);
+            errorLogger.error(`정책 생성 실패 (${policyConfig.id})`, err, {
+                component: 'ultraAdvancedAIEthicsAndGovernanceSystem',
+                action: 'createPolicy',
+                policyId: policyConfig.id,
+            });
             this.emit('policy_creation_error', policyConfig.id, error);
         }
     }
@@ -458,12 +466,17 @@ class UltraAdvancedAIEthicsAndGovernanceSystem extends EventEmitter {
             this.updateMetrics();
 
         } catch (error) {
-            console.error(`프레임워크 생성 실패 (${frameworkConfig.id}):`, error);
+            const err = toError(error);
+            errorLogger.error(`프레임워크 생성 실패 (${frameworkConfig.id})`, err, {
+                component: 'ultraAdvancedAIEthicsAndGovernanceSystem',
+                action: 'createFramework',
+                frameworkId: frameworkConfig.id,
+            });
             this.emit('framework_creation_error', frameworkConfig.id, error);
         }
     }
 
-    public async validateData(data: any, context?: any): Promise<{
+    public async validateData(data: Record<string, unknown>, context?: Record<string, unknown>): Promise<{
         is_valid: boolean;
         violations: EthicsViolation[];
         compliance_score: number;
@@ -503,7 +516,7 @@ class UltraAdvancedAIEthicsAndGovernanceSystem extends EventEmitter {
         };
     }
 
-    private async evaluateRule(rule: EthicsRule, data: any, context?: any): Promise<EthicsViolation | null> {
+    private async evaluateRule(rule: EthicsRule, data: Record<string, unknown>, context?: Record<string, unknown>): Promise<EthicsViolation | null> {
         // 규칙 평가 시뮬레이션
         const shouldViolate = Math.random() < 0.1; // 10% 확률로 위반
 
@@ -513,13 +526,13 @@ class UltraAdvancedAIEthicsAndGovernanceSystem extends EventEmitter {
                 policy_id: 'unknown',
                 rule_id: rule.id,
                 severity: 'medium',
-                description: `규칙 "${rule.name}" 위반이 감지되었습니다.`,
+                description: `규칙 "${String(rule.name ?? '')}" 위반이 감지되었습니다.`,
                 detected_at: new Date(),
                 resolved_at: null,
                 status: 'open',
                 affected_data: {
                     data_type: typeof data,
-                    data_source: context?.source || 'unknown',
+                    data_source: String(context?.source ?? 'unknown'),
                     data_volume: 1,
                     user_impact: Math.random() * 100
                 },

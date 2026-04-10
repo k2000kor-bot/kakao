@@ -484,10 +484,13 @@ async def get_context_history(chat_room_id: str):
 
 # 서버 시작
 if __name__ == "__main__":
+    _p = int(
+        os.environ.get("CONTEXT_ANALYSIS_SERVER_PORT", os.environ.get("PORT", "8008"))
+    )
     print("🚀 컨텍스트 분석 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8008")
-    print("📖 API 문서: http://localhost:8008/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 엔드포인트:")
     print("   POST /api/analyze-context - 컨텍스트 분석")
     print("   GET /api/situation-patterns - 상황 패턴 목록")
@@ -502,7 +505,7 @@ if __name__ == "__main__":
         
         # 서버 시작
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8008, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=_p, log_level="info")
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

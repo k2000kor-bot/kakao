@@ -712,6 +712,7 @@ async def health_check():
     }
 
 if __name__ == "__main__":
+    import os
     import uvicorn
     
     # 로깅 설정
@@ -720,10 +721,10 @@ if __name__ == "__main__":
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
-    # 서버 실행
+    _p = int(os.environ.get("ENTERPRISE_MICROSERVICE_ARCHITECTURE_PORT", os.environ.get("PORT", "8000")))
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8000,
+        port=_p,
         log_level="info"
     ) 

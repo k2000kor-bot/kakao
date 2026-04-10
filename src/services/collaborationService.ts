@@ -1,5 +1,3 @@
-import { Project, Chat, Message } from '../types/project';
-
 export interface CollaborationUser {
   id: string;
   name: string;
@@ -56,7 +54,7 @@ export interface CollaborationActivity {
   targetType: 'project' | 'chat' | 'message' | 'knowledge' | 'comment';
   targetId: string;
   timestamp: Date;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 class CollaborationService {
@@ -286,7 +284,7 @@ class CollaborationService {
     action: CollaborationActivity['action'],
     targetType: CollaborationActivity['targetType'],
     targetId: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): CollaborationActivity {
     const activities = this.getProjectActivities(projectId);
     const newActivity: CollaborationActivity = {

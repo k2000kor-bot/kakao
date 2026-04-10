@@ -19,6 +19,9 @@ import logging
 import uuid
 from collections import defaultdict, deque
 import random
+import os
+
+from cors_config import get_cors_allow_origins
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +32,7 @@ app = FastAPI(title="통합 백엔드 API 서버", version="1.0.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -653,4 +656,5 @@ if __name__ == "__main__":
     print("   🔄 WebSocket 실시간 통신")
     print("   📊 실시간 통계 및 분석")
     
-    uvicorn.run(app, host="0.0.0.0", port=8095) 
+    _p = int(os.environ.get("INTEGRATED_API_SERVER_PORT", os.environ.get("PORT", "8095")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

@@ -1,0 +1,16 @@
+---
+description: 개발·검증·배포 터미널 명령은 샌드박스 없이 실행
+alwaysApply: true
+---
+
+# 터미널: 샌드박스 해제 (개발 포함)
+
+`node`, `npm`, `npx`, `pnpm`, `yarn`으로 **프로젝트 루트**에서 실행하는 명령은 샌드박스에서 `node_modules` 등에 접근할 때 **EPERM**이 나기 쉽습니다.  
+다음에 해당하면 터미널 도구 호출 시 **항상** `required_permissions: ["all"]`을 사용하세요.
+
+- **개발**: `npm run dev`, `vite`, `next dev` 등 로컬 서버
+- **테스트·타입체크**: `jest`, `npx jest`, `vitest`, `npm test`, `npm run test:*`, `tsc`, `eslint`
+- **의존성**: `npm install`, `npm ci`
+- **검증·배포**: `npm run verify:completion`, `npm run test:views`, `npm run deploy:check`, `npm run deploy:static`, `npm run deploy:dev`
+
+실행 위치는 **package.json이 있는 디렉터리**(예: `kakao-frontend/kakao-frontend` 또는 `kakao-frontend/kakao-frontend/frontend`)입니다.

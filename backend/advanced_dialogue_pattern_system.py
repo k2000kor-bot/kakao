@@ -7,6 +7,7 @@
 - 실시간 대화 흐름 분석 및 적응
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -1531,4 +1532,5 @@ if __name__ == "__main__":
     for i, (type_name, type_data) in enumerate(advanced_dialogue_system.dialogue_patterns.items(), 1):
         print(f"   {i:2d}. {type_name}: {type_data['description']}")
     
-    uvicorn.run(app, host="0.0.0.0", port=8094) 
+    _p = int(os.environ.get("ADVANCED_DIALOGUE_PATTERN_PORT", os.environ.get("PORT", "8094")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

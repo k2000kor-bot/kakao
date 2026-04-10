@@ -17,7 +17,7 @@ npm start &
 REACT_PID=$!
 
 echo "✅ 모든 서버가 시작되었습니다!"
-echo "📍 백엔드: http://localhost:8000"
+echo "📍 백엔드(simple_working_chat 등): 레거시 스크립트 — 통합 API는 http://localhost:5002 권장"
 echo "📍 React 앱: http://localhost:3000"
 echo ""
 echo "프로세스 ID:"

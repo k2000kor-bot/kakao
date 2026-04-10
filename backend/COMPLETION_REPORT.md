@@ -1,8 +1,8 @@
-# CORBU AI Backend API 구현 완료 보고서
+# CORBU.AI Backend API 구현 완료 보고서
 
 ## 📋 프로젝트 개요
 
-CORBU AI Backend API는 FastAPI 기반의 완전한 인증, 보안, 사용자 관리 시스템입니다.
+CORBU.AI Backend API는 FastAPI 기반의 완전한 인증, 보안, 사용자 관리 시스템입니다.
 
 **구현 일자**: 2024년
 **버전**: 1.0.0
@@ -121,9 +121,9 @@ cd backend
 python app.py
 
 # 3. 접속
-# - API: http://localhost:5001
-# - 문서: http://localhost:5001/docs
-# - 헬스 체크: http://localhost:5001/api/health
+# - API: http://localhost:5002
+# - 문서: http://localhost:5002/api/docs
+# - 헬스 체크: http://localhost:5002/api/health
 ```
 
 ## 📊 테스트

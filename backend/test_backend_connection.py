@@ -3,15 +3,25 @@
 백엔드 API 서버 연결 테스트 스크립트
 """
 
+import os
 import requests
 import json
 import time
 from datetime import datetime
 
+
+def _legacy_integrated_api_base() -> str:
+    """integrated_api_server(레거시) 테스트 베이스."""
+    port = os.environ.get("INTEGRATED_API_SERVER_PORT") or "8095"
+    return os.environ.get(
+        "CORBU_INTEGRATED_API_TEST_BASE", f"http://localhost:{port}"
+    ).rstrip("/")
+
+
 def test_server_connection():
     """서버 연결 테스트"""
-    
-    base_url = "http://localhost:8095"
+
+    base_url = _legacy_integrated_api_base()
     
     print("🔗 백엔드 API 서버 연결 테스트 시작")
     print("=" * 50)
@@ -132,7 +142,7 @@ def test_performance():
     print("\n⚡ 성능 테스트 시작")
     print("-" * 30)
     
-    base_url = "http://localhost:8095"
+    base_url = _legacy_integrated_api_base()
     test_messages = [
         "이 결정은 공정하지 않습니다.",
         "정말 화가 납니다!",

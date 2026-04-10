@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# CORBU AI 고도화된 자동 통합 시스템 시작 스크립트
+# CORBU.AI 고도화된 자동 통합 시스템 시작 스크립트
 
-echo "🚀 CORBU AI 고도화된 자동 통합 시스템을 시작합니다..."
+echo "🚀 CORBU.AI 고도화된 자동 통합 시스템을 시작합니다..."
 
 # 필요한 디렉토리 생성
 echo "📁 필요한 디렉토리를 생성합니다..."
@@ -106,7 +106,7 @@ check_service 5000 "기존 API"
 
 echo ""
 echo "🎉 고도화된 통합 시스템이 성공적으로 시작되었습니다!"
-echo "브라우저에서 http://localhost:3000 을 열어 CORBU AI를 사용하세요."
+echo "브라우저에서 http://localhost:3000 을 열어 CORBU.AI를 사용하세요."
 echo ""
 echo "💡 사용 방법:"
 echo "   1. 파일을 업로드하면 6개 시스템이 자동으로 연동됩니다"

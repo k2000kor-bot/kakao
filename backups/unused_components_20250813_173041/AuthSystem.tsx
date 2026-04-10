@@ -104,7 +104,7 @@ const AuthSystem: React.FC<AuthSystemProps> = ({ onAuthSuccess, onAuthFailure })
         addNotification({
           type: 'success',
           title: '로그인 성공',
-          message: 'CORBU AI에 오신 것을 환영합니다!'
+          message: 'CORBU.AI에 오신 것을 환영합니다!'
         });
         onAuthSuccess();
       } else {

@@ -13,7 +13,8 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
 if __name__ == "__main__":
-    os.chdir('/Users/aD/kakao-frontend')
+    _ROOT = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(_ROOT)
     
     with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
         print(f"🚀 CORBU.AI 서버를 시작합니다...")

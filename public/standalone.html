@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CORBU.AI - 접속 확인</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: #1a1a2e;
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: #16213e;
+      padding: 40px;
+      border-radius: 16px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      border: 1px solid #0f3460;
+    }
+    h1 { font-size: 28px; margin-bottom: 12px; color: #e94560; }
+    p { font-size: 16px; line-height: 1.6; margin-bottom: 12px; color: #a0a0a0; }
+    .ok { color: #00d26a; font-weight: bold; margin-top: 20px; font-size: 18px; }
+    a { color: #e94560; }
+    .url { background: #0f3460; padding: 12px; border-radius: 8px; margin: 16px 0; font-size: 14px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>CORBU.AI</h1>
+    <p><strong>이 화면이 보이면</strong> 개발 서버에 정상 접속된 것입니다.</p>
+    <p class="url">접속 주소: <span id="url"></span></p>
+    <p>메인 앱: <a href="/">여기를 클릭</a> (또는 주소창에 / 입력 후 이동)</p>
+    <p class="ok">✓ 연결 확인 완료</p>
+  </div>
+  <script>
+    document.getElementById('url').textContent = window.location.origin || window.location.href;
+  </script>
+</body>
+</html>

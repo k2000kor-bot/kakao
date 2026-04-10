@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# CORBU AI PWA 아이콘 최적화 스크립트
-echo "🖼️ CORBU AI PWA 아이콘 최적화 시작..."
+# CORBU.AI PWA 아이콘 최적화 스크립트
+echo "🖼️ CORBU.AI PWA 아이콘 최적화 시작..."
 
 # 필요한 도구 설치 확인
 if ! command -v convert &> /dev/null; then
@@ -15,7 +15,7 @@ mkdir -p public/icons
 
 echo "📱 PWA 아이콘 생성 중..."
 
-# 기본 아이콘들 생성 (CORBU AI 브랜딩)
+# 기본 아이콘들 생성 (CORBU.AI 브랜딩)
 # 16x16 아이콘
 convert -size 16x16 xc:transparent -fill "#3B82F6" -draw "circle 8,8 8,2" -fill white -font Arial -pointsize 6 -gravity center -draw "text 0,0 'AI'" public/icons/icon-16x16.png
 
@@ -50,20 +50,20 @@ convert -size 512x512 xc:transparent -fill "#3B82F6" -draw "circle 256,256 256,3
 echo "📱 스플래시 스크린 생성 중..."
 
 # iPhone 스플래시 스크린들
-convert -size 640x1136 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 640,1136" -fill white -font Arial -pointsize 48 -gravity center -draw "text 0,0 'CORBU AI'" public/icons/splash-640x1136.png
+convert -size 640x1136 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 640,1136" -fill white -font Arial -pointsize 48 -gravity center -draw "text 0,0 'CORBU.AI'" public/icons/splash-640x1136.png
 
-convert -size 750x1334 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 750,1334" -fill white -font Arial -pointsize 56 -gravity center -draw "text 0,0 'CORBU AI'" public/icons/splash-750x1334.png
+convert -size 750x1334 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 750,1334" -fill white -font Arial -pointsize 56 -gravity center -draw "text 0,0 'CORBU.AI'" public/icons/splash-750x1334.png
 
-convert -size 1242x2208 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 1242,2208" -fill white -font Arial -pointsize 72 -gravity center -draw "text 0,0 'CORBU AI'" public/icons/splash-1242x2208.png
+convert -size 1242x2208 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 1242,2208" -fill white -font Arial -pointsize 72 -gravity center -draw "text 0,0 'CORBU.AI'" public/icons/splash-1242x2208.png
 
-convert -size 1125x2436 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 1125,2436" -fill white -font Arial -pointsize 68 -gravity center -draw "text 0,0 'CORBU AI'" public/icons/splash-1125x2436.png
+convert -size 1125x2436 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 1125,2436" -fill white -font Arial -pointsize 68 -gravity center -draw "text 0,0 'CORBU.AI'" public/icons/splash-1125x2436.png
 
 # iPad 스플래시 스크린들
-convert -size 1536x2048 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 1536,2048" -fill white -font Arial -pointsize 80 -gravity center -draw "text 0,0 'CORBU AI'" public/icons/splash-1536x2048.png
+convert -size 1536x2048 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 1536,2048" -fill white -font Arial -pointsize 80 -gravity center -draw "text 0,0 'CORBU.AI'" public/icons/splash-1536x2048.png
 
-convert -size 1668x2224 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 1668,2224" -fill white -font Arial -pointsize 84 -gravity center -draw "text 0,0 'CORBU AI'" public/icons/splash-1668x2224.png
+convert -size 1668x2224 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 1668,2224" -fill white -font Arial -pointsize 84 -gravity center -draw "text 0,0 'CORBU.AI'" public/icons/splash-1668x2224.png
 
-convert -size 2048x2732 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 2048,2732" -fill white -font Arial -pointsize 96 -gravity center -draw "text 0,0 'CORBU AI'" public/icons/splash-2048x2732.png
+convert -size 2048x2732 xc:transparent -fill "#3B82F6" -draw "rectangle 0,0 2048,2732" -fill white -font Arial -pointsize 96 -gravity center -draw "text 0,0 'CORBU.AI'" public/icons/splash-2048x2732.png
 
 # 단축 아이콘들 생성
 echo "🔗 단축 아이콘 생성 중..."
@@ -71,7 +71,7 @@ echo "🔗 단축 아이콘 생성 중..."
 # 새 프로젝트 단축 아이콘
 convert -size 96x96 xc:transparent -fill "#10B981" -draw "rectangle 20,20 76,76" -fill white -font Arial -pointsize 16 -gravity center -draw "text 0,0 'NEW'" public/icons/shortcut-new-project.png
 
-# 음성 채팅 단축 아이콘
+# 음성 대화 단축 아이콘
 convert -size 96x96 xc:transparent -fill "#F59E0B" -draw "circle 48,48 48,12" -fill white -font Arial -pointsize 16 -gravity center -draw "text 0,0 'VOICE'" public/icons/shortcut-voice.png
 
 # 차트 분석 단축 아이콘

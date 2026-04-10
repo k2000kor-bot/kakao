@@ -2,10 +2,14 @@
 시공사 선정 시스템 API 엔드포인트
 """
 
+import os
+
+from cors_config import get_cors_allow_origins
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional
+import io
 import json
 import pandas as pd
 from construction_company_analyzer import construction_analyzer, DecisionCriteria, EvaluationCriteria
@@ -15,7 +19,7 @@ app = FastAPI(title="Construction Company Selection API", version="1.0.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,11 +60,23 @@ async def upload_comparison_data(
         # 파일 읽기
         content = await file.read()
         
-        if file.filename.endswith('.json'):
+        name = (file.filename or '').lower()
+        if name.endswith('.json'):
             raw_data = json.loads(content.decode('utf-8'))
-        elif file.filename.endswith(('.xlsx', '.xls')):
-            # Excel 파일 처리
-            df = pd.read_excel(content)
+        elif name.endswith(('.xlsx', '.xls')):
+            df = pd.read_excel(io.BytesIO(content))
+            raw_data = df.to_dict('records')
+        elif name.endswith('.csv'):
+            text: Optional[str] = None
+            for enc in ('utf-8-sig', 'utf-8', 'cp949', 'euc-kr'):
+                try:
+                    text = content.decode(enc)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if text is None:
+                text = content.decode('utf-8', errors='replace')
+            df = pd.read_csv(io.StringIO(text))
             raw_data = df.to_dict('records')
         else:
             raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다.")
@@ -271,4 +287,6 @@ async def reset_data():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8002) 
+
+    _p = int(os.environ.get("CONSTRUCTION_API_PORT", os.environ.get("PORT", "8002")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

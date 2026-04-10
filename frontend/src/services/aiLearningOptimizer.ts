@@ -9,7 +9,7 @@ interface LearningPattern {
             frequency: number;
             successRate: number;
             lastUsed: Date;
-            preferences: any;
+            preferences: Record<string, unknown>;
         };
     };
     improvements: {
@@ -23,19 +23,30 @@ interface LearningPattern {
 
 interface OptimizationResult {
     improved: boolean;
-    changes: {
-        [key: string]: any;
-    };
+    changes: Record<string, unknown>;
     confidence: number;
     reasoning: string;
 }
 
-class AILearningOptimizer {
+interface LearningInteraction {
+    type?: string;
+    domain?: string;
+    complexity?: string;
+    responseTime?: number;
+}
+
+interface OptimizationOpportunity {
+    type: string;
+    priority?: string;
+    improvement?: unknown;
+}
+
+export class AILearningOptimizer {
     private learningPatterns: Map<string, LearningPattern> = new Map();
-    private globalOptimizations: Map<string, any> = new Map();
+    private globalOptimizations: Map<string, unknown> = new Map();
 
     // 학습 패턴 수집
-    collectLearningPattern(userId: string, sessionId: string, interaction: any) {
+    collectLearningPattern(userId: string, sessionId: string, interaction: LearningInteraction & Record<string, unknown>) {
         const pattern = this.learningPatterns.get(userId) || {
             userId,
             sessionId,
@@ -62,16 +73,16 @@ class AILearningOptimizer {
     }
 
     // 패턴 키 생성
-    private generatePatternKey(interaction: any): string {
+    private generatePatternKey(interaction: LearningInteraction): string {
         const { type, domain, complexity } = interaction;
-        return `${type}_${domain}_${complexity}`;
+        return `${type ?? ''}_${domain ?? ''}_${complexity ?? ''}`;
     }
 
     // 성공률 계산
-    private calculateSuccessRate(interaction: any): number {
+    private calculateSuccessRate(interaction: LearningInteraction & { responseTime?: number }): number {
         // 실제 구현에서는 사용자 피드백이나 만족도 지표를 사용
         const baseRate = 0.8;
-        const timeFactor = interaction.responseTime < 3000 ? 0.1 : -0.1;
+        const timeFactor = (interaction.responseTime ?? 0) < 3000 ? 0.1 : -0.1;
         const complexityFactor = interaction.complexity === 'medium' ? 0.05 : 0;
 
         return Math.min(1.0, Math.max(0.0, baseRate + timeFactor + complexityFactor));
@@ -101,8 +112,8 @@ class AILearningOptimizer {
     }
 
     // 최적화 기회 분석
-    private analyzeOptimizationOpportunities(pattern: LearningPattern, session?: ChatSession, project?: Project) {
-        const opportunities = [];
+    private analyzeOptimizationOpportunities(pattern: LearningPattern, session?: ChatSession, project?: Project): OptimizationOpportunity[] {
+        const opportunities: OptimizationOpportunity[] = [];
 
         // 응답 시간 최적화
         const avgResponseTime = this.calculateAverageResponseTime(pattern);
@@ -188,8 +199,8 @@ class AILearningOptimizer {
     }
 
     // 최적화 적용
-    private applyOptimizations(opportunities: any[]): OptimizationResult {
-        const changes: { [key: string]: any } = {};
+    private applyOptimizations(opportunities: OptimizationOpportunity[]): OptimizationResult {
+        const changes: Record<string, unknown> = {};
         let improved = false;
         let confidence = 0.5;
 
@@ -228,24 +239,24 @@ class AILearningOptimizer {
     }
 
     // 최적화 이유 생성
-    private generateOptimizationReasoning(opportunities: any[]): string {
+    private generateOptimizationReasoning(opportunities: OptimizationOpportunity[]): string {
         if (opportunities.length === 0) {
             return '현재 최적화가 필요한 영역이 없습니다.';
         }
 
-        const reasons = opportunities.map(opp => opp.improvement);
+        const reasons = opportunities.map(opp => String(opp.improvement ?? opp.type));
         return `다음 최적화를 적용했습니다: ${reasons.join(', ')}`;
     }
 
     // 개선사항 기록
-    private recordImprovements(userId: string, changes: { [key: string]: any }) {
+    private recordImprovements(userId: string, changes: Record<string, unknown>) {
         const pattern = this.learningPatterns.get(userId);
         if (!pattern) return;
 
         Object.entries(changes).forEach(([key, value]) => {
             pattern.improvements[key] = {
                 before: this.getCurrentMetric(key),
-                after: this.estimateImprovement(key, value),
+                after: this.estimateImprovement(key, value as unknown),
                 timestamp: new Date()
             };
         });
@@ -265,7 +276,7 @@ class AILearningOptimizer {
     }
 
     // 개선 효과 추정
-    private estimateImprovement(key: string, change: any): number {
+    private estimateImprovement(key: string, _change: unknown): number {
         const current = this.getCurrentMetric(key);
 
         switch (key) {
@@ -286,7 +297,7 @@ class AILearningOptimizer {
     }
 
     // 전역 최적화 조회
-    getGlobalOptimizations(): Map<string, any> {
+    getGlobalOptimizations(): Map<string, unknown> {
         return this.globalOptimizations;
     }
 
@@ -322,4 +333,5 @@ class AILearningOptimizer {
     }
 }
 
-export default new AILearningOptimizer();
+const aiLearningOptimizer = new AILearningOptimizer();
+export default aiLearningOptimizer;

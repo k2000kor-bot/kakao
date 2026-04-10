@@ -1,4 +1,6 @@
 import { ProjectFile } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { CHART_COLORS_HEX } from '../styles/themeColors';
 
 export interface FileAnalysisResult {
   fileId: string;
@@ -29,7 +31,7 @@ export interface FileAnalysisResult {
   visualAnalysis?: {
     objects: Array<{ name: string; confidence: number; boundingBox?: number[] }>;
     text: Array<{ content: string; confidence: number; position?: number[] }>;
-    faces: Array<{ confidence: number; attributes?: Record<string, any> }>;
+    faces: Array<{ confidence: number; attributes?: Record<string, unknown> }>;
     colors: Array<{ color: string; percentage: number }>;
     scene: string;
   };
@@ -50,7 +52,7 @@ export interface ChatFileAnalysis {
   recommendations: string[];
 }
 
-class FileAnalysisService {
+export class FileAnalysisService {
   private static instance: FileAnalysisService;
   private analysisCache: Map<string, FileAnalysisResult> = new Map();
 
@@ -72,13 +74,23 @@ class FileAnalysisService {
       return this.analysisCache.get(cacheKey)!;
     }
 
-    console.log(`파일 분석 시작: ${file.name} (${file.type})`);
+    errorLogger.info('파일 분석 시작', {
+      component: 'fileAnalysisService',
+      action: 'analyzeFile',
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+    });
 
     const startTime = Date.now();
     let analysisResult: FileAnalysisResult;
 
     try {
-      switch (file.type.toLowerCase()) {
+      // 파일명에서 확장자 추출
+      const fileName = file.name.toLowerCase();
+      const extension = fileName.split('.').pop() || '';
+
+      switch (extension) {
         case 'pdf':
         case 'doc':
         case 'docx':
@@ -106,10 +118,25 @@ class FileAnalysisService {
       // 캐시에 저장
       this.analysisCache.set(cacheKey, analysisResult);
       
-      console.log(`파일 분석 완료: ${file.name} (${Date.now() - startTime}ms)`);
+      const processingTime = Date.now() - startTime;
+      errorLogger.info('파일 분석 완료', {
+        component: 'fileAnalysisService',
+        action: 'analyzeFile',
+        fileName: file.name,
+        fileType: file.type,
+        processingTime,
+        confidence: analysisResult.confidence,
+      });
       return analysisResult;
     } catch (error) {
-      console.error(`파일 분석 실패: ${file.name}`, error);
+      const err = toError(error);
+      errorLogger.error('파일 분석 실패', err, {
+        component: 'fileAnalysisService',
+        action: 'analyzeFile',
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      });
       throw error;
     }
   }
@@ -123,7 +150,7 @@ class FileAnalysisService {
     const detailedAnalysis = {
       entities: [
         { name: '대우건설', type: 'ORGANIZATION', confidence: 95 },
-        { name: '개포우성7차', type: 'PROJECT', confidence: 90 },
+        { name: '샘플 프로젝트', type: 'PROJECT', confidence: 90 },
         { name: '재건축', type: 'CONCEPT', confidence: 85 },
         { name: '2024년', type: 'DATE', confidence: 80 },
         { name: '서울시', type: 'LOCATION', confidence: 75 }
@@ -141,7 +168,7 @@ class FileAnalysisService {
       structure: {
         headings: ['프로젝트 개요', '일정 계획', '예산 현황', '안전 관리', '결론'],
         sections: [
-          { title: '프로젝트 개요', content: '개포우성7차 재건축 사업의 전반적인 개요와 목표' },
+          { title: '프로젝트 개요', content: '샘플 재건축 사업의 전반적인 개요와 목표' },
           { title: '일정 계획', content: '프로젝트 진행 일정과 주요 마일스톤' },
           { title: '예산 현황', content: '프로젝트 예산 현황과 재정 계획' }
         ],
@@ -192,7 +219,7 @@ class FileAnalysisService {
         { name: '안전모', confidence: 75, boundingBox: [25, 35, 95, 105] }
       ],
       text: [
-        { content: '개포우성7차', confidence: 92, position: [30, 40] },
+        { content: '샘플 프로젝트', confidence: 92, position: [30, 40] },
         { content: '재건축 사업', confidence: 88, position: [35, 45] },
         { content: '2024년', confidence: 85, position: [40, 50] },
         { content: '대우건설', confidence: 90, position: [45, 55] }
@@ -202,11 +229,11 @@ class FileAnalysisService {
         { confidence: 72, attributes: { age: '40-50', gender: 'male', emotion: 'focused' } }
       ],
       colors: [
-        { color: '#4A90E2', percentage: 35 },
-        { color: '#F5A623', percentage: 25 },
-        { color: '#7ED321', percentage: 20 },
-        { color: '#D0021B', percentage: 15 },
-        { color: '#9013FE', percentage: 5 }
+        { color: CHART_COLORS_HEX[0], percentage: 35 },
+        { color: CHART_COLORS_HEX[2], percentage: 25 },
+        { color: CHART_COLORS_HEX[1], percentage: 20 },
+        { color: CHART_COLORS_HEX[3], percentage: 15 },
+        { color: CHART_COLORS_HEX[4], percentage: 5 }
       ],
       scene: '건설 현장'
     };
@@ -298,9 +325,14 @@ class FileAnalysisService {
     };
   }
 
-  // 채팅 질문에 대한 파일 분석 통합
+  // 대화 질문에 대한 파일 분석 통합
   async analyzeForChat(query: string, projectFiles: ProjectFile[]): Promise<ChatFileAnalysis> {
-    console.log(`채팅 분석 시작: "${query}" (${projectFiles.length}개 파일)`);
+    errorLogger.info('대화 분석 시작', {
+      component: 'fileAnalysisService',
+      action: 'analyzeForChat',
+      query: query,
+      filesCount: projectFiles.length,
+    });
 
     // 질문과 관련된 파일들 찾기
     const relevantFiles = await this.findRelevantFiles(query, projectFiles);
@@ -312,7 +344,14 @@ class FileAnalysisService {
         const result = await this.analyzeFile(file);
         analysisResults.push(result);
       } catch (error) {
-        console.error(`파일 분석 실패: ${file.name}`, error);
+        const err = toError(error);
+        errorLogger.error('파일 분석 실패', err, {
+          component: 'fileAnalysisService',
+          action: 'analyzeForChat',
+          fileName: file.name,
+          fileType: file.type,
+          query: query,
+        });
       }
     }
 
@@ -335,7 +374,8 @@ class FileAnalysisService {
     
     const relevantFiles = files.filter(file => {
       const fileNameLower = file.name.toLowerCase();
-      const fileTypeLower = file.type.toLowerCase();
+      // 파일명에서 확장자 추출
+      const extension = fileNameLower.split('.').pop() || '';
       
       // 파일명에 키워드가 포함된 경우
       if (relevantKeywords.some(keyword => fileNameLower.includes(keyword))) {
@@ -344,26 +384,25 @@ class FileAnalysisService {
       
       // 특정 질문 패턴에 따른 파일 타입 매칭
       if (queryLower.includes('이미지') || queryLower.includes('사진') || queryLower.includes('그림')) {
-        return ['jpg', 'jpeg', 'png', 'gif'].includes(fileTypeLower);
+        return ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
       }
       
       if (queryLower.includes('비디오') || queryLower.includes('영상') || queryLower.includes('동영상')) {
-        return ['mp4', 'avi', 'mov'].includes(fileTypeLower);
+        return ['mp4', 'avi', 'mov'].includes(extension);
       }
       
       if (queryLower.includes('문서') || queryLower.includes('pdf') || queryLower.includes('파일')) {
-        return ['pdf', 'doc', 'docx', 'txt'].includes(fileTypeLower);
+        return ['pdf', 'doc', 'docx', 'txt'].includes(extension);
       }
       
       if (queryLower.includes('오디오') || queryLower.includes('음성') || queryLower.includes('음악')) {
-        return ['mp3', 'wav'].includes(fileTypeLower);
+        return ['mp3', 'wav'].includes(extension);
       }
       
       return false;
     });
 
-    // 최대 5개 파일까지만 반환
-    return relevantFiles.slice(0, 5);
+    return relevantFiles;
   }
 
   // 질문에서 키워드 추출
@@ -401,7 +440,7 @@ class FileAnalysisService {
     const totalKeywords = results.flatMap(r => r.keywords);
     const uniqueKeywords = Array.from(new Set(totalKeywords));
     if (uniqueKeywords.length > 0) {
-      summary += `주요 키워드: ${uniqueKeywords.slice(0, 5).join(', ')}.`;
+      summary += `주요 키워드: ${uniqueKeywords.join(', ')}.`;
     }
 
     return summary;

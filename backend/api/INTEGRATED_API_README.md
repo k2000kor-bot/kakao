@@ -283,33 +283,42 @@ Flask 기반의 `main.py` 엔드포인트를 FastAPI router로 변환하여 `mai
 
 ### 서버 실행
 
+**권장** (프로젝트 루트):
+
 ```bash
-cd /Users/aD/kakao-frontend/backend
-python main_server.py
+cd /path/to/kakao-frontend/kakao-frontend
+npm run restart:backend
 ```
 
-서버는 `http://localhost:8000`에서 실행됩니다.
+**대안**:
+
+```bash
+cd /path/to/kakao-frontend/kakao-frontend/backend
+python3 -m uvicorn main_server:app --host 0.0.0.0 --port 5002
+```
+
+서버는 **`http://localhost:5002`** 에서 실행됩니다.
 
 ### API 문서 확인
 
-- Swagger UI: `http://localhost:8000/api/docs`
-- ReDoc: `http://localhost:8000/api/redoc`
+- Swagger UI: `http://localhost:5002/api/docs`
+- ReDoc: `http://localhost:5002/api/redoc`
 
 ### 예시 요청
 
 ```bash
 # 메시지 분석
-curl -X POST http://localhost:8000/api/integrated/analyze \
+curl -X POST http://localhost:5002/api/integrated/analyze \
   -H "Content-Type: application/json" \
   -d '{"message": "안녕하세요! 좋은 하루네요!"}'
 
 # 스토리 생성
-curl -X POST http://localhost:8000/api/integrated/creative/story \
+curl -X POST http://localhost:5002/api/integrated/creative/story \
   -H "Content-Type: application/json" \
   -d '{"genre": "romance", "theme": "사랑"}'
 
 # 시스템 상태 확인
-curl http://localhost:8000/api/integrated/status
+curl http://localhost:5002/api/integrated/status
 ```
 
 ## 통합 상태

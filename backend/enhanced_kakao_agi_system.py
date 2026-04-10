@@ -79,7 +79,7 @@ class EnhancedKakaoAGISystem:
         """실제 카카오톡 데이터 로드"""
         try:
             # 실제 카카오톡 대화 파일 분석
-            chat_file = "../chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt"
+            chat_file = "../chat_rooms/sample_chat_room/sample_chat_room.txt"
             
             logger.info("실제 카카오톡 대화 데이터 로드 중...")
             

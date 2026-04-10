@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CORBU AI 향상된 통합 API 서버 v2.0
+CORBU.AI 향상된 통합 API 서버 v2.0
 - ChatGPT 스타일 통합 시스템
 - 고급 AI 분석 엔진
 - 지능형 응답 생성
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI 향상된 통합 API 서버",
+    title="CORBU.AI 향상된 통합 API 서버",
     description="ChatGPT 스타일의 고급 AI 기능을 통합한 완전한 API 서버",
     version="2.0.0"
 )
@@ -131,8 +131,8 @@ class AdvancedAIResponseGenerator:
         """지식베이스 초기화"""
         return {
             'gaeposung_project': {
-                'name': '개포우성7차',
-                'description': '개포우성7차 재개발 프로젝트',
+                'name': '샘플 프로젝트 A',
+                'description': '샘플 프로젝트 A 재개발 프로젝트',
                 'status': '진행 중',
                 'key_issues': [
                     '시공사 홍보 문제',
@@ -141,8 +141,8 @@ class AdvancedAIResponseGenerator:
                     '커뮤니케이션 개선'
                 ],
                 'files': [
-                    '[인증]행복한소유☆개포우성7차.txt',
-                    '개포우성7차_대화요약.pdf',
+                    '대화요약_sample.txt',
+                    '샘플 프로젝트 A_대화요약.pdf',
                     '시공사_평가자료.xlsx'
                 ]
             },
@@ -199,7 +199,7 @@ class AdvancedAIResponseGenerator:
         })
         
         # 프로젝트 관련 질문
-        if any(keyword in message for keyword in ['개포우성', '개포우성7차', '프로젝트', '재건축', '부동산']):
+        if any(keyword in message for keyword in ['샘플 프로젝트 A', '프로젝트', '재건축', '부동산']):
             return self._generate_project_response(message)
         
         # 글쓰기 스타일 요청
@@ -284,7 +284,7 @@ class AdvancedAIResponseGenerator:
     
     def _determine_project_type(self, message: str) -> str:
         """프로젝트 유형 결정"""
-        if any(keyword in message for keyword in ['재건축', '개포우성']):
+        if any(keyword in message for keyword in ['재건축', '정비']):
             return "재건축 프로젝트"
         elif any(keyword in message for keyword in ['부동산', '아파트', '주택']):
             return "부동산 개발 프로젝트"
@@ -579,7 +579,7 @@ class AdvancedAIResponseGenerator:
     
     def _generate_system_status_response(self) -> str:
         """시스템 상태 응답"""
-        return """⚙️ **CORBU AI 시스템 상태**
+        return """⚙️ **CORBU.AI 시스템 상태**
 
 **서버 상태**
 • API 서버: ✅ 정상 동작 (포트 8004)
@@ -605,12 +605,12 @@ class AdvancedAIResponseGenerator:
     
     def _generate_help_response(self) -> str:
         """도움말 응답"""
-        return """🤖 **CORBU AI 도움말**
+        return """🤖 **CORBU.AI 도움말**
 
 **주요 기능**
 
 📊 **분석 기능**
-• "개포우성7차 프로젝트 분석해줘"
+• "샘플 프로젝트 A 프로젝트 분석해줘"
 • "이 대화의 감정을 분석해줘"
 • "편향성 분석해줘"
 
@@ -621,7 +621,7 @@ class AdvancedAIResponseGenerator:
 
 📁 **프로젝트 관리**
 • "프로젝트 목록 보여줘"
-• "개포우성7차 프로젝트 정보"
+• "샘플 프로젝트 A 프로젝트 정보"
 • "파일 업로드하기"
 
 ⚙️ **시스템 관리**
@@ -637,18 +637,18 @@ class AdvancedAIResponseGenerator:
     
     def _generate_general_response(self, message: str) -> str:
         """일반 응답 생성"""
-        return f"""안녕하세요! CORBU AI입니다.
+        return f"""안녕하세요! CORBU.AI입니다.
 
 '{message}'에 대해 이야기해보겠습니다.
 
 **사용 가능한 기능**
 • 📊 분석: 프로젝트, 감정, 편향성 분석
 • ✍️ 글쓰기: 연령대별 스타일 글쓰기
-• 📁 프로젝트: 개포우성7차 등 프로젝트 관리
+• 📁 프로젝트: 샘플 프로젝트 A 등 프로젝트 관리
 • ⚙️ 시스템: 상태 확인 및 관리
 
 **예시 질문**
-• "개포우성7차 프로젝트 분석해줘"
+• "샘플 프로젝트 A 프로젝트 분석해줘"
 • "50대 남성 어조로 부동산 정책에 대한 글 써줘"
 • "시스템 상태 확인"
 • "도움말 보기"
@@ -795,7 +795,7 @@ class AdvancedAnalyticsEngine:
     def _extract_key_topics(self, content: str):
         """주요 주제 추출"""
         topics = []
-        if "재개발" in content or "개포우성" in content:
+        if "재개발" in content or "정비" in content:
             topics.append("재개발")
         if "부동산" in content or "아파트" in content:
             topics.append("부동산")
@@ -1138,7 +1138,7 @@ async def health_check():
 
 @app.post("/api/v7/advanced-ai", response_model=ChatResponse)
 async def advanced_ai_chat(request: ChatMessage):
-    """고급 AI 채팅 API"""
+    """고급 AI 대화 API"""
     start_time = time.time()
     
     try:
@@ -1180,8 +1180,8 @@ async def get_projects():
         projects = [
             {
                 "id": "proj_1",
-                "name": "개포우성7차",
-                "description": "개포우성7차 재개발 프로젝트",
+                "name": "샘플 프로젝트 A",
+                "description": "샘플 프로젝트 A 재개발 프로젝트",
                 "status": "진행 중",
                 "file_count": 3,
                 "created_time": datetime.now().isoformat()
@@ -1204,7 +1204,7 @@ async def get_files():
         files = [
             {
                 "id": "file_1",
-                "name": "[인증]행복한소유☆개포우성7차.txt",
+                "name": "대화요약_sample.txt",
                 "type": "text",
                 "size": "50KB",
                 "upload_time": datetime.now().isoformat(),
@@ -1851,8 +1851,8 @@ async def natural_language_processing(request: dict):
                 },
                 "semantic_analysis": {
                     "topic_modeling": ["재개발", "부동산", "투자", "프로젝트"],
-                    "keyword_extraction": ["개포우성7차", "재개발", "투자", "수익성"],
-                    "named_entities": ["개포우성7차", "서울시", "강남구"]
+                    "keyword_extraction": ["샘플 프로젝트 A", "재개발", "투자", "수익성"],
+                    "named_entities": ["샘플 프로젝트 A", "서울시", "강남구"]
                 }
             },
             "language_modeling": {
@@ -1985,7 +1985,7 @@ async def real_time_data_analysis(request: dict):
                     "negative_news": 3,
                     "neutral_news": 4,
                     "key_headlines": [
-                        "개포우성7차 재개발 사업 승인",
+                        "샘플 프로젝트 A 재개발 사업 승인",
                         "투자자들 관심 집중",
                         "입주민 동의율 상승"
                     ]
@@ -3072,7 +3072,7 @@ async def ar_vr_support(request: dict):
             "virtual_environment": {
                 "project_visualization": {
                     "3d_models": {
-                        "building_models": ["개포우성7차_3D모델", "주변환경_3D모델", "인프라_3D모델"],
+                        "building_models": ["샘플 프로젝트 A_3D모델", "주변환경_3D모델", "인프라_3D모델"],
                         "interactive_elements": ["건물_상세정보", "투자_분석_차트", "시장_데이터_시각화"],
                         "real_time_updates": True
                     },
@@ -3112,7 +3112,7 @@ async def ar_vr_support(request: dict):
             },
             "virtual_reality_features": {
                 "immersive_experience": {
-                    "360_degree_views": ["개포우성7차_전경", "주변_환경_탐색", "미래_개발_모습"],
+                    "360_degree_views": ["샘플 프로젝트 A_전경", "주변_환경_탐색", "미래_개발_모습"],
                     "walkthrough_simulation": ["현재_상태_투어", "개발_후_모습_체험", "투자_효과_시뮬레이션"],
                     "interactive_elements": ["건물_클릭_정보", "투자_분석_차트", "리스크_평가_도구"]
                 },
@@ -3254,7 +3254,7 @@ async def advanced_insights_generation(request: dict):
                             "instagram": 0.74,
                             "linkedin": 0.81
                         },
-                        "trending_topics": ["개포우성7차", "재개발_프로젝트", "투자_기회"],
+                        "trending_topics": ["샘플 프로젝트 A", "재개발_프로젝트", "투자_기회"],
                         "influencer_impact": ["전문가_의견", "미디어_보도", "네트워크_효과"]
                     }
                 },
@@ -3864,7 +3864,7 @@ async def automated_workflow_engine(request: dict):
                         "onboarding_process": "단계별_가이드",
                         "help_system": "컨텍스트_도움말",
                         "training_materials": "비디오_튜토리얼",
-                        "support_channels": "실시간_채팅",
+                        "support_channels": "실시간_대화",
                         "feedback_system": "지속적_개선"
                     }
                 },
@@ -6646,7 +6646,7 @@ async def cosmic_ai_integration(request: dict):
 # WebSocket 엔드포인트
 @app.websocket("/ws/chat/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    """WebSocket 채팅 엔드포인트"""
+    """WebSocket 대화 엔드포인트"""
     await manager.connect(websocket, room_id)
     try:
         while True:
@@ -6683,16 +6683,16 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 if __name__ == "__main__":
     # 데이터베이스 초기화
     init_database()
-    
-    logger.info("CORBU AI 향상된 통합 API 서버를 시작합니다...")
-    logger.info("서버 주소: http://localhost:8005")
-    logger.info("API 문서: http://localhost:8005/docs")
+    _p = int(os.environ.get("ENHANCED_UNIFIED_API_SERVER_PORT", os.environ.get("PORT", "8005")))
+    logger.info("CORBU.AI 향상된 통합 API 서버를 시작합니다...")
+    logger.info(f"서버 주소: http://localhost:{_p}")
+    logger.info(f"API 문서: http://localhost:{_p}/docs")
     
     try:
         uvicorn.run(
             "enhanced_unified_api_server:app",
             host="0.0.0.0",
-            port=8005,
+            port=_p,
             reload=True,
             log_level="info"
         )

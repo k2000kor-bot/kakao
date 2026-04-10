@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
-CORBU AI 통합 대화 시스템 테스트 스크립트
+CORBU.AI 통합 대화 시스템 테스트 스크립트
 """
 
+import os
 import requests
 import json
 import time
 from datetime import datetime
 
-# API 기본 URL
-BASE_URL = "http://localhost:8001"
+# 레거시 통합 대화 서버(unified_conversation_api 등, 기본 8001).
+# main_server(5002) 검증: scripts/test/api_test.py 또는 CORBU_UNIFIED_TEST_BASE=http://localhost:5002 (엔드포인트 호환 시)
+BASE_URL = os.environ.get("CORBU_UNIFIED_TEST_BASE", "http://localhost:8001")
 
 def test_server_health():
     """서버 상태 확인"""
@@ -68,7 +70,7 @@ def test_file_upload():
     print("\n📁 파일 업로드 테스트...")
     
     # 테스트 파일 생성
-    test_content = "이것은 테스트 파일입니다.\nCORBU AI 시스템 테스트용입니다."
+    test_content = "이것은 테스트 파일입니다.\nCORBU.AI 시스템 테스트용입니다."
     
     try:
         files = {'file': ('test.txt', test_content, 'text/plain')}
@@ -99,7 +101,7 @@ def test_message_storage():
         {
             "id": "test_2", 
             "sender": "ai",
-            "content": "안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?",
+            "content": "안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?",
             "timestamp": datetime.now().isoformat(),
             "message_type": "text"
         }
@@ -128,7 +130,7 @@ def test_project_management():
     # 프로젝트 생성 테스트
     test_project = {
         "name": "테스트 프로젝트",
-        "description": "CORBU AI 시스템 테스트용 프로젝트"
+        "description": "CORBU.AI 시스템 테스트용 프로젝트"
     }
     
     try:
@@ -182,7 +184,7 @@ def test_system_status():
 
 def run_all_tests():
     """모든 테스트 실행"""
-    print("🚀 CORBU AI 통합 대화 시스템 테스트 시작")
+    print("🚀 CORBU.AI 통합 대화 시스템 테스트 시작")
     print("=" * 50)
     
     # 서버 상태 확인

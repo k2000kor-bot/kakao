@@ -195,8 +195,8 @@ class PerformanceOptimizer:
 ## 📈 API 엔드포인트
 
 ### 핵심 API
-- **`/api/chat`**: 메인 채팅 API (하이브리드 AI)
-- **`/api/advanced-chat`**: 고급 채팅 API (다양한 응답 타입)
+- **`/api/chat`**: 메인 대화 API (하이브리드 AI)
+- **`/api/advanced-chat`**: 고급 대화 API (다양한 응답 타입)
 - **`/api/health`**: 시스템 상태 확인
 - **`/api/system-status`**: 실시간 모니터링 상태
 - **`/api/performance-summary`**: 성능 요약
@@ -293,7 +293,7 @@ class PerformanceOptimizer:
 - **실시간 적응**: 사용자 패턴 학습 및 개인화
 
 ### 2. 완전 통합된 시스템
-- **단일 인터페이스**: 모든 기능이 하나의 채팅 인터페이스에 통합
+- **단일 인터페이스**: 모든 기능이 하나의 대화 인터페이스에 통합
 - **자동화**: 사용자 개입 없이 최적의 응답 생성
 - **지능형 라우팅**: 요청에 따른 최적 엔진 자동 선택
 

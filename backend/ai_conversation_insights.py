@@ -8,6 +8,7 @@ AI 대화 인사이트 서버 - 카카오톡 AI 분석 시스템
 - 행동 패턴 인사이트
 """
 
+import os
 import sqlite3
 import json
 from datetime import datetime, timedelta
@@ -17,16 +18,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 
+from cors_config import get_cors_allow_origins
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+LISTEN_PORT = int(
+    os.environ.get("AI_CONVERSATION_INSIGHTS_PORT", os.environ.get("PORT", "8009"))
+)
 
 app = FastAPI(title="AI 대화 인사이트 서버 v1.0")
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -106,7 +113,7 @@ def generate_conversation_summary(chat_room_id: str) -> Dict[str, Any]:
     conn.close()
     
     # 요약 생성
-    summary = f"이 채팅방은 총 {total_messages}개의 메시지가 {unique_participants}명의 참여자에 의해 {duration_days}일간 진행되었습니다. "
+    summary = f"이 대화방은 총 {total_messages}개의 메시지가 {unique_participants}명의 참여자에 의해 {duration_days}일간 진행되었습니다. "
     summary += f"가장 활발한 시간대는 {peak_hour}시이며, {top_participant}님이 {top_participant_count}개의 메시지로 가장 활발하게 참여했습니다."
     
     return {
@@ -523,7 +530,7 @@ async def get_analysis_types():
 
 @app.get("/api/chat-rooms")
 async def get_analyzable_chat_rooms():
-    """분석 가능한 채팅방 목록"""
+    """분석 가능한 대화방 목록"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -552,15 +559,16 @@ async def get_analyzable_chat_rooms():
         return {"success": True, "chat_rooms": rooms}
         
     except Exception as e:
-        logger.error(f"채팅방 목록 조회 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"채팅방 목록 조회 중 오류 발생: {str(e)}")
+        logger.error(f"대화방 목록 조회 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"대화방 목록 조회 중 오류 발생: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
+    _p = LISTEN_PORT
     print("🚀 AI 대화 인사이트 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8009")
-    print("📖 API 문서: http://localhost:8009/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 기능:")
     print("   - 대화 요약 생성")
     print("   - 핵심 주제 추출")
@@ -569,4 +577,4 @@ if __name__ == "__main__":
     print("   - 행동 패턴 인사이트")
     print("=" * 50)
     
-    uvicorn.run(app, host="0.0.0.0", port=8009) 
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

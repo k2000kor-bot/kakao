@@ -1,7 +1,17 @@
 import { Project } from '../types/project';
 import { ChatSession } from '../types/chat';
 import { projectService } from './projectService';
-import chatSessionService from './chatSessionService';
+import { CHAT_SESSIONS_STORAGE_KEY } from './chatSessionStorageKeys';
+import { PROJECTS_STORAGE_KEY } from './projectStorageKeys';
+import {
+  CORBU_AI_CHAT_SESSIONS_STORAGE_KEY,
+  CORBU_AI_PROJECTS_STORAGE_KEY,
+  CORBU_AI_RECENT_FILES_STORAGE_KEY,
+  CORBU_AI_STATISTICS_STORAGE_KEY,
+  CORBU_AI_TEMPLATES_STORAGE_KEY,
+  CORBU_AI_WORKFLOWS_STORAGE_KEY,
+} from './sideMenuDataStorageKeys';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 사이드 메뉴 데이터 타입 정의
 export interface SideMenuData {
@@ -81,36 +91,48 @@ class SideMenuDataService {
 
     private loadProjects(): Project[] {
         try {
-            const stored = localStorage.getItem('projects');
+            const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
             if (!stored) {
                 // 시드 생성
                 projectService.seedProjectsIfEmpty();
             }
-            const parsed = localStorage.getItem('projects');
+            const parsed = localStorage.getItem(PROJECTS_STORAGE_KEY);
             return parsed ? (JSON.parse(parsed) as Project[]) : [];
         } catch (error) {
-            console.error('프로젝트 데이터 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('프로젝트 데이터 로드 실패', err, {
+                component: 'sideMenuDataService',
+                action: 'loadProjects',
+            });
             return [];
         }
     }
 
     private loadChatSessions(): ChatSession[] {
         try {
-            const stored = localStorage.getItem('corbu_chat_sessions');
+            const stored = localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY);
             return stored ? (JSON.parse(stored) as ChatSession[]) : [];
         } catch (error) {
-            console.error('채팅 세션 데이터 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('대화 세션 데이터 로드 실패', err, {
+                component: 'sideMenuDataService',
+                action: 'loadChatSessions',
+            });
             return [];
         }
     }
 
     private loadRecentFiles(): FileItem[] {
-        const stored = localStorage.getItem('corbu_ai_recent_files');
+        const stored = localStorage.getItem(CORBU_AI_RECENT_FILES_STORAGE_KEY);
         if (stored) {
             try {
                 return JSON.parse(stored);
             } catch (error) {
-                console.error('최근 파일 데이터 로드 실패:', error);
+                const err = toError(error);
+                errorLogger.error('최근 파일 데이터 로드 실패', err, {
+                    component: 'sideMenuDataService',
+                    action: 'loadRecentFiles',
+                });
             }
         }
 
@@ -156,12 +178,16 @@ class SideMenuDataService {
     }
 
     private loadTemplates(): TemplateItem[] {
-        const stored = localStorage.getItem('corbu_ai_templates');
+        const stored = localStorage.getItem(CORBU_AI_TEMPLATES_STORAGE_KEY);
         if (stored) {
             try {
                 return JSON.parse(stored);
             } catch (error) {
-                console.error('템플릿 데이터 로드 실패:', error);
+                const err = toError(error);
+                errorLogger.error('템플릿 데이터 로드 실패', err, {
+                    component: 'sideMenuDataService',
+                    action: 'loadTemplates',
+                });
             }
         }
 
@@ -207,12 +233,16 @@ class SideMenuDataService {
     }
 
     private loadWorkflows(): WorkflowItem[] {
-        const stored = localStorage.getItem('corbu_ai_workflows');
+        const stored = localStorage.getItem(CORBU_AI_WORKFLOWS_STORAGE_KEY);
         if (stored) {
             try {
                 return JSON.parse(stored);
             } catch (error) {
-                console.error('워크플로우 데이터 로드 실패:', error);
+                const err = toError(error);
+                errorLogger.error('워크플로우 데이터 로드 실패', err, {
+                    component: 'sideMenuDataService',
+                    action: 'loadWorkflows',
+                });
             }
         }
 
@@ -252,12 +282,16 @@ class SideMenuDataService {
     }
 
     private loadStatistics(): StatisticsData {
-        const stored = localStorage.getItem('corbu_ai_statistics');
+        const stored = localStorage.getItem(CORBU_AI_STATISTICS_STORAGE_KEY);
         if (stored) {
             try {
                 return JSON.parse(stored);
             } catch (error) {
-                console.error('통계 데이터 로드 실패:', error);
+                const err = toError(error);
+                errorLogger.error('통계 데이터 로드 실패', err, {
+                    component: 'sideMenuDataService',
+                    action: 'loadStatistics',
+                });
             }
         }
 
@@ -275,32 +309,32 @@ class SideMenuDataService {
     // 데이터 업데이트 메서드들
     public updateProjects(projects: Project[]): void {
         this.data.projects = projects;
-        localStorage.setItem('corbu_ai_projects', JSON.stringify(projects));
+        localStorage.setItem(CORBU_AI_PROJECTS_STORAGE_KEY, JSON.stringify(projects));
     }
 
     public updateChatSessions(sessions: ChatSession[]): void {
         this.data.chatSessions = sessions;
-        localStorage.setItem('corbu_ai_chat_sessions', JSON.stringify(sessions));
+        localStorage.setItem(CORBU_AI_CHAT_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
     }
 
     public updateRecentFiles(files: FileItem[]): void {
         this.data.recentFiles = files;
-        localStorage.setItem('corbu_ai_recent_files', JSON.stringify(files));
+        localStorage.setItem(CORBU_AI_RECENT_FILES_STORAGE_KEY, JSON.stringify(files));
     }
 
     public updateTemplates(templates: TemplateItem[]): void {
         this.data.templates = templates;
-        localStorage.setItem('corbu_ai_templates', JSON.stringify(templates));
+        localStorage.setItem(CORBU_AI_TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
     }
 
     public updateWorkflows(workflows: WorkflowItem[]): void {
         this.data.workflows = workflows;
-        localStorage.setItem('corbu_ai_workflows', JSON.stringify(workflows));
+        localStorage.setItem(CORBU_AI_WORKFLOWS_STORAGE_KEY, JSON.stringify(workflows));
     }
 
     public updateStatistics(statistics: StatisticsData): void {
         this.data.statistics = statistics;
-        localStorage.setItem('corbu_ai_statistics', JSON.stringify(statistics));
+        localStorage.setItem(CORBU_AI_STATISTICS_STORAGE_KEY, JSON.stringify(statistics));
     }
 
     // 데이터 조회 메서드들
@@ -360,5 +394,15 @@ class SideMenuDataService {
         return date.toLocaleDateString();
     }
 }
+
+export {
+  CORBU_AI_CHAT_SESSIONS_STORAGE_KEY,
+  CORBU_AI_PROJECTS_STORAGE_KEY,
+  CORBU_AI_RECENT_FILES_STORAGE_KEY,
+  CORBU_AI_STATISTICS_STORAGE_KEY,
+  CORBU_AI_TEMPLATES_STORAGE_KEY,
+  CORBU_AI_WORKFLOWS_STORAGE_KEY,
+} from './sideMenuDataStorageKeys';
+export { PROJECTS_STORAGE_KEY } from './projectStorageKeys';
 
 export default SideMenuDataService;

@@ -1,0 +1,52 @@
+/**
+ * 고급 설정 — CORBU.AI Brainwave 테마
+ */
+.as-root { max-width: 896px; margin: 0 auto; }
+.as-header { margin-bottom: var(--spacing-2xl); }
+.as-title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); }
+.as-desc { font-size: var(--font-size-sm); color: var(--text-secondary); margin-top: var(--spacing-sm); }
+.as-tabs { border-bottom: var(--border-width) solid var(--border-color); margin-bottom: var(--spacing-2xl); }
+.as-tab { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md) var(--spacing-xs); border-bottom: 2px solid transparent; font-size: var(--font-size-sm); font-weight: 500; background: none; border-top: none; border-left: none; border-right: none; color: var(--text-secondary); cursor: pointer; transition: color var(--transition-base), border-color var(--transition-base); }
+.as-tab:hover { color: var(--text-primary); }
+.as-tab.active { border-bottom-color: var(--accent-info); color: var(--accent-info); }
+.as-section { padding: var(--spacing-lg); }
+.as-section-title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); color: var(--text-primary); margin-bottom: var(--spacing-lg); }
+.as-subtitle { font-size: var(--font-size-lg); font-weight: 500; color: var(--text-primary); margin-bottom: var(--spacing-md); }
+.as-label { display: block; font-size: var(--font-size-sm); font-weight: 500; color: var(--text-primary); margin-bottom: var(--spacing-sm); }
+.as-row-list { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.as-panel { display: flex; flex-direction: column; gap: var(--spacing-lg); }
+.as-field { margin-bottom: var(--spacing-md); }
+.as-row { display: flex; align-items: center; justify-content: space-between; padding: var(--spacing-md); background: var(--bg-secondary); border-radius: var(--radius-lg); }
+.as-row-title { font-weight: 500; color: var(--text-primary); }
+.as-row-desc { font-size: var(--font-size-sm); color: var(--text-secondary); }
+.as-toggle { width: 48px; height: 24px; border-radius: 12px; padding: 3px; border: none; cursor: pointer; display: flex; align-items: center; transition: background var(--transition-base); }
+.as-toggle.on { background: var(--accent-info); justify-content: flex-end; }
+.as-toggle.off { background: var(--bg-tertiary); justify-content: flex-start; }
+.as-toggle-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--bg-primary); flex-shrink: 0; }
+.as-footer { display: flex; align-items: center; justify-content: space-between; margin-top: var(--spacing-2xl); padding: var(--spacing-lg); background: var(--bg-secondary); border-radius: var(--radius-lg); flex-wrap: wrap; gap: var(--spacing-md); }
+.as-footer-actions { display: flex; align-items: center; gap: var(--spacing-md); }
+.as-file-label { cursor: pointer; display: inline-flex; align-items: center; gap: var(--spacing-sm); }
+.as-file-input { position: absolute; width: 0; height: 0; opacity: 0; overflow: hidden; clip: rect(0,0,0,0); }
+.as-radio-group { display: flex; gap: var(--spacing-lg); flex-wrap: wrap; }
+.as-radio-label { display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer; font-size: var(--font-size-sm); color: var(--text-primary); }
+.as-radio { accent-color: var(--accent-info); }
+.as-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-backdrop);
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.as-confirm-panel { background: var(--bg-primary); border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 384px; }
+.as-confirm-title { display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-md); }
+.as-confirm-icon { color: var(--accent-warning); flex-shrink: 0; }
+.as-confirm-body { color: var(--text-secondary); margin-bottom: var(--spacing-lg); }
+.as-confirm-actions { display: flex; justify-content: flex-end; gap: var(--spacing-md); }

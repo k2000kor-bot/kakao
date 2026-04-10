@@ -184,7 +184,7 @@ class ProjectMediaClassifier:
             },
             "file_categories": {
                 "document": {
-                    "extensions": [".pdf", ".docx", ".doc", ".txt", ".hwp"],
+                    "extensions": [".pdf", ".docx", ".doc", ".txt", ".md", ".csv", ".hwp"],
                     "keywords": ["계약", "제안", "보고", "검토", "의견"],
                     "auto_actions": ["텍스트추출", "키워드분석", "카테고리분류"]
                 },
@@ -1021,7 +1021,7 @@ async def demo_auto_classification():
     
     # 샘플 프로젝트 생성
     sample_project = await project_classifier.create_project({
-        "project_name": "개포우성7차 재개발",
+        "project_name": "샘플 재개발 프로젝트",
         "description": "재개발 조합 시공사 선정 프로젝트"
     })
     
@@ -1063,4 +1063,5 @@ if __name__ == "__main__":
     print("   🤖 일관된 메시지 전달 보장")
     print("   🔄 스마트 프로젝트 조직화")
     
-    uvicorn.run(app, host="0.0.0.0", port=8092) 
+    _p = int(os.environ.get("PROJECT_MEDIA_AUTO_CLASSIFIER_PORT", os.environ.get("PORT", "8092")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

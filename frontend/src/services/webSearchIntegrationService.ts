@@ -1,4 +1,13 @@
+import {
+    DEMO_SIM_DOCS_EXAMPLE_BASE_URL,
+    DEMO_SIM_GITHUB_BASE_URL,
+    DEMO_SIM_INTEGRATION_WEB_BASE_URL,
+    DEMO_SIM_NEWS_EXAMPLE_BASE_URL,
+    DEMO_SIM_STACKOVERFLOW_BASE_URL,
+} from '../config/api';
 import { NLPAnalysisResult } from './advancedNLPEngine';
+import { errorLogger } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface SearchResult {
     id: string;
@@ -74,7 +83,7 @@ class WebSearchIntegrationService {
     async searchAndSynthesize(
         query: string,
         nlpAnalysis: NLPAnalysisResult,
-        context?: any
+        context?: Record<string, unknown>
     ): Promise<IntegratedResponse> {
         // 검색 쿼리 최적화
         const searchQuery = await this.optimizeSearchQuery(query, nlpAnalysis, context);
@@ -102,7 +111,7 @@ class WebSearchIntegrationService {
     private async optimizeSearchQuery(
         query: string,
         nlpAnalysis: NLPAnalysisResult,
-        context?: any
+        context?: Record<string, unknown>
     ): Promise<SearchQuery> {
         let processedQuery = query;
         let searchType: SearchQuery['search_type'] = 'general';
@@ -130,6 +139,20 @@ class WebSearchIntegrationService {
             processedQuery = this.addDomainKeywords(processedQuery, nlpAnalysis.context.domain);
         }
 
+        // 입찰공고·시공사선정 쿼리 최적화 (나라장터·G2B·정비사업 검색 강화)
+        if (this.isBidNoticeRelatedQuery(processedQuery)) {
+            processedQuery = this.optimizeBidNoticeQuery(processedQuery);
+            searchType = 'general'; // news/general 소스 우선
+        }
+        // 정보몽땅·정비사업 정보 쿼리 최적화
+        if (this.isInfoMongtangRelatedQuery(processedQuery)) {
+            processedQuery = this.optimizeInfoMongtangQuery(processedQuery);
+        }
+        // 서울시청·공공 행정 쿼리 최적화 (seoul.go.kr, si.re.kr)
+        if (this.isSeoulGovRelatedQuery(processedQuery)) {
+            processedQuery = this.optimizeSeoulGovQuery(processedQuery);
+        }
+
         // 언어별 최적화
         if (nlpAnalysis.language === 'ko') {
             processedQuery = this.optimizeKoreanQuery(processedQuery);
@@ -140,12 +163,17 @@ class WebSearchIntegrationService {
             min_credibility: this.getMinCredibilityForExpertise(nlpAnalysis.context.user_expertise_level)
         };
 
+        const convHistory = (context && Array.isArray((context as Record<string, unknown>).conversation_history))
+            ? ((context as Record<string, unknown>).conversation_history as unknown[]).map(m =>
+                typeof m === 'string' ? m : (m as { content?: string })?.content ?? ''
+            ).filter((s): s is string => s.length > 0)
+            : [];
         const searchContext: SearchContext = {
             user_intent: nlpAnalysis.intent,
             domain: nlpAnalysis.context.domain,
             expertise_level: nlpAnalysis.context.user_expertise_level,
             previous_searches: this.getRecentSearches(5),
-            conversation_context: context?.conversation_history || []
+            conversation_context: convHistory
         };
 
         return {
@@ -219,18 +247,75 @@ class WebSearchIntegrationService {
 
     // 도메인 키워드 추가
     private addDomainKeywords(query: string, domain: string): string {
-        const domainKeywords = {
+        const domainKeywords: Record<string, string> = {
             web_development: 'web development frontend backend',
             mobile_development: 'mobile app development iOS Android',
             data_science: 'data science machine learning AI',
             devops: 'devops deployment infrastructure cloud',
             database: 'database SQL NoSQL',
             security: 'cybersecurity security encryption',
-            design: 'UI UX design interface'
+            design: 'UI UX design interface',
+            real_estate: '부동산 재건축 재개발 시공사 입찰',
+            urban_planning: '도시정비 재건축 재개발 시공사 입찰공고 정비사업 조합 정관 표준정관',
+            realestate: '부동산 재건축 재개발 시공사 입찰',
+            construction: '건설 시공사 입찰 재건축 재개발'
         };
 
-        const keywords = domainKeywords[domain as keyof typeof domainKeywords];
+        const keywords = domainKeywords[domain];
         return keywords ? `${query} ${keywords}` : query;
+    }
+
+    // 입찰공고·시공사선정 관련 쿼리 여부
+    private isBidNoticeRelatedQuery(query: string): boolean {
+        const bidNoticeTerms = [
+            '입찰공고', '입찰 공고', '시공사 선정', '시공사선정',
+            '현장설명회', '합동설명회', '나라장터', 'G2B', 'g2b',
+            '재건축 입찰', '재개발 입찰', '정비사업 입찰'
+        ];
+        const lower = query.toLowerCase();
+        return bidNoticeTerms.some(term => lower.includes(term.toLowerCase()));
+    }
+
+    // 입찰공고 검색 쿼리 최적화 (나라장터·정비사업·조합 검색 강화)
+    private optimizeBidNoticeQuery(query: string): string {
+        let optimized = query;
+        if (!optimized.includes('site:') && !optimized.includes('나라장터') && !optimized.includes('g2b')) {
+            optimized += ' (site:g2b.go.kr OR "나라장터" OR "정비사업정보시스템")';
+        }
+        if (optimized.includes('현장설명회') || optimized.includes('합동설명회')) {
+            optimized += ' 일정 장소';
+        }
+        return optimized;
+    }
+
+    // 정보몽땅·정비사업 정보 관련 쿼리 여부
+    private isInfoMongtangRelatedQuery(query: string): boolean {
+        const terms = ['정보몽땅', '정비사업 정보몽땅', 'cleanup.seoul', '클린업시스템', 'e-조합', 'e조합', '재건축 정보', '재개발 정보'];
+        return terms.some(term => query.toLowerCase().includes(term.toLowerCase()));
+    }
+
+    // 정보몽땅 검색 쿼리 최적화 (cleanup.seoul.go.kr·정비사업정보시스템 강화)
+    private optimizeInfoMongtangQuery(query: string): string {
+        let optimized = query;
+        if (!optimized.includes('cleanup') && !optimized.includes('seoul.go.kr')) {
+            optimized += ' site:cleanup.seoul.go.kr OR "정비사업정보시스템" OR "정보몽땅"';
+        }
+        return optimized;
+    }
+
+    // 서울시청·공공 행정 관련 쿼리 여부
+    private isSeoulGovRelatedQuery(query: string): boolean {
+        const terms = ['서울시', '서울시청', 'seoul.go.kr', 'si.re.kr', '서울시 조례', '서울시 행정', '서울시 공고', '서울 부동산', '서울 정비사업'];
+        return terms.some(term => query.toLowerCase().includes(term.toLowerCase()));
+    }
+
+    // 서울시청·공공 도메인 검색 쿼리 최적화
+    private optimizeSeoulGovQuery(query: string): string {
+        let optimized = query;
+        if (!optimized.includes('site:') && !optimized.includes('seoul.go.kr')) {
+            optimized += ' (site:seoul.go.kr OR site:si.re.kr OR "서울특별시")';
+        }
+        return optimized;
     }
 
     // 한국어 쿼리 최적화
@@ -288,8 +373,12 @@ class WebSearchIntegrationService {
             setTimeout(() => this.searchCache.delete(cacheKey), 60 * 60 * 1000);
 
             return results;
-        } catch (error) {
-            console.error('Multi-source search error:', error);
+        } catch (error: unknown) {
+            errorLogger.error('Multi-source search error', error instanceof Error ? error : new Error(String(error)), {
+                component: 'WebSearchIntegrationService',
+                action: 'searchMultipleSources',
+                searchQuery: searchQuery.original_query,
+            });
             return this.getFallbackResults(searchQuery);
         }
     }
@@ -354,7 +443,7 @@ class WebSearchIntegrationService {
                 credibility_score: this.getCredibilityScore(sourceType),
                 metadata: {
                     domain: this.getDomainForSourceType(sourceType),
-                    tags: searchQuery.context.conversation_context.slice(0, 3),
+                    tags: [...searchQuery.context.conversation_context],
                     reading_time: Math.floor(Math.random() * 10) + 2,
                     complexity_level: this.getComplexityForExpertise(searchQuery.context.expertise_level)
                 }
@@ -389,8 +478,7 @@ class WebSearchIntegrationService {
             return scoreB - scoreA;
         });
 
-        // 상위 10개 결과만 반환
-        return filtered.slice(0, 10);
+        return filtered;
     }
 
     // 관련성 점수 계산
@@ -436,7 +524,7 @@ class WebSearchIntegrationService {
         const primaryAnswer = await this.generatePrimaryAnswer(results, searchQuery, nlpAnalysis);
 
         // 지원 증거 선별
-        const supportingEvidence = results.slice(0, 5);
+        const supportingEvidence = results;
 
         // 관련 주제 추출
         const relatedTopics = this.extractRelatedTopics(results);
@@ -464,7 +552,7 @@ class WebSearchIntegrationService {
         searchQuery: SearchQuery,
         nlpAnalysis: NLPAnalysisResult
     ): Promise<string> {
-        const topResults = results.slice(0, 3);
+        const topResults = results;
         const combinedContent = topResults.map(r => r.snippet).join(' ');
 
         // 응답 전략에 따른 답변 생성
@@ -475,7 +563,7 @@ class WebSearchIntegrationService {
         if (strategy.detail_level === 'brief') {
             answer = this.generateBriefAnswer(combinedContent, searchQuery);
         } else if (strategy.detail_level === 'detailed') {
-            answer = this.generateDetailedAnswer(combinedContent, searchQuery, strategy);
+            answer = this.generateDetailedAnswer(combinedContent, searchQuery, strategy as unknown as Record<string, unknown>);
         } else {
             answer = this.generateModerateAnswer(combinedContent, searchQuery);
         }
@@ -493,19 +581,18 @@ class WebSearchIntegrationService {
 
     // 간단한 답변 생성
     private generateBriefAnswer(content: string, searchQuery: SearchQuery): string {
-        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = content.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const relevantSentences = sentences
-            .filter(sentence => this.isRelevantSentence(sentence, searchQuery))
-            .slice(0, 2);
+            .filter(sentence => this.isRelevantSentence(sentence, searchQuery));
 
-        return relevantSentences.join('. ') + '.';
+        return relevantSentences.join('. ') + (relevantSentences.length ? '.' : '');
     }
 
     // 상세한 답변 생성
     private generateDetailedAnswer(
         content: string,
         searchQuery: SearchQuery,
-        strategy: any
+        strategy: Record<string, unknown>
     ): string {
         let answer = this.generateModerateAnswer(content, searchQuery);
 
@@ -518,12 +605,11 @@ class WebSearchIntegrationService {
 
     // 보통 수준 답변 생성
     private generateModerateAnswer(content: string, searchQuery: SearchQuery): string {
-        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = content.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const relevantSentences = sentences
-            .filter(sentence => this.isRelevantSentence(sentence, searchQuery))
-            .slice(0, 4);
+            .filter(sentence => this.isRelevantSentence(sentence, searchQuery));
 
-        return relevantSentences.join('. ') + '.';
+        return relevantSentences.join('. ') + (relevantSentences.length ? '.' : '');
     }
 
     // 문장 관련성 확인
@@ -553,7 +639,7 @@ class WebSearchIntegrationService {
             result.metadata.tags.forEach(tag => topics.add(tag));
         });
 
-        return Array.from(topics).slice(0, 5);
+        return Array.from(topics);
     }
 
     // 후속 질문 생성
@@ -573,11 +659,11 @@ class WebSearchIntegrationService {
             questions.push(`Would you like to see practical implementation examples?`);
         }
 
-        return questions.slice(0, 3);
+        return questions;
     }
 
     // 신뢰도 점수 계산
-    private calculateConfidenceScore(results: SearchResult[], searchQuery: SearchQuery): number {
+    private calculateConfidenceScore(results: SearchResult[], _searchQuery: SearchQuery): number {
         if (results.length === 0) return 0.1;
 
         const avgCredibility = results.reduce((sum, r) => sum + r.credibility_score, 0) / results.length;
@@ -645,11 +731,11 @@ class WebSearchIntegrationService {
 
     private generateMockUrl(sourceType: string): string {
         const domains = {
-            web: 'https://example.com',
-            stackoverflow: 'https://stackoverflow.com',
-            github: 'https://github.com',
-            documentation: 'https://docs.example.com',
-            news: 'https://news.example.com'
+            web: DEMO_SIM_INTEGRATION_WEB_BASE_URL,
+            stackoverflow: DEMO_SIM_STACKOVERFLOW_BASE_URL,
+            github: DEMO_SIM_GITHUB_BASE_URL,
+            documentation: DEMO_SIM_DOCS_EXAMPLE_BASE_URL,
+            news: DEMO_SIM_NEWS_EXAMPLE_BASE_URL,
         };
         return `${domains[sourceType as keyof typeof domains]}/search-result`;
     }
@@ -704,7 +790,7 @@ class WebSearchIntegrationService {
         }];
     }
 
-    private generateFallbackResponse(searchQuery: SearchQuery): IntegratedResponse {
+    private generateFallbackResponse(_searchQuery: SearchQuery): IntegratedResponse {
         return {
             primary_answer: '죄송합니다. 요청하신 정보에 대한 검색 결과를 찾을 수 없습니다. 다른 검색어로 다시 시도해보시거나, 더 구체적인 질문을 해주시기 바랍니다.',
             supporting_evidence: [],
@@ -728,7 +814,7 @@ class WebSearchIntegrationService {
         this.searchHistory = [];
     }
 
-    getSearchAnalytics(): any {
+    getSearchAnalytics(): Record<string, unknown> {
         return {
             total_searches: this.searchHistory.length,
             search_types: this.getSearchTypeDistribution(),
@@ -737,7 +823,7 @@ class WebSearchIntegrationService {
         };
     }
 
-    private getSearchTypeDistribution(): any {
+    private getSearchTypeDistribution(): Record<string, unknown> {
         const distribution: { [key: string]: number } = {};
         this.searchHistory.forEach(search => {
             distribution[search.search_type] = (distribution[search.search_type] || 0) + 1;
@@ -745,7 +831,7 @@ class WebSearchIntegrationService {
         return distribution;
     }
 
-    private getDomainDistribution(): any {
+    private getDomainDistribution(): Record<string, unknown> {
         const distribution: { [key: string]: number } = {};
         this.searchHistory.forEach(search => {
             distribution[search.context.domain] = (distribution[search.context.domain] || 0) + 1;

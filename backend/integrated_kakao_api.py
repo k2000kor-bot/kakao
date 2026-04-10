@@ -292,17 +292,17 @@ async def get_system_status():
 
 @app.get("/api/rooms")
 async def get_chat_rooms():
-    """채팅방 목록 조회"""
+    """대화방 목록 조회"""
     try:
         db = SessionLocal()
         rooms_data = []
         
-        # 실제 구현에서는 데이터베이스에서 채팅방 정보를 조회
+        # 실제 구현에서는 데이터베이스에서 대화방 정보를 조회
         sample_rooms = [
-            {"room_id": "room-1", "name": "일반 채팅방", "last_message": "안녕하세요!", "message_count": 15},
-            {"room_id": "room-2", "name": "업무 채팅방", "last_message": "회의 일정 확인해주세요.", "message_count": 8},
-            {"room_id": "room-3", "name": "친구 채팅방", "last_message": "오늘 뭐해?", "message_count": 23},
-            {"room_id": "room-4", "name": "가족 채팅방", "last_message": "저녁 뭐 먹을까?", "message_count": 12}
+            {"room_id": "room-1", "name": "일반 대화방", "last_message": "안녕하세요!", "message_count": 15},
+            {"room_id": "room-2", "name": "업무 대화방", "last_message": "회의 일정 확인해주세요.", "message_count": 8},
+            {"room_id": "room-3", "name": "친구 대화방", "last_message": "오늘 뭐해?", "message_count": 23},
+            {"room_id": "room-4", "name": "가족 대화방", "last_message": "저녁 뭐 먹을까?", "message_count": 12}
         ]
         
         for room in sample_rooms:
@@ -318,12 +318,12 @@ async def get_chat_rooms():
         return rooms_data
         
     except Exception as e:
-        logger.error(f"채팅방 목록 조회 오류: {e}")
+        logger.error(f"대화방 목록 조회 오류: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/conversations/{room_id}")
 async def get_conversations(room_id: str, limit: int = 50):
-    """특정 채팅방의 대화 기록 조회"""
+    """특정 대화방의 대화 기록 조회"""
     try:
         db = SessionLocal()
         conversations = db.query(Conversation).filter(
@@ -452,10 +452,11 @@ async def get_system_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    logger.info("카카오톡 AI 대화 대응 통합 시스템 시작 중...")
+    _p = int(os.environ.get("INTEGRATED_KAKAO_API_PORT", os.environ.get("PORT", "8003")))
+    logger.info(f"카카오톡 AI 대화 대응 통합 시스템 시작 중... (port={_p})")
     uvicorn.run(
         app,
         host="localhost",
-        port=8003,
+        port=_p,
         log_level="info"
     ) 

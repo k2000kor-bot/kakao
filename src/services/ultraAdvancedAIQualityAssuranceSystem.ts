@@ -1,4 +1,6 @@
 import { EventEmitter } from 'events';
+import { CHAT_POST_PATH } from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface QualityTest {
     id: string;
@@ -8,8 +10,8 @@ export interface QualityTest {
     priority: 'low' | 'medium' | 'high' | 'critical';
     description: string;
     test_script: string;
-    expected_result: any;
-    actual_result?: any;
+    expected_result: unknown;
+    actual_result?: unknown;
     execution_time?: number;
     error_message?: string;
     created_at: string;
@@ -149,7 +151,10 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
         super();
         this.initializeSystem();
         this.isInitialized = true;
-        console.log('🔍 고도화된 AI 품질 보증 시스템이 초기화되었습니다.');
+        errorLogger.info('고도화된 AI 품질 보증 시스템이 초기화되었습니다', {
+            component: 'ultraAdvancedAIQualityAssuranceSystem',
+            action: 'constructor',
+        });
     }
 
     private async initializeSystem(): Promise<void> {
@@ -167,7 +172,11 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
 
             this.emit('system_initialized', this.systemMetrics);
         } catch (error) {
-            console.error('품질 보증 시스템 초기화 오류:', error);
+            const err = toError(error);
+            errorLogger.error('품질 보증 시스템 초기화 오류', err, {
+                component: 'ultraAdvancedAIQualityAssuranceSystem',
+                action: 'initializeSystem',
+            });
             this.emit('system_error', error);
         }
     }
@@ -181,7 +190,7 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
                 status: 'pending',
                 priority: 'high',
                 description: 'API 엔드포인트의 응답 시간을 측정합니다.',
-                test_script: 'measureResponseTime("/api/chat")',
+                test_script: `measureResponseTime(${JSON.stringify(CHAT_POST_PATH)})`,
                 expected_result: { max_time: 2000 },
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
@@ -326,7 +335,13 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
             this.emit('test_created', test);
             return testId;
         } catch (error) {
-            console.error('테스트 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('테스트 생성 오류', err, {
+                component: 'ultraAdvancedAIQualityAssuranceSystem',
+                action: 'createTest',
+                testName: testConfig.name,
+                testType: testConfig.type,
+            });
             throw error;
         }
     }
@@ -368,7 +383,12 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
             this.emit('test_completed', test);
             return test;
         } catch (error) {
-            console.error('테스트 실행 오류:', error);
+            const err = toError(error);
+            errorLogger.error('테스트 실행 오류', err, {
+                component: 'ultraAdvancedAIQualityAssuranceSystem',
+                action: 'runTest',
+                testId,
+            });
             throw error;
         }
     }
@@ -386,7 +406,11 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
                 completed: pendingTests.length
             });
         } catch (error) {
-            console.error('자동화 테스트 실행 오류:', error);
+            const err = toError(error);
+            errorLogger.error('자동화 테스트 실행 오류', err, {
+                component: 'ultraAdvancedAIQualityAssuranceSystem',
+                action: 'runAutomatedTests',
+            });
             this.emit('automated_tests_error', error);
         }
     }
@@ -422,7 +446,12 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
 
             this.emit('metric_updated', metric);
         } catch (error) {
-            console.error('메트릭 업데이트 오류:', error);
+            const err = toError(error);
+            errorLogger.error('메트릭 업데이트 오류', err, {
+                component: 'ultraAdvancedAIQualityAssuranceSystem',
+                action: 'updateMetric',
+                metricId,
+            });
             throw error;
         }
     }
@@ -437,7 +466,11 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
 
             this.emit('metrics_updated', this.systemMetrics);
         } catch (error) {
-            console.error('메트릭 업데이트 오류:', error);
+            const err = toError(error);
+            errorLogger.error('메트릭 업데이트 오류', err, {
+                component: 'ultraAdvancedAIQualityAssuranceSystem',
+                action: 'updateMetrics',
+            });
             this.emit('metrics_update_error', error);
         }
     }
@@ -491,7 +524,11 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
 
             return report;
         } catch (error) {
-            console.error('품질 보고서 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('품질 보고서 생성 오류', err, {
+                component: 'ultraAdvancedAIQualityAssuranceSystem',
+                action: 'generateQualityReport',
+            });
             throw error;
         }
     }
@@ -564,7 +601,11 @@ class UltraAdvancedAIQualityAssuranceSystem extends EventEmitter {
 
             this.emit('config_updated', this.config);
         } catch (error) {
-            console.error('설정 업데이트 오류:', error);
+            const err = toError(error);
+            errorLogger.error('설정 업데이트 오류', err, {
+                component: 'ultraAdvancedAIQualityAssuranceSystem',
+                action: 'updateConfig',
+            });
             throw error;
         }
     }

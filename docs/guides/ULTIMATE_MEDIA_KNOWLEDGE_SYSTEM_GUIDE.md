@@ -33,6 +33,17 @@ ChatGPT-5 수준의 미디어 이해 및 지식 추출 시스템입니다. 다�
 
 ## 🛠️ 설치 및 실행
 
+### 0. **선택 의존성 (기능별)**
+
+| 기능 | 패키지 | 비고 |
+|------|--------|------|
+| PPTX 텍스트 추출 | `python-pptx` | `pip install python-pptx` |
+| XLSX 텍스트 추출 | `openpyxl` | `pip install openpyxl` |
+| 오디오→텍스트 | `openai-whisper` | 용량 큼, torch 의존성 |
+| 비디오 오디오 추출 | ffmpeg | 시스템 설치: `brew install ffmpeg` |
+
+미설치 시 해당 형식은 기본 placeholder로 동작합니다. `backend/requirements-optional.txt` 참고.
+
 ### 1. **시스템 시작**
 
 ```bash
@@ -51,7 +62,7 @@ npm start
 
 ```bash
 # 백엔드 API 상태 확인
-curl http://localhost:8001/api/v1/health
+curl http://localhost:5002/api/v1/health
 ```
 
 ## 📖 사용 방법
@@ -90,15 +101,15 @@ curl http://localhost:8001/api/v1/health
 
 ```bash
 # 미디어 파일 분석
-curl -X POST "http://localhost:8001/api/v1/analyze-media" \
+curl -X POST "http://localhost:5002/api/v1/analyze-media" \
   -F "file=@your_file.jpg" \
   -F "project_id=your_project_id"
 
 # 지식 베이스 조회
-curl "http://localhost:8001/api/v1/knowledge-base/your_project_id"
+curl "http://localhost:5002/api/v1/knowledge-base/your_project_id"
 
 # 학습 히스토리 조회
-curl "http://localhost:8001/api/v1/learning-history"
+curl "http://localhost:5002/api/v1/learning-history"
 ```
 
 ### 2. **프로그래밍 방식 사용**
@@ -230,7 +241,7 @@ A: 서버 상태를 확인하고, 필요시 재시작하세요.
 - **커뮤니티**: https://community.corbu-ai.com
 
 ### 2. **개발자 리소스**
-- **API 문서**: http://localhost:8001/docs
+- **API 문서**: http://localhost:5002/api/docs
 - **GitHub**: https://github.com/corbu-ai/ultimate-media-system
 - **예제 코드**: `/examples` 디렉토리
 

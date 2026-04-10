@@ -93,7 +93,7 @@ const response = await fetch('/api/chat', {
 
 | 모델 | 크기 | 용도 | 성능 |
 |------|------|------|------|
-| llama3.1:8b | 4.7GB | 범용 채팅 | 빠름 |
+| llama3.1:8b | 4.7GB | 범용 대화 | 빠름 |
 | qwen2.5:7b | 4.4GB | 고성능 분석 | 정확함 |
 | gemma2:9b | 5.4GB | Google 모델 | 균형 |
 | kullm:12.8b | 7.2GB | 한국어 특화 | 한국어 최적화 |

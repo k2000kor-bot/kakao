@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import os
 import aiohttp
 import logging
 from datetime import datetime
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 초기화
 app = FastAPI(
-    title="CORBU AI 웹 스크래핑 서비스",
+    title="CORBU.AI 웹 스크래핑 서비스",
     description="부동산 관련 웹 정보 수집 및 분석",
     version="1.0.0"
 )
@@ -293,11 +294,12 @@ def _generate_insights(categorized_results: Dict[str, List[Dict[str, Any]]]) -> 
 
 # 메인 실행
 if __name__ == "__main__":
+    _p = int(os.environ.get("WEB_SCRAPER_SERVICE_PORT", os.environ.get("PORT", "8013")))
     logger.info("🚀 웹 스크래핑 서비스 시작 중...")
     uvicorn.run(
         "web_scraper_service:app",
         host="0.0.0.0",
-        port=8013,
+        port=_p,
         reload=False,
         log_level="info"
     )

@@ -322,9 +322,12 @@ async def get_message_history():
 # 서버 시작
 if __name__ == "__main__":
     print("🚀 메시지 생성 서버 시작")
+    _port = int(
+        os.environ.get("MESSAGE_GENERATION_PORT", os.environ.get("PORT", "8003"))
+    )
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8001")
-    print("📖 API 문서: http://localhost:8001/docs")
+    print(f"📍 서버 주소: http://localhost:{_port}")
+    print(f"📖 API 문서: http://localhost:{_port}/docs")
     print("🎯 주요 엔드포인트:")
     print("   POST /api/generate-message - 메시지 생성")
     print("   GET /api/message-history - 히스토리 조회")
@@ -338,7 +341,8 @@ if __name__ == "__main__":
         
         # 서버 시작
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8003, log_level="info")
+
+        uvicorn.run(app, host="0.0.0.0", port=_port, log_level="info")
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

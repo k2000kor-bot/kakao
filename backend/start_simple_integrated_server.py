@@ -5,6 +5,7 @@ integrated_api만 사용하는 경량 서버
 """
 
 import logging
+import os
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI 통합 API 서버",
+    title="CORBU.AI 통합 API 서버",
     description="통합 API 엔드포인트만 포함하는 경량 서버",
     version="1.0.0",
     docs_url="/api/docs",
@@ -45,7 +46,7 @@ app.include_router(integrated_router)
 @app.get("/")
 async def root():
     return {
-        "message": "CORBU AI 통합 API 서버",
+        "message": "CORBU.AI 통합 API 서버",
         "version": "1.0.0",
         "docs": "/api/docs",
         "integrated_api": "/api/integrated",
@@ -61,17 +62,24 @@ async def health():
 # 서버 시작 이벤트
 @app.on_event("startup")
 async def startup_event():
-    logger.info("🚀 CORBU AI 통합 API 서버가 시작되었습니다!")
-    logger.info("📍 서버 주소: http://localhost:8000")
-    logger.info("📚 API 문서: http://localhost:8000/api/docs")
-    logger.info("🔗 통합 API: http://localhost:8000/api/integrated")
+    _p = int(os.environ.get("BACKEND_PORT", os.environ.get("PORT", "5002")))
+    logger.info("🚀 CORBU.AI 통합 API 서버가 시작되었습니다!")
+    logger.info("📍 서버 주소: http://localhost:%s", _p)
+    logger.info("📚 API 문서: http://localhost:%s/api/docs", _p)
+    logger.info("🔗 통합 API: http://localhost:%s/api/integrated", _p)
 
 
 if __name__ == "__main__":
+    _port = int(
+        os.environ.get(
+            "BACKEND_PORT",
+            os.environ.get("API_PORT", os.environ.get("PORT", "5002")),
+        )
+    )
     uvicorn.run(
         "start_simple_integrated_server:app",
         host="0.0.0.0",
-        port=8000,
+        port=_port,
         reload=True,
         log_level="info",
     )

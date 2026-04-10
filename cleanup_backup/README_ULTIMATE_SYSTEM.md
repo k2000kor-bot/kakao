@@ -165,7 +165,7 @@ const { isConnected, lastMessage, subscribeToRoom } = useWebSocket({
   autoReconnect: true
 });
 
-// 특정 채팅방 구독
+// 특정 대화방 구독
 subscribeToRoom('개포우성7차');
 ```
 
@@ -357,7 +357,7 @@ Content-Type: application/json
 const ws = new WebSocket('ws://localhost:8004/ws/client_id');
 ```
 
-#### 채팅방 구독
+#### 대화방 구독
 
 ```javascript
 ws.send(JSON.stringify({

@@ -1,5 +1,5 @@
 """
-CORBU AI Advanced Language Processor - 고급 언어 처리 및 이해 엔진
+CORBU.AI Advanced Language Processor - 고급 언어 처리 및 이해 엔진
 """
 import re
 import json

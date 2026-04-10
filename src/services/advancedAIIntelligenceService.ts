@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 interface AIInsight {
     id: string;
@@ -9,7 +10,7 @@ interface AIInsight {
     impact: 'high' | 'medium' | 'low';
     category: string;
     timestamp: Date;
-    data: any;
+    data: unknown;
 }
 
 interface LearningPattern {
@@ -27,7 +28,7 @@ interface PredictiveModel {
     type: 'classification' | 'regression' | 'clustering' | 'nlp';
     accuracy: number;
     lastTrained: Date;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     performance: {
         precision: number;
         recall: number;
@@ -134,8 +135,8 @@ class AdvancedAIIntelligenceService extends EventEmitter {
     }
 
     // 고급 AI 분석
-    public async performAdvancedAnalysis(input: string, context: any = {}): Promise<{
-        analysis: any;
+    public async performAdvancedAnalysis(input: string, context: Record<string, unknown> = {}): Promise<{
+        analysis: Record<string, unknown>;
         insights: AIInsight[];
         recommendations: string[];
         confidence: number;
@@ -155,10 +156,10 @@ class AdvancedAIIntelligenceService extends EventEmitter {
                 patterns: patternAnalysis,
                 timestamp: new Date(),
                 confidence: this.calculateOverallConfidence([
-                    userBehaviorAnalysis.confidence,
-                    contentQualityAnalysis.confidence,
-                    sentimentAnalysis.confidence,
-                    patternAnalysis.confidence
+                    Number((userBehaviorAnalysis as Record<string, number>).confidence),
+                    Number((contentQualityAnalysis as Record<string, number>).confidence),
+                    Number((sentimentAnalysis as Record<string, number>).confidence),
+                    Number((patternAnalysis as Record<string, number>).confidence)
                 ])
             };
 
@@ -179,12 +180,17 @@ class AdvancedAIIntelligenceService extends EventEmitter {
             };
 
         } catch (error) {
-            console.error('고급 AI 분석 중 오류 발생:', error);
-            throw error;
+            const err = toError(error);
+            errorLogger.error('고급 AI 분석 중 오류 발생', err, {
+                component: 'advancedAIIntelligenceService',
+                action: 'performAdvancedAnalysis',
+                input,
+            });
+            throw err;
         }
     }
 
-    private async analyzeUserBehavior(input: string, context: any): Promise<any> {
+    private async analyzeUserBehavior(input: string, context: Record<string, unknown>): Promise<Record<string, unknown>> {
         // 사용자 행동 분석 시뮬레이션
         const model = this.predictiveModels.find(m => m.id === 'user-behavior-model');
 
@@ -198,7 +204,7 @@ class AdvancedAIIntelligenceService extends EventEmitter {
         };
     }
 
-    private async analyzeContentQuality(input: string): Promise<any> {
+    private async analyzeContentQuality(input: string): Promise<Record<string, unknown>> {
         // 콘텐츠 품질 분석 시뮬레이션
         const model = this.predictiveModels.find(m => m.id === 'content-quality-model');
 
@@ -213,7 +219,7 @@ class AdvancedAIIntelligenceService extends EventEmitter {
         };
     }
 
-    private async analyzeSentiment(input: string): Promise<any> {
+    private async analyzeSentiment(input: string): Promise<Record<string, unknown>> {
         // 감정 분석 시뮬레이션
         const model = this.predictiveModels.find(m => m.id === 'sentiment-analysis-model');
 
@@ -227,7 +233,7 @@ class AdvancedAIIntelligenceService extends EventEmitter {
         };
     }
 
-    private async analyzePatterns(input: string): Promise<any> {
+    private async analyzePatterns(input: string): Promise<Record<string, unknown>> {
         // 패턴 분석 시뮬레이션
         return {
             commonPatterns: this.findCommonPatterns(input),
@@ -259,7 +265,11 @@ class AdvancedAIIntelligenceService extends EventEmitter {
             await this.optimizeModels();
 
         } catch (error) {
-            console.error('지속적 학습 중 오류 발생:', error);
+            const err = toError(error);
+            errorLogger.error('지속적 학습 중 오류 발생', err, {
+                component: 'advancedAIIntelligenceService',
+                action: 'performContinuousLearning',
+            });
         } finally {
             this.isLearning = false;
         }
@@ -322,11 +332,14 @@ class AdvancedAIIntelligenceService extends EventEmitter {
         this.cleanupOldInsights();
     }
 
-    private async generateContextualInsights(analysis: any): Promise<AIInsight[]> {
+    private async generateContextualInsights(analysis: Record<string, unknown>): Promise<AIInsight[]> {
         const insights: AIInsight[] = [];
+        const ub = analysis.userBehavior as { engagement?: number } | undefined;
+        const cq = analysis.contentQuality as { qualityScore?: number } | undefined;
+        const sent = analysis.sentiment as { intensity?: number } | undefined;
 
         // 사용자 행동 인사이트
-        if (analysis.userBehavior.engagement > 0.8) {
+        if (ub && (ub.engagement ?? 0) > 0.8) {
             insights.push({
                 id: `insight-${Date.now()}-1`,
                 type: 'pattern',
@@ -341,7 +354,7 @@ class AdvancedAIIntelligenceService extends EventEmitter {
         }
 
         // 콘텐츠 품질 인사이트
-        if (analysis.contentQuality.qualityScore > 0.9) {
+        if (cq && (cq.qualityScore ?? 0) > 0.9) {
             insights.push({
                 id: `insight-${Date.now()}-2`,
                 type: 'recommendation',
@@ -356,7 +369,7 @@ class AdvancedAIIntelligenceService extends EventEmitter {
         }
 
         // 감정 분석 인사이트
-        if (analysis.sentiment.intensity > 0.7) {
+        if (sent && (sent.intensity ?? 0) > 0.7) {
             insights.push({
                 id: `insight-${Date.now()}-3`,
                 type: 'anomaly',
@@ -373,21 +386,24 @@ class AdvancedAIIntelligenceService extends EventEmitter {
         return insights;
     }
 
-    private async generateRecommendations(analysis: any, insights: AIInsight[]): Promise<string[]> {
+    private async generateRecommendations(analysis: Record<string, unknown>, insights: AIInsight[]): Promise<string[]> {
         const recommendations: string[] = [];
+        const ub = analysis.userBehavior as { engagement?: number } | undefined;
+        const cq = analysis.contentQuality as { qualityScore?: number } | undefined;
+        const sent = analysis.sentiment as { polarity?: number } | undefined;
 
         // 사용자 행동 기반 추천
-        if (analysis.userBehavior.engagement > 0.8) {
+        if (ub && (ub.engagement ?? 0) > 0.8) {
             recommendations.push('사용자 참여도가 높으므로 더 많은 상호작용 기능을 제공해보세요.');
         }
 
         // 콘텐츠 품질 기반 추천
-        if (analysis.contentQuality.qualityScore < 0.6) {
+        if (cq && (cq.qualityScore ?? 1) < 0.6) {
             recommendations.push('콘텐츠 품질을 개선하기 위해 더 자세한 정보를 제공해보세요.');
         }
 
         // 감정 분석 기반 추천
-        if (analysis.sentiment.polarity < -0.5) {
+        if (sent && (sent.polarity ?? 0) < -0.5) {
             recommendations.push('부정적인 감정이 감지되었습니다. 더 긍정적인 접근 방식을 고려해보세요.');
         }
 
@@ -400,36 +416,36 @@ class AdvancedAIIntelligenceService extends EventEmitter {
     }
 
     // 유틸리티 메서드들
-    private predictIntent(input: string): string {
+    private predictIntent(_input: string): string {
         const intents = ['question', 'request', 'complaint', 'compliment', 'suggestion'];
         return intents[Math.floor(Math.random() * intents.length)];
     }
 
-    private calculateEngagement(input: string, context: any): number {
+    private calculateEngagement(_input: string, _context: Record<string, unknown>): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 
-    private extractPreferences(input: string, context: any): string[] {
+    private extractPreferences(_input: string, _context: Record<string, unknown>): string[] {
         return ['interactive', 'detailed', 'visual'];
     }
 
-    private identifyBehaviorPattern(context: any): string {
+    private identifyBehaviorPattern(_context: Record<string, unknown>): string {
         return 'consistent-user';
     }
 
-    private calculateReadability(input: string): number {
+    private calculateReadability(_input: string): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private calculateRelevance(input: string): number {
+    private calculateRelevance(_input: string): number {
         return Math.random() * 0.2 + 0.8; // 0.8-1.0
     }
 
-    private calculateCompleteness(input: string): number {
+    private calculateCompleteness(_input: string): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private calculateOriginality(input: string): number {
+    private calculateOriginality(_input: string): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 
@@ -440,36 +456,36 @@ class AdvancedAIIntelligenceService extends EventEmitter {
             this.calculateOriginality(input)) / 4;
     }
 
-    private detectEmotion(input: string): string {
+    private detectEmotion(_input: string): string {
         const emotions = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'neutral'];
         return emotions[Math.floor(Math.random() * emotions.length)];
     }
 
-    private calculatePolarity(input: string): number {
+    private calculatePolarity(_input: string): number {
         return Math.random() * 2 - 1; // -1 to 1
     }
 
-    private calculateIntensity(input: string): number {
+    private calculateIntensity(_input: string): number {
         return Math.random() * 0.5 + 0.5; // 0.5-1.0
     }
 
-    private analyzeEmotionalContext(input: string): string {
+    private analyzeEmotionalContext(_input: string): string {
         return 'professional';
     }
 
-    private findCommonPatterns(input: string): string[] {
+    private findCommonPatterns(_input: string): string[] {
         return ['frequent-words', 'sentence-structure', 'topic-patterns'];
     }
 
-    private detectAnomalies(input: string): string[] {
+    private detectAnomalies(_input: string): string[] {
         return Math.random() > 0.8 ? ['unusual-length', 'rare-words'] : [];
     }
 
-    private identifyTrends(input: string): string[] {
+    private identifyTrends(_input: string): string[] {
         return ['increasing-complexity', 'topic-shift'];
     }
 
-    private findCorrelations(input: string): string[] {
+    private findCorrelations(_input: string): string[] {
         return ['sentiment-quality', 'length-engagement'];
     }
 
@@ -503,13 +519,14 @@ class AdvancedAIIntelligenceService extends EventEmitter {
         // 모델 최적화 시뮬레이션
         this.predictiveModels.forEach(model => {
             // 하이퍼파라미터 조정
-            if (model.parameters.learningRate) {
-                model.parameters.learningRate *= (0.95 + Math.random() * 0.1);
+            const lr = model.parameters.learningRate as number | undefined;
+            if (typeof lr === 'number') {
+                (model.parameters as Record<string, number>).learningRate = lr * (0.95 + Math.random() * 0.1);
             }
         });
     }
 
-    private async storeLearningData(input: string, analysis: any, context: any): Promise<void> {
+    private async storeLearningData(input: string, analysis: Record<string, unknown>, context: Record<string, unknown>): Promise<void> {
         // 학습 데이터 저장 시뮬레이션
         const adaptiveResponse: AdaptiveResponse = {
             id: `response-${Date.now()}`,

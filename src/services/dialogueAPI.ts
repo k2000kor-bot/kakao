@@ -1,4 +1,12 @@
+import {
+    API_ANALYZE_CONTEXT_PATH,
+    API_DIALOGUE_TYPES_PATH,
+    API_GENERATE_DIALOGUE_PATH,
+    joinApiHealthCheckUrl,
+    resolveApiBaseUrl,
+} from '../config/api';
 import axios, { AxiosResponse } from 'axios';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 기본 대화 유형 정의
 export const DEFAULT_DIALOGUE_TYPES = [
@@ -111,7 +119,7 @@ const generateMessage = (request: DialogueRequest): GeneratedMessage[] => {
     // 선택된 메시지 형식들에 대해 각각 메시지 생성
     const formats = target_dialogue_types.includes('auto') ? ['agreement', 'suggestion', 'empathy'] : target_dialogue_types;
 
-    formats.slice(0, 3).forEach((formatId, index) => {
+    formats.forEach((formatId, index) => {
         const format = DEFAULT_DIALOGUE_TYPES.find(f => f.id === formatId);
         if (!format) return;
 
@@ -141,16 +149,16 @@ const generateMessage = (request: DialogueRequest): GeneratedMessage[] => {
 // 리라이팅용 콘텐츠 생성
 const generateRewriteContent = (originalText: string, format: DialogueType): string => {
     const templates = {
-        refutation: `${originalText.substring(0, 30)}...라고 하셨는데, 사실 이 부분에서 다른 관점을 제시해드리고 싶습니다. 실제로는...`,
-        agreement: `말씀하신 내용에 완전히 동의합니다. "${originalText.substring(0, 40)}..." 이 부분이 특히 공감됩니다.`,
-        empathy: `"${originalText.substring(0, 30)}..." 라고 말씀해주셔서 마음이 와닿습니다. 그런 상황이셨다면 정말 힘드셨을 것 같아요.`,
-        suggestion: `말씀하신 상황을 보니 이런 방법은 어떨까요? "${originalText.substring(0, 25)}..." 이 부분을 개선해보시면...`,
-        questioning: `"${originalText.substring(0, 30)}..." 라고 하셨는데, 혹시 구체적으로 어떤 부분이 그렇게 느껴지셨나요?`,
-        neutral: `말씀하신 내용을 정리해보면 "${originalText.substring(0, 40)}..." 라는 상황이군요. 이에 대해 객관적으로 살펴보면...`,
-        emphasis: `특히 "${originalText.substring(0, 30)}..." 이 부분이 정말 중요한 포인트라고 생각합니다!`,
-        criticism: `"${originalText.substring(0, 25)}..." 이런 접근 방식은 문제가 있어 보입니다. 다시 생각해보시는 게 좋을 것 같아요.`,
-        sarcasm: `아, "${originalText.substring(0, 30)}..." 정말 훌륭한 생각이네요. (웃음) 하지만 현실적으로는...`,
-        directive: `"${originalText.substring(0, 25)}..." 이 상황에서는 반드시 이렇게 해야 합니다.`
+        refutation: `${originalText}라고 하셨는데, 사실 이 부분에서 다른 관점을 제시해드리고 싶습니다. 실제로는...`,
+        agreement: `말씀하신 내용에 완전히 동의합니다. "${originalText}" 이 부분이 특히 공감됩니다.`,
+        empathy: `"${originalText}" 라고 말씀해주셔서 마음이 와닿습니다. 그런 상황이셨다면 정말 힘드셨을 것 같아요.`,
+        suggestion: `말씀하신 상황을 보니 이런 방법은 어떨까요? "${originalText}" 이 부분을 개선해보시면...`,
+        questioning: `"${originalText}" 라고 하셨는데, 혹시 구체적으로 어떤 부분이 그렇게 느껴지셨나요?`,
+        neutral: `말씀하신 내용을 정리해보면 "${originalText}" 라는 상황이군요. 이에 대해 객관적으로 살펴보면...`,
+        emphasis: `특히 "${originalText}" 이 부분이 정말 중요한 포인트라고 생각합니다!`,
+        criticism: `"${originalText}" 이런 접근 방식은 문제가 있어 보입니다. 다시 생각해보시는 게 좋을 것 같아요.`,
+        sarcasm: `아, "${originalText}" 정말 훌륭한 생각이네요. (웃음) 하지만 현실적으로는...`,
+        directive: `"${originalText}" 이 상황에서는 반드시 이렇게 해야 합니다.`
     };
 
     return templates[format.id as keyof typeof templates] || `${format.name} 형식으로 다시 표현하면: ${originalText}을 바탕으로 새로운 관점을 제시합니다.`;
@@ -158,7 +166,7 @@ const generateRewriteContent = (originalText: string, format: DialogueType): str
 
 // 새 메시지 생성
 const generateNewContent = (inputMessage: string, format: DialogueType, selectedMessage?: string): string => {
-    const context = selectedMessage ? `"${selectedMessage.substring(0, 30)}..."에 대한 응답으로` : '';
+    const context = selectedMessage ? `"${selectedMessage}"에 대한 응답으로` : '';
 
     const templates = {
         agreement: `${context} 완전히 동의합니다. ${inputMessage}에 대해 저도 같은 생각입니다. 특히 이런 부분이 인상적이네요.`,
@@ -217,7 +225,7 @@ export const utils = {
         return num.toString();
     },
 
-    downloadFile: (data: any, filename: string, format: string = 'json') => {
+    downloadFile: (data: unknown, filename: string, format: string = 'json') => {
         let content: string;
         let mimeType: string;
 
@@ -227,11 +235,12 @@ export const utils = {
         } else if (format === 'csv') {
             // 간단한 CSV 변환
             if (Array.isArray(data)) {
-                const headers = Object.keys(data[0] || {});
+                const firstRow = data[0] as Record<string, unknown> | undefined;
+                const headers = Object.keys(firstRow ?? {});
                 const csvContent = [
                     headers.join(','),
-                    ...data.map(row => headers.map(header =>
-                        JSON.stringify(row[header] || '')
+                    ...data.map((row: Record<string, unknown>) => headers.map(header =>
+                        JSON.stringify((row[header] ?? ''))
                     ).join(','))
                 ].join('\n');
                 content = csvContent;
@@ -258,33 +267,33 @@ export const utils = {
     generateId: () => `id_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
 
     getCategoryColor: (category: string) => {
-        const colors: Record<string, string> = {
-            auto: 'bg-purple-100 text-purple-800',
-            opposition: 'bg-red-100 text-red-800',
-            support: 'bg-green-100 text-green-800',
-            attack: 'bg-orange-100 text-orange-800',
-            objective: 'bg-gray-100 text-gray-800',
-            evasive: 'bg-yellow-100 text-yellow-800',
-            indirect: 'bg-pink-100 text-pink-800',
-            emotional: 'bg-teal-100 text-teal-800',
-            solution: 'bg-emerald-100 text-emerald-800',
-            inquiry: 'bg-blue-100 text-blue-800',
-            dismissive: 'bg-slate-100 text-slate-800',
-            assertive: 'bg-cyan-100 text-cyan-800',
-            tentative: 'bg-lime-100 text-lime-800',
-            command: 'bg-violet-100 text-violet-800',
-            pressure: 'bg-rose-100 text-rose-800',
-            manipulation: 'bg-amber-100 text-amber-800'
+        const map: Record<string, string> = {
+            auto: 'bw-badge bw-badge-secondary',
+            opposition: 'bw-badge bw-badge-error',
+            support: 'bw-badge bw-badge-success',
+            attack: 'bw-badge bw-badge-warning',
+            objective: 'bw-badge',
+            evasive: 'bw-badge bw-badge-warning',
+            indirect: 'bw-badge bw-badge-secondary',
+            emotional: 'bw-badge bw-badge-info',
+            solution: 'bw-badge bw-badge-success',
+            inquiry: 'bw-badge bw-badge-info',
+            dismissive: 'bw-badge',
+            assertive: 'bw-badge bw-badge-info',
+            tentative: 'bw-badge bw-badge-warning',
+            command: 'bw-badge bw-badge-secondary',
+            pressure: 'bw-badge bw-badge-error',
+            manipulation: 'bw-badge bw-badge-warning',
         };
-        return colors[category] || 'bg-gray-100 text-gray-800';
+        return map[category] || 'bw-badge';
     },
 
     getEffectivenessColor: (score: number) => {
-        if (score >= 85) return 'text-green-600';
-        if (score >= 70) return 'text-blue-600';
-        if (score >= 55) return 'text-yellow-600';
-        return 'text-red-600';
-    }
+        if (score >= 85) return 'bw-badge bw-badge-success';
+        if (score >= 70) return 'bw-badge bw-badge-info';
+        if (score >= 55) return 'bw-badge bw-badge-warning';
+        return 'bw-badge bw-badge-error';
+    },
 };
 
 // DialogueAPIService 클래스
@@ -292,18 +301,23 @@ export class DialogueAPIService {
     private baseURL: string;
 
     constructor() {
-        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+        this.baseURL = resolveApiBaseUrl();
 
         // Axios 인터셉터 설정
-        axios.interceptors.request.use((config: any) => {
+        axios.interceptors.request.use((config) => {
             config.timeout = 30000; // 30초 타임아웃
             return config;
         });
 
         axios.interceptors.response.use(
-            (response: any) => response,
-            (error: any) => {
-                console.warn('API 호출 실패, 로컬 모드로 전환:', error.message);
+            (response) => response,
+            (error: unknown) => {
+                const err = toError(error);
+                errorLogger.warn('API 호출 실패, 로컬 모드로 전환', {
+                    component: 'dialogueAPI',
+                    action: 'axiosInterceptor',
+                    error: err.message,
+                });
                 return Promise.reject(error);
             }
         );
@@ -311,10 +325,15 @@ export class DialogueAPIService {
 
     async getDialogueTypes(): Promise<{ dialogueTypes: DialogueType[], categories: typeof CATEGORY_NAMES }> {
         try {
-            const response: AxiosResponse = await axios.get(`${this.baseURL}/api/dialogue-types`);
+            const response: AxiosResponse = await axios.get(joinApiHealthCheckUrl(this.baseURL, API_DIALOGUE_TYPES_PATH));
             return response.data;
         } catch (error) {
-            console.warn('백엔드 연결 실패, 기본 데이터 사용');
+            const err = toError(error);
+            errorLogger.warn('백엔드 연결 실패, 기본 데이터 사용', {
+                component: 'dialogueAPI',
+                action: 'getDialogueTypes',
+                error: err.message,
+            });
             return {
                 dialogueTypes: DEFAULT_DIALOGUE_TYPES,
                 categories: CATEGORY_NAMES
@@ -324,10 +343,18 @@ export class DialogueAPIService {
 
     async generateDialogue(request: DialogueRequest): Promise<GeneratedMessage[]> {
         try {
-            const response: AxiosResponse = await axios.post(`${this.baseURL}/api/generate-dialogue`, request);
+            const response: AxiosResponse = await axios.post(
+                joinApiHealthCheckUrl(this.baseURL, API_GENERATE_DIALOGUE_PATH),
+                request,
+            );
             return response.data.messages;
         } catch (error) {
-            console.warn('백엔드 연결 실패, 로컬 생성 모드 사용');
+            const err = toError(error);
+            errorLogger.warn('백엔드 연결 실패, 로컬 생성 모드 사용', {
+                component: 'dialogueAPI',
+                action: 'generateDialogue',
+                error: err.message,
+            });
             // 로컬에서 메시지 생성
             return generateMessage(request);
         }
@@ -335,12 +362,18 @@ export class DialogueAPIService {
 
     async analyzeContext(conversationHistory: string[]): Promise<ContextAnalysis> {
         try {
-            const response: AxiosResponse = await axios.post(`${this.baseURL}/api/analyze-context`, {
+            const response: AxiosResponse = await axios.post(joinApiHealthCheckUrl(this.baseURL, API_ANALYZE_CONTEXT_PATH), {
                 conversation_history: conversationHistory
             });
             return response.data;
         } catch (error) {
-            console.warn('컨텍스트 분석 실패, 기본 분석 사용');
+            const err = toError(error);
+            errorLogger.warn('컨텍스트 분석 실패, 기본 분석 사용', {
+                component: 'dialogueAPI',
+                action: 'analyzeContext',
+                conversationHistoryLength: conversationHistory.length,
+                error: err.message,
+            });
             return {
                 sentiment: 'neutral',
                 urgency: 5,

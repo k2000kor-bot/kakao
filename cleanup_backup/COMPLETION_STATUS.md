@@ -59,7 +59,7 @@
 ### 🔧 추가 시스템들
 
 13. **`advanced_ai_engine.py`** - 고급 AI 엔진
-14. **`enhanced_chat_server.py`** - 향상된 채팅 서버
+14. **`enhanced_chat_server.py`** - 향상된 대화 서버
 15. **`integrated_master_api.py`** - 통합 마스터 API
 16. **`universal_ai_orchestrator.py`** - 범용 AI 오케스트레이터
 

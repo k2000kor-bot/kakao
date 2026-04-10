@@ -11,8 +11,6 @@
 // import advancedConversationProcessor from './advancedConversationProcessor';
 // import advancedAIAnalyticsService from './advancedAIAnalyticsService';
 // import webCommentAnalysisService from './webCommentAnalysisService';
-import performanceOptimizationService from './performanceOptimizationService';
-import advancedSecurityService from './advancedSecurityService';
 
 export interface AIWorkflow {
   id: string;
@@ -24,7 +22,7 @@ export interface AIWorkflow {
   createdAt: Date;
   updatedAt: Date;
   executionTime?: number;
-  result?: any;
+  result?: Record<string, unknown>;
 }
 
 export interface AIWorkflowStep {
@@ -32,12 +30,12 @@ export interface AIWorkflowStep {
   name: string;
   service: string;
   method: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   dependencies: string[];
   timeout: number;
   retryCount: number;
   status: 'pending' | 'running' | 'completed' | 'failed';
-  result?: any;
+  result?: unknown;
   error?: string;
 }
 
@@ -69,10 +67,10 @@ export interface IntelligentWorkflowRequest {
   context: {
     userId: string;
     sessionId: string;
-    previousInteractions: any[];
-    userPreferences: any;
+    previousInteractions: unknown[];
+    userPreferences: Record<string, unknown>;
     currentProject?: string;
-    attachedFiles?: any[];
+    attachedFiles?: unknown[];
   };
   requirements: {
     responseType: 'text' | 'analysis' | 'recommendation' | 'action' | 'multimodal';
@@ -96,11 +94,11 @@ export interface IntelligentWorkflowResponse {
   status: 'success' | 'partial' | 'failed';
   mainResponse: string;
   analysis: {
-    nlpAnalysis: any;
-    questionAnalysis: any;
-    knowledgeIntegration: any;
-    securityAnalysis: any;
-    performanceAnalysis: any;
+    nlpAnalysis: unknown;
+    questionAnalysis: unknown;
+    knowledgeIntegration: unknown;
+    securityAnalysis: unknown;
+    performanceAnalysis: unknown;
   };
   recommendations: {
     immediate: string[];
@@ -125,7 +123,7 @@ class AdvancedAIOrchestrationService {
   private activeWorkflows: Set<string> = new Set();
   private config!: AIOrchestrationConfig;
   private metrics!: AIOrchestrationMetrics;
-  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cache: Map<string, { data: unknown; timestamp: number }> = new Map();
 
   constructor() {
     this.initializeConfig();
@@ -197,7 +195,7 @@ class AdvancedAIOrchestrationService {
       if (this.config.enableCaching) {
         const cached = this.cache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < this.config.cacheExpiration) {
-          return this.createCachedResponse(workflowId, cached.data, Date.now() - startTime);
+          return this.createCachedResponse(workflowId, cached.data as Partial<IntelligentWorkflowResponse> & { metadata?: Record<string, unknown> }, Date.now() - startTime);
         }
       }
 
@@ -355,11 +353,11 @@ class AdvancedAIOrchestrationService {
   /**
    * 워크플로우 실행
    */
-  private async executeWorkflow(workflow: AIWorkflow): Promise<any> {
+  private async executeWorkflow(workflow: AIWorkflow): Promise<Record<string, unknown>> {
     workflow.status = 'running';
     workflow.updatedAt = new Date();
 
-    const results: Record<string, any> = {};
+    const results: Record<string, unknown> = {};
     const executionOrder = this.calculateExecutionOrder(workflow.steps);
 
     for (const stepGroup of executionOrder) {
@@ -426,7 +424,7 @@ class AdvancedAIOrchestrationService {
   /**
    * 단계 실행
    */
-  private async executeStep(step: AIWorkflowStep, previousResults: Record<string, any>): Promise<any> {
+  private async executeStep(step: AIWorkflowStep, _previousResults: Record<string, unknown>): Promise<unknown> {
     step.status = 'running';
     step.retryCount = 0;
 
@@ -469,8 +467,8 @@ class AdvancedAIOrchestrationService {
   /**
    * 서비스 가져오기
    */
-  private getService(serviceName: string): any {
-    const services: Record<string, any> = {
+  private getService(serviceName: string): Record<string, unknown> {
+    const services: Record<string, Record<string, unknown>> = {
       // 임시로 빈 객체로 설정
       advancedNLPService: {},
       knowledgeIntegrationService: {},
@@ -483,7 +481,7 @@ class AdvancedAIOrchestrationService {
       advancedSecurityService: {}
     };
 
-    return services[serviceName];
+    return services[serviceName] ?? {};
   }
 
   /**
@@ -516,8 +514,8 @@ class AdvancedAIOrchestrationService {
   /**
    * 응답 생성
    */
-  private createResponse(workflowId: string, results: any, executionTime: number): IntelligentWorkflowResponse {
-    const mainResponse = results['intelligent-response']?.content || '응답을 생성할 수 없습니다.';
+  private createResponse(workflowId: string, results: Record<string, unknown>, executionTime: number): IntelligentWorkflowResponse {
+    const mainResponse = (results['intelligent-response'] as { content?: string } | undefined)?.content ?? '응답을 생성할 수 없습니다.';
     const nlpAnalysis = results['nlp-analysis'];
     const questionAnalysis = results['question-analysis'];
     const knowledgeIntegration = results['knowledge-integration'];
@@ -549,7 +547,7 @@ class AdvancedAIOrchestrationService {
   /**
    * 캐시된 응답 생성
    */
-  private createCachedResponse(workflowId: string, cachedData: any, executionTime: number): IntelligentWorkflowResponse {
+  private createCachedResponse(workflowId: string, cachedData: Partial<IntelligentWorkflowResponse> & { metadata?: Record<string, unknown> }, executionTime: number): IntelligentWorkflowResponse {
     return {
       ...cachedData,
       workflowId,
@@ -558,13 +556,13 @@ class AdvancedAIOrchestrationService {
         executionTime,
         cached: true
       }
-    };
+    } as IntelligentWorkflowResponse;
   }
 
   /**
    * 추천사항 생성
    */
-  private generateRecommendations(results: any): any {
+  private generateRecommendations(results: Record<string, unknown>): { immediate: string[]; shortTerm: string[]; longTerm: string[] } {
     const recommendations = {
       immediate: [] as string[],
       shortTerm: [] as string[],
@@ -572,16 +570,19 @@ class AdvancedAIOrchestrationService {
     };
 
     // 즉시 실행 가능한 추천
-    if (results['security-check']?.vulnerabilities?.length > 0) {
+    const securityCheck = results['security-check'] as { vulnerabilities?: unknown[] } | undefined;
+    if (securityCheck?.vulnerabilities?.length && securityCheck.vulnerabilities.length > 0) {
       recommendations.immediate.push('보안 취약점을 즉시 해결하세요.');
     }
 
-    if (results['performance-optimization']?.suggestions) {
-      recommendations.immediate.push(...results['performance-optimization'].suggestions);
+    const perfOpt = results['performance-optimization'] as { suggestions?: string[] } | undefined;
+    if (perfOpt?.suggestions) {
+      recommendations.immediate.push(...perfOpt.suggestions);
     }
 
     // 단기 추천
-    if (results['nlp-analysis']?.complexity === 'high') {
+    const nlpAnalysis = results['nlp-analysis'] as { complexity?: string } | undefined;
+    if (nlpAnalysis?.complexity === 'high') {
       recommendations.shortTerm.push('복잡한 질문에 대한 더 상세한 분석을 고려하세요.');
     }
 
@@ -595,13 +596,14 @@ class AdvancedAIOrchestrationService {
   /**
    * 신뢰도 계산
    */
-  private calculateConfidence(results: any): number {
+  private calculateConfidence(results: Record<string, unknown>): number {
     let totalConfidence = 0;
     let count = 0;
 
-    Object.values(results).forEach((result: any) => {
-      if (result?.confidence) {
-        totalConfidence += result.confidence;
+    Object.values(results).forEach((result: unknown) => {
+      const r = result as { confidence?: number } | null | undefined;
+      if (r?.confidence != null) {
+        totalConfidence += r.confidence;
         count++;
       }
     });
@@ -612,13 +614,14 @@ class AdvancedAIOrchestrationService {
   /**
    * 품질 계산
    */
-  private calculateQuality(results: any): number {
+  private calculateQuality(results: Record<string, unknown>): number {
     let totalQuality = 0;
     let count = 0;
 
-    Object.values(results).forEach((result: any) => {
-      if (result?.quality) {
-        totalQuality += result.quality;
+    Object.values(results).forEach((result: unknown) => {
+      const r = result as { quality?: number } | null | undefined;
+      if (r?.quality != null) {
+        totalQuality += r.quality;
         count++;
       }
     });
@@ -629,7 +632,7 @@ class AdvancedAIOrchestrationService {
   /**
    * 다음 단계 생성
    */
-  private generateNextSteps(results: any, mainResponse: string): any {
+  private generateNextSteps(_results: Record<string, unknown>, _mainResponse: string): IntelligentWorkflowResponse['nextSteps'] {
     return {
       suggestedActions: [
         '응답에 대한 피드백을 제공하세요.',

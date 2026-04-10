@@ -1152,7 +1152,7 @@ def test_context_analyzer():
     
     # 테스트 데이터
     test_input = {
-        "project_description": "개포우성7차 대규모 재개발 프로젝트",
+        "project_description": "샘플 프로젝트 대규모 재개발 프로젝트",
         "stakeholders": ["조합 임원진", "실무진", "외부 컨설턴트"],
         "timeline_requirements": "시급한 시공사 선정 필요",
         "financial_considerations": "예산 제약과 수익성 극대화",

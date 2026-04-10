@@ -8,6 +8,7 @@ AI 대화 패턴 분석 및 예측 서버 - 카카오톡 AI 분석 시스템
 - 대화 품질 예측
 """
 
+import os
 import sqlite3
 import json
 import re
@@ -18,6 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 
+from cors_config import get_cors_allow_origins
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,7 +30,7 @@ app = FastAPI(title="AI 대화 패턴 분석 및 예측 서버 v1.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -927,7 +930,7 @@ async def get_analysis_types():
 
 @app.get("/api/chat-rooms")
 async def get_analyzable_chat_rooms():
-    """분석 가능한 채팅방 목록"""
+    """분석 가능한 대화방 목록"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -956,15 +959,16 @@ async def get_analyzable_chat_rooms():
         return {"success": True, "chat_rooms": rooms}
         
     except Exception as e:
-        logger.error(f"채팅방 목록 조회 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"채팅방 목록 조회 중 오류 발생: {str(e)}")
+        logger.error(f"대화방 목록 조회 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"대화방 목록 조회 중 오류 발생: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
+    _p = int(os.environ.get("AI_CONVERSATION_PATTERN_ANALYZER_PORT", os.environ.get("PORT", "8012")))
     print("🚀 AI 대화 패턴 분석 및 예측 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8012")
-    print("📖 API 문서: http://localhost:8012/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 기능:")
     print("   - 대화 패턴 분석")
     print("   - 참여자 행동 패턴 분석")
@@ -973,4 +977,4 @@ if __name__ == "__main__":
     print("   - 대화 품질 예측")
     print("=" * 50)
     
-    uvicorn.run(app, host="0.0.0.0", port=8012) 
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

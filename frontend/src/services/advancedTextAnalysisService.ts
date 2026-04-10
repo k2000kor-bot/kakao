@@ -1,3 +1,5 @@
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface AnalysisResult {
     type: string;
     findings: string[];
@@ -74,7 +76,7 @@ class AdvancedTextAnalysisService {
         text: string,
         analysisType: 'descriptive' | 'research' | 'opinion' | 'manipulation' = 'descriptive'
     ): Promise<ComprehensiveAnalysis> {
-        const cacheKey = `${analysisType}_${text.substring(0, 100)}`;
+        const cacheKey = `${analysisType}_${text}`;
         if (this.cache.has(cacheKey)) {
             return this.cache.get(cacheKey)!;
         }
@@ -122,8 +124,8 @@ class AdvancedTextAnalysisService {
     }
 
     private performDescriptiveAnalysis(text: string): AnalysisResult {
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+        const sentences = text.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
+        const words = text.split(/\s+/).filter((w) => coerceTrimmedString(w, '').length > 0);
 
         return {
             type: 'descriptive',
@@ -157,7 +159,7 @@ class AdvancedTextAnalysisService {
         };
     }
 
-    private performResearcherAnalysis(text: string): AnalysisResult {
+    private performResearcherAnalysis(_text: string): AnalysisResult {
         return {
             type: 'research',
             findings: [
@@ -188,7 +190,7 @@ class AdvancedTextAnalysisService {
         };
     }
 
-    private performOpinionAnalysis(text: string): AnalysisResult {
+    private performOpinionAnalysis(_text: string): AnalysisResult {
         return {
             type: 'opinion',
             findings: [
@@ -218,7 +220,7 @@ class AdvancedTextAnalysisService {
         };
     }
 
-    private performManipulationAnalysis(text: string): ComprehensiveAnalysis['manipulation'] {
+    private performManipulationAnalysis(_text: string): ComprehensiveAnalysis['manipulation'] {
         return {
             changes: [
                 '텍스트 구조의 논리적 개선',
@@ -340,5 +342,3 @@ class AdvancedTextAnalysisService {
 }
 
 export const advancedTextAnalysisService = new AdvancedTextAnalysisService();
-
-export { };

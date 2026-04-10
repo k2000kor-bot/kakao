@@ -15,13 +15,13 @@ echo -e "${BLUE}백엔드 서버 상태 확인${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-# 서버 포트 기본값
-PORT=${PORT:-8000}
+# 서버 포트 기본값 (통합 main_server / app.py)
+PORT="${BACKEND_PORT:-${PORT:-5002}}"
 BASE_URL="http://localhost:${PORT}"
 
-# 헬스 체크
+# 헬스 체크 (main_server·app.py: /api/health)
 echo -e "${GREEN}헬스 체크 중...${NC}"
-HEALTH_RESPONSE=$(curl -s "${BASE_URL}/health" 2>&1)
+HEALTH_RESPONSE=$(curl -s "${BASE_URL}/api/health" 2>&1)
 CURL_EXIT_CODE=$?
 
 if [ $CURL_EXIT_CODE -eq 0 ] && echo "$HEALTH_RESPONSE" | grep -q "healthy"; then
@@ -38,7 +38,7 @@ if [ $CURL_EXIT_CODE -eq 0 ] && echo "$HEALTH_RESPONSE" | grep -q "healthy"; the
 else
     echo -e "${RED}❌ 서버 상태: 오프라인 또는 오류${NC}"
     echo -e "${YELLOW}서버가 실행 중인지 확인하세요:${NC}"
-    echo -e "  ${BLUE}cd backend && python advanced_api_server.py${NC}"
+    echo -e "  ${BLUE}npm run restart:backend${NC} 또는 ${BLUE}cd backend && python3 main_server.py${NC}"
     exit 1
 fi
 
@@ -46,11 +46,11 @@ echo ""
 
 # API 문서 확인
 echo -e "${GREEN}API 문서 확인 중...${NC}"
-DOCS_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/docs" 2>&1 || echo "000")
+DOCS_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/docs" 2>&1 || echo "000")
 
 if [ "$DOCS_RESPONSE" = "200" ]; then
     echo -e "${GREEN}✅ API 문서: 접근 가능${NC}"
-    echo -e "  URL: ${BLUE}${BASE_URL}/docs${NC}"
+    echo -e "  URL: ${BLUE}${BASE_URL}/api/docs${NC}"
 else
     echo -e "${YELLOW}⚠️  API 문서: 접근 불가 (HTTP ${DOCS_RESPONSE})${NC}"
 fi
@@ -97,6 +97,6 @@ echo ""
 echo -e "${BLUE}========================================${NC}"
 echo -e "${GREEN}서버 정보:${NC}"
 echo -e "  URL: ${BLUE}${BASE_URL}${NC}"
-echo -e "  헬스 체크: ${BLUE}${BASE_URL}/health${NC}"
-echo -e "  API 문서: ${BLUE}${BASE_URL}/docs${NC}"
+echo -e "  헬스 체크: ${BLUE}${BASE_URL}/api/health${NC}"
+echo -e "  API 문서: ${BLUE}${BASE_URL}/api/docs${NC}"
 echo -e "${BLUE}========================================${NC}"

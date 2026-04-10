@@ -1,4 +1,44 @@
 import { sendChatMessage, ChatRequest } from './unifiedAPI';
+import type { ChatTurn } from './modernChatContextBuilder';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { ASSISTANT_GENERATION_STEP_LABELS_DEFAULT } from '../utils/chatInputUtils';
+
+/** 다단계 파이프라인: 완료된 단계 산출을 다음 API 호출의 conversation_history로 전달 */
+function buildMultiStepConversationHistory(
+    originalQuestion: string,
+    previousResults: Record<string, unknown>,
+    completedStepIds: string[]
+): ChatTurn[] {
+    if (!completedStepIds.length) return [];
+    const history: ChatTurn[] = [
+        { role: 'user', content: `원 질문:\n${originalQuestion}` },
+    ];
+    for (const sid of completedStepIds) {
+        const raw = previousResults[sid];
+        if (!raw || typeof raw !== 'object') continue;
+        const obj = raw as { stepName?: string; result?: unknown };
+        let text: string;
+        if (typeof obj.result === 'string') {
+            text = obj.result;
+        } else if (obj.result !== undefined) {
+            try {
+                text = JSON.stringify(obj.result);
+            } catch {
+                text = String(obj.result);
+            }
+        } else {
+            continue;
+        }
+        const label = obj.stepName ?? sid;
+        const chunk = text.trim();
+        if (!chunk) continue;
+        history.push({
+            role: 'assistant',
+            content: `[단계: ${label}]\n${chunk}`,
+        });
+    }
+    return history;
+}
 
 export interface ResponseStep {
     id: string;
@@ -64,7 +104,7 @@ const RESPONSE_STRATEGIES: ResponseStrategy[] = [
         steps: [
             {
                 id: 'question-analysis',
-                name: '질문 분석',
+                name: ASSISTANT_GENERATION_STEP_LABELS_DEFAULT[0],
                 type: 'analysis',
                 description: '질문의 핵심 요구사항과 맥락 분석',
                 required: true,
@@ -261,7 +301,8 @@ export const executeResponseStep = async (
     step: ResponseStep,
     question: string,
     context: Record<string, unknown>,
-    previousResults: Record<string, unknown>
+    previousResults: Record<string, unknown>,
+    completedStepIdsInOrder?: string[]
 ): Promise<unknown> => {
     const stepPrompts = {
         analysis: `다음 질문을 심층적으로 분석해주세요:
@@ -333,9 +374,16 @@ export const executeResponseStep = async (
 
     const prompt = stepPrompts[step.type] || stepPrompts.synthesis;
 
+    const conversation_history = buildMultiStepConversationHistory(
+        question,
+        previousResults,
+        completedStepIdsInOrder ?? []
+    );
+
     const chatRequest: ChatRequest = {
         message: prompt,
         context,
+        ...(conversation_history.length ? { conversation_history } : {}),
         options: {
             intent: step.type,
             style: 'detailed',
@@ -357,7 +405,14 @@ export const executeResponseStep = async (
             throw new Error('API 응답 실패');
         }
     } catch (error) {
-        console.error(`Step ${step.name} 실행 오류:`, error);
+        const err = toError(error);
+        errorLogger.error('Step 실행 오류', err, {
+            component: 'multiStepResponseGenerator',
+            action: 'executeResponseStep',
+            stepId: step.id,
+            stepName: step.name,
+            stepType: step.type,
+        });
         return {
             stepId: step.id,
             stepName: step.name,
@@ -385,29 +440,58 @@ export const generateMultiStepResponse = async (
         confidence: 0
     };
 
-    console.log(`선택된 전략: ${strategy.name} (복잡도: ${strategy.complexity})`);
+    errorLogger.info('선택된 전략', {
+        component: 'multiStepResponseGenerator',
+        action: 'generateMultiStepResponse',
+        strategyName: strategy.name,
+        complexity: strategy.complexity,
+        stepsCount: strategy.steps.length,
+    });
 
     // 각 단계 순차 실행
     for (let i = 0; i < strategy.steps.length; i++) {
         const step = strategy.steps[i];
         response.currentStep = i + 1;
 
-        console.log(`단계 ${i + 1}/${strategy.steps.length}: ${step.name} 실행 중...`);
+        errorLogger.info('단계 실행 중', {
+            component: 'multiStepResponseGenerator',
+            action: 'generateMultiStepResponse',
+            stepNumber: i + 1,
+            totalSteps: strategy.steps.length,
+            stepName: step.name,
+            stepId: step.id,
+        });
 
         try {
-            const stepResult = await executeResponseStep(step, question, context, response.results);
+            const completedOrder = strategy.steps.slice(0, i).map((s) => s.id);
+            const stepResult = await executeResponseStep(
+                step,
+                question,
+                context,
+                response.results,
+                completedOrder
+            );
             response.results[step.id] = stepResult;
 
             // 단계별 신뢰도 계산
             if (stepResult && typeof stepResult === 'object' && 'metadata' in stepResult) {
-                const metadata = stepResult.metadata as any;
-                if (metadata.confidence) {
-                    response.confidence = (response.confidence + metadata.confidence) / 2;
+                const metadata = stepResult.metadata as Record<string, unknown>;
+                const conf = metadata.confidence;
+                if (typeof conf === 'number') {
+                    response.confidence = (response.confidence + conf) / 2;
                 }
             }
 
         } catch (error) {
-            console.error(`단계 ${step.name} 실행 실패:`, error);
+            const err = toError(error);
+            errorLogger.error('단계 실행 실패', err, {
+                component: 'multiStepResponseGenerator',
+                action: 'generateMultiStepResponse',
+                stepId: step.id,
+                stepName: step.name,
+                stepNumber: i + 1,
+                totalSteps: strategy.steps.length,
+            });
             response.results[step.id] = {
                 error: error instanceof Error ? error.message : 'Unknown error',
                 stepId: step.id,
@@ -431,7 +515,13 @@ export const generateMultiStepResponse = async (
     response.isComplete = true;
     response.currentStep = strategy.steps.length;
 
-    console.log(`다단계 응답 생성 완료. 최종 신뢰도: ${response.confidence}`);
+    errorLogger.info('다단계 응답 생성 완료', {
+        component: 'multiStepResponseGenerator',
+        action: 'generateMultiStepResponse',
+        finalConfidence: response.confidence,
+        totalSteps: strategy.steps.length,
+        completedSteps: Object.keys(response.results).length,
+    });
 
     return response;
 };

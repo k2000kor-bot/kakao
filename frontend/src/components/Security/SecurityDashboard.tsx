@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getSeverityColor } from '../../styles/themeColors';
 import {
     Box,
     Card,
@@ -6,16 +7,11 @@ import {
     Typography,
     Grid,
     Chip,
-    LinearProgress,
     IconButton,
-    Tooltip,
-    Alert,
-    AlertTitle,
     List,
     ListItem,
     ListItemIcon,
     ListItemText,
-    Divider,
     Button,
     Dialog,
     DialogTitle,
@@ -28,8 +24,6 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Avatar,
-    Badge,
     Switch,
     FormControlLabel,
     Tabs,
@@ -44,28 +38,21 @@ import {
 import {
     Security,
     Shield,
-    Lock,
     Warning,
-    CheckCircle,
     Error,
     Info,
     Refresh,
     Settings,
     Visibility,
-    VisibilityOff,
     Person,
     AdminPanelSettings,
     Login,
     Logout,
-    Key,
-    History,
-    Assessment,
-    Notifications,
     Block,
-    Check,
-    Close
 } from '@mui/icons-material';
-import securityService, { SecurityEvent, SecurityConfig, User } from '../../services/securityService';
+import securityService, { SecurityEvent, SecurityConfig } from '../../services/securityService';
+import AdvancedSecurityPanel from './AdvancedSecurityPanel';
+import { errorLogger, toError } from '../../utils/errorLogger';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -96,7 +83,12 @@ function TabPanel(props: TabPanelProps) {
 const SecurityDashboard: React.FC = () => {
     const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
     const [securityConfig, setSecurityConfig] = useState<SecurityConfig | null>(null);
-    const [securityMetrics, setSecurityMetrics] = useState<any>(null);
+    interface SecurityMetricsShape {
+        totalEvents?: number;
+        failedLogins?: number;
+        suspiciousActivities?: number;
+    }
+    const [securityMetrics, setSecurityMetrics] = useState<SecurityMetricsShape | null>(null);
     const [selectedTab, setSelectedTab] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
@@ -109,6 +101,7 @@ const SecurityDashboard: React.FC = () => {
         // 30초마다 보안 이벤트 업데이트
         const interval = setInterval(loadSecurityEvents, 30000);
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadSecurityData = async () => {
@@ -120,7 +113,11 @@ const SecurityDashboard: React.FC = () => {
                 loadSecurityMetrics()
             ]);
         } catch (error) {
-            console.error('보안 데이터 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 데이터 로드 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'loadSecurityData',
+            });
         } finally {
             setIsLoading(false);
         }
@@ -131,7 +128,11 @@ const SecurityDashboard: React.FC = () => {
             const events = await securityService.getSecurityEvents(50);
             setSecurityEvents(events);
         } catch (error) {
-            console.error('보안 이벤트 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 이벤트 로드 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'loadSecurityEvents',
+            });
         }
     };
 
@@ -141,16 +142,24 @@ const SecurityDashboard: React.FC = () => {
             setSecurityConfig(config);
             setTempConfig(config);
         } catch (error) {
-            console.error('보안 설정 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 설정 로드 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'loadSecurityConfig',
+            });
         }
     };
 
     const loadSecurityMetrics = async () => {
         try {
             const metrics = await securityService.getSecurityMetrics();
-            setSecurityMetrics(metrics);
+            setSecurityMetrics(metrics as SecurityMetricsShape | null);
         } catch (error) {
-            console.error('보안 메트릭 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 메트릭 로드 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'loadSecurityMetrics',
+            });
         }
     };
 
@@ -168,7 +177,11 @@ const SecurityDashboard: React.FC = () => {
                 setIsConfigDialogOpen(false);
             }
         } catch (error) {
-            console.error('보안 설정 저장 실패:', error);
+            const err = toError(error);
+            errorLogger.error('보안 설정 저장 실패', err, {
+                component: 'SecurityDashboard',
+                action: 'handleConfigSave',
+            });
         }
     };
 
@@ -186,21 +199,6 @@ const SecurityDashboard: React.FC = () => {
                 return <Warning color="error" />;
             default:
                 return <Info color="info" />;
-        }
-    };
-
-    const getSeverityColor = (severity: string) => {
-        switch (severity) {
-            case 'low':
-                return '#4CAF50';
-            case 'medium':
-                return '#FF9800';
-            case 'high':
-                return '#F44336';
-            case 'critical':
-                return '#9C27B0';
-            default:
-                return '#9E9E9E';
         }
     };
 
@@ -239,7 +237,7 @@ const SecurityDashboard: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom sx={{
-                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -352,6 +350,7 @@ const SecurityDashboard: React.FC = () => {
                     <Tab label="사용자 관리" />
                     <Tab label="권한 관리" />
                     <Tab label="보안 정책" />
+                    <Tab label="고급 보안" />
                 </Tabs>
             </Box>
 
@@ -804,6 +803,11 @@ const SecurityDashboard: React.FC = () => {
                     <Button onClick={handleConfigSave} variant="contained">저장</Button>
                 </DialogActions>
             </Dialog>
+
+            {/* 고급 보안 탭 */}
+            <TabPanel value={selectedTab} index={4}>
+                <AdvancedSecurityPanel />
+            </TabPanel>
         </Box>
     );
 };

@@ -17,13 +17,16 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from urllib.parse import urlparse
+import os
 
-app = FastAPI(title="CORBU AI Backend", version="1.0.0")
+from cors_config import get_cors_allow_origins
+
+app = FastAPI(title="CORBU.AI Backend", version="1.0.0")
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,7 +66,7 @@ class AIResponse(BaseModel):
     content: str
     role: str = "assistant"
     timestamp: Optional[str] = None
-    model: str = "CORBU AI"
+    model: str = "CORBU.AI"
 
 class Project(BaseModel):
     id: str
@@ -401,7 +404,7 @@ def format_response(title: str, content: str, summary: str = None, key_points: L
             formatted_response += f"{i}. {point}\n"
         formatted_response += "\n"
     
-    formatted_response += "---\n*CORBU AI가 제공하는 서비스입니다.*"
+    formatted_response += "---\n*CORBU.AI가 제공하는 서비스입니다.*"
     
     return formatted_response
 
@@ -1175,8 +1178,8 @@ def generate_ai_response(user_input: str) -> str:
     # 기본 응답
     else:
         return format_response(
-            "CORBU AI 도우미 서비스 안내",
-            """안녕하세요! CORBU AI 도우미입니다. 다음과 같은 서비스를 제공합니다:
+            "CORBU.AI 도우미 서비스 안내",
+            """안녕하세요! CORBU.AI 도우미입니다. 다음과 같은 서비스를 제공합니다:
 
 ### 📝 글쓰기 도우미
 - 이메일, 블로그, 보고서 작성
@@ -1194,23 +1197,23 @@ def generate_ai_response(user_input: str) -> str:
 - 트렌드 분석
 
 어떤 도움이 필요하신가요?""",
-            "CORBU AI의 다양한 기능을 활용해보세요.",
+            "CORBU.AI의 다양한 기능을 활용해보세요.",
             ["글쓰기 지원", "웹 검색", "뉴스 분석", "실시간 모니터링"]
         )
 
 # API 엔드포인트
 @app.get("/")
 async def root():
-    return {"message": "CORBU AI Backend Server", "status": "running", "version": "1.0.0"}
+    return {"message": "CORBU.AI Backend Server", "status": "running", "version": "1.0.0"}
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-# 채팅 관련 API
+# 대화 관련 API
 @app.post("/api/chat")
 async def send_message(message: ChatMessage):
-    """채팅 메시지 전송 및 AI 응답"""
+    """대화 메시지 전송 및 AI 응답"""
     try:
         # AI 응답 생성
         ai_response_content = generate_ai_response(message.content)
@@ -1232,7 +1235,7 @@ async def send_message(message: ChatMessage):
 
 @app.get("/api/chat/history")
 async def get_chat_history():
-    """채팅 히스토리 조회"""
+    """대화 히스토리 조회"""
     return {
         "success": True,
         "history": chat_history,
@@ -1466,7 +1469,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             
             # 메시지 타입에 따른 처리
             if message.get("type") == "chat":
-                # 채팅 메시지 처리
+                # 대화 메시지 처리
                 user_message = message.get("content", "")
                 ai_response = generate_ai_response(user_message)
                 
@@ -1474,7 +1477,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     "type": "ai_response",
                     "content": ai_response,
                     "timestamp": datetime.now().isoformat(),
-                    "model": "CORBU AI"
+                    "model": "CORBU.AI"
                 }
                 
                 await manager.send_personal_message(json.dumps(response_data), websocket)
@@ -1506,4 +1509,5 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000) 
+    _p = int(os.environ.get("TEST_SERVER_PORT", os.environ.get("PORT", "5000")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

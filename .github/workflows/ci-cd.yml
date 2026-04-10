@@ -1,4 +1,4 @@
-name: CORBU AI CI/CD Pipeline
+name: CORBU.AI CI/CD Pipeline
 
 on:
   push:
@@ -30,12 +30,18 @@ jobs:
         
     - name: 의존성 설치
       run: npm ci
+
+    - name: Jest 테스트 import 패턴 검사
+      run: npm run check:test-imports
       
     - name: TypeScript 타입 검사
       run: npx tsc --noEmit
+
+    - name: 적응형 학습 테스트 타입 검사 (src·frontend)
+      run: npm run typecheck:adaptive-learning-tests:all
       
     - name: ESLint 검사
-      run: npx eslint src --ext .ts,.tsx --format github-actions || true
+      run: npm run lint:strict
       
     - name: Prettier 포맷 검사
       run: npx prettier --check src || true
@@ -124,10 +130,42 @@ jobs:
     - name: 백엔드 테스트 실행
       run: |
         cd backend
-        python -m pytest --cov=. --cov-report=xml || echo "테스트 실패했지만 계속 진행"
+        python3 -m pytest --cov=. --cov-report=xml || echo "테스트 실패했지만 계속 진행"
       continue-on-error: true
 
-  # 4. 보안 스캔
+  # 4. E2E 테스트 (chromium)
+  e2e-test:
+    runs-on: ubuntu-latest
+    needs: frontend-build
+    name: E2E 테스트
+    
+    steps:
+    - name: 체크아웃
+      uses: actions/checkout@v4
+      
+    - name: Node.js 설정
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: 의존성 설치
+      run: npm ci
+      
+    - name: 빌드 아티팩트 다운로드
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-build
+        path: build/
+        
+    - name: Playwright Chromium 설치
+      run: npx playwright install chromium --with-deps
+      
+    - name: E2E 테스트 실행
+      run: E2E_USE_BUILD=1 npx playwright test --project=chromium
+      continue-on-error: true
+
+  # 5. 보안 스캔
   security-scan:
     runs-on: ubuntu-latest
     name: 보안 스캔
@@ -150,7 +188,7 @@ jobs:
     - name: CodeQL 분석 수행
       uses: github/codeql-action/analyze@v2
 
-  # 5. Docker 이미지 빌드 및 푸시
+  # 6. Docker 이미지 빌드 및 푸시
   docker-build:
     runs-on: ubuntu-latest
     needs: [frontend-build, backend-test]
@@ -198,7 +236,7 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-  # 6. 스테이징 배포
+  # 7. 스테이징 배포
   deploy-staging:
     runs-on: ubuntu-latest
     needs: docker-build
@@ -216,7 +254,7 @@ jobs:
         echo "실제 배포 시에는 SSH를 통해 서버에 접속하여 배포를 수행합니다."
       continue-on-error: true
 
-  # 7. 프로덕션 배포
+  # 8. 프로덕션 배포
   deploy-production:
     runs-on: ubuntu-latest
     needs: docker-build
@@ -234,7 +272,7 @@ jobs:
         echo "실제 배포 시에는 SSH를 통해 서버에 접속하여 배포를 수행합니다."
       continue-on-error: true
 
-  # 8. 성능 테스트
+  # 9. 성능 테스트
   performance-test:
     runs-on: ubuntu-latest
     needs: deploy-staging
@@ -251,7 +289,7 @@ jobs:
         echo "실제 환경에서는 Lighthouse CI나 다른 성능 테스트 도구를 사용합니다."
       continue-on-error: true
 
-  # 9. 배포 알림
+  # 10. 배포 알림
   notify:
     runs-on: ubuntu-latest
     needs: [deploy-staging, deploy-production]

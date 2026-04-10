@@ -1,0 +1,4 @@
+# 개발/테스트용 의존성 (setup.sh 또는 수동 설치)
+pytest>=7.0.0
+# httpx<0.28: Starlette TestClient와 호환 (httpx 0.28+에서 app 인자 제거됨)
+httpx<0.28

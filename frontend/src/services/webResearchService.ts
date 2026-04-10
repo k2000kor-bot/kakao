@@ -1,6 +1,14 @@
+import {
+    API_ANALYSIS_WEB_RESEARCH_PATH,
+    API_QUERY_PARAM_PROJECT_ID,
+    API_QUERY_PARAM_USER_ID,
+    joinApiHealthCheckUrl,
+    resolveApiBaseUrl,
+} from '../config/api';
 import axios from 'axios';
+import { errorLogger, toError } from '../utils/errorLogger';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = resolveApiBaseUrl();
 
 export interface WebResearchResult {
     original_question: string;
@@ -42,15 +50,16 @@ export interface WebResearchResult {
 }
 
 class WebResearchService {
-    async performWebResearch(question: string, context: any = {}): Promise<WebResearchResult> {
+    async performWebResearch(question: string, context: Record<string, unknown> = {}): Promise<WebResearchResult> {
         try {
-            const response = await axios.post(`${API_BASE_URL}/analysis/web-research`, {
+            const ctx = context as { project_id?: string; user_id?: string; conversation_history?: unknown[]; uploaded_files?: unknown[] };
+            const response = await axios.post(joinApiHealthCheckUrl(API_BASE_URL, API_ANALYSIS_WEB_RESEARCH_PATH), {
                 question,
                 context: {
-                    project_id: context.project_id || 'gaeposung_project',
-                    user_id: context.user_id || 'default_user',
-                    conversation_history: context.conversation_history || [],
-                    uploaded_files: context.uploaded_files || []
+                    [API_QUERY_PARAM_PROJECT_ID]: ctx.project_id ?? 'gaeposung_project',
+                    [API_QUERY_PARAM_USER_ID]: ctx.user_id ?? 'default_user',
+                    conversation_history: ctx.conversation_history ?? [],
+                    uploaded_files: ctx.uploaded_files ?? []
                 }
             });
 
@@ -60,7 +69,12 @@ class WebResearchService {
                 throw new Error(response.data.error || '웹 연구 분석에 실패했습니다.');
             }
         } catch (error) {
-            console.error('웹 연구 서비스 오류:', error);
+            const err = toError(error);
+            errorLogger.error('웹 연구 서비스 오류', err, {
+                component: 'webResearchService',
+                action: 'performWebResearch',
+                question: question.substring(0, 100),
+            });
             throw error;
         }
     }

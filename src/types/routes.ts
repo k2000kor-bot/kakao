@@ -1,7 +1,7 @@
 export interface RouteConfig {
     path: string;
     name: string;
-    component: React.ComponentType<any>;
+    component: React.ComponentType<Record<string, unknown>>;
     description?: string;
     icon?: string;
     category?: string;

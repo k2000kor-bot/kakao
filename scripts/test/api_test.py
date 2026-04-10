@@ -11,7 +11,7 @@ from datetime import datetime
 
 class BackendAPITester:
     def __init__(self):
-        self.base_url = "http://localhost:8000"
+        self.base_url = "http://localhost:5002"
         self.test_results = []
         
     def test_health_endpoint(self):
@@ -46,14 +46,14 @@ class BackendAPITester:
             return False
     
     def test_chat_rooms_endpoint(self):
-        """채팅방 목록 엔드포인트 테스트"""
+        """대화방 목록 엔드포인트 테스트"""
         try:
             response = requests.get(f"{self.base_url}/api/v7/chat-rooms", timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 chat_rooms = data.get('chat_rooms', [])
                 print(f"✅ /api/v7/chat-rooms 엔드포인트 정상")
-                print(f"   - 발견된 채팅방: {len(chat_rooms)}개")
+                print(f"   - 발견된 대화방: {len(chat_rooms)}개")
                 return True
             else:
                 print(f"❌ /api/v7/chat-rooms 엔드포인트 오류: {response.status_code}")
@@ -188,7 +188,7 @@ class BackendAPITester:
         tests = [
             ("헬스 체크", self.test_health_endpoint),
             ("시스템 상태", self.test_status_endpoint),
-            ("채팅방 목록", self.test_chat_rooms_endpoint),
+            ("대화방 목록", self.test_chat_rooms_endpoint),
             ("GPT 메시지 생성", self.test_gpt_message_generation),
             ("분석 대시보드", self.test_analytics_dashboard),
             ("프로젝트 관리", self.test_projects_endpoint),
@@ -242,8 +242,8 @@ def main():
     
     if success:
         print("\n🚀 백엔드 API 테스트 완료!")
-        print("📖 API 문서: http://localhost:8000/docs")
-        print("🔗 서버 주소: http://localhost:8000")
+        print("📖 API 문서: http://localhost:5002/api/docs")
+        print("🔗 서버 주소: http://localhost:5002")
     else:
         print("\n❌ 백엔드 API 테스트 실패!")
         print("🔧 서버 상태를 확인하세요.")

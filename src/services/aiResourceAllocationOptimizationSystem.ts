@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // AI 리소스 할당 최적화 인터페이스 정의
 export interface ResourceAllocation {
@@ -219,7 +220,7 @@ export interface AllocationConstraint {
   name: string;
   type: 'capacity' | 'skill' | 'time' | 'budget' | 'location' | 'policy';
   description: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   priority: 'low' | 'medium' | 'high' | 'critical';
   flexible: boolean;
   impact: number;
@@ -387,12 +388,18 @@ export class AIResourceAllocationOptimizationSystem {
   };
 
   constructor() {
-    console.log('🎯 AI 리소스 할당 최적화 시스템 초기화 중...');
+    errorLogger.info('AI 리소스 할당 최적화 시스템 초기화 중', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'constructor',
+    });
   }
 
   public start(): void {
     if (this.isRunning) {
-      console.log('⚠️ AI 리소스 할당 최적화 시스템이 이미 실행 중입니다.');
+      errorLogger.warn('AI 리소스 할당 최적화 시스템이 이미 실행 중입니다', {
+        component: 'aiResourceAllocationOptimizationSystem',
+        action: 'start',
+      });
       return;
     }
 
@@ -402,32 +409,68 @@ export class AIResourceAllocationOptimizationSystem {
     this.createInitialAllocations();
     this.startOptimizationMonitoring();
 
-    console.log('✅ AI 리소스 할당 최적화 시스템이 시작되었습니다.');
+    errorLogger.info('AI 리소스 할당 최적화 시스템이 시작되었습니다', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'start',
+    });
     realTimeAIAlertSystem.sendAlert('info', 'AI 리소스 할당 최적화 시스템이 시작되었습니다.');
   }
 
   public stop(): void {
     if (!this.isRunning) {
-      console.log('⚠️ AI 리소스 할당 최적화 시스템이 실행 중이 아닙니다.');
+      errorLogger.warn('AI 리소스 할당 최적화 시스템이 실행 중이 아닙니다', {
+        component: 'aiResourceAllocationOptimizationSystem',
+        action: 'stop',
+      });
       return;
     }
 
     this.isRunning = false;
     this.cleanupData();
 
-    console.log('🛑 AI 리소스 할당 최적화 시스템이 중지되었습니다.');
+    errorLogger.info('AI 리소스 할당 최적화 시스템이 중지되었습니다', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'stop',
+    });
     realTimeAIAlertSystem.sendAlert('info', 'AI 리소스 할당 최적화 시스템이 중지되었습니다.');
   }
 
   private initializeSystem(): void {
-    console.log('🔧 리소스 할당 최적화 시스템 초기화 중...');
+    errorLogger.info('리소스 할당 최적화 시스템 초기화 중', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'initializeSystem',
+    });
 
-    console.log('📊 리소스 분석 엔진 초기화 완료');
-    console.log('🎯 할당 최적화 알고리즘 초기화 완료');
-    console.log('💰 비용 최적화 엔진 초기화 완료');
-    console.log('⏰ 스케줄링 엔진 초기화 완료');
-    console.log('🔄 실시간 모니터링 시스템 초기화 완료');
-    console.log('📈 성과 분석 시스템 초기화 완료');
+    errorLogger.info('리소스 분석 엔진 초기화 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'resourceAnalysisEngine',
+    });
+    errorLogger.info('할당 최적화 알고리즘 초기화 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'allocationOptimizationAlgorithm',
+    });
+    errorLogger.info('비용 최적화 엔진 초기화 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'costOptimizationEngine',
+    });
+    errorLogger.info('스케줄링 엔진 초기화 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'schedulingEngine',
+    });
+    errorLogger.info('실시간 모니터링 시스템 초기화 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'realtimeMonitoringSystem',
+    });
+    errorLogger.info('성과 분석 시스템 초기화 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'performanceAnalysisSystem',
+    });
   }
 
   private createInitialResources(): void {
@@ -621,7 +664,11 @@ export class AIResourceAllocationOptimizationSystem {
 
     this.resources.set(resource1.resourceId, resource1);
     this.resources.set(resource2.resourceId, resource2);
-    console.log('📋 초기 리소스 생성 완료');
+    errorLogger.info('초기 리소스 생성 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'createInitialResources',
+      resourcesCount: 2,
+    });
   }
 
   private createInitialAllocations(): void {
@@ -828,7 +875,11 @@ export class AIResourceAllocationOptimizationSystem {
 
     this.allocations.set(allocation1.allocationId, allocation1);
     this.optimizeAllocation(allocation1.allocationId);
-    console.log('🎯 초기 리소스 할당 생성 완료');
+    errorLogger.info('초기 리소스 할당 생성 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'createInitialAllocations',
+      allocationId: allocation1.allocationId,
+    });
   }
 
   public createAllocation(allocation: Omit<ResourceAllocation, 'allocationId' | 'optimization' | 'performance' | 'recommendations' | 'timestamp'>): ResourceAllocation {
@@ -882,14 +933,23 @@ export class AIResourceAllocationOptimizationSystem {
     this.optimizeAllocation(allocationId);
     this.updateAnalytics();
 
-    console.log(`🎯 새로운 리소스 할당 생성: ${allocationId}`);
+    errorLogger.info('새로운 리소스 할당 생성', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'createAllocation',
+      allocationId,
+    });
     return fullAllocation;
   }
 
   public addResource(resource: Resource): void {
     this.resources.set(resource.resourceId, resource);
     this.updateAnalytics();
-    console.log(`📋 새로운 리소스 추가: ${resource.name}`);
+    errorLogger.info('새로운 리소스 추가', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'addResource',
+      resourceId: resource.resourceId,
+      resourceName: resource.name,
+    });
   }
 
   public updateResourceUtilization(resourceId: string, utilization: number): void {
@@ -904,7 +964,11 @@ export class AIResourceAllocationOptimizationSystem {
     const allocation = this.allocations.get(allocationId);
     if (!allocation) return;
 
-    console.log(`🔧 리소스 할당 최적화 시작: ${allocationId}`);
+    errorLogger.info('리소스 할당 최적화 시작', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'optimizeAllocation',
+      allocationId,
+    });
 
     const optimization = allocation.optimization;
     optimization.status = 'running';
@@ -930,7 +994,11 @@ export class AIResourceAllocationOptimizationSystem {
     // 권장사항 생성
     this.generateOptimizationRecommendations(allocation);
 
-    console.log(`✅ 리소스 할당 최적화 완료: ${allocationId}`);
+    errorLogger.info('리소스 할당 최적화 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'optimizeAllocation',
+      allocationId,
+    });
   }
 
   private optimizeMultiObjective(allocation: ResourceAllocation): void {
@@ -1121,7 +1189,7 @@ export class AIResourceAllocationOptimizationSystem {
     }
   }
 
-  private calculateCostReduction(allocation: ResourceAllocation): number {
+  private calculateCostReduction(_allocation: ResourceAllocation): number {
     // 비용 절감 가능성 계산 (간단한 구현)
     return Math.random() * 0.15; // 0-15% 절감 가능
   }
@@ -1133,7 +1201,7 @@ export class AIResourceAllocationOptimizationSystem {
     return Math.max(0, target - current);
   }
 
-  private identifySkillGaps(allocation: ResourceAllocation): Array<{ skill: string, impact: number }> {
+  private identifySkillGaps(_allocation: ResourceAllocation): Array<{ skill: string, impact: number }> {
     // 스킬 격차 식별 (간단한 구현)
     return [
       { skill: 'React', impact: 0.2 },
@@ -1141,12 +1209,12 @@ export class AIResourceAllocationOptimizationSystem {
     ];
   }
 
-  private calculateWorkloadImbalance(allocation: ResourceAllocation): number {
+  private calculateWorkloadImbalance(_allocation: ResourceAllocation): number {
     // 워크로드 불균형 계산 (간단한 구현)
     return Math.random() * 0.3; // 0-30% 불균형
   }
 
-  private identifyCapacityIssues(allocation: ResourceAllocation): Array<{
+  private identifyCapacityIssues(_allocation: ResourceAllocation): Array<{
     resourceName: string,
     impact: number,
     cost: number,
@@ -1167,7 +1235,7 @@ export class AIResourceAllocationOptimizationSystem {
     ];
   }
 
-  private identifyCostOptimizations(allocation: ResourceAllocation): Array<{
+  private identifyCostOptimizations(_allocation: ResourceAllocation): Array<{
     title: string,
     description: string,
     savings: number,
@@ -1188,7 +1256,7 @@ export class AIResourceAllocationOptimizationSystem {
     ];
   }
 
-  private calculateSkillMatchingScore(allocation: ResourceAllocation): number {
+  private calculateSkillMatchingScore(_allocation: ResourceAllocation): number {
     // 스킬 매칭 점수 계산 (간단한 구현)
     return 0.75 + Math.random() * 0.2; // 75-95%
   }
@@ -1199,9 +1267,21 @@ export class AIResourceAllocationOptimizationSystem {
 
     results.forEach(result => {
       if (result.improvement > 0.1) {
-        console.log(`📈 상당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
+        errorLogger.info('상당한 개선', {
+          component: 'aiResourceAllocationOptimizationSystem',
+          action: 'analyzeOptimizationResults',
+          metric: result.metric,
+          improvement: result.improvement,
+          improvementPercent: (result.improvement * 100).toFixed(1),
+        });
       } else if (result.improvement > 0.05) {
-        console.log(`📊 적당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
+        errorLogger.info('적당한 개선', {
+          component: 'aiResourceAllocationOptimizationSystem',
+          action: 'analyzeOptimizationResults',
+          metric: result.metric,
+          improvement: result.improvement,
+          improvementPercent: (result.improvement * 100).toFixed(1),
+        });
       }
     });
   }
@@ -1280,12 +1360,12 @@ export class AIResourceAllocationOptimizationSystem {
     return totalEfficiency / allocation.resources.length;
   }
 
-  private calculateSkillMatch(allocation: ResourceAllocation): number {
+  private calculateSkillMatch(_allocation: ResourceAllocation): number {
     // 스킬 매칭 점수 계산 (간단한 구현)
     return 0.8 + Math.random() * 0.15;
   }
 
-  private calculateTimelineAdherence(allocation: ResourceAllocation): number {
+  private calculateTimelineAdherence(_allocation: ResourceAllocation): number {
     // 일정 준수율 계산 (간단한 구현)
     return 0.85 + Math.random() * 0.1;
   }
@@ -1300,12 +1380,12 @@ export class AIResourceAllocationOptimizationSystem {
     return totalQuality / allocation.resources.length;
   }
 
-  private calculateSatisfaction(allocation: ResourceAllocation): number {
+  private calculateSatisfaction(_allocation: ResourceAllocation): number {
     // 만족도 계산 (간단한 구현)
     return 0.8 + Math.random() * 0.15;
   }
 
-  private calculateROI(allocation: ResourceAllocation): number {
+  private calculateROI(_allocation: ResourceAllocation): number {
     // ROI 계산 (간단한 구현)
     return 1.2 + Math.random() * 0.5;
   }
@@ -1336,7 +1416,13 @@ export class AIResourceAllocationOptimizationSystem {
         const utilizationGap = Math.abs(allocation.performance.resourceUtilization - settings.utilizationTarget);
 
         if (utilizationGap > settings.rebalancingThreshold) {
-          console.log(`🔄 활용도 기준 미달로 자동 최적화 실행: ${allocationId}`);
+          errorLogger.info('활용도 기준 미달로 자동 최적화 실행', {
+            component: 'aiResourceAllocationOptimizationSystem',
+            action: 'checkOptimizationNeeds',
+            allocationId,
+            utilizationGap,
+            rebalancingThreshold: settings.rebalancingThreshold,
+          });
           this.optimizeAllocation(allocationId);
         }
       }
@@ -1379,7 +1465,10 @@ export class AIResourceAllocationOptimizationSystem {
   private cleanupData(): void {
     this.allocations.clear();
     this.resources.clear();
-    console.log('🧹 리소스 할당 데이터 정리 완료');
+    errorLogger.info('리소스 할당 데이터 정리 완료', {
+      component: 'aiResourceAllocationOptimizationSystem',
+      action: 'cleanupData',
+    });
   }
 
   public getAllocations(): ResourceAllocation[] {

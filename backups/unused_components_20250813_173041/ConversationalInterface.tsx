@@ -21,7 +21,7 @@ const ConversationalInterface: React.FC<ConversationalInterfaceProps> = ({
     {
       id: '1',
       type: 'assistant',
-      content: '안녕하세요! CORBU AI 파일 관리 시스템입니다. 어떤 도움이 필요하신가요?',
+      content: '안녕하세요! CORBU.AI 파일 관리 시스템입니다. 어떤 도움이 필요하신가요?',
       timestamp: new Date()
     }
   ]);
@@ -159,7 +159,7 @@ const ConversationalInterface: React.FC<ConversationalInterfaceProps> = ({
       {/* 헤더 */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          CORBU AI 대화형 인터페이스
+          CORBU.AI 대화형 인터페이스
         </h2>
         <div className="flex items-center space-x-2">
           <button

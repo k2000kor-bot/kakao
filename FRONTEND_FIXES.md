@@ -29,13 +29,13 @@
 
 ```bash
 # 프론트엔드 실행
-cd /Users/aD/kakao-frontend/frontend
+cd /path/to/kakao-frontend/kakao-frontend/frontend
 npm start
 ```
 
 브라우저에서 `http://localhost:3000` 접속하면:
 
-- 🤖 CORBU AI 채팅 탭
+- 🤖 CORBU.AI 대화 탭
 - 🚀 통합 API 탭
 - 테스트 탭
 

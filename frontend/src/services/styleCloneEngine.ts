@@ -1,10 +1,11 @@
 /**
- * CORBU AI 스타일 복제 엔진
+ * CORBU.AI 스타일 복제 엔진
  * 분석된 스타일 프로필을 기반으로 동일한 스타일의 새로운 글을 생성하는 고도화된 시스템
  */
-
-import { styleAnalysisEngine, StyleProfile, StyleAnalysisRequest } from './styleAnalysisEngine';
-import { masterWritingEngine, MasterWritingProfile } from './masterWritingEngine';
+import { styleAnalysisEngine, StyleProfile } from './styleAnalysisEngine';
+import masterWritingEngine, { MasterWritingProfile } from './masterWritingEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface StyleCloneRequest {
     originalText: string;
@@ -27,8 +28,8 @@ export interface StyleCloneResponse {
 
 export interface StyleDeviation {
     aspect: string;
-    originalValue: any;
-    generatedValue: any;
+    originalValue: unknown;
+    generatedValue: unknown;
     significance: 'minor' | 'moderate' | 'major';
     reason: string;
 }
@@ -73,8 +74,8 @@ export interface DetailedStyleControl {
 }
 
 class StyleCloneEngine {
-    private stylePatterns: Map<string, any> = new Map();
-    private generationTemplates: Map<string, any> = new Map();
+    private stylePatterns: Map<string, unknown> = new Map();
+    private generationTemplates: Map<string, unknown> = new Map();
 
     constructor() {
         this.initializeGenerationTemplates();
@@ -137,7 +138,12 @@ class StyleCloneEngine {
             };
 
         } catch (error) {
-            console.error('스타일 복제 실패:', error);
+            const err = toError(error);
+            errorLogger.error('스타일 복제 실패', err, {
+                component: 'styleCloneEngine',
+                action: 'cloneStyle',
+                newTopic: request.newTopic,
+            });
             throw new Error('스타일 복제에 실패했습니다.');
         }
     }
@@ -184,7 +190,12 @@ class StyleCloneEngine {
             };
 
         } catch (error) {
-            console.error('정밀 제어 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('정밀 제어 생성 실패', err, {
+                component: 'styleCloneEngine',
+                action: 'generateWithDetailedControl',
+                topic,
+            });
             throw new Error('정밀 제어 생성에 실패했습니다.');
         }
     }
@@ -242,7 +253,7 @@ class StyleCloneEngine {
             throw new Error(`스타일 패턴 '${patternName}'을 찾을 수 없습니다.`);
         }
 
-        const baseProfile = { ...pattern.pattern, ...customizations };
+        const _baseProfile = { ...(pattern as unknown as { pattern: StyleProfile }).pattern, ...customizations };
 
         return this.cloneStyle({
             originalText: '', // 패턴 기반이므로 원본 텍스트 불필요
@@ -300,7 +311,7 @@ class StyleCloneEngine {
             purpose: profile.purpose || 'inform'
         };
 
-        const result = await masterWritingEngine.generateMasterWriting(masterRequest as any);
+        const result = await masterWritingEngine.generateMasterWriting(masterRequest as Parameters<typeof masterWritingEngine.generateMasterWriting>[0]);
         let generatedText = result.generatedText;
 
         // 3. 스타일 세부 조정 적용
@@ -320,15 +331,15 @@ class StyleCloneEngine {
      */
     private convertToMasterProfile(profile: StyleProfile): MasterWritingProfile {
         return {
-            politicalSpectrum: this.mapPoliticalSpectrum(profile),
-            politicalStance: this.mapPoliticalStance(profile),
-            ageGroup: this.mapAgeGroup(profile),
-            generationStyle: this.mapGenerationStyle(profile),
-            stancePosition: this.mapStancePosition(profile),
-            argumentStyle: this.mapArgumentStyle(profile),
-            emotionIntensity: this.mapEmotionIntensity(profile),
-            toneIntensity: this.mapToneIntensity(profile),
-            strengthLevel: this.mapStrengthLevel(profile),
+            politicalSpectrum: this.mapPoliticalSpectrum(profile) as unknown as MasterWritingProfile['politicalSpectrum'],
+            politicalStance: this.mapPoliticalStance(profile) as unknown as MasterWritingProfile['politicalStance'],
+            ageGroup: this.mapAgeGroup(profile) as unknown as MasterWritingProfile['ageGroup'],
+            generationStyle: this.mapGenerationStyle(profile) as unknown as MasterWritingProfile['generationStyle'],
+            stancePosition: this.mapStancePosition(profile) as unknown as MasterWritingProfile['stancePosition'],
+            argumentStyle: this.mapArgumentStyle(profile) as unknown as MasterWritingProfile['argumentStyle'],
+            emotionIntensity: this.mapEmotionIntensity(profile) as unknown as MasterWritingProfile['emotionIntensity'],
+            toneIntensity: this.mapToneIntensity(profile) as unknown as MasterWritingProfile['toneIntensity'],
+            strengthLevel: this.mapStrengthLevel(profile) as unknown as MasterWritingProfile['strengthLevel'],
             formalityLevel: this.mapFormalityLevel(profile.formality),
             useHonorific: profile.honorificUsage !== 'none',
             useMilitantLanguage: profile.intensity === 'very_strong',
@@ -437,7 +448,7 @@ class StyleCloneEngine {
     private applyDetailedStyleAdjustments(
         text: string,
         profile: StyleProfile,
-        request: StyleCloneRequest
+        _request: StyleCloneRequest
     ): string {
         let adjustedText = text;
 
@@ -471,7 +482,7 @@ class StyleCloneEngine {
         let adjustedText = text;
 
         // 문단 수 조정
-        const currentParagraphs = text.split('\n\n').filter(p => p.trim().length > 0);
+        const currentParagraphs = text.split('\n\n').filter((p) => coerceTrimmedString(p, '').length > 0);
         if (currentParagraphs.length !== profile.paragraphCount) {
             adjustedText = this.adjustParagraphCount(text, profile.paragraphCount);
         }
@@ -618,48 +629,48 @@ class StyleCloneEngine {
     /**
      * 유틸리티 메서드들
      */
-    private mapWritingStyle(style: string): any {
-        const mapping = {
+    private mapWritingStyle(style: string): string {
+        const mapping: Record<string, string> = {
             'descriptive': 'essay',
             'narrative': 'essay',
             'argumentative': 'opinion',
             'persuasive': 'opinion',
             'informative': 'analysis'
         };
-        return mapping[style as keyof typeof mapping] || 'essay';
+        return mapping[style] ?? 'essay';
     }
 
-    private mapToneStyle(profile: StyleProfile): any {
+    private mapToneStyle(profile: StyleProfile): string {
         if (profile.formality === 'very_formal') return 'academic';
         if (profile.formality === 'formal') return 'formal';
         if (profile.emotionalTone === 'very_positive' || profile.emotionalTone === 'very_negative') return 'passionate';
         return 'conversational';
     }
 
-    private mapPoliticalSpectrum(profile: StyleProfile): any {
+    private mapPoliticalSpectrum(profile: StyleProfile): string {
         if (profile.argumentativeStance === 'strongly_for') return 'conservative';
         if (profile.argumentativeStance === 'strongly_against') return 'progressive';
         return 'center';
     }
 
-    private mapPoliticalStance(profile: StyleProfile): any {
+    private mapPoliticalStance(profile: StyleProfile): string {
         return profile.argumentativeStance === 'neutral' ? 'neutral' : 'support';
     }
 
-    private mapAgeGroup(profile: StyleProfile): any {
+    private mapAgeGroup(profile: StyleProfile): string {
         if (profile.targetAudience === 'elderly') return '70s';
         if (profile.targetAudience === 'adults') return '50s';
         if (profile.targetAudience === 'teenagers') return '30s';
         return '50s';
     }
 
-    private mapGenerationStyle(profile: StyleProfile): any {
+    private mapGenerationStyle(profile: StyleProfile): string {
         if (profile.honorificUsage === 'extensive') return 'wise_elder';
         if (profile.certaintyLevel === 'absolute') return 'authoritative_experienced';
         return 'formal_traditional';
     }
 
-    private mapStancePosition(profile: StyleProfile): any {
+    private mapStancePosition(profile: StyleProfile): string {
         const mapping = {
             'strongly_for': 'strongly_support',
             'for': 'support',
@@ -670,7 +681,7 @@ class StyleCloneEngine {
         return mapping[profile.argumentativeStance as keyof typeof mapping] || 'neutral';
     }
 
-    private mapArgumentStyle(profile: StyleProfile): any {
+    private mapArgumentStyle(profile: StyleProfile): string {
         const mapping = {
             'descriptive': 'descriptive',
             'narrative': 'experiential',
@@ -681,7 +692,7 @@ class StyleCloneEngine {
         return mapping[profile.writingStyle as keyof typeof mapping] || 'logical';
     }
 
-    private mapEmotionIntensity(profile: StyleProfile): any {
+    private mapEmotionIntensity(profile: StyleProfile): string {
         const mapping = {
             'very_positive': 'very_passionate',
             'positive': 'passionate',
@@ -692,7 +703,7 @@ class StyleCloneEngine {
         return mapping[profile.emotionalTone as keyof typeof mapping] || 'moderate';
     }
 
-    private mapToneIntensity(profile: StyleProfile): any {
+    private mapToneIntensity(profile: StyleProfile): string {
         const mapping = {
             'very_mild': 'gentle',
             'mild': 'gentle',
@@ -703,7 +714,7 @@ class StyleCloneEngine {
         return mapping[profile.intensity as keyof typeof mapping] || 'moderate';
     }
 
-    private mapStrengthLevel(profile: StyleProfile): any {
+    private mapStrengthLevel(profile: StyleProfile): string {
         const mapping = {
             'very_mild': 'mild',
             'mild': 'mild',
@@ -715,30 +726,30 @@ class StyleCloneEngine {
     }
 
     // 추가 유틸리티 메서드들은 실제 구현에서 계속 추가...
-    private calculatePartialScore(aspect: string, original: any, generated: any): number {
+    private calculatePartialScore(_aspect: string, _original: unknown, _generated: unknown): number {
         // 부분 점수 계산 로직
         return 70; // 임시 구현
     }
 
-    private calculateStructuralSimilarity(original: StyleProfile, generated: StyleProfile): number {
+    private calculateStructuralSimilarity(_original: StyleProfile, _generated: StyleProfile): number {
         // 구조적 유사성 계산
         return 80; // 임시 구현
     }
 
-    private calculateDeviationSignificance(aspect: string, original: any, generated: any): 'minor' | 'moderate' | 'major' {
+    private calculateDeviationSignificance(_aspect: string, _original: unknown, _generated: unknown): 'minor' | 'moderate' | 'major' {
         // 편차 중요도 계산
         return 'moderate'; // 임시 구현
     }
 
-    private getDeviationReason(aspect: string, original: any, generated: any): string {
-        return `${aspect}에서 ${original}에서 ${generated}로 변경됨`;
+    private getDeviationReason(aspect: string, original: unknown, generated: unknown): string {
+        return `${aspect}에서 ${String(original)}에서 ${String(generated)}로 변경됨`;
     }
 
-    private getImprovementTip(aspect: string, targetValue: any): string {
-        return `${aspect}을 ${targetValue} 스타일로 조정`;
+    private getImprovementTip(aspect: string, targetValue: unknown): string {
+        return `${aspect}을 ${String(targetValue)} 스타일로 조정`;
     }
 
-    private analyzeStructuralDeviations(original: StyleProfile, generated: StyleProfile): StyleDeviation[] {
+    private analyzeStructuralDeviations(_original: StyleProfile, _generated: StyleProfile): StyleDeviation[] {
         return []; // 임시 구현
     }
 
@@ -747,15 +758,15 @@ class StyleCloneEngine {
         return profiles[0]; // 임시 구현
     }
 
-    private calculatePatternConfidence(profiles: StyleProfile[]): number {
+    private calculatePatternConfidence(_profiles: StyleProfile[]): number {
         return 0.85; // 임시 구현
     }
 
-    private evaluateControlAccuracy(control: DetailedStyleControl, generated: StyleProfile): number {
+    private evaluateControlAccuracy(_control: DetailedStyleControl, _generated: StyleProfile): number {
         return 0.9; // 임시 구현
     }
 
-    private async generateBaseStructure(topic: string, profile: StyleProfile, control: DetailedStyleControl): Promise<string> {
+    private async generateBaseStructure(topic: string, profile: StyleProfile, _control: DetailedStyleControl): Promise<string> {
         return `${topic}에 대한 ${profile.writingStyle} 스타일의 글입니다.`; // 임시 구현
     }
 
@@ -773,64 +784,65 @@ class StyleCloneEngine {
 
     private adjustToWordCountRange(text: string, range: { min: number; max: number }): string {
         const words = text.split(/\s+/);
-        if (words.length >= range.min && words.length <= range.max) return text;
+        const { min: rMin, max: rMax } = range;
+        if (words.length >= rMin && words.length <= rMax) return text;
 
-        if (words.length > range.max) {
-            return words.slice(0, range.max).join(' ');
+        if (words.length > rMax) {
+            return words.slice(0, rMax).join(' ');
         } else {
             return text; // 임시 구현
         }
     }
 
-    private adjustSentenceCount(text: string, range: { min: number; max: number }): string {
+    private adjustSentenceCount(text: string, _range: { min: number; max: number }): string {
         return text; // 임시 구현
     }
 
-    private adjustVocabularyComplexity(text: string, complexity: StyleProfile['vocabularyLevel']): string {
+    private adjustVocabularyComplexity(text: string, _complexity: StyleProfile['vocabularyLevel']): string {
         return text; // 임시 구현
     }
 
-    private applyRhetoricalDevices(text: string, devices: string[]): string {
+    private applyRhetoricalDevices(text: string, _devices: string[]): string {
         return text; // 임시 구현
     }
 
-    private finalQualityAdjustment(text: string, profile: StyleProfile, control: DetailedStyleControl): string {
+    private finalQualityAdjustment(text: string, _profile: StyleProfile, _control: DetailedStyleControl): string {
         return text; // 임시 구현
     }
 
-    private insertUniquePhrases(text: string, phrases: string[]): string {
+    private insertUniquePhrases(text: string, _phrases: string[]): string {
         return text; // 임시 구현
     }
 
-    private applyCharacteristicExpressions(text: string, expressions: string[]): string {
+    private applyCharacteristicExpressions(text: string, _expressions: string[]): string {
         return text; // 임시 구현
     }
 
-    private applyPunctuationPatterns(text: string, patterns: any): string {
+    private applyPunctuationPatterns(text: string, _patterns: Record<string, unknown>): string {
         return text; // 임시 구현
     }
 
-    private applyTransitionWords(text: string, words: string[]): string {
+    private applyTransitionWords(text: string, _words: string[]): string {
         return text; // 임시 구현
     }
 
-    private adjustParagraphCount(text: string, targetCount: number): string {
+    private adjustParagraphCount(text: string, _targetCount: number): string {
         return text; // 임시 구현
     }
 
-    private adjustSentenceLength(text: string, targetLength: number): string {
+    private adjustSentenceLength(text: string, _targetLength: number): string {
         return text; // 임시 구현
     }
 
-    private applyHonorificUsage(text: string, usage: StyleProfile['honorificUsage']): string {
+    private applyHonorificUsage(text: string, _usage: StyleProfile['honorificUsage']): string {
         return text; // 임시 구현
     }
 
-    private adjustEmotionalTone(text: string, tone: StyleProfile['emotionalTone']): string {
+    private adjustEmotionalTone(text: string, _tone: StyleProfile['emotionalTone']): string {
         return text; // 임시 구현
     }
 
-    private adjustFormality(text: string, formality: StyleProfile['formality']): string {
+    private adjustFormality(text: string, _formality: StyleProfile['formality']): string {
         return text; // 임시 구현
     }
 
@@ -840,11 +852,12 @@ class StyleCloneEngine {
     public getLearnedPatterns(): Array<{ name: string; description: string; confidence: number }> {
         const patterns: Array<{ name: string; description: string; confidence: number }> = [];
 
-        this.stylePatterns.forEach((value, key) => {
+        this.stylePatterns.forEach((value: unknown, key: string) => {
+            const v = value as { description: string; confidence: number };
             patterns.push({
                 name: key,
-                description: value.description,
-                confidence: value.confidence
+                description: v.description,
+                confidence: v.confidence
             });
         });
 

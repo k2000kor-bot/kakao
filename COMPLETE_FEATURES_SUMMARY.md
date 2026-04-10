@@ -57,7 +57,7 @@
 - POST /api/auth/reset-password
 - GET /api/auth/me
 
-**채팅** (1개):
+**대화** (1개):
 - POST /api/chat (LLM 연동, 프로젝트 컨텍스트 지원)
 
 **보안 시스템** (5개):
@@ -145,8 +145,8 @@ export LLM_PROVIDER="openai"
 ### 4. 접속
 
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:5001
-- **API 문서**: http://localhost:5001/docs
+- **백엔드 API**: http://localhost:5002
+- **API 문서**: http://localhost:5002/api/docs
 
 ---
 
@@ -210,7 +210,7 @@ export LLM_PROVIDER="openai"
 
 ## 🎉 결론
 
-**CORBU AI 시스템이 완전히 구축되었습니다!**
+**CORBU.AI 시스템이 완전히 구축되었습니다!**
 
 **주요 성과**:
 - ✅ ChatGPT 스타일 인터페이스

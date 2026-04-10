@@ -3,9 +3,17 @@
  * 하드코딩된 파일 데이터를 제거하고 깨끗한 상태로 만듭니다.
  */
 
+import { errorLogger } from './errorLogger';
+import { CURRENT_PROJECT_STORAGE_KEY } from '../services/projectStorageKeys';
+
+function getFileName(obj: Record<string, unknown>): string {
+  const n = obj.name ?? obj.filename ?? obj.fileName;
+  return typeof n === 'string' ? n : '';
+}
+
 export const cleanLocalStorage = () => {
   try {
-    console.log('로컬 스토리지 정리 시작...');
+    errorLogger.info('로컬 스토리지 정리 시작', { component: 'storageCleaner', action: 'cleanLocalStorage' });
     
     // 파일 저장소 키들
     const storageKeys = [
@@ -31,15 +39,15 @@ export const cleanLocalStorage = () => {
           if (typeof parsed === 'object') {
             if (Array.isArray(parsed)) {
               // 배열인 경우
-              const cleaned = parsed.filter((item: any) => {
+              const cleaned = parsed.filter((item: Record<string, unknown>) => {
                 if (item && typeof item === 'object') {
                   // 파일 이름이 하드코딩된 파일인지 확인
-                  const fileName = item.name || item.filename || item.fileName || '';
+                  const fileName = getFileName(item);
                   if (fileName.includes('개포우성7차_제안서') || 
                       fileName.includes('래미안 루미원') ||
                       fileName.includes('Raemian') ||
                       fileName.includes('개포우성')) {
-                    console.log('하드코딩된 파일 제거:', fileName);
+                    errorLogger.info('하드코딩된 파일 제거', { component: 'storageCleaner', action: 'cleanLocalStorage', fileName, key });
                     return false;
                   }
                 }
@@ -48,7 +56,7 @@ export const cleanLocalStorage = () => {
               
               if (cleaned.length !== parsed.length) {
                 localStorage.setItem(key, JSON.stringify(cleaned));
-                console.log(`${key}: ${parsed.length - cleaned.length}개 파일 제거됨`);
+                errorLogger.info(`${key}: ${parsed.length - cleaned.length}개 파일 제거됨`, { component: 'storageCleaner', action: 'cleanLocalStorage', key, removedCount: parsed.length - cleaned.length });
               }
             } else {
               // 객체인 경우 (프로젝트별 파일 저장소)
@@ -56,13 +64,13 @@ export const cleanLocalStorage = () => {
               Object.keys(parsed).forEach(projectId => {
                 if (parsed[projectId] && parsed[projectId].files) {
                   const originalLength = parsed[projectId].files.length;
-                  parsed[projectId].files = parsed[projectId].files.filter((file: any) => {
-                    const fileName = file.name || file.filename || file.fileName || '';
+                  parsed[projectId].files = parsed[projectId].files.filter((file: Record<string, unknown>) => {
+                    const fileName = getFileName(file);
                     if (fileName.includes('개포우성7차_제안서') || 
                         fileName.includes('래미안 루미원') ||
                         fileName.includes('Raemian') ||
                         fileName.includes('개포우성')) {
-                      console.log('하드코딩된 파일 제거:', fileName);
+                      errorLogger.info('하드코딩된 파일 제거', { component: 'storageCleaner', action: 'cleanLocalStorage', fileName, key });
                       return false;
                     }
                     return true;
@@ -70,7 +78,7 @@ export const cleanLocalStorage = () => {
                   
                   if (parsed[projectId].files.length !== originalLength) {
                     hasChanges = true;
-                    console.log(`프로젝트 ${projectId}: ${originalLength - parsed[projectId].files.length}개 파일 제거됨`);
+                      errorLogger.info(`프로젝트 ${projectId}: ${originalLength - parsed[projectId].files.length}개 파일 제거됨`, { component: 'storageCleaner', action: 'cleanLocalStorage', projectId, removedCount: originalLength - parsed[projectId].files.length });
                   }
                 }
               });
@@ -81,7 +89,7 @@ export const cleanLocalStorage = () => {
             }
           }
         } catch (parseError) {
-          console.warn(`${key} 파싱 실패:`, parseError);
+          errorLogger.warn(`${key} 파싱 실패`, { component: 'storageCleaner', action: 'cleanLocalStorage', key, error: parseError instanceof Error ? parseError : new Error(String(parseError)) });
         }
       }
     });
@@ -98,7 +106,7 @@ export const cleanLocalStorage = () => {
     keysToRemove.forEach(key => {
       if (localStorage.getItem(key)) {
         localStorage.removeItem(key);
-        console.log(`${key} 완전 삭제됨`);
+        errorLogger.info(`${key} 완전 삭제됨`, { component: 'storageCleaner', action: 'cleanLocalStorage', key });
       }
     });
     
@@ -115,14 +123,14 @@ export const cleanLocalStorage = () => {
               
               if (Array.isArray(parsed)) {
                 const originalLength = parsed.length;
-                const cleaned = parsed.filter((item: any) => {
+                const cleaned = parsed.filter((item: Record<string, unknown>) => {
                   if (item && typeof item === 'object') {
-                    const fileName = item.name || item.filename || item.fileName || '';
+                    const fileName = getFileName(item);
                     if (fileName.includes('개포우성7차_제안서') || 
                         fileName.includes('래미안 루미원') ||
                         fileName.includes('Raemian') ||
                         fileName.includes('개포우성')) {
-                      console.log(`전역 검색에서 하드코딩된 파일 제거: ${fileName} (${key})`);
+                      errorLogger.info(`전역 검색에서 하드코딩된 파일 제거: ${fileName} (${key})`, { component: 'storageCleaner', action: 'cleanLocalStorage', fileName, key });
                       return false;
                     }
                   }
@@ -132,12 +140,12 @@ export const cleanLocalStorage = () => {
                 if (cleaned.length !== originalLength) {
                   localStorage.setItem(key, JSON.stringify(cleaned));
                   hasChanges = true;
-                  console.log(`${key}: ${originalLength - cleaned.length}개 파일 제거됨`);
+                  errorLogger.info(`${key}: ${originalLength - cleaned.length}개 파일 제거됨`, { component: 'storageCleaner', action: 'cleanLocalStorage', key, removedCount: originalLength - cleaned.length });
                 }
               }
               
               if (hasChanges) {
-                console.log(`${key} 업데이트됨`);
+                errorLogger.info(`${key} 업데이트됨`, { component: 'storageCleaner', action: 'cleanLocalStorage', key });
               }
             }
           }
@@ -147,10 +155,10 @@ export const cleanLocalStorage = () => {
       }
     });
     
-    console.log('로컬 스토리지 정리 완료');
+    errorLogger.info('로컬 스토리지 정리 완료', { component: 'storageCleaner', action: 'cleanLocalStorage' });
     return true;
   } catch (error) {
-    console.error('로컬 스토리지 정리 중 오류:', error);
+    errorLogger.error('로컬 스토리지 정리 중 오류', error instanceof Error ? error : new Error(String(error)), { component: 'storageCleaner', action: 'cleanLocalStorage' });
     return false;
   }
 };
@@ -170,10 +178,10 @@ export const forceRefreshFileList = () => {
       detail: { force: true, clean: true }
     }));
     
-    console.log('파일 목록 강제 새로고침 이벤트 발생');
+    errorLogger.info('파일 목록 강제 새로고침 이벤트 발생', { component: 'storageCleaner', action: 'forceRefreshFileList' });
     return true;
   } catch (error) {
-    console.error('파일 목록 새로고침 중 오류:', error);
+    errorLogger.error('파일 목록 새로고침 중 오류', error instanceof Error ? error : new Error(String(error)), { component: 'storageCleaner', action: 'forceRefreshFileList' });
     return false;
   }
 };
@@ -183,8 +191,8 @@ export const resetProjectData = () => {
     // 프로젝트 데이터 초기화
     const projectData = {
       id: '1',
-      name: '개포우성7차',
-      description: '개포우성7차 재건축 프로젝트',
+      name: '샘플 프로젝트',
+      description: '데모용 재건축·정비 프로젝트',
       status: 'active',
       priority: 'high',
       createdAt: '2024-01-15',
@@ -207,14 +215,14 @@ export const resetProjectData = () => {
         notifications: true
       },
       archived: false,
-      tags: ['재건축', '개포우성', '프로젝트']
+      tags: ['재건축', '데모', '프로젝트']
     };
     
-    localStorage.setItem('currentProject', JSON.stringify(projectData));
-    console.log('프로젝트 데이터 초기화 완료');
+    localStorage.setItem(CURRENT_PROJECT_STORAGE_KEY, JSON.stringify(projectData));
+    errorLogger.info('프로젝트 데이터 초기화 완료', { component: 'storageCleaner', action: 'resetProjectData' });
     return true;
   } catch (error) {
-    console.error('프로젝트 데이터 초기화 중 오류:', error);
+    errorLogger.error('프로젝트 데이터 초기화 중 오류', error instanceof Error ? error : new Error(String(error)), { component: 'storageCleaner', action: 'resetProjectData' });
     return false;
   }
 };

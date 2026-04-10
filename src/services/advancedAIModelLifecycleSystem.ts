@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
+import { API_HEALTH_PATH, buildCorbuModelPredictUrl } from '../config/api';
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
-import aiHealthMonitor from './aiHealthMonitor';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface AIModel {
@@ -20,7 +21,7 @@ export interface AIModel {
     last_updated: Date;
     created_by: string;
     tags: string[];
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
 }
 
 export interface TrainingDataset {
@@ -150,7 +151,7 @@ export interface ModelTrainingJob {
 
 export interface TrainingConfig {
     algorithm: string;
-    hyperparameters: Record<string, any>;
+    hyperparameters: Record<string, unknown>;
     optimization_strategy: 'grid_search' | 'random_search' | 'bayesian' | 'evolutionary';
     early_stopping: boolean;
     checkpoint_frequency: number;
@@ -248,7 +249,10 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
     constructor() {
         super();
         this.initializeModels();
-        console.log('🔄 고급 AI 모델 생명주기 관리 시스템이 초기화되었습니다.');
+        errorLogger.info('🔄 고급 AI 모델 생명주기 관리 시스템이 초기화되었습니다', {
+            component: 'advancedAIModelLifecycleSystem',
+            action: 'constructor',
+        });
     }
 
     // 시스템 시작
@@ -258,7 +262,10 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
         this.isRunning = true;
         this.startMonitoring();
         this.startMetricsCollection();
-        console.log('🚀 고급 AI 모델 생명주기 관리 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 고급 AI 모델 생명주기 관리 시스템이 시작되었습니다', {
+            component: 'advancedAIModelLifecycleSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
@@ -272,7 +279,10 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             this.metricsInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ 고급 AI 모델 생명주기 관리 시스템이 중지되었습니다.');
+        errorLogger.info('⏹️ 고급 AI 모델 생명주기 관리 시스템이 중지되었습니다', {
+            component: 'advancedAIModelLifecycleSystem',
+            action: 'stop',
+        });
     }
 
     // 새 모델 생성
@@ -296,13 +306,25 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                 approval_status: 'approved'
             });
 
-            console.log(`📦 새 모델 생성: ${model.name} (${model.id})`);
+            errorLogger.info('📦 새 모델 생성', {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'createModel',
+                modelId: model.id,
+                modelName: model.name,
+                modelType: model.type,
+                framework: model.framework,
+            });
             this.emit('model_created', model);
 
             return model;
 
         } catch (error) {
-            console.error('❌ 모델 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 모델 생성 오류', err, {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'createModel',
+                modelName: modelData.name,
+            });
             throw error;
         }
     }
@@ -334,13 +356,25 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             existingVersions.push(version);
             this.modelVersions.set(modelId, existingVersions);
 
-            console.log(`🔄 새 모델 버전 생성: ${model.name} v${version.version}`);
+            errorLogger.info('🔄 새 모델 버전 생성', {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'createModelVersion',
+                modelId,
+                modelName: model.name,
+                version: version.version,
+                versionId: version.id,
+            });
             this.emit('version_created', version);
 
             return version;
 
         } catch (error) {
-            console.error('❌ 모델 버전 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 모델 버전 생성 오류', err, {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'createModelVersion',
+                modelId,
+            });
             throw error;
         }
     }
@@ -361,8 +395,8 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                 status: 'queued',
                 progress_percentage: 0,
                 start_time: new Date(),
-                total_epochs: trainingConfig.hyperparameters.epochs || 100,
-                current_metrics: {},
+                total_epochs: Number((trainingConfig.hyperparameters as Record<string, unknown>).epochs) || 100,
+                current_metrics: {} as Record<string, number>,
                 logs: [],
                 resource_usage: {
                     cpu_usage_percent: 0,
@@ -377,13 +411,25 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             // 훈련 시작
             await this.executeTraining(trainingJob);
 
-            console.log(`🏋️ 모델 훈련 시작: ${model.name} (${trainingJob.id})`);
+            errorLogger.info('🏋️ 모델 훈련 시작', {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'startTraining',
+                modelId,
+                modelName: model.name,
+                trainingJobId: trainingJob.id,
+                datasetId,
+            });
             this.emit('training_started', trainingJob);
 
             return trainingJob;
 
         } catch (error) {
-            console.error('❌ 모델 훈련 시작 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 모델 훈련 시작 오류', err, {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'startTraining',
+                modelId,
+            });
             throw error;
         }
     }
@@ -429,13 +475,30 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             // 배포 실행
             await this.executeDeployment(deployment);
 
-            console.log(`🚀 모델 배포 시작: ${model.name} v${version.version} → ${environment}`);
+            errorLogger.info('🚀 모델 배포 시작', {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'deployModel',
+                modelId,
+                modelName: model.name,
+                versionId,
+                version: version.version,
+                environment,
+                deploymentId: deployment.id,
+                deploymentStrategy,
+            });
             this.emit('deployment_started', deployment);
 
             return deployment;
 
         } catch (error) {
-            console.error('❌ 모델 배포 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 모델 배포 오류', err, {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'deployModel',
+                modelId,
+                versionId,
+                environment,
+            });
             throw error;
         }
     }
@@ -466,7 +529,12 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             return metrics;
 
         } catch (error) {
-            console.error('❌ 모델 성능 모니터링 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 모델 성능 모니터링 오류', err, {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'monitorModelPerformance',
+                deploymentId,
+            });
             throw error;
         }
     }
@@ -482,7 +550,12 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                 throw new Error(`모델을 찾을 수 없습니다: ${modelId}`);
             }
 
-            console.log(`⚡ 모델 최적화 시작: ${model.name}`);
+            errorLogger.info('⚡ 모델 최적화 시작', {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'optimizeModel',
+                modelId,
+                modelName: model.name,
+            });
 
             // 최적화 수행
             const optimizationReport = await this.performOptimization(model);
@@ -490,7 +563,13 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             // 최적화된 모델 생성
             const optimizedModel = await this.applyOptimizations(model, optimizationReport);
 
-            console.log(`✨ 모델 최적화 완료: ${model.name}`);
+            errorLogger.info('✨ 모델 최적화 완료', {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'optimizeModel',
+                modelId,
+                modelName: model.name,
+                optimizedModelId: optimizedModel.id,
+            });
             this.emit('model_optimized', { model: optimizedModel, report: optimizationReport });
 
             return {
@@ -499,7 +578,12 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             };
 
         } catch (error) {
-            console.error('❌ 모델 최적화 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 모델 최적화 오류', err, {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'optimizeModel',
+                modelId,
+            });
             throw error;
         }
     }
@@ -512,7 +596,12 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                 throw new Error(`배포를 찾을 수 없습니다: ${deploymentId}`);
             }
 
-            console.log(`🔄 모델 롤백 시작: ${deploymentId} (이유: ${reason})`);
+            errorLogger.info('🔄 모델 롤백 시작', {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'rollbackDeployment',
+                deploymentId,
+                reason,
+            });
 
             deployment.status = 'rolling_back';
             this.deployments.set(deploymentId, deployment);
@@ -540,11 +629,22 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                 }
             });
 
-            console.log(`✅ 모델 롤백 완료: ${deploymentId}`);
+            errorLogger.info('✅ 모델 롤백 완료', {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'rollbackDeployment',
+                deploymentId,
+                reason,
+            });
             this.emit('deployment_rolled_back', deployment);
 
         } catch (error) {
-            console.error('❌ 모델 롤백 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 모델 롤백 오류', err, {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'rollbackDeployment',
+                deploymentId,
+                reason,
+            });
             throw error;
         }
     }
@@ -617,7 +717,11 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             return metrics;
 
         } catch (error) {
-            console.error('❌ 생명주기 메트릭 수집 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 생명주기 메트릭 수집 오류', err, {
+                component: 'advancedAIModelLifecycleSystem',
+                action: 'collectLifecycleMetrics',
+            });
             throw error;
         }
     }
@@ -685,7 +789,7 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                         network_bandwidth_mbps: 1000
                     },
                     health_check_config: {
-                        endpoint: '/health',
+                        endpoint: API_HEALTH_PATH,
                         interval_seconds: 30,
                         timeout_seconds: 5,
                         healthy_threshold: 2,
@@ -781,7 +885,7 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                         network_bandwidth_mbps: 1500
                     },
                     health_check_config: {
-                        endpoint: '/health',
+                        endpoint: API_HEALTH_PATH,
                         interval_seconds: 20,
                         timeout_seconds: 3,
                         healthy_threshold: 2,
@@ -950,13 +1054,13 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
         };
     }
 
-    private async handlePerformanceDegradation(deployment: ModelDeployment, degradation: any): Promise<void> {
+    private async handlePerformanceDegradation(deployment: ModelDeployment, degradation: { severity?: string; issues?: string[] }): Promise<void> {
         // 성능 저하 알림 생성
         await realTimeAIAlertSystem.createAlert({
             type: 'warning',
-            severity: degradation.severity,
+            severity: degradation.severity ?? 'high',
             title: `모델 성능 저하 감지`,
-            message: `배포 ${deployment.id}에서 성능 저하가 감지되었습니다: ${degradation.issues.join(', ')}`,
+            message: `배포 ${deployment.id}에서 성능 저하가 감지되었습니다: ${(degradation.issues ?? []).join(', ')}`,
             source: 'model-lifecycle-system',
             category: 'performance',
             auto_resolve: false,
@@ -964,14 +1068,14 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             tags: ['모델', '성능저하', '배포', '시스템'],
             metadata: {
                 deployment_id: deployment.id,
-                issues: degradation.issues,
+                issues: degradation.issues ?? [],
                 severity: degradation.severity
             }
         });
 
         // 심각한 성능 저하 시 자동 롤백
         if (degradation.severity === 'critical') {
-            await this.rollbackDeployment(deployment.id, `Critical performance degradation: ${degradation.issues.join(', ')}`);
+            await this.rollbackDeployment(deployment.id, `Critical performance degradation: ${(degradation.issues ?? []).join(', ')}`);
         }
     }
 
@@ -1047,14 +1151,22 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
         return optimizedModel;
     }
 
-    private async executeRollback(deployment: ModelDeployment, reason: string): Promise<void> {
+    private async executeRollback(deployment: ModelDeployment, _reason: string): Promise<void> {
         // 롤백 시뮬레이션
-        console.log(`🔄 롤백 실행 중: ${deployment.id}`);
+        errorLogger.info('🔄 롤백 실행 중', {
+            component: 'advancedAIModelLifecycleSystem',
+            action: 'executeRollback',
+            deploymentId: deployment.id,
+        });
 
         // 롤백 로직 (실제로는 인프라 API 호출)
         await new Promise(resolve => setTimeout(resolve, 3000));
 
-        console.log(`✅ 롤백 완료: ${deployment.id}`);
+        errorLogger.info('✅ 롤백 완료', {
+            component: 'advancedAIModelLifecycleSystem',
+            action: 'executeRollback',
+            deploymentId: deployment.id,
+        });
     }
 
     private generatePerformanceTrends(): PerformanceTrend[] {
@@ -1162,7 +1274,7 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
     }
 
     private generateEndpointUrl(model: AIModel, environment: string): string {
-        return `https://api-${environment}.corbu.ai/models/${model.id}/predict`;
+        return buildCorbuModelPredictUrl(environment, model.id);
     }
 
     private startMonitoring(): void {
@@ -1173,7 +1285,12 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
                     try {
                         await this.monitorModelPerformance(deployment.id);
                     } catch (error) {
-                        console.error(`모델 모니터링 오류: ${deployment.id}`, error);
+                        const err = toError(error);
+                        errorLogger.error('모델 모니터링 오류', err, {
+                            component: 'advancedAIModelLifecycleSystem',
+                            action: 'startMonitoring',
+                            deploymentId: deployment.id,
+                        });
                     }
                 }
             }
@@ -1185,7 +1302,11 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
             try {
                 await this.collectLifecycleMetrics();
             } catch (error) {
-                console.error('생명주기 메트릭 수집 오류:', error);
+                const err = toError(error);
+                errorLogger.error('생명주기 메트릭 수집 오류', err, {
+                    component: 'advancedAIModelLifecycleSystem',
+                    action: 'startMetricsCollection',
+                });
             }
         }, 300000); // 5분마다
     }
@@ -1235,7 +1356,10 @@ class AdvancedAIModelLifecycleSystem extends EventEmitter {
         this.trainingJobs.clear();
         this.deployments.clear();
         this.lifecycleMetrics = null;
-        console.log('🔌 고급 AI 모델 생명주기 관리 시스템이 종료되었습니다.');
+        errorLogger.info('🔌 고급 AI 모델 생명주기 관리 시스템이 종료되었습니다', {
+            component: 'advancedAIModelLifecycleSystem',
+            action: 'shutdown',
+        });
     }
 }
 

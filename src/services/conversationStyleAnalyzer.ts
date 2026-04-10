@@ -10,6 +10,9 @@
  * - 대화 논리 흐름 분석
  */
 
+import { errorLogger } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface SpeakingStyle {
     formality_level: number; // 격식도 (0: 반말, 1: 존댓말)
     sentence_length: 'short' | 'medium' | 'long';
@@ -97,7 +100,7 @@ export class ConversationStyleAnalyzer {
     /**
      * 개별 발화자의 스타일 분석
      */
-    analyzeSpeakerStyle(messages: any[], speakerId: string): PersonaProfile {
+    analyzeSpeakerStyle(messages: Record<string, unknown>[], speakerId: string): PersonaProfile {
         const speakerMessages = messages.filter(msg => msg.sender === speakerId);
 
         if (speakerMessages.length === 0) {
@@ -110,12 +113,13 @@ export class ConversationStyleAnalyzer {
                 return msg;
             }
             return msg.content || msg.message || msg.text || String(msg);
-        }).filter(content => typeof content === 'string' && content.trim().length > 0);
+        }).filter((content) => typeof content === 'string' && coerceTrimmedString(content, '').length > 0);
 
-        const speakingStyle = this.analyzeSpeakingStyle(messageContents);
-        const conversationLogic = this.analyzeConversationLogic(messageContents);
-        const signatureExpressions = this.extractCharacteristicPhrases(messageContents);
-        const vocabularyAnalysis = this.analyzeVocabulary(messageContents);
+        const msgRecords = speakerMessages as unknown as Record<string, unknown>[];
+        const speakingStyle = this.analyzeSpeakingStyle(msgRecords);
+        const conversationLogic = this.analyzeConversationLogic(msgRecords);
+        const signatureExpressions = this.extractCharacteristicPhrases(messageContents as string[]);
+        const vocabularyAnalysis = this.analyzeVocabulary(msgRecords);
 
         const profile: PersonaProfile = {
             speaker_id: speakerId,
@@ -125,8 +129,8 @@ export class ConversationStyleAnalyzer {
             emotional_vocabulary: vocabularyAnalysis.emotional,
             technical_vocabulary: vocabularyAnalysis.technical,
             social_markers: vocabularyAnalysis.social,
-            consistency_score: this.calculateConsistencyScore(messageContents),
-            sample_messages: speakerMessages.slice(-5).map(msg => msg.content)
+            consistency_score: this.calculateConsistencyScore(msgRecords),
+            sample_messages: speakerMessages.slice(-5).map(msg => (typeof msg === 'object' && msg && 'content' in msg ? (msg as { content?: unknown }).content : msg) as string).filter((s): s is string => typeof s === 'string')
         };
 
         this.speakerProfiles.set(speakerId, profile);
@@ -136,13 +140,13 @@ export class ConversationStyleAnalyzer {
     /**
      * 말하기 스타일 분석
      */
-    private analyzeSpeakingStyle(messages: any[]): SpeakingStyle {
+    private analyzeSpeakingStyle(messages: Record<string, unknown>[]): SpeakingStyle {
         const contents = messages.map(msg => {
             if (typeof msg === 'string') {
                 return msg;
             }
             return msg?.content || msg?.message || msg?.text || String(msg);
-        }).filter(content => typeof content === 'string' && content.trim().length > 0);
+        }).filter((content) => typeof content === 'string' && coerceTrimmedString(content, '').length > 0);
 
         // 빈 배열 처리
         if (contents.length === 0) {
@@ -150,28 +154,28 @@ export class ConversationStyleAnalyzer {
         }
 
         // 격식도 분석
-        const formalityLevel = this.analyzeFormalityLevel(contents);
+        const formalityLevel = this.analyzeFormalityLevel(contents as string[]);
 
         // 문장 길이 분석
-        const sentenceLength = this.analyzeSentenceLength(contents);
+        const sentenceLength = this.analyzeSentenceLength(contents as string[]);
 
         // 감정 표현 방식 분석
-        const emotionalExpression = this.analyzeEmotionalExpression(contents);
+        const emotionalExpression = this.analyzeEmotionalExpression(contents as string[]);
 
         // 논리 패턴 분석
-        const logicalPattern = this.analyzeLogicalPattern(contents);
+        const logicalPattern = this.analyzeLogicalPattern(contents as string[]);
 
         // 대화 역할 분석
-        const conversationRole = this.analyzeConversationRole(contents);
+        const conversationRole = this.analyzeConversationRole(contents as string[]);
 
         // 특징적 표현 추출
-        const characteristicPhrases = this.extractCharacteristicPhrases(contents);
+        const characteristicPhrases = this.extractCharacteristicPhrases(contents as string[]);
 
         // 말투 습관 분석
-        const verbalHabits = this.analyzeVerbalHabits(contents);
+        const verbalHabits = this.analyzeVerbalHabits(contents as string[]);
 
         // 어조 지표 분석
-        const toneIndicators = this.analyzeToneIndicators(contents);
+        const toneIndicators = this.analyzeToneIndicators(contents as string[]);
 
         return {
             formality_level: formalityLevel,
@@ -199,7 +203,12 @@ export class ConversationStyleAnalyzer {
         for (const content of contents) {
             // 타입 검증
             if (typeof content !== 'string') {
-                console.warn('Invalid content type in analyzeFormalityLevel:', typeof content, content);
+                errorLogger.warn('Invalid content type in analyzeFormalityLevel', {
+                    component: 'conversationStyleAnalyzer',
+                    action: 'analyzeFormalityLevel',
+                    contentType: typeof content,
+                    contentPreview: String(content).substring(0, 100),
+                });
                 continue;
             }
 
@@ -255,7 +264,12 @@ export class ConversationStyleAnalyzer {
         for (const content of contents) {
             // 타입 검증
             if (typeof content !== 'string') {
-                console.warn('Invalid content type in analyzeEmotionalExpression:', typeof content, content);
+                errorLogger.warn('Invalid content type in analyzeEmotionalExpression', {
+                    component: 'conversationStyleAnalyzer',
+                    action: 'analyzeEmotionalExpression',
+                    contentType: typeof content,
+                    contentPreview: String(content).substring(0, 100),
+                });
                 continue;
             }
 
@@ -364,7 +378,12 @@ export class ConversationStyleAnalyzer {
         for (const content of contents) {
             // 타입 검증: content가 문자열인지 확인
             if (typeof content !== 'string') {
-                console.warn('Invalid content type in extractCharacteristicPhrases:', typeof content, content);
+                errorLogger.warn('Invalid content type in extractCharacteristicPhrases', {
+                    component: 'conversationStyleAnalyzer',
+                    action: 'extractCharacteristicPhrases',
+                    contentType: typeof content,
+                    contentPreview: String(content).substring(0, 100),
+                });
                 continue;
             }
 
@@ -380,7 +399,7 @@ export class ConversationStyleAnalyzer {
 
         // 빈도 높은 구문 반환
         return Array.from(phraseCount.entries())
-            .filter(([phrase, count]) => count >= 2)
+            .filter(([_phrase, count]) => count >= 2)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10)
             .map(([phrase]) => phrase);
@@ -470,13 +489,13 @@ export class ConversationStyleAnalyzer {
     /**
      * 대화 논리 분석
      */
-    private analyzeConversationLogic(messages: any[]): ConversationLogic {
+    private analyzeConversationLogic(messages: Record<string, unknown>[]): ConversationLogic {
         const contents = messages.map(msg => {
             if (typeof msg === 'string') {
                 return msg;
             }
             return msg?.content || msg?.message || msg?.text || String(msg);
-        }).filter(content => typeof content === 'string' && content.trim().length > 0);
+        }).filter((content) => typeof content === 'string' && coerceTrimmedString(content, '').length > 0);
 
         // 빈 배열 처리
         if (contents.length === 0) {
@@ -490,13 +509,14 @@ export class ConversationStyleAnalyzer {
             };
         }
 
+        const strContents = contents as string[];
         return {
-            argument_structure: this.analyzeArgumentStructure(contents),
-            evidence_usage: this.analyzeEvidenceUsage(contents),
-            persuasion_style: this.analyzePersuasionStyle(contents),
-            decision_making: this.analyzeDecisionMaking(contents),
-            conflict_resolution: this.analyzeConflictResolution(contents),
-            topic_transitions: this.analyzeTopicTransitions(contents)
+            argument_structure: this.analyzeArgumentStructure(strContents),
+            evidence_usage: this.analyzeEvidenceUsage(strContents),
+            persuasion_style: this.analyzePersuasionStyle(strContents),
+            decision_making: this.analyzeDecisionMaking(strContents),
+            conflict_resolution: this.analyzeConflictResolution(strContents),
+            topic_transitions: this.analyzeTopicTransitions(strContents)
         };
     }
 
@@ -722,7 +742,7 @@ export class ConversationStyleAnalyzer {
     /**
      * 어휘 분석
      */
-    private analyzeVocabulary(messages: any[]): {
+    private analyzeVocabulary(messages: Record<string, unknown>[]): {
         emotional: string[];
         technical: string[];
         social: string[];
@@ -768,7 +788,7 @@ export class ConversationStyleAnalyzer {
     /**
      * 일관성 점수 계산
      */
-    private calculateConsistencyScore(messages: any[]): number {
+    private calculateConsistencyScore(messages: Record<string, unknown>[]): number {
         if (messages.length < 2) return 0.5;
 
         const contents = messages.map(msg => {
@@ -776,7 +796,7 @@ export class ConversationStyleAnalyzer {
                 return msg;
             }
             return msg?.content || msg?.message || msg?.text || String(msg);
-        }).filter(content => typeof content === 'string' && content.trim().length > 0);
+        }).filter((content) => typeof content === 'string' && coerceTrimmedString(content, '').length > 0);
 
         // 격식도 일관성
         const formalityLevels = contents.map(content => {
@@ -793,7 +813,8 @@ export class ConversationStyleAnalyzer {
         const formalityConsistency = 1.0 / (1.0 + formalityVariance);
 
         // 문장 길이 일관성
-        const lengths = contents.map(content => content.length);
+        const strContents = contents as string[];
+        const lengths = strContents.map(content => content.length);
         const lengthVariance = this.calculateVariance(lengths);
         const lengthConsistency = 1.0 / (1.0 + lengthVariance / 100);
 
@@ -818,7 +839,7 @@ export class ConversationStyleAnalyzer {
     generateStyleBasedMessage(
         speakerId: string,
         context: string,
-        recentMessages: any[],
+        recentMessages: Record<string, unknown>[],
         targetEmotion?: string
     ): StyleBasedMessage {
         const profile = this.speakerProfiles.get(speakerId);
@@ -917,7 +938,7 @@ export class ConversationStyleAnalyzer {
     private selectBestTemplate(
         templates: string[],
         profile: PersonaProfile,
-        recentMessages: any[]
+        _recentMessages: Record<string, unknown>[]
     ): string {
         if (templates.length === 0) {
             return "네, 알겠습니다.";
@@ -1004,7 +1025,7 @@ export class ConversationStyleAnalyzer {
      */
     private calculateNaturalFlowScore(
         message: string,
-        recentMessages: any[],
+        recentMessages: Record<string, unknown>[],
         profile: PersonaProfile
     ): number {
         if (recentMessages.length === 0) return 0.7;
@@ -1015,7 +1036,7 @@ export class ConversationStyleAnalyzer {
         const lastMessage = recentMessages[recentMessages.length - 1];
         if (lastMessage && lastMessage.content) {
             // 주제 연관성
-            const commonWords = this.findCommonWords(message, lastMessage.content);
+            const commonWords = this.findCommonWords(message, String(lastMessage?.content ?? ''));
             score += commonWords.length * 0.1;
 
             // 논리적 연결사 사용
@@ -1239,8 +1260,8 @@ export class ConversationStyleAnalyzer {
     /**
      * 프로필 업데이트
      */
-    updateSpeakerProfile(speakerId: string, newMessages: any[]): void {
-        const allMessages = [...(this.speakerProfiles.get(speakerId)?.sample_messages || []), ...newMessages.map(msg => msg.content)];
+    updateSpeakerProfile(speakerId: string, newMessages: Record<string, unknown>[]): void {
+        const _allMessages = [...(this.speakerProfiles.get(speakerId)?.sample_messages || []), ...newMessages.map(msg => msg.content)];
         this.analyzeSpeakerStyle(newMessages, speakerId);
     }
 }

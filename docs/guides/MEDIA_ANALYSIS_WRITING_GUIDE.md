@@ -245,7 +245,7 @@ interface WritingInsight {
 
 ```bash
 # 서버 상태 확인
-curl http://localhost:8001/
+curl http://localhost:5002/api/health
 
 # 서버 재시작
 ./start_media_analysis_server.sh

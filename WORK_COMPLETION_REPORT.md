@@ -71,7 +71,7 @@ const escapedText = text
 - **포트**: 8080
 - **접속 URL**: `http://localhost:8080/`
 - **서빙 파일**: `modern_chat_interface.html`
-- **백엔드 API**: 모든 기능 포함 (채팅, 프로젝트 관리, 감정 분석 등)
+- **백엔드 API**: 모든 기능 포함 (대화, 프로젝트 관리, 감정 분석 등)
 
 ## 📁 백업된 파일들
 

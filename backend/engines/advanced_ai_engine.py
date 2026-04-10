@@ -1,5 +1,5 @@
 """
-CORBU AI Advanced Engine - 딥러닝/머신러닝 통합 엔진
+CORBU.AI Advanced Engine - 딥러닝/머신러닝 통합 엔진
 """
 import numpy as np
 import pandas as pd

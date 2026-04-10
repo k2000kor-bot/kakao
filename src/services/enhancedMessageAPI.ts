@@ -1,5 +1,21 @@
 // 향상된 메시지 시스템 API 서비스
-const ENHANCED_MESSAGE_API_BASE = 'http://localhost:8001';
+import {
+    API_ANALYTICS_PATH,
+    API_HEALTH_PATH,
+    API_QUERY_PARAM_LIMIT,
+    API_SMOKE_TEST_PATH,
+    API_STATUS_PATH,
+    GENERATE_ENHANCED_MESSAGE_PATH,
+    MESSAGE_FORMATS_PATH,
+    MESSAGE_HISTORY_PATH_PREFIX,
+    joinApiHealthCheckUrl,
+    resolveApiBaseUrl,
+    UPDATE_USER_PROFILE_PATH,
+    USER_PROFILE_PATH_PREFIX,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+
+const ENHANCED_MESSAGE_API_BASE = resolveApiBaseUrl();
 
 export interface EnhancedMessageFormatRequest {
     format_type: string;
@@ -73,7 +89,7 @@ export interface MessageAnalyticsResult {
 // API 호출 헬퍼 함수
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     try {
-        const response = await fetch(`${ENHANCED_MESSAGE_API_BASE}${endpoint}`, {
+        const response = await fetch(joinApiHealthCheckUrl(ENHANCED_MESSAGE_API_BASE, endpoint), {
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers,
@@ -87,7 +103,13 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 
         return await response.json();
     } catch (error) {
-        console.error('API 호출 오류:', error);
+        const err = toError(error);
+        errorLogger.error('API 호출 오류', err, {
+            component: 'enhancedMessageAPI',
+            action: 'apiCall',
+            endpoint,
+            method: options?.method || 'GET',
+        });
         throw error;
     }
 };
@@ -96,22 +118,22 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 export class EnhancedMessageAPI {
     // 시스템 상태 확인
     static async getStatus() {
-        return apiCall('/api/status');
+        return apiCall(API_STATUS_PATH);
     }
 
     // 헬스 체크
     static async healthCheck() {
-        return apiCall('/api/health');
+        return apiCall(API_HEALTH_PATH);
     }
 
     // 메시지 형식 목록 조회
     static async getMessageFormats(): Promise<{ success: boolean; formats: Record<string, string> }> {
-        return apiCall('/api/message-formats');
+        return apiCall(MESSAGE_FORMATS_PATH);
     }
 
     // 향상된 메시지 생성
     static async generateEnhancedMessage(request: EnhancedMessageFormatRequest): Promise<{ success: boolean; message: EnhancedGeneratedMessage }> {
-        return apiCall('/api/generate-enhanced-message', {
+        return apiCall(GENERATE_ENHANCED_MESSAGE_PATH, {
             method: 'POST',
             body: JSON.stringify(request),
         });
@@ -119,7 +141,7 @@ export class EnhancedMessageAPI {
 
     // 사용자 프로필 업데이트
     static async updateUserProfile(request: UserProfileRequest): Promise<{ success: boolean; message: string }> {
-        return apiCall('/api/update-user-profile', {
+        return apiCall(UPDATE_USER_PROFILE_PATH, {
             method: 'POST',
             body: JSON.stringify(request),
         });
@@ -127,17 +149,18 @@ export class EnhancedMessageAPI {
 
     // 사용자 프로필 조회
     static async getUserProfile(userId: string): Promise<{ success: boolean; profile?: UserProfile; error?: string }> {
-        return apiCall(`/api/user-profile/${userId}`);
+        return apiCall(`${USER_PROFILE_PATH_PREFIX}/${encodeURIComponent(userId)}`);
     }
 
     // 메시지 히스토리 조회
     static async getMessageHistory(userId: string, limit: number = 10): Promise<{ success: boolean; history?: MessageHistoryItem[]; error?: string }> {
-        return apiCall(`/api/message-history/${userId}?limit=${limit}`);
+        const qs = new URLSearchParams({ [API_QUERY_PARAM_LIMIT]: String(limit) });
+        return apiCall(`${MESSAGE_HISTORY_PATH_PREFIX}/${encodeURIComponent(userId)}?${qs}`);
     }
 
     // 메시지 분석 결과 조회
     static async getMessageAnalytics(messageId: string): Promise<{ success: boolean; analytics?: MessageAnalyticsResult; error?: string }> {
-        return apiCall(`/api/analytics/${messageId}`);
+        return apiCall(`${API_ANALYTICS_PATH}/${encodeURIComponent(messageId)}`);
     }
 
     // 서버 연결 테스트
@@ -146,7 +169,11 @@ export class EnhancedMessageAPI {
             await this.healthCheck();
             return true;
         } catch (error) {
-            console.error('서버 연결 실패:', error);
+            const err = toError(error);
+            errorLogger.error('서버 연결 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'testConnection',
+            });
             return false;
         }
     }
@@ -160,26 +187,37 @@ export const enhancedMessageAPI = {
             const response = await EnhancedMessageAPI.getMessageFormats();
             return response.formats;
         } catch (error) {
-            console.error('메시지 형식 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('메시지 형식 조회 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'getFormats',
+            });
             return {};
         }
     },
 
     // 향상된 메시지 생성
-    generateEnhanced: async (formatType: string, originalMessage: string, context: string = '', recentMessages: any[] = [], userId: string = 'default') => {
+    generateEnhanced: async (formatType: string, originalMessage: string, context: string = '', recentMessages: unknown[] = [], userId: string = 'default') => {
         try {
             const request: EnhancedMessageFormatRequest = {
                 format_type: formatType,
                 original_message: originalMessage,
                 context,
-                recent_messages: recentMessages,
+                recent_messages: recentMessages as Array<{ content: string; sender: string; timestamp: string }>,
                 user_id: userId,
             };
 
             const response = await EnhancedMessageAPI.generateEnhancedMessage(request);
             return response.message;
         } catch (error) {
-            console.error('향상된 메시지 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('향상된 메시지 생성 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'generateEnhanced',
+                formatType,
+                originalMessageLength: originalMessage.length,
+                userId,
+            });
             throw error;
         }
     },
@@ -190,7 +228,12 @@ export const enhancedMessageAPI = {
             const response = await EnhancedMessageAPI.updateUserProfile(request);
             return response.message;
         } catch (error) {
-            console.error('프로필 업데이트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('프로필 업데이트 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'updateProfile',
+                userId: request.user_id,
+            });
             throw error;
         }
     },
@@ -201,7 +244,12 @@ export const enhancedMessageAPI = {
             const response = await EnhancedMessageAPI.getUserProfile(userId);
             return response.profile;
         } catch (error) {
-            console.error('프로필 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('프로필 조회 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'getProfile',
+                userId,
+            });
             throw error;
         }
     },
@@ -212,7 +260,13 @@ export const enhancedMessageAPI = {
             const response = await EnhancedMessageAPI.getMessageHistory(userId, limit);
             return response.history;
         } catch (error) {
-            console.error('히스토리 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('히스토리 조회 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'getHistory',
+                userId,
+                limit,
+            });
             throw error;
         }
     },
@@ -223,7 +277,12 @@ export const enhancedMessageAPI = {
             const response = await EnhancedMessageAPI.getMessageAnalytics(messageId);
             return response.analytics;
         } catch (error) {
-            console.error('분석 결과 조회 실패:', error);
+            const err = toError(error);
+            errorLogger.error('분석 결과 조회 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'getAnalytics',
+                messageId,
+            });
             throw error;
         }
     },
@@ -234,7 +293,11 @@ export const enhancedMessageAPI = {
             const response = await EnhancedMessageAPI.getStatus();
             return response.status === 'healthy';
         } catch (error) {
-            console.error('서버 상태 확인 실패:', error);
+            const err = toError(error);
+            errorLogger.error('서버 상태 확인 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'checkStatus',
+            });
             return false;
         }
     },
@@ -242,10 +305,14 @@ export const enhancedMessageAPI = {
     // 테스트 엔드포인트
     testEndpoint: async () => {
         try {
-            const response = await apiCall('/api/test');
+            const response = await apiCall(API_SMOKE_TEST_PATH);
             return response;
         } catch (error) {
-            console.error('테스트 엔드포인트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('테스트 엔드포인트 실패', err, {
+                component: 'enhancedMessageAPI',
+                action: 'testEndpoint',
+            });
             throw error;
         }
     },

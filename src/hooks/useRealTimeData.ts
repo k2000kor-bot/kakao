@@ -162,16 +162,16 @@ const useRealTimeData = () => {
         if (Math.random() > 0.95) {
             const newAlert: RealTimeAlert = {
                 id: `alert-${Date.now()}`,
-                type: ['info', 'warning', 'error', 'success', 'critical'][Math.floor(Math.random() * 5)] as any,
-                severity: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as any,
+                type: (['info', 'warning', 'error', 'success', 'critical'] as const)[Math.floor(Math.random() * 5)],
+                severity: (['low', 'medium', 'high', 'critical'] as const)[Math.floor(Math.random() * 4)],
                 title: `자동 생성 알림 ${Math.floor(Math.random() * 1000)}`,
                 message: '시스템 모니터링에 의해 자동 생성된 알림입니다.',
                 timestamp: new Date(),
                 source: 'auto-monitor',
-                category: ['performance', 'quality', 'security', 'connectivity'][Math.floor(Math.random() * 4)],
+                category: (['performance', 'quality', 'security', 'connectivity'] as const)[Math.floor(Math.random() * 4)],
                 acknowledged: false,
                 resolved: false,
-                priority: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as any,
+                priority: (['low', 'medium', 'high', 'critical'] as const)[Math.floor(Math.random() * 4)],
                 tags: ['auto-generated', 'monitoring'],
                 ai_analysis: {
                     sentiment: Math.random() > 0.5 ? 'positive' : 'negative',
@@ -220,8 +220,8 @@ const useRealTimeData = () => {
                     id: `test-${Date.now()}`,
                     name: `자동 테스트 ${Math.floor(Math.random() * 1000)}`,
                     status: 'running',
-                    type: ['unit', 'integration', 'e2e', 'performance', 'security'][Math.floor(Math.random() * 5)] as any,
-                    priority: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as any,
+                    type: (['unit', 'integration', 'e2e', 'performance', 'security'] as const)[Math.floor(Math.random() * 5)],
+                    priority: (['low', 'medium', 'high', 'critical'] as const)[Math.floor(Math.random() * 4)],
                     duration: Math.random() * 60 + 30,
                     progress: 0,
                     startTime: new Date()

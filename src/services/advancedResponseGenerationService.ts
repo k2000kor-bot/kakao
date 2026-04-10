@@ -1,6 +1,7 @@
 import { QuestionUnderstandingResult } from './advancedQuestionUnderstandingEngine';
 import { ConversationMemory } from './advancedConversationMemoryService';
 import { LearningExperience } from './personalizedLearningExperienceService';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface ResponseGenerationRequest {
     user_input: string;
@@ -9,7 +10,7 @@ export interface ResponseGenerationRequest {
     conversation_memory: ConversationMemory;
     learning_experience: LearningExperience;
     understanding_result: QuestionUnderstandingResult;
-    context: any;
+    context: Record<string, unknown>;
 }
 
 export interface ResponseGenerationResult {
@@ -102,7 +103,7 @@ class AdvancedResponseGenerationService {
 
             return {
                 content: personalizedResponse,
-                response_type: responseStrategy.type,
+                response_type: responseStrategy.type as 'conversational' | 'informative' | 'analytical' | 'problem_solving' | 'educational',
                 confidence_score: this.calculateConfidenceScore(request, responseStrategy),
                 processing_time: processingTime,
                 personalized_content: true,
@@ -114,13 +115,20 @@ class AdvancedResponseGenerationService {
             };
 
         } catch (error) {
-            console.error('Response generation error:', error);
+            const err = toError(error);
+            errorLogger.error('Response generation error', err, {
+                component: 'advancedResponseGenerationService',
+                action: 'generateResponse',
+                userId: request.user_id,
+                sessionId: request.session_id,
+                userInput: request.user_input.substring(0, 100),
+            });
             return this.generateFallbackResponse(request, Date.now() - startTime);
         }
     }
 
     // 응답 전략 결정
-    private determineResponseStrategy(request: ResponseGenerationRequest): any {
+    private determineResponseStrategy(request: ResponseGenerationRequest): Record<string, unknown> {
         const understanding = request.understanding_result;
         const intent = understanding.intent_clarification.primary_intent;
         const complexity = understanding.semantic_analysis.complexity_assessment.overall_complexity;
@@ -189,9 +197,9 @@ class AdvancedResponseGenerationService {
     }
 
     // 기본 응답 생성
-    private async generateBaseResponse(request: ResponseGenerationRequest, strategy: any): Promise<string> {
+    private async generateBaseResponse(request: ResponseGenerationRequest, strategy: Record<string, unknown>): Promise<string> {
         const understanding = request.understanding_result;
-        const coreConcepts = understanding.semantic_analysis.core_concepts;
+        const _coreConcepts = understanding.semantic_analysis.core_concepts;
         const domain = understanding.semantic_analysis.domain_classification.primary_domain;
 
         let response = '';
@@ -221,7 +229,7 @@ class AdvancedResponseGenerationService {
     }
 
     // 프로그래밍 응답 생성
-    private generateProgrammingResponse(request: ResponseGenerationRequest, strategy: any): string {
+    private generateProgrammingResponse(request: ResponseGenerationRequest, strategy: Record<string, unknown>): string {
         const concepts = request.understanding_result.semantic_analysis.core_concepts;
         const programmingConcepts = concepts.filter(c =>
             c.type === 'entity' && ['function', 'class', 'variable', 'algorithm'].includes(c.concept.toLowerCase())
@@ -250,7 +258,7 @@ class AdvancedResponseGenerationService {
     }
 
     // 웹 개발 응답 생성
-    private generateWebDevelopmentResponse(request: ResponseGenerationRequest, strategy: any): string {
+    private generateWebDevelopmentResponse(request: ResponseGenerationRequest, strategy: Record<string, unknown>): string {
         const concepts = request.understanding_result.semantic_analysis.core_concepts;
         const webConcepts = concepts.filter(c =>
             ['html', 'css', 'javascript', 'react', 'api', 'frontend', 'backend'].includes(c.concept.toLowerCase())
@@ -279,7 +287,7 @@ class AdvancedResponseGenerationService {
     }
 
     // 데이터베이스 응답 생성
-    private generateDatabaseResponse(request: ResponseGenerationRequest, strategy: any): string {
+    private generateDatabaseResponse(request: ResponseGenerationRequest, strategy: Record<string, unknown>): string {
         const concepts = request.understanding_result.semantic_analysis.core_concepts;
         const dbConcepts = concepts.filter(c =>
             ['database', 'sql', 'query', 'table', 'index'].includes(c.concept.toLowerCase())
@@ -308,7 +316,7 @@ class AdvancedResponseGenerationService {
     }
 
     // AI/ML 응답 생성
-    private generateAIMLResponse(request: ResponseGenerationRequest, strategy: any): string {
+    private generateAIMLResponse(request: ResponseGenerationRequest, strategy: Record<string, unknown>): string {
         const concepts = request.understanding_result.semantic_analysis.core_concepts;
         const aiConcepts = concepts.filter(c =>
             ['ai', 'machine learning', 'neural network', 'algorithm', 'model'].includes(c.concept.toLowerCase())
@@ -337,7 +345,7 @@ class AdvancedResponseGenerationService {
     }
 
     // 일반 응답 생성
-    private generateGeneralResponse(request: ResponseGenerationRequest, strategy: any): string {
+    private generateGeneralResponse(request: ResponseGenerationRequest, _strategy: Record<string, unknown>): string {
         const concepts = request.understanding_result.semantic_analysis.core_concepts;
 
         if (concepts.length > 0) {
@@ -349,7 +357,7 @@ class AdvancedResponseGenerationService {
     }
 
     // 전략에 따른 응답 조정
-    private adjustResponseByStrategy(response: string, strategy: any): string {
+    private adjustResponseByStrategy(response: string, strategy: Record<string, unknown>): string {
         let adjustedResponse = response;
 
         // 상세도 조정
@@ -419,13 +427,13 @@ class AdvancedResponseGenerationService {
 
         // 성능 점수 추정
         const complexity = understanding.semantic_analysis.complexity_assessment.overall_complexity;
-        const expertiseLevel = this.getExpertiseLevelNumber(userProfile.expertise_level);
+        const expertiseLevel = this.getExpertiseLevelNumber(String(userProfile.expertise_level ?? 'intermediate'));
         insights.performance_score = Math.max(0, Math.min(100,
             (expertiseLevel / complexity) * 100
         ));
 
         // 지식 격차 식별
-        insights.skill_gaps = this.identifySkillGaps(understanding, userProfile);
+        insights.skill_gaps = this.identifySkillGaps(understanding, userProfile as unknown as Record<string, unknown>);
 
         // 다음 추천 생성
         insights.next_recommendation = this.generateNextRecommendation(learningExperience, understanding);
@@ -437,7 +445,7 @@ class AdvancedResponseGenerationService {
     }
 
     // 대안 응답 생성
-    private async generateAlternativeResponses(request: ResponseGenerationRequest, strategy: any): Promise<string[]> {
+    private async generateAlternativeResponses(request: ResponseGenerationRequest, strategy: Record<string, unknown>): Promise<string[]> {
         const alternatives: string[] = [];
         const baseResponse = await this.generateBaseResponse(request, strategy);
 
@@ -449,7 +457,7 @@ class AdvancedResponseGenerationService {
             { ...strategy, include_code: !strategy.include_code }
         ];
 
-        for (const altStrategy of alternativeStrategies.slice(0, 2)) {
+        for (const altStrategy of alternativeStrategies) {
             const altResponse = await this.generateBaseResponse(request, altStrategy);
             if (altResponse !== baseResponse) {
                 alternatives.push(altResponse);
@@ -460,10 +468,10 @@ class AdvancedResponseGenerationService {
     }
 
     // 후속 질문 생성
-    private async generateFollowUpQuestions(request: ResponseGenerationRequest, response: string): Promise<string[]> {
+    private async generateFollowUpQuestions(request: ResponseGenerationRequest, _response: string): Promise<string[]> {
         const understanding = request.understanding_result;
         const domain = understanding.semantic_analysis.domain_classification.primary_domain;
-        const concepts = understanding.semantic_analysis.core_concepts;
+        const _concepts = understanding.semantic_analysis.core_concepts;
 
         const questions: string[] = [];
 
@@ -494,11 +502,11 @@ class AdvancedResponseGenerationService {
             questions.push('더 고급 주제로 넘어가볼까요?');
         }
 
-        return questions.slice(0, 3);
+        return questions;
     }
 
     // 신뢰도 점수 계산
-    private calculateConfidenceScore(request: ResponseGenerationRequest, strategy: any): number {
+    private calculateConfidenceScore(request: ResponseGenerationRequest, _strategy: Record<string, unknown>): number {
         const understanding = request.understanding_result;
         let score = 0.8; // 기본 점수
 
@@ -521,25 +529,25 @@ class AdvancedResponseGenerationService {
     }
 
     // 메타데이터 생성
-    private generateMetadata(request: ResponseGenerationRequest, strategy: any, response: string): ResponseMetadata {
+    private generateMetadata(request: ResponseGenerationRequest, strategy: Record<string, unknown>, response: string): ResponseMetadata {
         const userProfile = request.conversation_memory.user_profile;
 
         return {
             model_used: 'advanced-response-generator',
-            response_strategy: strategy.type,
+            response_strategy: String(strategy.type ?? 'informative'),
             content_adaptation: {
                 learning_style_adapted: true,
                 expertise_level_adapted: true,
                 communication_style_adapted: true,
                 response_length_adapted: strategy.detail_level !== 'moderate',
-                example_type_adapted: strategy.include_examples || strategy.include_code
+                example_type_adapted: Boolean(strategy.include_examples ?? strategy.include_code)
             },
-            user_preference_match: this.calculateUserPreferenceMatch(response, userProfile),
+            user_preference_match: this.calculateUserPreferenceMatch(response, userProfile as unknown as Record<string, unknown>),
             complexity_level: request.understanding_result.semantic_analysis.complexity_assessment.overall_complexity,
             response_length: this.determineResponseLength(response),
-            includes_examples: strategy.include_examples,
-            includes_code: strategy.include_code,
-            includes_visual_aids: strategy.include_visual_aids
+            includes_examples: Boolean(strategy.include_examples),
+            includes_code: Boolean(strategy.include_code),
+            includes_visual_aids: Boolean(strategy.include_visual_aids)
         };
     }
 
@@ -683,9 +691,9 @@ class AdvancedResponseGenerationService {
         return response + `\n\n📚 현재 "${currentPath.path_name}" 학습 경로를 진행 중이시니, 이 개념이 다음 모듈과 연결됩니다.`;
     }
 
-    private addConversationContext(response: string, conversationHistory: any[]): string {
+    private addConversationContext(response: string, conversationHistory: unknown[]): string {
         if (conversationHistory.length > 0) {
-            const recentTopics = conversationHistory.slice(-3).map(entry => entry.context?.current_topic).filter(Boolean);
+            const recentTopics = conversationHistory.slice(-3).map((entry: unknown) => (entry as { context?: { current_topic?: string } })?.context?.current_topic).filter(Boolean);
             if (recentTopics.length > 0) {
                 return response + `\n\n💬 이전에 ${recentTopics[0]}에 대해 이야기했는데, 이번 주제와 연관이 있습니다.`;
             }
@@ -703,10 +711,10 @@ class AdvancedResponseGenerationService {
         return levelMap[level] || 5;
     }
 
-    private identifySkillGaps(understanding: QuestionUnderstandingResult, userProfile: any): SkillGap[] {
+    private identifySkillGaps(understanding: QuestionUnderstandingResult, userProfile: Record<string, unknown>): SkillGap[] {
         const gaps: SkillGap[] = [];
         const complexity = understanding.semantic_analysis.complexity_assessment.overall_complexity;
-        const expertiseLevel = this.getExpertiseLevelNumber(userProfile.expertise_level);
+        const expertiseLevel = this.getExpertiseLevelNumber(String(userProfile.expertise_level ?? 'intermediate'));
 
         if (complexity > expertiseLevel + 2) {
             gaps.push({
@@ -720,7 +728,7 @@ class AdvancedResponseGenerationService {
         return gaps;
     }
 
-    private generateNextRecommendation(learningExperience: LearningExperience, understanding: QuestionUnderstandingResult): string {
+    private generateNextRecommendation(learningExperience: LearningExperience, _understanding: QuestionUnderstandingResult): string {
         if (learningExperience?.learning_recommendations?.length > 0) {
             return learningExperience.learning_recommendations[0].title;
         }
@@ -734,7 +742,7 @@ class AdvancedResponseGenerationService {
         return 0; // 유지
     }
 
-    private calculateUserPreferenceMatch(response: string, userProfile: any): number {
+    private calculateUserPreferenceMatch(response: string, userProfile: Record<string, unknown>): number {
         let match = 50; // 기본 점수
 
         // 응답 길이 매칭
@@ -770,12 +778,14 @@ class AdvancedResponseGenerationService {
     }
 
     private initializeCodeExamples(): void {
+        /* eslint-disable no-template-curly-in-string */
         this.codeExamples.set('function', [
             'function greet(name) {\n  return `Hello, ${name}!`;\n}\n\ngreet("World"); // "Hello, World!"'
         ]);
         this.codeExamples.set('class', [
             'class Person {\n  constructor(name) {\n    this.name = name;\n  }\n  \n  greet() {\n    return `Hello, I\'m ${this.name}`;\n  }\n}'
         ]);
+        /* eslint-enable no-template-curly-in-string */
         this.codeExamples.set('react', [
             'function Welcome(props) {\n  return <h1>Hello, {props.name}</h1>;\n}\n\n<Welcome name="React" />'
         ]);

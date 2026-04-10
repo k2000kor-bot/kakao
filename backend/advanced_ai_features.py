@@ -5,6 +5,7 @@
 """
 
 import logging
+import os
 import time
 import numpy as np
 import pandas as pd
@@ -1069,4 +1070,5 @@ async def get_models():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8011)
+    _p = int(os.environ.get("ADVANCED_AI_FEATURES_PORT", os.environ.get("PORT", "8011")))
+    uvicorn.run(app, host="0.0.0.0", port=_p)

@@ -1,4 +1,20 @@
 // AI 서비스 - 다양한 AI 모델과 상호작용
+import {
+    ANTHROPIC_API_BASE_URL,
+    ANTHROPIC_API_V1_MESSAGES_PATH,
+    API_GENERATE_PATH,
+    API_QUERY_PARAM_KEY,
+    GOOGLE_GEMINI_MODEL_ID_LEGACY_PRO,
+    GOOGLE_GENERATIVE_LANGUAGE_V1BETA_BASE_URL,
+    OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH,
+    OPENAI_OFFICIAL_API_BASE_URL,
+    joinApiBaseAndPath,
+    joinApiHealthCheckUrl,
+    resolveApiBaseUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export type AIModel = 'gemini-pro' | 'gpt-4' | 'claude-3' | 'custom';
 
 export interface AIResponse {
@@ -52,9 +68,9 @@ export interface NLPAnalysis {
 }
 
 // 고급 프롬프트 템플릿
-class AdvancedPromptEngine {
+export class AdvancedPromptEngine {
     private static readonly SYSTEM_PROMPTS = {
-        'gemini-pro': `당신은 CORBU AI의 고급 AI 어시스턴트입니다. 다음 지침을 엄격히 따라주세요:
+        'gemini-pro': `당신은 CORBU.AI의 고급 AI 어시스턴트입니다. 다음 지침을 엄격히 따라주세요:
 
 1. **상세하고 유용한 응답**: 사용자의 질문에 대해 깊이 있고 실용적인 답변을 제공하세요.
 2. **구체적인 예시**: 가능한 경우 구체적인 예시, 사례, 또는 코드를 포함하세요.
@@ -72,7 +88,7 @@ class AdvancedPromptEngine {
 
 항상 도움이 되고 가치 있는 정보를 제공하는 것을 목표로 하세요.`,
 
-        'gpt-4': `당신은 CORBU AI의 전문 AI 어시스턴트입니다. 최고 수준의 응답을 제공하기 위해 다음을 준수하세요:
+        'gpt-4': `당신은 CORBU.AI의 전문 AI 어시스턴트입니다. 최고 수준의 응답을 제공하기 위해 다음을 준수하세요:
 
 1. **전문적이고 깊이 있는 분석**: 질문의 핵심을 파악하고 포괄적으로 분석하세요.
 2. **구조화된 응답**: 논리적 구조와 명확한 섹션으로 구성하세요.
@@ -91,7 +107,7 @@ class AdvancedPromptEngine {
 
 최고 품질의 전문적 응답을 제공하세요.`,
 
-        'claude-3': `당신은 CORBU AI의 지능형 AI 어시스턴트입니다. 안전하고 유용한 고품질 응답을 위해 다음을 준수하세요:
+        'claude-3': `당신은 CORBU.AI의 지능형 AI 어시스턴트입니다. 안전하고 유용한 고품질 응답을 위해 다음을 준수하세요:
 
 1. **정확하고 신뢰할 수 있는 정보**: 검증된 사실과 최신 정보를 기반으로 응답하세요.
 2. **윤리적이고 안전한 조언**: 사용자와 사회에 도움이 되는 윤리적 조언을 제공하세요.
@@ -110,7 +126,7 @@ class AdvancedPromptEngine {
 
 안전하고 유용한 고품질 응답을 제공하세요.`,
 
-        'custom': `당신은 CORBU AI의 맞춤형 AI 어시스턴트입니다. 사용자 정의 모델로서 다음 지침을 따라주세요:
+        'custom': `당신은 CORBU.AI의 맞춤형 AI 어시스턴트입니다. 사용자 정의 모델로서 다음 지침을 따라주세요:
 
 1. **맞춤형 응답**: 사용자의 특별한 요구사항에 맞는 응답을 제공하세요.
 2. **도메인 특화**: 특정 분야나 주제에 대한 전문적인 답변을 제공하세요.
@@ -199,7 +215,7 @@ class AdvancedPromptEngine {
 }
 
 // 응답 품질 분석기
-class ResponseQualityAnalyzer {
+export class ResponseQualityAnalyzer {
     static analyzeResponse(content: string): AIResponse['quality'] {
         const words = content.split(' ').length;
         const sentences = content.split(/[.!?]+/).length;
@@ -233,14 +249,28 @@ export class AIService {
     private userPreferences: Map<string, AIRequest['userPreferences']> = new Map();
 
     constructor() {
-        // 기본 API 키 설정 (제공된 키)
-        this.apiKeys.set('gemini-pro', 'YAOOOEZZkhb5cQls-0RZ_OoBmamkaXtiKPHtDk0DpljUXuLKEJcB3IFWao4KJcAiOz5wQ7JcfaT3BlbkFJtXelOS4W3H3F3lfG_oO31Gd16MzehfO1YgzIVkAasx4aSe_7wUW-8zprbtcW5DixGfcrhNm3gA');
+        const geminiKey = (process.env.REACT_APP_GEMINI_API_KEY ?? '').trim();
+        if (geminiKey) {
+            this.apiKeys.set('gemini-pro', geminiKey);
+        }
 
         // 기본 URL 설정
-        this.baseURLs.set('gemini-pro', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent');
-        this.baseURLs.set('gpt-4', 'https://api.openai.com/v1/chat/completions');
-        this.baseURLs.set('claude-3', 'https://api.anthropic.com/v1/messages');
-        this.baseURLs.set('custom', 'http://localhost:8000/api/generate');
+        this.baseURLs.set(
+            'gemini-pro',
+            joinApiBaseAndPath(
+                GOOGLE_GENERATIVE_LANGUAGE_V1BETA_BASE_URL,
+                `models/${GOOGLE_GEMINI_MODEL_ID_LEGACY_PRO}:generateContent`,
+            ),
+        );
+        this.baseURLs.set(
+            'gpt-4',
+            joinApiBaseAndPath(OPENAI_OFFICIAL_API_BASE_URL, OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH),
+        );
+        this.baseURLs.set(
+            'claude-3',
+            joinApiBaseAndPath(ANTHROPIC_API_BASE_URL, ANTHROPIC_API_V1_MESSAGES_PATH),
+        );
+        this.baseURLs.set('custom', joinApiHealthCheckUrl(resolveApiBaseUrl(), API_GENERATE_PATH));
     }
 
     // API 키 설정
@@ -274,7 +304,7 @@ export class AIService {
 
     // 고급 NLP 분석
     async analyzeWithNLP(message: string, model: AIModel = 'gemini-pro'): Promise<NLPAnalysis> {
-        const startTime = Date.now();
+        const _startTime = Date.now();
 
         try {
             // 키워드 추출
@@ -308,14 +338,17 @@ export class AIService {
                 relatedTopics
             };
         } catch (error) {
-            console.error('NLP 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('NLP 분석 실패', err, {
+                component: 'aiService',
+                action: 'performAdvancedNLPAnalysis',
+            });
             throw error;
         }
     }
 
     // 키워드 추출
     private extractKeywords(text: string): string[] {
-        const keywords = [];
         const words = text.toLowerCase().split(/\s+/);
         const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those']);
 
@@ -331,7 +364,6 @@ export class AIService {
         // 빈도순으로 정렬하여 상위 키워드 추출
         const sortedWords = Object.entries(wordFreq)
             .sort(([, a], [, b]) => b - a)
-            .slice(0, 10)
             .map(([word]) => word);
 
         return sortedWords;
@@ -446,14 +478,16 @@ ${text}
 
         try {
             const response = await this.generateResponse(prompt, model);
-            return response.content.split('\n').filter(line => line.trim().length > 0).slice(0, 5);
+            return response.content
+              .split('\n')
+              .filter((line) => coerceTrimmedString(line, '').length > 0);
         } catch (error) {
             return ['추가 분석이 필요합니다.'];
         }
     }
 
     // 관련 주제 생성
-    private generateRelatedTopics(topics: string[], keywords: string[]): string[] {
+    private generateRelatedTopics(topics: string[], _keywords: string[]): string[] {
         const relatedTopics = new Set<string>();
 
         topics.forEach(topic => {
@@ -474,7 +508,7 @@ ${text}
             }
         });
 
-        return Array.from(relatedTopics).slice(0, 5);
+        return Array.from(relatedTopics);
     }
 
     // 응답 생성 (고급)
@@ -533,7 +567,12 @@ ${text}
 
             return response;
         } catch (error) {
-            console.error(`AI 응답 생성 실패 (${model}):`, error);
+            const err = toError(error);
+            errorLogger.error('AI 응답 생성 실패', err, {
+                component: 'aiService',
+                action: 'generateResponse',
+                model,
+            });
             throw error;
         }
     }
@@ -545,7 +584,13 @@ ${text}
             throw new Error('Gemini API 키가 설정되지 않았습니다.');
         }
 
-        const response = await fetch(`${this.baseURLs.get('gemini-pro')}?key=${apiKey}`, {
+        const geminiEndpoint = this.baseURLs.get('gemini-pro');
+        if (!geminiEndpoint) {
+            throw new Error('Gemini API URL이 설정되지 않았습니다.');
+        }
+        const geminiUrl = new URL(geminiEndpoint);
+        geminiUrl.searchParams.set(API_QUERY_PARAM_KEY, apiKey);
+        const response = await fetch(geminiUrl.toString(), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -596,7 +641,7 @@ ${text}
             body: JSON.stringify({
                 model: 'gpt-4',
                 messages: [
-                    { role: 'system', content: '당신은 CORBU AI의 전문 AI 어시스턴트입니다. 상세하고 유용한 응답을 제공하세요.' },
+                    { role: 'system', content: '당신은 CORBU.AI의 전문 AI 어시스턴트입니다. 상세하고 유용한 응답을 제공하세요.' },
                     { role: 'user', content: enhancedPrompt }
                 ],
                 max_tokens: 2000,
@@ -764,7 +809,12 @@ ${text}
                     throw new Error(`스트리밍을 지원하지 않는 모델: ${model}`);
             }
         } catch (error) {
-            console.error(`스트리밍 응답 생성 실패 (${model}):`, error);
+            const err = toError(error);
+            errorLogger.error('스트리밍 응답 생성 실패', err, {
+                component: 'aiService',
+                action: 'generateStreamingResponse',
+                model,
+            });
             throw error;
         }
     }

@@ -2,7 +2,7 @@
 
 ## 📋 개요
 
-CORBU AI는 여러 LLM 제공자를 지원합니다:
+CORBU.AI는 여러 LLM 제공자를 지원합니다:
 
 - **OpenAI** (GPT-3.5, GPT-4 등)
 - **Anthropic** (Claude 3.5 Sonnet)
@@ -108,7 +108,7 @@ LLM API 키를 설정하지 않으면 기본 모드로 작동합니다:
 ```json
 {
   "system_info": {
-    "name": "CORBU AI",
+    "name": "CORBU.AI",
     "version": "1.0.0"
   },
   "capabilities": [
@@ -129,7 +129,7 @@ LLM API 키를 설정하지 않으면 기본 모드로 작동합니다:
 ### API 테스트
 
 ```bash
-curl -X POST http://localhost:5001/api/chat \
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "안녕하세요",

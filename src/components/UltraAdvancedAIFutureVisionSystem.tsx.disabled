@@ -608,7 +608,7 @@ const UltraAdvancedAIFutureVisionSystem: React.FC = () => {
         {
             id: '1',
             type: 'ai',
-            content: `🔮 **CORBU AI 미래 비전 시스템에 오신 것을 환영합니다!** 🌟
+            content: `🔮 **CORBU.AI 미래 비전 시스템에 오신 것을 환영합니다!** 🌟
 
 이 시스템은 AI 기술의 미래 발전 방향과 인류 사회에 미칠 영향을 종합적으로 분석하고 예측합니다.
 
@@ -725,7 +725,7 @@ const UltraAdvancedAIFutureVisionSystem: React.FC = () => {
                                 <Rocket />
                             </Avatar>
                             <Box>
-                                <Typography variant="h6">CORBU AI 미래 비전 시스템</Typography>
+                                <Typography variant="h6">CORBU.AI 미래 비전 시스템</Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     AI 기술의 미래 발전 방향과 인류 사회에 미칠 영향 분석
                                 </Typography>
@@ -754,7 +754,7 @@ const UltraAdvancedAIFutureVisionSystem: React.FC = () => {
 
             {/* 메인 컨텐츠 */}
             <Box sx={{ display: 'flex', flex: 1, gap: 2 }}>
-                {/* 채팅 영역 */}
+                {/* 대화 영역 */}
                 <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
                         {/* 메시지 영역 */}

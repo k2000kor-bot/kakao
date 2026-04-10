@@ -1,4 +1,12 @@
-import { sendChatMessage, ChatRequest } from './unifiedAPI';
+import {
+  coerceTrimmedString,
+  extractPipelineMessageExtrasFromChatResponse,
+  hasPipelineExtras,
+  mergePipelineMessageExtras,
+  type PipelineMessageExtras,
+} from '../utils/chatInputUtils';
+import type { ChatTurn } from './modernChatContextBuilder';
+import { sendChatMessage, ChatRequest, type ChatResponse } from './unifiedAPI';
 import enhancedBackendAPI, { BackendAPIRequest } from './enhancedBackendAPI';
 import { Message } from '../types/chat';
 import advancedQualityEvaluator, { ResponseAnalysis } from './advancedQualityEvaluator';
@@ -30,6 +38,8 @@ export interface EnhancedResponseResult {
         improvements: string[];
         limitations: string[];
     };
+    /** 선택된 모델 응답에 실린 파이프라인 메타(백엔드·통합 대화 API) */
+    pipelineExtras?: PipelineMessageExtras;
 }
 
 export interface ResponseQualityMetrics {
@@ -44,6 +54,36 @@ export interface ResponseQualityMetrics {
 export class EnhancedResponseProcessor {
     private qualityThreshold = 0.8;
     private maxRetries = 3;
+
+    private pipelineExtrasFromUnifiedChatResponse(response: ChatResponse | undefined): PipelineMessageExtras | undefined {
+        if (!response?.success || !response.message) return undefined;
+        const raw = extractPipelineMessageExtrasFromChatResponse(
+            response.rawResponse !== undefined ? response.rawResponse : response
+        );
+        return hasPipelineExtras(raw) ? raw : undefined;
+    }
+
+    /** mergeApiChatContextPayload·백엔드 `conversation_history`용 (최근 20턴) */
+    private messagesToChatTurns(messages: Message[]): ChatTurn[] {
+        return messages
+            .slice(-20)
+            .map((m) => {
+                const isUser =
+                    m.role === 'user' ||
+                    m.sender === 'user' ||
+                    m.isUser === true;
+                const turn: ChatTurn = {
+                    role: isUser ? ('user' as const) : ('assistant' as const),
+                    content: coerceTrimmedString(m.content, ''),
+                };
+                const pe = m.pipelineExtras;
+                if (pe != null && typeof pe === 'object') {
+                    turn.pipelineExtras = pe;
+                }
+                return turn;
+            })
+            .filter((t) => t.content.length > 0);
+    }
 
     /**
      * 고급 응답 처리 메인 함수
@@ -97,7 +137,8 @@ export class EnhancedResponseProcessor {
                     sourcesUsed: finalResponse.sourcesUsed || 0,
                     improvements: finalResponse.improvements || [],
                     limitations: finalResponse.limitations || []
-                }
+                },
+                ...(finalResponse.pipelineExtras ? { pipelineExtras: finalResponse.pipelineExtras } : {}),
             };
 
         } catch (error) {
@@ -143,6 +184,7 @@ export class EnhancedResponseProcessor {
         type: string;
         model: string;
         qualityScore?: number;
+        pipelineExtras?: PipelineMessageExtras;
     }>> {
         const responses: Array<{
             content: string;
@@ -150,6 +192,7 @@ export class EnhancedResponseProcessor {
             type: string;
             model: string;
             qualityScore?: number;
+            pipelineExtras?: PipelineMessageExtras;
         }> = [];
 
         // 1. 백엔드 API 응답 (우선순위 높음)
@@ -171,7 +214,8 @@ export class EnhancedResponseProcessor {
                 confidence: backendResponse.confidence,
                 type: 'backend-api',
                 model: backendResponse.metadata.model,
-                qualityScore: backendResponse.metadata.qualityScore
+                qualityScore: backendResponse.metadata.qualityScore,
+                ...(backendResponse.pipelineExtras ? { pipelineExtras: backendResponse.pipelineExtras } : {}),
             });
         } catch (error) {
             console.error('백엔드 API 응답 생성 실패:', error);
@@ -212,12 +256,15 @@ export class EnhancedResponseProcessor {
         confidence: number;
         type: string;
         model: string;
+        pipelineExtras?: PipelineMessageExtras;
     }> {
         const prompt = this.buildEnhancedPrompt(userInput, context, 'basic');
 
+        const history = this.messagesToChatTurns(context.conversationHistory);
         const request: ChatRequest = {
             message: prompt,
             context: context.projectContext || {},
+            ...(history.length ? { conversation_history: history } : {}),
             options: {
                 intent: 'conversation',
                 style: context.userPreferences?.responseStyle || 'conversational',
@@ -227,12 +274,14 @@ export class EnhancedResponseProcessor {
         };
 
         const response = await sendChatMessage(request);
+        const pipelineExtras = this.pipelineExtrasFromUnifiedChatResponse(response);
 
         return {
-            content: response.success && response.message ? response.message.content : '기본 응답을 생성할 수 없습니다.',
+            content: response?.success && response.message ? response.message.content : '기본 응답을 생성할 수 없습니다.',
             confidence: 0.7,
             type: 'basic',
-            model: 'basic-ai'
+            model: 'basic-ai',
+            ...(pipelineExtras ? { pipelineExtras } : {}),
         };
     }
 
@@ -244,12 +293,15 @@ export class EnhancedResponseProcessor {
         confidence: number;
         type: string;
         model: string;
+        pipelineExtras?: PipelineMessageExtras;
     }> {
         const prompt = this.buildEnhancedPrompt(userInput, context, 'advanced');
 
+        const history = this.messagesToChatTurns(context.conversationHistory);
         const request: ChatRequest = {
             message: prompt,
             context: context.projectContext || {},
+            ...(history.length ? { conversation_history: history } : {}),
             options: {
                 intent: 'analysis',
                 style: 'technical',
@@ -259,12 +311,14 @@ export class EnhancedResponseProcessor {
         };
 
         const response = await sendChatMessage(request);
+        const pipelineExtras = this.pipelineExtrasFromUnifiedChatResponse(response);
 
         return {
-            content: response.success && response.message ? response.message.content : '고급 분석을 수행할 수 없습니다.',
+            content: response?.success && response.message ? response.message.content : '고급 분석을 수행할 수 없습니다.',
             confidence: 0.85,
             type: 'advanced',
-            model: 'advanced-analysis'
+            model: 'advanced-analysis',
+            ...(pipelineExtras ? { pipelineExtras } : {}),
         };
     }
 
@@ -276,9 +330,11 @@ export class EnhancedResponseProcessor {
         confidence: number;
         type: string;
         model: string;
+        pipelineExtras?: PipelineMessageExtras;
     }> {
         const prompt = this.buildEnhancedPrompt(userInput, context, 'contextual');
 
+        const history = this.messagesToChatTurns(context.conversationHistory);
         const request: ChatRequest = {
             message: prompt,
             context: {
@@ -286,6 +342,7 @@ export class EnhancedResponseProcessor {
                 conversationHistory: context.conversationHistory,
                 userPreferences: context.userPreferences
             },
+            ...(history.length ? { conversation_history: history } : {}),
             options: {
                 intent: 'contextual',
                 style: context.userPreferences?.responseStyle || 'conversational',
@@ -295,12 +352,14 @@ export class EnhancedResponseProcessor {
         };
 
         const response = await sendChatMessage(request);
+        const pipelineExtras = this.pipelineExtrasFromUnifiedChatResponse(response);
 
         return {
-            content: response.success && response.message ? response.message.content : '컨텍스트 기반 응답을 생성할 수 없습니다.',
+            content: response?.success && response.message ? response.message.content : '컨텍스트 기반 응답을 생성할 수 없습니다.',
             confidence: 0.8,
             type: 'contextual',
-            model: 'contextual-ai'
+            model: 'contextual-ai',
+            ...(pipelineExtras ? { pipelineExtras } : {}),
         };
     }
 
@@ -364,6 +423,7 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
             type: string;
             model: string;
             qualityScore?: number;
+            pipelineExtras?: PipelineMessageExtras;
         }>,
         context: EnhancedResponseContext
     ): Promise<{
@@ -375,6 +435,7 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
         sourcesUsed?: number;
         improvements?: string[];
         limitations?: string[];
+        pipelineExtras?: PipelineMessageExtras;
     }> {
         if (responses.length === 0) {
             throw new Error('생성된 응답이 없습니다.');
@@ -411,7 +472,8 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
             qualityScore: bestResponse.qualityScore,
             sourcesUsed: 1,
             improvements: ['다중 모델 병렬 처리', '품질 평가 시스템', '최적 응답 선택'],
-            limitations: ['제한된 정보 소스', '시간적 제약']
+            limitations: ['제한된 정보 소스', '시간적 제약'],
+            ...(bestResponse.pipelineExtras ? { pipelineExtras: bestResponse.pipelineExtras } : {}),
         };
     }
 
@@ -503,7 +565,7 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
      * 명확성 계산
      */
     private calculateClarity(content: string): number {
-        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = content.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const avgSentenceLength = sentences.reduce((sum, sentence) => sum + sentence.length, 0) / Math.max(1, sentences.length);
 
         // 적절한 문장 길이 (너무 길거나 짧지 않음)
@@ -551,6 +613,7 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
             type: string;
             model: string;
             qualityScore?: number;
+            pipelineExtras?: PipelineMessageExtras;
         },
         qualityAnalysis: ResponseAnalysis,
         context: EnhancedResponseContext
@@ -561,6 +624,7 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
         sourcesUsed?: number;
         improvements?: string[];
         limitations?: string[];
+        pipelineExtras?: PipelineMessageExtras;
     }> {
         console.log('🔧 품질 분석 기반 응답 정제 시작...');
 
@@ -573,7 +637,7 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
         if (highPriorityImprovements.length > 0) {
             console.log(`🔴 고우선순위 개선사항 ${highPriorityImprovements.length}개 적용 중...`);
 
-            for (const improvement of highPriorityImprovements.slice(0, 2)) { // 최대 2개만 적용
+            for (const improvement of highPriorityImprovements) {
                 refinedContent = await this.applyImprovement(refinedContent, improvement, context);
                 qualityScore = Math.min(1.0, qualityScore + 0.1); // 각 개선으로 10% 향상
             }
@@ -585,7 +649,7 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
         if (mediumPriorityImprovements.length > 0) {
             console.log(`🟡 중우선순위 개선사항 ${mediumPriorityImprovements.length}개 적용 중...`);
 
-            for (const improvement of mediumPriorityImprovements.slice(0, 1)) { // 최대 1개만 적용
+            for (const improvement of mediumPriorityImprovements) {
                 refinedContent = await this.applyImprovement(refinedContent, improvement, context);
                 qualityScore = Math.min(1.0, qualityScore + 0.05); // 각 개선으로 5% 향상
             }
@@ -603,7 +667,8 @@ ${context.conversationHistory.length > 0 ? `최근 ${context.conversationHistory
             qualityScore,
             sourcesUsed: 0,
             improvements: qualityAnalysis.improvements.map(imp => `${imp.dimension}: ${imp.suggestions[0]}`),
-            limitations: qualityAnalysis.weaknesses
+            limitations: qualityAnalysis.weaknesses,
+            ...(response.pipelineExtras ? { pipelineExtras: response.pipelineExtras } : {}),
         };
     }
 
@@ -640,9 +705,11 @@ ${content}
 개선된 응답을 제공해주세요.`;
 
         try {
+            const history = this.messagesToChatTurns(context.conversationHistory);
             const request: ChatRequest = {
                 message: improvementPrompt,
                 context: context.projectContext || {},
+                ...(history.length ? { conversation_history: history } : {}),
                 options: {
                     intent: 'improvement',
                     style: context.userPreferences?.responseStyle || 'conversational',
@@ -652,7 +719,7 @@ ${content}
             };
 
             const response = await sendChatMessage(request);
-            return response.success && response.message ? response.message.content : content;
+            return response?.success && response.message ? response.message.content : content;
         } catch (error) {
             console.error('개선사항 적용 실패:', error);
             return content;
@@ -686,7 +753,7 @@ ${content}
 ${qualityAnalysis.strengths.map(strength => `• ${strength}`).join('\n')}
 
 **⚠️ 개선사항:**
-${qualityAnalysis.recommendations.slice(0, 3).map(rec => `• ${rec}`).join('\n')}
+${qualityAnalysis.recommendations.map(rec => `• ${rec}`).join('\n')}
 `;
     }
 
@@ -708,9 +775,11 @@ ${content}
 개선된 응답을 제공해주세요.`;
 
         try {
+            const history = this.messagesToChatTurns(context.conversationHistory);
             const request: ChatRequest = {
                 message: improvementPrompt,
                 context: context.projectContext || {},
+                ...(history.length ? { conversation_history: history } : {}),
                 options: {
                     intent: 'improvement',
                     style: context.userPreferences?.responseStyle || 'conversational',
@@ -721,7 +790,7 @@ ${content}
 
             const response = await sendChatMessage(request);
 
-            return response.success && response.message ? response.message.content : content;
+            return response?.success && response.message ? response.message.content : content;
         } catch (error) {
             console.error('응답 개선 실패:', error);
             return content; // 개선 실패시 원본 반환
@@ -739,6 +808,7 @@ ${content}
             sourcesUsed?: number;
             improvements?: string[];
             limitations?: string[];
+            pipelineExtras?: PipelineMessageExtras;
         },
         context: EnhancedResponseContext
     ): Promise<{
@@ -748,6 +818,7 @@ ${content}
         sourcesUsed?: number;
         improvements?: string[];
         limitations?: string[];
+        pipelineExtras?: PipelineMessageExtras;
     }> {
         // 품질 임계값 확인
         if (response.qualityScore < this.qualityThreshold) {
@@ -761,13 +832,19 @@ ${content}
 
                     if (retryQuality.overall > response.qualityScore) {
                         console.log(`🔄 재시도 ${i + 1} 성공: 품질 향상 ${response.qualityScore} → ${retryQuality.overall}`);
+                        const mergedExtras = mergePipelineMessageExtras(
+                            retryResponse.pipelineExtras ?? {},
+                            response.pipelineExtras ?? {}
+                        );
+                        const pipelineExtras = hasPipelineExtras(mergedExtras) ? mergedExtras : undefined;
                         return {
                             content: retryResponse.content,
                             confidence: retryResponse.confidence,
                             qualityScore: retryQuality.overall,
                             sourcesUsed: 1,
                             improvements: ['재시도 로직을 통한 품질 향상'],
-                            limitations: ['제한된 재시도 횟수']
+                            limitations: ['제한된 재시도 횟수'],
+                            ...(pipelineExtras ? { pipelineExtras } : {}),
                         };
                     }
                 } catch (error) {

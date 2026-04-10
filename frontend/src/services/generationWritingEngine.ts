@@ -1,7 +1,9 @@
 /**
- * CORBU AI 연령대별 글쓰기 엔진
+ * CORBU.AI 연령대별 글쓰기 엔진
  * 50대, 60대, 70대 등 세대별 특징적인 어투와 표현 방식을 반영한 글쓰기 서비스
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export type AgeGroup = '20s' | '30s' | '40s' | '50s' | '60s' | '70s' | '80s_plus';
 export type GenerationStyle = 'formal_traditional' | 'respectful_conservative' | 'authoritative_experienced' | 'wise_elder' | 'strict_mentor';
@@ -41,12 +43,12 @@ export interface GenerationWritingResponse {
     formalityLevel: string;
 }
 
-class GenerationWritingEngine {
-    private generationVocabulary: Map<AgeGroup, any>;
+export class GenerationWritingEngine {
+    private generationVocabulary: Map<AgeGroup, Record<string, unknown>>;
     private generationPatterns: Map<AgeGroup, string[]>;
-    private communicationStyles: Map<CommunicationPattern, any>;
+    private communicationStyles: Map<CommunicationPattern, Record<string, unknown>>;
     private traditionalExpressions: Map<AgeGroup, string[]>;
-    private generationalReferences: Map<AgeGroup, any>;
+    private generationalReferences: Map<AgeGroup, Record<string, unknown>>;
 
     constructor() {
         this.generationVocabulary = new Map();
@@ -278,7 +280,14 @@ class GenerationWritingEngine {
             };
 
         } catch (error) {
-            console.error('연령대별 글쓰기 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('연령대별 글쓰기 생성 실패', err, {
+                component: 'generationWritingEngine',
+                action: 'generateGenerationWriting',
+                ageGroup: request.profile.ageGroup,
+                purposeType: request.purposeType,
+                topicPreview: request.topic.substring(0, 100),
+            });
             throw new Error('연령대별 글쓰기 생성에 실패했습니다.');
         }
     }
@@ -292,8 +301,10 @@ class GenerationWritingEngine {
         const refs = this.generationalReferences.get(profile.ageGroup);
 
         if (vocab && refs) {
-            characteristics.push(`${profile.ageGroup} 세대 특유의 ${vocab.keyWords.slice(0, 3).join(', ')} 중시`);
-            characteristics.push(`${refs.socialValues.slice(0, 2).join('과 ')} 가치관 반영`);
+            const keyWords = (vocab.keyWords as string[] | undefined) || [];
+            const socialValues = (refs.socialValues as string[] | undefined) || [];
+            characteristics.push(`${profile.ageGroup} 세대 특유의 ${keyWords.slice(0, 3).join(', ')} 중시`);
+            characteristics.push(`${socialValues.slice(0, 2).join('과 ')} 가치관 반영`);
 
             if (profile.useTraditionalExpressions) {
                 characteristics.push('전통적 표현 방식 활용');
@@ -319,12 +330,15 @@ class GenerationWritingEngine {
         const vocab = this.generationVocabulary.get(profile.ageGroup);
 
         if (vocab) {
+            const honorifics = (vocab.honorifics as string[] | undefined) || [];
+            const endings = (vocab.endings as string[] | undefined) || [];
+            const modifiers = (vocab.modifiers as string[] | undefined) || [];
             if (profile.useHonorific) {
-                features.push(`${profile.ageGroup} 세대 특유의 높임말 사용: ${vocab.honorifics.slice(0, 2).join(', ')}`);
+                features.push(`${profile.ageGroup} 세대 특유의 높임말 사용: ${honorifics.slice(0, 2).join(', ')}`);
             }
 
-            features.push(`세대별 어미 활용: ${vocab.endings.slice(0, 2).join(', ')}`);
-            features.push(`특징적 수식어: ${vocab.modifiers.slice(0, 3).join(', ')}`);
+            features.push(`세대별 어미 활용: ${endings.slice(0, 2).join(', ')}`);
+            features.push(`특징적 수식어: ${modifiers.slice(0, 3).join(', ')}`);
 
             switch (profile.languageFormality) {
                 case 'very_formal':
@@ -361,7 +375,7 @@ class GenerationWritingEngine {
     /**
      * 본문 생성
      */
-    private generateMainContent(request: GenerationWritingRequest, characteristics: string[]): string {
+    private generateMainContent(request: GenerationWritingRequest, _characteristics: string[]): string {
         const vocab = this.generationVocabulary.get(request.profile.ageGroup);
         const patterns = this.generationPatterns.get(request.profile.ageGroup);
         const traditionalExprs = this.traditionalExpressions.get(request.profile.ageGroup);
@@ -405,13 +419,15 @@ class GenerationWritingEngine {
         if (request.includePersonalExperience) {
             const refs = this.generationalReferences.get(request.profile.ageGroup);
             if (refs) {
-                const experience = refs.workExperience[Math.floor(Math.random() * refs.workExperience.length)];
+                const workExp = (refs.workExperience as string[] | undefined) || [];
+                const experience = workExp[Math.floor(Math.random() * workExp.length)];
                 content += `\n\n${experience} 시절을 겪어본 입장에서 말씀드리면, 이러한 문제는 신중하게 접근해야 합니다.`;
             }
         }
 
         // 5. 결론 - 세대별 특징적 마무리
-        const ending = vocab.endings[Math.floor(Math.random() * vocab.endings.length)];
+        const endings = (vocab.endings as string[] | undefined) || ['드립니다'];
+        const ending = endings[Math.floor(Math.random() * endings.length)];
         content += `\n\n이상으로 ${request.topic}에 대한 소견을 말씀${ending}`;
 
         return content;
@@ -420,57 +436,75 @@ class GenerationWritingEngine {
     /**
      * 조언 내용 생성
      */
-    private generateAdviceContent(request: GenerationWritingRequest, vocab: any): string {
-        return `${vocab.keyWords[0]}을 바탕으로 조언드리자면, ${request.topic}에 대해서는 ${vocab.modifiers[0]} 접근이 필요합니다. ` +
-            `${vocab.phrases[0]} 이런 상황에서는 무엇보다 ${vocab.keyWords[1]}이 중요하다고 생각합니다.`;
+    private generateAdviceContent(request: GenerationWritingRequest, vocab: Record<string, unknown>): string {
+        const kw = (vocab.keyWords as string[]) ?? [];
+        const mod = (vocab.modifiers as string[]) ?? [];
+        const phr = (vocab.phrases as string[]) ?? [];
+        return `${kw[0] ?? ''}을 바탕으로 조언드리자면, ${request.topic}에 대해서는 ${mod[0] ?? ''} 접근이 필요합니다. ` +
+            `${phr[0] ?? ''} 이런 상황에서는 무엇보다 ${kw[1] ?? ''}이 중요하다고 생각합니다.`;
     }
 
     /**
      * 의견 내용 생성
      */
-    private generateOpinionContent(request: GenerationWritingRequest, vocab: any): string {
-        return `${request.topic}에 대한 제 견해는 이렇습니다. ${vocab.phrases[0]} ${vocab.modifiers[0]} 관점에서 보면, ` +
-            `이 문제는 ${vocab.keyWords[0]}과 ${vocab.keyWords[1]}을 종합적으로 고려해야 할 사안입니다.`;
+    private generateOpinionContent(request: GenerationWritingRequest, vocab: Record<string, unknown>): string {
+        const kw = (vocab.keyWords as string[]) ?? [];
+        const mod = (vocab.modifiers as string[]) ?? [];
+        const phr = (vocab.phrases as string[]) ?? [];
+        return `${request.topic}에 대한 제 견해는 이렇습니다. ${phr[0] ?? ''} ${mod[0] ?? ''} 관점에서 보면, ` +
+            `이 문제는 ${kw[0] ?? ''}과 ${kw[1] ?? ''}을 종합적으로 고려해야 할 사안입니다.`;
     }
 
     /**
      * 비판 내용 생성
      */
-    private generateCriticismContent(request: GenerationWritingRequest, vocab: any): string {
-        return `${request.topic}에 대해 ${vocab.modifiers[0]} 비판을 제기하고자 합니다. ` +
-            `${vocab.phrases[0]} 이런 접근은 ${vocab.keyWords[0]}을 간과하고 있으며, ` +
-            `보다 ${vocab.modifiers[1]} 방향으로 개선되어야 한다고 봅니다.`;
+    private generateCriticismContent(request: GenerationWritingRequest, vocab: Record<string, unknown>): string {
+        const kw = (vocab.keyWords as string[]) ?? [];
+        const mod = (vocab.modifiers as string[]) ?? [];
+        const phr = (vocab.phrases as string[]) ?? [];
+        return `${request.topic}에 대해 ${mod[0] ?? ''} 비판을 제기하고자 합니다. ` +
+            `${phr[0] ?? ''} 이런 접근은 ${kw[0] ?? ''}을 간과하고 있으며, ` +
+            `보다 ${mod[1] ?? ''} 방향으로 개선되어야 한다고 봅니다.`;
     }
 
     /**
      * 지지 내용 생성
      */
-    private generateSupportContent(request: GenerationWritingRequest, vocab: any): string {
-        return `${request.topic}에 대해 ${vocab.modifiers[0]} 지지를 표명합니다. ` +
-            `${vocab.phrases[0]} 이러한 방향은 ${vocab.keyWords[0]}과 ${vocab.keyWords[1]}에 부합하며, ` +
-            `매우 ${vocab.modifiers[1]} 선택이라고 생각합니다.`;
+    private generateSupportContent(request: GenerationWritingRequest, vocab: Record<string, unknown>): string {
+        const kw = (vocab.keyWords as string[]) ?? [];
+        const mod = (vocab.modifiers as string[]) ?? [];
+        const phr = (vocab.phrases as string[]) ?? [];
+        return `${request.topic}에 대해 ${mod[0] ?? ''} 지지를 표명합니다. ` +
+            `${phr[0] ?? ''} 이러한 방향은 ${kw[0] ?? ''}과 ${kw[1] ?? ''}에 부합하며, ` +
+            `매우 ${mod[1] ?? ''} 선택이라고 생각합니다.`;
     }
 
     /**
      * 설명 내용 생성
      */
-    private generateExplanationContent(request: GenerationWritingRequest, vocab: any): string {
-        return `${request.topic}에 대해 ${vocab.modifiers[0]} 설명을 드리겠습니다. ` +
-            `${vocab.phrases[0]} 이 문제는 ${vocab.keyWords[0]}과 ${vocab.keyWords[1]}이라는 두 가지 측면에서 ` +
-            `이해할 수 있으며, ${vocab.modifiers[1]} 접근이 필요합니다.`;
+    private generateExplanationContent(request: GenerationWritingRequest, vocab: Record<string, unknown>): string {
+        const kw = (vocab.keyWords as string[]) ?? [];
+        const mod = (vocab.modifiers as string[]) ?? [];
+        const phr = (vocab.phrases as string[]) ?? [];
+        return `${request.topic}에 대해 ${mod[0] ?? ''} 설명을 드리겠습니다. ` +
+            `${phr[0] ?? ''} 이 문제는 ${kw[0] ?? ''}과 ${kw[1] ?? ''}이라는 두 가지 측면에서 ` +
+            `이해할 수 있으며, ${mod[1] ?? ''} 접근이 필요합니다.`;
     }
 
     /**
      * 세대별 참조 요소 추가
      */
-    private addGenerationalReferences(profile: GenerationWritingProfile, topic: string): string[] {
+    private addGenerationalReferences(profile: GenerationWritingProfile, _topic: string): string[] {
         const refs = this.generationalReferences.get(profile.ageGroup);
         const references: string[] = [];
 
         if (refs && profile.useGenerationalReferences) {
-            references.push(`${refs.historicalEvents[0]} 시대 경험`);
-            references.push(`${refs.culturalReferences[0]} 세대 특성`);
-            references.push(`${refs.workExperience[0]} 경험 활용`);
+            const histEvents = (refs.historicalEvents as string[] | undefined) || [];
+            const cultRefs = (refs.culturalReferences as string[] | undefined) || [];
+            const workExp = (refs.workExperience as string[] | undefined) || [];
+            if (histEvents[0]) references.push(`${histEvents[0]} 시대 경험`);
+            if (cultRefs[0]) references.push(`${cultRefs[0]} 세대 특성`);
+            if (workExp[0]) references.push(`${workExp[0]} 경험 활용`);
         }
 
         return references;
@@ -479,7 +513,7 @@ class GenerationWritingEngine {
     /**
      * 지혜/경험 요소 추가
      */
-    private addWisdomElements(profile: GenerationWritingProfile, purposeType: string): string[] {
+    private addWisdomElements(profile: GenerationWritingProfile, _purposeType: string): string[] {
         const wisdom: string[] = [];
         const vocab = this.generationVocabulary.get(profile.ageGroup);
 
@@ -554,7 +588,7 @@ class GenerationWritingEngine {
     /**
      * 연령대별 글쓰기 프로필 추천
      */
-    public recommendGenerationProfile(ageGroup: AgeGroup, context: string): GenerationWritingProfile {
+    public recommendGenerationProfile(ageGroup: AgeGroup, _context: string): GenerationWritingProfile {
         const baseProfile: GenerationWritingProfile = {
             ageGroup,
             generationStyle: 'formal_traditional',

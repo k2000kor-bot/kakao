@@ -1,5 +1,21 @@
-// 미디어 지식 시스템 API 서비스
-const MEDIA_KNOWLEDGE_API_BASE = 'http://localhost:8005';
+// 미디어 지식 시스템 API 서비스 (통합 API)
+import {
+    ANALYZE_FILE_PATH_PREFIX,
+    API_BASE_URL,
+    API_FORM_FIELD_FILE,
+    API_PROJECT_FILES_SEGMENT,
+    API_PROJECT_MEDIA_KNOWLEDGE_SEGMENT,
+    API_PROJECT_POPUPS_SEGMENT,
+    API_PROJECTS_LIST_PATH,
+    API_QUERY_PARAM_PROJECT_ID,
+    API_SMOKE_TEST_PATH,
+    API_STATUS_PATH,
+    FALLBACK_API_ORIGIN,
+    UPLOAD_MEDIA_PATH,
+    joinApiHealthCheckUrl,
+} from '../config/api';
+
+const MEDIA_KNOWLEDGE_API_BASE = API_BASE_URL || FALLBACK_API_ORIGIN;
 
 export interface ProjectCreate {
     name: string;
@@ -72,7 +88,7 @@ export interface Popup {
 // API 호출 헬퍼 함수
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     try {
-        const response = await fetch(`${MEDIA_KNOWLEDGE_API_BASE}${endpoint}`, {
+        const response = await fetch(joinApiHealthCheckUrl(MEDIA_KNOWLEDGE_API_BASE, endpoint), {
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers,
@@ -94,7 +110,7 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 // 파일 업로드 헬퍼 함수
 const uploadFile = async (endpoint: string, formData: FormData) => {
     try {
-        const response = await fetch(`${MEDIA_KNOWLEDGE_API_BASE}${endpoint}`, {
+        const response = await fetch(joinApiHealthCheckUrl(MEDIA_KNOWLEDGE_API_BASE, endpoint), {
             method: 'POST',
             body: formData,
         });
@@ -114,12 +130,12 @@ const uploadFile = async (endpoint: string, formData: FormData) => {
 export class MediaKnowledgeAPI {
     // 시스템 상태 확인
     static async getStatus() {
-        return apiCall('/api/status');
+        return apiCall(API_STATUS_PATH);
     }
 
     // 프로젝트 생성
     static async createProject(project: ProjectCreate): Promise<{ success: boolean; project_id: string; message: string }> {
-        return apiCall('/api/projects', {
+        return apiCall(API_PROJECTS_LIST_PATH, {
             method: 'POST',
             body: JSON.stringify(project),
         });
@@ -128,40 +144,49 @@ export class MediaKnowledgeAPI {
     // 미디어 파일 업로드
     static async uploadMediaFile(file: File, projectId: string): Promise<{ success: boolean; upload_result: MediaUploadResponse }> {
         const formData = new FormData();
-        formData.append('file', file);
-        formData.append('project_id', projectId);
+        formData.append(API_FORM_FIELD_FILE, file);
+        formData.append(API_QUERY_PARAM_PROJECT_ID, projectId);
 
-        return uploadFile('/api/upload-media', formData);
+        return uploadFile(UPLOAD_MEDIA_PATH, formData);
     }
 
     // 파일 분석
     static async analyzeFile(fileId: string): Promise<{ success: boolean; analysis_result: FileAnalysis }> {
-        return apiCall(`/api/analyze-file/${fileId}`, {
+        return apiCall(`${ANALYZE_FILE_PATH_PREFIX}/${encodeURIComponent(fileId)}`, {
             method: 'POST',
         });
     }
 
     // 프로젝트 파일 목록 조회
     static async getProjectFiles(projectId: string): Promise<{ success: boolean; files: MediaFile[] }> {
-        return apiCall(`/api/projects/${projectId}/files`);
+        return apiCall(
+            `${API_PROJECTS_LIST_PATH}/${encodeURIComponent(projectId)}${API_PROJECT_FILES_SEGMENT}`,
+        );
     }
 
     // 프로젝트 지식 베이스 조회
     static async getProjectKnowledge(projectId: string): Promise<{ success: boolean; knowledge: KnowledgeEntry[] }> {
-        return apiCall(`/api/projects/${projectId}/knowledge`);
+        return apiCall(
+            `${API_PROJECTS_LIST_PATH}/${encodeURIComponent(projectId)}${API_PROJECT_MEDIA_KNOWLEDGE_SEGMENT}`,
+        );
     }
 
     // 팝업 생성
     static async createPopup(projectId: string, popup: PopupCreate): Promise<{ success: boolean; popup_id: string; message: string }> {
-        return apiCall(`/api/projects/${projectId}/popups`, {
-            method: 'POST',
-            body: JSON.stringify(popup),
-        });
+        return apiCall(
+            `${API_PROJECTS_LIST_PATH}/${encodeURIComponent(projectId)}${API_PROJECT_POPUPS_SEGMENT}`,
+            {
+                method: 'POST',
+                body: JSON.stringify(popup),
+            },
+        );
     }
 
     // 프로젝트 팝업 목록 조회
     static async getProjectPopups(projectId: string): Promise<{ success: boolean; popups: Popup[] }> {
-        return apiCall(`/api/projects/${projectId}/popups`);
+        return apiCall(
+            `${API_PROJECTS_LIST_PATH}/${encodeURIComponent(projectId)}${API_PROJECT_POPUPS_SEGMENT}`,
+        );
     }
 
     // 서버 연결 테스트
@@ -269,7 +294,7 @@ export const mediaKnowledgeAPI = {
     // 테스트 엔드포인트
     testEndpoint: async () => {
         try {
-            const response = await apiCall('/api/test');
+            const response = await apiCall(API_SMOKE_TEST_PATH);
             return response;
         } catch (error) {
             console.error('테스트 엔드포인트 실패:', error);

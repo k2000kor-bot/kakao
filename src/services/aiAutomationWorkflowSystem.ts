@@ -3,6 +3,7 @@ import realTimeAIAlertSystem from './realTimeAIAlertSystem';
 import aiHealthMonitor from './aiHealthMonitor';
 import advancedAISecuritySystem from './advancedAISecuritySystem';
 import aiCacheManager from './aiCacheManager';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface WorkflowTask {
@@ -15,15 +16,15 @@ export interface WorkflowTask {
     started_at?: Date;
     completed_at?: Date;
     duration?: number; // ms
-    input_data: any;
-    output_data?: any;
+    input_data: unknown;
+    output_data?: unknown;
     error_message?: string;
     retry_count: number;
     max_retries: number;
     dependencies: string[]; // task IDs
     assigned_worker?: string;
     progress: number; // 0-100
-    metadata?: any;
+    metadata?: Record<string, unknown>;
 }
 
 export interface Workflow {
@@ -36,7 +37,7 @@ export interface Workflow {
     completed_at?: Date;
     tasks: WorkflowTask[];
     trigger_type: 'manual' | 'scheduled' | 'event' | 'condition';
-    trigger_config?: any;
+    trigger_config?: Record<string, unknown>;
     success_rate: number; // 0-100
     total_runs: number;
     successful_runs: number;
@@ -65,7 +66,7 @@ export interface WorkflowSchedule {
     id: string;
     workflow_id: string;
     schedule_type: 'interval' | 'cron' | 'daily' | 'weekly' | 'monthly';
-    schedule_config: any;
+    schedule_config: Record<string, unknown>;
     enabled: boolean;
     next_execution: Date;
     last_execution?: Date;
@@ -105,7 +106,10 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
         super();
         this.initializeWorkers();
         this.initializeDefaultWorkflows();
-        console.log('🤖 AI 자동화 워크플로우 시스템이 초기화되었습니다.');
+        errorLogger.info('AI 자동화 워크플로우 시스템이 초기화되었습니다', {
+            component: 'aiAutomationWorkflowSystem',
+            action: 'constructor',
+        });
     }
 
     // 시스템 시작
@@ -115,7 +119,10 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
         this.isRunning = true;
         this.startProcessing();
         this.startScheduler();
-        console.log('🚀 AI 자동화 워크플로우 시스템이 시작되었습니다.');
+        errorLogger.info('AI 자동화 워크플로우 시스템이 시작되었습니다', {
+            component: 'aiAutomationWorkflowSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
@@ -129,7 +136,10 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
             this.scheduleInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ AI 자동화 워크플로우 시스템이 중지되었습니다.');
+        errorLogger.info('AI 자동화 워크플로우 시스템이 중지되었습니다', {
+            component: 'aiAutomationWorkflowSystem',
+            action: 'stop',
+        });
     }
 
     // 워크플로우 생성
@@ -138,7 +148,7 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
         description: string;
         tasks: Omit<WorkflowTask, 'id' | 'created_at' | 'status' | 'retry_count' | 'progress'>[];
         trigger_type: Workflow['trigger_type'];
-        trigger_config?: any;
+        trigger_config?: Record<string, unknown>;
         enabled?: boolean;
     }): string {
         const workflowId = `workflow-${Date.now()}-${++this.workflowCounter}`;
@@ -177,20 +187,30 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
         });
 
         this.emit('workflow_created', workflow);
-        console.log(`📋 워크플로우 생성: ${workflow.name}`);
+        errorLogger.info('워크플로우 생성', {
+            component: 'aiAutomationWorkflowSystem',
+            action: 'createWorkflow',
+            workflowId,
+            workflowName: workflow.name,
+        });
 
         return workflowId;
     }
 
     // 워크플로우 실행
-    public async executeWorkflow(workflowId: string, inputData?: any): Promise<boolean> {
+    public async executeWorkflow(workflowId: string, inputData?: unknown): Promise<boolean> {
         const workflow = this.workflows.get(workflowId);
         if (!workflow || !workflow.enabled) {
             return false;
         }
 
         try {
-            console.log(`▶️ 워크플로우 실행 시작: ${workflow.name}`);
+            errorLogger.info('워크플로우 실행 시작', {
+                component: 'aiAutomationWorkflowSystem',
+                action: 'executeWorkflow',
+                workflowId,
+                workflowName: workflow.name,
+            });
 
             workflow.status = 'active';
             workflow.started_at = new Date();
@@ -202,7 +222,9 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
             );
 
             for (const task of readyTasks) {
-                task.input_data = { ...task.input_data, ...inputData };
+                const current = (task.input_data ?? {}) as Record<string, unknown>;
+                const merged = (inputData ?? {}) as Record<string, unknown>;
+                task.input_data = { ...current, ...merged };
                 this.enqueueTask(task);
             }
 
@@ -210,7 +232,13 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
             return true;
 
         } catch (error) {
-            console.error(`워크플로우 실행 오류: ${workflow.name}`, error);
+            const err = toError(error);
+            errorLogger.error('워크플로우 실행 오류', err, {
+                component: 'aiAutomationWorkflowSystem',
+                action: 'executeWorkflow',
+                workflowId,
+                workflowName: workflow.name,
+            });
             workflow.status = 'failed';
             workflow.failed_runs++;
             return false;
@@ -227,13 +255,26 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
         });
 
         this.emit('task_enqueued', task);
-        console.log(`📥 태스크 큐 추가: ${task.name} (우선순위: ${task.priority})`);
+        errorLogger.info('태스크 큐 추가', {
+            component: 'aiAutomationWorkflowSystem',
+            action: 'enqueueTask',
+            taskId: task.id,
+            taskName: task.name,
+            priority: task.priority,
+        });
     }
 
     // 태스크 처리
     private async processTask(task: WorkflowTask, worker: WorkflowWorker): Promise<boolean> {
         try {
-            console.log(`⚙️ 태스크 처리 시작: ${task.name} (워커: ${worker.name})`);
+            errorLogger.info('태스크 처리 시작', {
+                component: 'aiAutomationWorkflowSystem',
+                action: 'processTask',
+                taskId: task.id,
+                taskName: task.name,
+                workerId: worker.id,
+                workerName: worker.name,
+            });
 
             task.status = 'running';
             task.started_at = new Date();
@@ -259,7 +300,13 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
                 worker.processed_tasks++;
                 worker.last_activity = new Date();
 
-                console.log(`✅ 태스크 완료: ${task.name} (${task.duration}ms)`);
+                errorLogger.info('태스크 완료', {
+                    component: 'aiAutomationWorkflowSystem',
+                    action: 'processTask',
+                    taskId: task.id,
+                    taskName: task.name,
+                    duration: task.duration,
+                });
                 this.emit('task_completed', { task, worker });
 
                 // 의존성 태스크 확인
@@ -271,7 +318,14 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
             }
 
         } catch (error) {
-            console.error(`❌ 태스크 처리 실패: ${task.name}`, error);
+            const err = toError(error);
+            errorLogger.error('태스크 처리 실패', err, {
+                component: 'aiAutomationWorkflowSystem',
+                action: 'processTask',
+                taskId: task.id,
+                taskName: task.name,
+                retryCount: task.retry_count,
+            });
 
             task.status = 'failed';
             task.error_message = error instanceof Error ? error.message : 'Unknown error';
@@ -279,13 +333,27 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
 
             // 재시도 로직
             if (task.retry_count < task.max_retries) {
-                console.log(`🔄 태스크 재시도: ${task.name} (${task.retry_count}/${task.max_retries})`);
+                errorLogger.info('태스크 재시도', {
+                    component: 'aiAutomationWorkflowSystem',
+                    action: 'processTask',
+                    taskId: task.id,
+                    taskName: task.name,
+                    retryCount: task.retry_count,
+                    maxRetries: task.max_retries,
+                });
                 setTimeout(() => {
                     task.status = 'pending';
                     this.enqueueTask(task);
                 }, 5000 * task.retry_count); // 지수적 백오프
             } else {
-                console.log(`💥 태스크 최종 실패: ${task.name}`);
+                errorLogger.error('태스크 최종 실패', {
+                    component: 'aiAutomationWorkflowSystem',
+                    action: 'processTask',
+                    taskId: task.id,
+                    taskName: task.name,
+                    retryCount: task.retry_count,
+                    maxRetries: task.max_retries,
+                });
                 this.emit('task_failed', { task, worker });
             }
 
@@ -299,7 +367,7 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
     }
 
     // 태스크 타입별 실행
-    private async executeTaskByType(task: WorkflowTask): Promise<{ success: boolean; output?: any; error?: string }> {
+    private async executeTaskByType(task: WorkflowTask): Promise<{ success: boolean; output?: unknown; error?: string }> {
         switch (task.type) {
             case 'ai_processing':
                 return await this.executeAIProcessingTask(task);
@@ -319,7 +387,7 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
     }
 
     // AI 처리 태스크 실행
-    private async executeAIProcessingTask(task: WorkflowTask): Promise<{ success: boolean; output?: any; error?: string }> {
+    private async executeAIProcessingTask(task: WorkflowTask): Promise<{ success: boolean; output?: unknown; error?: string }> {
         try {
             // AI 처리 로직 시뮬레이션
             await this.simulateProcessing(2000 + Math.random() * 3000);
@@ -339,7 +407,7 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
     }
 
     // 데이터 분석 태스크 실행
-    private async executeDataAnalysisTask(task: WorkflowTask): Promise<{ success: boolean; output?: any; error?: string }> {
+    private async executeDataAnalysisTask(_task: WorkflowTask): Promise<{ success: boolean; output?: unknown; error?: string }> {
         try {
             await this.simulateProcessing(1500 + Math.random() * 2000);
 
@@ -361,15 +429,16 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
     }
 
     // 알림 태스크 실행
-    private async executeNotificationTask(task: WorkflowTask): Promise<{ success: boolean; output?: any; error?: string }> {
+    private async executeNotificationTask(task: WorkflowTask): Promise<{ success: boolean; output?: unknown; error?: string }> {
         try {
-            const { title, message, severity, recipients } = task.input_data;
+            const input = task.input_data as Record<string, unknown>;
+            const { title, message, severity, recipients } = input;
 
             // 알림 시스템을 통한 알림 발송
             const alertId = realTimeAIAlertSystem.createSystemAlert(
-                title || '워크플로우 알림',
-                message || '자동화된 알림입니다.',
-                severity || 'medium',
+                (title as string) || '워크플로우 알림',
+                (message as string) || '자동화된 알림입니다.',
+                (severity as string) || 'medium',
                 { workflow_task_id: task.id }
             );
 
@@ -380,7 +449,7 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
                 output: {
                     alert_id: alertId,
                     sent_at: new Date(),
-                    recipients_count: recipients?.length || 1
+                    recipients_count: Array.isArray(recipients) ? recipients.length : 1
                 }
             };
         } catch (error) {
@@ -389,9 +458,10 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
     }
 
     // 시스템 유지보수 태스크 실행
-    private async executeSystemMaintenanceTask(task: WorkflowTask): Promise<{ success: boolean; output?: any; error?: string }> {
+    private async executeSystemMaintenanceTask(task: WorkflowTask): Promise<{ success: boolean; output?: unknown; error?: string }> {
         try {
-            const { maintenance_type } = task.input_data;
+            const input = task.input_data as Record<string, unknown>;
+            const { maintenance_type } = input;
 
             switch (maintenance_type) {
                 case 'cache_cleanup':
@@ -423,9 +493,10 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
     }
 
     // 보안 검사 태스크 실행
-    private async executeSecurityCheckTask(task: WorkflowTask): Promise<{ success: boolean; output?: any; error?: string }> {
+    private async executeSecurityCheckTask(task: WorkflowTask): Promise<{ success: boolean; output?: unknown; error?: string }> {
         try {
-            const { check_type, target } = task.input_data;
+            const input = task.input_data as Record<string, unknown>;
+            const { check_type, target } = input;
 
             await this.simulateProcessing(2000 + Math.random() * 3000);
 
@@ -451,9 +522,10 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
     }
 
     // 보고서 생성 태스크 실행
-    private async executeReportGenerationTask(task: WorkflowTask): Promise<{ success: boolean; output?: any; error?: string }> {
+    private async executeReportGenerationTask(task: WorkflowTask): Promise<{ success: boolean; output?: unknown; error?: string }> {
         try {
-            const { report_type, period, format } = task.input_data;
+            const input = task.input_data as Record<string, unknown>;
+            const { report_type, period, format } = input;
 
             await this.simulateProcessing(4000 + Math.random() * 3000);
 
@@ -508,8 +580,9 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
                     return depTask?.output_data;
                 }).filter(output => output !== undefined);
 
+                const currentInput = (task.input_data ?? {}) as Record<string, unknown>;
                 task.input_data = {
-                    ...task.input_data,
+                    ...currentInput,
                     dependency_outputs: dependencyOutputs
                 };
 
@@ -551,7 +624,13 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
             }
 
             this.emit('workflow_completed', workflow);
-            console.log(`🏁 워크플로우 완료: ${workflow.name} (성공률: ${workflow.success_rate.toFixed(1)}%)`);
+            errorLogger.info('워크플로우 완료', {
+                component: 'aiAutomationWorkflowSystem',
+                action: 'checkWorkflowCompletion',
+                workflowId: workflow.id,
+                workflowName: workflow.name,
+                successRate: workflow.success_rate.toFixed(1),
+            });
         }
     }
 
@@ -672,7 +751,11 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
             this.workers.set(workerId, { ...workerData, id: workerId });
         });
 
-        console.log(`👷 워커 초기화 완료: ${workers.length}개`);
+        errorLogger.info('워커 초기화 완료', {
+            component: 'aiAutomationWorkflowSystem',
+            action: 'initializeWorkers',
+            workersCount: workers.length,
+        });
     }
 
     // 기본 워크플로우 초기화
@@ -795,8 +878,9 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
                 this.executeWorkflow(workflow.id);
 
                 // 다음 실행 시간 계산
-                if (workflow.trigger_config?.interval) {
-                    workflow.next_run = new Date(now.getTime() + workflow.trigger_config.interval);
+                const interval = (workflow.trigger_config as { interval?: number } | undefined)?.interval;
+                if (typeof interval === 'number') {
+                    workflow.next_run = new Date(now.getTime() + interval);
                 }
             }
         }
@@ -810,7 +894,10 @@ export class AIAutomationWorkflowSystem extends EventEmitter {
         this.workers.clear();
         this.schedules.clear();
         this.taskQueue = [];
-        console.log('🔌 AI 자동화 워크플로우 시스템이 종료되었습니다.');
+        errorLogger.info('AI 자동화 워크플로우 시스템이 종료되었습니다', {
+            component: 'aiAutomationWorkflowSystem',
+            action: 'shutdown',
+        });
     }
 }
 

@@ -2,11 +2,16 @@
  * 고급 사용자 행동 분석 시스템
  * 사용자의 상호작용 패턴을 분석하고 개인화된 경험 제공
  */
-
-import { Project, Chat, Message } from '../types/project';
+import { Project, Message } from '../types/project';
 import { collaborationService } from './collaborationService';
 import { projectKnowledgeService } from './projectKnowledgeService';
 import { workflowAutomationService } from './workflowAutomationService';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  ANALYTICS_USER_BEHAVIORS_STORAGE_KEY,
+  ANALYTICS_USER_ID_STORAGE_KEY,
+  ANALYTICS_USER_PROFILES_STORAGE_KEY,
+} from './analyticsPersistenceStorageKeys';
 
 export interface UserBehavior {
   userId: string;
@@ -14,7 +19,7 @@ export interface UserBehavior {
   timestamp: number;
   action: string;
   component: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   duration?: number;
   result?: 'success' | 'failure' | 'partial';
 }
@@ -25,7 +30,7 @@ export interface UserPattern {
   frequency: number;
   confidence: number;
   lastSeen: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface AnalyticsInsight {
@@ -34,7 +39,7 @@ export interface AnalyticsInsight {
   description: string;
   confidence: number;
   recommendations: string[];
-  data: any;
+  data: Record<string, unknown>;
 }
 
 export interface UserProfile {
@@ -93,7 +98,7 @@ export interface PredictiveInsight {
   title: string;
   description: string;
   confidence: number;
-  predictedValue: any;
+  predictedValue: unknown;
   factors: string[];
   recommendations: string[];
   timestamp: Date;
@@ -233,7 +238,7 @@ class AdvancedAnalyticsService {
   recordBehavior(
     action: string,
     component: string,
-    metadata: Record<string, any> = {},
+    metadata: Record<string, unknown> = {},
     duration?: number,
     result?: 'success' | 'failure' | 'partial'
   ): void {
@@ -679,7 +684,7 @@ class AdvancedAnalyticsService {
    * 유틸리티 메서드들
    */
   private getCurrentUserId(): string {
-    return localStorage.getItem('userId') || 'anonymous';
+    return localStorage.getItem(ANALYTICS_USER_ID_STORAGE_KEY) || 'anonymous';
   }
 
   private generateSessionId(): string {
@@ -690,23 +695,28 @@ class AdvancedAnalyticsService {
     if (this.behaviors.length > 1000) {
       this.behaviors = this.behaviors.slice(-1000);
     }
-    localStorage.setItem('userBehaviors', JSON.stringify(this.behaviors));
+    localStorage.setItem(ANALYTICS_USER_BEHAVIORS_STORAGE_KEY, JSON.stringify(this.behaviors));
   }
 
   private saveUserProfiles(): void {
     const profiles = Object.fromEntries(this.userProfiles);
-    localStorage.setItem('userProfiles', JSON.stringify(profiles));
+    localStorage.setItem(ANALYTICS_USER_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
   }
 
   private loadUserProfiles(): void {
     try {
-      const saved = localStorage.getItem('userProfiles');
+      const saved = localStorage.getItem(ANALYTICS_USER_PROFILES_STORAGE_KEY);
       if (saved) {
         const profiles = JSON.parse(saved);
         this.userProfiles = new Map(Object.entries(profiles));
       }
     } catch (error) {
-      console.warn('사용자 프로필 로드 실패:', error);
+      const err = toError(error);
+      errorLogger.warn('사용자 프로필 로드 실패', {
+        component: 'advancedAnalyticsService',
+        action: 'loadUserProfiles',
+        error: err.message,
+      });
     }
   }
 
@@ -734,8 +744,8 @@ class AdvancedAnalyticsService {
     this.behaviors = [];
     this.patterns.clear();
     this.insights = [];
-    localStorage.removeItem('userBehaviors');
-    localStorage.removeItem('userProfiles');
+    localStorage.removeItem(ANALYTICS_USER_BEHAVIORS_STORAGE_KEY);
+    localStorage.removeItem(ANALYTICS_USER_PROFILES_STORAGE_KEY);
   }
 
   // 성과 지표 계산
@@ -762,13 +772,13 @@ class AdvancedAnalyticsService {
   }
 
   private calculateProductivityMetrics(projectId: string): PerformanceMetric[] {
-    const chats = collaborationService.getProjectComments(projectId);
+    void collaborationService.getProjectComments(projectId);
     const messages = this.getAllProjectMessages(projectId);
     const workflows = workflowAutomationService.getProjectWorkflows(projectId);
 
     const totalMessages = messages.length;
     const avgMessagesPerDay = this.calculateAverageMessagesPerDay(messages);
-    const workflowCompletionRate = this.calculateWorkflowCompletionRate(workflows);
+    const workflowCompletionRate = this.calculateWorkflowCompletionRate(workflows as unknown as Record<string, unknown>[]);
 
     return [
       {
@@ -843,7 +853,7 @@ class AdvancedAnalyticsService {
       {
         id: this.generateId(),
         name: '멘션 응답률',
-        value: this.calculateMentionResponseRate(mentions),
+        value: this.calculateMentionResponseRate(mentions as unknown as Record<string, unknown>[]),
         unit: '%',
         trend: 'stable',
         changePercent: 0,
@@ -855,10 +865,10 @@ class AdvancedAnalyticsService {
 
   private calculateKnowledgeMetrics(projectId: string): PerformanceMetric[] {
     const knowledge = projectKnowledgeService.getProjectKnowledge(projectId);
-    const analytics = projectKnowledgeService.getKnowledgeAnalytics(projectId);
+    void projectKnowledgeService.getKnowledgeAnalytics(projectId);
 
-    const knowledgeGrowthRate = this.calculateKnowledgeGrowthRate(knowledge);
-    const knowledgeQualityScore = this.calculateKnowledgeQualityScore(knowledge);
+    const knowledgeGrowthRate = this.calculateKnowledgeGrowthRate(knowledge as unknown as Record<string, unknown>[]);
+    const knowledgeQualityScore = this.calculateKnowledgeQualityScore(knowledge as unknown as Record<string, unknown>[]);
 
     return [
       {
@@ -885,7 +895,7 @@ class AdvancedAnalyticsService {
       {
         id: this.generateId(),
         name: '지식 활용도',
-        value: this.calculateKnowledgeUtilization(knowledge),
+        value: this.calculateKnowledgeUtilization(knowledge as unknown as Record<string, unknown>[]),
         unit: '%',
         trend: 'stable',
         changePercent: 0,
@@ -900,7 +910,7 @@ class AdvancedAnalyticsService {
     const knowledge = projectKnowledgeService.getProjectKnowledge(projectId);
 
     const messageQualityScore = this.calculateMessageQualityScore(messages);
-    const knowledgeAccuracyScore = this.calculateKnowledgeAccuracyScore(knowledge);
+    const knowledgeAccuracyScore = this.calculateKnowledgeAccuracyScore(knowledge as unknown as Record<string, unknown>[]);
 
     return [
       {
@@ -1007,7 +1017,7 @@ class AdvancedAnalyticsService {
     const allProjects = this.getAllProjects();
     const averageMetrics = this.calculateAverageMetrics(allProjects);
 
-    const comparativeMetrics: { [key: string]: any } = {};
+    const comparativeMetrics: Record<string, { current: number; average: number; percentile: number }> = {};
 
     currentMetrics.forEach(metric => {
       const average = averageMetrics[metric.name] || 0;
@@ -1036,8 +1046,8 @@ class AdvancedAnalyticsService {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
-  private getAllProjectMessages(projectId: string): Message[] {
-    // 실제 구현에서는 프로젝트의 모든 채팅에서 메시지를 가져와야 함
+  private getAllProjectMessages(_projectId: string): Message[] {
+    // 실제 구현에서는 프로젝트의 모든 대화에서 메시지를 가져와야 함
     return [];
   }
 
@@ -1051,14 +1061,14 @@ class AdvancedAnalyticsService {
     return Math.round(messages.length / Math.max(daysDiff, 1));
   }
 
-  private calculateWorkflowCompletionRate(workflows: any[]): number {
+  private calculateWorkflowCompletionRate(workflows: Record<string, unknown>[]): number {
     if (workflows.length === 0) return 0;
 
-    const completedWorkflows = workflows.filter(w => w.status === 'completed').length;
+    const completedWorkflows = workflows.filter(w => (w as Record<string, unknown>).status === 'completed').length;
     return Math.round((completedWorkflows / workflows.length) * 100);
   }
 
-  private calculateCollaborationScore(comments: any[], mentions: any[], totalUsers: number): number {
+  private calculateCollaborationScore(comments: unknown[], mentions: unknown[], totalUsers: number): number {
     const commentScore = Math.min(comments.length * 2, 40); // 최대 40점
     const mentionScore = Math.min(mentions.length * 3, 30); // 최대 30점
     const userEngagementScore = Math.min(totalUsers * 5, 30); // 최대 30점
@@ -1066,29 +1076,29 @@ class AdvancedAnalyticsService {
     return commentScore + mentionScore + userEngagementScore;
   }
 
-  private calculateMentionResponseRate(mentions: any[]): number {
+  private calculateMentionResponseRate(mentions: Record<string, unknown>[]): number {
     if (mentions.length === 0) return 0;
 
-    const respondedMentions = mentions.filter(m => m.isRead).length;
+    const respondedMentions = mentions.filter(m => (m as Record<string, unknown>).isRead).length;
     return Math.round((respondedMentions / mentions.length) * 100);
   }
 
-  private calculateKnowledgeGrowthRate(knowledge: any[]): number {
+  private calculateKnowledgeGrowthRate(_knowledge: unknown[]): number {
     // 지식 성장률 계산 로직
     return 0;
   }
 
-  private calculateKnowledgeQualityScore(knowledge: any[]): number {
+  private calculateKnowledgeQualityScore(knowledge: Record<string, unknown>[]): number {
     if (knowledge.length === 0) return 0;
 
-    const totalConfidence = knowledge.reduce((sum, k) => sum + (k.confidence || 0.5), 0);
+    const totalConfidence = knowledge.reduce((sum, k) => sum + ((k as Record<string, unknown>).confidence as number ?? 0.5), 0);
     return Math.round((totalConfidence / knowledge.length) * 100);
   }
 
-  private calculateKnowledgeUtilization(knowledge: any[]): number {
+  private calculateKnowledgeUtilization(knowledge: Record<string, unknown>[]): number {
     if (knowledge.length === 0) return 0;
 
-    const accessedKnowledge = knowledge.filter(k => k.accessCount > 0).length;
+    const accessedKnowledge = knowledge.filter(k => ((k as Record<string, unknown>).accessCount as number) > 0).length;
     return Math.round((accessedKnowledge / knowledge.length) * 100);
   }
 
@@ -1099,10 +1109,10 @@ class AdvancedAnalyticsService {
     return 75; // 임시 값
   }
 
-  private calculateKnowledgeAccuracyScore(knowledge: any[]): number {
+  private calculateKnowledgeAccuracyScore(knowledge: Record<string, unknown>[]): number {
     if (knowledge.length === 0) return 0;
 
-    const highConfidenceKnowledge = knowledge.filter(k => (k.confidence || 0) > 0.8).length;
+    const highConfidenceKnowledge = knowledge.filter(k => ((k as Record<string, unknown>).confidence as number ?? 0) > 0.8).length;
     return Math.round((highConfidenceKnowledge / knowledge.length) * 100);
   }
 
@@ -1117,12 +1127,12 @@ class AdvancedAnalyticsService {
     return Math.round(((current - previous) / previous) * 100);
   }
 
-  private getPreviousPeriodValue(projectId: string, metric: string): number {
+  private getPreviousPeriodValue(_projectId: string, _metric: string): number {
     // 이전 기간 값 조회 로직
     return 0;
   }
 
-  private getHistoricalData(projectId: string, metric: string, period: string): TrendData[] {
+  private getHistoricalData(_projectId: string, _metric: string, _period: string): TrendData[] {
     // 히스토리 데이터 조회 로직
     return [];
   }
@@ -1160,7 +1170,7 @@ class AdvancedAnalyticsService {
     return Math.sqrt(variance) / mean; // 변동계수
   }
 
-  private detectSeasonality(data: TrendData[]): 'daily' | 'weekly' | 'monthly' | 'none' {
+  private detectSeasonality(_data: TrendData[]): 'daily' | 'weekly' | 'monthly' | 'none' {
     // 계절성 감지 로직
     return 'none';
   }
@@ -1179,7 +1189,7 @@ class AdvancedAnalyticsService {
     return forecast;
   }
 
-  private predictCompletionTime(projectId: string): PredictiveInsight | null {
+  private predictCompletionTime(_projectId: string): PredictiveInsight | null {
     // 완료 시간 예측 로직
     return {
       id: this.generateId(),
@@ -1194,7 +1204,7 @@ class AdvancedAnalyticsService {
     };
   }
 
-  private predictResourceNeeds(projectId: string): PredictiveInsight | null {
+  private predictResourceNeeds(_projectId: string): PredictiveInsight | null {
     // 리소스 필요성 예측 로직
     return {
       id: this.generateId(),
@@ -1209,7 +1219,7 @@ class AdvancedAnalyticsService {
     };
   }
 
-  private assessProjectRisks(projectId: string): PredictiveInsight | null {
+  private assessProjectRisks(_projectId: string): PredictiveInsight | null {
     // 위험도 평가 로직
     return {
       id: this.generateId(),
@@ -1224,7 +1234,7 @@ class AdvancedAnalyticsService {
     };
   }
 
-  private predictQualityOutcome(projectId: string): PredictiveInsight | null {
+  private predictQualityOutcome(_projectId: string): PredictiveInsight | null {
     // 품질 결과 예측 로직
     return {
       id: this.generateId(),
@@ -1251,12 +1261,12 @@ class AdvancedAnalyticsService {
     return totalScore / categoryMetrics.length;
   }
 
-  private calculateTimelineScore(projectId: string): number {
+  private calculateTimelineScore(_projectId: string): number {
     // 타임라인 점수 계산 로직
     return 80; // 임시 값
   }
 
-  private identifyHealthFactors(metrics: PerformanceMetric[], projectId: string): { positive: string[]; negative: string[] } {
+  private identifyHealthFactors(metrics: PerformanceMetric[], _projectId: string): { positive: string[]; negative: string[] } {
     const positive: string[] = [];
     const negative: string[] = [];
 
@@ -1294,17 +1304,17 @@ class AdvancedAnalyticsService {
     return [];
   }
 
-  private calculateAverageMetrics(projects: Project[]): { [key: string]: number } {
+  private calculateAverageMetrics(_projects: Project[]): { [key: string]: number } {
     // 평균 지표 계산 로직
     return {};
   }
 
-  private calculatePercentile(value: number, projects: Project[], metric: string): number {
+  private calculatePercentile(_value: number, _projects: Project[], _metric: string): number {
     // 백분위 계산 로직
     return 50; // 임시 값
   }
 
-  private generateComparativeInsights(metrics: { [key: string]: any }): string[] {
+  private generateComparativeInsights(metrics: Record<string, { current: number; average: number; percentile: number }>): string[] {
     const insights: string[] = [];
 
     Object.entries(metrics).forEach(([metric, data]) => {
@@ -1318,7 +1328,7 @@ class AdvancedAnalyticsService {
     return insights;
   }
 
-  private generateComparativeRecommendations(metrics: { [key: string]: any }): string[] {
+  private generateComparativeRecommendations(metrics: Record<string, { current: number; average: number; percentile: number }>): string[] {
     const recommendations: string[] = [];
 
     Object.entries(metrics).forEach(([metric, data]) => {
@@ -1330,6 +1340,12 @@ class AdvancedAnalyticsService {
     return recommendations;
   }
 }
+
+export {
+  ANALYTICS_USER_BEHAVIORS_STORAGE_KEY,
+  ANALYTICS_USER_ID_STORAGE_KEY,
+  ANALYTICS_USER_PROFILES_STORAGE_KEY,
+} from './analyticsPersistenceStorageKeys';
 
 export const advancedAnalyticsService = new AdvancedAnalyticsService();
 export default advancedAnalyticsService;

@@ -6,11 +6,12 @@ export interface PerformanceMetric {
     timestamp: Date;
 }
 
-export default {
+const realTimeAIPerformanceMonitor = {
     start: () => { },
     stop: () => { },
     getMetrics: (): PerformanceMetric[] => [],
     addMetric: () => { },
-    recordResponseTime: (service: string, time: number, metadata?: any) => { },
-    recordSatisfaction: (userId: string, sessionId: string, satisfaction: number, metadata?: any) => { }
+    recordResponseTime: (_service: string, _time: number, _metadata?: Record<string, unknown>) => { },
+    recordSatisfaction: (_userId: string, _sessionId: string, _satisfaction: number, _metadata?: Record<string, unknown>) => { }
 };
+export default realTimeAIPerformanceMonitor;

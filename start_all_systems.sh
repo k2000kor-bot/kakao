@@ -2,13 +2,27 @@
 
 # 모든 고도화된 시스템 시작 스크립트
 # 마스터 통합 시스템을 포함한 모든 서브시스템을 시작합니다.
+# backend/ 에서 레거시 다중 프로세스를 띄웁니다.
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$SCRIPT_DIR"
+# shellcheck source=scripts/lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
 
 echo "🚀 모든 고도화된 시스템을 시작합니다..."
 echo "================================================"
+echo "💡 일반 웹·대화 개발: npm run restart:backend → http://localhost:5002 (main_server)"
+echo "   이 스크립트는 레거시 멀티 프로세스(8001–8005) 전용입니다."
+echo ""
 
-# 가상환경 활성화
 echo "📦 가상환경 활성화 중..."
-source venv/bin/activate
+if ! backend_venv_activate "$REPO_ROOT"; then
+    echo "❌ venv 없음. ./setup.sh 또는 backend/.venv 생성 후 재시도."
+    exit 1
+fi
+
+cd "$REPO_ROOT/backend" || exit 1
 
 # 포트 확인 함수
 check_port() {
@@ -57,27 +71,27 @@ echo ""
 
 # 각 시스템 시작
 echo "🚀 1. 유시민 고도화 서버 시작 중..."
-python yoo_si_min_enhanced_server.py &
+python3 yoo_si_min_enhanced_server.py &
 SERVER1_PID=$!
 sleep 3
 
 echo "🚀 2. 궁극의 유시민 AI 시스템 시작 중..."
-python ultimate_yoo_ai_system.py &
+python3 ultimate_yoo_ai_system.py &
 SERVER2_PID=$!
 sleep 3
 
 echo "🚀 3. 고급 웹 학습 통합 시스템 시작 중..."
-python advanced_web_learning_integration.py &
+python3 advanced_web_learning_integration.py &
 SERVER3_PID=$!
 sleep 3
 
 echo "🚀 4. 멀티모달 학습 통합 시스템 시작 중..."
-python multimodal_learning_system.py &
+python3 multimodal_learning_system.py &
 SERVER4_PID=$!
 sleep 3
 
 echo "🚀 5. 마스터 통합 시스템 시작 중..."
-python master_integrated_system.py &
+python3 master_integrated_system.py &
 MASTER_PID=$!
 sleep 5
 
@@ -102,7 +116,7 @@ echo "🔧 시스템 상태 확인:"
 echo "   curl http://localhost:8001/api/master/status"
 echo ""
 echo "💡 테스트 명령어:"
-echo "   # 마스터 채팅 테스트"
+echo "   # 마스터 대화 테스트"
 echo "   curl -X POST http://localhost:8001/api/master/chat \\"
 echo "        -H 'Content-Type: application/json' \\"
 echo "        -d '{\"message\": \"정치와 교육의 관계에 대해 어떻게 생각하시나요?\", \"user_id\": \"test_user\"}'"

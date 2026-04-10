@@ -891,7 +891,9 @@ async def stop_sync():
 
 def should_process_file(file_ext: str, filters: Dict[str, Any]) -> bool:
     """파일 필터링 로직"""
-    if filters.get('includeTxt', True) and file_ext in ['.txt']:
+    if filters.get('includeTxt', True) and file_ext in ['.txt', '.md']:
+        return True
+    if filters.get('includeCsv', True) and file_ext == '.csv':
         return True
     if filters.get('includePdf', True) and file_ext in ['.pdf']:
         return True
@@ -899,12 +901,31 @@ def should_process_file(file_ext: str, filters: Dict[str, Any]) -> bool:
         return True
     return False
 
+
+def _read_sync_file_text(file_path: str, file_ext: str) -> Optional[str]:
+    """폴더 동기화용 텍스트 읽기 (CSV는 utf-8-sig·cp949 등 시도)"""
+    try:
+        if file_ext == '.csv':
+            raw = Path(file_path).read_bytes()
+            for enc in ('utf-8-sig', 'utf-8', 'cp949', 'euc-kr'):
+                try:
+                    return raw.decode(enc)
+                except UnicodeDecodeError:
+                    continue
+            return raw.decode('utf-8', errors='replace')
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception:
+        return None
+
+
 def process_file_for_database(file_path: str, search_keywords: List[str], category_tags: List[str]) -> bool:
     """파일을 데이터베이스에 저장하는 로직"""
     try:
-        # 파일 내용 읽기
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        file_ext = Path(file_path).suffix.lower()
+        content = _read_sync_file_text(file_path, file_ext)
+        if content is None:
+            return False
         
         # 키워드 검색
         matched_keywords = []
@@ -2836,4 +2857,11 @@ def _estimate_success_probability(optimization_strategies: list) -> float:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+
+    _port = int(
+        os.environ.get(
+            "BACKEND_PORT",
+            os.environ.get("API_PORT", os.environ.get("PORT", "5002")),
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_port) 

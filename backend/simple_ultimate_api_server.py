@@ -6,6 +6,7 @@
 
 import asyncio
 import json
+import os
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI 궁극의 통합 응답 시스템",
+    title="CORBU.AI 궁극의 통합 응답 시스템",
     description="모든 AI 기능을 통합한 고신뢰도 답변 생성 시스템",
     version="1.0.0"
 )
@@ -59,7 +60,7 @@ class SystemStatus(BaseModel):
 async def root():
     """루트 엔드포인트"""
     return {
-        "message": "CORBU AI 궁극의 통합 응답 시스템",
+        "message": "CORBU.AI 궁극의 통합 응답 시스템",
         "version": "1.0.0",
         "status": "active",
         "timestamp": datetime.now().isoformat()
@@ -121,7 +122,7 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "service": "CORBU AI Ultimate Response System"
+        "service": "CORBU.AI Ultimate Response System"
     }
 
 @app.get("/api/ultimate/capabilities")
@@ -165,11 +166,11 @@ async def get_system_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    # 서버 실행
+    _p = int(os.environ.get("SIMPLE_ULTIMATE_API_PORT", os.environ.get("PORT", "8004")))
     uvicorn.run(
         "simple_ultimate_api_server:app",
         host="0.0.0.0",
-        port=8004,
+        port=_p,
         reload=True,
         log_level="info"
     )

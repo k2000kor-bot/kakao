@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CORBU AI System Deployment Script
+# CORBU.AI System Deployment Script
 
 set -e
 
@@ -31,6 +31,9 @@ log_debug() {
 # 환경 변수
 ENVIRONMENT=${1:-development}
 VERSION=${2:-latest}
+# 호스트에서 백엔드 헬스 확인 URL (docker 포트 매핑이 다르면 재정의)
+BACKEND_HEALTH_URL="${BACKEND_HEALTH_URL:-http://localhost:5002/api/health}"
+BACKEND_PUBLIC_URL="${BACKEND_PUBLIC_URL:-http://localhost:5002}"
 
 # 배포 환경별 설정
 case $ENVIRONMENT in
@@ -165,8 +168,8 @@ health_check() {
     
     attempt=1
     while [ $attempt -le $max_attempts ]; do
-        if curl -f http://localhost:8004/health > /dev/null 2>&1; then
-            log_info "Backend health check passed"
+        if curl -f "$BACKEND_HEALTH_URL" > /dev/null 2>&1; then
+            log_info "Backend health check passed ($BACKEND_HEALTH_URL)"
             break
         fi
         
@@ -222,7 +225,7 @@ rollback() {
 
 # 메인 배포 함수
 main() {
-    log_info "Starting CORBU AI System deployment..."
+    log_info "Starting CORBU.AI System deployment..."
     log_info "Environment: $ENVIRONMENT"
     log_info "Version: $VERSION"
     
@@ -248,12 +251,12 @@ main() {
         log_info "Deployment completed successfully!"
         log_info "Duration: ${DURATION} seconds"
         log_info "Frontend: http://localhost"
-        log_info "Backend API: http://localhost:8004"
+        log_info "Backend API: $BACKEND_PUBLIC_URL"
         log_info "Health Check: http://localhost/health"
         
         # 성공 알림
         if command -v notify-send &> /dev/null; then
-            notify-send "CORBU AI Deployment" "Deployment completed successfully!"
+            notify-send "CORBU.AI Deployment" "Deployment completed successfully!"
         fi
     else
         log_error "Health check failed"

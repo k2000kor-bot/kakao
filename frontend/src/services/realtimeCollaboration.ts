@@ -1,3 +1,12 @@
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    API_QUERY_PARAM_USER_ID_CAMEL,
+    API_QUERY_PARAM_USERNAME,
+    WS_BASE_URL,
+    WS_COLLABORATION_PATH,
+    joinApiBaseAndPath,
+} from '../config/api';
+
 interface CollaborationMessage {
     id: string;
     type: 'message' | 'status' | 'file' | 'analysis' | 'insight';
@@ -5,7 +14,7 @@ interface CollaborationMessage {
     content: string;
     timestamp: string;
     projectId?: string;
-    metadata?: any;
+    metadata?: unknown;
 }
 
 interface UserStatus {
@@ -21,8 +30,8 @@ interface ProjectCollaboration {
     projectName: string;
     activeUsers: UserStatus[];
     messages: CollaborationMessage[];
-    files: any[];
-    analyses: any[];
+    files: unknown[];
+    analyses: unknown[];
 }
 
 class RealtimeCollaborationService {
@@ -34,16 +43,37 @@ class RealtimeCollaborationService {
     private currentUser: UserStatus | null = null;
     private currentProject: string | null = null;
 
-    constructor(private serverUrl: string = 'ws://localhost:8002') { }
+    constructor(
+        private collaborationWsUrl: string = joinApiBaseAndPath(WS_BASE_URL, WS_COLLABORATION_PATH),
+    ) { }
+
+    /** `ws://`/`wss://` 베이스에 쿼리를 `URL`로 붙여 인코딩·기존 쿼리와 충돌을 피한다. */
+    private buildCollaborationWebSocketUrl(userId: string, username: string): string {
+        try {
+            const u = new URL(this.collaborationWsUrl);
+            u.searchParams.set(API_QUERY_PARAM_USER_ID_CAMEL, userId);
+            u.searchParams.set(API_QUERY_PARAM_USERNAME, username);
+            return u.toString();
+        } catch {
+            const base = this.collaborationWsUrl.replace(/\/$/, '');
+            const sep = base.includes('?') ? '&' : '?';
+            return `${base}${sep}${API_QUERY_PARAM_USER_ID_CAMEL}=${encodeURIComponent(userId)}&${API_QUERY_PARAM_USERNAME}=${encodeURIComponent(username)}`;
+        }
+    }
 
     // WebSocket 연결
     connect(userId: string, username: string): Promise<void> {
         return new Promise((resolve, reject) => {
             try {
-                this.ws = new WebSocket(`${this.serverUrl}?userId=${userId}&username=${username}`);
+                this.ws = new WebSocket(this.buildCollaborationWebSocketUrl(userId, username));
 
                 this.ws.onopen = () => {
-                    console.log('WebSocket 연결 성공');
+                    errorLogger.info('WebSocket 연결 성공', {
+                        component: 'realtimeCollaboration',
+                        action: 'connect',
+                        userId,
+                        username,
+                    });
                     this.reconnectAttempts = 0;
                     this.currentUser = {
                         userId,
@@ -59,12 +89,23 @@ class RealtimeCollaborationService {
                 };
 
                 this.ws.onclose = () => {
-                    console.log('WebSocket 연결 종료');
+                    errorLogger.info('WebSocket 연결 종료', {
+                        component: 'realtimeCollaboration',
+                        action: 'connect',
+                        userId,
+                        username,
+                    });
                     this.handleReconnect();
                 };
 
                 this.ws.onerror = (error) => {
-                    console.error('WebSocket 오류:', error);
+                    const err = toError(error);
+                    errorLogger.error('WebSocket 오류', err, {
+                        component: 'realtimeCollaboration',
+                        action: 'connect',
+                        userId,
+                        username,
+                    });
                     reject(error);
                 };
             } catch (error) {
@@ -77,20 +118,34 @@ class RealtimeCollaborationService {
     private handleReconnect(): void {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            console.log(`재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+            errorLogger.info('재연결 시도', {
+                component: 'realtimeCollaboration',
+                action: 'handleReconnect',
+                reconnectAttempts: this.reconnectAttempts,
+                maxReconnectAttempts: this.maxReconnectAttempts,
+                userId: this.currentUser?.userId,
+            });
 
             setTimeout(() => {
                 if (this.currentUser) {
                     this.connect(this.currentUser.userId, this.currentUser.username)
-                        .catch(error => console.error('재연결 실패:', error));
+                        .catch(error => {
+                            const err = toError(error);
+                            errorLogger.error('재연결 실패', err, {
+                                component: 'realtimeCollaboration',
+                                action: 'handleReconnect',
+                                userId: this.currentUser?.userId,
+                                reconnectAttempts: this.reconnectAttempts,
+                            });
+                        });
                 }
             }, this.reconnectInterval);
         }
     }
 
     // 메시지 처리
-    private handleMessage(data: any): void {
-        const { type, payload } = data;
+    private handleMessage(data: Record<string, unknown>): void {
+        const { type, payload } = data as { type: string; payload?: unknown };
 
         switch (type) {
             case 'message':
@@ -112,7 +167,11 @@ class RealtimeCollaborationService {
                 this.emit('insightGenerated', payload);
                 break;
             default:
-                console.log('알 수 없는 메시지 타입:', type);
+                errorLogger.info('알 수 없는 메시지 타입', {
+                    component: 'realtimeCollaboration',
+                    action: 'handleMessage',
+                    messageType: type,
+                });
         }
     }
 
@@ -125,7 +184,7 @@ class RealtimeCollaborationService {
     }
 
     // 이벤트 발생
-    private emit(event: string, data: any): void {
+    private emit(event: string, data: unknown): void {
         const callbacks = this.listeners.get(event);
         if (callbacks) {
             callbacks.forEach(callback => callback(data));
@@ -189,18 +248,18 @@ class RealtimeCollaborationService {
     }
 
     // 파일 업로드 알림
-    notifyFileUpload(fileInfo: any): void {
-        this.sendMessage(`파일 업로드: ${fileInfo.name}`, 'file');
+    notifyFileUpload(fileInfo: { name?: string }): void {
+        this.sendMessage(`파일 업로드: ${fileInfo.name ?? 'unknown'}`, 'file');
     }
 
     // 분석 완료 알림
-    notifyAnalysisComplete(analysisInfo: any): void {
-        this.sendMessage(`분석 완료: ${analysisInfo.type}`, 'analysis');
+    notifyAnalysisComplete(analysisInfo: { type?: string }): void {
+        this.sendMessage(`분석 완료: ${analysisInfo.type ?? 'unknown'}`, 'analysis');
     }
 
     // 인사이트 생성 알림
-    notifyInsightGenerated(insightInfo: any): void {
-        this.sendMessage(`인사이트 생성: ${insightInfo.type}`, 'insight');
+    notifyInsightGenerated(insightInfo: { type?: string }): void {
+        this.sendMessage(`인사이트 생성: ${insightInfo.type ?? 'unknown'}`, 'insight');
     }
 
     // 연결 종료

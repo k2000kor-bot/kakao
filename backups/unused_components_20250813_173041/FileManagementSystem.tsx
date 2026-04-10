@@ -209,11 +209,11 @@ const FileManagementSystem: React.FC = () => {
           keyConcepts: ['AI 시스템', '딥러닝', '자연어처리', '컴퓨터비전'],
           patterns: ['모듈화 아키텍처', '실시간 처리', '자동화 시스템'],
           insights: ['통합 AI 플랫폼으로 높은 효율성 달성', '자동화된 파일 처리로 사용자 경험 향상'],
-          summary: 'CORBU AI 시스템 개발 계획서를 분석한 결과, 다양한 AI 기술들이 통합된 플랫폼 구축 계획이 확인되었습니다.',
+          summary: 'CORBU.AI 시스템 개발 계획서를 분석한 결과, 다양한 AI 기술들이 통합된 플랫폼 구축 계획이 확인되었습니다.',
           sentiment: 'positive',
           complexity: 'high',
           topics: ['AI Development', 'System Architecture', 'Machine Learning'],
-          entities: ['CORBU AI', 'React', 'TypeScript', 'Python'],
+          entities: ['CORBU.AI', 'React', 'TypeScript', 'Python'],
           completedAt: new Date()
         },
         knowledgeBase: {
@@ -232,7 +232,7 @@ const FileManagementSystem: React.FC = () => {
             {
               id: 'doc-1',
               title: 'AI 시스템 아키텍처',
-              content: 'CORBU AI 시스템의 전체적인 아키텍처와 구성 요소들',
+              content: 'CORBU.AI 시스템의 전체적인 아키텍처와 구성 요소들',
               type: 'architecture',
               tags: ['architecture', 'system', 'design']
             }
@@ -499,7 +499,7 @@ const FileManagementSystem: React.FC = () => {
       sentiment: 'positive',
       complexity: 'medium',
       topics: ['AI Development', 'System Architecture', 'Machine Learning'],
-      entities: ['CORBU AI', 'React', 'TypeScript', 'Python'],
+      entities: ['CORBU.AI', 'React', 'TypeScript', 'Python'],
       completedAt: new Date()
     };
   };
@@ -784,7 +784,7 @@ const FileManagementSystem: React.FC = () => {
           <AdvancedAnalyticsDashboard />
         ) : activeTab === '개요' ? (
           <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">CORBU AI 시스템 개요</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">CORBU.AI 시스템 개요</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">파일 관리</h3>

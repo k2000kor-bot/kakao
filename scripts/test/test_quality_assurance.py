@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-CORBU AI 대화형 품질 보증 시스템 테스트 스크립트
+CORBU.AI 대화형 품질 보증 시스템 테스트 스크립트
 """
 
 import json
@@ -187,7 +187,7 @@ class QualityAssuranceTester:
             "품질 보고서를 보여주세요"
         ]
         
-        print("🚀 CORBU AI 대화형 품질 보증 시스템 테스트 시작")
+        print("🚀 CORBU.AI 대화형 품질 보증 시스템 테스트 시작")
         print("=" * 60)
         
         for i, question in enumerate(test_questions, 1):

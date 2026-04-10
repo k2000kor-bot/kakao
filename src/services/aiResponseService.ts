@@ -1,4 +1,12 @@
 import { Message, AIResponseConfig, ChatContext } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  API_BASE_URL,
+  API_V7_AI_RESPONSE_PATH,
+  DEMO_PLACEHOLDER_IMAGE_URL,
+  FALLBACK_API_ORIGIN,
+  joinApiHealthCheckUrl,
+} from '../config/api';
 
 export interface AIResponseRequest {
   message: string;
@@ -13,11 +21,11 @@ export interface AIResponseResult {
 }
 
 export class AIResponseService {
-  private baseUrl = 'http://localhost:8002/api/v7';
+  private readonly apiOrigin = API_BASE_URL || FALLBACK_API_ORIGIN;
 
   async generateResponse(request: AIResponseRequest): Promise<AIResponseResult> {
     try {
-      const response = await fetch(`${this.baseUrl}/ai-response`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, API_V7_AI_RESPONSE_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,9 +41,14 @@ export class AIResponseService {
       return {
         success: true,
         message: data.message,
-      };
+        };
     } catch (error) {
-      console.error('AI 응답 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('AI 응답 생성 실패', err, {
+        component: 'aiResponseService',
+        action: 'generateResponse',
+        messagePreview: request.message.substring(0, 100),
+      });
       return {
         success: false,
         message: this.createFallbackMessage(request),
@@ -119,7 +132,7 @@ export class AIResponseService {
     return result.message;
   }
 
-  async generateFormResponse(formConfig: any, context: ChatContext): Promise<Message> {
+  async generateFormResponse(formConfig: Record<string, unknown>, context: ChatContext): Promise<Message> {
     const request: AIResponseRequest = {
       message: `다음 폼을 생성해주세요: ${JSON.stringify(formConfig)}`,
       context,
@@ -134,7 +147,7 @@ export class AIResponseService {
     return result.message;
   }
 
-  async generateChartResponse(data: any, chartType: string, context: ChatContext): Promise<Message> {
+  async generateChartResponse(data: Record<string, unknown>, chartType: string, context: ChatContext): Promise<Message> {
     const request: AIResponseRequest = {
       message: `다음 데이터로 ${chartType} 차트를 생성해주세요: ${JSON.stringify(data)}`,
       context,
@@ -149,7 +162,7 @@ export class AIResponseService {
     return result.message;
   }
 
-  async generateTableResponse(data: any, context: ChatContext): Promise<Message> {
+  async generateTableResponse(data: Record<string, unknown>, context: ChatContext): Promise<Message> {
     const request: AIResponseRequest = {
       message: `다음 데이터를 테이블로 표시해주세요: ${JSON.stringify(data)}`,
       context,
@@ -266,7 +279,7 @@ export class AIResponseService {
       },
       image: {
         content: '이미지가 생성되었습니다.',
-        url: 'https://via.placeholder.com/400x300',
+        url: DEMO_PLACEHOLDER_IMAGE_URL,
         prompt: userMessage,
         style: 'realistic',
       },
@@ -276,7 +289,7 @@ export class AIResponseService {
 
     const { content, ...responseData } = response;
     // responseData에서 type 속성 제거
-    const { type, ...cleanResponseData } = responseData as any;
+    const { type: _type, ...cleanResponseData } = responseData as Record<string, unknown>;
 
     const message: Message = {
       id,
@@ -286,7 +299,7 @@ export class AIResponseService {
       isMe: false,
       // type 필드 제거 - UI에서 불필요하므로 제외
       aiResponse: {
-        type: responseType as any,
+        type: responseType as 'conversation' | 'summary' | 'analysis' | 'form' | 'chart' | 'table' | 'list' | 'code' | 'image' | 'creative' | 'technical' | 'business',
         metadata: {
           confidence: 85,
           processingTime: 100,

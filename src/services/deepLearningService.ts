@@ -1,4 +1,10 @@
+import {
+  OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH,
+  OPENAI_OFFICIAL_API_BASE_URL,
+  joinApiBaseAndPath,
+} from '../config/api';
 import { Message } from './types';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface DeepLearningAnalysis {
   sentiment: 'positive' | 'negative' | 'neutral';
@@ -41,6 +47,9 @@ export interface GeneratedMessage {
   };
 }
 
+/** 환경변수: 'true'이면 OpenAI로 대화 분석(실제 딥러닝), 없거나 키 없으면 규칙 기반 로컬 분석 */
+const ENV_USE_OPENAI = process.env.REACT_APP_DEEP_LEARNING_USE_OPENAI === 'true';
+
 export class DeepLearningService {
   private openaiApiKey: string = '';
   private useLocalModel: boolean = true;
@@ -53,6 +62,10 @@ export class DeepLearningService {
   constructor() {
     // 환경변수에서 API 키 로드
     this.openaiApiKey = process.env.REACT_APP_OPENAI_API_KEY || '';
+    // OpenAI 사용 요청 + 키 있으면 로컬 규칙 기반 대신 OpenAI 분석 사용
+    if (ENV_USE_OPENAI && this.openaiApiKey) {
+      this.useLocalModel = false;
+    }
   }
 
   // 전체 대화 분석
@@ -64,7 +77,12 @@ export class DeepLearningService {
         return this.analyzeWithOpenAI(messages);
       }
     } catch (error) {
-      console.error('대화 분석 실패:', error);
+      const err = toError(error);
+      errorLogger.error('대화 분석 실패', err, {
+        component: 'deepLearningService',
+        action: 'analyzeConversation',
+        useLocalModel: this.useLocalModel,
+      });
       return this.getDefaultAnalysis();
     }
   }
@@ -118,28 +136,31 @@ export class DeepLearningService {
     const content = messages.map(m => `${m.sender}: ${m.content}`).join('\n');
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        joinApiBaseAndPath(OPENAI_OFFICIAL_API_BASE_URL, OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH),
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: '대화를 분석하여 감정, 주요 주제, 참여자별 특성을 JSON 형태로 반환해주세요.',
+              },
+              {
+                role: 'user',
+                content: `다음 대화를 분석해주세요:\n\n${content}`,
+              },
+            ],
+            max_tokens: 1000,
+            temperature: 0.3,
+          }),
         },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: '대화를 분석하여 감정, 주요 주제, 참여자별 특성을 JSON 형태로 반환해주세요.'
-            },
-            {
-              role: 'user',
-              content: `다음 대화를 분석해주세요:\n\n${content}`
-            }
-          ],
-          max_tokens: 1000,
-          temperature: 0.3
-        })
-      });
+      );
 
       const data = await response.json();
       const analysisText = data.choices[0].message.content;
@@ -149,14 +170,14 @@ export class DeepLearningService {
         const parsed = JSON.parse(analysisText);
         // participants 타입 보정
         const participants: DeepLearningAnalysis['participants'] = Array.isArray(parsed.participants)
-          ? parsed.participants.map((p: any) => {
+          ? parsed.participants.map((p: Record<string, unknown>) => {
             let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
             if (isSentiment(p.sentiment)) sentiment = p.sentiment;
             return {
               name: typeof p.name === 'string' ? p.name : '',
               messageCount: typeof p.messageCount === 'number' ? p.messageCount : 0,
               sentiment: sentiment as 'positive' | 'negative' | 'neutral',
-              keyTopics: Array.isArray(p.keyTopics) ? p.keyTopics.filter((k: any) => typeof k === 'string') : [],
+              keyTopics: Array.isArray(p.keyTopics) ? p.keyTopics.filter((k: unknown) => typeof k === 'string') : [],
             } as const;
           })
           : [];
@@ -172,7 +193,7 @@ export class DeepLearningService {
         // 나머지 필드 변환 및 반환
         const result: DeepLearningAnalysis = {
           sentiment: isSentiment(parsed.sentiment) ? parsed.sentiment as 'positive' | 'negative' | 'neutral' : 'neutral',
-          keyTopics: Array.isArray(parsed.keyTopics) ? parsed.keyTopics.filter((k: any) => typeof k === 'string') : [],
+          keyTopics: Array.isArray(parsed.keyTopics) ? parsed.keyTopics.filter((k: unknown) => typeof k === 'string') : [],
           participants,
           conversationFlow,
           urgency: typeof parsed.urgency === 'number' ? parsed.urgency : 0.5,
@@ -185,7 +206,12 @@ export class DeepLearningService {
         return this.analyzeWithLocalModel(messages);
       }
     } catch (error) {
-      console.error('OpenAI 분석 실패:', error);
+      const err = toError(error);
+      errorLogger.error('OpenAI 분석 실패', err, {
+        component: 'deepLearningService',
+        action: 'analyzeWithOpenAI',
+        messagesCount: messages.length,
+      });
       return this.analyzeWithLocalModel(messages);
     }
   }
@@ -287,14 +313,19 @@ export class DeepLearningService {
         return this.generateWithOpenAI(context);
       }
     } catch (error) {
-      console.error('메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('메시지 생성 실패', err, {
+        component: 'deepLearningService',
+        action: 'generateMessage',
+        useLocalModel: this.useLocalModel,
+      });
       return this.getDefaultGeneratedMessage();
     }
   }
 
   // 로컬 모델을 사용한 메시지 생성
   private async generateWithLocalModel(context: MessageGenerationContext): Promise<GeneratedMessage> {
-    const { messages, selectedMessage, analysis, userPreferences } = context;
+    const { messages: _messages, selectedMessage, analysis, userPreferences } = context;
 
     // 템플릿 기반 메시지 생성
     let template = '';
@@ -336,33 +367,36 @@ export class DeepLearningService {
       throw new Error('OpenAI API 키가 설정되지 않았습니다.');
     }
 
-    const { messages, selectedMessage, analysis, userPreferences, guidelines } = context;
+    const { messages: _messages, selectedMessage: _selectedMessage, analysis: _analysis, userPreferences: _userPreferences, guidelines: _guidelines } = context;
 
     const prompt = this.buildPrompt(context);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        joinApiBaseAndPath(OPENAI_OFFICIAL_API_BASE_URL, OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH),
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: '당신은 전문적인 대화 분석가입니다. 주어진 컨텍스트를 바탕으로 적절한 메시지를 생성해주세요.',
+              },
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            max_tokens: this.localModelConfig.maxTokens,
+            temperature: this.localModelConfig.temperature,
+          }),
         },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: '당신은 전문적인 대화 분석가입니다. 주어진 컨텍스트를 바탕으로 적절한 메시지를 생성해주세요.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: this.localModelConfig.maxTokens,
-          temperature: this.localModelConfig.temperature
-        })
-      });
+      );
 
       const data = await response.json();
       const generatedContent = data.choices[0].message.content;
@@ -378,14 +412,19 @@ export class DeepLearningService {
         }
       };
     } catch (error) {
-      console.error('OpenAI 메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('OpenAI 메시지 생성 실패', err, {
+        component: 'deepLearningService',
+        action: 'generateWithOpenAI',
+        model: 'gpt-4',
+      });
       return this.generateWithLocalModel(context);
     }
   }
 
   // 프롬프트 생성
   private buildPrompt(context: MessageGenerationContext): string {
-    const { messages, selectedMessage, analysis, userPreferences, guidelines } = context;
+    const { messages: _messages, selectedMessage, analysis, userPreferences, guidelines } = context;
 
     let prompt = `대화 분석 결과:\n`;
     prompt += `- 감정: ${analysis.sentiment}\n`;
@@ -394,7 +433,7 @@ export class DeepLearningService {
     prompt += `- 복잡도: ${analysis.complexity}\n\n`;
 
     if (selectedMessage) {
-      prompt += `선택된 메시지: ${selectedMessage.content}\"\n\n`;
+      prompt += `선택된 메시지: ${selectedMessage.content}"\n\n`;
     }
 
     prompt += `사용자 선호도:\n`;
@@ -446,10 +485,10 @@ export class DeepLearningService {
 }
 
 // 타입 가드 함수 추가
-function isSentiment(val: any): val is 'positive' | 'negative' | 'neutral' {
+function isSentiment(val: unknown): val is 'positive' | 'negative' | 'neutral' {
   return val === 'positive' || val === 'negative' || val === 'neutral';
 }
-function isPhase(val: any): val is 'introduction' | 'discussion' | 'conflict' | 'resolution' | 'conclusion' {
+function isPhase(val: unknown): val is 'introduction' | 'discussion' | 'conflict' | 'resolution' | 'conclusion' {
   return (
     val === 'introduction' ||
     val === 'discussion' ||
@@ -459,4 +498,5 @@ function isPhase(val: any): val is 'introduction' | 'discussion' | 'conflict' | 
   );
 }
 
-export default new DeepLearningService(); 
+const deepLearningService = new DeepLearningService();
+export default deepLearningService; 

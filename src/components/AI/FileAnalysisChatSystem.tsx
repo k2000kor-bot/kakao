@@ -3,9 +3,7 @@ import {
     FileText,
     MessageSquare,
     Upload,
-    Search,
     Brain,
-    Sparkles,
     Target,
     Eye,
     Download,
@@ -13,18 +11,10 @@ import {
     Copy,
     ThumbsUp,
     ThumbsDown,
-    RotateCcw,
     Settings,
-    Filter,
     BarChart,
     Lightbulb,
     CheckCircle,
-    AlertTriangle,
-    Clock,
-    Users,
-    Star,
-    Heart,
-    Zap,
     ArrowRight,
     File,
     Image,
@@ -36,6 +26,44 @@ import {
     Presentation
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getFileTypeStyle } from '../../styles/themeColors';
+import { resolveDeepseekFlagsForConversation } from '../../config/deepseekUiDefaults';
+import { buildUnifiedGenerationPrompt, buildUnifiedChatContext } from '../../services/generationPromptBuilder';
+import { DEFAULT_CHAT_PERSPECTIVE, DEFAULT_CHAT_RESPONSE_STYLE } from '../../utils/modernChatUrlStyle';
+import {
+    extractResponseContent,
+    extractPipelineFollowUpsFromChatResponse,
+    extractPipelineMessageExtrasFromChatResponse,
+    hasPipelineExtras,
+    coerceTrimmedString,
+    buildFeatureContextFromMessage,
+    parseQuestionRequirementSections,
+    parseInputIntent,
+    type PipelineMessageExtras,
+    scheduleAssistantNonStreamLoadingPhaseTimers,
+    runAssistantNonStreamPostResponsePhases,
+    ASSISTANT_PLACEHOLDER_ANALYZING,
+    ASSISTANT_PLACEHOLDER_DRAFT,
+    ASSISTANT_GENSPARK_QA_BADGE_QUESTION,
+    ASSISTANT_GENSPARK_QA_BADGE_ANSWER,
+} from '../../utils/chatInputUtils';
+import {
+    AssistantGensparkBody,
+    GensparkPipelineExtrasPanel,
+    GensparkNextActionChips,
+} from '../genspark';
+import { postChatJsonWithFallback } from '../../utils/apiClient';
+import {
+    mergeApiChatContextPayload,
+    normalizeChatTurnsForApiMerge,
+    resolveMergeOptionsFromHistoryAndExplicit,
+    scenarioInheritMergeOptionsFromPipelineLikeMessages,
+    toChatTurnWithPipelineExtras,
+} from '../../services/modernChatContextBuilder';
+import { errorLogger } from '../../utils/errorLogger';
+import { enrichChatContextRecordWithOptionalMultilayerStyleHint } from '../../services/multiLayerStyleAnalysisSystem';
+import { resolveGensparkAgentIdFromWindowSearch } from '../../services/gensparkAgentRegistry';
+import './FileAnalysisChatSystem.css';
 
 interface AnalyzedFile {
     id: string;
@@ -62,7 +90,7 @@ interface AnalyzedFile {
         relevance: number;
         accuracy: number;
     };
-    extractedData: Record<string, any>;
+    extractedData: Record<string, unknown>;
     insights: Array<{
         type: 'key_point' | 'trend' | 'anomaly' | 'recommendation';
         title: string;
@@ -77,6 +105,11 @@ interface ChatMessage {
     type: 'user' | 'ai';
     content: string;
     timestamp: Date;
+    /** 생성 중 임시 AI 메시지 — 다음 요청 맥락 구성 시 제외 */
+    generationPlaceholder?: boolean;
+    /** Genspark형 파이프라인 메타 (메인 대화와 동일) */
+    pipelineExtras?: PipelineMessageExtras;
+    suggestedFollowUps?: string[];
     files?: AnalyzedFile[];
     analysis?: {
         fileReferences: string[];
@@ -100,11 +133,11 @@ interface FileAnalysisChatSystemProps {
     onMessageSend?: (message: string, files?: AnalyzedFile[]) => void;
     onAnalysisComplete?: (analysis: AnalyzedFile) => void;
     onExportAnalysis?: (fileId: string, format: string) => void;
-    onShareAnalysis?: (fileId: string, shareOptions: any) => void;
+    onShareAnalysis?: (fileId: string, shareOptions: Record<string, unknown>) => void;
 }
 
 const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
-    onFileUpload,
+    onFileUpload: _onFileUpload,
     onMessageSend,
     onAnalysisComplete,
     onExportAnalysis,
@@ -114,10 +147,12 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
     const [analyzedFiles, setAnalyzedFiles] = useState<AnalyzedFile[]>([]);
     const [currentMessage, setCurrentMessage] = useState('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    void isAnalyzing; // reserved for future loading indicator
     const [isTyping, setIsTyping] = useState(false);
     const [activeTab, setActiveTab] = useState<'chat' | 'files' | 'analysis' | 'insights' | 'settings'>('chat');
     const [selectedFile, setSelectedFile] = useState<AnalyzedFile | null>(null);
     const [fileUploadProgress, setFileUploadProgress] = useState<Record<string, number>>({});
+    void fileUploadProgress; // reserved for progress UI
     const [analysisSettings, setAnalysisSettings] = useState({
         extractText: true,
         extractEntities: true,
@@ -136,7 +171,7 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
         const mockFiles: AnalyzedFile[] = [
             {
                 id: 'file1',
-                name: 'CORBU.AI_프로젝트_제안서.pdf',
+                name: 'CORBU_AI_프로젝트_제안서.pdf',
                 type: 'pdf',
                 size: 2048576,
                 uploadedAt: new Date('2024-01-15'),
@@ -188,51 +223,37 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
     }, []);
 
     const getFileIcon = (type: string) => {
+        const iconSize = 20;
         switch (type.toLowerCase()) {
-            case 'pdf': return <FileText className="h-5 w-5" />;
+            case 'pdf':
             case 'doc':
-            case 'docx': return <FileText className="h-5 w-5" />;
+            case 'docx':
             case 'xls':
-            case 'xlsx': return <FileText className="h-5 w-5" />;
+            case 'xlsx': return <FileText size={iconSize} aria-hidden />;
             case 'ppt':
-            case 'pptx': return <Presentation className="h-5 w-5" />;
+            case 'pptx': return <Presentation size={iconSize} aria-hidden />;
             case 'jpg':
             case 'jpeg':
             case 'png':
-            case 'gif': return <Image className="h-5 w-5" />;
+            case 'gif': return <Image size={iconSize} aria-hidden />;
             case 'mp4':
             case 'avi':
-            case 'mov': return <Video className="h-5 w-5" />;
+            case 'mov': return <Video size={iconSize} aria-hidden />;
             case 'mp3':
-            case 'wav': return <Music className="h-5 w-5" />;
+            case 'wav': return <Music size={iconSize} aria-hidden />;
             case 'zip':
-            case 'rar': return <Archive className="h-5 w-5" />;
+            case 'rar': return <Archive size={iconSize} aria-hidden />;
             case 'js':
             case 'ts':
             case 'py':
-            case 'java': return <Code className="h-5 w-5" />;
+            case 'java': return <Code size={iconSize} aria-hidden />;
             case 'sql':
-            case 'db': return <Database className="h-5 w-5" />;
-            default: return <File className="h-5 w-5" />;
+            case 'db': return <Database size={iconSize} aria-hidden />;
+            default: return <File size={iconSize} aria-hidden />;
         }
     };
 
-    const getFileTypeColor = (type: string) => {
-        switch (type.toLowerCase()) {
-            case 'pdf': return 'text-red-600 bg-red-50';
-            case 'doc':
-            case 'docx': return 'text-blue-600 bg-blue-50';
-            case 'xls':
-            case 'xlsx': return 'text-green-600 bg-green-50';
-            case 'ppt':
-            case 'pptx': return 'text-orange-600 bg-orange-50';
-            case 'jpg':
-            case 'jpeg':
-            case 'png':
-            case 'gif': return 'text-purple-600 bg-purple-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
-    };
+    const getFileTypeStyleObj = (type: string) => getFileTypeStyle(type);
 
     const handleFileUpload = async (files: FileList) => {
         setIsAnalyzing(true);
@@ -295,13 +316,14 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
         setFileUploadProgress({});
     };
 
-    const handleSendMessage = async () => {
-        if (!currentMessage.trim() && analyzedFiles.length === 0) return;
+    const handleSendMessage = async (directText?: string) => {
+        const fromInput = coerceTrimmedString(directText, currentMessage);
+        if (!fromInput && analyzedFiles.length === 0) return;
 
         const userMessage: ChatMessage = {
             id: `msg-${Date.now()}`,
             type: 'user',
-            content: currentMessage,
+            content: fromInput || '(파일만 업로드됨)',
             timestamp: new Date(),
             files: analyzedFiles
         };
@@ -310,30 +332,178 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
         setCurrentMessage('');
         setIsTyping(true);
 
-        // Simulate AI response generation
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        const aiResponse: ChatMessage = {
-            id: `ai-${Date.now()}`,
-            type: 'ai',
-            content: generateAIResponse(currentMessage, analyzedFiles),
-            timestamp: new Date(),
-            analysis: {
-                fileReferences: analyzedFiles.map(f => f.name),
-                confidence: 0.85,
-                sources: analyzedFiles.map(f => f.name)
+        const placeholderAiId = `ai-${Date.now()}`;
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: placeholderAiId,
+                type: 'ai',
+                content: ASSISTANT_PLACEHOLDER_ANALYZING,
+                timestamp: new Date(),
+                generationPlaceholder: true,
             },
-            metadata: {
-                model: 'gpt-4',
-                tokens: 150,
-                responseTime: 2000,
-                fileAnalysisTime: 1000
-            }
+        ]);
+
+        let clearFileAnalysisNsPhases = scheduleAssistantNonStreamLoadingPhaseTimers((text) => {
+            setMessages((prev) =>
+                prev.map((m) => (m.id === placeholderAiId ? { ...m, content: text } : m)),
+            );
+        });
+
+        const promptInput = fromInput || '업로드된 파일을 요약하고 핵심 인사이트를 알려주세요.';
+        const requestMessage = buildUnifiedGenerationPrompt(promptInput, {
+            responseStyle: DEFAULT_CHAT_RESPONSE_STYLE,
+            perspective: DEFAULT_CHAT_PERSPECTIVE,
+        });
+        const projectKnowledge = analyzedFiles.length > 0
+            ? analyzedFiles.map((f) => `[파일: ${f.name}]\n요약: ${f.summary}\n내용: ${f.content ?? ''}\n키워드: ${f.keywords.join(', ')}`).join('\n\n')
+            : '';
+        const messagesForApiContext = messages.filter((m) => !m.generationPlaceholder);
+        const conversationHistory = normalizeChatTurnsForApiMerge(
+            messagesForApiContext.map((m) =>
+                toChatTurnWithPipelineExtras({
+                    role: m.type === 'user' ? 'user' : 'assistant',
+                    content: m.content,
+                    pipelineExtras: m.pipelineExtras,
+                })
+            )
+        );
+        const ds = resolveDeepseekFlagsForConversation(undefined);
+        const hasNotebookKnowledge = Boolean(coerceTrimmedString(projectKnowledge, ''));
+        const agentRouteId = resolveGensparkAgentIdFromWindowSearch();
+        const agentGensparkSession = Boolean(agentRouteId);
+        const featureCtx = buildFeatureContextFromMessage(promptInput);
+        const parsedSections = parseQuestionRequirementSections(promptInput);
+        const inputIntent = parseInputIntent(promptInput);
+        const wantsStructured =
+            hasNotebookKnowledge ||
+            parsedSections.hasBoth ||
+            inputIntent.type !== 'general' ||
+            !!(featureCtx as Record<string, unknown>).prefer_informed_answer ||
+            !!(featureCtx as Record<string, unknown>).enable_web_research;
+        const useQaPipeline = wantsStructured || agentGensparkSession;
+        const context = buildUnifiedChatContext(promptInput, {
+            conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
+            deepSeekReviewLayerHints: useQaPipeline && ds.review,
+            pipelineDeepSeekRefine: useQaPipeline && ds.refine,
+            pipelineDeepSeekReasoner: useQaPipeline && ds.reasoner,
+            ...(useQaPipeline
+                ? {
+                      useQuestionAnswerPipeline: true,
+                      agenticGensparkStyle: true,
+                      qaPipelineAllowEmptyProject: true,
+                      ...(agentRouteId ? { gensparkRouteAgentId: agentRouteId } : {}),
+                      skipWriterLlmPolish:
+                          process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true',
+                      ...(process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true'
+                          ? { pipelineVerifierRewrite: true }
+                          : {}),
+                      ...(process.env.REACT_APP_INCLUDE_QA_GENERATION_SCENARIO === 'true'
+                          ? { includeGenerationScenarioInResponse: true }
+                          : {}),
+                  }
+                : {}),
+        });
+        const baseWithFiles: Record<string, unknown> = {
+            ...context,
+            projectKnowledge: projectKnowledge || undefined,
+            project_files: analyzedFiles.map((f) => ({ name: f.name, type: f.type })),
+        };
+        const contextWithFiles = await enrichChatContextRecordWithOptionalMultilayerStyleHint(
+            coerceTrimmedString(promptInput, ''),
+            baseWithFiles
+        );
+
+        const scenarioMergeOpts = scenarioInheritMergeOptionsFromPipelineLikeMessages(messagesForApiContext);
+
+        const mergeOpts = resolveMergeOptionsFromHistoryAndExplicit(conversationHistory, scenarioMergeOpts);
+
+        const { quality, contextForBody } = mergeApiChatContextPayload(
+            promptInput,
+            contextWithFiles,
+            conversationHistory.length > 0 ? conversationHistory : undefined,
+            mergeOpts
+        );
+        const chatPostBody = {
+            message: requestMessage,
+            quality,
+            ...(contextForBody && Object.keys(contextForBody).length > 0 ? { context: contextForBody } : {}),
+            response_style: DEFAULT_CHAT_RESPONSE_STYLE,
+            perspective: DEFAULT_CHAT_PERSPECTIVE,
         };
 
-        setMessages(prev => [...prev, aiResponse]);
-        setIsTyping(false);
-        onMessageSend?.(currentMessage, analyzedFiles);
+        try {
+            const data = await postChatJsonWithFallback(chatPostBody as Record<string, unknown>);
+            clearFileAnalysisNsPhases();
+            clearFileAnalysisNsPhases = () => {};
+            const responseText = extractResponseContent({ data });
+            const isSuccess = data.success !== false && responseText.length > 0;
+            const pipelineExtrasRaw = extractPipelineMessageExtrasFromChatResponse({ data });
+            const pipelineExtras = hasPipelineExtras(pipelineExtrasRaw)
+                ? pipelineExtrasRaw
+                : undefined;
+            const suggestedFollowUps = extractPipelineFollowUpsFromChatResponse({ data });
+
+            const aiResponse: ChatMessage = {
+                id: placeholderAiId,
+                type: 'ai',
+                content: isSuccess ? responseText : generateAIResponse(fromInput, analyzedFiles),
+                timestamp: new Date(),
+                ...(pipelineExtras ? { pipelineExtras } : {}),
+                ...(suggestedFollowUps?.length ? { suggestedFollowUps } : {}),
+                analysis: {
+                    fileReferences: analyzedFiles.map(f => f.name),
+                    confidence: isSuccess ? 0.9 : 0.85,
+                    sources: analyzedFiles.map(f => f.name)
+                },
+                metadata: {
+                    model: 'gpt-4',
+                    tokens: 150,
+                    responseTime: 2000,
+                    fileAnalysisTime: 1000
+                }
+            };
+            await runAssistantNonStreamPostResponsePhases((text) => {
+                setMessages((prev) =>
+                    prev.map((m) =>
+                        m.id === placeholderAiId
+                            ? { ...m, content: text, generationPlaceholder: true }
+                            : m,
+                    ),
+                );
+            });
+            setMessages((prev) => prev.map((m) => (m.id === placeholderAiId ? aiResponse : m)));
+        } catch (err) {
+            clearFileAnalysisNsPhases();
+            clearFileAnalysisNsPhases = () => {};
+            errorLogger.error('파일 분석 대화 API 오류', err instanceof Error ? err : new Error(String(err)), {
+                component: 'FileAnalysisChatSystem',
+                action: 'handleSendMessage',
+            });
+            const aiResponse: ChatMessage = {
+                id: placeholderAiId,
+                type: 'ai',
+                content: generateAIResponse(fromInput, analyzedFiles),
+                timestamp: new Date(),
+                analysis: {
+                    fileReferences: analyzedFiles.map(f => f.name),
+                    confidence: 0.85,
+                    sources: analyzedFiles.map(f => f.name)
+                },
+                metadata: {
+                    model: 'gpt-4',
+                    tokens: 150,
+                    responseTime: 2000,
+                    fileAnalysisTime: 1000
+                }
+            };
+            setMessages((prev) => prev.map((m) => (m.id === placeholderAiId ? aiResponse : m)));
+        } finally {
+            clearFileAnalysisNsPhases();
+            clearFileAnalysisNsPhases = () => {};
+            setIsTyping(false);
+            onMessageSend?.(fromInput, analyzedFiles);
+        }
     };
 
     const generateAIResponse = (question: string, files: AnalyzedFile[]): string => {
@@ -360,7 +530,7 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
             return `파일별 감정 분석 결과:\n${sentiments.join('\n')}`;
         }
 
-        return `업로드된 파일들(${fileNames})을 분석한 결과를 바탕으로 답변드립니다:\n\n${fileContent.substring(0, 200)}...\n\n더 구체적인 질문을 해주시면 더 정확한 답변을 드릴 수 있습니다.`;
+        return `업로드된 파일들(${fileNames})을 분석한 결과를 바탕으로 답변드립니다:\n\n${fileContent}\n\n더 구체적인 질문을 해주시면 더 정확한 답변을 드릴 수 있습니다.`;
     };
 
     const handleFileSelect = (file: AnalyzedFile) => {
@@ -373,51 +543,48 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
     }, [messages]);
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
+        <div className="fac-root bw-detail-root" data-testid="page-file-analysis">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <Brain className="h-5 w-5 text-blue-600" />
+            <div className="fac-header bw-detail-header">
+                <div className="fac-header-inner bw-detail-header-inner">
+                    <div className="bw-detail-header-left">
+                        <div className="fac-header-icon bw-detail-header-icon">
+                            <Brain size={20} aria-hidden />
                         </div>
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-900">파일 분석 대화</h2>
-                            <p className="text-sm text-gray-500">파일을 업로드하고 AI와 대화하세요</p>
+                            <h2 className="bw-detail-header-title">파일 분석 대화</h2>
+                            <p className="bw-detail-header-desc">파일을 업로드하고 CORBU.AI와 대화하세요</p>
                         </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                        >
-                            <Upload className="h-4 w-4" />
-                            <span>파일 업로드</span>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bw-btn-primary"
+                    >
+                        <Upload size={16} aria-hidden />
+                        파일 업로드
+                    </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mt-4">
-                    {[
+                <div className="fac-tabs bw-detail-tabs">
+                    {([
                         { id: 'chat', label: '대화', icon: MessageSquare },
                         { id: 'files', label: '파일', icon: FileText },
                         { id: 'analysis', label: '분석', icon: BarChart },
                         { id: 'insights', label: '인사이트', icon: Lightbulb },
                         { id: 'settings', label: '설정', icon: Settings }
-                    ].map((tab) => {
+                    ] as const).map((tab) => {
                         const IconComponent = tab.icon;
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`fac-tab bw-detail-tab ${activeTab === tab.id ? 'active' : ''}`}
                             >
-                                <IconComponent className="h-4 w-4" />
-                                <span>{tab.label}</span>
+                                <IconComponent size={16} aria-hidden />
+                                {tab.label}
                             </button>
                         );
                     })}
@@ -425,7 +592,7 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="fac-content bw-detail-content">
                 <AnimatePresence mode="wait">
                     {activeTab === 'chat' && (
                         <motion.div
@@ -433,88 +600,145 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="h-full flex flex-col"
+                            style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                         >
                             {/* Chat Messages */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            <div className="fac-chat-area genspark-chat-column">
                                 {messages.map((message) => (
                                     <motion.div
                                         key={message.id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                                        className={`fac-msg-wrap ${message.type === 'ai' ? 'ai' : ''}`}
                                     >
-                                        <div className={`max-w-3xl ${message.type === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg p-4`}>
-                                            <div className="flex items-start space-x-3">
-                                                {message.type === 'ai' && (
-                                                    <Brain className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
-                                                )}
-                                                <div className="flex-1">
-                                                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                        <div className={`fac-msg-bubble ${message.type}`}>
+                                            {message.type === 'ai' && (
+                                                <Brain size={20} style={{ color: 'var(--accent-info)', flexShrink: 0, marginTop: 2 }} aria-hidden />
+                                            )}
+                                            <div className="fac-msg-content">
+                                                <div
+                                                    className="genspark-qa-role-row"
+                                                    style={{
+                                                        display: 'flex',
+                                                        width: '100%',
+                                                        justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start',
+                                                        marginBottom: 6,
+                                                    }}
+                                                >
+                                                    <span
+                                                        className={`genspark-qa-badge ${message.type === 'user' ? 'genspark-qa-badge--question' : 'genspark-qa-badge--answer'}`}
+                                                    >
+                                                        {message.type === 'user' ? ASSISTANT_GENSPARK_QA_BADGE_QUESTION : ASSISTANT_GENSPARK_QA_BADGE_ANSWER}
+                                                    </span>
+                                                </div>
+                                                <div className="fac-msg-text">
+                                                    {message.type === 'ai' ? (
+                                                        <AssistantGensparkBody
+                                                            text={message.content}
+                                                            embedded
+                                                            enhancedCodeBlocks
+                                                            documentContext={analyzedFiles.length > 0}
+                                                        />
+                                                    ) : (
+                                                        <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{message.content}</p>
+                                                    )}
+                                                </div>
 
-                                                    {message.files && message.files.length > 0 && (
-                                                        <div className="mt-3 pt-3 border-t border-gray-200">
-                                                            <p className="text-xs opacity-75 mb-2">참조된 파일:</p>
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {message.files.map((file) => (
-                                                                    <span
-                                                                        key={file.id}
-                                                                        className="inline-flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs"
-                                                                    >
-                                                                        {getFileIcon(file.type)}
-                                                                        <span>{file.name}</span>
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </div>
+                                                {message.type === 'ai' &&
+                                                    message.suggestedFollowUps &&
+                                                    message.suggestedFollowUps.length > 0 && (
+                                                        <GensparkNextActionChips
+                                                            hints={message.suggestedFollowUps}
+                                                            messageId={message.id}
+                                                            onSelectHint={(h) => void handleSendMessage(h)}
+                                                            borderColor="var(--border-color)"
+                                                            textSecondary="var(--text-secondary)"
+                                                        />
+                                                    )}
+                                                {message.type === 'ai' &&
+                                                    message.pipelineExtras &&
+                                                    hasPipelineExtras(message.pipelineExtras) && (
+                                                        <GensparkPipelineExtrasPanel
+                                                            extras={message.pipelineExtras}
+                                                            messageId={message.id}
+                                                            theme={{
+                                                                borderColor: 'var(--border-color)',
+                                                                textSecondary: 'var(--text-secondary)',
+                                                            }}
+                                                        />
                                                     )}
 
-                                                    {message.analysis && (
-                                                        <div className="mt-2 text-xs opacity-75">
-                                                            신뢰도: {Math.round(message.analysis.confidence * 100)}% |
-                                                            소스: {message.analysis.sources.join(', ')}
+                                                {message.files && message.files.length > 0 && (
+                                                    <div className="fac-msg-files">
+                                                        <p className="fac-msg-meta" style={{ marginBottom: 'var(--spacing-sm)' }}>참조된 파일:</p>
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
+                                                            {message.files.map((file) => (
+                                                                <span
+                                                                    key={file.id}
+                                                                    className="fac-file-chip"
+                                                                >
+                                                                    {getFileIcon(file.type)}
+                                                                    <span>{file.name}</span>
+                                                                </span>
+                                                            ))}
                                                         </div>
-                                                    )}
-
-                                                    <div className="flex items-center space-x-2 mt-3">
-                                                        {message.type === 'ai' && (
-                                                            <>
-                                                                <button className="p-1 hover:bg-gray-200 rounded transition-colors">
-                                                                    <ThumbsUp className="h-4 w-4" />
-                                                                </button>
-                                                                <button className="p-1 hover:bg-gray-200 rounded transition-colors">
-                                                                    <ThumbsDown className="h-4 w-4" />
-                                                                </button>
-                                                                <button className="p-1 hover:bg-gray-200 rounded transition-colors">
-                                                                    <Copy className="h-4 w-4" />
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                        <span className="text-xs opacity-75">
-                                                            {message.timestamp.toLocaleTimeString()}
-                                                        </span>
                                                     </div>
+                                                )}
+
+                                                {message.analysis && (
+                                                    <div className="fac-msg-meta" style={{ marginTop: 'var(--spacing-sm)' }}>
+                                                        신뢰도: {Math.round(message.analysis.confidence * 100)}% |
+                                                        소스: {message.analysis.sources.join(', ')}
+                                                    </div>
+                                                )}
+
+                                                <div className="fac-msg-actions">
+                                                    {message.type === 'ai' && (
+                                                        <>
+                                                            <button type="button" className="fac-action-btn" aria-label="도움됨"><ThumbsUp size={16} aria-hidden /></button>
+                                                            <button type="button" className="fac-action-btn" aria-label="도움 안됨"><ThumbsDown size={16} aria-hidden /></button>
+                                                            <button type="button" className="fac-action-btn" aria-label="복사"><Copy size={16} aria-hidden /></button>
+                                                        </>
+                                                    )}
+                                                    <span className="fac-msg-meta">{message.timestamp.toLocaleTimeString()}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </motion.div>
                                 ))}
 
-                                {isTyping && (
+                                {isTyping &&
+                                    !messages.some((m) => m.generationPlaceholder) && (
                                     <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        className="flex justify-start"
+                                        style={{ display: 'flex', justifyContent: 'flex-start' }}
+                                        aria-live="polite"
+                                        aria-busy="true"
+                                        aria-label={ASSISTANT_PLACEHOLDER_DRAFT}
                                     >
-                                        <div className="bg-gray-100 rounded-lg p-4">
-                                            <div className="flex items-center space-x-2">
-                                                <Brain className="h-5 w-5 text-blue-600" />
-                                                <div className="flex space-x-1">
-                                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                        <div
+                                            className="fac-typing-bubble"
+                                            style={{
+                                                flexDirection: 'column',
+                                                alignItems: 'stretch',
+                                                gap: 'var(--spacing-sm)',
+                                                maxWidth: '100%',
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', alignItems: 'flex-start' }}>
+                                                <Brain size={20} style={{ color: 'var(--accent-info)', flexShrink: 0 }} aria-hidden />
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div className="genspark-qa-role-row" style={{ marginBottom: 6 }}>
+                                                        <span className="genspark-qa-badge genspark-qa-badge--answer">{ASSISTANT_GENSPARK_QA_BADGE_ANSWER}</span>
+                                                    </div>
+                                                    <AssistantGensparkBody
+                                                        text=""
+                                                        embedded
+                                                        enhancedCodeBlocks
+                                                        documentContext={analyzedFiles.length > 0}
+                                                    />
                                                 </div>
-                                                <span className="text-sm text-gray-600">AI가 답변을 생성하고 있습니다...</span>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -524,47 +748,60 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                             </div>
 
                             {/* Message Input */}
-                            <div className="p-4 border-t border-gray-200">
-                                <div className="flex items-end space-x-3">
-                                    <div className="flex-1">
-                                        <textarea
-                                            value={currentMessage}
-                                            onChange={(e) => setCurrentMessage(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                    e.preventDefault();
-                                                    handleSendMessage();
-                                                }
-                                            }}
-                                            placeholder="파일에 대해 질문하세요..."
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                            rows={3}
-                                        />
-                                    </div>
+                            <div className="fac-input-row bw-page-input-dock" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                                <div className="bw-figma-composer">
                                     <button
-                                        onClick={handleSendMessage}
-                                        disabled={!currentMessage.trim() && analyzedFiles.length === 0}
-                                        className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        type="button"
+                                        className="bw-figma-composer-add"
+                                        onClick={() => {
+                                            const el = document.getElementById('file-analysis-message-input');
+                                            el?.focus();
+                                        }}
+                                        aria-label="질문 입력 포커스"
                                     >
-                                        <ArrowRight className="h-5 w-5" />
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                            <path d="M12 5v14M5 12h14" />
+                                        </svg>
+                                    </button>
+                                    <textarea
+                                        id="file-analysis-message-input"
+                                        value={currentMessage}
+                                        onChange={(e) => setCurrentMessage(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendMessage();
+                                            }
+                                        }}
+                                        placeholder="질문을 입력하세요. (Shift+Enter 줄바꿈)"
+                                        className="fac-input bw-input bw-figma-composer-field"
+                                        rows={1}
+                                        style={{ minHeight: 44 }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleSendMessage()}
+                                        disabled={
+                                            (!coerceTrimmedString(currentMessage, '') && analyzedFiles.length === 0) ||
+                                            isTyping ||
+                                            messages.some((m) => m.generationPlaceholder)
+                                        }
+                                        className="fac-send-btn bw-figma-composer-action bw-figma-composer-action--primary"
+                                        aria-label="메시지 전송"
+                                    >
+                                        <ArrowRight size={20} aria-hidden />
                                     </button>
                                 </div>
 
-                                {/* Uploaded Files */}
                                 {analyzedFiles.length > 0 && (
-                                    <div className="mt-3">
-                                        <p className="text-sm text-gray-600 mb-2">업로드된 파일:</p>
-                                        <div className="flex flex-wrap gap-2">
+                                    <div className="fac-files-wrap">
+                                        <p className="fac-files-label">업로드된 파일:</p>
+                                        <div className="fac-file-list">
                                             {analyzedFiles.map((file) => (
-                                                <div
-                                                    key={file.id}
-                                                    className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg"
-                                                >
+                                                <div key={file.id} className="fac-file-list-item">
                                                     {getFileIcon(file.type)}
-                                                    <span className="text-sm font-medium">{file.name}</span>
-                                                    <span className="text-xs text-gray-500">
-                                                        {Math.round(file.size / 1024)}KB
-                                                    </span>
+                                                    <span className="fac-file-name">{file.name}</span>
+                                                    <span className="fac-msg-meta">{Math.round(file.size / 1024)}KB</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -580,42 +817,44 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="h-full overflow-y-auto p-4"
+                            className="fac-tab-content"
                         >
-                            <div className="space-y-4">
+                            <div className="fac-tab-stack-md">
                                 {analyzedFiles.map((file) => (
                                     <motion.div
                                         key={file.id}
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                        className="fac-card fac-file-card"
                                         onClick={() => handleFileSelect(file)}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleFileSelect(file)}
                                     >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-blue-100 rounded-lg">
-                                                    {getFileIcon(file.type)}
-                                                </div>
+                                        <div className="fac-row-between-start">
+                                            <div className="fac-row-center-md">
+                                                <div className="fac-header-icon">{getFileIcon(file.type)}</div>
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">{file.name}</h3>
-                                                    <p className="text-sm text-gray-500">{file.summary}</p>
+                                                    <h3 className="fac-header-title fac-title-base">{file.name}</h3>
+                                                    <p className="fac-header-desc">{file.summary}</p>
                                                 </div>
                                             </div>
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getFileTypeColor(file.type)}`}>
+                                            <span
+                                                className="fac-file-chip"
+                                                style={getFileTypeStyleObj(file.type)}
+                                            >
                                                 {file.type.toUpperCase()}
                                             </span>
                                         </div>
 
-                                        <div className="mt-3 space-y-2">
-                                            <div className="flex flex-wrap gap-1">
+                                        <div className="fac-card-meta">
+                                            <div className="fac-keywords-wrap">
                                                 {file.keywords.slice(0, 5).map((keyword, index) => (
-                                                    <span key={index} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                                                        {keyword}
-                                                    </span>
+                                                    <span key={index} className="fac-keyword-tag">{keyword}</span>
                                                 ))}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-sm text-gray-500">
+                                            <div className="fac-file-stats">
                                                 <span>업로드: {file.uploadedAt.toLocaleDateString()}</span>
                                                 <span>크기: {Math.round(file.size / 1024)}KB</span>
                                                 <span>단어: {file.wordCount}</span>
@@ -634,97 +873,79 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="h-full overflow-y-auto p-4"
+                            className="fac-tab-content"
                         >
-                            <div className="space-y-6">
+                            <div className="fac-tab-stack-lg">
                                 {/* File Header */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="p-3 bg-blue-100 rounded-lg">
-                                                {getFileIcon(selectedFile.type)}
-                                            </div>
+                                <div className="fac-card">
+                                    <div className="fac-row-between-start">
+                                        <div className="fac-row-center-md">
+                                            <div className="fac-header-icon fac-icon-pad-md">{getFileIcon(selectedFile.type)}</div>
                                             <div>
-                                                <h2 className="text-xl font-semibold text-gray-900">{selectedFile.name}</h2>
-                                                <p className="text-gray-500">{selectedFile.summary}</p>
+                                                <h2 className="fac-card-title fac-card-title-xl">{selectedFile.name}</h2>
+                                                <p className="fac-header-desc">{selectedFile.summary}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                            <button
-                                                onClick={() => onExportAnalysis?.(selectedFile.id, 'pdf')}
-                                                className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                            >
-                                                <Download className="h-4 w-4" />
-                                                <span>내보내기</span>
+                                        <div className="fac-actions-row">
+                                            <button type="button" onClick={() => onExportAnalysis?.(selectedFile.id, 'pdf')} className="bw-btn-primary">
+                                                <Download size={16} aria-hidden /> 내보내기
                                             </button>
-                                            <button
-                                                onClick={() => onShareAnalysis?.(selectedFile.id, {})}
-                                                className="flex items-center space-x-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                                            >
-                                                <Share2 className="h-4 w-4" />
-                                                <span>공유</span>
+                                            <button type="button" onClick={() => onShareAnalysis?.(selectedFile.id, {})} className="bw-btn-secondary">
+                                                <Share2 size={16} aria-hidden /> 공유
                                             </button>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Analysis Metrics */}
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                        <div className="flex items-center justify-between">
+                                <div className="fac-grid-metrics">
+                                    <div className="fac-card fac-metric-card">
+                                        <div className="fac-metric-head">
                                             <div>
-                                                <p className="text-sm text-gray-500">복잡도</p>
-                                                <p className="text-2xl font-bold text-blue-600">
-                                                    {Math.round(selectedFile.analysis.complexity * 100)}%
-                                                </p>
+                                                <p className="fac-header-desc">복잡도</p>
+                                                <p className="fac-metric-value info">{Math.round(selectedFile.analysis.complexity * 100)}%</p>
                                             </div>
-                                            <BarChart className="h-8 w-8 text-blue-600" />
+                                            <BarChart size={32} className="fac-icon-info" aria-hidden />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                        <div className="flex items-center justify-between">
+                                    <div className="fac-card fac-metric-card">
+                                        <div className="fac-metric-head">
                                             <div>
-                                                <p className="text-sm text-gray-500">가독성</p>
-                                                <p className="text-2xl font-bold text-green-600">
-                                                    {Math.round(selectedFile.analysis.readability * 100)}%
-                                                </p>
+                                                <p className="fac-header-desc">가독성</p>
+                                                <p className="fac-metric-value success">{Math.round(selectedFile.analysis.readability * 100)}%</p>
                                             </div>
-                                            <Eye className="h-8 w-8 text-green-600" />
+                                            <Eye size={32} className="fac-icon-success" aria-hidden />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                        <div className="flex items-center justify-between">
+                                    <div className="fac-card fac-metric-card">
+                                        <div className="fac-metric-head">
                                             <div>
-                                                <p className="text-sm text-gray-500">관련성</p>
-                                                <p className="text-2xl font-bold text-purple-600">
-                                                    {Math.round(selectedFile.analysis.relevance * 100)}%
-                                                </p>
+                                                <p className="fac-header-desc">관련성</p>
+                                                <p className="fac-metric-value secondary">{Math.round(selectedFile.analysis.relevance * 100)}%</p>
                                             </div>
-                                            <Target className="h-8 w-8 text-purple-600" />
+                                            <Target size={32} className="fac-icon-secondary" aria-hidden />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                        <div className="flex items-center justify-between">
+                                    <div className="fac-card fac-metric-card">
+                                        <div className="fac-metric-head">
                                             <div>
-                                                <p className="text-sm text-gray-500">정확도</p>
-                                                <p className="text-2xl font-bold text-orange-600">
-                                                    {Math.round(selectedFile.analysis.accuracy * 100)}%
-                                                </p>
+                                                <p className="fac-header-desc">정확도</p>
+                                                <p className="fac-metric-value orange">{Math.round(selectedFile.analysis.accuracy * 100)}%</p>
                                             </div>
-                                            <CheckCircle className="h-8 w-8 text-orange-600" />
+                                            <CheckCircle size={32} className="fac-icon-orange" aria-hidden />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Entities */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">추출된 엔티티</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="fac-card">
+                                    <h3 className="fac-card-title">추출된 엔티티</h3>
+                                    <div className="fac-grid-entities">
                                         {selectedFile.entities.map((entity, index) => (
-                                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                <div>
-                                                    <span className="font-medium text-gray-900">{entity.name}</span>
-                                                    <span className="text-sm text-gray-500 ml-2">
+                                            <div key={index} className="fac-entity-row">
+                                                <div className="fac-entity-main">
+                                                    <span className="fac-entity-name">{entity.name}</span>
+                                                    <span className="fac-header-desc">
                                                         ({entity.type === 'person' ? '사람' :
                                                             entity.type === 'organization' ? '조직' :
                                                                 entity.type === 'location' ? '위치' :
@@ -732,31 +953,25 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                                                                         entity.type === 'money' ? '금액' : '비율'})
                                                     </span>
                                                 </div>
-                                                <span className="text-sm text-gray-500">
-                                                    {Math.round(entity.confidence * 100)}%
-                                                </span>
+                                                <span className="fac-header-desc">{Math.round(entity.confidence * 100)}%</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Insights */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 인사이트</h3>
-                                    <div className="space-y-3">
+                                <div className="fac-card">
+                                    <h3 className="fac-card-title">AI 인사이트</h3>
+                                    <div className="fac-insights-list">
                                         {selectedFile.insights.map((insight, index) => (
-                                            <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                                                <Lightbulb className="h-5 w-5 text-yellow-600 mt-1" />
-                                                <div className="flex-1">
-                                                    <h4 className="font-medium text-gray-900">{insight.title}</h4>
-                                                    <p className="text-sm text-gray-600">{insight.description}</p>
-                                                    <div className="flex items-center space-x-2 mt-2">
-                                                        <span className="text-xs text-gray-500">
-                                                            신뢰도: {Math.round(insight.confidence * 100)}%
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            소스: {insight.source}
-                                                        </span>
+                                            <div key={index} className="fac-insight-item">
+                                                <Lightbulb size={20} className="fac-insight-icon" aria-hidden />
+                                                <div className="fac-insight-content">
+                                                    <h4 className="fac-insight-title">{insight.title}</h4>
+                                                    <p className="fac-header-desc fac-insight-desc">{insight.description}</p>
+                                                    <div className="fac-insight-meta">
+                                                        <span className="fac-header-desc">신뢰도: {Math.round(insight.confidence * 100)}%</span>
+                                                        <span className="fac-header-desc">소스: {insight.source}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -773,30 +988,24 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="h-full overflow-y-auto p-4"
+                            className="fac-tab-content"
                         >
-                            <div className="space-y-6">
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">전체 파일 인사이트</h3>
-                                    <div className="space-y-4">
-                                        {analyzedFiles.flatMap(file => file.insights).map((insight, index) => (
-                                            <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
-                                                <Lightbulb className="h-5 w-5 text-yellow-600 mt-1" />
-                                                <div className="flex-1">
-                                                    <h4 className="font-medium text-gray-900">{insight.title}</h4>
-                                                    <p className="text-sm text-gray-600">{insight.description}</p>
-                                                    <div className="flex items-center space-x-2 mt-2">
-                                                        <span className="text-xs text-gray-500">
-                                                            신뢰도: {Math.round(insight.confidence * 100)}%
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            소스: {insight.source}
-                                                        </span>
-                                                    </div>
+                            <div className="fac-card">
+                                <h3 className="fac-card-title">전체 파일 인사이트</h3>
+                                <div className="fac-insights-list">
+                                    {analyzedFiles.flatMap(file => file.insights).map((insight, index) => (
+                                        <div key={index} className="fac-insight-item">
+                                            <Lightbulb size={20} className="fac-insight-icon" aria-hidden />
+                                            <div className="fac-insight-content">
+                                                <h4 className="fac-insight-title">{insight.title}</h4>
+                                                <p className="fac-header-desc fac-insight-desc">{insight.description}</p>
+                                                <div className="fac-insight-meta">
+                                                    <span className="fac-header-desc">신뢰도: {Math.round(insight.confidence * 100)}%</span>
+                                                    <span className="fac-header-desc">소스: {insight.source}</span>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </motion.div>
@@ -808,14 +1017,14 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="h-full overflow-y-auto p-4"
+                            className="fac-tab-content"
                         >
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">분석 설정</h3>
-                                <div className="space-y-4">
+                            <div className="fac-card">
+                                <h3 className="fac-card-title">분석 설정</h3>
+                                <div className="fac-settings-list">
                                     {Object.entries(analysisSettings).map(([key, value]) => (
-                                        <div key={key} className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">
+                                        <div key={key} className="fac-settings-row">
+                                            <span className="fac-setting-label">
                                                 {key === 'extractText' ? '텍스트 추출' :
                                                     key === 'extractEntities' ? '엔티티 추출' :
                                                         key === 'sentimentAnalysis' ? '감정 분석' :
@@ -825,12 +1034,33 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                                                                         '인사이트 생성'}
                                             </span>
                                             <button
+                                                type="button"
                                                 onClick={() => setAnalysisSettings(prev => ({ ...prev, [key]: !value }))}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-blue-600' : 'bg-gray-200'
-                                                    }`}
+                                                style={{
+                                                    background: value ? 'var(--accent-info)' : 'var(--bg-tertiary)',
+                                                    width: 44,
+                                                    height: 24,
+                                                    borderRadius: 12,
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    padding: '3px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: value ? 'flex-end' : 'flex-start'
+                                                }}
+                                                aria-label={`${key} ${value ? '비활성화' : '활성화'}`}
+                                                aria-pressed={value}
                                             >
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'
-                                                    }`} />
+                                                <span
+                                                    style={{
+                                                        width: 18,
+                                                        height: 18,
+                                                        borderRadius: '50%',
+                                                        background: 'var(--bg-primary)',
+                                                        flexShrink: 0,
+                                                        transition: 'transform var(--transition-base)'
+                                                    }}
+                                                />
                                             </button>
                                         </div>
                                     ))}
@@ -848,7 +1078,8 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                 multiple
                 onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
                 className="hidden"
-                accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.mp3,.wav,.zip,.rar,.js,.ts,.py,.java,.sql,.db"
+                accept=".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.mp3,.wav,.zip,.rar,.js,.ts,.py,.java,.sql,.db"
+                aria-label="파일 선택하여 분석"
             />
         </div>
     );

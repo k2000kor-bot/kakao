@@ -5,7 +5,7 @@
 echo "🧪 긴 글 생성 기능 테스트"
 echo ""
 
-API_URL="http://localhost:5001"
+API_URL="${API_URL:-http://localhost:5002}"
 
 # 색상 정의
 GREEN='\033[0;32m'

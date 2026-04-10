@@ -21,7 +21,7 @@
 lsof -ti:3000 | xargs kill -9
 
 # 서버 재시작
-cd /Users/aD/kakao-frontend
+cd /path/to/kakao-frontend/kakao-frontend
 npm start
 ```
 

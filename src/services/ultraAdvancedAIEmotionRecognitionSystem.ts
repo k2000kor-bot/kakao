@@ -1,11 +1,5 @@
 import { EventEmitter } from 'events';
-import { ultraAdvancedAIService } from './ultraAdvancedAIService';
-import ultraAdvancedAIOrchestrationService from './ultraAdvancedAIOrchestrationService';
-import ultraAdvancedAIIntegrationManager from './ultraAdvancedAIIntegrationManager';
-import ultraAdvancedAIPredictiveAnalyticsSystem from './ultraAdvancedAIPredictiveAnalyticsSystem';
-import ultraAdvancedAIAutomationSystem from './ultraAdvancedAIAutomationSystem';
-import ultraAdvancedAIEthicsAndGovernanceSystem from './ultraAdvancedAIEthicsAndGovernanceSystem';
-import ultraAdvancedAICognitiveArchitectureSystem from './ultraAdvancedAICognitiveArchitectureSystem';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 고도화된 AI 감정 인식 인터페이스
 export interface EmotionData {
@@ -19,7 +13,7 @@ export interface EmotionData {
         user_id: string;
         session_id: string;
         previous_emotions: EmotionResult[];
-        environmental_factors: any;
+        environmental_factors: Record<string, unknown>;
     };
 }
 
@@ -125,7 +119,10 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
         super();
         this.initializeSystem();
         this.isInitialized = true;
-        console.log('😊 고도화된 AI 감정 인식 시스템이 초기화되었습니다.');
+        errorLogger.info('😊 고도화된 AI 감정 인식 시스템이 초기화되었습니다.', {
+            component: 'ultraAdvancedAIEmotionRecognitionSystem',
+            action: 'constructor',
+        });
     }
 
     private async initializeSystem(): Promise<void> {
@@ -138,7 +135,11 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
 
             this.emit('system_initialized', this.metrics);
         } catch (error) {
-            console.error('AI 감정 인식 시스템 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('AI 감정 인식 시스템 초기화 실패', err, {
+                component: 'ultraAdvancedAIEmotionRecognitionSystem',
+                action: 'initializeSystem',
+            });
             this.emit('initialization_error', error);
         }
     }
@@ -206,7 +207,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
     public async analyzeEmotion(
         content: string,
         type: EmotionData['type'],
-        context?: any
+        context?: Record<string, unknown>
     ): Promise<EmotionData> {
         const emotionDataId = `emotion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -221,10 +222,10 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
             confidence: this.calculateOverallConfidence(detectedEmotions),
             timestamp: new Date(),
             context: {
-                user_id: context?.user_id || 'anonymous',
-                session_id: context?.session_id || 'default',
-                previous_emotions: this.getRecentEmotions(context?.user_id),
-                environmental_factors: context?.environmental_factors || {}
+                user_id: (context as Record<string, unknown> | undefined)?.user_id as string ?? 'anonymous',
+                session_id: (context as Record<string, unknown> | undefined)?.session_id as string ?? 'default',
+                previous_emotions: this.getRecentEmotions((context as Record<string, unknown> | undefined)?.user_id as string),
+                environmental_factors: ((context as Record<string, unknown> | undefined)?.environmental_factors as Record<string, unknown>) ?? {}
             }
         };
 
@@ -339,7 +340,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
         return emotions;
     }
 
-    private analyzeVoiceEmotion(text: string): EmotionResult[] {
+    private analyzeVoiceEmotion(_text: string): EmotionResult[] {
         // 음성 분석 시뮬레이션
         return [{
             emotion: 'neutral',
@@ -356,7 +357,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
         }];
     }
 
-    private analyzeFacialEmotion(text: string): EmotionResult[] {
+    private analyzeFacialEmotion(_text: string): EmotionResult[] {
         // 표정 분석 시뮬레이션
         return [{
             emotion: 'neutral',
@@ -388,7 +389,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
 
         const integratedEmotions: EmotionResult[] = [];
 
-        for (const [emotionType, emotionList] of emotionGroups) {
+        for (const [_emotionType, emotionList] of emotionGroups) {
             if (emotionList.length === 1) {
                 integratedEmotions.push(emotionList[0]);
             } else {
@@ -592,10 +593,13 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
             relief: { type: 'supportive' as const, tone: 'friendly' as const, name: '안도감 공유 전략' }
         };
 
-        return (strategies as any)[emotion.emotion] || { type: 'adaptive', tone: 'professional', name: '기본 적응 전략' };
+        type StrategyType = 'analytical' | 'supportive' | 'encouraging' | 'adaptive' | 'celebratory' | 'empathic' | 'calming';
+        type StrategyTone = 'formal' | 'casual' | 'friendly' | 'professional' | 'serious' | 'warm' | 'playful';
+        const strategiesMap: Record<string, { type: StrategyType; tone: StrategyTone; name: string }> = strategies;
+        return strategiesMap[emotion.emotion] ?? { type: 'adaptive' as const, tone: 'professional' as const, name: '기본 적응 전략' };
     }
 
-    private async generateResponseContent(emotion: EmotionResult, strategy: any): Promise<string> {
+    private async generateResponseContent(emotion: EmotionResult, _strategy: { type: string; tone: string; name: string }): Promise<string> {
         const responseTemplates = {
             joy: [
                 "정말 기쁘시겠어요! 🎉 그런 긍정적인 감정을 느끼실 수 있어서 저도 함께 기뻐요. 계속해서 이런 좋은 기운을 유지하시길 바랍니다.",
@@ -624,14 +628,15 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
             ]
         };
 
-        const templates = (responseTemplates as any)[emotion.emotion] || [
+        const templatesMap: Record<string, string[]> = responseTemplates;
+        const templates = templatesMap[emotion.emotion] ?? [
             "지금 어떤 감정을 느끼고 계신지 이해하려고 해요. 🤗 필요하시면 언제든 말씀해 주세요."
         ];
 
         return templates[Math.floor(Math.random() * templates.length)];
     }
 
-    private calculateEmotionalIntelligence(emotion: EmotionResult, strategy: any): number {
+    private calculateEmotionalIntelligence(emotion: EmotionResult, _strategy: { type: string; tone: string; name: string }): number {
         // 감정 지능 점수 계산 (0-1)
         let score = 0.7; // 기본 점수
 
@@ -650,7 +655,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
         return Math.min(score, 1);
     }
 
-    private calculateAppropriateness(emotion: EmotionResult, strategy: any): number {
+    private calculateAppropriateness(emotion: EmotionResult, strategy: { type: string }): number {
         // 적절성 점수 계산 (0-1)
         let score = 0.8; // 기본 점수
 
@@ -686,7 +691,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
         return Math.min(score, 1);
     }
 
-    private calculateEmotionalAlignment(emotion: EmotionResult, strategy: any): number {
+    private calculateEmotionalAlignment(emotion: EmotionResult, strategy: { type: string }): number {
         // 감정적 정렬도 계산 (0-1)
         const alignmentScores: Record<string, Record<string, number>> = {
             joy: { celebratory: 0.9, encouraging: 0.8, empathic: 0.7 },
@@ -715,7 +720,7 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
         return scores[strategy.type] || 0.7;
     }
 
-    private predictUserSatisfaction(emotion: EmotionResult, strategy: any): number {
+    private predictUserSatisfaction(emotion: EmotionResult, _strategy: { type: string }): number {
         // 사용자 만족도 예측 (0-1)
         let prediction = 0.75; // 기본 예측
 
@@ -782,7 +787,12 @@ class UltraAdvancedAIEmotionRecognitionSystem extends EventEmitter {
                 .sort((a, b) => b[1] - a[1])[0];
 
             if (dominantEmotion) {
-                console.log(`🌍 전역 감정 패턴: ${dominantEmotion[0]} (${dominantEmotion[1]}회)`);
+                errorLogger.info(`🌍 전역 감정 패턴: ${dominantEmotion[0]} (${dominantEmotion[1]}회)`, {
+                    component: 'ultraAdvancedAIEmotionRecognitionSystem',
+                    action: 'analyzeGlobalEmotionPatterns',
+                    dominantEmotion: dominantEmotion[0],
+                    count: dominantEmotion[1],
+                });
             }
         }
     }

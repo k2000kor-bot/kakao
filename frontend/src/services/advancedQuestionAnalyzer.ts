@@ -3,6 +3,8 @@
  * 복합적이고 다층적인 질문을 분해하고 각각의 요구사항을 파악하는 시스템
  */
 
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface QuestionComponent {
     id: string;
     type: 'primary' | 'secondary' | 'implicit' | 'conditional' | 'contextual';
@@ -125,7 +127,7 @@ class AdvancedQuestionAnalyzer {
         this.domainKeywords.set('technology', ['기술', '시스템', '소프트웨어', '개발', 'AI', 'IT', '디지털']);
         this.domainKeywords.set('finance', ['금융', '투자', '주식', '경제', '재정', '자금', '은행']);
         this.domainKeywords.set('real_estate', ['부동산', '아파트', '주택', '건설', '하자', '원베일리', '분양']);
-        this.domainKeywords.set('legal', ['법률', '법적', '소송', '계약', '규정', '조례', '판례']);
+        this.domainKeywords.set('legal', ['법률', '법적', '소송', '계약', '규정', '조례', '판례', '형사', '형사수사기법', '수사기법']);
         this.domainKeywords.set('social', ['사회', '정치', '문화', '교육', '복지', '환경']);
     }
 
@@ -215,7 +217,9 @@ class AdvancedQuestionAnalyzer {
         conjunctions.forEach(conj => {
             if (currentSegment.includes(conj)) {
                 const parts = currentSegment.split(conj);
-                segments.push(...parts.map(part => part.trim()).filter(part => part.length > 0));
+                segments.push(
+                  ...parts.map((part) => coerceTrimmedString(part, '')).filter((part) => part.length > 0)
+                );
                 currentSegment = '';
             }
         });
@@ -226,7 +230,9 @@ class AdvancedQuestionAnalyzer {
         
         // 문장 부호 기반 추가 분할
         if (segments.length === 0) {
-            segments.push(...question.split(/[.!?]/).filter(s => s.trim().length > 0));
+            segments.push(
+              ...question.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0)
+            );
         }
 
         return segments.length > 0 ? segments : [question];
@@ -250,7 +256,7 @@ class AdvancedQuestionAnalyzer {
     }
 
     private analyzeSegment(segment: string, index: number, originalQuestion: string): QuestionComponent | null {
-        const trimmed = segment.trim();
+        const trimmed = coerceTrimmedString(segment, '');
         if (trimmed.length < 5) return null;
 
         const id = `component_${index + 1}`;
@@ -726,7 +732,10 @@ class AdvancedQuestionAnalyzer {
 
     // 유틸리티 메서드들 (간소화된 구현)
     private extractDirectQuestions(question: string): string[] {
-        return question.split('?').filter(q => q.trim().length > 0).map(q => q.trim() + '?');
+        return question
+          .split('?')
+          .filter((q) => coerceTrimmedString(q, '').length > 0)
+          .map((q) => coerceTrimmedString(q, '') + '?');
     }
 
     private extractExplicitRequests(question: string): string[] {
@@ -899,7 +908,7 @@ class AdvancedQuestionAnalyzer {
 
     private generateConclusion(
         decomposition: QuestionDecomposition,
-        analysis: MultiLayerAnalysis
+        _analysis: MultiLayerAnalysis
     ): string {
         return `종합적으로, ${decomposition.components.length}개 요소를 고려한 분석 결과를 제시했습니다. 추가 질문이 있으시면 언제든 말씀해 주세요.`;
     }
@@ -952,7 +961,7 @@ class AdvancedQuestionAnalyzer {
         return points;
     }
 
-    private generateFeedbackRequests(decomposition: QuestionDecomposition): string[] {
+    private generateFeedbackRequests(_decomposition: QuestionDecomposition): string[] {
         return [
             '답변이 귀하의 기대에 부합하는지 확인',
             '추가로 알고 싶은 부분이 있는지 문의',
@@ -962,3 +971,4 @@ class AdvancedQuestionAnalyzer {
 }
 
 export const advancedQuestionAnalyzer = new AdvancedQuestionAnalyzer();
+export default advancedQuestionAnalyzer;

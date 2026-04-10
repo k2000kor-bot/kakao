@@ -1,4 +1,4 @@
-# CORBU AI 최종 개발 상태
+# CORBU.AI 최종 개발 상태
 
 ## ✅ 완료된 모든 작업
 
@@ -15,8 +15,8 @@
    - ✅ POST /api/auth/reset-password - 비밀번호 재설정
    - ✅ GET /api/auth/me - 현재 사용자 정보
 
-2. **채팅 (1개)**
-   - ✅ POST /api/chat - 채팅 메시지 처리
+2. **대화 (1개)**
+   - ✅ POST /api/chat - 대화 메시지 처리
 
 3. **보안 시스템 (5개)**
    - ✅ POST /api/security/events - 보안 이벤트 로깅
@@ -104,8 +104,8 @@
 
 3. **접속**
    - 프론트엔드: http://localhost:3000
-   - 백엔드: http://localhost:5001
-   - API 문서: http://localhost:5001/docs
+   - 백엔드: http://localhost:5002
+   - API 문서: http://localhost:5002/api/docs
 
 ## 📊 통계
 

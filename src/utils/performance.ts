@@ -1,12 +1,17 @@
 /**
  * 성능 최적화 유틸리티
+ * 디바운스·스로틀·메모이제이션·지연 로딩·가상 스크롤·프리로드·성능 측정 등 제공.
+ * @module performance
  */
 
 import { errorLogger } from './errorLogger';
 
 /**
- * 디바운스 함수
+ * 디바운스 함수. 마지막 호출 후 wait ms 동안 추가 호출이 없을 때만 func 실행.
+ * @param func - 디바운스할 함수
+ * @param wait - 대기 시간 (ms)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- HOF requires permissive typing for any callback
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -27,8 +32,11 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 /**
- * 쓰로틀 함수
+ * 쓰로틀 함수. limit ms 동안 최대 1회만 func 실행.
+ * @param func - 스로틀할 함수
+ * @param limit - 최소 호출 간격 (ms)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- HOF requires permissive typing for any callback
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
@@ -47,9 +55,10 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 /**
- * 메모이제이션 헬퍼
+ * 메모이제이션 헬퍼. 동일 인자로 재호출 시 캐시된 결과 반환.
+ * @param fn - 메모이제이션할 함수
  */
-export function memoize<Args extends any[], Return>(
+export function memoize<Args extends unknown[], Return>(
   fn: (...args: Args) => Return
 ): (...args: Args) => Return {
   const cache = new Map<string, Return>();
@@ -68,7 +77,7 @@ export function memoize<Args extends any[], Return>(
 }
 
 /**
- * 이미지 지연 로딩
+ * 이미지 지연 로딩. 뷰포트에 들어오면 src 할당 (rootMargin 50px).
  */
 export function lazyLoadImage(img: HTMLImageElement, src: string): void {
   const observer = new IntersectionObserver(
@@ -86,9 +95,7 @@ export function lazyLoadImage(img: HTMLImageElement, src: string): void {
   observer.observe(img);
 }
 
-/**
- * 가상 스크롤링 헬퍼
- */
+/** 가상 스크롤링 옵션 */
 export interface VirtualScrollOptions {
   containerHeight: number;
   itemHeight: number;
@@ -103,6 +110,9 @@ export interface VirtualScrollResult {
   offsetY: number;
 }
 
+/**
+ * 가상 스크롤 계산. 뷰포트에 보일 항목 범위·오프셋 계산.
+ */
 export function calculateVirtualScroll(
   scrollTop: number,
   options: VirtualScrollOptions
@@ -126,7 +136,7 @@ export function calculateVirtualScroll(
 }
 
 /**
- * 리소스 프리로딩
+ * 리소스 프리로딩. image/script/style 타입별로 미리 로드.
  */
 export function preloadResource(url: string, type: 'image' | 'script' | 'style'): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -154,7 +164,7 @@ export function preloadResource(url: string, type: 'image' | 'script' | 'style')
 }
 
 /**
- * 성능 측정
+ * 성능 측정. development에서 duration 로깅.
  */
 export function measurePerformance<T>(
   name: string,
@@ -172,7 +182,7 @@ export function measurePerformance<T>(
 }
 
 /**
- * 배치 업데이트
+ * 배치 업데이트. 여러 업데이트 함수를 순서대로 실행하고 결과 배열 반환.
  */
 export function batchUpdates<T>(
   updates: Array<() => T>
@@ -181,7 +191,7 @@ export function batchUpdates<T>(
 }
 
 /**
- * 웹 워커 생성 헬퍼
+ * 웹 워커 생성 헬퍼. 함수를 Blob으로 감싸 Worker 인스턴스 생성.
  */
 export function createWorker(workerFunction: Function): Worker {
   const blob = new Blob([`(${workerFunction.toString()})()`], {

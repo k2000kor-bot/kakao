@@ -2,7 +2,7 @@
 
 # 통합 API 서버 시작 및 상태 확인 스크립트
 
-SERVER_PORT=8000
+SERVER_PORT="${BACKEND_PORT:-${PORT:-5002}}"
 SERVER_PID_FILE="/tmp/integrated_server.pid"
 SERVER_LOG_FILE="/tmp/integrated_server.log"
 

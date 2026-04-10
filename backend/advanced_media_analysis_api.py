@@ -827,4 +827,9 @@ async def get_uploaded_files(project_id: str = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+    _media = int(
+        os.environ.get(
+            "ADVANCED_MEDIA_ANALYSIS_PORT", os.environ.get("PORT", "8001")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_media) 

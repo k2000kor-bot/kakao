@@ -1,48 +1,36 @@
 #!/bin/bash
 
-# 개포우성 분석 서버 시작 스크립트
+# 레거시 Flask 분석 서버 시작 스크립트
 
-echo "🏢 개포우성 재개발 프로젝트 분석 서버를 시작합니다..."
+echo "🏢 Flask 분석 서버를 시작합니다 (GAEPO_ANALYSIS_PORT)..."
 
-# 필요한 디렉토리 생성
-mkdir -p backend/uploads/gaeposung
-mkdir -p backend/logs
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
 
-# Python 가상환경 활성화 (있는 경우)
-if [ -d "venv" ]; then
-    echo "📦 가상환경을 활성화합니다..."
-    source venv/bin/activate
-fi
+mkdir -p "$REPO_ROOT/backend/uploads/gaeposung"
+mkdir -p "$REPO_ROOT/backend/logs"
 
-# 필요한 Python 패키지 설치
+backend_venv_activate "$REPO_ROOT" || true
+
 echo "📦 필요한 패키지를 설치합니다..."
 pip install flask flask-cors werkzeug pillow
 
-# 백엔드 디렉토리로 이동
-cd backend
+cd "$REPO_ROOT/backend" || exit 1
 
-# 분석 시스템 초기화
 echo "🔧 분석 시스템을 초기화합니다..."
-python -c "
+python3 -c "
 from gaeposung_advanced_analysis_system import GaepoSungAdvancedAnalysisSystem
 system = GaepoSungAdvancedAnalysisSystem()
 print('✅ 분석 시스템 초기화 완료')
-"
+" 2>/dev/null || echo "⚠️ 초기화 스킵 또는 모듈 없음"
 
-# API 서버 시작
 echo "🚀 API 서버를 시작합니다..."
-echo "📍 서버 주소: http://localhost:5001"
-echo "📋 API 엔드포인트:"
-echo "  - GET  /api/health : 헬스 체크"
-echo "  - POST /api/files/upload : 파일 업로드"
-echo "  - GET  /api/files : 파일 목록 조회"
-echo "  - POST /api/analysis/comprehensive : 종합 분석 시작"
-echo "  - GET  /api/analysis/results : 분석 결과 조회"
-echo "  - GET  /api/analysis/status : 분석 상태 조회"
-echo "  - POST /api/analysis/quick : 빠른 분석"
-echo "  - POST /api/project/context : 프로젝트 컨텍스트 설정"
-echo ""
+echo "📍 서버 주소: http://localhost:${GAEPO_ANALYSIS_PORT:-5001} (GAEPO_ANALYSIS_PORT)"
+echo "💡 통합 CORBU API는 별도: npm run restart:backend → 5002"
 echo "🛑 서버를 중지하려면 Ctrl+C를 누르세요"
 echo ""
 
-python gaeposung_analysis_api.py
+exec python3 gaeposung_analysis_api.py

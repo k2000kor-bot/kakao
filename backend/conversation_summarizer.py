@@ -445,7 +445,7 @@ if __name__ == "__main__":
     summarizer = KakaoConversationSummarizer()
     
     # 실제 카카오톡 대화 파일 경로
-    chat_file = "../chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt"
+    chat_file = "../chat_rooms/sample_chat_room/sample_chat_room.txt"
     
     print("카카오톡 대화 요약 생성 중...")
     

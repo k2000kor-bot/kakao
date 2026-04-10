@@ -9,6 +9,7 @@ import sqlite3
 import json
 from datetime import datetime
 import logging
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -28,7 +29,7 @@ def get_db_connection():
 
 @app.route('/api/chat-rooms', methods=['GET'])
 def get_chat_rooms():
-    """채팅방 목록 조회"""
+    """대화방 목록 조회"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -56,13 +57,13 @@ def get_chat_rooms():
         return jsonify({'success': True, 'data': rooms})
         
     except Exception as e:
-        logger.error(f"채팅방 목록 조회 실패: {e}")
+        logger.error(f"대화방 목록 조회 실패: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/messages/<chat_room_id>', methods=['GET'])
 def get_messages(chat_room_id):
-    """특정 채팅방의 메시지 조회"""
+    """특정 대화방의 메시지 조회"""
     try:
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 50))
@@ -328,5 +329,6 @@ def health_check():
 
 
 if __name__ == '__main__':
-    logger.info(f"카카오톡 데이터베이스 API 서버 시작 (DB: {DB_PATH})")
-    app.run(host='0.0.0.0', port=8002, debug=True) 
+    _p = int(os.environ.get("CHAT_DATABASE_API_PORT", os.environ.get("PORT", "8002")))
+    logger.info(f"카카오톡 데이터베이스 API 서버 시작 (DB: {DB_PATH}, port={_p})")
+    app.run(host='0.0.0.0', port=_p, debug=True) 

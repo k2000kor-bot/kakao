@@ -3,15 +3,25 @@
 echo "🚀 고급 NLP 엔진 설치 스크립트 시작"
 echo "=================================="
 
-# Python 가상환경 확인
-if [ ! -d "venv" ]; then
-    echo "📦 Python 가상환경 생성 중..."
-    python3 -m venv venv
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
+
+if ! backend_venv_activate "$REPO_ROOT"; then
+    echo "📦 표준 venv 없음 — backend/.venv 생성..."
+    ( cd "$REPO_ROOT/backend" && python3 -m venv .venv && .venv/bin/pip install --upgrade pip setuptools wheel ) || {
+        echo "❌ 가상환경 생성 실패"
+        exit 1
+    }
+    backend_venv_activate "$REPO_ROOT" || {
+        echo "❌ 가상환경 활성화 실패"
+        exit 1
+    }
 fi
 
-# 가상환경 활성화
-echo "🔧 가상환경 활성화..."
-source venv/bin/activate
+echo "🔧 가상환경 활성화됨 (저장소 루트: $REPO_ROOT)"
 
 # 기본 패키지 업그레이드
 echo "📦 기본 패키지 업그레이드..."
@@ -35,11 +45,11 @@ pip install spacy
 
 # 한국어 Spacy 모델 다운로드
 echo "🇰🇷 한국어 Spacy 모델 다운로드 중..."
-python -m spacy download ko_core_news_sm
+python3 -m spacy download ko_core_news_sm
 
 # 영어 Spacy 모델 다운로드 (백업용)
 echo "🇺🇸 영어 Spacy 모델 다운로드 중..."
-python -m spacy download en_core_web_sm
+python3 -m spacy download en_core_web_sm
 
 # NLTK 설치
 echo "📚 NLTK 설치 중..."
@@ -67,7 +77,7 @@ pip install pillow
 
 # NLTK 데이터 다운로드
 echo "📥 NLTK 데이터 다운로드 중..."
-python -c "
+python3 -c "
 import nltk
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
@@ -80,7 +90,7 @@ print('NLTK 데이터 다운로드 완료')
 
 # 설치 확인
 echo "✅ 설치 확인 중..."
-python -c "
+python3 -c "
 try:
     import torch
     print(f'✅ PyTorch 설치됨 (버전: {torch.__version__})')

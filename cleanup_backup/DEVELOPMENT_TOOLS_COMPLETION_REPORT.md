@@ -158,7 +158,7 @@ cd /Users/aD/kakao-frontend
 ./start_dev_tools.sh
 
 # 2. 웹에서 접속
-# - 채팅 인터페이스: http://localhost:3000
+# - 대화 인터페이스: http://localhost:3000
 # - 코드 편집기: http://localhost:8080/web_code_editor.html
 # - 데모 페이지: http://localhost:8080/DEVELOPMENT_DEMO.html
 ```

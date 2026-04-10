@@ -12,10 +12,19 @@ from typing import Dict, List, Optional
 import base64
 import io
 from pydantic import BaseModel
+import os
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# main_server와 동일 우선순위 (테스트 응답용 WebSocket URL)
+_PUBLIC_API_PORT = int(
+    os.environ.get(
+        "BACKEND_PORT",
+        os.environ.get("API_PORT", os.environ.get("PORT", "5002")),
+    )
+)
 
 
 # WebSocket 연결 관리자
@@ -84,7 +93,7 @@ app.add_middleware(
 # WebSocket 엔드포인트
 @app.websocket("/ws/chat/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    """WebSocket 채팅 엔드포인트"""
+    """WebSocket 대화 엔드포인트"""
     await manager.connect(websocket, room_id)
     try:
         while True:
@@ -904,7 +913,7 @@ async def get_system_status():
 
 @app.get("/api/v7/chat-rooms")
 async def get_chat_rooms():
-    """채팅방 목록 조회"""
+    """대화방 목록 조회"""
     try:
         rooms = []
         for room_id, connections in manager.active_connections.items():
@@ -920,10 +929,10 @@ async def get_chat_rooms():
             "total_rooms": len(rooms)
         }
     except Exception as e:
-        logger.error(f"채팅방 목록 조회 중 오류: {e}")
+        logger.error(f"대화방 목록 조회 중 오류: {e}")
         return {
             "status": "error",
-            "message": "채팅방 목록 조회 중 오류가 발생했습니다."
+            "message": "대화방 목록 조회 중 오류가 발생했습니다."
         }
 
 
@@ -967,8 +976,8 @@ async def get_projects():
         projects = [
             {
                 "id": "1",
-                "name": "개포우성7차",
-                "description": "개포우성7차 재건축 프로젝트",
+                "name": "샘플 프로젝트 A",
+                "description": "데모용 재건축·정비 프로젝트",
                 "status": "active",
                 "created_at": "2024-01-15T10:00:00",
                 "updated_at": datetime.now().isoformat()
@@ -1449,7 +1458,7 @@ async def test_websocket():
     return {
         "status": "success",
         "message": "WebSocket 서버가 정상적으로 실행 중입니다.",
-        "websocket_url": "ws://localhost:8000/ws/chat/{room_id}",
+        "websocket_url": f"ws://localhost:{_PUBLIC_API_PORT}/ws/chat/{{room_id}}",
         "timestamp": datetime.now().isoformat()
     }
 
@@ -1706,4 +1715,5 @@ async def get_project_recommendations(project_id: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    _adv_port = int(os.environ.get("ADVANCED_API_PORT", os.environ.get("PORT", "8000")))
+    uvicorn.run(app, host="0.0.0.0", port=_adv_port) 

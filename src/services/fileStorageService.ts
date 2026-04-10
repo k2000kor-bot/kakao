@@ -25,8 +25,8 @@ class FileStorageService {
     return files.filter(file => {
       // 하드코딩된 파일 이름 패턴 체크
       const hardcodedPatterns = [
-        '개포우성7차_제안서',
-        '개포우성7차_분석보고서',
+        'sample_hardcoded_proposal',
+        'sample_hardcoded_report',
         'proposal.pdf',
         'test_proposal'
       ];

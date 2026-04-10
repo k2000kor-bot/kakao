@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-채팅 파일 업로드 서버 (중복 처리 포함)
+대화 파일 업로드 서버 (중복 처리 포함)
 """
 
 import os
@@ -13,13 +13,14 @@ from pydantic import BaseModel
 import logging
 import sqlite3
 from advanced_kakao_parser import AdvancedKakaoParser
+from cors_config import get_cors_allow_origins
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="채팅 파일 업로드 서버",
+    title="대화 파일 업로드 서버",
     description="카카오톡 대화 파일 업로드 및 중복 처리 서버",
     version="1.0.0"
 )
@@ -27,7 +28,7 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -77,19 +78,19 @@ class ChatRoomInfo(BaseModel):
 async def startup_event():
     """서버 시작 시 초기화"""
     init_database()
-    logger.info("채팅 업로드 서버 시작")
+    logger.info("대화 업로드 서버 시작")
 
 @app.get("/")
 async def root():
     """루트 엔드포인트"""
     return {
-        "service": "채팅 파일 업로드 서버",
+        "service": "대화 파일 업로드 서버",
         "version": "1.0.0",
         "status": "running",
         "features": [
             "카카오톡 대화 파일 업로드",
             "중복 메시지 자동 제외",
-            "채팅방별 메시지 관리",
+            "대화방별 메시지 관리",
             "업로드 통계 제공"
         ]
     }
@@ -99,7 +100,7 @@ async def upload_chat_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
-    """채팅 파일 업로드"""
+    """대화 파일 업로드"""
     
     try:
         # 파일 확장자 확인
@@ -118,7 +119,7 @@ async def upload_chat_file(
         lines = content_str.split('\n')
         room_name = lines[0].strip() if lines else "Unknown Room"
         
-        # 채팅방 디렉토리 생성
+        # 대화방 디렉토리 생성
         room_dir = os.path.join(upload_dir, room_name)
         os.makedirs(room_dir, exist_ok=True)
         
@@ -176,12 +177,12 @@ def save_upload_log(chat_room_id: str, file_name: str, room: Any):
 
 @app.get("/api/chat-rooms")
 async def get_chat_rooms():
-    """채팅방 목록 조회"""
+    """대화방 목록 조회"""
     try:
         conn = sqlite3.connect('chat_system.db')
         cursor = conn.cursor()
         
-        # 채팅방별 통계 조회
+        # 대화방별 통계 조회
         cursor.execute('''
             SELECT 
                 chat_room_id,
@@ -210,7 +211,7 @@ async def get_chat_rooms():
         }
         
     except Exception as e:
-        logger.error(f"채팅방 조회 오류: {e}")
+        logger.error(f"대화방 조회 오류: {e}")
         return {
             "success": False,
             "error": str(e),
@@ -219,7 +220,7 @@ async def get_chat_rooms():
 
 @app.get("/api/chat-rooms/{chat_room_id}/statistics")
 async def get_chat_room_statistics(chat_room_id: str):
-    """채팅방 통계 조회"""
+    """대화방 통계 조회"""
     try:
         parser = AdvancedKakaoParser()
         stats = parser.get_duplicate_statistics(chat_room_id)
@@ -303,17 +304,21 @@ async def get_upload_logs():
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 채팅 파일 업로드 서버 시작")
+
+    _cup = int(
+        os.environ.get("CHAT_UPLOAD_SERVER_PORT", os.environ.get("PORT", "8004"))
+    )
+    print("🚀 대화 파일 업로드 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8005")
-    print("📖 API 문서: http://localhost:8005/docs")
+    print(f"📍 서버 주소: http://localhost:{_cup}")
+    print(f"📖 API 문서: http://localhost:{_cup}/docs")
     print("🎯 주요 엔드포인트:")
     print("   POST /api/upload-chat - 파일 업로드")
-    print("   GET /api/chat-rooms - 채팅방 목록")
+    print("   GET /api/chat-rooms - 대화방 목록")
     print("   GET /api/upload-logs - 업로드 로그")
     print("")
     
     try:
-        uvicorn.run(app, host="0.0.0.0", port=8004, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=_cup, log_level="info")
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}") 

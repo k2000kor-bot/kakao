@@ -1,4 +1,4 @@
-# 🤖 CORBU AI 사용자 가이드
+# 🤖 CORBU.AI 사용자 가이드
 
 ## 📋 목차
 
@@ -32,18 +32,19 @@ cd kakao-frontend
 npm install
 pip install -r backend/requirements.txt
 
-# 3. 서버 시작
+# 3. 서버 시작 (권장)
+npm run restart:backend      # 통합 API (포트 5002, main_server)
 npm start                    # 프론트엔드 (포트 3000)
-cd backend && python main_server.py &              # 메인 API (포트 8001)
-python analysis_server.py &                        # 분석 API (포트 8005)
-python integrated_analysis_api_server.py &         # 통합 분석 (포트 8006)
+
+# 레거시 다중 백엔드가 필요할 때만 (예시)
+# cd backend && python3 analysis_server.py &
 ```
 
 ### 접속 방법
 
 - **메인 애플리케이션**: <http://localhost:3000>
 - **테스트 페이지**: <http://localhost:3000/test.html>
-- **API 문서**: <http://localhost:8006/docs>
+- **통합 API 문서**: <http://localhost:5002/api/docs>
 
 ---
 
@@ -51,7 +52,7 @@ python integrated_analysis_api_server.py &         # 통합 분석 (포트 8006)
 
 ### 1. 🧠 AI 기반 대화형 분석
 
-CORBU AI는 ChatGPT 스타일의 자연스러운 대화를 통해 다양한 분석을 제공합니다.
+CORBU.AI는 ChatGPT 스타일의 자연스러운 대화를 통해 다양한 분석을 제공합니다.
 
 **사용 방법:**
 
@@ -237,8 +238,9 @@ docker-compose up -d --scale corbu-ai=3
 #### 1. 포트 충돌 오류
 
 ```bash
-# 포트 사용 중인 프로세스 확인
-lsof -i :8001
+# 포트 사용 중인 프로세스 확인 (백엔드 5002, 프론트 3000 등)
+lsof -i :5002
+lsof -i :3000
 
 # 프로세스 종료
 kill -9 <PID>
@@ -247,8 +249,9 @@ kill -9 <PID>
 #### 2. Python 환경 문제
 
 ```bash
-# 가상환경 활성화
-source .venv/bin/activate
+# 가상환경 활성화 (우선순위: backend/venv → backend/.venv → 루트 venv)
+source backend/.venv/bin/activate
+# 또는: bash -c 'source scripts/lib-activate-backend-venv.sh && backend_venv_activate "$(pwd)"'
 
 # 의존성 재설치
 pip install -r backend/requirements.txt
@@ -385,5 +388,5 @@ Content-Type: application/json
 
 ---
 
-*🤖 CORBU AI - 차세대 AI 기반 지능형 분석 플랫폼*  
+*🤖 CORBU.AI - 차세대 AI 기반 지능형 분석 플랫폼*  
 *📅 최종 업데이트: 2025년 8월 7일*

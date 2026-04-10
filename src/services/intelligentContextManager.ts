@@ -1,4 +1,3 @@
-import { ChatSession } from '../types/chat';
 import { Project } from '../types/project';
 
 interface ContextNode {
@@ -9,7 +8,7 @@ interface ContextNode {
     timestamp: Date;
     relationships: string[];
     metadata: {
-        [key: string]: any;
+        [key: string]: unknown;
     };
 }
 
@@ -27,16 +26,16 @@ interface ConversationContext {
         duration: number;
     };
     userPreferences: {
-        [key: string]: any;
+        [key: string]: unknown;
     };
     conversationFlow: {
-        [key: string]: any;
+        [key: string]: unknown;
     };
 }
 
 export class IntelligentContextManager {
     private contexts: Map<string, ConversationContext> = new Map();
-    private globalContext: Map<string, any> = new Map();
+    private globalContext: Map<string, unknown> = new Map();
 
     // 컨텍스트 초기화
     initializeContext(sessionId: string, project?: Project): ConversationContext {
@@ -352,7 +351,7 @@ export class IntelligentContextManager {
     }
 
     // 선호도 기반 응답 조정
-    private adjustResponseByPreferences(response: string, preferences: { [key: string]: any }): string {
+    private adjustResponseByPreferences(response: string, preferences: Record<string, unknown>): string {
         if (preferences.analysisDepth === 'detailed') {
             return response + ' (상세한 분석 포함)';
         }
@@ -394,12 +393,12 @@ export class IntelligentContextManager {
     }
 
     // 전역 컨텍스트 설정
-    setGlobalContext(key: string, value: any) {
+    setGlobalContext(key: string, value: unknown) {
         this.globalContext.set(key, value);
     }
 
     // 전역 컨텍스트 조회
-    getGlobalContext(key: string): any {
+    getGlobalContext(key: string): unknown {
         return this.globalContext.get(key);
     }
 

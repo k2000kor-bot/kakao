@@ -794,7 +794,7 @@ class ConversationMemorySystem:
             
             # Simple topic categorization
             topics = []
-            if any(word in content for word in ['카카오톡', '대화', '채팅', '메시지']):
+            if any(word in content for word in ['카카오톡', '대화', '대화', '메시지']):
                 topics.append('카카오톡')
             if any(word in content for word in ['AI', '인공지능', '로봇', '자동']):
                 topics.append('AI')
@@ -1203,4 +1203,9 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.info("WebSocket client disconnected")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8004) 
+    _p = int(
+        os.environ.get(
+            "CONVERSATION_MEMORY_SYSTEM_PORT", os.environ.get("PORT", "8004")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

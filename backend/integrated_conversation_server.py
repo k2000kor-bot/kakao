@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI 통합 대화 시스템",
+    title="CORBU.AI 통합 대화 시스템",
     description="모든 AI 시스템을 통합한 대화형 인터페이스",
     version="1.0.0"
 )
@@ -157,10 +157,10 @@ class SystemManager:
         
         # 프로젝트 데이터
         self.projects = {
-            'gaepo_woosung_7': {
-                'id': 'gaepo_woosung_7',
-                'name': '개포우성7차',
-                'description': '개포우성7차 재개발 프로젝트',
+            'sample_project_a': {
+                'id': 'sample_project_a',
+                'name': '샘플 프로젝트 A',
+                'description': '데모용 재개발·정비 프로젝트',
                 'status': '진행중',
                 'files': [],
                 'lastUpdated': '2025-01-27'
@@ -212,7 +212,7 @@ class SystemManager:
             return 'analysis'
         elif any(keyword in content_lower for keyword in ['가이드', 'guidance', '메시지']):
             return 'guidance'
-        elif any(keyword in content_lower for keyword in ['프로젝트', 'project', '개포우성']):
+        elif any(keyword in content_lower for keyword in ['프로젝트', 'project']):
             return 'project'
         elif any(keyword in content_lower for keyword in ['파일', 'file', '업로드']):
             return 'file'
@@ -264,10 +264,10 @@ class SystemManager:
                f"🎯 목표: 효과적인 의사소통"
 
     def generate_project_response(self, content: str) -> str:
-        project = self.projects.get('gaepo_woosung_7', {})
+        project = self.projects.get('sample_project_a', {})
         
         return f"프로젝트 정보:\n\n" \
-               f"📋 프로젝트: {project.get('name', '개포우성7차')}\n" \
+               f"📋 프로젝트: {project.get('name', '샘플 프로젝트 A')}\n" \
                f"📄 상태: {project.get('status', '진행중')}\n" \
                f"📁 파일: {len(project.get('files', []))}개\n" \
                f"🕒 최종 업데이트: {project.get('lastUpdated', '2025-01-27')}"
@@ -342,7 +342,7 @@ system_manager = SystemManager()
 # API 엔드포인트
 @app.get("/")
 async def root():
-    return {"message": "CORBU AI 통합 대화 시스템이 실행 중입니다."}
+    return {"message": "CORBU.AI 통합 대화 시스템이 실행 중입니다."}
 
 @app.get("/api/health")
 async def health_check():
@@ -358,7 +358,7 @@ async def chat_endpoint(request: MessageRequest):
         response = system_manager.process_message(request)
         return response
     except Exception as e:
-        logger.error(f"채팅 처리 실패: {e}")
+        logger.error(f"대화 처리 실패: {e}")
         raise HTTPException(status_code=500, detail="메시지 처리 중 오류가 발생했습니다.")
 
 @app.post("/api/analyze")
@@ -652,12 +652,11 @@ async def update_learning_feedback(request: Dict):
 if __name__ == "__main__":
     # 로그 디렉토리 생성
     os.makedirs("logs", exist_ok=True)
-    
-    # 서버 시작
+    _p = int(os.environ.get("INTEGRATED_CONVERSATION_SERVER_PORT", os.environ.get("PORT", "8003")))
     uvicorn.run(
         "integrated_conversation_server:app",
         host="0.0.0.0",
-        port=8003,
+        port=_p,
         reload=True,
         log_level="info"
     ) 

@@ -1,8 +1,18 @@
 /**
- * CORBU AI 통합 API 서비스
+ * CORBU.AI 통합 API 서비스
  * - 간단한 통합 API 서버와의 통신
  * - 종합적인 AI 분석 기능 제공
  */
+
+import {
+    INTEGRATED_API_ANALYZE_PATH,
+    INTEGRATED_API_HEALTH_PATH,
+    INTEGRATED_API_METRICS_PATH,
+    INTEGRATED_API_STATUS_PATH,
+    joinApiHealthCheckUrl,
+    resolveApiBaseUrl,
+} from '../config/api';
+import { errorLogger } from '../utils/errorLogger';
 
 interface IntegratedAnalysisRequest {
     message: string;
@@ -46,7 +56,7 @@ export class IntegratedAPIService {
     private timeout: number;
 
     constructor() {
-        this.baseURL = process.env.REACT_APP_INTEGRATED_API_URL || 'http://localhost:5002';
+        this.baseURL = (process.env.REACT_APP_INTEGRATED_API_URL || resolveApiBaseUrl());
         this.timeout = 30000;
     }
 
@@ -55,7 +65,7 @@ export class IntegratedAPIService {
      */
     async analyzeMessage(message: string): Promise<IntegratedAnalysisResponse> {
         try {
-            const response = await fetch(`${this.baseURL}/api/integrated/analyze`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, INTEGRATED_API_ANALYZE_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -69,9 +79,13 @@ export class IntegratedAPIService {
             }
 
             const data = await response.json();
-            return data;
+            // 백엔드가 create_success_response로 감싸므로 data.data가 실제 분석 결과
+            if (data.success && data.data != null) {
+                return data.data as IntegratedAnalysisResponse;
+            }
+            return data as IntegratedAnalysisResponse;
         } catch (error) {
-            console.error('통합 분석 API 오류:', error);
+            errorLogger.error('통합 분석 API 오류', error instanceof Error ? error : new Error(String(error)), { component: 'IntegratedAPIService', action: 'analyzeMessage' });
             throw error;
         }
     }
@@ -81,7 +95,7 @@ export class IntegratedAPIService {
      */
     async getSystemStatus(): Promise<SystemStatus> {
         try {
-            const response = await fetch(`${this.baseURL}/api/integrated/status`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, INTEGRATED_API_STATUS_PATH), {
                 method: 'GET',
                 signal: AbortSignal.timeout(this.timeout)
             });
@@ -91,9 +105,10 @@ export class IntegratedAPIService {
             }
 
             const data = await response.json();
-            return data;
+            if (data.success && data.data != null) return data.data as SystemStatus;
+            return data as SystemStatus;
         } catch (error) {
-            console.error('시스템 상태 조회 오류:', error);
+            errorLogger.error('시스템 상태 조회 오류', error instanceof Error ? error : new Error(String(error)), { component: 'IntegratedAPIService', action: 'getSystemStatus' });
             throw error;
         }
     }
@@ -103,7 +118,7 @@ export class IntegratedAPIService {
      */
     async healthCheck(): Promise<{ status: string; service: string; timestamp: string }> {
         try {
-            const response = await fetch(`${this.baseURL}/api/integrated/health`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, INTEGRATED_API_HEALTH_PATH), {
                 method: 'GET',
                 signal: AbortSignal.timeout(5000)
             });
@@ -113,9 +128,12 @@ export class IntegratedAPIService {
             }
 
             const data = await response.json();
+            if (data.success && data.data != null) {
+                return { ...data.data, timestamp: data.timestamp } as { status: string; service: string; timestamp: string };
+            }
             return data;
         } catch (error) {
-            console.error('헬스 체크 오류:', error);
+            errorLogger.error('헬스 체크 오류', error instanceof Error ? error : new Error(String(error)), { component: 'IntegratedAPIService', action: 'healthCheck' });
             throw error;
         }
     }
@@ -133,7 +151,7 @@ export class IntegratedAPIService {
         }; timestamp: string
     }> {
         try {
-            const response = await fetch(`${this.baseURL}/api/integrated/metrics`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, INTEGRATED_API_METRICS_PATH), {
                 method: 'GET',
                 signal: AbortSignal.timeout(this.timeout)
             });
@@ -143,9 +161,12 @@ export class IntegratedAPIService {
             }
 
             const data = await response.json();
+            if (data.success && data.data != null) {
+                return { success: true, metrics: data.data.metrics ?? data.data, timestamp: data.timestamp };
+            }
             return data;
         } catch (error) {
-            console.error('메트릭 조회 오류:', error);
+            errorLogger.error('메트릭 조회 오류', error instanceof Error ? error : new Error(String(error)), { component: 'IntegratedAPIService', action: 'getMetrics' });
             throw error;
         }
     }
@@ -158,7 +179,7 @@ export class IntegratedAPIService {
             await this.healthCheck();
             return true;
         } catch (error) {
-            console.error('서버 연결 실패:', error);
+            errorLogger.error('서버 연결 실패', error instanceof Error ? error : new Error(String(error)), { component: 'IntegratedAPIService', action: 'testConnection' });
             return false;
         }
     }

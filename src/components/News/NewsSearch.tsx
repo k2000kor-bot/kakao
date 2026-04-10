@@ -1,8 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, TrendingUp, BarChart, ExternalLink } from 'lucide-react';
+import { getSentimentColor } from '../../styles/themeColors';
 import { newsService, NewsArticle, CommentAnalysis } from '../../services/newsService';
 import { errorLogger } from '../../utils/errorLogger';
+import { coerceTrimmedString } from '../../utils/chatInputUtils';
 
 interface NewsSearchProps {
     onArticleSelect?: (article: NewsArticle) => void;
@@ -21,14 +23,15 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
 
     // 뉴스 검색
     const handleSearch = useCallback(async () => {
-        if (!searchQuery.trim()) return;
+        const q = coerceTrimmedString(searchQuery, '');
+        if (!q) return;
 
         setIsSearching(true);
         try {
             if (apiKey) {
                 newsService.setAPIKey(apiKey);
             }
-            const result = await newsService.searchNews(searchQuery);
+            const result = await newsService.searchNews(q);
             setSearchResults(result.articles);
         } catch (error) {
             errorLogger.error('뉴스 검색 실패', error instanceof Error ? error : new Error(String(error)), { component: 'NewsSearch', action: 'handleSearch' });
@@ -125,7 +128,7 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
 
     // 컴포넌트 마운트 시 자동 검색 및 트렌딩 뉴스 로드
     useEffect(() => {
-        handleSearch();
+        void handleSearch();
         loadTrendingNews();
     }, [handleSearch, loadTrendingNews]);
 
@@ -139,59 +142,46 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
     return (
         <div className="h-full flex flex-col">
             {/* 검색 헤더 */}
-            <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center space-x-4">
-                    <div className="flex-1">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder="뉴스 검색어를 입력하세요..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
+            <div style={{ padding: 'var(--spacing-md)', borderBottom: 'var(--border-width) solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <Search className="h-5 w-5" style={{ position: 'absolute', left: 'var(--spacing-md)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} aria-hidden />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') void handleSearch();
+                            }}
+                            placeholder="뉴스 검색어를 입력하세요..."
+                            className="bw-input"
+                            style={{ paddingLeft: '2.5rem' }}
+                        />
                     </div>
                     <button
-                        onClick={handleSearch}
-                        disabled={isSearching}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                        type="button"
+                        onClick={() => void handleSearch()}
+                        disabled={isSearching || !coerceTrimmedString(searchQuery, '')}
+                        className="bw-btn-primary"
                     >
                         {isSearching ? '검색 중...' : '검색'}
                     </button>
                 </div>
-
-                {/* 탭 네비게이션 */}
-                <div className="flex space-x-4 mt-4">
-                    <button
-                        onClick={() => setActiveTab('search')}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${activeTab === 'search' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                    >
-                        <Search className="h-4 w-4" />
-                        <span>뉴스 검색</span>
-                    </button>
-                    <button
-                        onClick={() => {
-                            setActiveTab('trending');
-                            loadTrendingNews();
-                        }}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${activeTab === 'trending' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                    >
-                        <TrendingUp className="h-4 w-4" />
-                        <span>트렌딩 뉴스</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('analysis')}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${activeTab === 'analysis' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                    >
-                        <BarChart className="h-4 w-4" />
-                        <span>댓글 분석</span>
-                    </button>
+                <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-md)' }}>
+                    {(['search', 'trending', 'analysis'] as const).map((tab) => (
+                        <button
+                            key={tab}
+                            type="button"
+                            onClick={() => { setActiveTab(tab); if (tab === 'trending') loadTrendingNews(); }}
+                            className={`bw-btn-ghost ${activeTab === tab ? 'bw-tab-active' : ''}`}
+                            style={activeTab === tab ? { background: 'var(--accent-info-muted)', color: 'var(--accent-info)' } : undefined}
+                        >
+                            {tab === 'search' && <Search className="h-4 w-4" aria-hidden />}
+                            {tab === 'trending' && <TrendingUp className="h-4 w-4" aria-hidden />}
+                            {tab === 'analysis' && <BarChart className="h-4 w-4" aria-hidden />}
+                            <span>{tab === 'search' ? '뉴스 검색' : tab === 'trending' ? '트렌딩 뉴스' : '댓글 분석'}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -206,51 +196,34 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                             exit={{ opacity: 0, y: -20 }}
                             className="space-y-4"
                         >
-                            <h3 className="text-lg font-semibold text-gray-900">검색 결과</h3>
-                            {searchResults.map((article) => (
-                                <div
-                                    key={article.id}
-                                    onClick={() => handleArticleSelect(article)}
-                                    className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition-colors"
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <h4 className="font-medium text-gray-900 mb-2">{article.title}</h4>
-                                            <p className="text-sm text-gray-600 mb-2">{article.summary}</p>
-                                            <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        window.open(article.url, '_blank');
-                                                    }}
-                                                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                                                >
-                                                    <span>{article.source}</span>
-                                                    <ExternalLink className="h-3 w-3" />
-                                                </button>
-                                                <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
-                                                <span className={`px-2 py-1 rounded-full ${article.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                                                    article.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                                    }`}>
-                                                    {article.sentiment === 'positive' ? '긍정' :
-                                                        article.sentiment === 'negative' ? '부정' : '중립'}
-                                                </span>
+                            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--spacing-md)' }}>검색 결과</h3>
+                            {searchResults.map((article) => {
+                                const sentColor = getSentimentColor(article.sentiment || 'neutral');
+                                const sentStyle = article.sentiment === 'positive' ? { color: 'var(--accent-success)', backgroundColor: 'var(--accent-success-muted)' } : article.sentiment === 'negative' ? { color: 'var(--accent-error)', backgroundColor: 'var(--accent-error-muted)' } : { color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)' };
+                                return (
+                                    <div key={article.id} onClick={() => handleArticleSelect(article)} className="bw-card" style={{ padding: 'var(--spacing-md)', cursor: 'pointer', borderColor: 'var(--border-color)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--spacing-md)' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <h4 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 'var(--spacing-sm)' }}>{article.title}</h4>
+                                                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-sm)' }}>{article.summary || article.content}</p>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                                                    <button type="button" onClick={(e) => { e.stopPropagation(); window.open(article.url, '_blank'); }} className="bw-btn-ghost" style={{ padding: 0, fontSize: 'inherit', color: sentColor }}>
+                                                        <span>{article.source}</span>
+                                                        <ExternalLink className="h-3 w-3" style={{ marginLeft: 'var(--spacing-xs)' }} aria-hidden />
+                                                    </button>
+                                                    <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
+                                                    <span style={{ padding: 'var(--spacing-xs) var(--spacing-sm)', borderRadius: 9999, fontSize: 'var(--font-size-xs)', fontWeight: 500, ...sentStyle }}>
+                                                        {article.sentiment === 'positive' ? '긍정' : article.sentiment === 'negative' ? '부정' : '중립'}
+                                                    </span>
+                                                </div>
                                             </div>
+                                            <button type="button" onClick={(e) => { e.stopPropagation(); window.open(article.url, '_blank'); }} className="bw-btn-ghost" title="기사 원문 보기">
+                                                <ExternalLink className="h-4 w-4" aria-hidden />
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                window.open(article.url, '_blank');
-                                            }}
-                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="기사 원문 보기"
-                                        >
-                                            <ExternalLink className="h-4 w-4" />
-                                        </button>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </motion.div>
                     )}
 
@@ -262,47 +235,30 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                             exit={{ opacity: 0, y: -20 }}
                             className="space-y-4"
                         >
-                            <h3 className="text-lg font-semibold text-gray-900">트렌딩 뉴스</h3>
+                            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--spacing-md)' }}>트렌딩 뉴스</h3>
                             {trendingNews.map((article) => (
-                                <div
-                                    key={article.id}
-                                    onClick={() => handleArticleSelect(article)}
-                                    className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition-colors"
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <h4 className="font-medium text-gray-900 mb-2">{article.title}</h4>
-                                            <p className="text-sm text-gray-600 mb-2">{article.summary}</p>
-                                            <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        window.open(article.url, '_blank');
-                                                    }}
-                                                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                                                >
-                                                    <span>{article.source}</span>
-                                                    <ExternalLink className="h-3 w-3" />
-                                                </button>
-                                                <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
-                                                <span className="flex items-center space-x-1 text-orange-600">
-                                                    <TrendingUp className="h-3 w-3" />
-                                                    <span>트렌딩</span>
-                                                </span>
+                                    <div key={article.id} onClick={() => handleArticleSelect(article)} className="bw-card" style={{ padding: 'var(--spacing-md)', cursor: 'pointer' }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--spacing-md)' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <h4 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 'var(--spacing-sm)' }}>{article.title}</h4>
+                                                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-sm)' }}>{article.summary || article.content}</p>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                                                    <button type="button" onClick={(e) => { e.stopPropagation(); window.open(article.url, '_blank'); }} className="bw-btn-ghost" style={{ padding: 0, fontSize: 'inherit', color: 'var(--accent-info)' }}>
+                                                        <span>{article.source}</span>
+                                                        <ExternalLink className="h-3 w-3" style={{ marginLeft: 'var(--spacing-xs)' }} aria-hidden />
+                                                    </button>
+                                                    <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', color: 'var(--accent-orange)' }}>
+                                                        <TrendingUp className="h-3 w-3" aria-hidden />
+                                                        <span>트렌딩</span>
+                                                    </span>
+                                                </div>
                                             </div>
+                                            <button type="button" onClick={(e) => { e.stopPropagation(); window.open(article.url, '_blank'); }} className="bw-btn-ghost" title="기사 원문 보기">
+                                                <ExternalLink className="h-4 w-4" aria-hidden />
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                window.open(article.url, '_blank');
-                                            }}
-                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="기사 원문 보기"
-                                        >
-                                            <ExternalLink className="h-4 w-4" />
-                                        </button>
                                     </div>
-                                </div>
                             ))}
                         </motion.div>
                     )}
@@ -315,24 +271,24 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                             exit={{ opacity: 0, y: -20 }}
                             className="space-y-6"
                         >
-                            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                            <div className="bw-card">
                                 <div className="flex items-start justify-between mb-4">
-                                    <h3 className="text-lg font-semibold text-gray-900">선택된 기사</h3>
+                                    <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>선택된 기사</h3>
                                     <button
                                         onClick={() => window.open(selectedArticle.url, '_blank')}
-                                        className="flex items-center space-x-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                        className="bw-btn-ghost" style={{ fontSize: 'var(--font-size-sm)' }}
                                         title="기사 원문 보기"
                                     >
                                         <span>원문 보기</span>
                                         <ExternalLink className="h-3 w-3" />
                                     </button>
                                 </div>
-                                <h4 className="font-medium text-gray-900 mb-2">{selectedArticle.title}</h4>
-                                <p className="text-sm text-gray-600 mb-2">{selectedArticle.summary}</p>
-                                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                <h4 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 'var(--spacing-sm)' }}>{selectedArticle.title}</h4>
+                                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-sm)' }}>{selectedArticle.summary}</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                     <button
                                         onClick={() => window.open(selectedArticle.url, '_blank')}
-                                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                                        className="bw-btn-ghost" style={{ padding: 0, fontSize: 'inherit', color: 'var(--accent-info)' }}
                                     >
                                         <span>{selectedArticle.source}</span>
                                         <ExternalLink className="h-3 w-3" />
@@ -343,18 +299,18 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
 
                             {isAnalyzing ? (
                                 <div className="text-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                                    <p className="mt-2 text-gray-600">댓글 분석 중...</p>
+                                    <div className="bw-spinner" style={{ width: 32, height: 32, margin: '0 auto' }} />
+                                    <p style={{ marginTop: 'var(--spacing-sm)', color: 'var(--text-secondary)' }}>댓글 분석 중...</p>
                                 </div>
                             ) : commentAnalysis && (
-                                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                                <div className="bw-card">
                                     <div className="flex items-start justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">댓글 분석 결과</h3>
-                                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>댓글 분석 결과</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                             <span>출처: {selectedArticle.source}</span>
                                             <button
                                                 onClick={() => window.open(selectedArticle.url, '_blank')}
-                                                className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                                                className="bw-btn-ghost" style={{ padding: 0, fontSize: 'inherit', color: 'var(--accent-info)' }}
                                                 title="기사 원문 보기"
                                             >
                                                 <span>원문</span>
@@ -366,23 +322,23 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* 감정 분포 */}
                                         <div>
-                                            <h4 className="font-medium text-gray-900 mb-3">감정 분포</h4>
+                                            <h4 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 'var(--spacing-md)' }}>감정 분포</h4>
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-600">긍정</span>
-                                                    <span className="text-sm font-medium text-green-600">
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>긍정</span>
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--accent-success)' }}>
                                                         {commentAnalysis.sentimentDistribution.positive}개
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-600">중립</span>
-                                                    <span className="text-sm font-medium text-gray-600">
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>중립</span>
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--text-secondary)' }}>
                                                         {commentAnalysis.sentimentDistribution.neutral}개
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-600">부정</span>
-                                                    <span className="text-sm font-medium text-red-600">
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>부정</span>
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--accent-error)' }}>
                                                         {commentAnalysis.sentimentDistribution.negative}개
                                                     </span>
                                                 </div>
@@ -391,18 +347,18 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
 
                                         {/* 참여도 지표 */}
                                         <div>
-                                            <h4 className="font-medium text-gray-900 mb-3">참여도 지표</h4>
+                                            <h4 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 'var(--spacing-md)' }}>참여도 지표</h4>
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-600">총 댓글</span>
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>총 댓글</span>
                                                     <span className="text-sm font-medium">{commentAnalysis.totalComments}개</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-600">총 좋아요</span>
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>총 좋아요</span>
                                                     <span className="text-sm font-medium">{commentAnalysis.engagementMetrics.totalLikes}개</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-600">평균 좋아요</span>
+                                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>평균 좋아요</span>
                                                     <span className="text-sm font-medium">
                                                         {commentAnalysis.engagementMetrics.averageLikes.toFixed(1)}개
                                                     </span>
@@ -415,8 +371,8 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                                     {commentAnalysis.topKeywords.length > 0 && (
                                         <div className="mt-6">
                                             <div className="flex items-center justify-between mb-3">
-                                                <h4 className="font-medium text-gray-900">주요 키워드</h4>
-                                                <span className="text-xs text-gray-500">
+                                                <h4 className="font-medium style={{ color: 'var(--text-primary)' }}">주요 키워드</h4>
+                                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                                     분석 시간: {new Date().toLocaleTimeString()}
                                                 </span>
                                             </div>
@@ -424,7 +380,7 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                                                 {commentAnalysis.topKeywords.slice(0, 10).map((keyword, index) => (
                                                     <span
                                                         key={index}
-                                                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors cursor-default"
+                                                        style={{ padding: 'var(--spacing-xs) var(--spacing-md)', color: 'var(--accent-info)', backgroundColor: 'var(--accent-info-muted)', borderRadius: 9999, fontSize: 'var(--font-size-sm)' }}
                                                         title={`키워드: ${keyword.keyword}, 빈도: ${keyword.frequency}회`}
                                                     >
                                                         {keyword.keyword} ({keyword.frequency})
@@ -432,7 +388,7 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                                                 ))}
                                             </div>
                                             {commentAnalysis.topKeywords.length > 10 && (
-                                                <p className="text-xs text-gray-500 mt-2">
+                                                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--spacing-sm)' }}>
                                                     외 {commentAnalysis.topKeywords.length - 10}개 키워드 더...
                                                 </p>
                                             )}
@@ -440,15 +396,15 @@ const NewsSearch: React.FC<NewsSearchProps> = ({ onArticleSelect, apiKey }) => {
                                     )}
 
                                     {/* 분석 요약 */}
-                                    <div className="mt-6 p-3 bg-gray-50 rounded-lg">
-                                        <h4 className="font-medium text-gray-900 mb-2">분석 요약</h4>
-                                        <div className="text-sm text-gray-600 space-y-1">
+                                    <div style={{ marginTop: 'var(--spacing-lg)', padding: 'var(--spacing-md)', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+                                        <h4 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 'var(--spacing-sm)' }}>분석 요약</h4>
+                                        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
                                             <p>• 총 {commentAnalysis.totalComments}개의 댓글을 분석했습니다.</p>
                                             <p>• 주요 감정: {commentAnalysis.sentimentDistribution.positive > commentAnalysis.sentimentDistribution.negative ? '긍정적' : '부정적'} 반응이 우세합니다.</p>
                                             <p>• 평균 참여도: 댓글당 {commentAnalysis.engagementMetrics.averageLikes.toFixed(1)}개의 좋아요를 받았습니다.</p>
                                             <p>• 출처: <button
                                                 onClick={() => window.open(selectedArticle.url, '_blank')}
-                                                className="text-blue-600 hover:text-blue-800 hover:underline"
+                                                className="bw-btn-ghost" style={{ padding: 0, color: 'var(--accent-info)' }}
                                             >
                                                 {selectedArticle.source}
                                             </button>에서 수집된 데이터입니다.</p>

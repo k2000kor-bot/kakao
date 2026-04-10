@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getStatusColor } from '../../styles/themeColors';
 import {
     Box,
     Card,
@@ -8,14 +9,12 @@ import {
     Chip,
     LinearProgress,
     IconButton,
-    Tooltip,
     Alert,
     AlertTitle,
     List,
     ListItem,
     ListItemIcon,
     ListItemText,
-    Divider,
     Button,
     Dialog,
     DialogTitle,
@@ -29,7 +28,6 @@ import {
     TableRow,
     Paper,
     Avatar,
-    Badge,
     Switch,
     FormControlLabel,
     Tabs,
@@ -49,29 +47,14 @@ import {
     NetworkCheck,
     Security,
     Analytics,
-    Psychology,
     AutoAwesome,
     Timeline,
     Assessment,
-    Lightbulb,
     Download,
-    Upload,
     PlayArrow,
-    Stop,
-    Pause
 } from '@mui/icons-material';
 import integratedSystemAPI, { SystemStatus } from '../../services/integratedSystemAPI';
-import { errorLogger } from '../../utils/errorLogger';
-
-// Helper function to safely convert unknown error types to Error objects
-const toError = (err: unknown): Error => {
-    if (err instanceof Error) {
-        return err as Error;
-    }
-    // Error 생성자를 명시적으로 사용
-    const ErrorConstructor = globalThis.Error;
-    return new ErrorConstructor(String(err)) as Error;
-};
+import { errorLogger, toError } from '../../utils/errorLogger';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -104,9 +87,10 @@ const SystemIntegrationDashboard: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedTab, setSelectedTab] = useState(0);
     const [autoRefresh, setAutoRefresh] = useState(true);
-    const [refreshInterval, setRefreshInterval] = useState(30000); // 30초
+    const [refreshInterval, _setRefreshInterval] = useState(30000); // 30초
+    void refreshInterval;
     const [selectedService, setSelectedService] = useState<string | null>(null);
-    const [serviceDetails, setServiceDetails] = useState<any>(null);
+    const [_serviceDetails, setServiceDetails] = useState<unknown>(null);
 
     useEffect(() => {
         loadSystemStatus();
@@ -164,23 +148,8 @@ const SystemIntegrationDashboard: React.FC = () => {
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'up':
-            case 'healthy':
-                return '#4CAF50';
-            case 'down':
-            case 'unhealthy':
-                return '#F44336';
-            case 'degraded':
-                return '#FF9800';
-            default:
-                return '#9E9E9E';
-        }
-    };
-
     const getOverallStatusColor = () => {
-        if (!systemStatus) return '#9E9E9E';
+        if (!systemStatus) return 'var(--text-tertiary)';
         return getStatusColor(systemStatus.status);
     };
 
@@ -199,7 +168,7 @@ const SystemIntegrationDashboard: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom sx={{
-                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -209,7 +178,7 @@ const SystemIntegrationDashboard: React.FC = () => {
             </Typography>
 
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                CORBU AI 시스템의 모든 서비스 상태를 모니터링하고 관리합니다.
+                CORBU.AI 시스템의 모든 서비스 상태를 모니터링하고 관리합니다.
             </Typography>
 
             {/* 제어 패널 */}

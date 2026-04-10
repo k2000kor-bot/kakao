@@ -190,7 +190,7 @@ class ConversationAnalyzer:
             "project": ["프로젝트", "project", "작업", "task"],
             "file": ["파일", "file", "업로드", "upload", "분석", "analysis"],
             "system": ["시스템", "system", "기능", "function", "설정", "setting"],
-            "chat": ["채팅", "chat", "대화", "conversation", "메시지", "message"],
+            "chat": ["대화", "chat", "대화", "conversation", "메시지", "message"],
             "help": ["도움", "help", "질문", "question", "문제", "problem"]
         }
         

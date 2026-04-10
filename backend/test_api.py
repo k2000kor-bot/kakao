@@ -1,13 +1,17 @@
 """
-CORBU AI Backend API 테스트 스크립트
+CORBU.AI Backend API 테스트 스크립트
 API 엔드포인트를 테스트하는 간단한 스크립트
 """
 
+import os
 import requests
 import json
 from typing import Optional
 
-BASE_URL = "http://localhost:5001"
+_API_PORT = os.environ.get("API_PORT") or os.environ.get("BACKEND_PORT") or "5002"
+BASE_URL = os.environ.get(
+    "CORBU_TEST_API_BASE", f"http://localhost:{_API_PORT}"
+)
 
 class APITester:
     def __init__(self, base_url: str = BASE_URL):
@@ -251,7 +255,7 @@ class APITester:
     def run_all_tests(self):
         """모든 테스트 실행"""
         print("\n" + "="*50)
-        print("🚀 CORBU AI Backend API 테스트 시작")
+        print("🚀 CORBU.AI Backend API 테스트 시작")
         print("="*50 + "\n")
         
         results = []

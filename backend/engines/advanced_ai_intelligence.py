@@ -1,5 +1,5 @@
 """
-CORBU AI Advanced Intelligence Engine - 고급 AI 지능 엔진
+CORBU.AI Advanced Intelligence Engine - 고급 AI 지능 엔진
 """
 import re
 import json
@@ -580,7 +580,7 @@ B: 네, {prompt}에 대한 {random.choice(self.creative_templates["plot_elements
                 report_parts.append("")
             
             report_parts.append("---")
-            report_parts.append("*CORBU AI Advanced Intelligence Engine이 제공하는 분석입니다*")
+            report_parts.append("*CORBU.AI Advanced Intelligence Engine이 제공하는 분석입니다*")
             
             return "\n".join(report_parts)
             

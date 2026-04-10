@@ -1,4 +1,27 @@
 // API 서비스 함수들
+import {
+  API_ADVANCED_MEDIA_ADVANCED_ANALYSIS_PREFIX,
+  API_ADVANCED_MEDIA_ANALYSIS_RESULTS_PATH,
+  API_ADVANCED_MEDIA_ANALYSIS_STATUS_PREFIX,
+  API_ADVANCED_MEDIA_ANALYZE_MEDIA_PREFIX,
+  API_ADVANCED_MEDIA_FILES_LIST_PATH,
+  API_ADVANCED_MEDIA_GENERATE_CONVERSATIONAL_PATH,
+  API_ADVANCED_MEDIA_UPLOAD_MEDIA_PATH,
+  API_FORM_FIELD_FILE,
+  API_MEDIA_WRITING_ANALYSIS_PREFIX,
+  API_MEDIA_WRITING_ANALYZE_PREFIX,
+  API_MEDIA_WRITING_CONVERSATION_PATH,
+  API_MEDIA_WRITING_FILES_PATH,
+  API_MEDIA_WRITING_SERVER_ROOT_PATH,
+  API_MEDIA_WRITING_UPLOAD_PATH,
+  API_MEDIA_WRITING_WRITING_THEORIES_PATH,
+  API_QUERY_PARAM_PROJECT_ID,
+  joinApiHealthCheckUrl,
+  resolveApiBaseUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+
+const API_BASE = resolveApiBaseUrl();
 export interface MediaUploadResponse {
   id: string;
   filename: string;
@@ -19,7 +42,7 @@ export interface AnalysisResult {
   confidence: number;
   processing_time: number;
   created_at: string;
-  writing_insights?: any[];
+  writing_insights?: unknown[];
 }
 
 export interface ConversationalResponse {
@@ -44,7 +67,7 @@ export interface MediaFile {
   summary?: string;
   keywords?: string[];
   sentiment?: string;
-  writingInsights?: any[];
+  writingInsights?: unknown[];
 }
 
 export interface WritingTheory {
@@ -73,10 +96,10 @@ export interface ConversationMessage {
 // 파일 업로드
 export const uploadMediaFile = async (file: File): Promise<MediaUploadResponse> => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append(API_FORM_FIELD_FILE, file);
 
   try {
-    const response = await fetch('http://localhost:8000/upload-media', {
+    const response = await fetch(joinApiHealthCheckUrl(API_BASE, API_ADVANCED_MEDIA_UPLOAD_MEDIA_PATH), {
       method: 'POST',
       body: formData,
     });
@@ -87,7 +110,14 @@ export const uploadMediaFile = async (file: File): Promise<MediaUploadResponse> 
 
     return await response.json();
   } catch (error) {
-    console.error('Upload error:', error);
+    const err = toError(error);
+    errorLogger.error('Upload error', err, {
+      component: 'advancedMediaAnalysisAPI',
+      action: 'uploadMediaFile',
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+    });
     // Mock response for development
     return {
       id: Date.now().toString(),
@@ -103,9 +133,10 @@ export const uploadMediaFile = async (file: File): Promise<MediaUploadResponse> 
 // 파일 분석
 export const analyzeMediaFile = async (fileId: string): Promise<AnalysisResult> => {
   try {
-    const response = await fetch(`http://localhost:8000/analyze-media/${fileId}`, {
-      method: 'POST',
-    });
+    const response = await fetch(
+      joinApiHealthCheckUrl(API_BASE, `${API_ADVANCED_MEDIA_ANALYZE_MEDIA_PREFIX}/${encodeURIComponent(fileId)}`),
+      { method: 'POST' },
+    );
 
     if (!response.ok) {
       throw new Error(`Analysis failed: ${response.statusText}`);
@@ -113,7 +144,12 @@ export const analyzeMediaFile = async (fileId: string): Promise<AnalysisResult> 
 
     return await response.json();
   } catch (error) {
-    console.error('Analysis error:', error);
+    const err = toError(error);
+    errorLogger.error('Analysis error', err, {
+      component: 'advancedMediaAnalysisAPI',
+      action: 'analyzeMediaFile',
+      fileId,
+    });
     // Mock response for development
     return {
       id: Date.now().toString(),
@@ -142,7 +178,7 @@ export const generateConversationalResponse = async (
   tone: string = 'friendly'
 ): Promise<ConversationalResponse> => {
   try {
-    const response = await fetch('http://localhost:8000/generate-conversational-response', {
+    const response = await fetch(joinApiHealthCheckUrl(API_BASE, API_ADVANCED_MEDIA_GENERATE_CONVERSATIONAL_PATH), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -161,7 +197,15 @@ export const generateConversationalResponse = async (
 
     return await response.json();
   } catch (error) {
-    console.error('Response generation error:', error);
+    const err = toError(error);
+    errorLogger.error('Response generation error', err, {
+      component: 'advancedMediaAnalysisAPI',
+      action: 'generateConversationalResponse',
+      queryLength: query.length,
+      contextCount: context.length,
+      writingStyle,
+      tone,
+    });
     // Mock response for development
     return {
       id: Date.now().toString(),
@@ -178,7 +222,7 @@ export const generateConversationalResponse = async (
 // 파일 목록 조회
 export const getFileList = async (): Promise<MediaUploadResponse[]> => {
   try {
-    const response = await fetch('http://localhost:8000/files', {
+    const response = await fetch(joinApiHealthCheckUrl(API_BASE, API_ADVANCED_MEDIA_FILES_LIST_PATH), {
       method: 'GET',
     });
 
@@ -188,12 +232,16 @@ export const getFileList = async (): Promise<MediaUploadResponse[]> => {
 
     return await response.json();
   } catch (error) {
-    console.error('File list error:', error);
+    const err = toError(error);
+    errorLogger.error('File list error', err, {
+      component: 'advancedMediaAnalysisAPI',
+      action: 'getFileList',
+    });
     // Mock response for development
     return [
       {
         id: '1',
-        filename: '개포우성_대화내용.txt',
+        filename: 'sample_대화내용.txt',
         file_type: 'text/plain',
         file_size: 2457600,
         upload_time: '2024-01-15T10:30:00Z',
@@ -201,7 +249,7 @@ export const getFileList = async (): Promise<MediaUploadResponse[]> => {
       },
       {
         id: '2',
-        filename: '잠실우성_요약보고서.pdf',
+        filename: 'sample_요약보고서.pdf',
         file_type: 'application/pdf',
         file_size: 1887436,
         upload_time: '2024-01-14T15:45:00Z',
@@ -223,8 +271,11 @@ export const getFileList = async (): Promise<MediaUploadResponse[]> => {
 export const getAnalysisResults = async (fileId?: string): Promise<AnalysisResult[]> => {
   try {
     const url = fileId
-      ? `http://localhost:8000/analysis-results/${fileId}`
-      : 'http://localhost:8000/analysis-results';
+      ? joinApiHealthCheckUrl(
+          API_BASE,
+          `${API_ADVANCED_MEDIA_ANALYSIS_RESULTS_PATH}/${encodeURIComponent(fileId)}`,
+        )
+      : joinApiHealthCheckUrl(API_BASE, API_ADVANCED_MEDIA_ANALYSIS_RESULTS_PATH);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -236,14 +287,19 @@ export const getAnalysisResults = async (fileId?: string): Promise<AnalysisResul
 
     return await response.json();
   } catch (error) {
-    console.error('Analysis results error:', error);
+    const err = toError(error);
+    errorLogger.error('Analysis results error', err, {
+      component: 'advancedMediaAnalysisAPI',
+      action: 'getAnalysisResults',
+      fileId,
+    });
     // Mock response for development
     return [
       {
         id: '1',
         file_id: '1',
-        extracted_text: '개포우성 7차 재건축 프로젝트 관련 대화 내용 분석',
-        summary: '개포우성 7차 재건축 프로젝트 관련 대화 내용 분석',
+        extracted_text: '샘플 재건축 프로젝트 관련 대화 내용 분석',
+        summary: '샘플 재건축 프로젝트 관련 대화 내용 분석',
         key_points: [
           '삼성물산과 GS건설의 제안서 비교',
           '조합원들의 우려사항과 요구사항',
@@ -258,8 +314,8 @@ export const getAnalysisResults = async (fileId?: string): Promise<AnalysisResul
       {
         id: '2',
         file_id: '2',
-        extracted_text: '잠실우성 프로젝트 요약 보고서 분석',
-        summary: '잠실우성 프로젝트 요약 보고서 분석',
+        extracted_text: '샘플 프로젝트 요약 보고서 분석',
+        summary: '샘플 프로젝트 요약 보고서 분석',
         key_points: [
           '프로젝트 진행 상황 및 일정',
           '주요 의사결정 사항',
@@ -278,9 +334,13 @@ export const getAnalysisResults = async (fileId?: string): Promise<AnalysisResul
 // 파일 삭제
 export const deleteFile = async (fileId: string): Promise<boolean> => {
   try {
-    const response = await fetch(`http://localhost:8000/files/${fileId}`, {
-      method: 'DELETE',
-    });
+    const response = await fetch(
+      joinApiHealthCheckUrl(
+        API_BASE,
+        `${API_ADVANCED_MEDIA_FILES_LIST_PATH}/${encodeURIComponent(fileId)}`,
+      ),
+      { method: 'DELETE' },
+    );
 
     if (!response.ok) {
       throw new Error(`File deletion failed: ${response.statusText}`);
@@ -288,7 +348,12 @@ export const deleteFile = async (fileId: string): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    console.error('File deletion error:', error);
+    const err = toError(error);
+    errorLogger.error('File deletion error', err, {
+      component: 'advancedMediaAnalysisAPI',
+      action: 'deleteFile',
+      fileId,
+    });
     // Mock response for development
     return true;
   }
@@ -303,9 +368,13 @@ export const uploadMultipleFiles = async (files: File[]): Promise<MediaUploadRes
 // 파일 분석 상태 확인
 export const checkAnalysisStatus = async (fileId: string): Promise<{ status: string; progress: number }> => {
   try {
-    const response = await fetch(`http://localhost:8000/analysis-status/${fileId}`, {
-      method: 'GET',
-    });
+    const response = await fetch(
+      joinApiHealthCheckUrl(
+        API_BASE,
+        `${API_ADVANCED_MEDIA_ANALYSIS_STATUS_PREFIX}/${encodeURIComponent(fileId)}`,
+      ),
+      { method: 'GET' },
+    );
 
     if (!response.ok) {
       throw new Error(`Status check failed: ${response.statusText}`);
@@ -313,7 +382,12 @@ export const checkAnalysisStatus = async (fileId: string): Promise<{ status: str
 
     return await response.json();
   } catch (error) {
-    console.error('Status check error:', error);
+    const err = toError(error);
+    errorLogger.error('Status check error', err, {
+      component: 'advancedMediaAnalysisAPI',
+      action: 'checkAnalysisStatus',
+      fileId,
+    });
     // Mock response for development
     return {
       status: 'completed',
@@ -336,13 +410,19 @@ export const performAdvancedAnalysis = async (
   options: AdvancedAnalysisOptions
 ): Promise<AnalysisResult> => {
   try {
-    const response = await fetch(`http://localhost:8000/advanced-analysis/${fileId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      joinApiHealthCheckUrl(
+        API_BASE,
+        `${API_ADVANCED_MEDIA_ADVANCED_ANALYSIS_PREFIX}/${encodeURIComponent(fileId)}`,
+      ),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(options),
       },
-      body: JSON.stringify(options),
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Advanced analysis failed: ${response.statusText}`);
@@ -350,7 +430,13 @@ export const performAdvancedAnalysis = async (
 
     return await response.json();
   } catch (error) {
-    console.error('Advanced analysis error:', error);
+    const err = toError(error);
+    errorLogger.error('Advanced analysis error', err, {
+      component: 'advancedMediaAnalysisAPI',
+      action: 'performAdvancedAnalysis',
+      fileId,
+      options,
+    });
     // Mock response for development
     return {
       id: Date.now().toString(),
@@ -392,19 +478,19 @@ export interface ConversationResponse {
 class AdvancedMediaAnalysisAPI {
   private baseURL: string;
 
-  constructor(baseURL: string = 'http://localhost:8001') {
+  constructor(baseURL: string = API_BASE) {
     this.baseURL = baseURL;
   }
 
   // 미디어 파일 업로드
   async uploadMediaFile(file: File, projectId?: string): Promise<MediaUploadResponse> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append(API_FORM_FIELD_FILE, file);
     if (projectId) {
-      formData.append('project_id', projectId);
+      formData.append(API_QUERY_PARAM_PROJECT_ID, projectId);
     }
 
-    const response = await fetch(`${this.baseURL}/upload`, {
+    const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_MEDIA_WRITING_UPLOAD_PATH), {
       method: 'POST',
       body: formData,
     });
@@ -418,9 +504,13 @@ class AdvancedMediaAnalysisAPI {
 
   // 파일 분석 시작
   async analyzeFile(fileId: string): Promise<AnalysisResult> {
-    const response = await fetch(`${this.baseURL}/analyze/${fileId}`, {
-      method: 'POST',
-    });
+    const response = await fetch(
+      joinApiHealthCheckUrl(
+        this.baseURL,
+        `${API_MEDIA_WRITING_ANALYZE_PREFIX}/${encodeURIComponent(fileId)}`,
+      ),
+      { method: 'POST' },
+    );
 
     if (!response.ok) {
       throw new Error(`파일 분석 실패: ${response.statusText}`);
@@ -431,7 +521,12 @@ class AdvancedMediaAnalysisAPI {
 
   // 분석 결과 조회
   async getAnalysisResult(fileId: string): Promise<AnalysisResult> {
-    const response = await fetch(`${this.baseURL}/analysis/${fileId}`);
+    const response = await fetch(
+      joinApiHealthCheckUrl(
+        this.baseURL,
+        `${API_MEDIA_WRITING_ANALYSIS_PREFIX}/${encodeURIComponent(fileId)}`,
+      ),
+    );
 
     if (!response.ok) {
       throw new Error(`분석 결과 조회 실패: ${response.statusText}`);
@@ -442,7 +537,7 @@ class AdvancedMediaAnalysisAPI {
 
   // 글쓰기 이론 목록 조회
   async getWritingTheories(): Promise<WritingTheory[]> {
-    const response = await fetch(`${this.baseURL}/writing-theories`);
+    const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_MEDIA_WRITING_WRITING_THEORIES_PATH));
 
     if (!response.ok) {
       throw new Error(`글쓰기 이론 조회 실패: ${response.statusText}`);
@@ -457,7 +552,7 @@ class AdvancedMediaAnalysisAPI {
     theoryId?: string
   ): Promise<ConversationResponse> {
     try {
-      const response = await fetch(`${this.baseURL}/conversation`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_MEDIA_WRITING_CONVERSATION_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -475,16 +570,22 @@ class AdvancedMediaAnalysisAPI {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error generating conversational response:', error);
+      const err = toError(error);
+      errorLogger.error('Error generating conversational response', err, {
+        component: 'advancedMediaAnalysisAPI',
+        action: 'generateConversationalResponse',
+        theoryId,
+      });
       throw error;
     }
   }
 
   // 업로드된 파일 목록 조회
   async getUploadedFiles(projectId?: string): Promise<MediaFile[]> {
-    const url = projectId
-      ? `${this.baseURL}/files?project_id=${projectId}`
-      : `${this.baseURL}/files`;
+    const path = projectId
+      ? `${API_MEDIA_WRITING_FILES_PATH}?${new URLSearchParams({ [API_QUERY_PARAM_PROJECT_ID]: projectId }).toString()}`
+      : API_MEDIA_WRITING_FILES_PATH;
+    const url = joinApiHealthCheckUrl(this.baseURL, path);
 
     const response = await fetch(url);
 
@@ -493,14 +594,14 @@ class AdvancedMediaAnalysisAPI {
     }
 
     const files = await response.json();
-    return files.map((file: any) => ({
+    return files.map((file: Record<string, unknown>) => ({
       id: file.id,
       name: file.name,
-      type: this.getFileType(file.mime_type),
+      type: this.getFileType(String(file.mime_type ?? '')),
       size: file.size,
       url: '', // 실제 파일 URL은 별도 처리 필요
       uploadDate: file.upload_date,
-      analysisStatus: file.analysis_status as 'pending' | 'processing' | 'completed' | 'error'
+      analysisStatus: (file.analysis_status ?? 'pending') as 'pending' | 'processing' | 'completed' | 'error'
     }));
   }
 
@@ -515,7 +616,7 @@ class AdvancedMediaAnalysisAPI {
   // 서버 상태 확인
   async checkServerStatus(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseURL}/`);
+      const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_MEDIA_WRITING_SERVER_ROOT_PATH));
       return response.ok;
     } catch {
       return false;
@@ -532,7 +633,13 @@ class AdvancedMediaAnalysisAPI {
         }
       } catch (error) {
         // 분석이 아직 완료되지 않은 경우
-        console.log(`분석 진행 중... (${i + 1}/${maxAttempts})`);
+        errorLogger.info('분석 진행 중', {
+          component: 'advancedMediaAnalysisAPI',
+          action: 'pollAnalysisStatus',
+          fileId,
+          attempt: i + 1,
+          maxAttempts,
+        });
       }
 
       // 2초 대기
@@ -549,9 +656,9 @@ class AdvancedMediaAnalysisAPI {
     for (const file of files) {
       try {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append(API_FORM_FIELD_FILE, file);
 
-        const response = await fetch(`${this.baseURL}/upload`, {
+        const response = await fetch(joinApiHealthCheckUrl(this.baseURL, API_MEDIA_WRITING_UPLOAD_PATH), {
           method: 'POST',
           body: formData,
         });
@@ -577,9 +684,11 @@ class AdvancedMediaAnalysisAPI {
         });
 
         // 분석 시작
-        const analysisResponse = await fetch(`${this.baseURL}/analyze/${uploadResult.file_id}`, {
-          method: 'POST',
-        });
+        const fid = encodeURIComponent(String(uploadResult.file_id ?? ''));
+        const analysisResponse = await fetch(
+          joinApiHealthCheckUrl(this.baseURL, `${API_MEDIA_WRITING_ANALYZE_PREFIX}/${fid}`),
+          { method: 'POST' },
+        );
 
         if (analysisResponse.ok) {
           const analysisResult = await analysisResponse.json();
@@ -596,7 +705,14 @@ class AdvancedMediaAnalysisAPI {
           }
         }
       } catch (error) {
-        console.error(`Error processing file ${file.name}:`, error);
+        const err = toError(error);
+        errorLogger.error('Error processing file', err, {
+          component: 'advancedMediaAnalysisAPI',
+          action: 'uploadAndAnalyzeFiles',
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        });
       }
     }
 

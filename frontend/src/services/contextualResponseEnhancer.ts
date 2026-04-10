@@ -4,7 +4,84 @@
  * 텍스트 조작 및 생성 능력을 극대화한 통합 시스템
  */
 
-import { conversationMemoryService } from './conversationMemoryService';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString, type PipelineMessageExtras } from '../utils/chatInputUtils';
+
+
+// Internal type definitions
+interface ConversationalContext {
+    flow: string;
+    topicProgression: string;
+    patterns: string[];
+    expertiseLevel: string;
+    discourseComplexity: string;
+    conversationDepth: number;
+    thematicCoherence: string;
+}
+
+interface ResearcherAnalysisResult {
+    academicFramework: string;
+    theoreticalBasis: string;
+    methodologicalApproach: string;
+    evidenceAssessment: string;
+    limitationsAndBias: string;
+    futureResearchDirections: string[];
+}
+
+interface OpinionAnalysisResult {
+    publicSentimentAssessment: string;
+    stakeholderPerspectives: string[];
+    socialImplications: string;
+    politicalRamifications: string;
+    mediaInfluenceFactors: string[];
+    consensusBuildingPotential: string;
+}
+
+interface TextManipulationResult {
+    enhancedModification: string;
+    systematicCounterargument: string;
+    persuasiveAppeal: string;
+    comprehensiveRebuttal: string;
+    academicExpansion: string;
+    rhetoricalVariations: {
+        formal: string;
+        persuasive: string;
+        analytical: string;
+        emotive: string;
+    };
+}
+
+interface StrategicRecommendationsResult {
+    communicationStrategy: string[];
+    riskMitigation: string[];
+    opportunityLeveraging: string[];
+    stakeholderEngagement: string[];
+}
+
+interface FollowUpFrameworkResult {
+    deepeningQuestions: string[];
+    alternativePerspectives: string[];
+    synthesisOpportunities: string[];
+    practicalApplications: string[];
+}
+
+interface PrimaryResponseResult {
+    content: string;
+    perspective: string;
+    methodology: string;
+    confidence: number;
+}
+
+interface IntentEvolution {
+    summary: string;
+}
+
+interface ConversationHistoryItem {
+    message: string;
+    response: string;
+    timestamp: string;
+    analysisType?: string;
+}
 
 export interface ContextualAnalysisRequest {
     currentMessage: string;
@@ -25,6 +102,8 @@ export interface ContextualAnalysisRequest {
         timeframe?: string;
         objectives?: string[];
     };
+    /** 상위 파이프라인(채팅·Q→A)에서 넘긴 메타 — 강화 단계에서 변형하지 않고 응답에 그대로 실어줌 */
+    pipelineExtras?: PipelineMessageExtras;
 }
 
 export interface EnhancedResponse {
@@ -81,6 +160,8 @@ export interface EnhancedResponse {
         synthesisOpportunities: string[];
         practicalApplications: string[];
     };
+    /** 요청에 `pipelineExtras`가 있으면 동일 객체 참조로 전달 */
+    pipelineExtras?: PipelineMessageExtras;
 }
 
 class ContextualResponseEnhancer {
@@ -135,11 +216,18 @@ class ContextualResponseEnhancer {
                 opinionAnalysisInsights: opinionAnalysis,
                 textManipulationSuite: textManipulations,
                 strategicRecommendations,
-                followUpFramework
+                followUpFramework,
+                ...(request.pipelineExtras ? { pipelineExtras: request.pipelineExtras } : {}),
             };
 
         } catch (error) {
-            console.error('맥락적 응답 강화 오류:', error);
+            const err = toError(error);
+            errorLogger.error('맥락적 응답 강화 오류', err, {
+                component: 'contextualResponseEnhancer',
+                action: 'enhanceResponse',
+                messagePreview: request.currentMessage.substring(0, 100),
+                historyLength: request.conversationHistory.length,
+            });
             throw new Error('응답 강화 처리 중 오류가 발생했습니다.');
         }
     }
@@ -147,7 +235,7 @@ class ContextualResponseEnhancer {
     /**
      * 대화 맥락 분석
      */
-    private analyzeConversationalContext(request: ContextualAnalysisRequest): any {
+    private analyzeConversationalContext(request: ContextualAnalysisRequest): ConversationalContext {
         const history = request.conversationHistory;
         const currentMessage = request.currentMessage;
 
@@ -180,19 +268,19 @@ class ContextualResponseEnhancer {
     /**
      * 연구자 관점 분석 생성
      */
-    private generateResearcherAnalysis(request: ContextualAnalysisRequest, context: any): any {
+    private generateResearcherAnalysis(request: ContextualAnalysisRequest, context: ConversationalContext): ResearcherAnalysisResult {
         const currentMessage = request.currentMessage;
 
         return {
-            academicFramework: `
+            academicFramework: coerceTrimmedString(`
 본 분석은 **다학제적 접근법**을 통해 수행되었으며, 특히 ${this.identifyAcademicDisciplines(currentMessage).join(', ')} 분야의 이론적 틀을 적용하였습니다. 
 
 **이론적 기반**: ${this.identifyTheoreticalBasis(currentMessage, context)}
 
 **연구 패러다임**: ${this.identifyResearchParadigm(context)} 접근법을 채택하여 체계적 분석을 수행하였습니다.
-            `.trim(),
+            `, ''),
 
-            theoreticalBasis: `
+            theoreticalBasis: coerceTrimmedString(`
 **1. 주요 이론적 프레임워크**
 ${this.generateTheoreticalFramework(currentMessage)}
 
@@ -201,9 +289,9 @@ ${this.generateConceptualModel(currentMessage, context)}
 
 **3. 선행연구와의 연관성**
 ${this.relateToPreviousResearch(currentMessage)}
-            `.trim(),
+            `, ''),
 
-            methodologicalApproach: `
+            methodologicalApproach: coerceTrimmedString(`
 **연구방법론적 특성**:
 - **분석 단위**: ${this.identifyAnalysisUnit(currentMessage)}
 - **자료 수집 방법**: ${this.identifyDataCollectionMethod(context)}
@@ -211,9 +299,9 @@ ${this.relateToPreviousResearch(currentMessage)}
 - **타당성 확보 방안**: ${this.identifyValidityMeasures(context)}
 
 **품질 기준**: 신뢰성(reliability), 타당성(validity), 일반화가능성(generalizability)을 종합적으로 고려하였습니다.
-            `.trim(),
+            `, ''),
 
-            evidenceAssessment: `
+            evidenceAssessment: coerceTrimmedString(`
 **증거의 질적 평가**:
 - **1차 자료의 신뢰성**: ${this.assessPrimarySourceReliability(currentMessage)}
 - **정보의 검증가능성**: ${this.assessVerifiability(currentMessage)}
@@ -221,9 +309,9 @@ ${this.relateToPreviousResearch(currentMessage)}
 - **시간적 적절성**: ${this.assessTemporalRelevance(context)}
 
 **증거 가중치 평가**: 각 증거의 상대적 중요성과 신뢰도를 체계적으로 평가하였습니다.
-            `.trim(),
+            `, ''),
 
-            limitationsAndBias: `
+            limitationsAndBias: coerceTrimmedString(`
 **연구의 한계**:
 1. **표본의 한계**: ${this.identifySampleLimitations(context)}
 2. **시간적 제약**: ${this.identifyTemporalConstraints(context)}
@@ -235,7 +323,7 @@ ${this.relateToPreviousResearch(currentMessage)}
 - **문화적 편향**: ${this.assessCulturalBias(context)}
 
 **편향 완화 방안**: 다각적 검증, 동료 검토, 반증 가능성 검토를 통해 객관성을 제고하였습니다.
-            `.trim(),
+            `, ''),
 
             futureResearchDirections: [
                 '종단적 연구를 통한 장기적 패턴 분석',
@@ -251,11 +339,11 @@ ${this.relateToPreviousResearch(currentMessage)}
     /**
      * 여론분석가 관점 인사이트 생성
      */
-    private generateOpinionAnalysisInsights(request: ContextualAnalysisRequest, context: any): any {
+    private generateOpinionAnalysisInsights(request: ContextualAnalysisRequest, context: ConversationalContext): OpinionAnalysisResult {
         const currentMessage = request.currentMessage;
 
         return {
-            publicSentimentAssessment: `
+            publicSentimentAssessment: coerceTrimmedString(`
 **여론 지형 분석**:
 현재 담론 환경에서 관찰되는 여론의 특성은 ${this.assessOverallSentiment(currentMessage)} 경향을 보이고 있습니다.
 
@@ -264,7 +352,7 @@ ${this.relateToPreviousResearch(currentMessage)}
 **사회적 정체성과의 연관성**: ${this.analyzeSocialIdentityLinks(currentMessage)}
 
 **여론 형성 메커니즘**: ${this.analyzeOpinionFormationMechanism(currentMessage, context)}
-            `.trim(),
+            `, ''),
 
             stakeholderPerspectives: [
                 `**시민사회**: ${this.analyzeCivilSocietyPerspective(currentMessage)}`,
@@ -274,7 +362,7 @@ ${this.relateToPreviousResearch(currentMessage)}
                 `**경제 주체들**: ${this.analyzeEconomicActorsPerspective(currentMessage)}`
             ],
 
-            socialImplications: `
+            socialImplications: coerceTrimmedString(`
 **사회적 파급효과 분석**:
 
 **1차 효과**: ${this.analyzePrimaryEffects(currentMessage)}
@@ -288,9 +376,9 @@ ${this.relateToPreviousResearch(currentMessage)}
 **장기적 함의**: ${this.analyzeLongTermImplications(currentMessage)}
 - 사회적 가치체계의 변화 방향
 - 세대 간 인식 차이의 확대 또는 축소
-            `.trim(),
+            `, ''),
 
-            politicalRamifications: `
+            politicalRamifications: coerceTrimmedString(`
 **정치적 파급효과**:
 
 **의제 설정 효과**: ${this.analyzeAgendaSettingEffect(currentMessage)}
@@ -299,7 +387,7 @@ ${this.relateToPreviousResearch(currentMessage)}
 **정당 간 경쟁 구도 변화**: ${this.analyzePartyCompetitionChange(currentMessage)}
 
 **정책 우선순위 재편**: 이 이슈가 정책 의제에서 차지하는 위치와 우선순위 변화를 면밀히 모니터링할 필요가 있습니다.
-            `.trim(),
+            `, ''),
 
             mediaInfluenceFactors: [
                 '전통 미디어의 프레이밍 효과',
@@ -310,7 +398,7 @@ ${this.relateToPreviousResearch(currentMessage)}
                 '미디어 리터러시 수준의 영향'
             ],
 
-            consensusBuildingPotential: `
+            consensusBuildingPotential: coerceTrimmedString(`
 **합의 형성 가능성 평가**:
 
 **공통분모 식별**: ${this.identifyCommonGround(currentMessage)}
@@ -322,14 +410,14 @@ ${this.relateToPreviousResearch(currentMessage)}
 2. 객관적 정보 공유를 통한 인식 격차 해소
 3. 점진적 신뢰 구축 메커니즘 도입
 4. 상호 이익을 고려한 윈-윈 방안 모색
-            `.trim()
+            `, '')
         };
     }
 
     /**
      * 포괄적 텍스트 조작 스위트 생성
      */
-    private generateComprehensiveTextManipulations(request: ContextualAnalysisRequest): any {
+    private generateComprehensiveTextManipulations(request: ContextualAnalysisRequest): TextManipulationResult {
         const currentMessage = request.currentMessage;
 
         return {
@@ -351,10 +439,10 @@ ${this.relateToPreviousResearch(currentMessage)}
      * 전략적 권장사항 생성
      */
     private generateStrategicRecommendations(
-        request: ContextualAnalysisRequest,
-        researcherAnalysis: any,
-        opinionAnalysis: any
-    ): any {
+        _request: ContextualAnalysisRequest,
+        _researcherAnalysis: ResearcherAnalysisResult,
+        _opinionAnalysis: OpinionAnalysisResult
+    ): StrategicRecommendationsResult {
         return {
             communicationStrategy: [
                 '다층적 커뮤니케이션 채널 활용을 통한 메시지 도달률 극대화',
@@ -393,7 +481,7 @@ ${this.relateToPreviousResearch(currentMessage)}
     /**
      * 후속 프레임워크 생성
      */
-    private generateFollowUpFramework(request: ContextualAnalysisRequest, context: any): any {
+    private generateFollowUpFramework(_request: ContextualAnalysisRequest, _context: ConversationalContext): FollowUpFrameworkResult {
         return {
             deepeningQuestions: [
                 '이 주제의 근본적 가정들을 재검토해볼 필요는 없을까요?',
@@ -434,14 +522,14 @@ ${this.relateToPreviousResearch(currentMessage)}
      */
     private generatePrimaryResponse(
         request: ContextualAnalysisRequest,
-        context: any,
-        researcherAnalysis: any,
-        opinionAnalysis: any
-    ): any {
+        context: ConversationalContext,
+        researcherAnalysis: ResearcherAnalysisResult,
+        opinionAnalysis: OpinionAnalysisResult
+    ): PrimaryResponseResult {
         const perspective = this.determinePerspective(request, context);
         const methodology = this.determineMethodology(request, context);
 
-        const content = `
+        const content = coerceTrimmedString(`
 ## 📊 **종합적 맥락 분석 및 전문가 수준 응답**
 
 ### 🔍 **대화 맥락 및 의도 진화 분석**
@@ -470,7 +558,7 @@ ${researcherAnalysis.evidenceAssessment}
 ${opinionAnalysis.publicSentimentAssessment}
 
 **이해관계자 분석**:
-${opinionAnalysis.stakeholderPerspectives.slice(0, 3).join('\n')}
+${opinionAnalysis.stakeholderPerspectives.join('\n')}
 
 **정치사회적 파급효과**:
 ${opinionAnalysis.politicalRamifications}
@@ -492,11 +580,11 @@ ${researcherAnalysis.limitationsAndBias}
 
 ### 🚀 **향후 연구 및 실천 방향**
 
-**단기적 과제**: ${researcherAnalysis.futureResearchDirections.slice(0, 2).join(', ')}
+**단기적 과제**: ${researcherAnalysis.futureResearchDirections.join(', ')}
 **장기적 비전**: ${this.generateLongTermVision(request, context)}
 
 *본 분석은 지속적인 검증과 개선을 통해 더욱 정교화될 수 있으며, 실제 적용 과정에서 나타나는 새로운 변수들을 반영하여 업데이트될 것입니다.*
-        `.trim();
+        `, '');
 
         return {
             content,
@@ -507,18 +595,18 @@ ${researcherAnalysis.limitationsAndBias}
     }
 
     // 헬퍼 메서드들 (실제 구현에서는 더 정교한 로직 필요)
-    private analyzeConversationalFlow(history: any[]): string {
+    private analyzeConversationalFlow(history: ConversationHistoryItem[]): string {
         if (history.length === 0) return '초기 탐색 단계';
         if (history.length < 3) return '점진적 심화 과정';
         if (history.length < 5) return '체계적 분석 진행';
         return '고도의 전문적 담론 형성';
     }
 
-    private analyzeTopicProgression(history: any[], currentMessage: string): string {
+    private analyzeTopicProgression(_history: ConversationHistoryItem[], _currentMessage: string): string {
         return '주제의 점진적 확장과 심화를 통한 다층적 이해 구축';
     }
 
-    private identifyEmergingPatterns(history: any[], currentMessage: string): string[] {
+    private identifyEmergingPatterns(_history: ConversationHistoryItem[], _currentMessage: string): string[] {
         return [
             '분석적 사고의 체계적 접근',
             '다각적 관점 수용 의지',
@@ -527,19 +615,19 @@ ${researcherAnalysis.limitationsAndBias}
         ];
     }
 
-    private assessUserExpertiseLevel(history: any[]): string {
+    private assessUserExpertiseLevel(_history: ConversationHistoryItem[]): string {
         return '중급에서 고급 수준의 전문성을 보유한 것으로 평가';
     }
 
-    private assessDiscourseComplexity(history: any[], currentMessage: string): string {
+    private assessDiscourseComplexity(_history: ConversationHistoryItem[], _currentMessage: string): string {
         return '높은 수준의 담론적 복잡성과 인지적 정교함';
     }
 
-    private assessThematicCoherence(history: any[]): string {
+    private assessThematicCoherence(_history: ConversationHistoryItem[]): string {
         return '높은 주제적 일관성과 논리적 연결성';
     }
 
-    private trackIntentEvolution(history: any[]): any {
+    private trackIntentEvolution(_history: ConversationHistoryItem[]): IntentEvolution {
         return {
             summary: '탐색적 질문에서 시작하여 심층적 분석과 실용적 적용으로 발전하는 패턴'
         };
@@ -568,7 +656,7 @@ ${researcherAnalysis.limitationsAndBias}
         'determineMethodology', 'generateKeyInsight', 'generateAcademicImplication',
         'generateSociopoliticalImplication', 'generateLongTermVision', 'calculateConfidence'
     ].forEach(methodName => {
-        (this as any)[methodName] = (...args: any[]) => {
+        (this as Record<string, (...args: unknown[]) => unknown>)[methodName] = (...args: unknown[]) => {
             // 각 메서드별 고유한 응답 로직 구현
             switch (methodName) {
                 case 'identifyAcademicDisciplines':
@@ -587,62 +675,62 @@ ${researcherAnalysis.limitationsAndBias}
     */
 
     // 누락된 메서드들을 간단히 구현
-    private identifyAcademicDisciplines = (...args: any[]) => ['분야1'];
-    private identifyTheoreticalBasis = (...args: any[]) => '이론적 기반';
-    private identifyResearchParadigm = (...args: any[]) => '연구 패러다임';
-    private generateTheoreticalFramework = (...args: any[]) => '이론적 프레임워크';
-    private generateConceptualModel = (...args: any[]) => '개념적 모델';
-    private relateToPreviousResearch = (...args: any[]) => '선행연구 연관성';
-    private identifyAnalysisUnit = (...args: any[]) => '분석 단위';
-    private identifyDataCollectionMethod = (...args: any[]) => '자료 수집 방법';
-    private identifyAnalysisTechnique = (...args: any[]) => '분석 기법';
-    private identifyValidityMeasures = (...args: any[]) => '타당성 방안';
-    private assessPrimarySourceReliability = (...args: any[]) => '1차 자료 신뢰성';
-    private assessVerifiability = (...args: any[]) => '검증가능성';
-    private assessSourceDiversity = (...args: any[]) => '출처 다양성';
-    private assessTemporalRelevance = (...args: any[]) => '시간적 적절성';
-    private identifySampleLimitations = (...args: any[]) => '표본 한계';
-    private identifyTemporalConstraints = (...args: any[]) => '시간적 제약';
-    private identifyMethodologicalConstraints = (...args: any[]) => '방법론적 제약';
-    private assessSelectionBias = (...args: any[]) => '선택 편향';
-    private assessConfirmationBias = (...args: any[]) => '확증 편향';
-    private assessCulturalBias = (...args: any[]) => '문화적 편향';
-    private assessOverallSentiment = (...args: any[]) => '전반적 정서';
-    private analyzeEmotionalOrientation = (...args: any[]) => '감정적 지향';
-    private identifyCognitiveBias = (...args: any[]) => '인지적 편향';
-    private analyzeSocialIdentityLinks = (...args: any[]) => '사회정체성 연관';
-    private analyzeOpinionFormationMechanism = (...args: any[]) => '여론 형성 메커니즘';
-    private analyzeCivilSocietyPerspective = (...args: any[]) => '시민사회 관점';
-    private analyzePolicyMakerPerspective = (...args: any[]) => '정책결정자 관점';
-    private analyzeExpertGroupPerspective = (...args: any[]) => '전문가 관점';
-    private analyzeMediaPerspective = (...args: any[]) => '미디어 관점';
-    private analyzeEconomicActorsPerspective = (...args: any[]) => '경제주체 관점';
-    private analyzePrimaryEffects = (...args: any[]) => '1차 효과';
-    private analyzeSecondaryEffects = (...args: any[]) => '2차 효과';
-    private analyzeLongTermImplications = (...args: any[]) => '장기적 함의';
-    private analyzeAgendaSettingEffect = (...args: any[]) => '의제설정 효과';
-    private analyzePoliticalMobilizationPotential = (...args: any[]) => '정치적 동원력';
-    private analyzeElectoralPoliticsImpact = (...args: any[]) => '선거정치 영향';
-    private analyzePartyCompetitionChange = (...args: any[]) => '정당경쟁 변화';
-    private identifyCommonGround = (...args: any[]) => '공통분모';
-    private analyzeConflictElements = (...args: any[]) => '갈등 요소';
-    private assessMediationPotential = (...args: any[]) => '중재 가능성';
-    private generateEnhancedModification = (...args: any[]) => '개선된 수정안';
-    private generateSystematicCounterargument = (...args: any[]) => '체계적 반박';
-    private generatePersuasiveAppeal = (...args: any[]) => '설득적 호소';
-    private generateComprehensiveRebuttal = (...args: any[]) => '종합적 반박';
-    private generateAcademicExpansion = (...args: any[]) => '학술적 확장';
-    private generateFormalVariation = (...args: any[]) => '격식 버전';
-    private generatePersuasiveVariation = (...args: any[]) => '설득 버전';
-    private generateAnalyticalVariation = (...args: any[]) => '분석 버전';
-    private generateEmotiveVariation = (...args: any[]) => '감정 버전';
-    private determinePerspective = (...args: any[]) => '관점';
-    private determineMethodology = (...args: any[]) => '방법론';
-    private generateKeyInsight = (...args: any[]) => '핵심 인사이트';
-    private generateAcademicImplication = (...args: any[]) => '학술적 함의';
-    private generateSociopoliticalImplication = (...args: any[]) => '사회정치적 함의';
-    private generateLongTermVision = (...args: any[]) => '장기적 비전';
-    private calculateConfidence = (...args: any[]) => 0.85;
+    private identifyAcademicDisciplines = (_message: string): string[] => ['분야1'];
+    private identifyTheoreticalBasis = (_message: string, _context: ConversationalContext): string => '이론적 기반';
+    private identifyResearchParadigm = (_context: ConversationalContext): string => '연구 패러다임';
+    private generateTheoreticalFramework = (_message: string): string => '이론적 프레임워크';
+    private generateConceptualModel = (_message: string, _context: ConversationalContext): string => '개념적 모델';
+    private relateToPreviousResearch = (_message: string): string => '선행연구 연관성';
+    private identifyAnalysisUnit = (_message: string): string => '분석 단위';
+    private identifyDataCollectionMethod = (_context: ConversationalContext): string => '자료 수집 방법';
+    private identifyAnalysisTechnique = (_message: string): string => '분석 기법';
+    private identifyValidityMeasures = (_context: ConversationalContext): string => '타당성 방안';
+    private assessPrimarySourceReliability = (_message: string): string => '1차 자료 신뢰성';
+    private assessVerifiability = (_message: string): string => '검증가능성';
+    private assessSourceDiversity = (_context: ConversationalContext): string => '출처 다양성';
+    private assessTemporalRelevance = (_context: ConversationalContext): string => '시간적 적절성';
+    private identifySampleLimitations = (_context: ConversationalContext): string => '표본 한계';
+    private identifyTemporalConstraints = (_context: ConversationalContext): string => '시간적 제약';
+    private identifyMethodologicalConstraints = (_context: ConversationalContext): string => '방법론적 제약';
+    private assessSelectionBias = (_context: ConversationalContext): string => '선택 편향';
+    private assessConfirmationBias = (_message: string): string => '확증 편향';
+    private assessCulturalBias = (_context: ConversationalContext): string => '문화적 편향';
+    private assessOverallSentiment = (_message: string): string => '전반적 정서';
+    private analyzeEmotionalOrientation = (_message: string): string => '감정적 지향';
+    private identifyCognitiveBias = (_message: string): string => '인지적 편향';
+    private analyzeSocialIdentityLinks = (_message: string): string => '사회정체성 연관';
+    private analyzeOpinionFormationMechanism = (_message: string, _context: ConversationalContext): string => '여론 형성 메커니즘';
+    private analyzeCivilSocietyPerspective = (_message: string): string => '시민사회 관점';
+    private analyzePolicyMakerPerspective = (_message: string): string => '정책결정자 관점';
+    private analyzeExpertGroupPerspective = (_message: string): string => '전문가 관점';
+    private analyzeMediaPerspective = (_message: string): string => '미디어 관점';
+    private analyzeEconomicActorsPerspective = (_message: string): string => '경제주체 관점';
+    private analyzePrimaryEffects = (_message: string): string => '1차 효과';
+    private analyzeSecondaryEffects = (_message: string, _context: ConversationalContext): string => '2차 효과';
+    private analyzeLongTermImplications = (_message: string): string => '장기적 함의';
+    private analyzeAgendaSettingEffect = (_message: string): string => '의제설정 효과';
+    private analyzePoliticalMobilizationPotential = (_message: string): string => '정치적 동원력';
+    private analyzeElectoralPoliticsImpact = (_message: string): string => '선거정치 영향';
+    private analyzePartyCompetitionChange = (_message: string): string => '정당경쟁 변화';
+    private identifyCommonGround = (_message: string): string => '공통분모';
+    private analyzeConflictElements = (_message: string): string => '갈등 요소';
+    private assessMediationPotential = (_message: string): string => '중재 가능성';
+    private generateEnhancedModification = (_message: string): string => '개선된 수정안';
+    private generateSystematicCounterargument = (_message: string): string => '체계적 반박';
+    private generatePersuasiveAppeal = (_message: string): string => '설득적 호소';
+    private generateComprehensiveRebuttal = (_message: string): string => '종합적 반박';
+    private generateAcademicExpansion = (_message: string): string => '학술적 확장';
+    private generateFormalVariation = (_message: string): string => '격식 버전';
+    private generatePersuasiveVariation = (_message: string): string => '설득 버전';
+    private generateAnalyticalVariation = (_message: string): string => '분석 버전';
+    private generateEmotiveVariation = (_message: string): string => '감정 버전';
+    private determinePerspective = (_request: ContextualAnalysisRequest, _context: ConversationalContext): string => '관점';
+    private determineMethodology = (_request: ContextualAnalysisRequest, _context: ConversationalContext): string => '방법론';
+    private generateKeyInsight = (_request: ContextualAnalysisRequest, _context: ConversationalContext): string => '핵심 인사이트';
+    private generateAcademicImplication = (_analysis: ResearcherAnalysisResult): string => '학술적 함의';
+    private generateSociopoliticalImplication = (_analysis: OpinionAnalysisResult): string => '사회정치적 함의';
+    private generateLongTermVision = (_request: ContextualAnalysisRequest, _context: ConversationalContext): string => '장기적 비전';
+    private calculateConfidence = (_context: ConversationalContext, _researcherAnalysis: ResearcherAnalysisResult, _opinionAnalysis: OpinionAnalysisResult): number => 0.85;
 }
 
 export const contextualResponseEnhancer = new ContextualResponseEnhancer();

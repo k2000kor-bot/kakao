@@ -841,7 +841,7 @@ if __name__ == "__main__":
         test_request = {
             'user_input': '현재 개발 현황을 분석하고 향후 계획을 제시해주세요.',
             'conversation_history': [],
-            'project_context': {'project_id': 'test', 'name': 'CORBU AI'},
+            'project_context': {'project_id': 'test', 'name': 'CORBU.AI'},
             'user_preferences': {'quality': 'ultimate', 'detail_level': 'high'}
         }
         

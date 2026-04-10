@@ -718,7 +718,7 @@ if __name__ == "__main__":
     # 샘플 메시지
     sample_message = ChatMessage(
         message_id="msg_001",
-        chat_room="개포우성7차",
+        chat_room="demo_chat_room",
         sender="김조합장",
         content="현대건설로 시공사를 결정하는 것에 대해 어떻게 생각하시나요? 분담금이 너무 높아질 것 같아 걱정됩니다.",
         timestamp=datetime.now(),

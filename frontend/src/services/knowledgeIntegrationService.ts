@@ -4,6 +4,7 @@
  */
 
 import { QuestionAnalysis } from './advancedNLPService';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface KnowledgeSource {
     type: 'web_search' | 'news_api' | 'learned_content' | 'user_history' | 'expert_knowledge';
@@ -55,7 +56,7 @@ export interface LearningContext {
     };
 }
 
-class KnowledgeIntegrationService {
+export class KnowledgeIntegrationService {
     private knowledgeBase: Map<string, KnowledgeSource[]> = new Map();
     private learningContext: LearningContext;
     private reliabilityWeights: Map<string, number> = new Map();
@@ -107,8 +108,8 @@ class KnowledgeIntegrationService {
     async integrateKnowledge(
         question: string,
         questionAnalysis: QuestionAnalysis,
-        webSearchResults: any[] = [],
-        newsResults: any[] = [],
+        webSearchResults: Record<string, unknown>[] = [],
+        newsResults: Record<string, unknown>[] = [],
         conversationHistory: string[] = []
     ): Promise<IntegratedKnowledge> {
 
@@ -139,8 +140,8 @@ class KnowledgeIntegrationService {
     private async collectKnowledgeSources(
         question: string,
         analysis: QuestionAnalysis,
-        webSearchResults: any[],
-        newsResults: any[],
+        webSearchResults: Record<string, unknown>[],
+        newsResults: Record<string, unknown>[],
         conversationHistory: string[]
     ): Promise<KnowledgeSource[]> {
 
@@ -148,32 +149,40 @@ class KnowledgeIntegrationService {
 
         // 웹 검색 결과 처리
         webSearchResults.forEach(result => {
+            const r = result as Record<string, unknown>;
+            const snippet = String(r.snippet ?? r.content ?? '');
+            const link = String(r.link ?? r.url ?? '');
             sources.push({
                 type: 'web_search',
-                content: result.snippet || result.content,
+                content: snippet || String(r.content ?? ''),
                 reliability: this.calculateWebSourceReliability(result),
                 timestamp: new Date(),
-                source: result.link || result.url,
-                relevance: this.calculateRelevance(result.snippet, question),
+                source: link || String(r.url ?? ''),
+                relevance: this.calculateRelevance(snippet || String(r.content ?? ''), question),
                 metadata: {
-                    domain: this.extractDomain(result.link),
-                    factCheck: this.isFactCheckSource(result.link)
+                    domain: this.extractDomain(link),
+                    factCheck: this.isFactCheckSource(link)
                 }
             });
         });
 
         // 뉴스 API 결과 처리
         newsResults.forEach(article => {
+            const a = article as Record<string, unknown>;
+            const content = String(a.description ?? a.content ?? '');
+            const publishedAt = a.publishedAt;
+            const url = String(a.url ?? '');
+            const author = a.author as string | undefined;
             sources.push({
                 type: 'news_api',
-                content: article.description || article.content,
+                content: content || String(a.content ?? ''),
                 reliability: this.calculateNewsReliability(article),
-                timestamp: new Date(article.publishedAt),
-                source: article.url,
-                relevance: this.calculateRelevance(article.description, question),
+                timestamp: new Date(publishedAt instanceof Date ? publishedAt : String(publishedAt ?? '')),
+                source: url || String(a.url ?? ''),
+                relevance: this.calculateRelevance(content, question),
                 metadata: {
                     domain: 'news',
-                    author: article.author,
+                    author: author,
                     factCheck: true
                 }
             });
@@ -397,7 +406,7 @@ class KnowledgeIntegrationService {
     private generateExplanatoryResponse(
         sources: KnowledgeSource[],
         analysis: QuestionAnalysis,
-        logicalFlow: IntegratedKnowledge['logicalFlow']
+        _logicalFlow: IntegratedKnowledge['logicalFlow']
     ): string {
 
         let response = '';
@@ -435,22 +444,24 @@ class KnowledgeIntegrationService {
     }
 
     // 유틸리티 메서드들
-    private calculateWebSourceReliability(result: any): number {
+    private calculateWebSourceReliability(result: Record<string, unknown>): number {
         let reliability = 0.6; // 기본값
+        const link = String(result.link ?? '');
 
-        if (result.link?.includes('.edu')) reliability += 0.2;
-        if (result.link?.includes('.gov')) reliability += 0.3;
-        if (result.link?.includes('wikipedia')) reliability += 0.1;
+        if (link.includes('.edu')) reliability += 0.2;
+        if (link.includes('.gov')) reliability += 0.3;
+        if (link.includes('wikipedia')) reliability += 0.1;
 
         return Math.min(reliability, 1.0);
     }
 
-    private calculateNewsReliability(article: any): number {
+    private calculateNewsReliability(article: Record<string, unknown>): number {
         let reliability = 0.7; // 기본값
+        const sourceName = String((article.source as Record<string, unknown> | undefined)?.name ?? '');
 
-        if (article.source?.name?.includes('Reuters') ||
-            article.source?.name?.includes('AP') ||
-            article.source?.name?.includes('BBC')) {
+        if (sourceName.includes('Reuters') ||
+            sourceName.includes('AP') ||
+            sourceName.includes('BBC')) {
             reliability += 0.2;
         }
 
@@ -614,16 +625,19 @@ class KnowledgeIntegrationService {
         // 학습된 인사이트 업데이트
         analysis.context.domain.forEach(domain => {
             const existingKnowledge = this.learningContext.learnedInsights.factualKnowledge.get(domain) || '';
-            const newKnowledge = `${existingKnowledge}\n${knowledge.synthesizedContent}`.trim();
+            const newKnowledge = coerceTrimmedString(
+              `${existingKnowledge}\n${knowledge.synthesizedContent}`,
+              ''
+            );
             this.learningContext.learnedInsights.factualKnowledge.set(domain, newKnowledge);
         });
     }
 
     // 추가 유틸리티 메서드들 (간소화된 구현)
     private extractKeyFindings(sources: KnowledgeSource[]): Array<{ title: string, content: string }> {
-        return sources.slice(0, 3).map((source, index) => ({
+        return sources.map((source, index) => ({
             title: `핵심 발견 ${index + 1}`,
-            content: source.content.substring(0, 100) + '...'
+            content: source.content
         }));
     }
 
@@ -632,11 +646,11 @@ class KnowledgeIntegrationService {
         return statMatch ? `관련 통계: ${statMatch[0]}` : '정량적 지표 확인 필요';
     }
 
-    private identifyComparisonCriteria(sources: KnowledgeSource[], analysis: QuestionAnalysis): string[] {
+    private identifyComparisonCriteria(_sources: KnowledgeSource[], _analysis: QuestionAnalysis): string[] {
         return ['기능성', '비용 효율성', '사용 편의성', '신뢰성']; // 기본 비교 기준
     }
 
-    private extractComparisonItems(sources: KnowledgeSource[]): Array<{
+    private extractComparisonItems(_sources: KnowledgeSource[]): Array<{
         name: string,
         advantages: string[],
         disadvantages: string[],
@@ -645,19 +659,19 @@ class KnowledgeIntegrationService {
         return []; // 실제 구현에서는 소스에서 비교 항목 추출
     }
 
-    private generateComparisonSummary(items: any[], criteria: string[]): string {
+    private generateComparisonSummary(_items: Record<string, unknown>[], _criteria: string[]): string {
         return '종합적으로 고려할 때, 각 옵션은 고유한 장단점을 가지고 있으며, 선택은 개별 요구사항에 따라 달라질 수 있습니다.';
     }
 
-    private extractDefinitions(sources: KnowledgeSource[]): Array<{ term: string, definition: string }> {
+    private extractDefinitions(_sources: KnowledgeSource[]): Array<{ term: string, definition: string }> {
         return []; // 실제 구현에서는 정의 추출
     }
 
-    private extractBackground(sources: KnowledgeSource[], analysis: QuestionAnalysis): string {
-        return sources.length > 0 ? sources[0].content.substring(0, 200) + '...' : '배경 정보를 수집 중입니다.';
+    private extractBackground(sources: KnowledgeSource[], _analysis: QuestionAnalysis): string {
+        return sources.length > 0 ? sources[0].content : '배경 정보를 수집 중입니다.';
     }
 
-    private extractSteps(sources: KnowledgeSource[]): string[] {
+    private extractSteps(_sources: KnowledgeSource[]): string[] {
         return ['1단계 정보 수집', '2단계 분석', '3단계 결론 도출']; // 기본 단계
     }
 
@@ -665,7 +679,7 @@ class KnowledgeIntegrationService {
         return sources.filter(s => s.content.includes('예')).map(s => s.content.substring(0, 100));
     }
 
-    private adjustContentByPreferences(content: string, analysis: QuestionAnalysis): string {
+    private adjustContentByPreferences(content: string, _analysis: QuestionAnalysis): string {
         const detailLevel = this.learningContext.userPreferences.detailLevel;
 
         if (detailLevel === 'brief' && content.length > 500) {
@@ -690,22 +704,21 @@ class KnowledgeIntegrationService {
 
     private extractFactualClaims(content: string): string[] {
         // 간단한 사실 추출 로직
-        const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 10);
-        return sentences.slice(0, 2); // 처음 2개 문장을 사실로 간주
+        const sentences = content.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 10);
+        return sentences;
     }
 
-    private generateFactualResponse(sources: KnowledgeSource[], analysis: QuestionAnalysis): string {
+    private generateFactualResponse(sources: KnowledgeSource[], _analysis: QuestionAnalysis): string {
         let response = '## 📋 핵심 정보\n\n';
 
-        const topSources = sources.slice(0, 3);
-        topSources.forEach((source, index) => {
-            response += `**${index + 1}.** ${source.content.substring(0, 150)}...\n\n`;
+        sources.forEach((source, index) => {
+            response += `**${index + 1}.** ${source.content}\n\n`;
         });
 
         return response;
     }
 
-    private generateGeneralResponse(sources: KnowledgeSource[], analysis: QuestionAnalysis): string {
+    private generateGeneralResponse(sources: KnowledgeSource[], _analysis: QuestionAnalysis): string {
         let response = '## 💡 종합 답변\n\n';
 
         if (sources.length > 0) {
@@ -713,7 +726,7 @@ class KnowledgeIntegrationService {
 
             if (sources.length > 1) {
                 response += '## 📚 추가 정보\n\n';
-                sources.slice(1, 3).forEach((source, index) => {
+                sources.slice(1, 3).forEach((source, _index) => {
                     response += `- ${source.content.substring(0, 100)}...\n`;
                 });
             }

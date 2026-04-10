@@ -1,4 +1,4 @@
-# 🎉 CORBU AI 시스템 최종 개발 완료 보고서
+# 🎉 CORBU.AI 시스템 최종 개발 완료 보고서
 
 **작성일**: 2025년 1월 27일  
 **상태**: ✅ **개발 완료**  
@@ -10,10 +10,10 @@
 
 ### ✅ 완료된 주요 작업
 
-#### Task-C 시리즈: 채팅 경험 업그레이드 (3/3 완료)
+#### Task-C 시리즈: 대화 경험 업그레이드 (3/3 완료)
 
-- ✅ **Task-C1**: 채팅 경험 업그레이드 (로딩 상태, 에러 처리)
-- ✅ **Task-C2**: 채팅 기능 개선 (메시지 액션, 편집)
+- ✅ **Task-C1**: 대화 경험 업그레이드 (로딩 상태, 에러 처리)
+- ✅ **Task-C2**: 대화 기능 개선 (메시지 액션, 편집)
 - ✅ **Task-C3**: 메시지 히스토리 관리 개선
 
 #### Task-D 시리즈: 검색/네비게이션 심화 (3/3 완료)
@@ -65,7 +65,7 @@
 
 ## 🎯 주요 기능 요약
 
-### 1. 채팅 시스템
+### 1. 대화 시스템
 - ✅ ChatGPT 스타일 인터페이스
 - ✅ 실시간 대화
 - ✅ 마크다운 지원
@@ -115,7 +115,7 @@
 kakao-frontend/
 ├── src/
 │   ├── components/
-│   │   ├── ChatGPT5CompleteInterface.tsx  # 메인 채팅 인터페이스
+│   │   ├── ChatGPT5CompleteInterface.tsx  # 메인 대화 인터페이스
 │   │   ├── ProjectHub.tsx                 # 프로젝트 허브
 │   │   ├── AdvancedSearchPanel.tsx         # 고급 검색
 │   │   ├── ConfirmDialog.tsx              # 확인 다이얼로그
@@ -164,8 +164,8 @@ cd .. && npm install
 ### 접속
 
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:5001
-- **API 문서**: http://localhost:5001/docs
+- **백엔드 API**: http://localhost:5002
+- **API 문서**: http://localhost:5002/api/docs
 
 ---
 
@@ -190,7 +190,7 @@ cd .. && npm install
 ## ✅ 최종 체크리스트
 
 ### 기능
-- [x] 채팅 인터페이스
+- [x] 대화 인터페이스
 - [x] 프로젝트 관리
 - [x] 검색 및 네비게이션
 - [x] 메시지 수정 요청
@@ -215,7 +215,7 @@ cd .. && npm install
 
 ## 🎉 완료
 
-CORBU AI 시스템의 주요 개발 작업이 완료되었습니다!
+CORBU.AI 시스템의 주요 개발 작업이 완료되었습니다!
 
 **주요 성과:**
 - ✅ 15개 주요 작업 완료

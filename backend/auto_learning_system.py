@@ -194,7 +194,7 @@ class AutoLearningSystem:
             return 'video'
         elif ext in ['.mp3', '.wav', '.aac', '.flac']:
             return 'audio'
-        elif ext in ['.pdf', '.doc', '.docx', '.txt']:
+        elif ext in ['.pdf', '.doc', '.docx', '.txt', '.md', '.csv']:
             return 'document'
         else:
             return 'other'

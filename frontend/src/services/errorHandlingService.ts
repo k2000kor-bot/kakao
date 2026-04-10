@@ -3,13 +3,17 @@
  * 모든 에러를 체계적으로 관리하고 사용자에게 친화적인 피드백 제공
  */
 
+import { API_BASE_URL, API_ERRORS_REPORT_PATH, joinApiHealthCheckUrl } from '../config/api';
+import { errorLogger } from '../utils/errorLogger';
+import { ERROR_HANDLING_LOGS_STORAGE_KEY } from './errorHandlingStorageKeys';
+
 export interface ErrorContext {
   component: string;
   action: string;
   timestamp: Date;
   userId?: string;
   sessionId: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ErrorReport {
@@ -194,7 +198,7 @@ class ErrorHandlingService {
   /**
    * 해결 제안 생성
    */
-  private generateSuggestions(error: Error | string, context: Partial<ErrorContext>): string[] {
+  private generateSuggestions(error: Error | string, _context: Partial<ErrorContext>): string[] {
     const message = typeof error === 'string' ? error : error.message;
     const suggestions: string[] = [];
 
@@ -280,7 +284,7 @@ class ErrorHandlingService {
       title: this.getSeverityTitle(severity),
       message: userMessage,
       duration: severity === ErrorSeverity.LOW ? 5000 : 0, // 낮은 심각도는 자동으로 사라짐
-      actions: recoveryActions.slice(0, 2).map(action => ({
+      actions: recoveryActions.map(action => ({
         label: action.label,
         action: action.action,
         style: action.priority === 1 ? 'primary' : 'secondary'
@@ -325,7 +329,12 @@ class ErrorHandlingService {
           break;
       }
     } catch (recoveryError) {
-      console.warn('자동 복구 실패:', recoveryError);
+      errorLogger.warn('자동 복구 실패', {
+        component: 'ErrorHandlingService',
+        action: 'attemptAutoRecovery',
+        errorType: errorReport.type,
+        recoveryError: recoveryError instanceof Error ? recoveryError.message : String(recoveryError),
+      });
     }
   }
 
@@ -335,7 +344,7 @@ class ErrorHandlingService {
   private async retryNetworkConnection(): Promise<void> {
     // 간단한 핑 테스트
     try {
-      await fetch('/api/health', { method: 'HEAD' });
+      await fetch(joinApiHealthCheckUrl(API_BASE_URL), { method: 'HEAD' });
       this.showFeedback({
         type: 'success',
         title: '연결 복구',
@@ -352,7 +361,10 @@ class ErrorHandlingService {
    */
   private async restartAIService(): Promise<void> {
     // AI 서비스 상태 확인 및 재시작 로직
-    console.log('AI 서비스 재시작 시도...');
+    errorLogger.info('AI 서비스 재시작 시도', {
+      component: 'ErrorHandlingService',
+      action: 'restartAIService',
+    });
   }
 
   /**
@@ -360,7 +372,11 @@ class ErrorHandlingService {
    */
   private async retryFileProcessing(context: Partial<ErrorContext>): Promise<void> {
     // 파일 처리 재시도 로직
-    console.log('파일 처리 재시도...', context);
+    errorLogger.info('파일 처리 재시도', {
+      component: 'ErrorHandlingService',
+      action: 'retryFileProcessing',
+      context,
+    });
   }
 
   /**
@@ -383,7 +399,7 @@ class ErrorHandlingService {
   private async logError(errorReport: ErrorReport): Promise<void> {
     try {
       // 로컬 스토리지에 저장
-      const logs = JSON.parse(localStorage.getItem('errorLogs') || '[]');
+      const logs = JSON.parse(localStorage.getItem(ERROR_HANDLING_LOGS_STORAGE_KEY) || '[]');
       logs.push(errorReport);
       
       // 최대 100개까지만 보관
@@ -391,14 +407,17 @@ class ErrorHandlingService {
         logs.splice(0, logs.length - 100);
       }
       
-      localStorage.setItem('errorLogs', JSON.stringify(logs));
+      localStorage.setItem(ERROR_HANDLING_LOGS_STORAGE_KEY, JSON.stringify(logs));
 
       // 서버로 전송 (선택적)
       if (errorReport.severity === ErrorSeverity.HIGH || errorReport.severity === ErrorSeverity.CRITICAL) {
         await this.sendErrorToServer(errorReport);
       }
     } catch (loggingError) {
-      console.error('에러 로깅 실패:', loggingError);
+      errorLogger.error('에러 로깅 실패', loggingError instanceof Error ? loggingError : new Error(String(loggingError)), {
+        component: 'ErrorHandlingService',
+        action: 'logError',
+      });
     }
   }
 
@@ -407,7 +426,7 @@ class ErrorHandlingService {
    */
   private async sendErrorToServer(errorReport: ErrorReport): Promise<void> {
     try {
-      await fetch('/api/errors', {
+      await fetch(joinApiHealthCheckUrl(API_BASE_URL, API_ERRORS_REPORT_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -469,11 +488,13 @@ class ErrorHandlingService {
    */
   clearErrorHistory(): void {
     this.errorHistory = [];
-    localStorage.removeItem('errorLogs');
+    localStorage.removeItem(ERROR_HANDLING_LOGS_STORAGE_KEY);
   }
 }
 
 // 싱글톤 인스턴스
+export { ERROR_HANDLING_LOGS_STORAGE_KEY } from './errorHandlingStorageKeys';
+
 export const errorHandlingService = new ErrorHandlingService();
 
 // 전역 에러 핸들러 설정

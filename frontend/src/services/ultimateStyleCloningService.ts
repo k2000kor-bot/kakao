@@ -1,13 +1,13 @@
 /**
- * CORBU AI 궁극적 스타일 복제 서비스
+ * CORBU.AI 궁극적 스타일 복제 서비스
  * 모든 분석 엔진을 통합하여 입력한 글의 어조, 논리, 문체를 완벽 분석하고
  * 동일한 스타일로 새로운 주제의 글을 생성하는 최고 수준의 AI 글쓰기 시스템
  */
 
-import { styleAnalysisEngine, StyleProfile, StyleAnalysisRequest, StyleAnalysisResponse } from './styleAnalysisEngine';
-import { styleCloneEngine, StyleCloneRequest, StyleCloneResponse, DetailedStyleControl } from './styleCloneEngine';
-import { advancedLogicAnalysisEngine, AdvancedStyleProfile, LogicalStructure, TonalProgression } from './advancedLogicAnalysisEngine';
-import { masterWritingEngine, MasterWritingProfile } from './masterWritingEngine';
+import { styleAnalysisEngine, StyleProfile, StyleAnalysisResponse } from './styleAnalysisEngine';
+import { styleCloneEngine, StyleCloneRequest } from './styleCloneEngine';
+import { advancedLogicAnalysisEngine, AdvancedStyleProfile, LogicalStructure } from './advancedLogicAnalysisEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface UltimateStyleAnalysisRequest {
     originalText: string;
@@ -261,12 +261,20 @@ class UltimateStyleCloningService {
      */
     public async analyzeUltimateStyle(request: UltimateStyleAnalysisRequest): Promise<UltimateStyleAnalysisResponse> {
         try {
-            console.log('🔍 궁극적 스타일 분석 시작...', { depth: request.analysisDepth });
+            errorLogger.info('🔍 궁극적 스타일 분석 시작', {
+                component: 'ultimateStyleCloningService',
+                action: 'analyzeUltimateStyle',
+                depth: request.analysisDepth,
+            });
 
             // 캐시 확인
             const cacheKey = this.generateCacheKey(request);
             if (this.analysisCache.has(cacheKey)) {
-                console.log('📋 캐시에서 분석 결과 반환');
+                errorLogger.info('📋 캐시에서 분석 결과 반환', {
+                    component: 'ultimateStyleCloningService',
+                    action: 'analyzeUltimateStyle',
+                    cacheKey,
+                });
                 return this.analysisCache.get(cacheKey)!;
             }
 
@@ -278,7 +286,7 @@ class UltimateStyleCloningService {
 
             // 2. 고도화된 논리/어조 분석
             const advancedAnalysis = await advancedLogicAnalysisEngine.analyzeAdvancedStyle(request.originalText);
-            advancedAnalysis.basicStyle = basicAnalysis.profile;
+            advancedAnalysis.basicStyle = basicAnalysis.profile as unknown as Record<string, unknown>;
 
             // 3. 종합 분석
             const comprehensiveAnalysis = await this.performComprehensiveAnalysis(
@@ -313,11 +321,20 @@ class UltimateStyleCloningService {
             // 캐시에 저장
             this.analysisCache.set(cacheKey, result);
 
-            console.log('✅ 궁극적 스타일 분석 완료', { confidence: analysisConfidence });
+            errorLogger.info('✅ 궁극적 스타일 분석 완료', {
+                component: 'ultimateStyleCloningService',
+                action: 'analyzeUltimateStyle',
+                confidence: analysisConfidence,
+            });
             return result;
 
         } catch (error) {
-            console.error('❌ 궁극적 스타일 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 궁극적 스타일 분석 실패', err, {
+                component: 'ultimateStyleCloningService',
+                action: 'analyzeUltimateStyle',
+                depth: request.analysisDepth,
+            });
             throw new Error('궁극적 스타일 분석에 실패했습니다.');
         }
     }
@@ -327,7 +344,11 @@ class UltimateStyleCloningService {
      */
     public async cloneUltimateStyle(request: UltimateStyleCloneRequest): Promise<UltimateStyleCloneResponse> {
         try {
-            console.log('🎯 궁극적 스타일 복제 시작...', { accuracy: request.cloneAccuracy });
+            errorLogger.info('🎯 궁극적 스타일 복제 시작', {
+                component: 'ultimateStyleCloningService',
+                action: 'cloneUltimateStyle',
+                accuracy: request.cloneAccuracy,
+            });
 
             const startTime = Date.now();
             const analysisSteps: string[] = [];
@@ -345,7 +366,7 @@ class UltimateStyleCloningService {
 
             // 2. 복제 전략 수립
             analysisSteps.push('복제 전략 수립');
-            const cloneStrategy = this.developCloneStrategy(originalAnalysis, request);
+            const _cloneStrategy = this.developCloneStrategy(originalAnalysis, request);
 
             // 3. 기본 복제 수행
             analysisSteps.push('기본 스타일 복제');
@@ -426,15 +447,22 @@ class UltimateStyleCloningService {
                 }
             };
 
-            console.log('✅ 궁극적 스타일 복제 완료', {
+            errorLogger.info('✅ 궁극적 스타일 복제 완료', {
+                component: 'ultimateStyleCloningService',
+                action: 'cloneUltimateStyle',
                 quality: cloneQuality.overallScore,
-                time: processingTime
+                time: processingTime,
             });
 
             return result;
 
         } catch (error) {
-            console.error('❌ 궁극적 스타일 복제 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 궁극적 스타일 복제 실패', err, {
+                component: 'ultimateStyleCloningService',
+                action: 'cloneUltimateStyle',
+                accuracy: request.cloneAccuracy,
+            });
             throw new Error('궁극적 스타일 복제에 실패했습니다.');
         }
     }
@@ -475,7 +503,11 @@ class UltimateStyleCloningService {
             return result.clonedText;
 
         } catch (error) {
-            console.error('빠른 스타일 복제 실패:', error);
+            const err = toError(error);
+            errorLogger.error('빠른 스타일 복제 실패', err, {
+                component: 'ultimateStyleCloningService',
+                action: 'quickCloneStyle',
+            });
             throw new Error('빠른 스타일 복제에 실패했습니다.');
         }
     }
@@ -487,7 +519,7 @@ class UltimateStyleCloningService {
         text: string,
         basicProfile: StyleProfile,
         advancedProfile: AdvancedStyleProfile,
-        depth: string
+        _depth: string
     ): Promise<ComprehensiveStyleAnalysis> {
         // 1. 핵심 특징 추출
         const coreCharacteristics = this.extractCoreCharacteristics(basicProfile, advancedProfile);
@@ -827,7 +859,7 @@ class UltimateStyleCloningService {
         return (text.match(regex) || []).length;
     }
 
-    private calculateVocabularyConsistency(text: string, profile: StyleProfile): number {
+    private calculateVocabularyConsistency(_text: string, _profile: StyleProfile): number {
         // 간단한 구현 - 실제로는 더 정교한 분석 필요
         return 85;
     }
@@ -844,12 +876,12 @@ class UltimateStyleCloningService {
         return Math.max(0, consistency);
     }
 
-    private calculateStructuralConsistency(text: string, profile: StyleProfile): number {
+    private calculateStructuralConsistency(_text: string, _profile: StyleProfile): number {
         // 구조적 일관성 계산
         return 80;
     }
 
-    private calculatePredictabilityScore(basicProfile: StyleProfile, advancedProfile: AdvancedStyleProfile): number {
+    private calculatePredictabilityScore(_basicProfile: StyleProfile, _advancedProfile: AdvancedStyleProfile): number {
         // 예측 가능성 점수 계산
         return 75;
     }
@@ -885,7 +917,7 @@ class UltimateStyleCloningService {
         return 'master';
     }
 
-    private calculateUniquenessFactor(basicProfile: StyleProfile, advancedProfile: AdvancedStyleProfile): number {
+    private calculateUniquenessFactor(_basicProfile: StyleProfile, _advancedProfile: AdvancedStyleProfile): number {
         // 독특함 점수 계산
         return 75;
     }
@@ -896,7 +928,7 @@ class UltimateStyleCloningService {
     }
 
     // Big 5 성격 분석 메서드들
-    private analyzeOpenness(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzeOpenness(_text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
         let score = 50; // 기본 점수
 
         if (basic.vocabularyLevel === 'expert' || basic.vocabularyLevel === 'advanced') score += 20;
@@ -907,7 +939,7 @@ class UltimateStyleCloningService {
         return Math.min(100, score);
     }
 
-    private analyzeConscientiousness(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzeConscientiousness(_text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
         let score = 50;
 
         if (basic.formality === 'very_formal' || basic.formality === 'formal') score += 20;
@@ -917,7 +949,7 @@ class UltimateStyleCloningService {
         return Math.min(100, score);
     }
 
-    private analyzeExtraversion(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzeExtraversion(_text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
         let score = 50;
 
         if (basic.voiceType === 'first_person') score += 15;
@@ -927,7 +959,7 @@ class UltimateStyleCloningService {
         return Math.min(100, score);
     }
 
-    private analyzeAgreeableness(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzeAgreeableness(_text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
         let score = 50;
 
         if (basic.politeness === 'very_polite' || basic.politeness === 'polite') score += 25;
@@ -937,7 +969,7 @@ class UltimateStyleCloningService {
         return Math.min(100, score);
     }
 
-    private analyzeNeuroticism(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzeNeuroticism(_text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
         let score = 50;
 
         if (basic.intensity === 'very_strong') score += 20;
@@ -948,37 +980,37 @@ class UltimateStyleCloningService {
     }
 
     // 추가 특성 분석 메서드들 (간략히 구현)
-    private analyzeAssertiveness(text: string, advanced: AdvancedStyleProfile): number {
+    private analyzeAssertiveness(_text: string, advanced: AdvancedStyleProfile): number {
         return advanced.logicalStructure.strengthOfClaims === 'absolute' ? 90 : 60;
     }
 
-    private analyzeAnalyticalThinking(text: string, advanced: AdvancedStyleProfile): number {
+    private analyzeAnalyticalThinking(_text: string, advanced: AdvancedStyleProfile): number {
         return advanced.cognitivePatterns.some(p => p.type === 'analytical') ? 85 : 50;
     }
 
-    private analyzeEmotionalExpressiveness(text: string, basic: StyleProfile): number {
+    private analyzeEmotionalExpressiveness(_text: string, basic: StyleProfile): number {
         return basic.emotionalTone !== 'neutral' ? 80 : 30;
     }
 
-    private analyzeSocialOrientation(text: string, basic: StyleProfile): number {
+    private analyzeSocialOrientation(_text: string, basic: StyleProfile): number {
         return basic.voiceType === 'second_person' ? 85 : 50;
     }
 
-    private analyzeWritingConfidence(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzeWritingConfidence(_text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
         return advanced.logicalStructure.strengthOfClaims === 'strong' ? 85 : 60;
     }
 
-    private analyzeRiskTaking(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzeRiskTaking(_text: string, basic: StyleProfile, _advanced: AdvancedStyleProfile): number {
         return basic.subjectivity === 'very_subjective' ? 75 : 45;
     }
 
-    private analyzeCreativity(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzeCreativity(_text: string, basic: StyleProfile, _advanced: AdvancedStyleProfile): number {
         if (basic.subjectivity === 'very_subjective') return 80;
         if (basic.subjectivity === 'subjective') return 65;
         return 50;
     }
 
-    private analyzePrecision(text: string, basic: StyleProfile, advanced: AdvancedStyleProfile): number {
+    private analyzePrecision(_text: string, basic: StyleProfile, _advanced: AdvancedStyleProfile): number {
         return basic.vocabularyLevel === 'expert' ? 90 : 60;
     }
 
@@ -990,7 +1022,7 @@ class UltimateStyleCloningService {
             textLength: textLength > 2000 ? 'excellent' : textLength > 1000 ? 'good' : textLength > 500 ? 'adequate' : textLength > 200 ? 'minimal' : 'insufficient',
             textComplexity: words > 300 ? 'very_complex' : words > 200 ? 'complex' : words > 100 ? 'moderate' : words > 50 ? 'simple' : 'too_simple',
             languageQuality: 'good', // 실제로는 더 정교한 분석 필요
-            analysisDepth: depth as any,
+            analysisDepth: (depth === 'shallow' ? 'surface' : depth) as 'comprehensive' | 'moderate' | 'ultimate' | 'surface' | 'deep',
             reliabilityScore: 85
         };
     }
@@ -1015,7 +1047,7 @@ class UltimateStyleCloningService {
     }
 
     // 복제 관련 메서드들 (간략히 구현)
-    private developCloneStrategy(analysis: UltimateStyleAnalysisResponse, request: UltimateStyleCloneRequest): any {
+    private developCloneStrategy(analysis: UltimateStyleAnalysisResponse, request: UltimateStyleCloneRequest): Record<string, unknown> {
         return {
             primaryFocus: 'tone_preservation',
             secondaryFocus: 'logical_structure',
@@ -1023,32 +1055,32 @@ class UltimateStyleCloningService {
         };
     }
 
-    private async applyAdvancedLogic(text: string, advancedProfile: AdvancedStyleProfile, topic: string): Promise<string> {
+    private async applyAdvancedLogic(text: string, _advancedProfile: AdvancedStyleProfile, _topic: string): Promise<string> {
         // 고도화된 논리 구조 적용
         return text; // 임시 구현
     }
 
-    private async applyToneAdjustments(text: string, adjustments: ToneAdjustments, analysis: UltimateStyleAnalysisResponse): Promise<string> {
+    private async applyToneAdjustments(text: string, _adjustments: ToneAdjustments, _analysis: UltimateStyleAnalysisResponse): Promise<string> {
         // 어조 조정 적용
         return text; // 임시 구현
     }
 
-    private async applyUniquePatterns(text: string, patterns: UniquePattern[]): Promise<string> {
+    private async applyUniquePatterns(text: string, _patterns: UniquePattern[]): Promise<string> {
         // 독특한 패턴 적용
         return text; // 임시 구현
     }
 
-    private async adaptToTopic(text: string, topic: string, analysis: UltimateStyleAnalysisResponse): Promise<string> {
+    private async adaptToTopic(_text: string, _topic: string, _analysis: UltimateStyleAnalysisResponse): Promise<string> {
         // 주제별 적응
-        return text; // 임시 구현
+        return _text; // 임시 구현
     }
 
-    private async finalQualityEnhancement(text: string, analysis: UltimateStyleAnalysisResponse, request: UltimateStyleCloneRequest): Promise<string> {
+    private async finalQualityEnhancement(text: string, _analysis: UltimateStyleAnalysisResponse, _request: UltimateStyleCloneRequest): Promise<string> {
         // 최종 품질 향상
         return text; // 임시 구현
     }
 
-    private async analyzeCloneQuality(original: string, cloned: string, analysis: UltimateStyleAnalysisResponse): Promise<CloneQuality> {
+    private async analyzeCloneQuality(_original: string, _cloned: string, _analysis: UltimateStyleAnalysisResponse): Promise<CloneQuality> {
         return {
             overallScore: 85,
             aspectScores: {
@@ -1064,7 +1096,7 @@ class UltimateStyleCloningService {
         };
     }
 
-    private async performComparisonAnalysis(analysis: UltimateStyleAnalysisResponse, clonedText: string): Promise<ComparisonAnalysis> {
+    private async performComparisonAnalysis(_analysis: UltimateStyleAnalysisResponse, _clonedText: string): Promise<ComparisonAnalysis> {
         return {
             similarities: [],
             differences: [],
@@ -1073,11 +1105,11 @@ class UltimateStyleCloningService {
         };
     }
 
-    private generateImprovementSuggestions(quality: CloneQuality, comparison: ComparisonAnalysis): ImprovementSuggestion[] {
+    private generateImprovementSuggestions(_quality: CloneQuality, _comparison: ComparisonAnalysis): ImprovementSuggestion[] {
         return [];
     }
 
-    private async generateAlternativeVersions(request: UltimateStyleCloneRequest, analysis: UltimateStyleAnalysisResponse, baseText: string): Promise<AlternativeVersion[]> {
+    private async generateAlternativeVersions(_request: UltimateStyleCloneRequest, _analysis: UltimateStyleAnalysisResponse, _baseText: string): Promise<AlternativeVersion[]> {
         return [];
     }
 }

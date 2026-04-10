@@ -3,8 +3,15 @@
 
 import axios from 'axios';
 import { errorLogger } from '../utils/errorLogger';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+import {
+    API_APARTMENT_COMMUNITY_ANALYTICS_PATH,
+    API_APARTMENT_COMMUNITY_ANALYZE_COMMENT_PATH,
+    API_APARTMENT_COMMUNITY_COMMENTS_PATH,
+    API_APARTMENT_COMMUNITY_GENERATE_RESPONSE_PATH,
+    API_APARTMENT_COMMUNITY_RESIDENTS_PATH,
+    API_BASE_URL as CONFIG_API_ORIGIN,
+    joinApiHealthCheckUrl,
+} from '../config/api';
 
 // 타입 정의
 export type Sentiment = 'positive' | 'neutral' | 'negative';
@@ -79,7 +86,7 @@ class ApartmentCommunityAnalysisService {
      */
     async getResidents(apartmentId?: string): Promise<ResidentProfile[]> {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/apartment/community/residents`, {
+            const response = await axios.get(joinApiHealthCheckUrl(CONFIG_API_ORIGIN, API_APARTMENT_COMMUNITY_RESIDENTS_PATH), {
                 params: apartmentId ? { apartment_id: apartmentId } : {},
             });
             return response.data.residents || [];
@@ -98,7 +105,7 @@ class ApartmentCommunityAnalysisService {
      */
     async getComments(apartmentId?: string, limit?: number): Promise<CommunityComment[]> {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/apartment/community/comments`, {
+            const response = await axios.get(joinApiHealthCheckUrl(CONFIG_API_ORIGIN, API_APARTMENT_COMMUNITY_COMMENTS_PATH), {
                 params: {
                     ...(apartmentId && { apartment_id: apartmentId }),
                     ...(limit && { limit }),
@@ -119,7 +126,7 @@ class ApartmentCommunityAnalysisService {
      */
     async getAnalytics(apartmentId?: string, period?: 'week' | 'month' | 'quarter'): Promise<CommunityAnalytics> {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/apartment/community/analytics`, {
+            const response = await axios.get(joinApiHealthCheckUrl(CONFIG_API_ORIGIN, API_APARTMENT_COMMUNITY_ANALYTICS_PATH), {
                 params: {
                     ...(apartmentId && { apartment_id: apartmentId }),
                     ...(period && { period }),
@@ -140,7 +147,7 @@ class ApartmentCommunityAnalysisService {
      */
     async analyzeComment(commentId: string): Promise<CommentAnalysis> {
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/apartment/community/analyze-comment`, {
+            const response = await axios.post(joinApiHealthCheckUrl(CONFIG_API_ORIGIN, API_APARTMENT_COMMUNITY_ANALYZE_COMMENT_PATH), {
                 comment_id: commentId,
             });
             return response.data.analysis;
@@ -169,10 +176,13 @@ class ApartmentCommunityAnalysisService {
         tone?: ResponseTone
     ): Promise<CommunityResponse> {
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/apartment/community/generate-response`, {
-                comment_id: commentId,
-                ...(tone && { tone }),
-            });
+            const response = await axios.post(
+                joinApiHealthCheckUrl(CONFIG_API_ORIGIN, API_APARTMENT_COMMUNITY_GENERATE_RESPONSE_PATH),
+                {
+                    comment_id: commentId,
+                    ...(tone && { tone }),
+                }
+            );
             return response.data.response;
         } catch (error) {
             errorLogger.error('대응글 생성 실패', error as Error, {
@@ -202,7 +212,10 @@ class ApartmentCommunityAnalysisService {
     }> {
         try {
             const response = await axios.get(
-                `${API_BASE_URL}/api/apartment/community/residents/${residentId}/sentiment`
+                joinApiHealthCheckUrl(
+                    CONFIG_API_ORIGIN,
+                    `${API_APARTMENT_COMMUNITY_RESIDENTS_PATH}/${encodeURIComponent(residentId)}/sentiment`,
+                ),
             );
             return response.data;
         } catch (error) {

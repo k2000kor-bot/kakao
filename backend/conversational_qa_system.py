@@ -79,8 +79,8 @@ class ConversationalQASystem:
         
         self.entity_patterns = {
             'location': [
-                r'개포우성|개포동|강남구|서울|한국',
-                r'gaeposung|gaepo|gangnam|seoul|korea'
+                r'강남구|서울|부산|대구|한국',
+                r'gangnam|seoul|busan|daegu|korea'
             ],
             'project': [
                 r'재개발|개발|프로젝트|사업|계획|정책',
@@ -190,7 +190,7 @@ class ConversationalQASystem:
         """키워드 추출"""
         # 한국어 키워드 패턴
         korean_patterns = [
-            r'개포우성|개포동|강남구|서울',
+            r'강남구|서울|부산|대구',
             r'재개발|개발|프로젝트|사업',
             r'투자|자금|비용|수익|이익',
             r'법률|규정|허가|승인',
@@ -465,8 +465,8 @@ class ConversationalQASystem:
         
         # 키워드 기반 후속 질문
         for keyword in question_analysis.keywords:
-            if '개포우성' in keyword:
-                follow_ups.append("개포우성 재개발의 현재 진행 상황은 어떻나요?")
+            if '재개발' in keyword or '정비' in keyword:
+                follow_ups.append("해당 사업의 현재 진행 상황은 어떻나요?")
             elif '투자' in keyword:
                 follow_ups.append("투자에 따른 위험 요소는 무엇인가요?")
             elif '법률' in keyword:
@@ -480,10 +480,10 @@ class ConversationalQASystem:
         
         # 키워드 기반 관련 주제
         for keyword in question_analysis.keywords:
-            if '개포우성' in keyword:
-                topics.update(['재개발', '투자', '법규', '주민', '환경'])
-            elif '재개발' in keyword:
-                topics.update(['개포우성', '투자', '법규', '정책', '계획'])
+            if '재개발' in keyword or '정비' in keyword:
+                topics.update(['투자', '법규', '주민', '환경', '일정'])
+            elif '프로젝트' in keyword:
+                topics.update(['재개발', '투자', '법규', '정책', '계획'])
             elif '투자' in keyword:
                 topics.update(['수익', '위험', '자금', '경제', '분석'])
             elif '법률' in keyword:

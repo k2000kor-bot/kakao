@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // 멀티모달 협업 인터페이스 정의
 export interface MultimodalCollaborationSession {
@@ -24,7 +25,7 @@ export interface MultimodalStream {
     streamId: string;
     participantId: string;
     modality: string;
-    data: any;
+    data: unknown;
     timestamp: number;
     quality: number;
     metadata: StreamMetadata;
@@ -216,12 +217,18 @@ class RealTimeAIMultimodalCollaborationSystem {
     };
 
     constructor() {
-        console.log('🎥 실시간 AI 멀티모달 협업 시스템 초기화 중...');
+        errorLogger.info('🎥 실시간 AI 멀티모달 협업 시스템 초기화 중', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'constructor',
+        });
     }
 
     public start(): void {
         if (this.isRunning) {
-            console.log('⚠️ 실시간 AI 멀티모달 협업 시스템이 이미 실행 중입니다.');
+            errorLogger.warn('⚠️ 실시간 AI 멀티모달 협업 시스템이 이미 실행 중입니다', {
+                component: 'realTimeAIMultimodalCollaborationSystem',
+                action: 'start',
+            });
             return;
         }
 
@@ -230,28 +237,40 @@ class RealTimeAIMultimodalCollaborationSystem {
         this.createInitialSessions();
         this.startMetricsUpdate();
 
-        console.log('✅ 실시간 AI 멀티모달 협업 시스템이 시작되었습니다.');
+        errorLogger.info('✅ 실시간 AI 멀티모달 협업 시스템이 시작되었습니다', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'start',
+        });
         realTimeAIAlertSystem.sendAlert('info', '실시간 AI 멀티모달 협업 시스템이 시작되었습니다.');
     }
 
     public stop(): void {
         if (!this.isRunning) {
-            console.log('⚠️ 실시간 AI 멀티모달 협업 시스템이 실행 중이 아닙니다.');
+            errorLogger.warn('⚠️ 실시간 AI 멀티모달 협업 시스템이 실행 중이 아닙니다', {
+                component: 'realTimeAIMultimodalCollaborationSystem',
+                action: 'stop',
+            });
             return;
         }
 
         this.isRunning = false;
         this.cleanupData();
 
-        console.log('🛑 실시간 AI 멀티모달 협업 시스템이 중지되었습니다.');
+        errorLogger.info('🛑 실시간 AI 멀티모달 협업 시스템이 중지되었습니다', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'stop',
+        });
         realTimeAIAlertSystem.sendAlert('info', '실시간 AI 멀티모달 협업 시스템이 중지되었습니다.');
     }
 
     private initializeSystem(): void {
-        console.log('🔧 멀티모달 협업 시스템 초기화 중...');
+        errorLogger.info('🔧 멀티모달 협업 시스템 초기화 중', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'initializeSystem',
+        });
 
         // 기본 모달리티 설정
-        const defaultModalities: CollaborationModality[] = [
+        const _defaultModalities: CollaborationModality[] = [
             { type: 'audio', enabled: true, quality: 'high', priority: 1 },
             { type: 'video', enabled: true, quality: 'medium', priority: 2 },
             { type: 'text', enabled: true, quality: 'high', priority: 3 },
@@ -259,9 +278,21 @@ class RealTimeAIMultimodalCollaborationSystem {
             { type: 'screen', enabled: true, quality: 'high', priority: 5 }
         ];
 
-        console.log('📡 멀티모달 스트림 처리기 초기화 완료');
-        console.log('🎯 크로스모달 분석 엔진 초기화 완료');
-        console.log('🔍 패턴 감지 시스템 초기화 완료');
+        errorLogger.info('📡 멀티모달 스트림 처리기 초기화 완료', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'initializeSystem',
+            engine: 'streamProcessor',
+        });
+        errorLogger.info('🎯 크로스모달 분석 엔진 초기화 완료', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'initializeSystem',
+            engine: 'crossModalAnalysis',
+        });
+        errorLogger.info('🔍 패턴 감지 시스템 초기화 완료', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'initializeSystem',
+            engine: 'patternDetection',
+        });
     }
 
     private createInitialSessions(): void {
@@ -314,7 +345,13 @@ class RealTimeAIMultimodalCollaborationSystem {
         };
 
         this.sessions.set(session1.sessionId, session1);
-        console.log('📋 초기 멀티모달 협업 세션 생성 완료');
+        errorLogger.info('📋 초기 멀티모달 협업 세션 생성 완료', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'createInitialSessions',
+            sessionId: session1.sessionId,
+            title: session1.title,
+            participantsCount: session1.participants.length,
+        });
     }
 
     public addMultimodalInteraction(sessionId: string, interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): MultimodalInteraction {
@@ -338,11 +375,18 @@ class RealTimeAIMultimodalCollaborationSystem {
         this.detectPatterns(sessionId);
         this.generateRecommendations(sessionId);
 
-        console.log(`🎥 멀티모달 상호작용 추가: ${interactionId}`);
+        errorLogger.info('🎥 멀티모달 상호작용 추가', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'addMultimodalInteraction',
+            sessionId,
+            interactionId,
+            modalities: interaction.modalities,
+            participantId: interaction.participantId,
+        });
         return fullInteraction;
     }
 
-    private analyzeMultimodalInteraction(interaction: any): InteractionAnalysis {
+    private analyzeMultimodalInteraction(interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): InteractionAnalysis {
         const analysis: InteractionAnalysis = {
             sentiment: this.analyzeSentiment(interaction),
             relevance: this.calculateRelevance(interaction),
@@ -356,33 +400,32 @@ class RealTimeAIMultimodalCollaborationSystem {
         return analysis;
     }
 
-    private analyzeSentiment(interaction: any): string {
+    private analyzeSentiment(_interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): string {
         const sentiments = ['positive', 'neutral', 'negative'];
-        const weights = [0.6, 0.3, 0.1];
         return sentiments[Math.floor(Math.random() * sentiments.length)];
     }
 
-    private calculateRelevance(interaction: any): number {
+    private calculateRelevance(_interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 
-    private assessQuality(interaction: any): number {
+    private assessQuality(_interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private measureImpact(interaction: any): number {
+    private measureImpact(_interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): number {
         return Math.random() * 0.5 + 0.5; // 0.5-1.0
     }
 
-    private calculateEngagement(interaction: any): number {
+    private calculateEngagement(_interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 
-    private assessClarity(interaction: any): number {
+    private assessClarity(_interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private measureCoherence(interaction: any): number {
+    private measureCoherence(_interaction: Omit<MultimodalInteraction, 'interactionId' | 'analysis'>): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 
@@ -495,7 +538,10 @@ class RealTimeAIMultimodalCollaborationSystem {
 
     private cleanupData(): void {
         this.sessions.clear();
-        console.log('🧹 멀티모달 협업 데이터 정리 완료');
+        errorLogger.info('🧹 멀티모달 협업 데이터 정리 완료', {
+            component: 'realTimeAIMultimodalCollaborationSystem',
+            action: 'cleanupData',
+        });
     }
 
     public getSessions(): MultimodalCollaborationSession[] {

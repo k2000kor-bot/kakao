@@ -1,0 +1,14 @@
+/** 실시간 협업 — CORBU.AI Brainwave 테마 */
+.rtc-root { max-width: 900px; margin: 0 auto; }
+.rtc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--spacing-xl); }
+.rtc-title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); }
+.rtc-desc { font-size: var(--font-size-sm); color: var(--text-secondary); margin-top: var(--spacing-xs); }
+.rtc-tabs { border-bottom: var(--border-width) solid var(--border-color); }
+.rtc-tab { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md) var(--spacing-xs); border-bottom: 2px solid transparent; font-size: var(--font-size-sm); font-weight: 500; background: none; border-top: none; border-left: none; border-right: none; color: var(--text-secondary); cursor: pointer; transition: color var(--transition-base), border-color var(--transition-base); }
+.rtc-tab:hover { color: var(--text-primary); }
+.rtc-tab.active { border-bottom-color: var(--accent-info); color: var(--accent-info); }
+.rtc-card { background: var(--bg-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); border: var(--border-width) solid var(--border-color); }
+.rtc-row { padding: var(--spacing-lg); border-top: var(--border-width) solid var(--border-color); }
+.rtc-row:first-child { border-top: none; }
+.rtc-badge { padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-xs); font-weight: 500; border-radius: 9999px; }
+.rtc-status-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg-primary); position: absolute; bottom: -2px; right: -2px; }

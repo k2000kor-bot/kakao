@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     FileText,
     Edit,
-    Plus,
-    Save,
     Download,
     Share2,
     Eye,
@@ -11,28 +9,20 @@ import {
     Settings,
     Wand2,
     Sparkles,
-    Target,
-    Clock,
     Users,
     BarChart,
     Lightbulb,
     CheckCircle,
-    AlertTriangle,
-    ArrowRight,
     RotateCcw,
-    Copy,
-    Trash2,
     Star,
-    Heart,
     ThumbsUp,
     ThumbsDown,
-    MessageSquare,
-    Calendar,
-    Tag,
     Filter,
     Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getCategoryStyle, getDocumentStatusStyle, getPriorityStyle } from '../../styles/themeColors';
+import './AIDocumentGenerator.css';
 
 interface DocumentTemplate {
     id: string;
@@ -47,7 +37,7 @@ interface DocumentTemplate {
         label: string;
         required: boolean;
         options?: string[];
-        defaultValue?: any;
+        defaultValue?: unknown;
     }>;
     usageCount: number;
     rating: number;
@@ -60,7 +50,7 @@ interface GeneratedDocument {
     title: string;
     content: string;
     template: DocumentTemplate;
-    variables: Record<string, any>;
+    variables: Record<string, unknown>;
     status: 'draft' | 'review' | 'approved' | 'published';
     quality: number;
     wordCount: number;
@@ -90,7 +80,7 @@ interface AIDocumentGeneratorProps {
     onDocumentCreate?: (document: GeneratedDocument) => void;
     onDocumentUpdate?: (documentId: string, updates: Partial<GeneratedDocument>) => void;
     onDocumentDelete?: (documentId: string) => void;
-    onDocumentShare?: (documentId: string, shareOptions: any) => void;
+    onDocumentShare?: (documentId: string, shareOptions: Record<string, unknown>) => void;
     onExportDocument?: (documentId: string, format: string) => void;
     onSuggestionApply?: (documentId: string, suggestionId: string) => void;
 }
@@ -98,7 +88,7 @@ interface AIDocumentGeneratorProps {
 const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
     onDocumentCreate,
     onDocumentUpdate,
-    onDocumentDelete,
+    onDocumentDelete: _onDocumentDelete,
     onDocumentShare,
     onExportDocument,
     onSuggestionApply
@@ -207,36 +197,9 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
         }
     ]);
 
-    const getCategoryColor = (category: string) => {
-        switch (category) {
-            case 'business': return 'text-blue-600 bg-blue-50';
-            case 'technical': return 'text-green-600 bg-green-50';
-            case 'creative': return 'text-purple-600 bg-purple-50';
-            case 'academic': return 'text-orange-600 bg-orange-50';
-            case 'legal': return 'text-red-600 bg-red-50';
-            case 'marketing': return 'text-pink-600 bg-pink-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'draft': return 'text-gray-600 bg-gray-50';
-            case 'review': return 'text-yellow-600 bg-yellow-50';
-            case 'approved': return 'text-green-600 bg-green-50';
-            case 'published': return 'text-blue-600 bg-blue-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
-    };
-
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'high': return 'text-red-600 bg-red-50';
-            case 'medium': return 'text-yellow-600 bg-yellow-50';
-            case 'low': return 'text-green-600 bg-green-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
-    };
+    const getCategoryStyleObj = (category: string) => getCategoryStyle(category);
+    const getStatusStyleObj = (status: string) => getDocumentStatusStyle(status);
+    const getPriorityStyleObj = (priority: string) => getPriorityStyle(priority);
 
     const handleTemplateSelect = (template: DocumentTemplate) => {
         setSelectedTemplate(template);
@@ -307,35 +270,28 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
     });
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="aidg-root bw-detail-root" data-testid="page-documents">
             {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                            <FileText className="h-6 w-6 text-purple-600" />
+            <div className="aidg-header bw-detail-header">
+                <div className="aidg-header-inner bw-detail-header-inner">
+                    <div className="bw-detail-header-left">
+                        <div className="aidg-header-icon bw-detail-header-icon">
+                            <FileText size={24} aria-hidden />
                         </div>
                         <div>
-                            <h2 className="text-xl font-semibold text-gray-900">AI 문서 생성기</h2>
-                            <p className="text-sm text-gray-500">AI 기반 문서 생성 및 편집 시스템</p>
+                            <h2 className="aidg-title">AI 문서 생성기</h2>
+                            <p className="aidg-desc">CORBU.AI 기반 문서 생성 및 편집</p>
                         </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="bw-detail-header-actions">
                         {currentDocument && (
                             <>
-                                <button
-                                    onClick={() => setShowPreview(!showPreview)}
-                                    className="flex items-center space-x-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                    {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    <span>미리보기</span>
+                                <button type="button" onClick={() => setShowPreview(!showPreview)} className="bw-btn-secondary">
+                                    {showPreview ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
+                                    미리보기
                                 </button>
-                                <button
-                                    onClick={() => onExportDocument?.(currentDocument.id, 'pdf')}
-                                    className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                    <Download className="h-4 w-4" />
-                                    <span>내보내기</span>
+                                <button type="button" onClick={() => onExportDocument?.(currentDocument.id, 'pdf')} className="bw-btn-primary">
+                                    <Download size={16} aria-hidden /> 내보내기
                                 </button>
                             </>
                         )}
@@ -343,27 +299,24 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                 </div>
 
                 {/* Tabs */}
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                    {[
+                <div className="aidg-tabs bw-detail-tabs">
+                    {([
                         { id: 'templates', label: '템플릿', icon: FileText },
                         { id: 'documents', label: '문서', icon: Edit },
                         { id: 'editor', label: '편집기', icon: Wand2 },
                         { id: 'analytics', label: '분석', icon: BarChart },
                         { id: 'settings', label: '설정', icon: Settings }
-                    ].map((tab) => {
+                    ] as const).map((tab) => {
                         const IconComponent = tab.icon;
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                    activeTab === tab.id
-                                        ? 'bg-white text-purple-600 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                }`}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`aidg-tab bw-detail-tab ${activeTab === tab.id ? 'active' : ''}`}
                             >
-                                <IconComponent className="h-4 w-4" />
-                                <span>{tab.label}</span>
+                                <IconComponent size={16} aria-hidden />
+                                {tab.label}
                             </button>
                         );
                     })}
@@ -371,7 +324,7 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
             </div>
 
             {/* Content */}
-            <div className="p-6">
+            <div className="aidg-content bw-detail-content bw-detail-tab-content">
                 <AnimatePresence mode="wait">
                     {activeTab === 'templates' && (
                         <motion.div
@@ -382,23 +335,23 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                             className="space-y-6"
                         >
                             {/* Filters */}
-                            <div className="flex items-center space-x-4">
-                                <div className="flex items-center space-x-2">
-                                    <Search className="h-4 w-4 text-gray-500" />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-lg)', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                                    <Search size={16} style={{ color: 'var(--text-secondary)' }} aria-hidden />
                                     <input
                                         type="text"
                                         placeholder="템플릿 검색..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        className="aidg-input"
                                     />
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <Filter className="h-4 w-4 text-gray-500" />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                                    <Filter size={16} style={{ color: 'var(--text-secondary)' }} aria-hidden />
                                     <select
                                         value={filterCategory}
                                         onChange={(e) => setFilterCategory(e.target.value)}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        className="aidg-input"
                                     >
                                         <option value="all">모든 카테고리</option>
                                         <option value="business">비즈니스</option>
@@ -418,20 +371,21 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                         key={template.id}
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+                                        className="aidg-card"
+                                        style={{ cursor: 'pointer' }}
                                         onClick={() => handleTemplateSelect(template)}
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-purple-100 rounded-lg">
-                                                    <FileText className="h-5 w-5 text-purple-600" />
+                                                <div className="aidg-header-icon">
+                                                    <FileText size={20} aria-hidden />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">{template.name}</h3>
-                                                    <p className="text-sm text-gray-500">{template.description}</p>
+                                                    <h3 className="aidg-title" style={{ fontSize: 'var(--font-size-base)' }}>{template.name}</h3>
+                                                    <p className="aidg-desc">{template.description}</p>
                                                 </div>
                                             </div>
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(template.category)}`}>
+                                            <span className="aidg-tag" style={getCategoryStyleObj(template.category)}>
                                                 {template.category === 'business' ? '비즈니스' :
                                                  template.category === 'technical' ? '기술' :
                                                  template.category === 'creative' ? '크리에이티브' :
@@ -443,24 +397,24 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                         <div className="space-y-3">
                                             <div className="flex flex-wrap gap-1">
                                                 {template.tags.slice(0, 3).map((tag, index) => (
-                                                    <span key={index} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                                                    <span key={index} className="aidg-tag">
                                                         {tag}
                                                     </span>
                                                 ))}
                                                 {template.tags.length > 3 && (
-                                                    <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                                                    <span className="aidg-tag">
                                                         +{template.tags.length - 3}
                                                     </span>
                                                 )}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-sm text-gray-500">
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
                                                 <div className="flex items-center space-x-2">
-                                                    <Users className="h-3 w-3" />
+                                                    <Users size={12} aria-hidden />
                                                     <span>{template.usageCount}회 사용</span>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    <Star className="h-3 w-3" />
+                                                    <Star size={12} aria-hidden />
                                                     <span>{template.rating}</span>
                                                 </div>
                                             </div>
@@ -470,9 +424,10 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                                     e.stopPropagation();
                                                     handleTemplateSelect(template);
                                                 }}
-                                                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                                className="bw-btn-primary"
+                                                style={{ width: '100%', justifyContent: 'center' }}
                                             >
-                                                <Wand2 className="h-4 w-4" />
+                                                <Wand2 size={16} aria-hidden />
                                                 <span>템플릿 사용</span>
                                             </button>
                                         </div>
@@ -496,21 +451,19 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                         key={document.id}
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                                        className="aidg-card"
                                     >
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-blue-100 rounded-lg">
-                                                    <FileText className="h-5 w-5 text-blue-600" />
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--spacing-md)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                                                <div className="aidg-header-icon" style={{ background: 'var(--accent-info-muted)', color: 'var(--accent-info)' }}>
+                                                    <FileText size={20} aria-hidden />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">{document.title}</h3>
-                                                    <p className="text-sm text-gray-500">
-                                                        템플릿: {document.template.name}
-                                                    </p>
+                                                    <h3 className="aidg-title" style={{ fontSize: 'var(--font-size-base)' }}>{document.title}</h3>
+                                                    <p className="aidg-desc">템플릿: {document.template.name}</p>
                                                 </div>
                                             </div>
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(document.status)}`}>
+                                            <span className="aidg-tag" style={getStatusStyleObj(document.status)}>
                                                 {document.status === 'draft' ? '초안' :
                                                  document.status === 'review' ? '검토' :
                                                  document.status === 'approved' ? '승인' : '발행'}
@@ -520,28 +473,26 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                         <div className="space-y-3">
                                             <div className="flex flex-wrap gap-1">
                                                 {document.tags.slice(0, 3).map((tag, index) => (
-                                                    <span key={index} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                                                        {tag}
-                                                    </span>
+                                                    <span key={index} className="aidg-tag">{tag}</span>
                                                 ))}
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)', fontSize: 'var(--font-size-sm)' }}>
                                                 <div>
-                                                    <span className="text-gray-500">품질 점수</span>
-                                                    <div className="font-medium text-green-600">{document.quality}%</div>
+                                                    <span className="aidg-desc">품질 점수</span>
+                                                    <div style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--accent-success)' }}>{document.quality}%</div>
                                                 </div>
                                                 <div>
-                                                    <span className="text-gray-500">단어 수</span>
-                                                    <div className="font-medium">{document.wordCount.toLocaleString()}</div>
+                                                    <span className="aidg-desc">단어 수</span>
+                                                    <div style={{ fontWeight: 'var(--font-weight-medium)' }}>{document.wordCount.toLocaleString()}</div>
                                                 </div>
                                                 <div>
-                                                    <span className="text-gray-500">읽기 시간</span>
-                                                    <div className="font-medium">{document.readingTime}분</div>
+                                                    <span className="aidg-desc">읽기 시간</span>
+                                                    <div style={{ fontWeight: 'var(--font-weight-medium)' }}>{document.readingTime}분</div>
                                                 </div>
                                                 <div>
-                                                    <span className="text-gray-500">조회수</span>
-                                                    <div className="font-medium">{document.analytics.views}</div>
+                                                    <span className="aidg-desc">조회수</span>
+                                                    <div style={{ fontWeight: 'var(--font-weight-medium)' }}>{document.analytics.views}</div>
                                                 </div>
                                             </div>
 
@@ -551,13 +502,15 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                                         setCurrentDocument(document);
                                                         setActiveTab('editor');
                                                     }}
-                                                    className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                                    className="bw-btn-primary"
+                                                    style={{ flex: 1, fontSize: 'var(--font-size-sm)' }}
                                                 >
                                                     편집
                                                 </button>
                                                 <button
                                                     onClick={() => onDocumentShare?.(document.id, {})}
-                                                    className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                                                    className="bw-btn-secondary"
+                                                    style={{ flex: 1, fontSize: 'var(--font-size-sm)' }}
                                                 >
                                                     공유
                                                 </button>
@@ -578,27 +531,27 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                             className="space-y-6"
                         >
                             {selectedTemplate && !currentDocument && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                                <div className="aidg-card" style={{ background: 'var(--accent-info-muted)', borderColor: 'var(--accent-info)' }}>
                                     <div className="flex items-center space-x-3 mb-4">
-                                        <Sparkles className="h-6 w-6 text-blue-600" />
-                                        <h3 className="text-lg font-semibold text-blue-900">문서 생성 준비</h3>
+                                        <Sparkles size={24} style={{ color: 'var(--accent-info)' }} aria-hidden />
+                                        <h3 className="aidg-title" style={{ color: 'var(--accent-info)' }}>문서 생성 준비</h3>
                                     </div>
-                                    <p className="text-blue-700 mb-4">
+                                    <p className="aidg-desc" style={{ color: 'var(--accent-info)', marginBottom: 'var(--spacing-md)' }}>
                                         <strong>{selectedTemplate.name}</strong> 템플릿을 사용하여 새 문서를 생성합니다.
                                     </p>
                                     <button
                                         onClick={handleDocumentGenerate}
                                         disabled={isGenerating}
-                                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                        className="bw-btn-primary"
                                     >
                                         {isGenerating ? (
                                             <>
-                                                <RotateCcw className="h-4 w-4 animate-spin" />
+                                                <RotateCcw size={16} className="aidg-spin" aria-hidden />
                                                 <span>생성 중...</span>
                                             </>
                                         ) : (
                                             <>
-                                                <Wand2 className="h-4 w-4" />
+                                                <Wand2 size={16} aria-hidden />
                                                 <span>AI로 문서 생성</span>
                                             </>
                                         )}
@@ -611,8 +564,8 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                     {/* Document Header */}
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">{currentDocument.title}</h3>
-                                            <p className="text-sm text-gray-500">
+                                            <h3 className="aidg-title" style={{ fontSize: 'var(--font-size-lg)' }}>{currentDocument.title}</h3>
+                                            <p className="aidg-desc">
                                                 품질: {currentDocument.quality}% | 
                                                 단어: {currentDocument.wordCount.toLocaleString()} | 
                                                 읽기시간: {currentDocument.readingTime}분
@@ -621,16 +574,17 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                         <div className="flex items-center space-x-2">
                                             <button
                                                 onClick={() => setIsEditing(!isEditing)}
-                                                className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                                className="bw-btn-primary"
                                             >
-                                                <Edit className="h-4 w-4" />
+                                                <Edit size={16} aria-hidden />
                                                 <span>{isEditing ? '편집 완료' : '편집'}</span>
                                             </button>
                                             <button
                                                 onClick={() => onDocumentUpdate?.(currentDocument.id, { status: 'review' })}
-                                                className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                                className="bw-btn-primary"
+                                                style={{ background: 'var(--accent-success)', borderColor: 'var(--accent-success)' }}
                                             >
-                                                <CheckCircle className="h-4 w-4" />
+                                                <CheckCircle size={16} aria-hidden />
                                                 <span>검토 요청</span>
                                             </button>
                                         </div>
@@ -638,37 +592,30 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
 
                                     {/* AI Suggestions */}
                                     {currentDocument.aiSuggestions.length > 0 && (
-                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                            <h4 className="font-semibold text-yellow-900 mb-3">AI 제안사항</h4>
-                                            <div className="space-y-2">
+                                        <div className="aidg-suggestion-box">
+                                            <h4 className="aidg-title" style={{ marginBottom: 'var(--spacing-md)', color: 'var(--accent-warning)' }}>AI 제안사항</h4>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
                                                 {currentDocument.aiSuggestions.map((suggestion, index) => (
-                                                    <div key={index} className="flex items-start justify-between p-3 bg-white rounded-lg">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center space-x-2 mb-1">
-                                                                <Lightbulb className="h-4 w-4 text-yellow-600" />
-                                                                <span className="font-medium text-gray-900">{suggestion.title}</span>
-                                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(suggestion.priority)}`}>
+                                                    <div key={index} className="aidg-suggestion-item">
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-xs)' }}>
+                                                                <Lightbulb size={16} style={{ color: 'var(--accent-warning)' }} aria-hidden />
+                                                                <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)' }}>{suggestion.title}</span>
+                                                                <span className="aidg-tag" style={getPriorityStyleObj(suggestion.priority)}>
                                                                     {suggestion.priority === 'high' ? '높음' :
                                                                      suggestion.priority === 'medium' ? '중간' : '낮음'}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-sm text-gray-600">{suggestion.description}</p>
+                                                            <p className="aidg-desc">{suggestion.description}</p>
                                                         </div>
-                                                        <div className="flex items-center space-x-2">
+                                                        <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
                                                             {!suggestion.applied && (
-                                                                <button
-                                                                    onClick={() => handleSuggestionApply(suggestion.title)}
-                                                                    className="p-1 hover:bg-green-100 rounded transition-colors"
-                                                                >
-                                                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                                                <button type="button" onClick={() => handleSuggestionApply(suggestion.title)} className="aidg-action-btn" aria-label="적용">
+                                                                    <CheckCircle size={16} style={{ color: 'var(--accent-success)' }} aria-hidden />
                                                                 </button>
                                                             )}
-                                                            <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                                <ThumbsUp className="h-4 w-4 text-gray-600" />
-                                                            </button>
-                                                            <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                                <ThumbsDown className="h-4 w-4 text-gray-600" />
-                                                            </button>
+                                                            <button type="button" className="aidg-action-btn" aria-label="도움됨"><ThumbsUp size={16} aria-hidden /></button>
+                                                            <button type="button" className="aidg-action-btn" aria-label="도움 안됨"><ThumbsDown size={16} aria-hidden /></button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -677,19 +624,18 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                                     )}
 
                                     {/* Document Content */}
-                                    <div className="bg-white border border-gray-200 rounded-lg">
+                                    <div className="aidg-card" style={{ padding: 0 }}>
                                         {isEditing ? (
                                             <textarea
                                                 value={currentDocument.content}
                                                 onChange={(e) => setCurrentDocument(prev => prev ? { ...prev, content: e.target.value } : null)}
-                                                className="w-full h-96 p-4 border-0 focus:ring-0 resize-none"
+                                                className="aidg-input"
+                                                style={{ width: '100%', minHeight: 384, border: 'none', resize: 'none' }}
                                                 placeholder="문서 내용을 입력하세요..."
                                             />
                                         ) : (
-                                            <div className="p-4 h-96 overflow-y-auto">
-                                                <div className="prose max-w-none">
-                                                    <pre className="whitespace-pre-wrap font-sans">{currentDocument.content}</pre>
-                                                </div>
+                                            <div style={{ padding: 'var(--spacing-md)', minHeight: 384, overflowY: 'auto' }}>
+                                                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{currentDocument.content}</pre>
                                             </div>
                                         )}
                                     </div>
@@ -706,66 +652,66 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                             exit={{ opacity: 0, y: -20 }}
                             className="space-y-6"
                         >
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg">
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--spacing-lg)' }}>
+                                <div className="aidg-stat-card">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm opacity-90">총 문서 수</p>
-                                            <p className="text-3xl font-bold">{documents.length}</p>
+                                            <p className="aidg-desc" style={{ opacity: 0.9 }}>총 문서 수</p>
+                                            <p style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-bold)' }}>{documents.length}</p>
                                         </div>
-                                        <FileText className="h-8 w-8 opacity-80" />
+                                        <FileText size={32} style={{ opacity: 0.8 }} aria-hidden />
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg">
+                                <div className="aidg-stat-card success">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm opacity-90">평균 품질</p>
-                                            <p className="text-3xl font-bold">
+                                            <p className="aidg-desc" style={{ opacity: 0.9 }}>평균 품질</p>
+                                            <p style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-bold)' }}>
                                                 {Math.round(documents.reduce((acc, doc) => acc + doc.quality, 0) / documents.length)}%
                                             </p>
                                         </div>
-                                        <Star className="h-8 w-8 opacity-80" />
+                                        <Star size={32} style={{ opacity: 0.8 }} aria-hidden />
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg">
+                                <div className="aidg-stat-card secondary">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm opacity-90">총 조회수</p>
-                                            <p className="text-3xl font-bold">
+                                            <p className="aidg-desc" style={{ opacity: 0.9 }}>총 조회수</p>
+                                            <p style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-bold)' }}>
                                                 {documents.reduce((acc, doc) => acc + doc.analytics.views, 0)}
                                             </p>
                                         </div>
-                                        <Eye className="h-8 w-8 opacity-80" />
+                                        <Eye size={32} style={{ opacity: 0.8 }} aria-hidden />
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-lg">
+                                <div className="aidg-stat-card warning">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm opacity-90">총 공유수</p>
-                                            <p className="text-3xl font-bold">
+                                            <p className="aidg-desc" style={{ opacity: 0.9 }}>총 공유수</p>
+                                            <p style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-bold)' }}>
                                                 {documents.reduce((acc, doc) => acc + doc.analytics.shares, 0)}
                                             </p>
                                         </div>
-                                        <Share2 className="h-8 w-8 opacity-80" />
+                                        <Share2 size={32} style={{ opacity: 0.8 }} aria-hidden />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">문서 성과 분석</h3>
-                                <div className="space-y-4">
+                            <div className="aidg-card">
+                                <h3 className="aidg-title">문서 성과 분석</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
                                     {documents.map((document) => (
-                                        <div key={document.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                            <div className="flex items-center space-x-3">
-                                                <FileText className="h-5 w-5 text-gray-600" />
+                                        <div key={document.id} className="aidg-suggestion-item">
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                                                <FileText size={20} style={{ color: 'var(--text-secondary)' }} aria-hidden />
                                                 <div>
-                                                    <h4 className="font-medium text-gray-900">{document.title}</h4>
-                                                    <p className="text-sm text-gray-500">
+                                                    <h4 style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)' }}>{document.title}</h4>
+                                                    <p className="aidg-desc">
                                                         품질: {document.quality}% | 조회: {document.analytics.views}회
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
                                                 <span>공유: {document.analytics.shares}</span>
                                                 <span>좋아요: {document.analytics.likes}</span>
                                                 <span>댓글: {document.analytics.comments}</span>
@@ -785,25 +731,25 @@ const AIDocumentGenerator: React.FC<AIDocumentGeneratorProps> = ({
                             exit={{ opacity: 0, y: -20 }}
                             className="space-y-6"
                         >
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 설정</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">자동 제안 활성화</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+                            <div className="aidg-card">
+                                <h3 className="aidg-title">AI 설정</h3>
+                                <div className="aidg-settings-list">
+                                    <div className="aidg-settings-row">
+                                        <span className="aidg-desc aidg-settings-label-medium">자동 제안 활성화</span>
+                                        <button type="button" className="aidg-toggle-btn on" aria-label="자동 제안 토글">
+                                            <span className="aidg-toggle-thumb" />
                                         </button>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">품질 검사 자동화</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+                                    <div className="aidg-settings-row">
+                                        <span className="aidg-desc aidg-settings-label-medium">품질 검사 자동화</span>
+                                        <button type="button" className="aidg-toggle-btn on" aria-label="품질 검사 토글">
+                                            <span className="aidg-toggle-thumb" />
                                         </button>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">스타일 일관성 검사</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-1" />
+                                    <div className="aidg-settings-row">
+                                        <span className="aidg-desc aidg-settings-label-medium">스타일 일관성 검사</span>
+                                        <button type="button" className="aidg-toggle-btn off" aria-label="스타일 검사 토글">
+                                            <span className="aidg-toggle-thumb" />
                                         </button>
                                     </div>
                                 </div>

@@ -22,7 +22,7 @@
 프론트엔드 프로젝트 루트에 `.env` 파일 생성:
 
 ```env
-REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated
+REACT_APP_INTEGRATED_API_URL=http://localhost:5002/api/integrated
 ```
 
 ### 2. 서버 실행 확인
@@ -30,7 +30,7 @@ REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated
 백엔드 서버가 실행 중인지 확인:
 
 ```bash
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 ```
 
 ## 📖 사용 방법
@@ -153,15 +153,15 @@ function App() {
 1. **서버 실행** (백엔드):
 
    ```bash
-   cd /Users/aD/kakao-frontend/backend
+   cd /path/to/kakao-frontend/kakao-frontend/backend
    python3 start_simple_integrated_server.py
    ```
 
 2. **환경 변수 설정** (프론트엔드):
 
    ```bash
-   cd /Users/aD/kakao-frontend/frontend
-   echo "REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated" > .env
+   cd /path/to/kakao-frontend/kakao-frontend/frontend
+   echo "REACT_APP_INTEGRATED_API_URL=http://localhost:5002/api/integrated" > .env
    ```
 
 3. **프론트엔드 실행**:
@@ -196,7 +196,7 @@ function App() {
 1. 서버가 실행 중인지 확인:
 
    ```bash
-   curl http://localhost:8000/api/integrated/health
+   curl http://localhost:5002/api/integrated/health
    ```
 
 2. 환경 변수가 올바른지 확인:

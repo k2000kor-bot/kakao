@@ -7,7 +7,7 @@ interface SecurityEvent {
     timestamp: Date;
     source: string;
     target: string;
-    details: any;
+    details: Record<string, unknown>;
     status: 'detected' | 'investigating' | 'resolved' | 'false_positive';
 }
 
@@ -37,7 +37,7 @@ interface ThreatDetection {
     source: string;
     target: string;
     timestamp: Date;
-    details: any;
+    details: Record<string, unknown>;
     status: 'detected' | 'investigating' | 'mitigated' | 'resolved';
 }
 
@@ -50,18 +50,21 @@ interface AccessControl {
     expiresAt?: Date;
 }
 
-class SecurityEnhancementService extends EventEmitter {
+export class SecurityEnhancementService extends EventEmitter {
     private securityEvents: SecurityEvent[] = [];
     private securityPolicies: SecurityPolicy[] = [];
     private threatDetections: ThreatDetection[] = [];
     private accessControls: AccessControl[] = [];
     private isMonitoring: boolean = false;
     private monitoringInterval: NodeJS.Timeout | null = null;
+    private policyCheckInterval: NodeJS.Timeout | null = null;
 
     constructor() {
         super();
         this.initializeSecurityPolicies();
-        this.startSecurityMonitoring();
+        if (process.env.NODE_ENV !== 'test') {
+            this.startSecurityMonitoring();
+        }
     }
 
     private initializeSecurityPolicies(): void {
@@ -148,6 +151,9 @@ class SecurityEnhancementService extends EventEmitter {
     }
 
     private startSecurityMonitoring(): void {
+        if (this.monitoringInterval != null) {
+            return;
+        }
         this.isMonitoring = true;
 
         // 보안 이벤트 모니터링
@@ -158,9 +164,14 @@ class SecurityEnhancementService extends EventEmitter {
         }, 30000); // 30초마다 스캔
 
         // 정책 위반 감지
-        setInterval(() => {
+        this.policyCheckInterval = setInterval(() => {
             this.checkPolicyViolations();
         }, 60000); // 1분마다 정책 확인
+    }
+
+    /** `stopMonitoring()` 이후 모니터링 타이머를 다시 켭니다 */
+    public resumeMonitoring(): void {
+        this.startSecurityMonitoring();
     }
 
     // 보안 이벤트 로깅
@@ -169,7 +180,7 @@ class SecurityEnhancementService extends EventEmitter {
         severity: SecurityEvent['severity'],
         source: string,
         target: string,
-        details: any = {}
+        details: Record<string, unknown> = {}
     ): void {
         const event: SecurityEvent = {
             id: `security-event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -192,7 +203,7 @@ class SecurityEnhancementService extends EventEmitter {
     }
 
     // 인증 및 권한 확인
-    public async authenticateUser(userId: string, credentials: any): Promise<{
+    public async authenticateUser(userId: string, credentials: Record<string, unknown>): Promise<{
         success: boolean;
         token?: string;
         permissions?: string[];
@@ -288,7 +299,7 @@ class SecurityEnhancementService extends EventEmitter {
         endpoint: string,
         method: string,
         headers: Record<string, string>,
-        body?: any
+        body?: Record<string, unknown>
     ): Promise<{
         allowed: boolean;
         reason?: string;
@@ -422,7 +433,7 @@ class SecurityEnhancementService extends EventEmitter {
         );
 
         recentApiCalls.forEach(event => {
-            const body = event.details.body || '';
+            const body = String(event.details?.body ?? '');
             const hasSuspiciousPattern = suspiciousPatterns.some(pattern =>
                 body.toLowerCase().includes(pattern)
             );
@@ -447,6 +458,7 @@ class SecurityEnhancementService extends EventEmitter {
 
     private async detectXSS(): Promise<void> {
         // XSS 패턴 탐지 시뮬레이션
+        // eslint-disable-next-line no-script-url -- XSS pattern string for detection, not execution
         const xssPatterns = ['<script>', 'javascript:', 'onload=', 'onerror='];
 
         const recentApiCalls = this.securityEvents.filter(event =>
@@ -455,7 +467,7 @@ class SecurityEnhancementService extends EventEmitter {
         );
 
         recentApiCalls.forEach(event => {
-            const body = event.details.body || '';
+            const body = String(event.details?.body ?? '');
             const hasXSSPattern = xssPatterns.some(pattern =>
                 body.toLowerCase().includes(pattern)
             );
@@ -523,14 +535,14 @@ class SecurityEnhancementService extends EventEmitter {
                     'suspicious_activity',
                     'medium',
                     'security_scanner',
-                    vuln.target,
+                    String((vuln as Record<string, unknown>).target ?? ''),
                     { vulnerability: vuln }
                 );
             });
         }
     }
 
-    private async scanForVulnerabilities(): Promise<any[]> {
+    private async scanForVulnerabilities(): Promise<Record<string, unknown>[]> {
         // 취약점 스캔 시뮬레이션
         const vulnerabilities = [];
 
@@ -571,7 +583,7 @@ class SecurityEnhancementService extends EventEmitter {
         });
     }
 
-    private evaluateRule(rule: SecurityRule): boolean {
+    private evaluateRule(_rule: SecurityRule): boolean {
         // 정책 규칙 평가 시뮬레이션
         return Math.random() > 0.95; // 5% 확률로 위반
     }
@@ -607,7 +619,7 @@ class SecurityEnhancementService extends EventEmitter {
     }
 
     // 유틸리티 메서드들
-    private async validateCredentials(userId: string, credentials: any): Promise<boolean> {
+    private async validateCredentials(_userId: string, _credentials: Record<string, unknown>): Promise<boolean> {
         // 인증 로직 시뮬레이션
         return Math.random() > 0.1; // 90% 성공률
     }
@@ -616,12 +628,12 @@ class SecurityEnhancementService extends EventEmitter {
         return `token_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    private async getUserPermissions(userId: string): Promise<string[]> {
+    private async getUserPermissions(_userId: string): Promise<string[]> {
         // 사용자 권한 조회 시뮬레이션
         return ['read', 'write', 'execute'];
     }
 
-    private async validateAccess(userId: string, resource: string, permission: string): Promise<boolean> {
+    private async validateAccess(_userId: string, _resource: string, _permission: string): Promise<boolean> {
         // 접근 권한 검증 시뮬레이션
         return Math.random() > 0.2; // 80% 성공률
     }
@@ -631,7 +643,7 @@ class SecurityEnhancementService extends EventEmitter {
         return token.startsWith('token_');
     }
 
-    private async checkRateLimit(endpoint: string, token: string): Promise<{
+    private async checkRateLimit(_endpoint: string, _token: string): Promise<{
         allowed: boolean;
         remaining: number;
         resetTime: Date;
@@ -644,7 +656,7 @@ class SecurityEnhancementService extends EventEmitter {
         };
     }
 
-    private validateInput(input: any): boolean {
+    private validateInput(_input: unknown): boolean {
         // 입력 검증 시뮬레이션
         return Math.random() > 0.05; // 95% 유효
     }
@@ -688,6 +700,10 @@ class SecurityEnhancementService extends EventEmitter {
             clearInterval(this.monitoringInterval);
             this.monitoringInterval = null;
         }
+        if (this.policyCheckInterval) {
+            clearInterval(this.policyCheckInterval);
+            this.policyCheckInterval = null;
+        }
     }
 }
 
@@ -695,4 +711,4 @@ class SecurityEnhancementService extends EventEmitter {
 const securityEnhancementService = new SecurityEnhancementService();
 
 export default securityEnhancementService;
-export type { SecurityEnhancementService, SecurityEvent, SecurityPolicy, ThreatDetection, AccessControl };
+export type { SecurityEvent, SecurityPolicy, ThreatDetection, AccessControl };

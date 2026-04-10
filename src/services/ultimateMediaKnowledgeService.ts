@@ -1,4 +1,28 @@
+import {
+  API_FORM_FIELD_FILE,
+  API_HEALTH_PATH,
+  API_JSON_FIELD_TEXT,
+  API_QUERY_PARAM_EXPORT_FORMAT,
+  API_QUERY_PARAM_LIMIT,
+  API_QUERY_PARAM_MEDIA_TYPE,
+  API_QUERY_PARAM_MIN_CONFIDENCE,
+  API_QUERY_PARAM_PROJECT_ID,
+  API_QUERY_PARAM_RANGE_END,
+  API_QUERY_PARAM_RANGE_START,
+  API_QUERY_PARAM_SEARCH_Q,
+  API_QUERY_PARAM_SORT_ORDER,
+  API_QUERY_PARAM_SOURCE_TYPE,
+  API_V1_UMKS_ANALYZE_MEDIA_PATH,
+  API_V1_UMKS_KNOWLEDGE_BASE_PREFIX,
+  API_V1_UMKS_KNOWLEDGE_EXPORT_PREFIX,
+  API_V1_UMKS_LEARNING_HISTORY_PREFIX,
+  API_V1_UMKS_PERSUASION_PATH,
+  API_V1_UMKS_SEARCH_KNOWLEDGE_PATH,
+  joinApiHealthCheckUrl,
+  resolveApiBaseUrl,
+} from '../config/api';
 import { ProjectFile } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface ExtractedKnowledge {
   content: string;
@@ -17,7 +41,7 @@ export interface PersuasiveContent {
   arguments: string[];
   evidence: string[];
   emotional_appeal: Record<string, number>;
-  logical_structure: Record<string, any>;
+  logical_structure: Record<string, unknown>;
   target_audience: string;
   persuasion_techniques: string[];
 }
@@ -67,7 +91,19 @@ export interface KnowledgeSearchResult {
 
 class UltimateMediaKnowledgeService {
   private static instance: UltimateMediaKnowledgeService;
-  private baseUrl = (process.env.REACT_APP_UMKS_BASE_URL || 'http://localhost:8001') + '/api/v1';
+  /** UMKS·API 베이스의 HTTP 오리진 (`/api/v1` 제외) — `joinApiHealthCheckUrl`로 루트 경로 URL 생성 */
+  private readonly apiOrigin = (
+    process.env.REACT_APP_UMKS_BASE_URL ||
+    process.env.REACT_APP_API_URL ||
+    resolveApiBaseUrl()
+  )
+    .trim()
+    .replace(/\/$/, '');
+
+  /** UMKS 절대 URL (`/api/v1/...`). */
+  private umksAbs(fullPath: string): string {
+    return joinApiHealthCheckUrl(this.apiOrigin, fullPath);
+  }
 
   private constructor() { }
 
@@ -84,10 +120,10 @@ class UltimateMediaKnowledgeService {
   async analyzeMediaFile(file: File, projectId: string): Promise<MediaAnalysisResult> {
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('project_id', projectId);
+      formData.append(API_FORM_FIELD_FILE, file);
+      formData.append(API_QUERY_PARAM_PROJECT_ID, projectId);
 
-      const response = await fetch(`${this.baseUrl}/analyze-media`, {
+      const response = await fetch(this.umksAbs(API_V1_UMKS_ANALYZE_MEDIA_PATH), {
         method: 'POST',
         body: formData,
       });
@@ -99,7 +135,14 @@ class UltimateMediaKnowledgeService {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('미디어 파일 분석 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('미디어 파일 분석 중 오류', err, {
+        component: 'ultimateMediaKnowledgeService',
+        action: 'analyzeMediaFile',
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      });
       throw error;
     }
   }
@@ -109,7 +152,9 @@ class UltimateMediaKnowledgeService {
    */
   async getKnowledgeBase(projectId: string): Promise<KnowledgeBase> {
     try {
-      const response = await fetch(`${this.baseUrl}/knowledge-base/${projectId}`);
+      const response = await fetch(
+        this.umksAbs(`${API_V1_UMKS_KNOWLEDGE_BASE_PREFIX}/${encodeURIComponent(projectId)}`),
+      );
 
       if (!response.ok) {
         throw new Error(`지식 베이스 조회 실패: ${response.statusText}`);
@@ -117,7 +162,12 @@ class UltimateMediaKnowledgeService {
 
       return await response.json();
     } catch (error) {
-      console.error('지식 베이스 조회 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('지식 베이스 조회 중 오류', err, {
+        component: 'ultimateMediaKnowledgeService',
+        action: 'getKnowledgeBase',
+        projectId,
+      });
       throw error;
     }
   }
@@ -127,7 +177,9 @@ class UltimateMediaKnowledgeService {
    */
   async getLearningHistory(projectId: string): Promise<ProjectLearningHistory> {
     try {
-      const response = await fetch(`${this.baseUrl}/learning-history/${projectId}`);
+      const response = await fetch(
+        this.umksAbs(`${API_V1_UMKS_LEARNING_HISTORY_PREFIX}/${encodeURIComponent(projectId)}`),
+      );
 
       if (!response.ok) {
         throw new Error(`학습 히스토리 조회 실패: ${response.statusText}`);
@@ -135,7 +187,12 @@ class UltimateMediaKnowledgeService {
 
       return await response.json();
     } catch (error) {
-      console.error('학습 히스토리 조회 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('학습 히스토리 조회 중 오류', err, {
+        component: 'ultimateMediaKnowledgeService',
+        action: 'getLearningHistory',
+        projectId,
+      });
       throw error;
     }
   }
@@ -150,7 +207,7 @@ class UltimateMediaKnowledgeService {
     timestamp: string;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`);
+      const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, API_HEALTH_PATH));
 
       if (!response.ok) {
         throw new Error(`시스템 상태 확인 실패: ${response.statusText}`);
@@ -158,7 +215,11 @@ class UltimateMediaKnowledgeService {
 
       return await response.json();
     } catch (error) {
-      console.error('시스템 상태 확인 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('시스템 상태 확인 중 오류', err, {
+        component: 'ultimateMediaKnowledgeService',
+        action: 'checkSystemHealth',
+      });
       throw error;
     }
   }
@@ -177,7 +238,7 @@ class UltimateMediaKnowledgeService {
     // 주요 엔터티
     if (knowledge.entities.length > 0) {
       content.push(`**주요 발견사항:**`);
-      knowledge.entities.slice(0, 5).forEach(entity => {
+      knowledge.entities.forEach(entity => {
         content.push(`• ${entity}`);
       });
       content.push(``);
@@ -186,7 +247,7 @@ class UltimateMediaKnowledgeService {
     // 핵심 인사이트
     if (knowledge.insights.length > 0) {
       content.push(`**핵심 인사이트:**`);
-      knowledge.insights.slice(0, 3).forEach(insight => {
+      knowledge.insights.forEach(insight => {
         content.push(`• ${insight}`);
       });
       content.push(``);
@@ -215,22 +276,33 @@ class UltimateMediaKnowledgeService {
     opts?: { minConfidence?: number; mediaType?: string; limit?: number; start?: string; end?: string; order?: string; }
   ): Promise<KnowledgeSearchResult> {
     try {
-      const url = new URL(`${this.baseUrl}/search-knowledge`);
-      url.searchParams.set('project_id', projectId);
-      url.searchParams.set('q', query || '');
-      if (opts?.minConfidence !== undefined) url.searchParams.set('min_confidence', String(opts.minConfidence));
-      if (opts?.mediaType) url.searchParams.set('media_type', opts.mediaType);
-      if (opts?.limit !== undefined) url.searchParams.set('limit', String(opts.limit));
-      if (opts?.start) url.searchParams.set('start', opts.start);
-      if (opts?.end) url.searchParams.set('end', opts.end);
-      if (opts?.order) url.searchParams.set('order', opts.order);
+      const url = new URL(this.umksAbs(API_V1_UMKS_SEARCH_KNOWLEDGE_PATH));
+      url.searchParams.set(API_QUERY_PARAM_PROJECT_ID, projectId);
+      url.searchParams.set(API_QUERY_PARAM_SEARCH_Q, query || '');
+      if (opts?.minConfidence !== undefined) {
+        url.searchParams.set(API_QUERY_PARAM_MIN_CONFIDENCE, String(opts.minConfidence));
+      }
+      if (opts?.mediaType) url.searchParams.set(API_QUERY_PARAM_MEDIA_TYPE, opts.mediaType);
+      if (opts?.limit !== undefined) url.searchParams.set(API_QUERY_PARAM_LIMIT, String(opts.limit));
+      if (opts?.start) url.searchParams.set(API_QUERY_PARAM_RANGE_START, opts.start);
+      if (opts?.end) url.searchParams.set(API_QUERY_PARAM_RANGE_END, opts.end);
+      if (opts?.order) url.searchParams.set(API_QUERY_PARAM_SORT_ORDER, opts.order);
       const response = await fetch(url.toString());
       if (!response.ok) {
         throw new Error(`지식 검색 실패: ${response.statusText}`);
       }
       return await response.json();
     } catch (error) {
-      console.error('지식 검색 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('지식 검색 중 오류', err, {
+        component: 'ultimateMediaKnowledgeService',
+        action: 'searchKnowledge',
+        projectId,
+        query: query.substring(0, 100),
+        minConfidence: opts?.minConfidence,
+        mediaType: opts?.mediaType,
+        limit: opts?.limit,
+      });
       throw error;
     }
   }
@@ -243,15 +315,19 @@ class UltimateMediaKnowledgeService {
     format: 'json' | 'csv' = 'json',
     opts?: { minConfidence?: number; mediaType?: string; limit?: number; start?: string; end?: string; order?: string; q?: string; }
   ): Promise<Blob> {
-    const url = new URL(`${this.baseUrl}/knowledge-export/${projectId}`);
-    url.searchParams.set('format', format);
-    if (opts?.q) url.searchParams.set('q', opts.q);
-    if (opts?.minConfidence !== undefined) url.searchParams.set('min_confidence', String(opts.minConfidence));
-    if (opts?.mediaType) url.searchParams.set('media_type', opts.mediaType);
-    if (opts?.limit !== undefined) url.searchParams.set('limit', String(opts.limit));
-    if (opts?.start) url.searchParams.set('start', opts.start);
-    if (opts?.end) url.searchParams.set('end', opts.end);
-    if (opts?.order) url.searchParams.set('order', opts.order);
+    const url = new URL(
+      this.umksAbs(`${API_V1_UMKS_KNOWLEDGE_EXPORT_PREFIX}/${encodeURIComponent(projectId)}`),
+    );
+    url.searchParams.set(API_QUERY_PARAM_EXPORT_FORMAT, format);
+    if (opts?.q) url.searchParams.set(API_QUERY_PARAM_SEARCH_Q, opts.q);
+    if (opts?.minConfidence !== undefined) {
+      url.searchParams.set(API_QUERY_PARAM_MIN_CONFIDENCE, String(opts.minConfidence));
+    }
+    if (opts?.mediaType) url.searchParams.set(API_QUERY_PARAM_MEDIA_TYPE, opts.mediaType);
+    if (opts?.limit !== undefined) url.searchParams.set(API_QUERY_PARAM_LIMIT, String(opts.limit));
+    if (opts?.start) url.searchParams.set(API_QUERY_PARAM_RANGE_START, opts.start);
+    if (opts?.end) url.searchParams.set(API_QUERY_PARAM_RANGE_END, opts.end);
+    if (opts?.order) url.searchParams.set(API_QUERY_PARAM_SORT_ORDER, opts.order);
     const res = await fetch(url.toString());
     if (!res.ok) {
       throw new Error(`지식 내보내기 실패: ${res.statusText}`);
@@ -269,17 +345,26 @@ class UltimateMediaKnowledgeService {
     learning_insights: string;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/persuasion`, {
+      const response = await fetch(this.umksAbs(API_V1_UMKS_PERSUASION_PATH), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, source_type: sourceType })
+        body: JSON.stringify({
+          [API_JSON_FIELD_TEXT]: text,
+          [API_QUERY_PARAM_SOURCE_TYPE]: sourceType,
+        }),
       });
       if (!response.ok) {
         throw new Error(`설득 콘텐츠 생성 실패: ${response.statusText}`);
       }
       return await response.json();
     } catch (error) {
-      console.error('설득 콘텐츠 생성 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('설득 콘텐츠 생성 중 오류', err, {
+        component: 'ultimateMediaKnowledgeService',
+        action: 'createPersuasionFromText',
+        sourceType,
+        textLength: text.length,
+      });
       throw error;
     }
   }
@@ -289,15 +374,21 @@ class UltimateMediaKnowledgeService {
    */
   async clearProjectKnowledge(projectId: string): Promise<{ project_id: string; deleted_items: number; status: string; }> {
     try {
-      const response = await fetch(`${this.baseUrl}/knowledge-base/${projectId}`, {
-        method: 'DELETE'
-      });
+      const response = await fetch(
+        this.umksAbs(`${API_V1_UMKS_KNOWLEDGE_BASE_PREFIX}/${encodeURIComponent(projectId)}`),
+        { method: 'DELETE' },
+      );
       if (!response.ok) {
         throw new Error(`지식 초기화 실패: ${response.statusText}`);
       }
       return await response.json();
     } catch (error) {
-      console.error('지식 초기화 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('지식 초기화 중 오류', err, {
+        component: 'ultimateMediaKnowledgeService',
+        action: 'clearProjectKnowledge',
+        projectId,
+      });
       throw error;
     }
   }
@@ -316,12 +407,12 @@ class UltimateMediaKnowledgeService {
     summary.push(``);
 
     if (knowledge.entities.length > 0) {
-      summary.push(`**주요 엔터티:** ${knowledge.entities.slice(0, 5).join(', ')}`);
+      summary.push(`**주요 엔터티:** ${knowledge.entities.join(', ')}`);
     }
 
     if (knowledge.insights.length > 0) {
       summary.push(`**주요 인사이트:**`);
-      knowledge.insights.slice(0, 3).forEach(insight => {
+      knowledge.insights.forEach(insight => {
         summary.push(`• ${insight}`);
       });
     }
@@ -390,7 +481,7 @@ class UltimateMediaKnowledgeService {
     return {
       id: this.generateFileId(file),
       name: file.name,
-      type: this.detectMediaType(file) as any,
+      type: (this.detectMediaType(file) === 'unknown' ? 'other' : this.detectMediaType(file)) as 'image' | 'video' | 'audio' | 'document' | 'other',
       size: file.size,
       uploadedAt: new Date().toISOString(),
       uploadedBy: 'user',
@@ -458,5 +549,3 @@ class UltimateMediaKnowledgeService {
 }
 
 export default UltimateMediaKnowledgeService;
-
-export { };

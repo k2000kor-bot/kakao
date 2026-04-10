@@ -320,8 +320,8 @@ export class ConstructionCompanyIntelligenceService {
 
         return {
             currentIssues: this.identifyCurrentIssues(performance, defectAnalysis),
-            improvementActions: this.generateImprovementActions(performance, defectAnalysis),
-            kpis: this.defineImprovementKPIs(performance, defectAnalysis)
+            improvementActions: this.generateImprovementActions(performance, defectAnalysis) as { category: string; actions: string[]; timeline: string; expectedImpact: string }[],
+            kpis: this.defineImprovementKPIs(performance, defectAnalysis) as { metric: string; currentValue: number; targetValue: number; timeline: string }[]
         };
     }
 
@@ -586,7 +586,7 @@ export class ConstructionCompanyIntelligenceService {
         });
     }
 
-    private calculateCriteriaScore(criteria: SelectionCriteria, performance: CompanyPerformance, defectAnalysis: DefectAnalytics): number {
+    private calculateCriteriaScore(criteria: SelectionCriteria, performance: CompanyPerformance, _defectAnalysis: DefectAnalytics): number {
         switch (criteria.id) {
             case '1': // 기술 역량
                 return Math.min(100, performance.qualityScore + (performance.certifications.length * 5));
@@ -611,7 +611,7 @@ export class ConstructionCompanyIntelligenceService {
         }
     }
 
-    private generateEvidence(criteria: SelectionCriteria, performance: CompanyPerformance, defectAnalysis: DefectAnalytics): string {
+    private generateEvidence(criteria: SelectionCriteria, performance: CompanyPerformance, _defectAnalysis: DefectAnalytics): string {
         switch (criteria.id) {
             case '1':
                 return `품질점수 ${performance.qualityScore}점, 보유인증 ${performance.certifications.length}개`;
@@ -646,14 +646,14 @@ export class ConstructionCompanyIntelligenceService {
         return totalWeight > 0 ? totalScore / totalWeight : 0;
     }
 
-    private determineRecommendation(totalScore: number, performance: CompanyPerformance, defectAnalysis: DefectAnalytics): CompanyEvaluation['recommendation'] {
+    private determineRecommendation(totalScore: number, performance: CompanyPerformance, _defectAnalysis: DefectAnalytics): CompanyEvaluation['recommendation'] {
         if (totalScore >= 90 && performance.defectRate < 1.5) return 'highly_recommended';
         if (totalScore >= 80 && performance.defectRate < 2.5) return 'recommended';
         if (totalScore >= 70 && performance.defectRate < 4.0) return 'conditional';
         return 'not_recommended';
     }
 
-    private identifyStrengths(performance: CompanyPerformance, defectAnalysis: DefectAnalytics): string[] {
+    private identifyStrengths(performance: CompanyPerformance, _defectAnalysis: DefectAnalytics): string[] {
         const strengths: string[] = [];
 
         if (performance.onTimeDeliveryRate > 0.9) strengths.push('우수한 공기 준수율');
@@ -666,7 +666,7 @@ export class ConstructionCompanyIntelligenceService {
         return strengths;
     }
 
-    private identifyWeaknesses(performance: CompanyPerformance, defectAnalysis: DefectAnalytics): string[] {
+    private identifyWeaknesses(performance: CompanyPerformance, _defectAnalysis: DefectAnalytics): string[] {
         const weaknesses: string[] = [];
 
         if (performance.onTimeDeliveryRate < 0.8) weaknesses.push('공기 지연 위험');
@@ -717,15 +717,15 @@ export class ConstructionCompanyIntelligenceService {
         };
     }
 
-    private generateComparisonRecommendations(evaluations: CompanyEvaluation[], ranking: any[]): string[] {
+    private generateComparisonRecommendations(evaluations: CompanyEvaluation[], ranking: unknown[]): string[] {
         const recommendations: string[] = [];
-        const topCompany = ranking[0];
+        const topCompany = ranking[0] as { companyId?: string; score?: number } | undefined;
 
-        if (topCompany.score > 85) {
-            recommendations.push(`${topCompany.companyId}를 1순위로 추천합니다. 종합점수 ${topCompany.score.toFixed(1)}점으로 우수한 성과를 보입니다.`);
+        if (topCompany && (topCompany.score ?? 0) > 85) {
+            recommendations.push(`${topCompany.companyId ?? '해당'}를 1순위로 추천합니다. 종합점수 ${(topCompany.score ?? 0).toFixed(1)}점으로 우수한 성과를 보입니다.`);
         }
 
-        const lowPerformers = ranking.filter(r => r.score < 70);
+        const lowPerformers = ranking.filter(r => ((r as { score?: number }).score ?? 0) < 70);
         if (lowPerformers.length > 0) {
             recommendations.push(`점수가 70점 미만인 업체들은 신중한 검토가 필요합니다.`);
         }
@@ -744,7 +744,7 @@ export class ConstructionCompanyIntelligenceService {
         return issues;
     }
 
-    private generateImprovementActions(performance: CompanyPerformance, defectAnalysis: DefectAnalytics): any[] {
+    private generateImprovementActions(performance: CompanyPerformance, _defectAnalysis: DefectAnalytics): unknown[] {
         const actions = [];
 
         if (performance.defectRate > 2.5) {
@@ -768,7 +768,7 @@ export class ConstructionCompanyIntelligenceService {
         return actions;
     }
 
-    private defineImprovementKPIs(performance: CompanyPerformance, defectAnalysis: DefectAnalytics): any[] {
+    private defineImprovementKPIs(performance: CompanyPerformance, _defectAnalysis: DefectAnalytics): unknown[] {
         return [
             {
                 metric: '하자 발생률',

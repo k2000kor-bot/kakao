@@ -94,13 +94,14 @@ class NLPMasterServer:
         """Initialize all NLP systems"""
         try:
             logger.info("Initializing NLP systems...")
+            _base = int(os.environ.get("NLP_MASTER_SYSTEM_BASE_PORT", "8001"))
             
             # Conversational LLM System
             self.systems['conversation'] = AdvancedConversationalLLMSystem()
             self.system_status['conversation'] = SystemStatus(
                 name="Conversational LLM System",
                 status="initializing",
-                port=8001,
+                port=_base + 0,
                 health="unknown",
                 last_check=datetime.now()
             )
@@ -110,7 +111,7 @@ class NLPMasterServer:
             self.system_status['nlp'] = SystemStatus(
                 name="Korean NLP Engine", 
                 status="initializing",
-                port=8002,
+                port=_base + 1,
                 health="unknown",
                 last_check=datetime.now()
             )
@@ -120,7 +121,7 @@ class NLPMasterServer:
             self.system_status['search'] = SystemStatus(
                 name="Semantic Search Engine",
                 status="initializing", 
-                port=8003,
+                port=_base + 2,
                 health="unknown",
                 last_check=datetime.now()
             )
@@ -130,7 +131,7 @@ class NLPMasterServer:
             self.system_status['generation'] = SystemStatus(
                 name="Real-time Generation Engine",
                 status="initializing",
-                port=8004,
+                port=_base + 3,
                 health="unknown",
                 last_check=datetime.now()
             )
@@ -140,7 +141,7 @@ class NLPMasterServer:
             self.system_status['memory'] = SystemStatus(
                 name="Conversation Memory System",
                 status="initializing",
-                port=8005,
+                port=_base + 4,
                 health="unknown", 
                 last_check=datetime.now()
             )
@@ -150,7 +151,7 @@ class NLPMasterServer:
             self.system_status['command'] = SystemStatus(
                 name="Natural Language Command System",
                 status="initializing",
-                port=8006,
+                port=_base + 5,
                 health="unknown",
                 last_check=datetime.now()
             )
@@ -686,5 +687,7 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.info("WebSocket client disconnected")
 
 if __name__ == "__main__":
-    # Default port for master server [[memory:3383214]]
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    _nlp = int(
+        os.environ.get("NLP_MASTER_SERVER_PORT", os.environ.get("PORT", "8000"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_nlp) 

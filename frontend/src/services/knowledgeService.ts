@@ -3,11 +3,28 @@ import {
   Document,
   Guideline,
   LogicRule,
+  Condition,
   MessageGenerationRequest,
   MessageGenerationResponse,
   AIServiceConfig,
   KnowledgeProcessingResult
 } from '../types/knowledge';
+import {
+  OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH,
+  OPENAI_COMPAT_V1_EMBEDDINGS_PATH,
+  OPENAI_OFFICIAL_API_BASE_URL,
+  joinApiBaseAndPath,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
+/** analyzeContext 반환 타입 */
+interface ContextAnalysis {
+  contextEmbeddings: number[];
+  relevantDocuments: Document[];
+  keyTopics: string[];
+  sentiment: string;
+}
 
 class KnowledgeService {
   private knowledgeBases: Map<string, KnowledgeBase> = new Map();
@@ -66,7 +83,7 @@ class KnowledgeService {
       const extractedInfo = await this.extractInformation(processedContent);
 
       // 임베딩 생성 (OpenAI 또는 로컬 모델 사용)
-      const embeddings = await this.generateEmbeddings(processedContent);
+      const _embeddings = await this.generateEmbeddings(processedContent);
 
       const result: KnowledgeProcessingResult = {
         id: `processed_${Date.now()}`,
@@ -91,22 +108,24 @@ class KnowledgeService {
 
       return result;
     } catch (error) {
-      console.error('문서 처리 실패:', error);
+      const err = toError(error);
+      errorLogger.error('문서 처리 실패', err, {
+        component: 'knowledgeService',
+        action: 'processDocument',
+        documentId: document.id,
+      });
       throw error;
     }
   }
 
   private async preprocessContent(content: string): Promise<string> {
     // 텍스트 정규화 및 클리닝
-    return content
-      .replace(/\s+/g, ' ').trim()
-      .toLowerCase();
+    return coerceTrimmedString(content.replace(/\s+/g, ' '), '').toLowerCase();
   }
 
   private async extractInformation(content: string) {
     // 간단한 키워드 추출 (실제로는 더 정교한 NLP 사용)
-    const keywords = content.split(' ').filter(word => word.length > 2)
-      .slice(0, 10);
+    const keywords = content.split(' ').filter(word => word.length > 2);
 
     // 감정 분석 (간단한 구현)
     const positiveWords = ['좋음', '감사', '동의', '찬성', '수고', '고생', '축하', '기대', '환영'];
@@ -158,22 +177,30 @@ class KnowledgeService {
     }
 
     try {
-      const response = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.aiConfig.openaiApiKey}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        joinApiBaseAndPath(OPENAI_OFFICIAL_API_BASE_URL, OPENAI_COMPAT_V1_EMBEDDINGS_PATH),
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.aiConfig.openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            input: content,
+            model: 'text-embedding-ada-002',
+          }),
         },
-        body: JSON.stringify({
-          input: content,
-          model: 'text-embedding-ada-002'
-        })
-      });
+      );
 
       const data = await response.json();
       return data.data[0].embedding;
     } catch (error) {
-      console.error('OpenAI 임베딩 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('OpenAI 임베딩 생성 실패', err, {
+        component: 'knowledgeService',
+        action: 'generateOpenAIEmbeddings',
+        contentPreview: content.substring(0, 100),
+      });
       // 폴백으로 로컬 임베딩 사용
       return this.generateLocalEmbeddings(content);
     }
@@ -262,12 +289,18 @@ class KnowledgeService {
         }
       };
     } catch (error) {
-      console.error('메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('메시지 생성 실패', err, {
+        component: 'knowledgeService',
+        action: 'generateMessage',
+        knowledgeBaseId: request.knowledgeBaseId,
+        contextPreview: request.context.substring(0, 100),
+      });
       throw error;
     }
   }
 
-  private async analyzeContext(context: string, knowledgeBase: KnowledgeBase) {
+  private async analyzeContext(context: string, knowledgeBase: KnowledgeBase): Promise<ContextAnalysis> {
     // 컨텍스트 분석 로직
     const contextEmbeddings = await this.generateEmbeddings(context);
 
@@ -285,7 +318,7 @@ class KnowledgeService {
   }
 
   private async findRelevantGuidelines(request: MessageGenerationRequest, knowledgeBase: KnowledgeBase): Promise<Guideline[]> {
-    const contextEmbeddings = await this.generateEmbeddings(request.context);
+    const _contextEmbeddings = await this.generateEmbeddings(request.context);
 
     return knowledgeBase.guidelines
       .filter(guideline => {
@@ -300,7 +333,6 @@ class KnowledgeService {
         const priorityScore = this.getPriorityScore(b.priority) - this.getPriorityScore(a.priority);
         return priorityScore;
       })
-      .slice(0, 5); // 상위 5개만 반환
   }
 
   private async findApplicableRules(request: MessageGenerationRequest, knowledgeBase: KnowledgeBase): Promise<LogicRule[]> {
@@ -315,20 +347,21 @@ class KnowledgeService {
       .sort((a, b) => b.priority - a.priority);
   }
 
-  private evaluateCondition(condition: any, request: MessageGenerationRequest): boolean {
+  private evaluateCondition(condition: Condition, request: MessageGenerationRequest): boolean {
     const fieldValue = this.getFieldValue(condition.field, request);
+    const val = String(condition.value ?? '');
 
     switch (condition.operator) {
       case 'contains':
-        return fieldValue.includes(condition.value);
+        return fieldValue.includes(val);
       case 'equals':
-        return fieldValue === condition.value;
+        return fieldValue === val;
       case 'starts_with':
-        return fieldValue.startsWith(condition.value);
+        return fieldValue.startsWith(val);
       case 'ends_with':
-        return fieldValue.endsWith(condition.value);
+        return fieldValue.endsWith(val);
       case 'regex':
-        return new RegExp(condition.value).test(fieldValue);
+        return new RegExp(val).test(fieldValue);
       default:
         return false;
     }
@@ -349,7 +382,7 @@ class KnowledgeService {
 
   private async createMessage(
     request: MessageGenerationRequest,
-    contextAnalysis: any,
+    contextAnalysis: ContextAnalysis,
     guidelines: Guideline[],
     rules: LogicRule[]
   ): Promise<string> {
@@ -363,49 +396,57 @@ class KnowledgeService {
 
   private async generateWithOpenAI(
     request: MessageGenerationRequest,
-    contextAnalysis: any,
+    contextAnalysis: ContextAnalysis,
     guidelines: Guideline[],
     rules: LogicRule[]
   ): Promise<string> {
     const prompt = this.buildPrompt(request, contextAnalysis, guidelines, rules);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.aiConfig.openaiApiKey}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        joinApiBaseAndPath(OPENAI_OFFICIAL_API_BASE_URL, OPENAI_COMPAT_V1_CHAT_COMPLETIONS_PATH),
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.aiConfig.openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: this.aiConfig.model,
+            messages: [
+              {
+                role: 'system',
+                content: '당신은 전문적인 대화 분석가입니다. 주어진 지침과 규칙을 바탕으로 적절한 메시지를 생성해주세요.',
+              },
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            max_tokens: this.aiConfig.maxTokens,
+            temperature: this.aiConfig.temperature,
+          }),
         },
-        body: JSON.stringify({
-          model: this.aiConfig.model,
-          messages: [
-            {
-              role: 'system',
-              content: '당신은 전문적인 대화 분석가입니다. 주어진 지침과 규칙을 바탕으로 적절한 메시지를 생성해주세요.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: this.aiConfig.maxTokens,
-          temperature: this.aiConfig.temperature
-        })
-      });
+      );
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      console.error('OpenAI 메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('OpenAI 메시지 생성 실패', err, {
+        component: 'knowledgeService',
+        action: 'generateWithOpenAI',
+        contextPreview: request.context.substring(0, 100),
+      });
       return this.generateWithLocalModel(request, contextAnalysis, guidelines, rules);
     }
   }
 
   private async generateWithLocalModel(
     request: MessageGenerationRequest,
-    contextAnalysis: any,
+    contextAnalysis: ContextAnalysis,
     guidelines: Guideline[],
-    rules: LogicRule[]
+    _rules: LogicRule[]
   ): Promise<string> {
     // 로컬 모델을 사용한 메시지 생성 (템플릿 기반)
     const template = this.selectTemplate(request, guidelines);
@@ -414,7 +455,7 @@ class KnowledgeService {
 
   private buildPrompt(
     request: MessageGenerationRequest,
-    contextAnalysis: any,
+    contextAnalysis: ContextAnalysis,
     guidelines: Guideline[],
     rules: LogicRule[]
   ): string {
@@ -442,8 +483,8 @@ class KnowledgeService {
     return prompt;
   }
 
-  private selectTemplate(request: MessageGenerationRequest, guidelines: Guideline[]): string {
-    const tone = request.userPreferences.tone;
+  private selectTemplate(request: MessageGenerationRequest, _guidelines: Guideline[]): string {
+    const _tone = request.userPreferences.tone;
     const style = request.userPreferences.style;
 
     // 기본 템플릿 선택
@@ -459,12 +500,12 @@ class KnowledgeService {
     return template;
   }
 
-  private fillTemplate(template: string, request: MessageGenerationRequest, contextAnalysis: any): string {
+  private fillTemplate(template: string, request: MessageGenerationRequest, _contextAnalysis: ContextAnalysis): string {
     // 템플릿에 컨텍스트 정보 채우기
     return template.replace('{context}', request.context);
   }
 
-  private calculateConfidence(contextAnalysis: any, guidelines: Guideline[], rules: LogicRule[]): number {
+  private calculateConfidence(contextAnalysis: ContextAnalysis, guidelines: Guideline[], rules: LogicRule[]): number {
     let confidence = 0.5; // 기본값
 
     // 관련 문서가 많을수록 신뢰도 증가
@@ -479,7 +520,7 @@ class KnowledgeService {
     return Math.min(confidence, 1.0);
   }
 
-  private generateReasoning(contextAnalysis: any, guidelines: Guideline[], rules: LogicRule[]): string {
+  private generateReasoning(contextAnalysis: ContextAnalysis, guidelines: Guideline[], rules: LogicRule[]): string {
     let reasoning = '생성 근거: ';
 
     if (contextAnalysis.relevantDocuments.length > 0) {
@@ -497,7 +538,7 @@ class KnowledgeService {
     return reasoning;
   }
 
-  private generateSuggestions(request: MessageGenerationRequest, contextAnalysis: any): string[] {
+  private generateSuggestions(request: MessageGenerationRequest, contextAnalysis: ContextAnalysis): string[] {
     const suggestions = [];
     if (contextAnalysis.sentiment === 'negative') {
       suggestions.push('공감적이고 이해하는 톤으로 응답하는 것을 권장합니다.');
@@ -529,7 +570,7 @@ class KnowledgeService {
   private extractKeyTopics(context: string): string[] {
     // 간단한 키워드 추출
     const words = context.split(' ').filter(word => word.length > 2);
-    return words.slice(0, 5);
+    return words;
   }
 
   private analyzeSentiment(context: string): 'positive' | 'negative' | 'neutral' {
@@ -562,4 +603,5 @@ class KnowledgeService {
   }
 }
 
-export default new KnowledgeService(); 
+const knowledgeService = new KnowledgeService();
+export default knowledgeService; 

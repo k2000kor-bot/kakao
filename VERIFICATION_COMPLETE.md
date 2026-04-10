@@ -1,7 +1,7 @@
 # 검증 완료 보고서
 
 **작성일**: 2025년 1월 27일  
-**프로젝트**: CORBU AI  
+**프로젝트**: CORBU.AI  
 **버전**: 1.0.0  
 **검증 상태**: ✅ **모든 검증 통과**
 
@@ -86,8 +86,8 @@
 
 ### 접속 주소
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:5001
-- **API 문서**: http://localhost:5001/docs
+- **백엔드 API**: http://localhost:5002
+- **API 문서**: http://localhost:5002/api/docs
 
 ---
 

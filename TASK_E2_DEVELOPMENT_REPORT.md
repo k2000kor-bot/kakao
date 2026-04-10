@@ -25,7 +25,7 @@
 **적용된 컴포넌트:**
 - `.chatgpt-interface` - 메인 인터페이스
 - `.sidebar` - 사이드바
-- `.new-chat-btn` - 새 채팅 버튼
+- `.new-chat-btn` - 새 대화 버튼
 - `.conversation-item` - 대화 목록 항목
 - `.message-text` - 메시지 텍스트
 - `.input-container` - 입력 영역

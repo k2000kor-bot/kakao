@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# CORBU AI 시스템 시작 스크립트
+# CORBU.AI 시스템 시작 스크립트
 
-echo "🚀 CORBU AI 시스템 시작 중..."
+echo "🚀 CORBU.AI 시스템 시작 중..."
 echo "=" * 50
 
 # 색상 정의
@@ -29,21 +29,29 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 가상환경 확인 및 활성화
-if [ -d "venv" ]; then
-    print_status "가상환경 활성화 중..."
-    source venv/bin/activate
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
+
+# 가상환경 확인 및 활성화 (backend/venv → backend/.venv → 루트 venv/.venv)
+if backend_venv_activate "$REPO_ROOT"; then
     print_success "가상환경 활성화 완료"
 else
-    print_error "가상환경을 찾을 수 없습니다. 먼저 가상환경을 생성하세요."
+    print_error "가상환경을 찾을 수 없습니다. 먼저 backend에 venv를 생성하세요."
     exit 1
 fi
 
 # 의존성 확인
 print_status "의존성 확인 중..."
-if ! python -c "import fastapi, uvicorn, openai" 2>/dev/null; then
+if ! python3 -c "import fastapi, uvicorn, openai" 2>/dev/null; then
     print_warning "일부 의존성이 설치되지 않았습니다. 설치를 진행합니다..."
-    ./install_dependencies.sh
+    if [ -x "$REPO_ROOT/scripts/setup/install_dependencies.sh" ]; then
+        bash "$REPO_ROOT/scripts/setup/install_dependencies.sh"
+    else
+        print_warning "scripts/setup/install_dependencies.sh 없음 — pip 수동 설치"
+    fi
 fi
 
 # OpenAI API 키 확인
@@ -60,22 +68,21 @@ else
     print_success "OpenAI API 키 확인됨"
 fi
 
-# 백엔드 서버 시작
-print_status "백엔드 서버 시작 중..."
-cd backend
-python advanced_api_server.py &
+# 백엔드: 통합 FastAPI main_server (프론트 proxy·restart-backend와 동일 포트 5002)
+BACKEND_PORT="${BACKEND_PORT:-5002}"
+print_status "백엔드 서버 시작 중 (main_server, 포트 $BACKEND_PORT)..."
+( cd "$REPO_ROOT/backend" && python3 -m uvicorn main_server:app --host 0.0.0.0 --port "$BACKEND_PORT" ) &
 BACKEND_PID=$!
-cd ..
 
 # 백엔드 서버 시작 대기
 print_status "백엔드 서버 시작 대기 중..."
 sleep 5
 
 # 백엔드 서버 상태 확인
-if curl -s http://localhost:8000/health > /dev/null; then
+if curl -s "http://localhost:${BACKEND_PORT}/api/health" > /dev/null; then
     print_success "백엔드 서버 시작 완료 (PID: $BACKEND_PID)"
 else
-    print_error "백엔드 서버 시작 실패"
+    print_error "백엔드 서버 시작 실패 (http://localhost:${BACKEND_PORT}/api/health 확인)"
     kill $BACKEND_PID 2>/dev/null
     exit 1
 fi
@@ -98,21 +105,21 @@ fi
 
 # 시스템 모니터링 시작
 print_status "시스템 모니터링 시작 중..."
-python system_monitor.py &
+( cd "$REPO_ROOT/backend" && python3 system_monitor.py ) &
 MONITOR_PID=$!
 
 # 완료 메시지
 echo ""
-echo "🎉 CORBU AI 시스템 시작 완료!"
+echo "🎉 CORBU.AI 시스템 시작 완료!"
 echo "=" * 50
 echo "📱 프론트엔드: http://localhost:3000"
-echo "🔧 백엔드 API: http://localhost:8000"
-echo "📚 API 문서: http://localhost:8000/docs"
+echo "🔧 백엔드 API: http://localhost:${BACKEND_PORT}"
+echo "📚 API 문서: http://localhost:${BACKEND_PORT}/api/docs"
 echo "🖥️  모니터링: 시스템 상태 자동 업데이트"
 echo ""
 echo "💡 사용 팁:"
 echo "   • 브라우저에서 http://localhost:3000 접속"
-echo "   • API 테스트는 http://localhost:8000/docs 에서"
+echo "   • API 테스트는 http://localhost:${BACKEND_PORT}/api/docs 에서"
 echo "   • 종료하려면 Ctrl+C 또는 ./stop_system.sh 실행"
 echo ""
 

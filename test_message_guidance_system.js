@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * CORBU AI 메시지 가이드 시스템 통합 테스트
+ * CORBU.AI 메시지 가이드 시스템 통합 테스트
  * 
  * 이 스크립트는 메시지 가이드 시스템의 모든 주요 기능을 테스트합니다.
  * 
@@ -239,7 +239,7 @@ const testCases = {
 
         testHelpers.runTest('README.md 내용 확인', () => {
             const content = fs.readFileSync('README.md', 'utf8');
-            return content.includes('CORBU AI') || content.includes('메시지 가이드');
+            return content.includes('CORBU.AI') || content.includes('메시지 가이드');
         });
     },
 
@@ -282,7 +282,7 @@ const testCases = {
 
 // 메인 테스트 실행 함수
 const runAllTests = () => {
-    console.log('🚀 CORBU AI 메시지 가이드 시스템 통합 테스트 시작');
+    console.log('🚀 CORBU.AI 메시지 가이드 시스템 통합 테스트 시작');
     console.log('='.repeat(60));
 
     // 모든 테스트 실행

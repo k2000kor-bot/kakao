@@ -1,4 +1,29 @@
 // 고도화된 메시지 응답 API 서비스
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    API_BASE_URL,
+    CHAT_MESSAGES_PATH,
+    CHAT_ROOMS_PATH,
+    FALLBACK_API_ORIGIN,
+    joinApiHealthCheckUrl,
+    MEDIA_FILES_PREFIX_PATH,
+    MESSAGE_RESPONSE_ANALYZE_CONVERSATION_PATH,
+    MESSAGE_RESPONSE_GENERATE_PATH,
+    MESSAGE_RESPONSE_SIMULATE_PATH,
+    MESSAGE_RESPONSE_SYNC_PATH,
+    MESSAGE_RESPONSE_SYNC_STATUS_PATH,
+} from '../config/api';
+
+/** 메시지 응답·동기화 서버 상대 경로(`baseURL`은 오리진). 대화방·메시지는 `CHAT_ROOMS_PATH`·`CHAT_MESSAGES_PATH`. */
+const MESSAGE_RESPONSE_PATHS = {
+    GENERATE_MESSAGE: MESSAGE_RESPONSE_GENERATE_PATH,
+    ANALYZE_CONVERSATION: MESSAGE_RESPONSE_ANALYZE_CONVERSATION_PATH,
+    SIMULATE_RESPONSE: MESSAGE_RESPONSE_SIMULATE_PATH,
+    MEDIA_FILES_PREFIX: MEDIA_FILES_PREFIX_PATH,
+    SYNC: MESSAGE_RESPONSE_SYNC_PATH,
+    SYNC_STATUS: MESSAGE_RESPONSE_SYNC_STATUS_PATH,
+} as const;
+
 export interface MessageResponseRequest {
     target_message: {
         id: string;
@@ -87,13 +112,12 @@ class MessageResponseAPI {
     private baseURL: string;
 
     constructor() {
-        // 메시지 생성 서버 (포트 8001)
-        this.baseURL = 'http://localhost:8001';
+        this.baseURL = API_BASE_URL || FALLBACK_API_ORIGIN;
     }
 
     async generateResponseMessages(request: MessageResponseRequest): Promise<MessageResponseResponse> {
         try {
-            const response = await fetch(`${this.baseURL}/api/generate-message`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, MESSAGE_RESPONSE_PATHS.GENERATE_MESSAGE), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -115,14 +139,19 @@ class MessageResponseAPI {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('메시지 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('메시지 생성 오류', err, {
+                component: 'messageResponseAPI',
+                action: 'generateResponse',
+                chatRoomId: request.chat_room_id,
+            });
             return this.generateMockResponse(request);
         }
     }
 
     async analyzeConversation(messages: Message[]): Promise<ConversationAnalysis> {
         try {
-            const response = await fetch(`${this.baseURL}/api/analyze-conversation`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, MESSAGE_RESPONSE_PATHS.ANALYZE_CONVERSATION), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -137,14 +166,19 @@ class MessageResponseAPI {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('대화 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('대화 분석 오류', err, {
+                component: 'messageResponseAPI',
+                action: 'analyzeConversation',
+                messageCount: messages.length,
+            });
             return this.generateMockAnalysis(messages);
         }
     }
 
     async runSimulation(request: MessageResponseRequest): Promise<SimulationResult[]> {
         try {
-            const response = await fetch(`${this.baseURL}/api/simulate-response`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, MESSAGE_RESPONSE_PATHS.SIMULATE_RESPONSE), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -159,15 +193,25 @@ class MessageResponseAPI {
             const data = await response.json();
             return data.simulation_results || [];
         } catch (error) {
-            console.error('시뮬레이션 오류:', error);
+            const err = toError(error);
+            errorLogger.error('시뮬레이션 오류', err, {
+                component: 'messageResponseAPI',
+                action: 'runSimulation',
+                chatRoomId: request.chat_room_id,
+            });
             return this.generateMockSimulation(request);
         }
     }
 
-    async getMediaFiles(chatRoomId: string): Promise<any[]> {
+    async getMediaFiles(chatRoomId: string): Promise<Record<string, unknown>[]> {
         try {
             // 동기화 서버 (포트 8002)에서 미디어 파일 조회
-            const response = await fetch(`http://localhost:8002/api/media-files/${chatRoomId}`);
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseURL,
+                    `${MESSAGE_RESPONSE_PATHS.MEDIA_FILES_PREFIX}/${encodeURIComponent(chatRoomId)}`,
+                ),
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -176,15 +220,20 @@ class MessageResponseAPI {
             const data = await response.json();
             return data.media_files || [];
         } catch (error) {
-            console.error('미디어 파일 조회 오류:', error);
+            const err = toError(error);
+            errorLogger.error('미디어 파일 조회 오류', err, {
+                component: 'messageResponseAPI',
+                action: 'getMediaFiles',
+                chatRoomId,
+            });
             return [];
         }
     }
 
-    async manualSync(): Promise<any> {
+    async manualSync(): Promise<Record<string, unknown>> {
         try {
             // 동기화 서버 (포트 8002)에서 수동 동기화 실행
-            const response = await fetch('http://localhost:8002/api/sync', {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, MESSAGE_RESPONSE_PATHS.SYNC), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -198,15 +247,19 @@ class MessageResponseAPI {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('수동 동기화 오류:', error);
+            const err = toError(error);
+            errorLogger.error('수동 동기화 오류', err, {
+                component: 'messageResponseAPI',
+                action: 'manualSync',
+            });
             return { success: false, error: '동기화 실패' };
         }
     }
 
-    async getSyncStatus(): Promise<any> {
+    async getSyncStatus(): Promise<Record<string, unknown>> {
         try {
             // 동기화 서버 (포트 8002)에서 동기화 상태 조회
-            const response = await fetch('http://localhost:8002/api/sync-status');
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, MESSAGE_RESPONSE_PATHS.SYNC_STATUS));
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -215,15 +268,19 @@ class MessageResponseAPI {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('동기화 상태 조회 오류:', error);
+            const err = toError(error);
+            errorLogger.error('동기화 상태 조회 오류', err, {
+                component: 'messageResponseAPI',
+                action: 'getSyncStatus',
+            });
             return { success: false, error: '상태 조회 실패' };
         }
     }
 
     async getChatRooms(): Promise<ChatRoom[]> {
         try {
-            // 동기화 서버 (포트 8002)에서 채팅방 목록 조회
-            const response = await fetch('http://localhost:8002/api/chat-rooms');
+            // 동기화 서버 (포트 8002)에서 대화방 목록 조회
+            const response = await fetch(joinApiHealthCheckUrl(this.baseURL, CHAT_ROOMS_PATH));
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -232,15 +289,24 @@ class MessageResponseAPI {
             const data = await response.json();
             return data.chat_rooms || [];
         } catch (error) {
-            console.error('채팅방 목록 조회 오류:', error);
+            const err = toError(error);
+            errorLogger.error('대화방 목록 조회 오류', err, {
+                component: 'messageResponseAPI',
+                action: 'getChatRooms',
+            });
             return this.getMockChatRooms();
         }
     }
 
     async getChatMessages(chatRoomId: string): Promise<Message[]> {
         try {
-            // 동기화 서버 (포트 8002)에서 채팅 메시지 조회
-            const response = await fetch(`http://localhost:8002/api/chat-messages/${chatRoomId}`);
+            // 동기화 서버 (포트 8002)에서 대화 메시지 조회
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseURL,
+                    `${CHAT_MESSAGES_PATH}/${encodeURIComponent(chatRoomId)}`,
+                ),
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -249,7 +315,12 @@ class MessageResponseAPI {
             const data = await response.json();
             return data.messages || [];
         } catch (error) {
-            console.error('채팅 메시지 조회 오류:', error);
+            const err = toError(error);
+            errorLogger.error('대화 메시지 조회 오류', err, {
+                component: 'messageResponseAPI',
+                action: 'getChatMessages',
+                chatRoomId,
+            });
             return this.getMockMessages(chatRoomId);
         }
     }
@@ -324,12 +395,12 @@ class MessageResponseAPI {
         };
     }
 
-    // 모의 채팅방 데이터
+    // 모의 대화방 데이터
     private getMockChatRooms(): ChatRoom[] {
         return [
             {
                 id: 'room-1',
-                name: '개포우성7차 조합원 대화방',
+                name: '데모 조합원 대화방',
                 messageCount: 1247,
                 lastActivity: '2024-01-15 14:30',
                 isActive: true,
@@ -363,7 +434,7 @@ class MessageResponseAPI {
     }
 
     // 모의 메시지 데이터
-    private getMockMessages(chatRoomId: string): Message[] {
+    private getMockMessages(_chatRoomId: string): Message[] {
         const baseMessages = [
             {
                 id: 'msg-1',
@@ -522,4 +593,6 @@ class MessageResponseAPI {
     }
 }
 
-export default new MessageResponseAPI(); 
+const messageResponseAPI = new MessageResponseAPI();
+export default messageResponseAPI;
+export { MessageResponseAPI }; 

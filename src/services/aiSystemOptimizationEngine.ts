@@ -66,14 +66,14 @@ export interface AutoOptimizationAction {
     type: 'resource_allocation' | 'cache_optimization' | 'query_optimization' | 'security_patch' | 'ui_improvement';
     description: string;
     target: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     estimatedImpact: number;
     riskLevel: 'low' | 'medium' | 'high';
     executionTime: number;
     status: 'pending' | 'running' | 'completed' | 'failed';
     startedAt?: Date;
     completedAt?: Date;
-    results?: Record<string, any>;
+    results?: Record<string, unknown>;
 }
 
 export class AISystemOptimizationEngine {
@@ -86,7 +86,7 @@ export class AISystemOptimizationEngine {
     // 시스템 메트릭 수집
     collectSystemMetrics(projects: Project[], chats: Chat[], messages: Message[]): SystemMetrics {
         const totalProjects = projects.length;
-        const totalChats = chats.length;
+        const _totalChats = chats.length;
         const totalMessages = messages.length;
         const activeProjects = projects.filter(p => p.status === 'active').length;
         const recentActivity = messages.filter(m =>
@@ -360,7 +360,7 @@ export class AISystemOptimizationEngine {
     }
 
     // 예측 분석 생성
-    generatePredictiveAnalysis(metrics: SystemMetrics, healthScore: SystemHealthScore): PredictiveAnalysis[] {
+    generatePredictiveAnalysis(metrics: SystemMetrics, _healthScore: SystemHealthScore): PredictiveAnalysis[] {
         const analyses: PredictiveAnalysis[] = [];
 
         // 리소스 사용량 예측
@@ -465,7 +465,7 @@ export class AISystemOptimizationEngine {
                     optimizationId: action.id,
                     beforeMetrics: this.getCurrentMetricsSnapshot(),
                     afterMetrics: this.simulateImprovedMetrics(action),
-                    improvement: action.results.performanceImprovement || 0,
+                    improvement: Number((action.results as Record<string, unknown>)?.performanceImprovement ?? 0) || 0,
                     userSatisfaction: this.calculateUserSatisfaction(action),
                     learningInsights: this.generateLearningInsights(action),
                     appliedAt: action.completedAt || new Date()
@@ -477,7 +477,7 @@ export class AISystemOptimizationEngine {
         }
     }
 
-    private getCurrentMetricsSnapshot(): any {
+    private getCurrentMetricsSnapshot(): Record<string, unknown> {
         // 현재 시스템 메트릭 스냅샷 반환
         return {
             timestamp: new Date(),
@@ -488,9 +488,9 @@ export class AISystemOptimizationEngine {
         };
     }
 
-    private simulateImprovedMetrics(action: AutoOptimizationAction): any {
+    private simulateImprovedMetrics(action: AutoOptimizationAction): Record<string, unknown> {
         // 최적화 후 개선된 메트릭 시뮬레이션
-        const improvement = action.results?.performanceImprovement || 0;
+        const improvement = Number((action.results as Record<string, unknown>)?.performanceImprovement ?? 0) || 0;
         return {
             timestamp: new Date(),
             cpuUsage: Math.max(0, Math.random() * 100 - improvement * 10),
@@ -502,7 +502,7 @@ export class AISystemOptimizationEngine {
 
     private calculateUserSatisfaction(action: AutoOptimizationAction): number {
         // 사용자 만족도 계산 (0-1)
-        const improvement = action.results?.performanceImprovement || 0;
+        const improvement = Number((action.results as Record<string, unknown>)?.performanceImprovement ?? 0) || 0;
         return Math.min(1, 0.5 + improvement * 0.5);
     }
 
@@ -547,7 +547,7 @@ export class AISystemOptimizationEngine {
         }
     }
 
-    private getActionParameters(recommendation: OptimizationRecommendation): Record<string, any> {
+    private getActionParameters(recommendation: OptimizationRecommendation): Record<string, unknown> {
         switch (recommendation.category) {
             case 'performance':
                 return {
@@ -643,7 +643,7 @@ export class AISystemOptimizationEngine {
     }
 
     // 시스템 최적화 요약 리포트 생성
-    generateOptimizationReport(metrics: SystemMetrics, healthScore: SystemHealthScore): any {
+    generateOptimizationReport(metrics: SystemMetrics, healthScore: SystemHealthScore): Record<string, unknown> {
         const recommendations = this.generateOptimizationRecommendations(metrics, healthScore);
         const predictions = this.generatePredictiveAnalysis(metrics, healthScore);
 
@@ -706,27 +706,27 @@ export class AISystemOptimizationEngine {
     }
 
     // 적응형 학습 관련 메서드들
-    learnUserBehavior(projects: Project[], chats: Chat[], messages: Message[]): any {
+    learnUserBehavior(projects: Project[], chats: Chat[], messages: Message[]): unknown {
         return adaptiveLearningEngine.learnUserBehavior(projects, chats, messages);
     }
 
-    getLearningPatterns(): any {
+    getLearningPatterns(): unknown {
         return adaptiveLearningEngine.getLearningPatterns();
     }
 
-    getAdaptiveModels(): any {
+    getAdaptiveModels(): unknown {
         return adaptiveLearningEngine.getAdaptiveModels();
     }
 
-    getPredictiveInsights(): any {
+    getPredictiveInsights(): unknown {
         return adaptiveLearningEngine.getPredictiveInsights();
     }
 
-    retrainModels(): any {
+    retrainModels(): unknown {
         return adaptiveLearningEngine.retrainModels();
     }
 
-    generateLearningReport(): any {
+    generateLearningReport(): unknown {
         return adaptiveLearningEngine.generateLearningReport();
     }
 

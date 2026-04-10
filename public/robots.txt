@@ -1,4 +1,4 @@
-# CORBU AI - 통합 AI 채팅 시스템
+# CORBU AI - 통합 AI 대화 시스템
 # https://corbu-ai.com
 
 User-agent: *

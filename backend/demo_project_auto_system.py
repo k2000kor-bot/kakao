@@ -28,7 +28,7 @@ class ProjectAutoSystemDemo:
         self.classification_rules = {
             "project_types": {
                 "건설_재개발": {
-                    "keywords": ["재개발", "재건축", "정비", "철거", "신축", "개포우성"],
+                    "keywords": ["재개발", "재건축", "정비", "철거", "신축", "샘플 프로젝트"],
                     "auto_folders": ["설계도", "시공계획", "허가서", "현장사진", "회의록"]
                 },
                 "조합_운영": {
@@ -42,7 +42,7 @@ class ProjectAutoSystemDemo:
             },
             "file_categories": {
                 "document": {
-                    "extensions": [".pdf", ".docx", ".txt", ".hwp"],
+                    "extensions": [".pdf", ".docx", ".doc", ".txt", ".md", ".csv", ".hwp"],
                     "auto_actions": ["텍스트추출", "키워드분석", "카테고리분류"],
                     "folders": ["계약서", "제안서", "보고서", "검토서", "의견서"]
                 },
@@ -653,7 +653,7 @@ def main():
     print("-" * 40)
     
     project1 = demo.create_project_with_auto_classification(
-        "개포우성7차 재개발 프로젝트",
+        "샘플 프로젝트 재개발 프로젝트",
         "재개발 조합 시공사 선정 및 관리 프로젝트입니다. 공정한 경쟁과 투명한 절차가 중요합니다."
     )
     

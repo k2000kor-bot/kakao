@@ -1,4 +1,5 @@
 import { ProjectFile, KnowledgeBase, AILearningSession } from '../types/project';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface AIAnalysisResult {
   keywords: string[];
@@ -28,7 +29,7 @@ export interface RealTimeAnalysis {
   id: string;
   fileId: string;
   type: 'keyword' | 'sentiment' | 'entity' | 'topic' | 'summary';
-  result: any;
+  result: unknown;
   confidence: number;
   timestamp: string;
 }
@@ -144,7 +145,13 @@ export class AILearningService {
         accuracy
       };
     } catch (error) {
-      console.error('AI 파일 분석 오류:', error);
+      const err = toError(error);
+      errorLogger.error('AI 파일 분석 오류', err, {
+        component: 'aiLearningService',
+        action: 'analyzeFile',
+        fileName: file.name,
+        fileType: file.type,
+      });
       return {
         keywords: [],
         summary: `파일 "${file.name}" 분석 중 오류가 발생했습니다.`,
@@ -199,7 +206,7 @@ export class AILearningService {
     return Math.min(accuracy, 0.95); // 최대 0.95로 제한
   }
 
-  private async readFileContent(file: ProjectFile): Promise<string> {
+  private async readFileContent(_file: ProjectFile): Promise<string> {
     // 실제 구현에서는 파일 내용을 읽어옴
     // 여기서는 시뮬레이션된 내용 반환
     const sampleContents = [
@@ -287,7 +294,7 @@ export class AILearningService {
     return Array.from(new Set(keywords)).slice(0, 20);
   }
 
-  private generateSummary(content: string): string {
+  private generateSummary(_content: string): string {
     const summaries = [
       "프로젝트 진행 상황을 종합적으로 분석한 결과, 주요 이슈들과 해결 방안을 도출했습니다.",
       "팀 협업 및 커뮤니케이션 개선을 위한 구체적인 방안을 제시했습니다.",
@@ -299,12 +306,12 @@ export class AILearningService {
     return summaries[Math.floor(Math.random() * summaries.length)];
   }
 
-  private analyzeSentiment(content: string): 'positive' | 'negative' | 'neutral' {
+  private analyzeSentiment(_content: string): 'positive' | 'negative' | 'neutral' {
     const sentiments: Array<'positive' | 'negative' | 'neutral'> = ['positive', 'negative', 'neutral'];
     return sentiments[Math.floor(Math.random() * sentiments.length)];
   }
 
-  private extractEntities(content: string): string[] {
+  private extractEntities(_content: string): string[] {
     const entities = [
       '김철수', 'ABC기업', '서울시', '2024년 3월', '1억원'
     ];
@@ -312,7 +319,7 @@ export class AILearningService {
     return entities.slice(0, Math.floor(Math.random() * 3) + 1);
   }
 
-  private identifyTopics(content: string): string[] {
+  private identifyTopics(_content: string): string[] {
     const topics = [
       '프로젝트 관리', '팀 협업', '기술 개발', '사용자 경험', '시장 분석'
     ];
@@ -320,7 +327,7 @@ export class AILearningService {
     return topics.slice(0, Math.floor(Math.random() * 3) + 1);
   }
 
-  private generateRecommendationsFromContent(content: string): string[] {
+  private generateRecommendationsFromContent(_content: string): string[] {
     const recommendations = [
       "정기적인 팀 미팅을 통해 진행 상황을 공유하고 이슈를 조기에 해결하세요.",
       "프로젝트 관리 도구를 활용하여 작업 진행 상황을 시각화하고 추적하세요.",
@@ -381,8 +388,8 @@ export class AILearningService {
   }
 
   async generateRecommendations(projectId: string): Promise<string[]> {
-    const knowledge = this.getProjectKnowledge(projectId);
-    const sessions = this.getProjectLearningSessions(projectId);
+    const _knowledge = this.getProjectKnowledge(projectId);
+    const _sessions = this.getProjectLearningSessions(projectId);
 
     const recommendations = [
       "정기적인 지식 베이스 업데이트를 통해 최신 정보를 유지하세요.",
@@ -408,7 +415,7 @@ export class AILearningService {
     const completedSessions = sessions.filter(s => s.endTime !== undefined);
     const successRate = sessions.length > 0 ? (completedSessions.length / sessions.length) * 100 : 0;
     const averageConfidence = knowledge.length > 0
-      ? knowledge.reduce((sum, k) => sum + ((k as any).confidence || 0.8), 0) / knowledge.length
+      ? knowledge.reduce((sum, k) => sum + ((k as { confidence?: number }).confidence ?? 0.8), 0) / knowledge.length
       : 0;
 
     return {
@@ -429,7 +436,7 @@ export class AILearningService {
     const analysis: RealTimeAnalysis = {
       id: analysisId,
       fileId,
-      type: analysisType as any,
+      type: analysisType as 'sentiment' | 'summary' | 'topic' | 'keyword' | 'entity',
       result,
       confidence: Math.random() * 0.2 + 0.8, // 80-100% 신뢰도
       timestamp: new Date().toISOString()
@@ -443,7 +450,7 @@ export class AILearningService {
     return analysis;
   }
 
-  private async simulateRealTimeAnalysis(type: string): Promise<any> {
+  private async simulateRealTimeAnalysis(type: string): Promise<Record<string, unknown>> {
     const mockResults = {
       keyword: ['AI', '머신러닝', '데이터 분석', '자동화', '최적화'],
       sentiment: { positive: 0.7, neutral: 0.2, negative: 0.1 },
@@ -452,10 +459,11 @@ export class AILearningService {
       summary: '이 문서는 AI 기반 시스템의 개발 및 최적화에 대한 포괄적인 가이드를 제공합니다.'
     };
 
-    return mockResults[type as keyof typeof mockResults] || mockResults.keyword;
+    const raw = mockResults[type as keyof typeof mockResults] ?? mockResults.keyword;
+    return (typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? raw : { value: raw }) as Record<string, unknown>;
   }
 
-  async analyzePatterns(projectId: string): Promise<any> {
+  async analyzePatterns(projectId: string): Promise<Record<string, unknown>> {
     const sessions = this.getProjectLearningSessions(projectId);
     const knowledge = this.getProjectKnowledge(projectId);
 
@@ -475,7 +483,7 @@ export class AILearningService {
     };
   }
 
-  async getAdvancedAnalytics(projectId: string): Promise<any> {
+  async getAdvancedAnalytics(projectId: string): Promise<Record<string, unknown>> {
     const sessions = this.getProjectLearningSessions(projectId);
     const knowledge = this.getProjectKnowledge(projectId);
 

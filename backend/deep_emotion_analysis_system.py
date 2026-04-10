@@ -1419,6 +1419,7 @@ def create_emotion_analysis_app() -> FastAPI:
     return app
 
 if __name__ == "__main__":
+    import os
     import uvicorn
     
     # 로깅 설정
@@ -1428,10 +1429,10 @@ if __name__ == "__main__":
     )
     
     app = create_emotion_analysis_app()
-    
+    _p = int(os.environ.get("DEEP_EMOTION_ANALYSIS_SYSTEM_PORT", os.environ.get("PORT", "8004")))
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8004,
+        port=_p,
         log_level="info"
     ) 

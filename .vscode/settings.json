@@ -1,10 +1,14 @@
 {
-  "python.pythonPath": "./.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+  "python.pythonPath": "${workspaceFolder}/backend/.venv/bin/python",
   "python.terminal.activateEnvironment": true,
   "editor.formatOnSave": true,
   "files.exclude": {
     "**/__pycache__": true,
-    "**/*.pyc": true
+    "**/*.pyc": true,
+    "**/node_modules": true,
+    "**/build": true,
+    "**/backup": true
   },
   "C_Cpp_Runner.cCompilerPath": "clang",
   "C_Cpp_Runner.cppCompilerPath": "clang++",
@@ -63,5 +67,34 @@
   "C_Cpp_Runner.showCompilationTime": false,
   "C_Cpp_Runner.useLinkTimeOptimization": false,
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/build/**": true,
+    "**/backup/**": true,
+    "**/backups/**": true,
+    "**/corbu-ai/**": true,
+    "**/docs/reports/**": true,
+    "**/.git/**": true,
+    "**/frontend/node_modules/**": true,
+    "**/.pytest_cache/**": true,
+    "**/.ruff_cache/**": true,
+    "**/coverage/**": true,
+    "**/.venv/**": true,
+    "**/venv/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/build": true,
+    "**/backup": true,
+    "**/backups": true,
+    "**/corbu-ai": true,
+    "**/docs/reports": true,
+    "**/frontend/node_modules": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true,
+    "**/coverage": true,
+    "**/.venv": true,
+    "**/venv": true
+  }
 }

@@ -1,10 +1,11 @@
 // 더미 서비스 - 비활성화된 서비스 대체용
-export default {
+const realTimeAIAlertSystem = {
     start: () => { },
     stop: () => { },
-    sendAlert: (type: string, message: string) => { },
-    createAlert: (alert: any) => { },
-    createSecurityAlert: (title: string, message: string, priority: string, metadata?: any) => { },
-    createSystemAlert: (title: string, message: string, severity: string, metadata?: any) => { },
+    sendAlert: (_type: string, _message: string) => { },
+    createAlert: (_alert: Record<string, unknown>) => { },
+    createSecurityAlert: (_title: string, _message: string, _priority: string, _metadata?: Record<string, unknown>) => { },
+    createSystemAlert: (_title: string, _message: string, _severity: string, _metadata?: Record<string, unknown>) => { },
     getAlerts: () => []
 };
+export default realTimeAIAlertSystem;

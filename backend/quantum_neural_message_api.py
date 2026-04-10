@@ -616,12 +616,12 @@ async def debug_system_info():
 
 if __name__ == "__main__":
     import uvicorn
-    
+    _p = int(os.environ.get("QUANTUM_NEURAL_MESSAGE_API_PORT", os.environ.get("PORT", "8010")))
     logger.info("🌟 양자-신경망 메시지 생성 API v8.0 시작")
     uvicorn.run(
         "quantum_neural_message_api:app",
         host="0.0.0.0",
-        port=8010,
+        port=_p,
         log_level="info",
         reload=False
     ) 

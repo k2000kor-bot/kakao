@@ -5,6 +5,18 @@
 
 import { errorHandler } from '../utils/errorHandler';
 import { errorLogger } from '../utils/errorLogger';
+import {
+    API_BASE_URL,
+    API_FORM_FIELD_FILE,
+    API_PERSISTENT_SESSION_ARCHIVE_SEGMENT,
+    API_PERSISTENT_SESSION_FILES_SEGMENT,
+    API_PERSISTENT_SESSION_MESSAGES_SEGMENT,
+    API_PERSISTENT_SESSION_STATS_SEGMENT,
+    API_PERSISTENT_SESSION_UPLOAD_SEGMENT,
+    API_PERSISTENT_SESSIONS_LIST_QUERY_LIMIT_100,
+    API_PERSISTENT_SESSIONS_PATH,
+    joinApiHealthCheckUrl,
+} from '../config/api';
 
 export interface Project {
     id: string;
@@ -79,7 +91,7 @@ class ChatGPTProjectService {
     private baseUrl: string;
 
     constructor() {
-        this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+        this.baseUrl = API_BASE_URL;
     }
 
     public static getInstance(): ChatGPTProjectService {
@@ -97,7 +109,7 @@ class ChatGPTProjectService {
         description?: string;
     }): Promise<Project> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, `${API_PERSISTENT_SESSIONS_PATH}`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -139,7 +151,12 @@ class ChatGPTProjectService {
     async getProjects(): Promise<Project[]> {
         const result = await errorHandler.safeApiCall(
             async () => {
-                const response = await fetch(`${this.baseUrl}/api/persistent-sessions?limit=100`);
+                const response = await fetch(
+                    joinApiHealthCheckUrl(
+                        this.baseUrl,
+                        `${API_PERSISTENT_SESSIONS_PATH}?${API_PERSISTENT_SESSIONS_LIST_QUERY_LIMIT_100}`,
+                    ),
+                );
 
                 if (!response.ok) {
                     throw new Error(`프로젝트 목록 조회 실패: ${response.statusText}`);
@@ -184,7 +201,7 @@ class ChatGPTProjectService {
     // 세션 관리
     async createSession(projectId: string, title: string): Promise<ProjectSession> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, `${API_PERSISTENT_SESSIONS_PATH}`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -224,7 +241,12 @@ class ChatGPTProjectService {
 
     async getProjectSessions(projectId: string): Promise<ProjectSession[]> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions?limit=100`);
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}?${API_PERSISTENT_SESSIONS_LIST_QUERY_LIMIT_100}`,
+                ),
+            );
 
             if (!response.ok) {
                 throw new Error(`세션 목록 조회 실패: ${response.statusText}`);
@@ -253,20 +275,26 @@ class ChatGPTProjectService {
     // 메시지 관리
     async sendMessage(sessionId: string, content: string, role: 'user' | 'assistant' = 'user'): Promise<ChatMessage> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}${API_PERSISTENT_SESSION_MESSAGES_SEGMENT}`,
+                ),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        role: role,
+                        sender: role,
+                        metadata: {
+                            timestamp: new Date().toISOString()
+                        }
+                    }),
                 },
-                body: JSON.stringify({
-                    content: content,
-                    role: role,
-                    sender: role,
-                    metadata: {
-                        timestamp: new Date().toISOString()
-                    }
-                })
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`메시지 전송 실패: ${response.statusText}`);
@@ -290,7 +318,12 @@ class ChatGPTProjectService {
 
     async getSessionMessages(sessionId: string): Promise<ChatMessage[]> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}/messages?limit=100`);
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}${API_PERSISTENT_SESSION_MESSAGES_SEGMENT}?${API_PERSISTENT_SESSIONS_LIST_QUERY_LIMIT_100}`,
+                ),
+            );
 
             if (!response.ok) {
                 throw new Error(`메시지 목록 조회 실패: ${response.statusText}`);
@@ -359,12 +392,18 @@ class ChatGPTProjectService {
     async uploadFile(sessionId: string, file: File): Promise<ProjectFile> {
         try {
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append(API_FORM_FIELD_FILE, file);
 
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}/upload`, {
-                method: 'POST',
-                body: formData
-            });
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}${API_PERSISTENT_SESSION_UPLOAD_SEGMENT}`,
+                ),
+                {
+                    method: 'POST',
+                    body: formData
+                },
+            );
 
             if (!response.ok) {
                 throw new Error(`파일 업로드 실패: ${response.statusText}`);
@@ -394,12 +433,18 @@ class ChatGPTProjectService {
     async getFileCount(sessionId: string): Promise<number> {
         try {
             // 방법 1: 세션 정보에서 파일 수 가져오기
-            const sessionResponse = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
+            const sessionResponse = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}`,
+                ),
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                 },
-            });
+            );
 
             if (sessionResponse.ok) {
                 const session = await sessionResponse.json();
@@ -415,12 +460,18 @@ class ChatGPTProjectService {
 
             // 방법 2: 파일 목록 API 호출 시도
             try {
-                const filesResponse = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}/files`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
+                const filesResponse = await fetch(
+                    joinApiHealthCheckUrl(
+                        this.baseUrl,
+                        `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}${API_PERSISTENT_SESSION_FILES_SEGMENT}`,
+                    ),
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
                     },
-                });
+                );
 
                 if (filesResponse.ok) {
                     const files = await filesResponse.json();
@@ -476,9 +527,15 @@ class ChatGPTProjectService {
     // 세션 관리
     async archiveSession(sessionId: string): Promise<boolean> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}/archive`, {
-                method: 'POST'
-            });
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}${API_PERSISTENT_SESSION_ARCHIVE_SEGMENT}`,
+                ),
+                {
+                    method: 'POST'
+                },
+            );
 
             return response.ok;
         } catch (error) {
@@ -489,9 +546,15 @@ class ChatGPTProjectService {
 
     async deleteSession(sessionId: string): Promise<boolean> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${sessionId}`, {
-                method: 'DELETE'
-            });
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(sessionId)}`,
+                ),
+                {
+                    method: 'DELETE'
+                },
+            );
 
             return response.ok;
         } catch (error) {
@@ -508,21 +571,27 @@ class ChatGPTProjectService {
         memoryType?: 'default' | 'project_exclusive';
     }): Promise<Project | null> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${projectId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(projectId)}`,
+                ),
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: updates.name,
+                        description: updates.description,
+                        metadata: {
+                            category: updates.category,
+                            memoryType: updates.memoryType,
+                            type: 'project'
+                        }
+                    })
                 },
-                body: JSON.stringify({
-                    title: updates.name,
-                    description: updates.description,
-                    metadata: {
-                        category: updates.category,
-                        memoryType: updates.memoryType,
-                        type: 'project'
-                    }
-                })
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`프로젝트 업데이트 실패: ${response.statusText}`);
@@ -560,9 +629,15 @@ class ChatGPTProjectService {
     // 프로젝트 삭제
     async deleteProject(projectId: string): Promise<boolean> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${projectId}`, {
-                method: 'DELETE'
-            });
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(projectId)}`,
+                ),
+                {
+                    method: 'DELETE'
+                },
+            );
 
             return response.ok;
         } catch (error) {
@@ -575,9 +650,15 @@ class ChatGPTProjectService {
     // 프로젝트 보관
     async archiveProject(projectId: string): Promise<boolean> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/${projectId}/archive`, {
-                method: 'POST'
-            });
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}/${encodeURIComponent(projectId)}${API_PERSISTENT_SESSION_ARCHIVE_SEGMENT}`,
+                ),
+                {
+                    method: 'POST'
+                },
+            );
 
             return response.ok;
         } catch (error) {
@@ -596,7 +677,12 @@ class ChatGPTProjectService {
         averageMessagesPerSession: number;
     }> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/persistent-sessions/stats`);
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_PERSISTENT_SESSIONS_PATH}${API_PERSISTENT_SESSION_STATS_SEGMENT}`,
+                ),
+            );
 
             if (!response.ok) {
                 throw new Error(`통계 조회 실패: ${response.statusText}`);

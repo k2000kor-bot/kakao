@@ -5,6 +5,7 @@ WebSocket 서버 - 실시간 통신 지원
 
 import asyncio
 import json
+import os
 import logging
 from datetime import datetime
 from typing import Dict, List, Set
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 초기화
 app = FastAPI(
-    title="CORBU AI WebSocket Server",
+    title="CORBU.AI WebSocket Server",
     description="실시간 통신을 위한 WebSocket 서버",
     version="1.0.0"
 )
@@ -157,11 +158,12 @@ async def health_check():
 
 # 메인 실행
 if __name__ == "__main__":
+    _p = int(os.environ.get("WEBSOCKET_SERVER_PORT", os.environ.get("PORT", "8002")))
     logger.info("🚀 WebSocket 서버 시작 중...")
     uvicorn.run(
         "websocket_server:app",
         host="0.0.0.0",
-        port=8002,
+        port=_p,
         reload=False,
         log_level="info"
     )

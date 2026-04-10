@@ -8,7 +8,7 @@
 
 ## 📋 개요
 
-`UniversalChatInput`은 다양한 프로젝트에서 재사용할 수 있는 범용적인 채팅 입력 컴포넌트입니다. 홈에 있는 입력창의 모든 기능을 포함하며, 테마, 크기, 기능을 커스터마이징할 수 있습니다.
+`UniversalChatInput`은 다양한 프로젝트에서 재사용할 수 있는 범용적인 대화 입력 컴포넌트입니다. 홈에 있는 입력창의 모든 기능을 포함하며, 테마, 크기, 기능을 커스터마이징할 수 있습니다.
 
 ### 🌟 주요 특징
 
@@ -75,7 +75,7 @@ const ChatApp: React.FC = () => {
         ))}
       </div>
 
-      {/* 범용 채팅 입력창 */}
+      {/* 범용 대화 입력창 */}
       <UniversalChatInput
         onSendMessage={handleSendMessage}
         onFileUpload={handleFileUpload}
@@ -345,7 +345,7 @@ const ChatApp: React.FC = () => {
 ```tsx
 <UniversalChatInput
   onSendMessage={handleSendMessage}
-  aria-label="채팅 메시지 입력"
+  aria-label="대화 메시지 입력"
   aria-describedby="chat-input-help"
 />
 ```
@@ -476,7 +476,7 @@ const ChatApp: React.FC = () => {
 
 ## 🎯 사용 시나리오
 
-### 1. 일반 채팅 앱
+### 1. 일반 대화 앱
 ```tsx
 <UniversalChatInput
   onSendMessage={handleSendMessage}
@@ -486,7 +486,7 @@ const ChatApp: React.FC = () => {
 />
 ```
 
-### 2. 고급 AI 채팅
+### 2. 고급 AI 대화
 ```tsx
 <UniversalChatInput
   onSendMessage={handleSendMessage}
@@ -502,7 +502,7 @@ const ChatApp: React.FC = () => {
 />
 ```
 
-### 3. 미니멀 채팅
+### 3. 미니멀 대화
 ```tsx
 <UniversalChatInput
   onSendMessage={handleSendMessage}

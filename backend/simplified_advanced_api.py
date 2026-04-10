@@ -10,6 +10,8 @@ Features:
 - Performance analytics
 """
 
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import json
@@ -1190,4 +1192,10 @@ def _estimate_optimization_success(strategies: List[Dict[str, Any]]) -> float:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)  # 다른 포트 사용 
+
+    _sap = int(
+        os.environ.get(
+            "SIMPLIFIED_ADVANCED_API_PORT", os.environ.get("PORT", "8001")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_sap)

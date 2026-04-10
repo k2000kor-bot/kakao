@@ -60,9 +60,9 @@ npm start
 ## 🌐 접속 주소
 
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:5001
-- **API 문서**: http://localhost:5001/docs
-- **ReDoc**: http://localhost:5001/redoc
+- **백엔드 API**: http://localhost:5002
+- **API 문서**: http://localhost:5002/api/docs
+- **ReDoc**: http://localhost:5002/api/redoc
 
 ---
 
@@ -78,7 +78,7 @@ npm start
 
 ## 🎯 주요 기능 사용법
 
-### 1. ChatGPT 스타일 채팅
+### 1. ChatGPT 스타일 대화
 - 메시지 입력 후 Enter 또는 전송 버튼 클릭
 - 마크다운 형식 자동 렌더링
 - 메시지 복사 기능
@@ -110,7 +110,7 @@ npm start
 
 ## 🎉 완료!
 
-**CORBU AI 시스템이 완전히 준비되었습니다!**
+**CORBU.AI 시스템이 완전히 준비되었습니다!**
 
 이제 `./start_all.sh`를 실행하여 시스템을 시작할 수 있습니다.
 

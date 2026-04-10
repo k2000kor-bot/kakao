@@ -4,6 +4,7 @@
 양자 컴퓨팅 개념을 적용한 최고급 AI 메시지 분석 및 생성 시스템
 """
 
+import os
 import json
 import random
 import time
@@ -673,11 +674,12 @@ async def test_endpoint():
 
 
 if __name__ == "__main__":
+    _p = int(os.environ.get("QUANTUM_AI_SYSTEM_PORT", os.environ.get("PORT", "8004")))
     print("🚀 양자 AI 시스템 시작 중...")
     uvicorn.run(
         "quantum_ai_system:app",
         host="0.0.0.0",
-        port=8004,
+        port=_p,
         reload=False,
         log_level="info"
     ) 

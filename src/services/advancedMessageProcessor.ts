@@ -29,7 +29,7 @@ export interface Task {
   estimatedTime: number;
   dependencies: string[];
   status: 'pending' | 'in-progress' | 'completed' | 'failed';
-  result?: any;
+  result?: unknown;
 }
 
 class AdvancedMessageProcessor {
@@ -141,8 +141,8 @@ class AdvancedMessageProcessor {
     const alternatives = this.analyzeAlternatives(message);
 
     return {
-      type: detectedType as any,
-      complexity: detectedComplexity as any,
+      type: detectedType as 'analysis' | 'research' | 'writing' | 'review' | 'coding' | 'planning' | 'design' | 'synthesis',
+      complexity: detectedComplexity as 'basic' | 'intermediate' | 'advanced' | 'expert',
       topics: uniqueKeywords,
       requirements: requirements,
       constraints: constraints,
@@ -232,7 +232,7 @@ class AdvancedMessageProcessor {
   }
 
   // 권장사항 생성
-  private async generateRecommendations(context: MessageContext, tasks: Task[]): Promise<string[]> {
+  private async generateRecommendations(context: MessageContext, _tasks: Task[]): Promise<string[]> {
     const recommendations: string[] = [];
 
     // 복잡도별 권장사항
@@ -279,7 +279,7 @@ class AdvancedMessageProcessor {
   }
 
   // 다음 단계 제안
-  private async suggestNextSteps(context: MessageContext, tasks: Task[]): Promise<string[]> {
+  private async suggestNextSteps(context: MessageContext, _tasks: Task[]): Promise<string[]> {
     const nextSteps: string[] = [];
 
     // 우선순위별 다음 단계

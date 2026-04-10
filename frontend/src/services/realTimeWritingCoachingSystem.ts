@@ -1,7 +1,10 @@
 /**
- * CORBU AI 실시간 글쓰기 코칭 시스템
+ * CORBU.AI 실시간 글쓰기 코칭 시스템
  * 사용자의 글쓰기 과정을 실시간으로 분석하고 개선 가이드를 제공하는 고도화된 시스템
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface WritingSession {
     sessionId: string;
@@ -83,7 +86,7 @@ export interface CoachingInteraction {
     context: {
         triggerEvent: string;
         textPosition: number;
-        relevantMetrics: any;
+        relevantMetrics: Record<string, unknown>;
     };
 }
 
@@ -126,6 +129,87 @@ export interface CoachingStrategy {
     };
 }
 
+// Internal types for method signatures and returns
+export interface UserProfile {
+    skillLevel: number;
+    preferredStyle: string;
+    writingHistory: unknown[];
+    strengths: string[];
+    improvementAreas: string[];
+    personalityTraits: string[];
+    learningPreferences: string[];
+    [key: string]: unknown;
+}
+
+export interface TextChanges {
+    addedWords: number;
+    deletedChars: number;
+    addedChars: number;
+    changeType: string;
+    changeLocation: number;
+    revisionRatio: number;
+}
+
+export interface QualityAnalysis {
+    clarity: number;
+    coherence: number;
+    engagement: number;
+    persuasiveness: number;
+    structuralCompleteness?: number;
+    goalAlignment?: number;
+    overallScore?: number;
+    goalAchievement?: number;
+    qualityBreakdown?: Record<string, number>;
+}
+
+export interface BlockAnalysisResult {
+    type: 'content' | 'structure' | 'style' | 'motivation' | 'technical';
+    severity: number;
+    likelyCauses: string[];
+    confidence: number;
+}
+
+export interface ResolutionStrategyItem {
+    strategy: string;
+    description: string;
+    steps: string[];
+    expectedEffectiveness: number;
+    timeEstimate: string;
+}
+
+export interface SessionSummaryData {
+    duration: number;
+    finalWordCount: number;
+    goalAchievement: number;
+    qualityAssessment: QualityAnalysis;
+    keyMilestones: string[];
+}
+
+export interface LearningInsightsData {
+    strengthsIdentified: string[];
+    improvementAreas: string[];
+    progressMade: string[];
+    futureRecommendations: string[];
+}
+
+export interface CoachingEffectivenessData {
+    overallScore: number;
+    interventionAnalysis: {
+        acceptanceRate?: number;
+        mostEffective?: string;
+        leastEffective?: string;
+        [key: string]: unknown;
+    };
+    userEngagement: number;
+    adaptationSuccess: number;
+}
+
+export interface NextSessionRecommendationsData {
+    suggestedGoals: WritingGoal[];
+    focusAreas: string[];
+    strategyAdjustments: string[];
+}
+
 export interface WritingAssistance {
     realTimeSuggestions: {
         wordChoice: Array<{
@@ -163,10 +247,10 @@ export interface WritingAssistance {
 class RealTimeWritingCoachingSystem {
     private activeSessions: Map<string, WritingSession> = new Map();
     private coachingStrategies: Map<string, CoachingStrategy> = new Map();
-    private userProfiles: Map<string, any> = new Map();
-    private analyticsEngine: Map<string, any> = new Map();
-    private interventionRules: Map<string, any> = new Map();
-    private learningModels: Map<string, any> = new Map();
+    private userProfiles: Map<string, UserProfile | Record<string, unknown>> = new Map();
+    private analyticsEngine: Map<string, Record<string, unknown>> = new Map();
+    private interventionRules: Map<string, Record<string, unknown>> = new Map();
+    private learningModels: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializeCoachingStrategies();
@@ -189,7 +273,12 @@ class RealTimeWritingCoachingSystem {
         setupRecommendations: string[];
     }> {
         try {
-            console.log('✍️ 실시간 글쓰기 세션 시작...', { userId, goalType: writingGoal.type });
+            errorLogger.info('✍️ 실시간 글쓰기 세션 시작', {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'startWritingSession',
+                userId,
+                goalType: writingGoal.type,
+            });
 
             const sessionId = this.generateSessionId(userId);
 
@@ -241,7 +330,13 @@ class RealTimeWritingCoachingSystem {
             };
 
         } catch (error) {
-            console.error('❌ 글쓰기 세션 시작 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 글쓰기 세션 시작 실패', err, {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'startWritingSession',
+                userId,
+                goalType: writingGoal.type,
+            });
             throw new Error('글쓰기 세션 시작에 실패했습니다.');
         }
     }
@@ -270,10 +365,12 @@ class RealTimeWritingCoachingSystem {
                 throw new Error('Session not found');
             }
 
-            console.log('🔄 실시간 텍스트 분석...', {
+            errorLogger.info('🔄 실시간 텍스트 분석', {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'processRealTimeText',
                 sessionId,
                 textLength: newText.length,
-                inputType: inputMetadata.inputType
+                inputType: inputMetadata.inputType,
             });
 
             // 텍스트 변화 분석
@@ -332,7 +429,12 @@ class RealTimeWritingCoachingSystem {
             };
 
         } catch (error) {
-            console.error('❌ 실시간 텍스트 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 실시간 텍스트 처리 실패', err, {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'processRealTimeText',
+                sessionId,
+            });
             throw new Error('실시간 텍스트 처리에 실패했습니다.');
         }
     }
@@ -371,7 +473,12 @@ class RealTimeWritingCoachingSystem {
                 throw new Error('Session not found');
             }
 
-            console.log('🚧 글쓰기 블록 감지 및 분석...', { sessionId, pauseDuration: blockIndicators.pauseDuration });
+            errorLogger.info('🚧 글쓰기 블록 감지 및 분석', {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'detectAndResolveWritingBlock',
+                sessionId,
+                pauseDuration: blockIndicators.pauseDuration,
+            });
 
             // 블록 유형 분석
             const blockAnalysis = await this.analyzeWritingBlock(session, blockIndicators);
@@ -403,7 +510,12 @@ class RealTimeWritingCoachingSystem {
             };
 
         } catch (error) {
-            console.error('❌ 글쓰기 블록 해결 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 글쓰기 블록 해결 실패', err, {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'detectAndResolveWritingBlock',
+                sessionId,
+            });
             throw new Error('글쓰기 블록 해결에 실패했습니다.');
         }
     }
@@ -417,7 +529,7 @@ class RealTimeWritingCoachingSystem {
             acceptanceRate: number;
             improvementRate: number;
             userSatisfaction: number;
-            efficiencyMetrics: any;
+            efficiencyMetrics: Record<string, unknown>;
         },
         userFeedback?: {
             satisfactionLevel: number;
@@ -429,7 +541,7 @@ class RealTimeWritingCoachingSystem {
         updatedStrategy: CoachingStrategy;
         adaptationReasons: string[];
         expectedImprovements: string[];
-        personalizations: any;
+        personalizations: CoachingStrategy['personalizations'];
     }> {
         try {
             const session = this.activeSessions.get(sessionId);
@@ -437,7 +549,12 @@ class RealTimeWritingCoachingSystem {
                 throw new Error('Session not found');
             }
 
-            console.log('🔄 코칭 전략 적응...', { sessionId, acceptanceRate: performanceData.acceptanceRate });
+            errorLogger.info('🔄 코칭 전략 적응', {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'adaptCoachingStrategy',
+                sessionId,
+                acceptanceRate: performanceData.acceptanceRate,
+            });
 
             // 현재 전략 효과성 분석
             const strategyEffectiveness = await this.analyzeStrategyEffectiveness(
@@ -489,7 +606,12 @@ class RealTimeWritingCoachingSystem {
             };
 
         } catch (error) {
-            console.error('❌ 코칭 전략 적응 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 코칭 전략 적응 실패', err, {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'adaptCoachingStrategy',
+                sessionId,
+            });
             throw new Error('코칭 전략 적응에 실패했습니다.');
         }
     }
@@ -512,7 +634,7 @@ class RealTimeWritingCoachingSystem {
             duration: number;
             finalWordCount: number;
             goalAchievement: number;
-            qualityAssessment: any;
+            qualityAssessment: QualityAnalysis;
             keyMilestones: string[];
         };
         learningInsights: {
@@ -523,7 +645,7 @@ class RealTimeWritingCoachingSystem {
         };
         coachingEffectiveness: {
             overallScore: number;
-            interventionAnalysis: any;
+            interventionAnalysis: CoachingEffectivenessData['interventionAnalysis'];
             userEngagement: number;
             adaptationSuccess: number;
         };
@@ -539,7 +661,12 @@ class RealTimeWritingCoachingSystem {
                 throw new Error('Session not found');
             }
 
-            console.log('✅ 글쓰기 세션 완료 분석...', { sessionId, finalLength: finalText.length });
+            errorLogger.info('✅ 글쓰기 세션 완료 분석', {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'completeWritingSession',
+                sessionId,
+                finalLength: finalText.length,
+            });
 
             // 최종 텍스트 품질 분석
             const finalQualityAnalysis = await this.analyzeFinalQuality(
@@ -596,7 +723,12 @@ class RealTimeWritingCoachingSystem {
             };
 
         } catch (error) {
-            console.error('❌ 글쓰기 세션 완료 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 글쓰기 세션 완료 처리 실패', err, {
+                component: 'realTimeWritingCoachingSystem',
+                action: 'completeWritingSession',
+                sessionId,
+            });
             throw new Error('글쓰기 세션 완료 처리에 실패했습니다.');
         }
     }
@@ -765,15 +897,15 @@ class RealTimeWritingCoachingSystem {
         return `session_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    private async analyzeUserProfile(userId: string): Promise<any> {
+    private async analyzeUserProfile(userId: string): Promise<UserProfile> {
         const existingProfile = this.userProfiles.get(userId);
 
-        if (existingProfile) {
-            return existingProfile;
+        if (existingProfile && 'skillLevel' in existingProfile) {
+            return existingProfile as UserProfile;
         }
 
         // 새 사용자 기본 프로필
-        const defaultProfile = {
+        const defaultProfile: UserProfile = {
             skillLevel: 0.5,
             preferredStyle: 'adaptive',
             writingHistory: [],
@@ -801,7 +933,7 @@ class RealTimeWritingCoachingSystem {
     }
 
     private async developCoachingStrategy(
-        userProfile: any,
+        userProfile: UserProfile,
         writingGoal: WritingGoal,
         contextualFactors: ContextualFactors
     ): Promise<CoachingStrategy> {
@@ -867,7 +999,7 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private async generateInitialGuidance(writingGoal: WritingGoal, strategy: CoachingStrategy): Promise<string[]> {
+    private async generateInitialGuidance(writingGoal: WritingGoal, _strategy: CoachingStrategy): Promise<string[]> {
         const guidance = [];
 
         guidance.push(`${writingGoal.type} 글쓰기를 시작합니다. 목표 길이는 ${writingGoal.desiredLength.target}단어입니다.`);
@@ -907,15 +1039,19 @@ class RealTimeWritingCoachingSystem {
 
     private startRealTimeMonitoring(sessionId: string): void {
         // 실시간 모니터링 로직 (간략화)
-        console.log(`🔍 실시간 모니터링 시작: ${sessionId}`);
+        errorLogger.info(`🔍 실시간 모니터링 시작: ${sessionId}`, {
+            component: 'realTimeWritingCoachingSystem',
+            action: 'startRealTimeMonitoring',
+            sessionId,
+        });
     }
 
     private async analyzeTextChanges(
         previousText: string,
         newText: string,
-        metadata: any
-    ): Promise<any> {
-        const changes = {
+        metadata: { inputType: string; cursorPosition: number; [key: string]: unknown }
+    ): Promise<TextChanges> {
+        const changes: TextChanges = {
             addedWords: this.countWords(newText) - this.countWords(previousText),
             deletedChars: Math.max(0, previousText.length - newText.length),
             addedChars: Math.max(0, newText.length - previousText.length),
@@ -927,7 +1063,7 @@ class RealTimeWritingCoachingSystem {
         return changes;
     }
 
-    private async updateRealTimeMetrics(session: WritingSession, changes: any, metadata: any): Promise<void> {
+    private async updateRealTimeMetrics(session: WritingSession, changes: TextChanges, metadata: Record<string, unknown>): Promise<void> {
         const now = new Date();
 
         // 쓰기 속도 계산
@@ -964,8 +1100,8 @@ class RealTimeWritingCoachingSystem {
     private async analyzeCurrentQuality(
         text: string,
         writingGoal: WritingGoal,
-        progress: WritingProgress
-    ): Promise<any> {
+        _progress: WritingProgress
+    ): Promise<QualityAnalysis> {
         return {
             clarity: this.calculateClarity(text),
             coherence: this.calculateCoherence(text),
@@ -980,7 +1116,7 @@ class RealTimeWritingCoachingSystem {
     private async updateProgress(
         session: WritingSession,
         newText: string,
-        qualityAnalysis: any
+        qualityAnalysis: QualityAnalysis
     ): Promise<WritingProgress> {
         const wordCount = this.countWords(newText);
         const paragraphCount = this.countParagraphs(newText);
@@ -1003,9 +1139,9 @@ class RealTimeWritingCoachingSystem {
 
     private async generateCoachingFeedback(
         session: WritingSession,
-        changes: any,
-        qualityAnalysis: any,
-        metadata: any
+        changes: TextChanges,
+        qualityAnalysis: QualityAnalysis,
+        metadata: Record<string, unknown>
     ): Promise<CoachingInteraction[]> {
         const feedback: CoachingInteraction[] = [];
         const strategy = this.coachingStrategies.get(session.sessionId);
@@ -1021,7 +1157,8 @@ class RealTimeWritingCoachingSystem {
         }
 
         // 주기적 피드백 확인
-        if (this.shouldProvidePeriodicFeedback(session, metadata.timestamp)) {
+        const metaTs = metadata.timestamp instanceof Date ? metadata.timestamp : new Date(metadata.timestamp as string | number);
+        if (this.shouldProvidePeriodicFeedback(session, metaTs)) {
             const periodicFeedback = await this.generatePeriodicFeedback(session, qualityAnalysis);
             feedback.push(...periodicFeedback);
         }
@@ -1032,8 +1169,8 @@ class RealTimeWritingCoachingSystem {
     private async generateWritingAssistance(
         text: string,
         writingGoal: WritingGoal,
-        qualityAnalysis: any,
-        metrics: RealTimeMetrics
+        _qualityAnalysis: QualityAnalysis,
+        _metrics: RealTimeMetrics
     ): Promise<WritingAssistance> {
         return {
             realTimeSuggestions: {
@@ -1076,7 +1213,7 @@ class RealTimeWritingCoachingSystem {
         return 'tired';
     }
 
-    private async analyzePreviousSessions(userId: string): Promise<any> {
+    private async analyzePreviousSessions(_userId: string): Promise<ContextualFactors['previousSessions']> {
         return {
             count: 0,
             averageQuality: 0.5,
@@ -1085,7 +1222,7 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private async getUserPreferences(userId: string): Promise<any> {
+    private async getUserPreferences(_userId: string): Promise<ContextualFactors['userPreferences']> {
         return {
             coachingStyle: 'gentle',
             feedbackTiming: 'periodic',
@@ -1093,7 +1230,7 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private selectBaseStrategy(userProfile: any, writingGoal: WritingGoal, contextualFactors: ContextualFactors): CoachingStrategy {
+    private selectBaseStrategy(userProfile: UserProfile, writingGoal: WritingGoal, _contextualFactors: ContextualFactors): CoachingStrategy {
         if (userProfile.skillLevel < 0.4) {
             return this.coachingStrategies.get('supportive')!;
         } else if (writingGoal.type === 'academic') {
@@ -1103,28 +1240,28 @@ class RealTimeWritingCoachingSystem {
         }
     }
 
-    private adaptLanguageStyle(userProfile: any, contextualFactors: ContextualFactors): string {
+    private adaptLanguageStyle(userProfile: UserProfile, contextualFactors: ContextualFactors): string {
         const coachingStyle = contextualFactors.userPreferences.coachingStyle;
         if (coachingStyle === 'gentle' || coachingStyle === 'direct') return 'formal';
         if (userProfile.personalityTraits?.includes('casual')) return 'casual';
         return 'conversational';
     }
 
-    private calculateEncouragementLevel(userProfile: any, contextualFactors: ContextualFactors): number {
+    private calculateEncouragementLevel(userProfile: UserProfile, contextualFactors: ContextualFactors): number {
         let level = 0.5;
         if (userProfile.skillLevel < 0.4) level += 0.3;
         if (contextualFactors.userMood === 'frustrated') level += 0.2;
         return Math.min(level, 1.0);
     }
 
-    private calculateTechnicalDetail(userProfile: any, writingGoal: WritingGoal): number {
+    private calculateTechnicalDetail(userProfile: UserProfile, writingGoal: WritingGoal): number {
         let detail = 0.5;
         if (userProfile.skillLevel > 0.7) detail += 0.2;
         if (writingGoal.type === 'academic') detail += 0.3;
         return Math.min(detail, 1.0);
     }
 
-    private calculateExampleUsage(userProfile: any, writingGoal: WritingGoal): number {
+    private calculateExampleUsage(userProfile: UserProfile, writingGoal: WritingGoal): number {
         let usage = 0.6;
         if (userProfile.learningPreferences?.includes('visual_examples')) usage += 0.2;
         if (writingGoal.type === 'creative') usage += 0.1;
@@ -1132,11 +1269,11 @@ class RealTimeWritingCoachingSystem {
     }
 
     private countWords(text: string): number {
-        return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+        return coerceTrimmedString(text, '').split(/\s+/).filter((word) => word.length > 0).length;
     }
 
     private countParagraphs(text: string): number {
-        return text.split(/\n\s*\n/).filter(para => para.trim().length > 0).length;
+        return text.split(/\n\s*\n/).filter((para) => coerceTrimmedString(para, '').length > 0).length;
     }
 
     private calculateRevisionRatio(oldText: string, newText: string): number {
@@ -1147,13 +1284,13 @@ class RealTimeWritingCoachingSystem {
         return totalLength > 0 ? totalChanges / totalLength : 0;
     }
 
-    private inferRevisionReason(changes: any, metadata: any): string {
+    private inferRevisionReason(changes: TextChanges, _metadata: Record<string, unknown>): string {
         if (changes.deletedChars > changes.addedChars * 2) return 'substantial_deletion';
         if (changes.addedChars > changes.deletedChars * 2) return 'content_expansion';
         return 'refinement';
     }
 
-    private async updateFlowState(metrics: RealTimeMetrics, changes: any, metadata: any): Promise<any> {
+    private async updateFlowState(metrics: RealTimeMetrics, changes: TextChanges, metadata: Record<string, unknown>): Promise<RealTimeMetrics['flowState']> {
         let state = metrics.flowState.currentState;
 
         if (changes.addedWords > 10 && changes.revisionRatio < 0.2) {
@@ -1171,7 +1308,7 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private calculateFlowConfidence(state: string, changes: any): number {
+    private calculateFlowConfidence(state: string, _changes: TextChanges): number {
         const stateConfidence = {
             focused: 0.9,
             struggling: 0.3,
@@ -1182,7 +1319,7 @@ class RealTimeWritingCoachingSystem {
         return stateConfidence[state as keyof typeof stateConfidence] || 0.5;
     }
 
-    private async calculateCognitiveLoad(text: string, metrics: RealTimeMetrics, goal: WritingGoal): Promise<any> {
+    private async calculateCognitiveLoad(text: string, metrics: RealTimeMetrics, _goal: WritingGoal): Promise<RealTimeMetrics['cognitiveLoad']> {
         let load = 0.5;
 
         // 텍스트 복잡성에 따른 부하
@@ -1207,7 +1344,7 @@ class RealTimeWritingCoachingSystem {
     }
 
     private calculateAverageWordsPerSentence(text: string): number {
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 0);
         const words = this.countWords(text);
         return sentences.length > 0 ? words / sentences.length : 0;
     }
@@ -1284,15 +1421,15 @@ class RealTimeWritingCoachingSystem {
     }
 
     // 기타 분석 메서드들은 간략화하여 구현...
-    private calculateStructuralCompleteness(text: string, goal: WritingGoal): number {
+    private calculateStructuralCompleteness(_text: string, _goal: WritingGoal): number {
         return 0.7; // 간략화
     }
 
-    private calculateGoalAlignment(text: string, goal: WritingGoal): number {
+    private calculateGoalAlignment(_text: string, _goal: WritingGoal): number {
         return 0.8; // 간략화
     }
 
-    private calculateStructuralProgress(text: string, goal: WritingGoal): any {
+    private calculateStructuralProgress(text: string, goal: WritingGoal): WritingProgress['structuralProgress'] {
         return {
             introduction: text.length > 100 ? 1.0 : text.length / 100,
             body: Math.min(1.0, (this.countWords(text) - 50) / (goal.desiredLength.target - 100)),
@@ -1300,7 +1437,7 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private updateMilestones(currentMilestones: any, wordCount: number, paragraphCount: number): any {
+    private updateMilestones(currentMilestones: WritingProgress['milestones'], wordCount: number, paragraphCount: number): WritingProgress['milestones'] {
         const achieved = [...currentMilestones.achieved];
         const upcoming = [...currentMilestones.upcoming];
 
@@ -1322,11 +1459,11 @@ class RealTimeWritingCoachingSystem {
     }
 
     // 피드백 생성 메서드들 (간략화)
-    private shouldProvideImmediateFeedback(changes: any, quality: any, strategy?: CoachingStrategy): boolean {
+    private shouldProvideImmediateFeedback(changes: TextChanges, quality: QualityAnalysis, _strategy?: CoachingStrategy): boolean {
         return changes.revisionRatio > 0.5 || quality.clarity < 0.5;
     }
 
-    private async generateImmediateFeedback(session: WritingSession, changes: any, quality: any): Promise<CoachingInteraction[]> {
+    private async generateImmediateFeedback(session: WritingSession, changes: TextChanges, quality: QualityAnalysis): Promise<CoachingInteraction[]> {
         const feedback: CoachingInteraction[] = [];
 
         if (quality.clarity < 0.5) {
@@ -1357,7 +1494,7 @@ class RealTimeWritingCoachingSystem {
         return timeSinceLastFeedback > 300000; // 5분
     }
 
-    private async generatePeriodicFeedback(session: WritingSession, quality: any): Promise<CoachingInteraction[]> {
+    private async generatePeriodicFeedback(session: WritingSession, _quality: QualityAnalysis): Promise<CoachingInteraction[]> {
         return [{
             timestamp: new Date(),
             type: 'encouragement',
@@ -1375,47 +1512,47 @@ class RealTimeWritingCoachingSystem {
     }
 
     // 글쓰기 지원 생성 메서드들 (간략화)
-    private async generateWordChoiceSuggestions(text: string): Promise<any[]> {
+    private async generateWordChoiceSuggestions(_text: string): Promise<WritingAssistance['realTimeSuggestions']['wordChoice']> {
         return []; // 간략화
     }
 
-    private async generateStructuralSuggestions(text: string, goal: WritingGoal): Promise<any[]> {
+    private async generateStructuralSuggestions(_text: string, _goal: WritingGoal): Promise<WritingAssistance['realTimeSuggestions']['structuralImprovements']> {
         return []; // 간략화
     }
 
-    private async generateStylisticSuggestions(text: string, goal: WritingGoal): Promise<any[]> {
+    private async generateStylisticSuggestions(_text: string, _goal: WritingGoal): Promise<WritingAssistance['realTimeSuggestions']['stylistic']> {
         return []; // 간략화
     }
 
-    private async identifyMissingElements(text: string, goal: WritingGoal): Promise<string[]> {
+    private async identifyMissingElements(_text: string, _goal: WritingGoal): Promise<string[]> {
         return []; // 간략화
     }
 
-    private async identifyStrengtheningOpportunities(text: string): Promise<string[]> {
+    private async identifyStrengtheningOpportunities(_text: string): Promise<string[]> {
         return []; // 간략화
     }
 
-    private async identifyRedundancies(text: string): Promise<string[]> {
+    private async identifyRedundancies(_text: string): Promise<string[]> {
         return []; // 간략화
     }
 
-    private async identifyFactualCheckNeeds(text: string): Promise<string[]> {
+    private async identifyFactualCheckNeeds(_text: string): Promise<string[]> {
         return []; // 간략화
     }
 
-    private async generateTransitionSuggestions(text: string): Promise<string[]> {
+    private async generateTransitionSuggestions(_text: string): Promise<string[]> {
         return []; // 간략화
     }
 
-    private async suggestParagraphReorganization(text: string): Promise<string[]> {
+    private async suggestParagraphReorganization(_text: string): Promise<string[]> {
         return []; // 간략화
     }
 
-    private async suggestLogicalImprovements(text: string): Promise<string[]> {
+    private async suggestLogicalImprovements(_text: string): Promise<string[]> {
         return []; // 간략화
     }
 
-    private async generateAdaptiveRecommendations(session: WritingSession, changes: any, quality: any): Promise<string[]> {
+    private async generateAdaptiveRecommendations(session: WritingSession, changes: TextChanges, quality: QualityAnalysis): Promise<string[]> {
         const recommendations = [];
 
         if (session.realTimeMetrics.writingVelocity < 20) {
@@ -1430,7 +1567,7 @@ class RealTimeWritingCoachingSystem {
     }
 
     // 글쓰기 블록 해결 관련 메서드들 (간략화 - 다음 요청에서 구현)
-    private async analyzeWritingBlock(session: WritingSession, indicators: any): Promise<any> {
+    private async analyzeWritingBlock(_session: WritingSession, _indicators: Record<string, unknown>): Promise<BlockAnalysisResult> {
         return {
             type: 'content' as const,
             severity: 0.7,
@@ -1439,7 +1576,7 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private async generateResolutionStrategies(blockAnalysis: any, goal: WritingGoal, context: ContextualFactors): Promise<any[]> {
+    private async generateResolutionStrategies(_blockAnalysis: BlockAnalysisResult, _goal: WritingGoal, _context: ContextualFactors): Promise<ResolutionStrategyItem[]> {
         return [{
             strategy: 'freewriting',
             description: '5분간 자유롭게 써보세요',
@@ -1449,56 +1586,72 @@ class RealTimeWritingCoachingSystem {
         }];
     }
 
-    private async generateImmediateActions(blockAnalysis: any, session: WritingSession): Promise<string[]> {
+    private async generateImmediateActions(_blockAnalysis: BlockAnalysisResult, _session: WritingSession): Promise<string[]> {
         return ['깊게 숨을 들이쉬고 내쉬세요', '현재까지 쓴 내용을 다시 읽어보세요'];
     }
 
-    private async generateEncouragement(blockAnalysis: any, coachingStyle: string): Promise<string> {
+    private async generateEncouragement(_blockAnalysis: BlockAnalysisResult, _coachingStyle: string): Promise<string> {
         return '글쓰기 막힘은 자연스러운 현상입니다. 잠시 쉬어가도 괜찮아요!';
     }
 
-    private async recordBlockResolutionAttempt(session: WritingSession, analysis: any, strategies: any[]): Promise<void> {
+    private async recordBlockResolutionAttempt(_session: WritingSession, _analysis: BlockAnalysisResult, _strategies: ResolutionStrategyItem[]): Promise<void> {
         // 블록 해결 시도 기록 로직
     }
 
     // 기타 필요한 메서드들은 간략화하거나 추후 구현...
-    private async analyzeStrategyEffectiveness(session: WritingSession, performance: any): Promise<any> {
+    private async analyzeStrategyEffectiveness(_session: WritingSession, _performance: { acceptanceRate: number; improvementRate: number; userSatisfaction: number; efficiencyMetrics: Record<string, unknown> }): Promise<{ effectiveness: number; areas_for_improvement: string[] }> {
         return { effectiveness: 0.7, areas_for_improvement: ['timing', 'personalization'] };
     }
 
-    private async analyzeFeedback(userFeedback: any, session: WritingSession): Promise<any> {
+    private async analyzeFeedback(userFeedback: { satisfactionLevel: number; preferredInterventions?: string[]; unwantedInterventions?: string[]; generalComments?: string }, _session: WritingSession): Promise<{ satisfaction: number; improvements_needed: string[] }> {
         return { satisfaction: userFeedback.satisfactionLevel, improvements_needed: [] };
     }
 
-    private async assessAdaptationNeeds(effectiveness: any, feedback: any, session: WritingSession): Promise<any> {
+    private async assessAdaptationNeeds(
+        _effectiveness: { effectiveness: number; areas_for_improvement: string[] },
+        _feedback: { satisfaction: number; improvements_needed: string[] } | null,
+        _session: WritingSession
+    ): Promise<{ needs_adaptation: boolean; priority_areas: string[] }> {
         return { needs_adaptation: true, priority_areas: ['encouragement_level'] };
     }
 
-    private async generateUpdatedStrategy(session: WritingSession, needs: any, performance: any): Promise<CoachingStrategy> {
+    private async generateUpdatedStrategy(
+        session: WritingSession,
+        _needs: { needs_adaptation: boolean; priority_areas: string[] },
+        _performance: { acceptanceRate: number; improvementRate: number; userSatisfaction: number; efficiencyMetrics: Record<string, unknown> }
+    ): Promise<CoachingStrategy> {
         const currentStrategy = this.coachingStrategies.get(session.sessionId) || this.coachingStrategies.get('adaptive')!;
         return { ...currentStrategy }; // 간단한 복사
     }
 
-    private async updatePersonalizations(userId: string, strategy: CoachingStrategy, feedback?: any): Promise<any> {
-        return { updated_preferences: strategy.personalizations };
+    private async updatePersonalizations(
+        _userId: string,
+        strategy: CoachingStrategy,
+        _feedback?: { satisfactionLevel: number; preferredInterventions?: string[]; unwantedInterventions?: string[]; generalComments?: string }
+    ): Promise<CoachingStrategy['personalizations']> {
+        return strategy.personalizations;
     }
 
-    private async generateAdaptationReasons(needs: any): Promise<string[]> {
+    private async generateAdaptationReasons(_needs: { needs_adaptation: boolean; priority_areas: string[] }): Promise<string[]> {
         return ['사용자 만족도 향상을 위해'];
     }
 
-    private async generateExpectedImprovements(strategy: CoachingStrategy): Promise<string[]> {
+    private async generateExpectedImprovements(_strategy: CoachingStrategy): Promise<string[]> {
         return ['더 나은 사용자 경험', '향상된 글쓰기 품질'];
     }
 
-    private async updateUserProfile(userId: string, updates: any): Promise<void> {
+    private async updateUserProfile(userId: string, updates: Record<string, unknown>): Promise<void> {
         const currentProfile = this.userProfiles.get(userId) || {};
         this.userProfiles.set(userId, { ...currentProfile, ...updates });
     }
 
     // 세션 완료 관련 메서드들도 간략화...
-    private async analyzeFinalQuality(text: string, goal: WritingGoal): Promise<any> {
+    private async analyzeFinalQuality(_text: string, _goal: WritingGoal): Promise<QualityAnalysis> {
         return {
+            clarity: 0.8,
+            coherence: 0.85,
+            engagement: 0.75,
+            persuasiveness: 0.7,
             overallScore: 0.8,
             goalAchievement: 0.85,
             qualityBreakdown: {
@@ -1510,19 +1663,23 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private async generateSessionSummary(session: WritingSession, finalText: string, quality: any): Promise<any> {
+    private async generateSessionSummary(session: WritingSession, finalText: string, quality: QualityAnalysis): Promise<SessionSummaryData> {
         const duration = (new Date().getTime() - session.startTime.getTime()) / 60000; // 분
 
         return {
             duration,
             finalWordCount: this.countWords(finalText),
-            goalAchievement: quality.goalAchievement,
+            goalAchievement: quality.goalAchievement ?? 0,
             qualityAssessment: quality,
             keyMilestones: session.progress.milestones.achieved
         };
     }
 
-    private async extractLearningInsights(session: WritingSession, quality: any, selfAssessment?: any): Promise<any> {
+    private async extractLearningInsights(
+        _session: WritingSession,
+        _quality: QualityAnalysis,
+        _selfAssessment?: { satisfactionLevel?: number; perceivedDifficulty?: number; goalAchievement?: number; coachingEffectiveness?: number; additionalComments?: string }
+    ): Promise<LearningInsightsData> {
         return {
             strengthsIdentified: ['systematic_approach', 'good_structure'],
             improvementAreas: ['clarity', 'engagement'],
@@ -1531,7 +1688,10 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private async evaluateCoachingEffectiveness(session: WritingSession, selfAssessment?: any): Promise<any> {
+    private async evaluateCoachingEffectiveness(
+        session: WritingSession,
+        _selfAssessment?: { satisfactionLevel?: number; perceivedDifficulty?: number; goalAchievement?: number; coachingEffectiveness?: number; additionalComments?: string }
+    ): Promise<CoachingEffectivenessData> {
         const acceptedInterventions = session.coachingHistory.filter(c => c.acceptanceStatus === 'accepted').length;
         const totalInterventions = session.coachingHistory.length;
 
@@ -1547,7 +1707,11 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private async generateNextSessionRecommendations(session: WritingSession, insights: any, effectiveness: any): Promise<any> {
+    private async generateNextSessionRecommendations(
+        _session: WritingSession,
+        insights: LearningInsightsData,
+        _effectiveness: CoachingEffectivenessData
+    ): Promise<NextSessionRecommendationsData> {
         return {
             suggestedGoals: [{
                 type: 'professional' as const,
@@ -1562,8 +1726,13 @@ class RealTimeWritingCoachingSystem {
         };
     }
 
-    private async updateUserProfileWithSessionData(userId: string, summary: any, insights: any, effectiveness: any): Promise<void> {
-        const profile = this.userProfiles.get(userId) || {};
+    private async updateUserProfileWithSessionData(
+        userId: string,
+        summary: SessionSummaryData,
+        insights: LearningInsightsData,
+        effectiveness: CoachingEffectivenessData
+    ): Promise<void> {
+        const profile = (this.userProfiles.get(userId) || {}) as UserProfile & { writingHistory?: unknown[]; skillLevel?: number };
 
         profile.writingHistory = profile.writingHistory || [];
         profile.writingHistory.push({
@@ -1573,14 +1742,21 @@ class RealTimeWritingCoachingSystem {
             effectiveness
         });
 
-        profile.skillLevel = Math.min(1.0, profile.skillLevel + 0.1); // 점진적 향상
+        profile.skillLevel = Math.min(1.0, (profile.skillLevel ?? 0) + 0.1); // 점진적 향상
 
         this.userProfiles.set(userId, profile);
     }
 
-    private async updateLearningModels(session: WritingSession, summary: any, selfAssessment?: any): Promise<void> {
+    private async updateLearningModels(
+        _session: WritingSession,
+        _summary: SessionSummaryData,
+        _selfAssessment?: { satisfactionLevel?: number; perceivedDifficulty?: number; goalAchievement?: number; coachingEffectiveness?: number; additionalComments?: string }
+    ): Promise<void> {
         // 머신러닝 모델 업데이트 로직 (간략화)
-        console.log('📚 학습 모델 업데이트 완료');
+        errorLogger.info('📚 학습 모델 업데이트 완료', {
+            component: 'realTimeWritingCoachingSystem',
+            action: 'updateLearningModels',
+        });
     }
 }
 

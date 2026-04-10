@@ -74,7 +74,7 @@ class AdvancedConversationSummarizer:
     def __init__(self, analyzer: ChatConversationAnalyzer):
         self.analyzer = analyzer
         
-        # 실제 조합 채팅방 패턴 분석을 위한 확장된 키워드
+        # 실제 조합 대화방 패턴 분석을 위한 확장된 키워드
         self.issue_patterns = self._initialize_issue_patterns()
         self.role_indicators = self._initialize_role_indicators()
         self.stance_patterns = self._initialize_stance_patterns()
@@ -756,7 +756,7 @@ if __name__ == "__main__":
     sample_messages = [
         ChatMessage(
             message_id="msg_001",
-            chat_room="개포우성7차",
+            chat_room="demo_chat_room",
             sender="김한수",
             content="총회 실무 안내드립니다. 위임장, 회의비 신청서 등 파일 제공해드리고 출력 안내드리겠습니다. 총회 장소, 참석절차, 시간표 안내드립니다.",
             timestamp=datetime.now(),
@@ -766,7 +766,7 @@ if __name__ == "__main__":
         ),
         ChatMessage(
             message_id="msg_002",
-            chat_room="개포우성7차",
+            chat_room="demo_chat_room",
             sender="송미화",
             content="GS-파르나스 협약이 조합원 권리 침해 소지가 있다고 봅니다. 외부 위탁의 불투명성을 지적하고 싶습니다.",
             timestamp=datetime.now(),
@@ -776,7 +776,7 @@ if __name__ == "__main__":
         ),
         ChatMessage(
             message_id="msg_003",
-            chat_room="개포우성7차",
+            chat_room="demo_chat_room",
             sender="김혜경",
             content="외부 위탁 초기는 효율적일 수 있으며, 지나친 불안감은 경계해야 한다고 생각합니다. 본계약 이후에도 협상 가능하며 상생을 목표로 해야 합니다.",
             timestamp=datetime.now(),
@@ -800,7 +800,7 @@ if __name__ == "__main__":
     print(formatted_result)
     
     print("\n✅ 고도화된 대화 요약 시스템 구축 완료!")
-    print("   🎯 실제 조합 채팅방 패턴 분석 가능")
+    print("   🎯 실제 조합 대화방 패턴 분석 가능")
     print("   📊 개인별 역할 및 입장 자동 분류")
     print("   🗨️ 주제별 찬반 의견 체계적 정리")
     print("   📋 실무진/조합장/찬성파/반대파 구분")

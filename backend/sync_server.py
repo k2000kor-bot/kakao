@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 동기화 전용 서버
-채팅방 동기화와 미디어 파일 분류 기능만 포함
+대화방 동기화와 미디어 파일 분류 기능만 포함
 """
 
 import os
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # FastAPI 앱 생성
 app = FastAPI(
     title="동기화 서버",
-    description="채팅방 동기화 전용 API 서버",
+    description="대화방 동기화 전용 API 서버",
     version="1.0.0"
 )
 
@@ -42,7 +42,7 @@ def init_sync_database():
     conn = sqlite3.connect('sync_system.db')
     cursor = conn.cursor()
     
-    # 채팅방 테이블
+    # 대화방 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS chat_rooms (
             id TEXT PRIMARY KEY,
@@ -172,7 +172,7 @@ def classify_media_files(chat_room_path):
         'images': ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
         'videos': ['.mp4', '.avi', '.mov', '.mkv'],
         'audios': ['.mp3', '.wav', '.m4a'],
-        'documents': ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx']
+        'documents': ['.pdf', '.doc', '.docx', '.txt', '.md', '.csv', '.xls', '.xlsx']
     }
     
     for root, dirs, files in os.walk(media_path):
@@ -213,12 +213,12 @@ def classify_media_files(chat_room_path):
     
     return media_files
 
-# 채팅방 동기화
+# 대화방 동기화
 def sync_chat_rooms():
-    """채팅방 자동 동기화"""
+    """대화방 자동 동기화"""
     chat_rooms_path = 'chat_rooms'
     if not os.path.exists(chat_rooms_path):
-        logger.warning(f"채팅방 폴더가 없습니다: {chat_rooms_path}")
+        logger.warning(f"대화방 폴더가 없습니다: {chat_rooms_path}")
         return []
     
     conn = sqlite3.connect('sync_system.db')
@@ -231,10 +231,10 @@ def sync_chat_rooms():
         if not os.path.isdir(room_path):
             continue
         
-        # 채팅방 ID 생성
+        # 대화방 ID 생성
         room_id = room_folder
         
-        # 채팅 파일 찾기
+        # 대화 파일 찾기
         chat_files = []
         for file in os.listdir(room_path):
             if file.endswith('.txt'):
@@ -259,7 +259,7 @@ def sync_chat_rooms():
         existing_room = cursor.fetchone()
         
         if existing_room:
-            # 기존 채팅방 업데이트 확인
+            # 기존 대화방 업데이트 확인
             last_update = existing_room[3]
             if last_update and os.path.getmtime(latest_chat_file) <= datetime.fromisoformat(last_update).timestamp():
                 # 변경사항 없음
@@ -277,7 +277,7 @@ def sync_chat_rooms():
                 })
                 continue
         
-        # 새로운 채팅방 또는 업데이트
+        # 새로운 대화방 또는 업데이트
         messages, participants = parse_kakao_chat(latest_chat_file)
         
         # 미디어 파일 분류
@@ -287,7 +287,7 @@ def sync_chat_rooms():
         now = datetime.now().isoformat()
         
         if existing_room:
-            # 기존 채팅방 업데이트
+            # 기존 대화방 업데이트
             cursor.execute('''
                 UPDATE chat_rooms 
                 SET message_count = ?, last_activity = ?, updated_at = ?
@@ -303,7 +303,7 @@ def sync_chat_rooms():
                 VALUES (?, ?, ?, ?)
             ''', ('update', room_id, f'Updated {len(messages)} messages', now))
         else:
-            # 새로운 채팅방 추가
+            # 새로운 대화방 추가
             cursor.execute('''
                 INSERT INTO chat_rooms (id, name, message_count, last_activity, participants, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -342,7 +342,7 @@ def sync_chat_rooms():
             'participants': participants
         })
         
-        logger.info(f"채팅방 동기화 완료: {room_id} ({len(messages)}개 메시지, {len(media_files)}개 미디어)")
+        logger.info(f"대화방 동기화 완료: {room_id} ({len(messages)}개 메시지, {len(media_files)}개 미디어)")
     
     conn.commit()
     conn.close()
@@ -367,7 +367,7 @@ async def get_status():
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat(),
         "features": [
-            "채팅방 자동 동기화",
+            "대화방 자동 동기화",
             "미디어 파일 분류",
             "데이터베이스 관리",
             "동기화 로그"
@@ -376,7 +376,7 @@ async def get_status():
 
 @app.get("/api/chat-rooms")
 async def get_chat_rooms():
-    """채팅방 목록 조회"""
+    """대화방 목록 조회"""
     try:
         # 동기화 실행
         synced_rooms = sync_chat_rooms()
@@ -387,7 +387,7 @@ async def get_chat_rooms():
             "sync_time": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"채팅방 조회 오류: {e}")
+        logger.error(f"대화방 조회 오류: {e}")
         return {
             "success": False,
             "error": str(e),
@@ -396,7 +396,7 @@ async def get_chat_rooms():
 
 @app.get("/api/chat-messages/{chat_room_id}")
 async def get_chat_messages(chat_room_id: str):
-    """채팅 메시지 조회"""
+    """대화 메시지 조회"""
     try:
         conn = sqlite3.connect('sync_system.db')
         cursor = conn.cursor()
@@ -544,12 +544,13 @@ async def get_sync_status():
 
 # 서버 시작
 if __name__ == "__main__":
+    _sync = int(os.environ.get("SYNC_SERVER_PORT", os.environ.get("PORT", "8010")))
     print("🚀 동기화 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8002")
-    print("📖 API 문서: http://localhost:8002/docs")
+    print(f"📍 서버 주소: http://localhost:{_sync}")
+    print(f"📖 API 문서: http://localhost:{_sync}/docs")
     print("🎯 주요 엔드포인트:")
-    print("   GET /api/chat-rooms - 채팅방 목록")
+    print("   GET /api/chat-rooms - 대화방 목록")
     print("   GET /api/chat-messages/{id} - 메시지 조회")
     print("   GET /api/media-files/{id} - 미디어 파일 조회")
     print("   POST /api/sync - 수동 동기화")
@@ -563,7 +564,8 @@ if __name__ == "__main__":
         
         # 서버 시작
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8002, log_level="info")
+
+        uvicorn.run(app, host="0.0.0.0", port=_sync, log_level="info")
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

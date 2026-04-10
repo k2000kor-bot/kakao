@@ -121,7 +121,7 @@ class ChatRoomSelectionActivity : AppCompatActivity() {
                     val roomType = when(cursor.getInt(2)) {
                         1 -> "개인 대화"
                         2 -> "그룹 대화"
-                        3 -> "오픈 채팅"
+                        3 -> "오픈 대화"
                         else -> "기타"
                     }
                     

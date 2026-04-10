@@ -1,11 +1,14 @@
 """
-통합 채팅 API 테스트
+통합 대화 API 테스트
 unified_chat_api.py의 엔드포인트 테스트
 """
 
+import asyncio
+import json
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-import json
 
 # unified_chat_api에서 앱 임포트 시도
 try:
@@ -53,10 +56,10 @@ def _extract_text(data: dict) -> str:
 
 @pytest.mark.api
 class TestUnifiedChatAPI:
-    """통합 채팅 API 테스트"""
+    """통합 대화 API 테스트"""
 
     def test_chat_endpoint_basic(self):
-        """기본 채팅 엔드포인트 테스트"""
+        """기본 대화 엔드포인트 테스트"""
         payload = {"message": "안녕하세요", "quality": "enhanced"}
 
         for endpoint in CHAT_ENDPOINTS:
@@ -74,7 +77,7 @@ class TestUnifiedChatAPI:
             assert len(text) > 0
 
     def test_chat_endpoint_with_context(self):
-        """컨텍스트가 있는 채팅 엔드포인트 테스트"""
+        """컨텍스트가 있는 대화 엔드포인트 테스트"""
         payload = {
             "message": "테스트 메시지",
             "quality": "enhanced",
@@ -139,7 +142,7 @@ class TestUnifiedChatAPI:
 
 @pytest.mark.unit
 class TestUnifiedChatAPIStructure:
-    """통합 채팅 API 구조 테스트"""
+    """통합 대화 API 구조 테스트"""
 
     def test_router_instance(self):
         """라우터 인스턴스 확인"""
@@ -259,3 +262,174 @@ class TestCommentToneGeneration:
         assert len(lines) == 5
         # 질문형 비율이 높으면 ?가 어느 정도 포함되는지 확인
         assert any("?" in line for line in lines)
+
+    def test_pre_generation_pipeline_context_flow(self):
+        """사전 파이프라인(자료 수집·논리 구성·스타일) 컨텍스트가 적용된 흐름 검증"""
+        from api.unified_chat_api import generate_chat_response
+        import asyncio
+
+        ctx = {
+            "parsed_input": {
+                "question": "Python 가상환경 설정 방법",
+                "requirements": "venv 사용, 단계별 안내",
+                "intent_type": "question",
+            },
+            "response_style": "concise",
+            "perspective": "practical",
+            "conversation_history": [
+                {"role": "user", "content": "파이썬 개발 환경이 궁금해요"},
+                {"role": "assistant", "content": "Python 환경 설정에 대해 알려드릴게요."},
+            ],
+        }
+        out = asyncio.run(generate_chat_response("venv 만드는 법 알려줘", "enhanced", ctx))
+        assert isinstance(out, str), "응답은 문자열이어야 함"
+        assert len(out.strip()) >= 10, "파이프라인·폴백 경로를 통한 최소 응답 길이"
+
+    def test_innovative_writing_instruction_creative_perspective(self):
+        """perspective=creative 시 혁신 답변 품질 지시(창의 모드)가 파이프라인에 포함되는 흐름 검증"""
+        from api.unified_chat_api import generate_chat_response
+        import asyncio
+
+        ctx = {
+            "parsed_input": {"question": "아이디어 브레인스토밍", "intent_type": "question"},
+            "response_style": "balanced",
+            "perspective": "creative",
+            "conversation_history": [],
+        }
+        out = asyncio.run(
+            generate_chat_response("창의적 접근법 2가지 제안해줘", "enhanced", ctx)
+        )
+        assert isinstance(out, str), "응답은 문자열이어야 함"
+        assert len(out.strip()) >= 10, "creative+혁신 지시 경로를 통한 최소 응답"
+
+
+@pytest.mark.unit
+class TestDeepSeekLLMPathMock:
+    """DeepSeek/LLM 코드 경로 mock 단위 테스트 (5.3)"""
+
+    def test_generate_chat_response_uses_llm_path_when_mocked(self):
+        """intelligent_answer_generator.generate_answer를 mock 시 해당 응답이 반환되는지 검증"""
+        from api.unified_chat_api import generate_chat_response
+
+        mocked_text = "Mocked-LLM-response-DeepSeek-path"
+        with patch(
+            "api.intelligent_answer_generator.intelligent_answer_generator.generate_answer",
+            new_callable=AsyncMock,
+            return_value=mocked_text,
+        ):
+            out = asyncio.run(
+                generate_chat_response("테스트 질문", "enhanced", {})
+            )
+        assert isinstance(out, str), "응답은 문자열이어야 함"
+        assert mocked_text in out or out.strip() == mocked_text, (
+            "mock된 LLM 응답이 반환되어야 함"
+        )
+
+
+@pytest.mark.unit
+def test_ensure_original_message_and_adapt_defaults():
+    from api.unified_chat_api import (
+        _DEFAULT_ADAPT_ANSWER_TO_REQUEST,
+        _ensure_original_message_and_adapt_defaults,
+    )
+
+    ctx: dict = {}
+    _ensure_original_message_and_adapt_defaults(ctx, "  hello  ")
+    assert ctx.get("original_user_message") == "hello"
+    assert ctx.get("adapt_answer_to_request") == _DEFAULT_ADAPT_ANSWER_TO_REQUEST
+    # 이미 있으면 덮어쓰지 않음
+    ctx2 = {"original_user_message": "x", "adapt_answer_to_request": "custom"}
+    _ensure_original_message_and_adapt_defaults(ctx2, "y")
+    assert ctx2["original_user_message"] == "x"
+    assert ctx2["adapt_answer_to_request"] == "custom"
+
+    long_msg = "a" * 5000
+    ctx3: dict = {}
+    _ensure_original_message_and_adapt_defaults(ctx3, long_msg)
+    assert len(ctx3.get("original_user_message", "")) == 5000
+    over = "b" * 100_100
+    ctx4: dict = {}
+    _ensure_original_message_and_adapt_defaults(ctx4, over)
+    assert len(ctx4.get("original_user_message", "")) == 100_100
+
+
+@pytest.mark.unit
+def test_append_multi_request_items_to_research_seed():
+    from api.unified_chat_api import _append_multi_request_items_to_research_seed
+
+    assert _append_multi_request_items_to_research_seed("hello", None) == "hello"
+    out = _append_multi_request_items_to_research_seed(
+        "검색해줘",
+        {
+            "multi_request_mode": True,
+            "multi_request_items": ["A주제", "B주제"],
+        },
+    )
+    assert "검색해줘" in out
+    assert "다중 요청 항목" in out
+    assert "A주제" in out and "B주제" in out
+    # 이미 항목 블록이 있으면 중복 없음
+    once = _append_multi_request_items_to_research_seed(out, {"multi_request_mode": True, "multi_request_items": ["x"]})
+    assert once.count("[다중 요청 항목") == 1
+
+
+@pytest.mark.unit
+def test_compose_multi_request_instruction_builds_block():
+    """다중 요청 context → LLM용 _multi_request_instruction 블록"""
+    from api.unified_chat_api import _compose_multi_request_instruction
+
+    assert _compose_multi_request_instruction(None) is None
+    assert _compose_multi_request_instruction({}) is None
+    assert _compose_multi_request_instruction({"multi_request_mode": False}) is None
+    text = _compose_multi_request_instruction(
+        {
+            "multi_request_mode": True,
+            "multi_request_adaptation_instruction": "각 항목에 맞춰 답하세요.",
+            "multi_request_items": ["요약해줘", "비교해줘"],
+        }
+    )
+    assert text
+    assert "생성 전" in text or "시나리오" in text
+    assert "각 항목" in text
+    assert "요약해줘" in text
+    assert "비교해줘" in text
+
+
+@pytest.mark.unit
+def test_compose_multi_request_instruction_none_without_items_or_adapt():
+    """다중 모드만 켜고 항목·맞춤 지시가 없으면 블록을 만들지 않음"""
+    from api.unified_chat_api import _compose_multi_request_instruction
+
+    assert (
+        _compose_multi_request_instruction(
+            {"multi_request_mode": True, "multi_request_items": [], "multi_request_adaptation_instruction": ""}
+        )
+        is None
+    )
+    assert (
+        _compose_multi_request_instruction(
+            {
+                "multi_request_mode": True,
+                "multi_request_items": ["  ", ""],
+                "multi_request_adaptation_instruction": "  ",
+            }
+        )
+        is None
+    )
+
+
+@pytest.mark.unit
+def test_compose_multi_request_instruction_adapt_only_still_builds():
+    """맞춤 지시만 있어도 흐름 preamble + 지시로 블록 생성"""
+    from api.unified_chat_api import _compose_multi_request_instruction
+
+    t = _compose_multi_request_instruction(
+        {
+            "multi_request_mode": True,
+            "multi_request_adaptation_instruction": "형식은 Q&A로.",
+            "multi_request_items": [],
+        }
+    )
+    assert t
+    assert "형식은 Q&A로" in t
+    assert "시나리오" in t or "생성 전" in t

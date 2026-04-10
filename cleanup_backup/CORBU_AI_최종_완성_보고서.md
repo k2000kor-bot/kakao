@@ -18,7 +18,7 @@
 
 ### 2. ChatGPT 스타일 사용자 인터페이스
 
-- 직관적인 채팅 인터페이스
+- 직관적인 대화 인터페이스
 - 실시간 메시지 전송/수신
 - 프로젝트 관리 시스템
 - 모드 전환 (CORBU AI, ChatGPT, 대시보드)
@@ -37,11 +37,11 @@
 ```
 src/
 ├── components/
-│   ├── ChatGPTMode.tsx          # 메인 채팅 인터페이스
+│   ├── ChatGPTMode.tsx          # 메인 대화 인터페이스
 │   ├── Dashboard.tsx            # 분석 대시보드
 │   ├── AI/                      # AI 관련 컴포넌트
 │   ├── Analytics/               # 분석 컴포넌트
-│   ├── Chat/                    # 채팅 관련 컴포넌트
+│   ├── Chat/                    # 대화 관련 컴포넌트
 │   └── Layout/                  # 레이아웃 컴포넌트
 ├── services/
 │   ├── websocketService.ts      # WebSocket 통신
@@ -138,7 +138,7 @@ backend/
 ### 메인 화면
 
 - **모드 선택기**: CORBU AI, ChatGPT, 대시보드 전환
-- **채팅 인터페이스**: ChatGPT 스타일 메시지 교환
+- **대화 인터페이스**: ChatGPT 스타일 메시지 교환
 - **프로젝트 사이드바**: 프로젝트 관리 및 탐색
 - **실시간 상태**: 연결 상태 및 시스템 상태 표시
 

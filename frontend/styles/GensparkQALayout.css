@@ -1,0 +1,378 @@
+/**
+ * Genspark형 Q&A 레이아웃: 중앙 읽기 폭, 질문/답변 배지, 답변 본문(마크다운) 타이포
+ */
+.genspark-chat-column {
+  width: 100%;
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/* 메인 통합 대화(ChatGPTInterface): 메시지 스크롤 + 입력창 동일 읽기 폭 */
+.genspark-chat-messages-wrap {
+  width: 100%;
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.genspark-chat-input-wrap {
+  width: 100%;
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+/* UltimateChatGPTInterface: 컬럼+입력 래퍼 — Tailwind py-4(1rem) 기준 하단에 safe-area */
+.genspark-chat-column.genspark-chat-input-wrap {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.genspark-chat-column .message-content {
+  max-width: 100%;
+}
+
+.genspark-qa-role-row {
+  width: 100%;
+  display: flex;
+  margin-bottom: var(--spacing-xs, 6px);
+}
+
+.message.user .genspark-qa-role-row,
+.message.user-message .genspark-qa-role-row {
+  justify-content: flex-end;
+}
+
+.message.ai .genspark-qa-role-row,
+.message.assistant-message .genspark-qa-role-row {
+  justify-content: flex-start;
+}
+
+.genspark-qa-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 6px;
+  line-height: 1.2;
+}
+
+.genspark-qa-badge--question {
+  background: var(--accent-info-muted, rgba(59, 130, 246, 0.18));
+  color: var(--accent-info, #2563eb);
+  border: 1px solid var(--accent-info-muted, rgba(59, 130, 246, 0.35));
+}
+
+.genspark-qa-badge--answer {
+  background: var(--accent-success-muted, rgba(34, 197, 94, 0.14));
+  color: var(--accent-success, #15803d);
+  border: 1px solid var(--accent-success-muted, rgba(34, 197, 94, 0.3));
+}
+
+.dark-mode .genspark-qa-badge--question {
+  color: var(--accent-info-figma, #60a5fa);
+}
+
+.dark-mode .genspark-qa-badge--answer {
+  color: var(--accent-success, #4ade80);
+}
+
+/* 메인 대화(article) — 카드 느낌 보강 */
+article.message.genspark-qa-article {
+  padding: 2px 0;
+}
+
+article.message.genspark-qa-article .message-text {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Genspark형 말풍선: 큰 라운드 + 살짝 그림자 (본문 답변·질문) */
+article.message.genspark-qa-article.assistant-message
+  .message-text:not([data-generation-step="true"]):not(:has([data-generation-step="true"])) {
+  border-radius: 1rem;
+  border-bottom-left-radius: 0.35rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+}
+
+article.message.genspark-qa-article.user-message .message-text {
+  border-radius: 1rem;
+  border-bottom-right-radius: 0.35rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* 마크다운 답변 본문 */
+.genspark-md-body {
+  font-size: var(--font-size-sm, 14px);
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.genspark-md-body h1,
+.genspark-md-body h2,
+.genspark-md-body h3 {
+  margin: 1em 0 0.5em;
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1.35;
+}
+
+.genspark-md-body h1 { font-size: 1.25rem; }
+.genspark-md-body h2 { font-size: 1.1rem; }
+.genspark-md-body h3 { font-size: 1rem; }
+
+.genspark-md-body p {
+  margin: 0 0 0.75em;
+}
+
+.genspark-md-body p:last-child {
+  margin-bottom: 0;
+}
+
+.genspark-md-body ul,
+.genspark-md-body ol {
+  margin: 0 0 0.75em;
+  padding-left: 1.35em;
+}
+
+.genspark-md-body li {
+  margin-bottom: 0.25em;
+}
+
+.genspark-md-body pre {
+  margin: 0.75em 0;
+  padding: var(--spacing-md, 12px);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-tertiary, #f3f4f6);
+  border: 1px solid var(--border-color, #e5e7eb);
+  overflow-x: auto;
+  font-size: 0.85em;
+}
+
+.dark-mode .genspark-md-body pre {
+  background: var(--sidebar-dark-input-bg, rgba(0, 0, 0, 0.25));
+}
+
+.genspark-md-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.genspark-md-body p code,
+.genspark-md-body li code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-active, rgba(0, 0, 0, 0.06));
+}
+
+.genspark-md-body pre code {
+  padding: 0;
+  background: none;
+}
+
+.genspark-md-body blockquote {
+  margin: 0.75em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--accent-info-muted, rgba(59, 130, 246, 0.4));
+  color: var(--text-secondary, #6b7280);
+}
+
+.genspark-md-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  margin: 0.75em 0;
+}
+
+.genspark-md-body th,
+.genspark-md-body td {
+  border: 1px solid var(--border-color, #e5e7eb);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.genspark-md-body th {
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.genspark-md-body a {
+  color: var(--accent-info, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.genspark-md-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md, 8px);
+  margin: 0.5em 0;
+}
+
+/* /agents?id= 세션 상단 — Genspark 편집 링크 */
+.genspark-agent-route-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 16px;
+  margin: 0 auto;
+  max-width: 52rem;
+  width: 100%;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-secondary, #f9fafb);
+  font-size: 13px;
+  color: var(--text-secondary, #4b5563);
+}
+
+.genspark-agent-route-banner__title {
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+}
+
+.genspark-agent-route-banner__meta {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.genspark-agent-route-banner__link {
+  color: var(--accent-info, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+/* 젠스파이크형 “생성 중” 단계 (스트리밍·비스트리밍 플레이스홀더) */
+.genspark-generation-status {
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-secondary, #f9fafb);
+  color: var(--text-primary, #111827);
+  overflow: hidden;
+}
+
+.dark-mode .genspark-generation-status {
+  background: var(--sidebar-dark-input-bg, rgba(0, 0, 0, 0.2));
+  border-color: var(--sidebar-dark-border-strong, #374151);
+}
+
+.genspark-generation-status__headline {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-primary, #111827);
+}
+
+.genspark-generation-status__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: flex-start;
+}
+
+.genspark-generation-status__step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.genspark-generation-status__step--done {
+  color: var(--accent-success, #15803d);
+}
+
+.genspark-generation-status__step--active {
+  color: var(--text-primary, #111827);
+  font-weight: 600;
+}
+
+.genspark-generation-status__step--active .genspark-generation-status__dot {
+  background: var(--accent-info, #2563eb);
+  box-shadow: 0 0 0 3px var(--accent-info-muted, rgba(59, 130, 246, 0.25));
+  animation: genspark-gen-pulse 1.2s ease-in-out infinite;
+}
+
+.genspark-generation-status__step--done .genspark-generation-status__dot {
+  background: var(--accent-success, #22c55e);
+}
+
+.genspark-generation-status__step--pending .genspark-generation-status__dot {
+  background: var(--border-color, #d1d5db);
+}
+
+.genspark-generation-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.genspark-generation-status__retry {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.genspark-generation-status__pulse {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.06),
+    transparent
+  );
+  animation: genspark-gen-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes genspark-gen-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+@keyframes genspark-gen-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* 카드·말풍선 안에 넣을 때 이중 테두리·배경 완화 */
+.genspark-generation-status--embedded {
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  box-shadow: none;
+}
+
+.genspark-generation-status--embedded .genspark-generation-status__headline {
+  font-size: 12px;
+}
+
+.genspark-generation-status--embedded .genspark-generation-status__pulse {
+  display: none;
+}

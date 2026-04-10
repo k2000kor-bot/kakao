@@ -3,9 +3,11 @@
 간단한 테스트 서버
 """
 
+import os
+import sys
+
 from fastapi import FastAPI
 import uvicorn
-import sys
 
 def create_server(port):
     app = FastAPI(title=f"Test Server {port}")
@@ -21,7 +23,15 @@ def create_server(port):
     return app
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8006
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
+    else:
+        port = int(
+            os.environ.get(
+                "SIMPLE_TEST_SERVER_PORT",
+                os.environ.get("PORT", "8006"),
+            )
+        )
     app = create_server(port)
     print(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)

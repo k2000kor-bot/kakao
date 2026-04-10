@@ -81,7 +81,7 @@
 5. **`complete_server.py`** - 통합 서버 (모든 기능 연결)
 
 ### 프론트엔드 파일
-6. **`modern_chat_interface.html`** - 초고급 채팅 인터페이스
+6. **`modern_chat_interface.html`** - 초고급 대화 인터페이스
 7. **`install_ollama.sh`** - Ollama 자동 설치 스크립트
 
 ### 문서화 파일
@@ -127,7 +127,7 @@
 ### 1. 기본 사용
 ```bash
 # 서버 시작
-cd /Users/aD/kakao-frontend
+cd /path/to/kakao-frontend/kakao-frontend
 source venv/bin/activate
 python complete_server.py
 

@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # CORBU AI 개발 서비스
+  # CORBU.AI 개발 서비스
   corbu-ai-dev:
     build:
       context: .

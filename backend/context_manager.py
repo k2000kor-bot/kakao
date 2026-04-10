@@ -1,7 +1,9 @@
 """
-CORBU AI 대화 컨텍스트 관리 시스템
+CORBU.AI 대화 컨텍스트 관리 시스템
 사용자의 대화 맥락을 기억하여 더 정확한 응답을 제공합니다.
 """
+
+import os
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -14,7 +16,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="CORBU AI Context Manager", version="1.0.0")
+app = FastAPI(title="CORBU.AI Context Manager", version="1.0.0")
 
 class ConversationContext(BaseModel):
     session_id: str
@@ -129,7 +131,7 @@ def generate_context_summary(context: ConversationContext) -> str:
             "scalability": "확장성 관리",
             "advanced_ai": "고급 AI",
             "long_term_planning": "장기 계획",
-            "general_chat": "일반 채팅"
+            "general_chat": "일반 대화"
         }
         
         return f"최근 {intent_labels.get(most_common_intent, most_common_intent)} 관련 대화 진행 중"
@@ -253,7 +255,7 @@ async def health_check():
 async def root():
     """루트 엔드포인트"""
     return {
-        "message": "CORBU AI Context Manager",
+        "message": "CORBU.AI Context Manager",
         "version": "1.0.0",
         "description": "대화 컨텍스트를 관리하여 더 정확한 의도 분류를 제공합니다.",
         "endpoints": {
@@ -268,4 +270,8 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8003)
+
+    _p = int(
+        os.environ.get("CONTEXT_MANAGER_SERVICE_PORT", os.environ.get("PORT", "8003"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p)

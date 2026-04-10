@@ -1,16 +1,24 @@
 #!/bin/bash
 
+BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$BACKEND_DIR/.." && pwd)"
+# shellcheck source=../scripts/lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+
 echo "🚀 통합 메시지 시스템 시작"
 echo "=================================================="
-echo "📍 프로젝트 루트: $(pwd)"
+echo "💡 CORBU 메인 FastAPI: npm run restart:backend (5002). 아래는 unified_message_system.py (8000) 레거시."
+echo "📍 백엔드: $BACKEND_DIR | 저장소: $REPO_ROOT"
 echo ""
 
-# 가상환경 활성화
 echo "[STEP] 가상환경 활성화 중..."
-source venv/bin/activate
-echo "[SUCCESS] 가상환경 활성화 완료"
+cd "$REPO_ROOT" || exit 1
+if backend_venv_activate "$REPO_ROOT"; then
+    echo "[SUCCESS] 가상환경 활성화 완료"
+else
+    echo "[WARNING] venv 없음 — 시스템 Python 사용"
+fi
 
-# 포트 확인 및 정리
 echo "[STEP] 포트 8000 상태 확인 중..."
 if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null ; then
     echo "[WARNING] 포트 8000이 사용 중입니다. 프로세스를 종료합니다."
@@ -18,16 +26,15 @@ if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null ; then
     sleep 1
 fi
 
-# 백엔드 디렉토리로 이동
-cd backend
+mkdir -p "$REPO_ROOT/logs"
+cd "$BACKEND_DIR" || exit 1
 
-# 통합 메시지 시스템 시작
 echo "[INFO] 통합 메시지 시스템 시작 (포트 8000)..."
-python3 unified_message_system.py > ../logs/unified_message_system.log 2>&1 &
+python3 unified_message_system.py > "$REPO_ROOT/logs/unified_message_system.log" 2>&1 &
 UNIFIED_MESSAGE_PID=$!
 echo "[SUCCESS] 통합 메시지 시스템 시작됨 (PID: $UNIFIED_MESSAGE_PID)"
 
-cd ..
+cd "$REPO_ROOT" || exit 1
 
 # 서버 상태 확인
 echo ""
@@ -61,12 +68,12 @@ echo "   - 맥락 정보 입력 (선택사항)"
 echo "   - '메시지 생성' 버튼 클릭"
 echo ""
 echo "🛑 서버 종료: kill $UNIFIED_MESSAGE_PID"
-echo "📋 로그 확인: logs/unified_message_system.log"
+echo "📋 로그 확인: $REPO_ROOT/logs/unified_message_system.log"
 echo ""
 echo "🚀 통합 메시지 시스템이 성공적으로 시작되었습니다!"
 
 # PID 저장
-echo "$UNIFIED_MESSAGE_PID" > .unified_message_system_pid
+echo "$UNIFIED_MESSAGE_PID" > "$REPO_ROOT/.unified_message_system_pid"
 
 # 백그라운드에서 실행 중인 프로세스 모니터링
 echo ""

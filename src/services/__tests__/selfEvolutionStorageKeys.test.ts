@@ -1,0 +1,43 @@
+/**
+ * @jest-environment jsdom
+ */
+import {
+  ARCHITECTURAL_EVOLUTIONS_STORAGE_KEY,
+  CONSCIOUSNESS_EVOLUTIONS_STORAGE_KEY,
+  CREATIVE_BREAKTHROUGHS_STORAGE_KEY,
+  META_LEARNING_RECORDS_STORAGE_KEY,
+  SELF_DIRECTED_GOALS_STORAGE_KEY,
+  SELF_EVOLUTION_CAPABILITIES_STORAGE_KEY,
+  SELF_OPTIMIZATIONS_STORAGE_KEY,
+} from '../selfEvolutionStorageKeys';
+import {
+  ARCHITECTURAL_EVOLUTIONS_STORAGE_KEY as K_ARCH,
+  CONSCIOUSNESS_EVOLUTIONS_STORAGE_KEY as K_CONS,
+  CREATIVE_BREAKTHROUGHS_STORAGE_KEY as K_CRE,
+  META_LEARNING_RECORDS_STORAGE_KEY as K_META,
+  SELF_DIRECTED_GOALS_STORAGE_KEY as K_GOALS,
+  SELF_EVOLUTION_CAPABILITIES_STORAGE_KEY as K_CAP,
+  SELF_OPTIMIZATIONS_STORAGE_KEY as K_OPT,
+} from '../selfEvolutionService';
+
+describe('selfEvolutionStorageKeys', () => {
+  it('localStorage 키 문자열 계약', () => {
+    expect(SELF_EVOLUTION_CAPABILITIES_STORAGE_KEY).toBe('self_evolution_capabilities');
+    expect(META_LEARNING_RECORDS_STORAGE_KEY).toBe('meta_learning_records');
+    expect(SELF_OPTIMIZATIONS_STORAGE_KEY).toBe('self_optimizations');
+    expect(ARCHITECTURAL_EVOLUTIONS_STORAGE_KEY).toBe('architectural_evolutions');
+    expect(CONSCIOUSNESS_EVOLUTIONS_STORAGE_KEY).toBe('consciousness_evolutions');
+    expect(CREATIVE_BREAKTHROUGHS_STORAGE_KEY).toBe('creative_breakthroughs');
+    expect(SELF_DIRECTED_GOALS_STORAGE_KEY).toBe('self_directed_goals');
+  });
+
+  it('selfEvolutionService 재보내기와 동일', () => {
+    expect(K_CAP).toBe(SELF_EVOLUTION_CAPABILITIES_STORAGE_KEY);
+    expect(K_META).toBe(META_LEARNING_RECORDS_STORAGE_KEY);
+    expect(K_OPT).toBe(SELF_OPTIMIZATIONS_STORAGE_KEY);
+    expect(K_ARCH).toBe(ARCHITECTURAL_EVOLUTIONS_STORAGE_KEY);
+    expect(K_CONS).toBe(CONSCIOUSNESS_EVOLUTIONS_STORAGE_KEY);
+    expect(K_CRE).toBe(CREATIVE_BREAKTHROUGHS_STORAGE_KEY);
+    expect(K_GOALS).toBe(SELF_DIRECTED_GOALS_STORAGE_KEY);
+  });
+});

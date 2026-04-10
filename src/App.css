@@ -26,27 +26,737 @@ body {
   background: var(--bg-primary);
 }
 
-/* ---------- Brainwave 3단 레이아웃 (Figma 무제 폴더 디자인) ---------- */
+/* ---------- 토스트 (고도화: 슬라이드 인 + 타입별 색상) ---------- */
+.brainwave-toast {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  right: max(20px, env(safe-area-inset-right, 0px));
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dropdown);
+  z-index: var(--z-toast);
+  color: var(--on-accent);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-base);
+  animation: brainwave-toast-in 0.3s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brainwave-toast { animation: none; }
+}
+.brainwave-toast-error { background: var(--accent-error, #dc3545); }
+.brainwave-toast-success { background: var(--accent-success, #28a745); }
+.brainwave-toast-info { background: var(--accent-primary, #0084FF); }
+@keyframes brainwave-toast-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ---------- 로딩 Fallback (페이드인) ---------- */
+.brainwave-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  animation: brainwave-fade-in 0.3s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brainwave-fallback { animation: none; }
+}
+
+/* ---------- 라우트 전환 (페이드인) ---------- */
+.brainwave-route-content {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  animation: brainwave-fade-in 0.2s ease-out;
+}
+.brainwave-route-content > * {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brainwave-route-content { animation: none; }
+}
+
+/* ---------- 대화 라우트 셸: 일반(/) vs 프로젝트(/projects/:id) 구분·전체 높이 채움 ---------- */
+.brainwave-chat-route-shell {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+.brainwave-chat-route-breadcrumb {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: var(--border-width) solid var(--border-color);
+  background: var(--bg-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+/* 홈·프로젝트 목록·프로젝트 상단 경로: 동일 컬럼·중립 톤 */
+.bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned {
+  padding: 0 0 var(--spacing-md) 0;
+  margin: 0;
+  border: none;
+  border-bottom: var(--border-width) solid var(--border-color);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+.bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned .brainwave-chat-route-breadcrumb__link {
+  color: var(--accent-info-figma, #3b82f6);
+}
+.bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned .brainwave-chat-route-breadcrumb__leaf {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+.bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned .brainwave-chat-route-breadcrumb__hint {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+.brainwave-chat-route-breadcrumb__badge {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+.brainwave-chat-route-breadcrumb__sep {
+  color: var(--text-secondary);
+  opacity: 0.85;
+  user-select: none;
+}
+.brainwave-chat-route-breadcrumb__leaf {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+.brainwave-chat-route-breadcrumb__link {
+  color: var(--accent-info-figma, #3b82f6);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+.brainwave-chat-route-breadcrumb__link:hover {
+  text-decoration: underline;
+}
+.brainwave-chat-route-breadcrumb__hint {
+  flex: 1 0 100%;
+  font-size: 0.7rem;
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+.brainwave-chat-route-body {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 도구·설정 등: 본문 스크롤은 셸 안에서 처리 */
+.brainwave-tool-route-body {
+  overflow: auto;
+}
+
+/* 사이드바: 프로젝트 하위 대화 그룹 */
+.sidebar-chat-project-group {
+  margin-bottom: var(--spacing-xs);
+}
+.sidebar-chat-project-group__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px 4px;
+}
+.sidebar-chat-project-group__project {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--sidebar-dark-text-muted, rgba(255, 255, 255, 0.65));
+  text-decoration: none;
+  border-radius: var(--radius-sm, 4px);
+}
+.sidebar-chat-project-group__project:hover {
+  color: var(--sidebar-dark-text, #fff);
+  background: var(--sidebar-dark-hover, rgba(255, 255, 255, 0.06));
+}
+.sidebar-chat-project-group__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-chat-project-group__sub {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sidebar-dark-text-muted, rgba(255, 255, 255, 0.45));
+  padding-left: 20px;
+}
+.sidebar-chat-item.sidebar-chat-item--under-project {
+  padding-left: 1.35rem;
+  position: relative;
+}
+.sidebar-chat-item.sidebar-chat-item--under-project::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: var(--accent-info-figma, #3b82f6);
+  opacity: 0.7;
+}
+
+.sidebar.brainwave-sidebar-dark .sidebar-chat-item-row {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chat-item-row .sidebar-chat-item,
+.sidebar.brainwave-sidebar-dark .sidebar-chat-item-row .sidebar-topic-item {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chat-delete-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  margin: 4px 6px 4px 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  color: var(--sidebar-dark-text-muted, rgba(255, 255, 255, 0.5));
+  cursor: pointer;
+  transition: color var(--transition-base), background var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chat-delete-btn:hover {
+  color: var(--accent-error, #f87171);
+  background: color-mix(in srgb, var(--accent-error, #ef4444) 12%, transparent);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chat-delete-btn:focus-visible {
+  outline: 2px solid var(--accent-info-figma, #3b82f6);
+  outline-offset: 1px;
+}
+
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-chat-item-row {
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 2px 0;
+}
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-chat-item-row .sidebar-chat-item,
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-chat-item-row .sidebar-topic-item {
+  width: 100%;
+  justify-content: center;
+  padding: 6px 4px;
+}
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-chat-delete-btn--collapsed {
+  width: 28px;
+  height: 22px;
+  margin: 0 0 4px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+/* AppUnified 등 ChatGPTInterface 밖에서 쓰는 확인 모달 */
+dialog.modal-overlay .modal-content .modal-content-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  justify-content: flex-end;
+  margin-top: var(--spacing-md, 12px);
+}
+
+/* ---------- 에러 폴백 (ErrorBoundary) ---------- */
+.brainwave-error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: var(--spacing-2xl);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  text-align: center;
+}
+.brainwave-error-fallback .brainwave-retry-btn {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.brainwave-error-fallback .brainwave-retry-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+.brainwave-error-fallback h2 {
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+}
+.brainwave-error-fallback > p {
+  margin: 0 0 var(--spacing-lg);
+  color: var(--text-secondary);
+}
+.brainwave-error-fallback-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.brainwave-error-fallback .brainwave-error-home-link {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--accent-info);
+  color: var(--on-accent);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+.brainwave-error-fallback .brainwave-error-home-link:hover {
+  opacity: 0.9;
+}
+
+/* ---------- 모바일 헤더 ---------- */
+.brainwave-mobile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  min-height: var(--touch-target-min);
+}
+.brainwave-mobile-menu-btn {
+  padding: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.brainwave-mobile-title {
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+/* ---------- 404 페이지 (에러 폴백 스타일 재사용) ---------- */
+.brainwave-404 .brainwave-404-title {
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+}
+.brainwave-404 .brainwave-404-desc {
+  margin: 0 0 var(--spacing-lg);
+  color: var(--text-secondary);
+}
+.brainwave-404 .brainwave-404-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: var(--spacing-lg);
+}
+.brainwave-404 .brainwave-404-btn-secondary {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+.brainwave-404 .brainwave-404-btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+.brainwave-404 .brainwave-404-btn-primary {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--accent-info);
+  color: var(--on-accent);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+.brainwave-404 .brainwave-404-btn-primary:hover {
+  opacity: 0.9;
+}
+.brainwave-404 .brainwave-404-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+/* ---------- 사이드바 API 로딩 인디케이터 ---------- */
+.sidebar-api-loading {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--sidebar-dark-text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.sidebar-api-loading-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-info-figma);
+  animation: brainwave-pulse 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-api-loading-dot { animation: none; opacity: 0.8; }
+}
+@keyframes brainwave-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.9); }
+}
+
+/* ---------- 스킵 링크 (포커스 시 부드러운 등장) ---------- */
+a.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: var(--z-popover);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--accent-info-figma);
+  color: var(--on-accent);
+  border-radius: var(--radius-sm);
+  transition: left var(--transition-smooth), top var(--transition-smooth);
+}
+a.skip-to-main:focus {
+  left: 8px;
+  top: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  a.skip-to-main { transition: none; }
+}
+
+/* ---------- Brainwave 2단 레이아웃 (좌측 사이드바 + 메인, 모든 페이지 공통) ---------- */
+/* 사이드바 + 입력창 프레임 최적화: 사이드바 고정폭, 메인 영역이 남은 공간을 채우고 입력창은 하단 고정 */
 .app-container.brainwave-unified {
   display: grid;
-  grid-template-columns: var(--layout-sidebar-width) 1fr var(--layout-right-sidebar-width);
+  grid-template-columns: var(--layout-sidebar-width) 1fr;
   grid-template-rows: 1fr;
-  grid-template-areas: "sidebar-left main right-sidebar";
+  grid-template-areas: "sidebar-left main";
   height: 100vh;
+  min-height: 0;
+  isolation: isolate;
 }
-@media (max-width: 1200px) {
-  .app-container.brainwave-unified {
-    grid-template-columns: var(--layout-sidebar-width) 1fr;
-    grid-template-areas: "sidebar-left main";
+.app-container.brainwave-unified .sidebar {
+  grid-area: sidebar-left;
+  min-width: var(--layout-sidebar-width);
+  max-width: var(--layout-sidebar-width);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.app-container.brainwave-unified .brainwave-main {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.app-container.brainwave-unified .brainwave-route-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.app-container.brainwave-unified .brainwave-route-content > * {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+@supports (height: 100dvh) {
+  body {
+    height: 100dvh;
   }
-  .brainwave-right-sidebar { display: none; }
+  .app-container {
+    height: 100dvh;
+  }
+  .app-container.brainwave-unified {
+    height: 100dvh;
+  }
 }
-@media (max-width: 768px) {
+
+@media (max-width: var(--breakpoint-md)) {
   .app-container.brainwave-unified {
     grid-template-columns: 1fr;
     grid-template-areas: "main";
   }
-  .sidebar.brainwave-sidebar-dark { display: none; }
+  .sidebar.brainwave-sidebar-dark {
+    display: none;
+  }
+  .sidebar.brainwave-sidebar-dark.mobile-open {
+    display: flex;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: var(--z-panel);
+    width: var(--layout-sidebar-width);
+    max-width: 85vw;
+    box-shadow: var(--shadow-modal);
+    animation: brainwave-sidebar-slide-in 0.25s ease-out;
+  }
+  .brainwave-mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--modal-overlay);
+    z-index: calc(var(--z-panel) - 1);
+    animation: brainwave-fade-in 0.2s ease-out;
+  }
+}
+@keyframes brainwave-sidebar-slide-in {
+  from { transform: translateX(-100%); opacity: 0.9; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes brainwave-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar.brainwave-sidebar-dark.mobile-open {
+    animation: none;
+  }
+  .brainwave-mobile-overlay {
+    animation: none;
+  }
+}
+
+/* ---------- 좌측 사이드바 — 라이트 모드 (이미지 레이아웃: 흰색/연회색) ---------- */
+html:not(.dark-mode) .app-container.brainwave-unified .sidebar.brainwave-sidebar-dark {
+  background: #ffffff;
+  border-right: var(--border-width) solid var(--border-color);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-header,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-chatgpt-header {
+  border-bottom-color: var(--border-color);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-search-input {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-search-input::placeholder {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-search-icon {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-new-project-btn,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-new-chat-btn {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-new-project-btn:hover,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-new-chat-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-tool-item {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-tool-item:hover,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-tool-item.active {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-topic-item {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-topic-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-footer {
+  border-top-color: var(--border-color);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .user-info-name,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-user-name {
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .upgrade-pro-btn {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .upgrade-pro-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .theme-toggle button {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .theme-toggle button:hover,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .theme-toggle button.active {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-more-btn {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-more-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-more-dropdown {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-more-item {
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-more-item:hover {
+  background: var(--bg-hover);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-more-separator {
+  background: var(--border-color);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-more-btn:focus-visible,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-more-item:focus-visible {
+  outline: none;
+}
+/* 라이트 모드: 새 프로젝트 행·더 보기 링크 가시성 (흰 배경에서 대비) */
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-project-create-row {
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-project-create-row:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-project-create-row .sidebar-project-icon,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-project-create-row .sidebar-project-plus {
+  color: inherit;
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-more-link {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-more-link:hover {
+  color: var(--text-primary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .nav-item.chat-list-item {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .nav-item.chat-list-item:hover,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .nav-item.chat-list-item.active {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .user-avatar {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+.sidebar-footer-hide {
+  display: none !important;
+}
+.user-avatar--kim {
+  background: #e53935 !important;
+  color: #fff !important;
+}
+.sidebar-project-preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-project-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base), color var(--transition-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-project-preview-item:hover {
+  background: var(--sidebar-dark-hover);
+  color: var(--sidebar-dark-text);
+}
+.sidebar-project-preview-item svg {
+  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.9;
+}
+html:not(.dark-mode) .sidebar-project-preview-item {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar-project-preview-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.sidebar-new-project-btn--single {
+  margin-top: 2px;
+}
+/* 프로젝트 섹션: 제목 바로 아래 리스트 노출 */
+.sidebar-project-section {
+  margin-top: var(--spacing-sm);
+}
+.sidebar-project-section-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--sidebar-dark-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 12px 4px 0;
+  margin-bottom: 4px;
+}
+html:not(.dark-mode) .sidebar-project-section-title {
+  color: var(--text-secondary);
+}
+.sidebar-project-empty {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text-muted);
+}
+html:not(.dark-mode) .sidebar-project-empty {
+  color: var(--text-secondary);
+}
+.sidebar-project-preview-item.active {
+  background: var(--sidebar-dark-active-bg);
+  color: var(--sidebar-dark-active-text);
+}
+html:not(.dark-mode) .sidebar-project-preview-item.active {
+  background: var(--accent-info-muted, rgba(0, 132, 255, 0.12));
+  color: var(--accent-info);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-api-loading,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-api-ok,
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-api-error-text {
+  color: var(--text-secondary);
 }
 
 /* ---------- 좌측 사이드바 — 다크 테마 (Figma Brainwave) ---------- */
@@ -54,15 +764,530 @@ body {
   grid-area: sidebar-left;
   width: var(--layout-sidebar-width);
   min-width: var(--layout-sidebar-width);
+  min-height: 0;
   background: var(--sidebar-dark-bg);
   border-right: var(--border-width) solid var(--sidebar-dark-border);
   display: flex;
   flex-direction: column;
-  transition: transform var(--transition-slow), background var(--transition-base);
+  transition: transform var(--transition-smooth), background var(--transition-base), box-shadow var(--transition-smooth);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.sidebar.brainwave-sidebar-dark:focus-within {
+  outline: none;
+}
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed {
+  width: 56px;
+  min-width: 56px;
+}
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-chatgpt-header {
+  padding-left: var(--spacing-sm);
+  padding-right: var(--spacing-sm);
+}
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-body {
+  padding-left: var(--spacing-sm);
+  padding-right: var(--spacing-sm);
+}
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-search-wrap {
+  justify-content: center;
+  min-height: 36px;
+  cursor: pointer;
+}
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-search-icon {
+  position: static;
+}
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-actions-row .sidebar-new-chat-btn,
+.sidebar.brainwave-sidebar-dark.sidebar--collapsed .sidebar-actions-row .sidebar-new-project-btn {
+  justify-content: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-toggle-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--sidebar-dark-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: color var(--transition-base), background var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-toggle-btn:hover {
+  color: var(--sidebar-dark-text);
+  background: var(--sidebar-dark-hover);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-toggle-btn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-info-figma);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-bottom: 4px;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-section-head .sidebar-project-section-title {
+  margin-bottom: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-project-create-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--sidebar-dark-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: color var(--transition-base), background var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-project-create-btn:hover {
+  color: var(--sidebar-dark-text);
+  background: var(--sidebar-dark-hover);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-project-create-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-project-create-row:hover {
+  background: var(--sidebar-dark-hover);
+  color: var(--sidebar-dark-text);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-icon-folder-plus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-project-create-row .sidebar-project-icon {
+  flex-shrink: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-project-create-row .sidebar-project-plus {
+  flex-shrink: 0;
+  margin-left: -4px;
+  opacity: 0.9;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-project-preview-item .sidebar-project-icon {
+  flex-shrink: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-more-link {
+  display: block;
+  padding: 6px 12px;
+  font-size: var(--font-size-xs);
+  color: var(--sidebar-dark-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-more-link:hover {
+  color: var(--sidebar-dark-text);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chat-item,
+.sidebar.brainwave-sidebar-dark .sidebar-chat-list .sidebar-topic-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chat-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chat-item-icon {
+  flex-shrink: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-new-chat-btn--top {
+  justify-content: flex-start;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-icon-new-chat,
+.sidebar.brainwave-sidebar-dark .sidebar-chat-item-icon,
+.sidebar.brainwave-sidebar-dark .sidebar-icon-voice {
+  flex-shrink: 0;
 }
 .sidebar.brainwave-sidebar-dark .sidebar-header {
   padding: var(--spacing-lg);
   border-bottom: var(--border-width) solid var(--sidebar-dark-border);
+}
+/* ChatGPT 스타일 사이드바 */
+.sidebar.brainwave-sidebar-dark .sidebar-chatgpt-header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  border-bottom: none;
+  padding-bottom: var(--spacing-sm);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--sidebar-dark-text-muted);
+  pointer-events: none;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text);
+  background: var(--sidebar-dark-hover, rgba(255,255,255,0.06));
+  border: 1px solid var(--sidebar-dark-border);
+  border-radius: var(--radius-md);
+  outline: none;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-wrap:has(.sidebar-search-clear) .sidebar-search-input {
+  padding-right: 32px;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-clear {
+  position: absolute;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--sidebar-dark-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--transition-base), background var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-clear:hover {
+  color: var(--sidebar-dark-text);
+  background: var(--sidebar-dark-hover);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-clear:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-info-figma);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-input::placeholder {
+  color: var(--sidebar-dark-text-muted);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-search-input:focus {
+  border-color: var(--accent-info-figma);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-gpt-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--spacing-sm);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-new-project-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--sidebar-dark-text-muted);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-new-project-btn:hover {
+  background: var(--sidebar-dark-hover);
+  color: var(--sidebar-dark-text);
+}
+/* 상단: CORBU.AI 로고 + 더보기 */
+.sidebar.brainwave-sidebar-dark .sidebar-brand-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: var(--spacing-md) 0;
+  margin-bottom: var(--spacing-xs);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-logo-link {
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-logo-link:hover {
+  color: inherit;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+  margin-bottom: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-row--logo-only {
+  padding: 0;
+  margin: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--spacing-xs);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-new-chat-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text-muted);
+  background: transparent;
+  border: 1px solid var(--sidebar-dark-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-new-chat-btn:hover {
+  background: var(--sidebar-dark-hover);
+  color: var(--sidebar-dark-text);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-tools-section {
+  margin-top: var(--spacing-sm);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-tools-section .sidebar-project-section-title {
+  margin-bottom: 4px;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-tool-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-tool-item:hover,
+.sidebar.brainwave-sidebar-dark .sidebar-tool-item.active {
+  background: var(--sidebar-dark-hover);
+  color: var(--sidebar-dark-text);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-row .brainwave-logo-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-info-figma);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-more-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  margin: -6px 0 -6px auto;
+  color: var(--sidebar-dark-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-more-btn:hover {
+  background: var(--sidebar-dark-hover);
+  color: var(--sidebar-dark-text);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-more-btn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-info-figma);
+}
+
+/* 로고 더보기 드롭다운 */
+.sidebar.brainwave-sidebar-dark .sidebar-brand-more-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 140px;
+  padding: var(--spacing-xs) 0;
+  background: var(--sidebar-dark-bg);
+  border: 1px solid var(--sidebar-dark-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: var(--z-dropdown);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-more-item {
+  display: block;
+  padding: 8px 14px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text);
+  text-decoration: none;
+  transition: background var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-more-item:hover {
+  background: var(--sidebar-dark-hover);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-more-separator {
+  height: 1px;
+  margin: 6px 12px;
+  background: var(--sidebar-dark-border, rgba(255, 255, 255, 0.08));
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-more-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-info-figma);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-brand-row .brainwave-logo-text {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--sidebar-dark-text);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-brand-row .brainwave-logo-text {
+  color: var(--text-primary);
+}
+
+/* 더 보기: ··· 더 보기 (사이드바 메뉴) */
+.sidebar.brainwave-sidebar-dark .sidebar-more-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--spacing-md);
+  padding: 10px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-more-menu:hover {
+  background: var(--sidebar-dark-hover);
+  color: var(--sidebar-dark-text);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-more-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.9;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-more-menu--dots .sidebar-more-dots {
+  font-size: var(--font-size-base);
+  letter-spacing: 2px;
+  color: inherit;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-more-menu .sidebar-more-label {
+  flex: 1;
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-more-menu {
+  color: var(--text-secondary);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-more-menu:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sidebar.brainwave-sidebar-dark .sidebar-more-dots {
+  color: var(--sidebar-dark-text-muted);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-topic-empty {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text-muted);
+}
+html:not(.dark-mode) .sidebar.brainwave-sidebar-dark .sidebar-topic-empty {
+  color: var(--text-secondary);
+}
+/* 대화 목록: 섹션 제목 "대화" 바로 아래 노출 (프로젝트 리스트와 동일한 간격) */
+.sidebar.brainwave-sidebar-dark .sidebar-topic-list {
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-topic-item {
+  display: block;
+  padding: 6px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--sidebar-dark-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-base), color var(--transition-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-topic-item:hover {
+  background: var(--sidebar-dark-hover);
+  color: var(--sidebar-dark-text);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-topic-item--with-dot {
+  position: relative;
+  padding-left: 18px;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-topic-item--with-dot::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-info-figma, #3b82f6);
+}
+/* 대화 섹션: 제목·리스트가 프로젝트 섹션처럼 바로 아래 노출 */
+.sidebar.brainwave-sidebar-dark .sidebar-chatgpt-nav {
+  padding-top: var(--spacing-sm);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chatgpt-footer .sidebar-user-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-user-info-inner {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar.brainwave-sidebar-dark .sidebar-user-name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--sidebar-dark-text);
+}
+.sidebar.brainwave-sidebar-dark .nav-item .nav-item-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sidebar.brainwave-sidebar-dark .sidebar-title {
   color: var(--sidebar-dark-text);
@@ -89,6 +1314,11 @@ body {
   color: var(--sidebar-dark-text);
 }
 .sidebar.brainwave-sidebar-dark .new-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
   background: var(--accent-info-figma);
   border-color: var(--accent-info-figma);
 }
@@ -98,6 +1328,8 @@ body {
 }
 .sidebar.brainwave-sidebar-dark .nav-item {
   color: var(--sidebar-dark-text-muted);
+  transition: background var(--transition-nav), color var(--transition-nav), border-color var(--transition-nav);
+  border-left: 3px solid transparent;
 }
 .sidebar.brainwave-sidebar-dark .nav-item:hover {
   background: var(--sidebar-dark-hover);
@@ -106,6 +1338,18 @@ body {
 .sidebar.brainwave-sidebar-dark .nav-item.active {
   background: var(--sidebar-dark-active-bg);
   color: var(--sidebar-dark-active-text);
+  border-left-color: var(--accent-info-figma);
+}
+.sidebar.brainwave-sidebar-dark .nav-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-info-figma);
+}
+.sidebar.brainwave-sidebar-dark .chat-list-item {
+  transition: background var(--transition-nav), color var(--transition-nav);
+}
+.sidebar.brainwave-sidebar-dark .chat-list-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-info-figma);
 }
 .sidebar.brainwave-sidebar-dark .nav-section-title {
   color: var(--sidebar-dark-text-muted);
@@ -145,14 +1389,106 @@ body {
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }
+.sidebar.brainwave-sidebar-dark .chat-list-dot--primary {
+  background: var(--accent-info-figma);
+}
+.sidebar.brainwave-sidebar-dark .chat-list-dot--secondary {
+  background: var(--sidebar-dark-active-bg);
+}
+.sidebar.brainwave-sidebar-dark .nav-item-hint {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  opacity: 0.7;
+}
+.sidebar.brainwave-sidebar-dark .nav-section {
+  margin-top: var(--spacing-xl);
+}
+.sidebar.brainwave-sidebar-dark .user-info-name {
+  font-weight: 500;
+}
+.sidebar.brainwave-sidebar-dark .user-info-email {
+  font-size: var(--font-size-xs);
+  color: var(--sidebar-dark-text-muted);
+}
+.sidebar-mobile-close-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--sidebar-dark-border);
+}
+.sidebar-mobile-close-btn {
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: var(--sidebar-dark-text);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
 .sidebar.brainwave-sidebar-dark .chat-list-item .chat-list-count {
   margin-left: auto;
   font-size: var(--font-size-xs);
   opacity: 0.8;
 }
 .sidebar.brainwave-sidebar-dark .sidebar-footer {
+  flex-shrink: 0;
   border-top: var(--border-width) solid var(--sidebar-dark-border);
   padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+.sidebar.brainwave-sidebar-dark .sidebar-chatgpt-footer .sidebar-user-row {
+  margin-bottom: 0;
+}
+.sidebar-api-error {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--accent-error-muted, rgba(239, 68, 68, 0.12));
+  border: 1px solid var(--accent-error-border, rgba(239, 68, 68, 0.35));
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--accent-error);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.sidebar-api-error-text { flex: 1; min-width: 0; }
+.sidebar-api-error-hint {
+  width: 100%;
+  font-size: 0.7rem;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+.sidebar-api-error code {
+  background: rgba(0, 0, 0, 0.08);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.95em;
+}
+.brainwave-retry-btn {
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--sidebar-dark-input-bg);
+  color: var(--sidebar-dark-text);
+  border: 1px solid var(--sidebar-dark-border);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-nav), border-color var(--transition-nav);
+}
+.brainwave-retry-btn:hover {
+  background: var(--sidebar-dark-hover);
+  border-color: var(--sidebar-dark-border-strong);
+}
+.brainwave-retry-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-info-figma);
+}
+.sidebar-api-ok {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--sidebar-dark-text-muted);
 }
 .sidebar.brainwave-sidebar-dark .user-info .user-avatar {
   background: var(--bg-tertiary);
@@ -170,15 +1506,15 @@ body {
 }
 .sidebar.brainwave-sidebar-dark .upgrade-pro-btn {
   width: 100%;
-  padding: var(--spacing-md);
-  background: var(--sidebar-dark-bg-subtle);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: transparent;
   color: var(--sidebar-dark-text-muted);
-  border: var(--border-width) solid var(--sidebar-dark-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
   cursor: pointer;
-  margin-top: var(--spacing-md);
-  transition: background var(--transition-base);
+  margin-top: var(--spacing-xs);
+  transition: background var(--transition-base), color var(--transition-base);
 }
 .sidebar.brainwave-sidebar-dark .upgrade-pro-btn:hover {
   background: var(--sidebar-dark-hover);
@@ -216,15 +1552,33 @@ body {
   color: var(--sidebar-dark-active-text);
 }
 
-/* ---------- 우측 사이드바 — 채팅 히스토리 ---------- */
+/* ---------- 우측 사이드바 — 대화 히스토리 (Figma node 7-3, 접기·펼치기 애니메이션) ---------- */
 .brainwave-right-sidebar {
-  grid-area: right-sidebar;
+  flex-shrink: 0;
   width: var(--layout-right-sidebar-width);
   min-width: var(--layout-right-sidebar-width);
   background: var(--bg-primary);
   border-left: var(--border-width) solid var(--border-color);
   display: flex;
   flex-direction: column;
+  transition: width var(--transition-smooth, 0.25s ease), min-width var(--transition-smooth, 0.25s ease), opacity var(--transition-smooth, 0.25s ease);
+  overflow: hidden;
+}
+.brainwave-right-sidebar.collapsed {
+  width: 40px;
+  min-width: 40px;
+}
+.brainwave-right-sidebar.collapsed .right-sidebar-title,
+.brainwave-right-sidebar.collapsed .chat-history-list,
+.brainwave-right-sidebar.collapsed .right-sidebar-footer {
+  display: none;
+}
+.brainwave-right-sidebar.collapsed .right-sidebar-header {
+  justify-content: center;
+  padding: var(--spacing-sm);
+}
+.brainwave-right-sidebar.collapsed .right-sidebar-toggle {
+  margin: 0 auto;
 }
 .brainwave-right-sidebar .right-sidebar-header {
   padding: var(--spacing-lg);
@@ -232,6 +1586,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
+}
+.brainwave-right-sidebar .right-sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.brainwave-right-sidebar .right-sidebar-toggle {
+  padding: var(--spacing-xs);
+}
+.brainwave-right-sidebar .chat-history-item.active {
+  background: var(--accent-info-muted, rgba(0, 132, 255, 0.12));
+  border-radius: var(--radius-md);
 }
 .brainwave-right-sidebar .right-sidebar-title {
   font-size: var(--font-size-sm);
@@ -382,12 +1749,37 @@ body {
   margin-bottom: var(--spacing-2xl);
 }
 
+.nav-section--compact {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .nav-section-title {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
+  margin-bottom: var(--spacing-2xs, 2px);
+}
+
+.nav-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-2xs, 2px);
+}
+
+.nav-section-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.nav-section-desc {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -459,8 +1851,8 @@ a.skip-to-main:focus-visible,
   outline-offset: var(--border-width-md);
 }
 .sidebar-footer button:focus-visible {
-  outline: var(--border-width-md) solid var(--accent-info);
-  outline-offset: var(--border-width-md);
+  outline: var(--focus-ring-figma, 2px solid var(--accent-info-figma));
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* ---------- Layout Sidebar (Brainwave, Figma node 7-3) ---------- */
@@ -479,7 +1871,7 @@ a.skip-to-main:focus-visible,
 .brainwave-sidebar-logo {
   width: var(--icon-size-lg);
   height: var(--icon-size-lg);
-  background: var(--accent-info);
+  background: var(--accent-info-figma);
   color: var(--on-accent);
   border-radius: var(--radius-md);
   display: flex;
@@ -522,8 +1914,8 @@ a.skip-to-main:focus-visible,
 }
 .brainwave-sidebar-input:focus {
   outline: none;
-  border-color: var(--accent-info);
-  box-shadow: 0 0 0 var(--border-width-md) var(--accent-info-muted);
+  border-color: var(--accent-info-figma);
+  box-shadow: var(--shadow-input-figma);
 }
 .brainwave-sidebar-btn-primary {
   width: 100%;
@@ -532,9 +1924,9 @@ a.skip-to-main:focus-visible,
   justify-content: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--accent-info);
+  background: var(--accent-info-figma);
   color: var(--on-accent);
-  border: var(--border-width) solid var(--accent-info);
+  border: var(--border-width) solid var(--accent-info-figma);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -543,8 +1935,8 @@ a.skip-to-main:focus-visible,
   box-shadow: var(--shadow-sm);
 }
 .brainwave-sidebar-btn-primary:hover:not(:disabled) {
-  background: var(--accent-info-hover);
-  border-color: var(--accent-info-hover);
+  background: var(--accent-info-figma-hover);
+  border-color: var(--accent-info-figma-hover);
   box-shadow: var(--shadow-md);
 }
 .brainwave-sidebar-btn-primary:disabled {
@@ -566,18 +1958,21 @@ a.skip-to-main:focus-visible,
   background: var(--bg-hover);
 }
 .brainwave-sidebar-item-selected {
-  background: var(--accent-info-muted);
-  color: var(--accent-info);
+  background: var(--accent-info-figma-muted);
+  color: var(--accent-info-figma);
   font-weight: var(--font-weight-medium);
 }
 .brainwave-sidebar-item-selected:hover {
-  background: var(--accent-info-muted);
-  color: var(--accent-info);
+  background: var(--accent-info-figma-muted);
+  color: var(--accent-info-figma);
 }
-.brainwave-sidebar-model-info { color: var(--accent-info); }
+.brainwave-sidebar-model-info { color: var(--accent-info-figma); }
 .brainwave-sidebar-model-secondary { color: var(--accent-secondary); }
 .brainwave-sidebar-model-success { color: var(--accent-success); }
 .brainwave-sidebar-model-orange { color: var(--accent-orange); }
+.brainwave-sidebar-footer-border {
+  border-color: var(--border-color);
+}
 .brainwave-sidebar-error-box {
   padding: var(--spacing-md);
   background: var(--accent-error-muted);
@@ -592,8 +1987,11 @@ a.skip-to-main:focus-visible,
 .brainwave-sidebar-modal-overlay {
   background: var(--bg-overlay);
   backdrop-filter: blur(var(--blur-sm));
+  z-index: var(--z-modal-backdrop);
 }
 .brainwave-sidebar-modal-panel {
+  position: relative;
+  z-index: var(--z-modal);
   background: var(--bg-primary);
   border-radius: var(--radius-lg);
   border: var(--border-width) solid var(--border-color);
@@ -646,11 +2044,11 @@ a.skip-to-main:focus-visible,
 
 /* 버튼 공통: 키보드 포커스 시 아웃라인 */
 .btn:focus-visible {
-  outline: var(--border-width-md) solid var(--accent-info);
-  outline-offset: var(--border-width-md);
+  outline: var(--focus-ring-figma, 2px solid var(--accent-info-figma));
+  outline-offset: var(--focus-ring-offset);
 }
 
-/* ---------- 메인 영역 (Figma node 7-3, 3단 레이아웃) ---------- */
+/* ---------- 메인 영역 (2단 레이아웃: 좌측 사이드바 + 메인) ---------- */
 .brainwave-main {
   grid-area: main;
   flex: 1;
@@ -659,8 +2057,19 @@ a.skip-to-main:focus-visible,
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+  padding: var(--layout-main-padding);
+  max-width: var(--layout-main-max-width);
+  transition: background-color var(--transition-smooth);
+  position: relative;
+  z-index: 1;
+}
+.brainwave-main:focus {
+  outline: none;
+}
+.brainwave-main:focus-visible {
+  outline: 2px solid var(--accent-info-figma);
+  outline-offset: -2px;
 }
 
 .main-content {
@@ -741,7 +2150,7 @@ a.skip-to-main:focus-visible,
   width: var(--icon-size-lg);
   height: var(--icon-size-lg);
   border-radius: var(--radius-full);
-  background: var(--accent-info);
+  background: var(--accent-info-figma);
   color: var(--on-accent);
   border: none;
   cursor: pointer;
@@ -756,7 +2165,7 @@ a.skip-to-main:focus-visible,
   opacity: 0.9;
 }
 
-/* ---------- 채팅 영역 ---------- */
+/* ---------- 대화 영역 ---------- */
 .chat-container {
   flex: 1;
   min-height: 0;
@@ -904,12 +2313,25 @@ a.skip-to-main:focus-visible,
   border-radius: var(--radius-sm);
   transition: width var(--transition-base);
 }
+.confidence-value {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
 
 /* ---------- 입력 영역 ---------- */
 .chat-input-container {
   padding: var(--spacing-2xl);
   border-top: var(--border-width) solid var(--border-color);
   background: var(--bg-primary);
+}
+
+.chat-input-container.genspark-input-dock {
+  padding-bottom: calc(var(--spacing-2xl) + env(safe-area-inset-bottom, 0px));
+}
+
+.chat-input-container.bw-page-input-dock {
+  padding: var(--spacing-lg);
+  border-top: var(--border-width) solid var(--border-color);
 }
 
 .input-wrapper {
@@ -1088,6 +2510,11 @@ a.skip-to-main:focus-visible,
   .chat-input-container {
     padding: var(--spacing-lg);
   }
+
+  /* 단축 padding 이후: ModernChat genspark 도크 하단 safe-area 유지 */
+  .chat-input-container.genspark-input-dock {
+    padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (max-width: var(--breakpoint-mobile)) {
@@ -1102,6 +2529,14 @@ a.skip-to-main:focus-visible,
   }
   .main-content {
     width: 100%;
+  }
+}
+
+@supports (height: 100dvh) {
+  @media (max-width: var(--breakpoint-mobile)) {
+    .sidebar {
+      height: 100dvh;
+    }
   }
 }
 

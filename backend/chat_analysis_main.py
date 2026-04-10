@@ -156,10 +156,10 @@ async def root():
     }
 
 
-# 1. 채팅 파일 업로드 및 분석
+# 1. 대화 파일 업로드 및 분석
 @app.post("/api/chat/upload")
 async def upload_chat_file(file: UploadFile = File(...)):
-    """채팅 파일 업로드 및 분석"""
+    """대화 파일 업로드 및 분석"""
     try:
         # 파일 저장
         upload_dir = Path("uploads")
@@ -170,7 +170,7 @@ async def upload_chat_file(file: UploadFile = File(...)):
             content = await file.read()
             f.write(content)
         
-        # 채팅 파일 파싱
+        # 대화 파일 파싱
         messages = analyzer.parse_chat_file(str(file_path))
         
         # 메시지 저장
@@ -181,7 +181,7 @@ async def upload_chat_file(file: UploadFile = File(...)):
         
         return {
             "status": "success",
-            "message": f"채팅 파일이 성공적으로 업로드되었습니다",
+            "message": f"대화 파일이 성공적으로 업로드되었습니다",
             "file_info": {
                 "filename": file.filename,
                 "total_messages": len(messages),
@@ -195,13 +195,13 @@ async def upload_chat_file(file: UploadFile = File(...)):
         }
         
     except Exception as e:
-        logger.error(f"채팅 파일 업로드 실패: {e}")
+        logger.error(f"대화 파일 업로드 실패: {e}")
         raise HTTPException(status_code=500, detail=f"파일 업로드 실패: {str(e)}")
 
 
 @app.post("/api/chat/parse-text")
 async def parse_chat_text(request: ChatFileUpload):
-    """텍스트 형태의 채팅 내용 직접 파싱"""
+    """텍스트 형태의 대화 내용 직접 파싱"""
     try:
         # 임시 파일 생성
         temp_path = f"temp_chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
@@ -227,7 +227,7 @@ async def parse_chat_text(request: ChatFileUpload):
         }
         
     except Exception as e:
-        logger.error(f"채팅 텍스트 파싱 실패: {e}")
+        logger.error(f"대화 텍스트 파싱 실패: {e}")
         raise HTTPException(status_code=500, detail=f"파싱 실패: {str(e)}")
 
 
@@ -986,10 +986,10 @@ async def get_person_profile(person_name: str):
         raise HTTPException(status_code=500, detail=f"프로필 분석 실패: {str(e)}")
 
 
-# 6. 채팅방 통계 및 현황
+# 6. 대화방 통계 및 현황
 @app.get("/api/chat/statistics")
 async def get_chat_statistics():
-    """전체 채팅 통계"""
+    """전체 대화 통계"""
     try:
         import sqlite3
         conn = sqlite3.connect(analyzer.db_path)
@@ -999,7 +999,7 @@ async def get_chat_statistics():
         cursor.execute("SELECT COUNT(*) FROM chat_messages")
         total_messages = cursor.fetchone()[0]
         
-        # 채팅방 수
+        # 대화방 수
         cursor.execute("SELECT COUNT(DISTINCT chat_room) FROM chat_messages")
         total_rooms = cursor.fetchone()[0]
         
@@ -1166,17 +1166,17 @@ async def search_messages(
         raise HTTPException(status_code=500, detail=f"검색 실패: {str(e)}")
 
 
-# 8. 실전 조합 채팅방 시뮬레이션
+# 8. 실전 조합 대화방 시뮬레이션
 @app.post("/api/demo/load-realistic-data")
 async def load_realistic_demo_data():
-    """실제 조합 채팅방과 유사한 데모 데이터 로드"""
+    """실제 조합 대화방과 유사한 데모 데이터 로드"""
     try:
         # 실제 패턴과 유사한 메시지들 생성
         demo_messages = [
             # 김한수 - 총회 실무진
             ChatMessage(
                 message_id="demo_kim_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="김한수",
                 content="총회 실무 안내드립니다. 위임장, 회의비 신청서 등 파일 제공해드리고 출력 안내드리겠습니다. 총회 장소는 개포중학교 강당이며, 참석절차와 시간표를 안내드립니다.",
                 timestamp=datetime.now() - timedelta(hours=3),
@@ -1188,7 +1188,7 @@ async def load_realistic_demo_data():
             # 송미화 - 운영권 논란 제기자
             ChatMessage(
                 message_id="demo_song_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="송미화",
                 content="GS-파르나스 협약이 조합원 권리 침해 소지가 있다고 봅니다. 스카이 커뮤니티 외부 위탁 운영의 불투명성을 지적하고 싶습니다. 서울시 심의 통과도 불확실한 상황입니다.",
                 timestamp=datetime.now() - timedelta(hours=2, minutes=30),
@@ -1200,7 +1200,7 @@ async def load_realistic_demo_data():
             # 김혜경 - 실용적 찬성파
             ChatMessage(
                 message_id="demo_kim2_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="김혜경",
                 content="외부 위탁 초기는 효율적일 수 있으며, 지나친 불안감은 경계해야 한다고 생각합니다. 본계약 이후에도 협상 가능하며 상생을 목표로 해야 합니다.",
                 timestamp=datetime.now() - timedelta(hours=2, minutes=15),
@@ -1212,7 +1212,7 @@ async def load_realistic_demo_data():
             # 김창희 - 조합 비판자
             ChatMessage(
                 message_id="demo_chang_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="김창희",
                 content="경쟁입찰이 가능했는데도 조합이 GS와 수의계약을 강행했습니다. 다른 단지보다 투명성과 협상력이 부족합니다. 조합장의 독단적 결정을 강력히 비판합니다.",
                 timestamp=datetime.now() - timedelta(hours=2),
@@ -1224,7 +1224,7 @@ async def load_realistic_demo_data():
             # 박제영 - 절차 문제 지적자
             ChatMessage(
                 message_id="demo_park_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="박제영",
                 content="속도전만 강조하는 분위기가 우려됩니다. 조합장과 일부 조합원의 독단을 경계해야 합니다. 주객전도된 구조이며 입찰 절차 미준수 가능성을 지적합니다.",
                 timestamp=datetime.now() - timedelta(hours=1, minutes=45),
@@ -1236,7 +1236,7 @@ async def load_realistic_demo_data():
             # 심원경 - 현실적 중재자
             ChatMessage(
                 message_id="demo_sim_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="심원경",
                 content="본계약 전 절차와 검토는 가능합니다. 계약 전 수정이 가능하므로 지나친 우려는 불필요하다고 봅니다. 현실적인 접근이 필요한 시점입니다.",
                 timestamp=datetime.now() - timedelta(hours=1, minutes=30),
@@ -1248,7 +1248,7 @@ async def load_realistic_demo_data():
             # 여환맹 - 실용적 지지자
             ChatMessage(
                 message_id="demo_yeo_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="여환맹",
                 content="외부 운영에 대한 실용적 관점을 강조하고 싶습니다. 파르나스 운영은 품질 측면에서 유리하며 경쟁력 있는 선택일 수 있다고 봅니다.",
                 timestamp=datetime.now() - timedelta(hours=1, minutes=15),
@@ -1260,7 +1260,7 @@ async def load_realistic_demo_data():
             # 윤상혁 - 제안서 검토자
             ChatMessage(
                 message_id="demo_yoon_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="윤상혁",
                 content="영업정지 보증 조건이 왜곡되어 있습니다. 제안서 내용 수정이 미이행되고 있는 문제를 지적합니다. 보다 정확한 검토가 필요합니다.",
                 timestamp=datetime.now() - timedelta(hours=1),
@@ -1272,7 +1272,7 @@ async def load_realistic_demo_data():
             # 김정준 - 총회 안내 담당
             ChatMessage(
                 message_id="demo_jung_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="김정준",
                 content="7월 12일 총회 일정을 상세히 안내드립니다. 개포중학교 강당에서 오후 2시 시작이며, 셔틀버스는 1시부터 운행됩니다. 참석절차를 꼼꼼히 확인해 주시기 바랍니다.",
                 timestamp=datetime.now() - timedelta(minutes=45),
@@ -1284,7 +1284,7 @@ async def load_realistic_demo_data():
             # 조슬기 - 정보 제공자
             ChatMessage(
                 message_id="demo_jo_001",
-                chat_room="개포우성7차_데모",
+                chat_room="demo_chat_room",
                 sender="조슬기",
                 content="외부 사례로 파크포레온 영상을 공유합니다. 다른 단지의 운영 현황을 참고하시면 도움이 될 것 같습니다. 자료를 첨부파일로 올려드리겠습니다.",
                 timestamp=datetime.now() - timedelta(minutes=30),
@@ -1299,7 +1299,7 @@ async def load_realistic_demo_data():
         
         return {
             "status": "success",
-            "message": "실제 조합 채팅방 패턴의 데모 데이터가 로드되었습니다",
+            "message": "실제 조합 대화방 패턴의 데모 데이터가 로드되었습니다",
             "demo_data": {
                 "total_messages": len(demo_messages),
                 "participants": list(set(msg.sender for msg in demo_messages)),
@@ -1327,7 +1327,7 @@ async def load_sample_level_data():
             # 김한수 - 총회 실무 안내 (샘플 원본)
             ChatMessage(
                 message_id="sample_kim_hansu_001",
-                chat_room="개포우성7차_샘플",
+                chat_room="sample_chat_room",
                 sender="김한수",
                 content="총회 실무 안내 및 서류 제공합니다. 위임장, 회의비 신청서 등 파일 제공 및 출력 안내드리겠습니다. 총회 장소, 참석절차, 시간표 안내드립니다.",
                 timestamp=datetime.now() - timedelta(hours=4),
@@ -1339,7 +1339,7 @@ async def load_sample_level_data():
             # 송미화 - 운영권 논란 (샘플 원본)
             ChatMessage(
                 message_id="sample_song_mihwa_001",
-                chat_room="개포우성7차_샘플",
+                chat_room="sample_chat_room",
                 sender="송미화",
                 content="GS–파르나스 협약이 조합원 권리 침해 소지 있음 지적합니다. 스카이 커뮤니티 외부 위탁 운영의 불투명성을 지적하고 싶습니다.",
                 timestamp=datetime.now() - timedelta(hours=3, minutes=45),
@@ -1351,7 +1351,7 @@ async def load_sample_level_data():
             # 김혜경 - 실용적 관점 (샘플 원본)
             ChatMessage(
                 message_id="sample_kim_hyekyeong_001",
-                chat_room="개포우성7차_샘플",
+                chat_room="sample_chat_room",
                 sender="김혜경",
                 content="외부 위탁 초기는 효율적일 수 있으며, 지나친 불안감은 경계해야 합니다. 본계약 이후에도 충분히 협상이 가능하며, 무엇보다 상생을 목표로 접근해야 한다고 봅니다.",
                 timestamp=datetime.now() - timedelta(hours=3, minutes=30),
@@ -1363,7 +1363,7 @@ async def load_sample_level_data():
             # 여환맹, 조남희 - 실용적 지지 (샘플 패턴)
             ChatMessage(
                 message_id="sample_yeo_hwanmaeng_001",
-                chat_room="개포우성7차_샘플",
+                chat_room="sample_chat_room",
                 sender="여환맹",
                 content="외부 위탁 초기는 효율적일 수 있으며, 지나친 불안감은 경계해야 합니다. 파르나스 운영은 품질 측면에서 유리하며 경쟁력 있는 선택입니다.",
                 timestamp=datetime.now() - timedelta(hours=3, minutes=15),
@@ -1375,7 +1375,7 @@ async def load_sample_level_data():
             # 심원경 - 절차적 옹호 (샘플 패턴)
             ChatMessage(
                 message_id="sample_sim_wonkyeong_001",
-                chat_room="개포우성7차_샘플",
+                chat_room="sample_chat_room",
                 sender="심원경",
                 content="본계약 전 절차와 검토는 가능하며, 계약 전 수정 가능하므로 지나친 우려는 불필요합니다. 입대위 출범 후 변경 가능한 상황입니다.",
                 timestamp=datetime.now() - timedelta(hours=3),
@@ -1387,7 +1387,7 @@ async def load_sample_level_data():
             # 김창희 - GS 수의계약 비판 (샘플 원본)
             ChatMessage(
                 message_id="sample_kim_changhee_001",
-                chat_room="개포우성7차_샘플",
+                chat_room="sample_chat_room",
                 sender="김창희",
                 content="경쟁입찰 가능했음에도 조합이 GS와 수의계약을 강행한 것은 문제가 있다고 봅니다. 다른 단지들과 비교해봐도 투명성과 협상력이 현저히 부족합니다. 조합장님의 독단적인 결정 방식에 대해 강력히 우려를 표명합니다.",
                 timestamp=datetime.now() - timedelta(hours=2, minutes=45),
@@ -1399,7 +1399,7 @@ async def load_sample_level_data():
             # 박제영 - 절차 문제 지적 (샘플 원본)
             ChatMessage(
                 message_id="sample_park_jeyoung_001",
-                chat_room="개포우성7차_샘플",
+                chat_room="sample_chat_room",
                 sender="박제영",
                 content="속도전만 강조하는 분위기 우려됩니다. 조합장과 일부 조합원의 독단을 경계해야 합니다. 주객전도된 구조, 입찰 절차 미준수 가능성을 지적합니다.",
                 timestamp=datetime.now() - timedelta(hours=2, minutes=30),
@@ -1411,7 +1411,7 @@ async def load_sample_level_data():
             # 조슬기 - 정보 제공자 (샘플 패턴)
             ChatMessage(
                 message_id="sample_jo_seulgi_001",
-                chat_room="개포우성7차_샘플",
+                chat_room="sample_chat_room",
                 sender="조슬기",
                 content="외부 사례(파크포레온) 영상을 공유합니다. 다른 단지의 운영 현황을 참고하시면 도움이 될 것 같습니다.",
                 timestamp=datetime.now() - timedelta(hours=2),
@@ -1426,7 +1426,7 @@ async def load_sample_level_data():
         
         return {
             "status": "success",
-            "message": "샘플 수준의 실제 조합 채팅방 패턴 데이터가 로드되었습니다",
+            "message": "샘플 수준의 실제 조합 대화방 패턴 데이터가 로드되었습니다",
             "sample_data": {
                 "total_messages": len(sample_messages),
                 "participants": list(set(msg.sender for msg in sample_messages)),
@@ -1527,8 +1527,12 @@ if __name__ == "__main__":
     print("")
     print("🏆 **최첨단 AI 기반 한국어 대화 분석 - 차세대 수준!**")
     print("")
-    
-    uvicorn.run(app, host="0.0.0.0", port=8002) 
+
+    _cam = int(
+        os.environ.get("CHAT_ANALYSIS_MAIN_PORT", os.environ.get("PORT", "8002"))
+    )
+    print(f"🌐 서버: http://localhost:{_cam}")
+    uvicorn.run(app, host="0.0.0.0", port=_cam) 
 
 
 @app.post("/api/ai-message-generation/analyze-person")

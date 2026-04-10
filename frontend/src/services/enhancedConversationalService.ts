@@ -1,5 +1,20 @@
 // 고도화된 대화형 인터페이스 서비스
 // Enhanced Conversational Interface Service
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  API_BASE_URL,
+  API_V2_ENHANCED_ANALYZE_PATH,
+  API_V2_ENHANCED_CHAT_PATH,
+  API_V2_ENHANCED_CONTEXTUAL_PATH,
+  API_V2_ENHANCED_FEEDBACK_PATH,
+  API_V2_ENHANCED_HEALTH_PATH,
+  API_V2_ENHANCED_INSIGHTS_PATH,
+  FALLBACK_API_ORIGIN,
+  joinApiBaseAndPath,
+  joinApiHealthCheckUrl,
+  WS_BASE_URL,
+  WS_ENHANCED_CONVERSATION_PATH_PREFIX,
+} from '../config/api';
 
 export interface MessageRequest {
   conversation_id: string;
@@ -17,7 +32,7 @@ export interface MessageResponse {
       emotion: 'positive' | 'negative' | 'neutral';
       confidence: number;
       processing_time: number;
-      context?: any;
+      context?: unknown;
     };
   };
   timestamp: string;
@@ -77,11 +92,11 @@ export interface ContextualResponseResponse {
     suggestions?: string[];
     confidence?: number;
     sources?: string[];
-    context?: any;
+    context?: unknown;
   };
   metadata: {
     processing_time: number;
-    intent: any;
+    intent: unknown;
     clarification_needed: boolean;
   };
   timestamp: string;
@@ -111,8 +126,8 @@ export interface HealthResponse {
   active_conversations: number;
 }
 
-class EnhancedConversationalService {
-  private baseUrl: string = 'http://localhost:8003';
+export class EnhancedConversationalService {
+  private baseUrl: string = API_BASE_URL || FALLBACK_API_ORIGIN;
 
   constructor(baseUrl?: string) {
     if (baseUrl) {
@@ -123,21 +138,26 @@ class EnhancedConversationalService {
   // 헬스 체크
   async checkHealth(): Promise<HealthResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v2/enhanced/health`);
+      const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_V2_ENHANCED_HEALTH_PATH));
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return await response.json();
     } catch (error) {
-      console.error('헬스 체크 실패:', error);
+      const err = toError(error);
+      errorLogger.error('헬스 체크 실패', err, {
+        component: 'enhancedConversationalService',
+        action: 'checkHealth',
+        baseUrl: this.baseUrl,
+      });
       throw error;
     }
   }
 
-  // 채팅 메시지 전송
+  // 대화 메시지 전송
   async sendMessage(request: MessageRequest): Promise<MessageResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v2/enhanced/chat`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_V2_ENHANCED_CHAT_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +171,14 @@ class EnhancedConversationalService {
 
       return await response.json();
     } catch (error) {
-      console.error('메시지 전송 실패:', error);
+      const err = toError(error);
+      errorLogger.error('메시지 전송 실패', err, {
+        component: 'enhancedConversationalService',
+        action: 'sendMessage',
+        conversationId: request.conversation_id,
+        userId: request.user_id,
+        messagePreview: request.message,
+      });
       throw error;
     }
   }
@@ -159,7 +186,7 @@ class EnhancedConversationalService {
   // 맥락 기반 정확한 답변 요청
   async getContextualResponse(request: ContextualResponseRequest): Promise<ContextualResponseResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v2/enhanced/contextual`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_V2_ENHANCED_CONTEXTUAL_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,7 +200,14 @@ class EnhancedConversationalService {
 
       return await response.json();
     } catch (error) {
-      console.error('맥락 기반 응답 요청 실패:', error);
+      const err = toError(error);
+      errorLogger.error('맥락 기반 응답 요청 실패', err, {
+        component: 'enhancedConversationalService',
+        action: 'getContextualResponse',
+        conversationId: request.conversation_id,
+        userId: request.user_id,
+        messagePreview: request.message,
+      });
       throw error;
     }
   }
@@ -181,7 +215,7 @@ class EnhancedConversationalService {
   // 응답 품질 피드백 전송
   async sendQualityFeedback(request: QualityFeedbackRequest): Promise<QualityFeedbackResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v2/enhanced/feedback`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_V2_ENHANCED_FEEDBACK_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,7 +229,15 @@ class EnhancedConversationalService {
 
       return await response.json();
     } catch (error) {
-      console.error('품질 피드백 전송 실패:', error);
+      const err = toError(error);
+      errorLogger.error('품질 피드백 전송 실패', err, {
+        component: 'enhancedConversationalService',
+        action: 'sendQualityFeedback',
+        conversationId: request.conversation_id,
+        userId: request.user_id,
+        messageId: request.message_id,
+        quality: request.quality,
+      });
       throw error;
     }
   }
@@ -203,7 +245,7 @@ class EnhancedConversationalService {
   // 고급 분석 실행
   async analyzeConversation(request: AnalysisRequest): Promise<AnalysisResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v2/enhanced/analyze`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_V2_ENHANCED_ANALYZE_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -217,7 +259,12 @@ class EnhancedConversationalService {
 
       return await response.json();
     } catch (error) {
-      console.error('대화 분석 실패:', error);
+      const err = toError(error);
+      errorLogger.error('대화 분석 실패', err, {
+        component: 'enhancedConversationalService',
+        action: 'analyzeConversation',
+        conversationId: request.conversation_id,
+      });
       throw error;
     }
   }
@@ -225,7 +272,7 @@ class EnhancedConversationalService {
   // 인사이트 생성
   async generateInsights(request: InsightRequest): Promise<InsightResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v2/enhanced/insights`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_V2_ENHANCED_INSIGHTS_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -239,14 +286,22 @@ class EnhancedConversationalService {
 
       return await response.json();
     } catch (error) {
-      console.error('인사이트 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('인사이트 생성 실패', err, {
+        component: 'enhancedConversationalService',
+        action: 'generateInsights',
+        conversationId: request.conversation_id,
+      });
       throw error;
     }
   }
 
   // WebSocket 연결
   createWebSocketConnection(conversationId: string): WebSocket {
-    const wsUrl = `ws://localhost:8003/ws/v2/enhanced/${conversationId}`;
+    const wsUrl = joinApiBaseAndPath(
+      WS_BASE_URL,
+      `${WS_ENHANCED_CONVERSATION_PATH_PREFIX}/${encodeURIComponent(conversationId)}`,
+    );
     return new WebSocket(wsUrl);
   }
 
@@ -258,12 +313,17 @@ class EnhancedConversationalService {
         content: content || ''
       }));
     } else {
-      console.error('WebSocket이 연결되지 않았습니다.');
+      errorLogger.error('WebSocket이 연결되지 않았습니다', {
+        component: 'enhancedConversationalService',
+        action: 'sendWebSocketMessage',
+        readyState: ws.readyState,
+        type,
+      });
     }
   }
 
   // 대화 세션 생성
-  createConversationSession(userId: string): string {
+  createConversationSession(_userId: string): string {
     const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     return conversationId;
   }
@@ -297,7 +357,7 @@ class EnhancedConversationalService {
 • 대화 길이: ${analysis.conversation_length}개 메시지
 • 평균 메시지 길이: ${analysis.average_message_length.toFixed(1)}자
 • 감정 분포: ${JSON.stringify(analysis.emotion_distribution)}
-• 주요 키워드: ${Object.keys(analysis.top_keywords).slice(0, 5).join(', ')}
+• 주요 키워드: ${Object.keys(analysis.top_keywords).join(', ')}
 • 대화 흐름: ${analysis.conversation_flow}
 • 사용자 만족도: ${(analysis.user_satisfaction * 100).toFixed(1)}%`;
   }
@@ -340,14 +400,19 @@ ${response.confidence ? `🎯 신뢰도: ${(response.confidence * 100).toFixed(1
   }
 
   // 에러 처리
-  handleError(error: any): string {
-    console.error('서비스 에러:', error);
+  handleError(error: unknown): string {
+    const err = toError(error);
+    errorLogger.error('서비스 에러', err, {
+      component: 'enhancedConversationalService',
+      action: 'handleError',
+    });
 
-    if (error.message?.includes('fetch')) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('fetch')) {
       return '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.';
     }
 
-    if (error.message?.includes('HTTP error')) {
+    if (msg.includes('HTTP error')) {
       return '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
     }
 
@@ -379,6 +444,5 @@ ${response.confidence ? `🎯 신뢰도: ${(response.confidence * 100).toFixed(1
 }
 
 // 싱글톤 인스턴스 생성
-const enhancedConversationalService = new EnhancedConversationalService();
-
+export const enhancedConversationalService = new EnhancedConversationalService();
 export default enhancedConversationalService; 

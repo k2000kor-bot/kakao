@@ -6,12 +6,21 @@
 
 ## 🚀 서버 실행 방법
 
-### 방법 1: 간단한 통합 API 서버 (권장)
+### 방법 0: 프로젝트 루트에서 (가장 권장)
+
+`package.json`이 있는 폴더에서:
+
+```bash
+cd /path/to/kakao-frontend/kakao-frontend
+npm run restart:backend
+```
+
+### 방법 1: 간단한 통합 API 서버
 
 의존성이 적고 빠르게 시작할 수 있습니다:
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 start_simple_integrated_server.py
 ```
 
@@ -20,7 +29,7 @@ python3 start_simple_integrated_server.py
 모든 기능을 포함한 서버:
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 main_server.py
 ```
 
@@ -28,9 +37,9 @@ python3 main_server.py
 
 서버가 시작되면:
 
-- **서버 주소**: `http://localhost:8000`
-- **API 문서**: `http://localhost:8000/api/docs` (Swagger UI)
-- **통합 API Base**: `http://localhost:8000/api/integrated`
+- **서버 주소**: `http://localhost:5002`
+- **API 문서**: `http://localhost:5002/api/docs` (Swagger UI)
+- **통합 API Base**: `http://localhost:5002/api/integrated`
 
 ## 🔍 서버 확인
 
@@ -38,13 +47,13 @@ python3 main_server.py
 
 ```bash
 # 헬스 체크
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 
 # 시스템 상태
-curl http://localhost:8000/api/integrated/status
+curl http://localhost:5002/api/integrated/status
 
 # 메시지 분석 테스트
-curl -X POST http://localhost:8000/api/integrated/analyze \
+curl -X POST http://localhost:5002/api/integrated/analyze \
   -H "Content-Type: application/json" \
   -d '{"message": "안녕하세요!"}'
 ```
@@ -56,7 +65,7 @@ curl -X POST http://localhost:8000/api/integrated/analyze \
 프론트엔드 프로젝트의 `.env` 파일에 추가:
 
 ```env
-REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated
+REACT_APP_INTEGRATED_API_URL=http://localhost:5002/api/integrated
 ```
 
 ### 2. TypeScript 클라이언트 사용
@@ -90,7 +99,7 @@ const content = await integratedAPI.generateSocialMediaContent({
 ### 3. 직접 fetch 사용
 
 ```typescript
-const response = await fetch('http://localhost:8000/api/integrated/analyze', {
+const response = await fetch('http://localhost:5002/api/integrated/analyze', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -185,4 +194,4 @@ const data = await response.json();
 
 ---
 
-**서버를 실행한 후 프론트엔드에서 `http://localhost:8000/api/integrated`로 접근하세요!**
+**서버를 실행한 후 프론트엔드에서 `http://localhost:5002/api/integrated`로 접근하세요!**

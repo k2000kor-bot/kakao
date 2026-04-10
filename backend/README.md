@@ -1,150 +1,35 @@
-# KakaoTalk 대화 분석 시스템 - 백엔드
+# Backend
 
-## 📁 파일 업로드 폴더 경로
+## 진입점·포트
 
-### 업로드 폴더 위치
-```
-/Users/aD/kakao-frontend/backend/uploads/
-```
+| 서버 | 파일 | 포트 |
+|------|------|------|
+| **통합 API** (대화·프로젝트) | `main_server.py` | 5002 |
+| **인증 등 (app.py)** | `app.py` | **5002** (기본, `API_PORT`/`BACKEND_PORT`로 변경) — **main_server와 동시 기동 금지** |
 
-### 처리된 파일 폴더 위치
-```
-/Users/aD/kakao-frontend/backend/processed/
-```
+프론트 기본: 5002 (src/config/api.ts).
 
-## 📋 지원하는 파일 형식
+## API 라우터 (backend/api/)
 
-### 문서 파일
-- **PDF** (.pdf) - 노동법, 정책 문서, 매뉴얼
-- **Word** (.docx, .doc) - 보고서, 안내서, 규정
-- **텍스트** (.txt) - 간단한 문서, 메모
-- **Excel** (.xlsx, .xls) - 데이터, 통계, 명단
-- **PowerPoint** (.pptx, .ppt) - 발표 자료, 교육 자료
-- **CSV** (.csv) - 데이터 파일
-- **JSON** (.json) - 구조화된 데이터
-- **XML** (.xml) - 구조화된 문서
+상세: [backend/api/README.md](api/README.md)
 
-## 🗂️ 자동 분류 카테고리
+| 파일 | 용도 |
+|------|------|
+| **project_session_api** | 프로젝트·세션 CRUD |
+| **unified_chat_api** | 대화·스트리밍·사전 생성 파이프라인 |
+| **main** | api.main 진입 (Flask) |
 
-### 1. 노동법 (labor_law)
-- **서브카테고리**: 근로기준법, 산업안전보건법, 최저임금법, 근로복지법
-- **키워드**: 노동, 근로, 임금, 근로기준법, 최저임금, 산업안전, 근로복지
+**프론트 `message`**: CRA 앱은 전송 전 `chatInputUtils.coerceTrimmedString`로 정규화 — [docs/guides/RESPONSE_CLEANING.md](../docs/guides/RESPONSE_CLEANING.md). 서버는 빈 문자열·최대 길이 등 기존 검증 유지.
+| **tts_api** | 목소리 생성 |
+| **analysis_api** | 웹 검색·분석 |
 
-### 2. 조합 정책 (union_policy)
-- **서브카테고리**: 조합원 규정, 복지 정책, 교육 정책, 협의 정책
-- **키워드**: 조합, 정책, 규정, 조합원, 조합장, 총회, 이사회
+## 테스트
 
-### 3. 안전 가이드라인 (safety_guidelines)
-- **서브카테고리**: 안전 규정, 작업 매뉴얼, 응급 대응, 교육 자료
-- **키워드**: 안전, 사고, 보호구, 안전교육, 작업매뉴얼, 응급, 구급
-
-### 4. 복지 정보 (welfare_info)
-- **서브카테고리**: 의료 혜택, 교육 지원, 문화 혜택, 금융 지원
-- **키워드**: 복지, 혜택, 의료, 교육, 문화, 금융, 지원, 보험
-
-### 5. 협의 자료 (negotiation_materials)
-- **서브카테고리**: 협의 기록, 합의 사항, 쟁점 사항, 후속 조치
-- **키워드**: 협의, 시공사, 합의, 쟁점, 협상, 대화, 회의
-
-### 6. 교육 자료 (training_materials)
-- **서브카테고리**: 기술 교육, 안전 교육, 법규 교육, 리더십 교육
-- **키워드**: 교육, 훈련, 강의, 학습, 기술, 리더십, 역량
-
-## 🚀 사용 방법
-
-### 1. 파일 업로드
-1. 지원하는 파일을 `/Users/aD/kakao-frontend/backend/uploads/` 폴더에 복사
-2. 웹 인터페이스에서 "문서 업로드" 버튼 클릭
-3. 파일 선택 후 업로드
-
-### 2. 자동 분류 확인
-- 업로드 후 AI가 자동으로 카테고리 분류
-- 분류 신뢰도 점수 확인 (0.7-1.0)
-- 자동 태그 생성 확인
-
-### 3. AI 학습
-- "AI 학습" 버튼으로 딥러닝 모델 훈련
-- 학습 진행률 실시간 모니터링
-- 정확도 및 손실률 확인
-
-### 4. 문서 관리
-- 카테고리별 필터링
-- 검색 기능 (제목, 내용, 태그)
-- 사용 통계 및 평점 관리
-
-## 📊 AI 기능
-
-### 자동 분류
-- 키워드 기반 문서 카테고리 분류
-- 파일명과 내용 분석
-- 신뢰도 점수 제공
-
-### AI 인사이트
-- **주제 분석**: 문서의 주요 주제 식별
-- **추천**: 관련 문서 및 행동 제안
-- **요약**: 문서 내용 요약
-- **키워드**: 중요 키워드 추출
-
-### 딥러닝 학습
-- 업로드된 문서로 AI 모델 훈련
-- 분류 정확도 향상
-- 새로운 패턴 학습
-
-## 🔧 시스템 요구사항
-
-### Python 패키지
-```
-fastapi
-uvicorn
-python-multipart
-pydantic
-```
-
-### 설치 방법
 ```bash
-cd /Users/aD/kakao-frontend/backend
-source venv/bin/activate
-pip install -r requirements.txt
+cd backend && python3 -m pytest tests/ -v
+# 또는 npm run test:backend
 ```
 
-### 실행 방법
-```bash
-cd /Users/aD/kakao-frontend/backend
-source venv/bin/activate
-python3 main.py
-```
+주요: test_unified_chat_api, test_project_session_api, test_main_api, test_main_server.
 
-## 📁 폴더 구조
-
-```
-backend/
-├── uploads/          # 업로드된 원본 파일
-├── processed/        # 처리된 파일 (카테고리별)
-│   ├── labor_law/
-│   ├── union_policy/
-│   ├── safety_guidelines/
-│   ├── welfare_info/
-│   ├── negotiation_materials/
-│   └── training_materials/
-├── main.py           # FastAPI 서버
-├── knowledge_management.py  # 지식 관리 시스템
-└── ...
-```
-
-## 🎯 주요 기능
-
-1. **파일 업로드**: 다양한 형식의 문서 지원
-2. **자동 분류**: AI 기반 카테고리 분류
-3. **태그 생성**: 자동 키워드 태그 생성
-4. **AI 인사이트**: 자동 분석 및 추천
-5. **딥러닝 학습**: 모델 훈련 및 개선
-6. **검색 기능**: 제목, 내용, 태그 기반 검색
-7. **통계 관리**: 사용 횟수, 평점 관리
-
-## 📞 지원
-
-문제가 발생하면 다음을 확인하세요:
-1. 파일 형식이 지원되는지 확인
-2. 파일 크기가 적절한지 확인 (최대 10MB)
-3. 파일명에 특수문자가 없는지 확인
-4. 백엔드 서버가 실행 중인지 확인 
+[docs/DEVELOPMENT_CONTINUITY.md](../docs/DEVELOPMENT_CONTINUITY.md) §6. 상세: README_APP.md, API_DOCUMENTATION.md.

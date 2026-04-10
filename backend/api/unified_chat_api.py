@@ -1,7 +1,7 @@
 # flake8: noqa
 """
-통합 채팅 API
-프론트엔드에서 사용하는 통합 채팅 응답 생성 API
+통합 대화 API
+프론트엔드에서 사용하는 통합 대화 응답 생성 API
 표준화된 응답 형식 제공
 """
 
@@ -17,6 +17,8 @@ from typing import Dict, Any, Optional, List
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict
+
+from api.stream_metadata_merge import merge_round_into_aggregated_stream_metadata
 import sys
 import os
 
@@ -38,6 +40,12 @@ except ImportError as e:
     logger_init.warning(f"⚠️ LLM 서비스 사용 불가: {e}")
 
 # 고급 응답 엔진 import
+try:
+    from api.memory_context_hint import attach_advanced_memory_instruction
+except ImportError:
+    def attach_advanced_memory_instruction(ctx: Optional[Dict[str, Any]]) -> None:
+        return
+
 try:
     from api.intelligent_response_engine import get_intelligent_engine
 
@@ -82,7 +90,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["chat", "unified"])
 
-
 def _json_error(*, error: str, status_code: int = 500, **kwargs):
     """
     표준 에러 바디 + 올바른 HTTP status_code 반환.
@@ -97,19 +104,111 @@ def _json_error(*, error: str, status_code: int = 500, **kwargs):
     return JSONResponse(status_code=status_code, content=body)
 
 
-@router.get("/health", summary="통합 채팅 API 헬스 체크")
+_MULTI_REQUEST_WORKFLOW_PREAMBLE = """[다중 질문·요구·요청 처리 흐름]
+- 한 메시지 안에 질문, 요구, 요청이 동시에 있을 수 있습니다. 모두 수용하고 빠짐없이 반영하세요.
+- 최종 글을 쓰기 전에: 항목을 어떤 순서로 다룰지, 서두→전개→마무리 시나리오를 짧게 정리한 뒤(생성 전 계획) 본문을 전개하세요.
+- 아래 번호(1. 2. …) 순서를 존중해 각 항목을 처리하고, 마지막에 모든 요구가 충족되었는지 점검한 뒤 하나의 완성된 답으로 마무리하세요."""
+
+
+def _compose_multi_request_instruction(ctx: Optional[Dict[str, Any]]) -> Optional[str]:
+    """
+    프론트 multi_request_mode·multi_request_items·multi_request_adaptation_instruction을
+    LLM prefix·고급 엔진 considerations용 단일 블록으로 합칩니다.
+    """
+    if not ctx or not isinstance(ctx, dict):
+        return None
+    if not ctx.get("multi_request_mode"):
+        return None
+    multi_parts: List[str] = [_MULTI_REQUEST_WORKFLOW_PREAMBLE]
+    madapt = ctx.get("multi_request_adaptation_instruction") or ""
+    if isinstance(madapt, str) and madapt.strip():
+        multi_parts.append(madapt.strip())
+    mitems = ctx.get("multi_request_items")
+    if isinstance(mitems, list) and mitems:
+        lines: List[str] = []
+        for idx, it in enumerate(mitems, start=1):
+            s = str(it).strip() if it is not None else ""
+            if s:
+                lines.append(f"  {idx}. {s}")
+        if lines:
+            multi_parts.append(
+                "[이번 메시지의 요청 항목 — 위 순서·시나리오 원칙에 따라 각각 응답할 것]\n"
+                + "\n".join(lines)
+            )
+    # preamble만 있고 맞춤 지시·항목이 없으면 다중 모드 의미가 없음
+    if len(multi_parts) <= 1:
+        return None
+    return "\n\n".join(multi_parts)
+
+
+def _append_multi_request_items_to_research_seed(
+    seed: str, ctx: Optional[Dict[str, Any]]
+) -> str:
+    """
+    웹 연구(should_research / analyze_information_gaps) 시드에 multi_request_items를 덧붙여
+    항목별 주제가 연구 쿼리에 반영되게 합니다.
+    """
+    s = (seed or "").strip()
+    if not s or not ctx or not isinstance(ctx, dict):
+        return s
+    if not ctx.get("multi_request_mode"):
+        return s
+    if "[다중 요청 항목" in s or "[이번 메시지의 요청 항목" in s:
+        return s
+    items = ctx.get("multi_request_items")
+    if not isinstance(items, list) or not items:
+        return s
+    lines: List[str] = []
+    for i, it in enumerate(items, 1):
+        part = str(it).strip() if it is not None else ""
+        if part:
+            lines.append(f"{i}) {part}")
+    if not lines:
+        return s
+    block = "[다중 요청 항목 — 연구·답변이 모두 다루어야 함]\n" + "\n".join(lines)
+    return (s + "\n\n" + block).strip()
+
+
+_DEFAULT_ADAPT_ANSWER_TO_REQUEST = (
+    "답변의 길이·형식·깊이는 사용자의 질문과 요구에 맞춰 유연하게 조절하세요. "
+    "글쓰기 형식(보고서·칼럼·요약·단계별 가이드·Q&A·사건조사 형식 등)과 스타일(어투·톤·길이)은 요구에 맞게 구성하고, "
+    "결과물의 구성(서론·본론·결론, 항목·섹션)을 질문과 요구사항에 맞게 잡으세요. 요구에 형식이 명시되면 반드시 따르세요. "
+    "답변 작성 시 생성로직(사실 정리→맥락·원인→분석·조사 내용→결론·시사점)을 갖추어 단계적으로 서술하세요. "
+    "사건조사 형식을 요청하면 개요·경과·원인 분석·관계자·결론·시사점 등 조사보고 구조에 맞게 작성하세요. "
+    "짧은 질문·단순 요청(예: 1+1은?, 뭐야?)에는 그 질문에 대한 직접적인 짧은 답을 먼저 제시하세요. "
+    "한 줄로·짧게·요약만 요청했으면 한 줄 또는 매우 짧은 답만 제시하세요. "
+    "반대되는 논리로만·반대 논리로 작성해달라 요청했으면 찬성 논리나 양론 정리가 아닌, 제시된 문장에 대한 반대 논리만 서술하세요. "
+    "찬성 논리로만·찬성 입장으로 작성해달라 요청했으면 반대 논리나 양론 정리가 아닌, 제시된 문장에 대한 찬성 논리만 서술하세요. "
+    "상세·분석·비교·단계별·예시를 요청하면 그에 맞게 충실히 답하고, 요구사항이 명시된 경우 형식·항목·구조를 지키세요."
+)
+
+
+def _ensure_original_message_and_adapt_defaults(
+    ctx: Dict[str, Any], user_message: str
+) -> None:
+    """프론트가 context를 안 보낸 API·스트림 호환: 원문·adapt 지시 기본값."""
+    if not ctx.get("original_user_message") and user_message:
+        ctx["original_user_message"] = user_message.strip()
+    if not ctx.get("adapt_answer_to_request"):
+        ctx["adapt_answer_to_request"] = _DEFAULT_ADAPT_ANSWER_TO_REQUEST
+
+
+@router.get("/health", summary="통합 대화 API 헬스 체크")
 async def health_check():
-    """통합 채팅 API 헬스 체크"""
+    """통합 대화 API 헬스 체크"""
     try:
         from api.health_check import system_health_checker
 
         health_status = system_health_checker.check_all_modules()
-        return {
+        out = {
             "status": "healthy",
             "service": "unified-chat-api",
             "timestamp": datetime.now().isoformat(),
             "details": health_status,
         }
+        if LLM_SERVICE_AVAILABLE and llm_service_instance is not None:
+            out["llm_provider"] = getattr(llm_service_instance, "provider", "unknown")
+        return out
     except Exception as e:
         logger.error(f"헬스 체크 오류: {e}")
         return {
@@ -121,7 +220,7 @@ async def health_check():
 
 
 class UnifiedChatRequest(BaseModel):
-    """통합 채팅 요청 모델"""
+    """통합 대화 요청 모델"""
 
     message: str
     user_id: Optional[str] = None
@@ -137,8 +236,9 @@ class UnifiedChatRequest(BaseModel):
     request_id: Optional[str] = None  # 고유 요청 ID (캐시 다양성 확보)
     avoid_repetition: Optional[bool] = True  # 반복 방지 활성화
     variation_mode: Optional[str] = "high"  # 변형 모드 (normal, high)
+    diversity_level: Optional[str] = None  # 프론트 다양성 모드: stable, varied, exploratory
     # 긴 응답 및 다중 질문 지원
-    max_tokens: Optional[int] = 4096  # 최대 토큰 수 (긴 응답 지원)
+    max_tokens: Optional[int] = 16384  # 최대 토큰 수 (요구·질문에 맞게 생성, 제한 완화)
     response_style: Optional[str] = (
         "balanced"  # concise, balanced, detailed, comprehensive
     )
@@ -146,6 +246,7 @@ class UnifiedChatRequest(BaseModel):
     perspective: Optional[str] = (
         None  # 특정 관점 지정 (practical, theoretical, creative, critical)
     )
+    project_id: Optional[str] = None  # 프로젝트별 노트북 LLM 컨텍스트 사용 시 프로젝트 ID
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -155,14 +256,14 @@ class UnifiedChatRequest(BaseModel):
                 "quality": "enhanced",
                 "mode": "chat",
                 "response_style": "detailed",
-                "max_tokens": 4096,
+                "max_tokens": 16384,
             }
         }
     )
 
 
 class ChatStreamRequest(BaseModel):
-    """SSE 스트리밍 채팅 요청 모델 (프론트 streamingClient.ts 호환)"""
+    """SSE 스트리밍 대화 요청 모델 (프론트 streamingClient.ts 호환)"""
 
     message: str
     session_id: Optional[str] = None
@@ -172,14 +273,16 @@ class ChatStreamRequest(BaseModel):
     quality: Optional[str] = "enhanced"
     mode: Optional[str] = None
     options: Optional[Dict[str, Any]] = None
+    project_id: Optional[str] = None  # 프로젝트별 노트북 LLM 컨텍스트 사용
     # 다양성 파라미터 (UnifiedChatRequest와 동일)
     diversity: Optional[bool] = True
     temperature: Optional[float] = 0.8
     request_id: Optional[str] = None
     avoid_repetition: Optional[bool] = True
     variation_mode: Optional[str] = "high"
+    diversity_level: Optional[str] = None  # stable, varied, exploratory
     # 긴 응답 및 다중 질문 지원
-    max_tokens: Optional[int] = 4096  # 최대 토큰 수 (긴 응답 지원)
+    max_tokens: Optional[int] = 16384  # 최대 토큰 수 (요구·질문에 맞게 생성, 제한 완화)
     response_style: Optional[str] = (
         "balanced"  # concise, balanced, detailed, comprehensive
     )
@@ -187,11 +290,11 @@ class ChatStreamRequest(BaseModel):
     perspective: Optional[str] = None  # 특정 관점 지정
 
 
-@router.post("/chat", summary="통합 채팅 응답 생성")
+@router.post("/chat", summary="통합 대화 응답 생성")
 async def unified_chat(request: UnifiedChatRequest):
     """
-    통합 채팅 응답 생성 API
-    프론트엔드에서 사용하는 표준화된 채팅 API
+    통합 대화 응답 생성 API
+    프론트엔드에서 사용하는 표준화된 대화 API
     """
     start_time = time.time()
 
@@ -221,7 +324,7 @@ async def unified_chat(request: UnifiedChatRequest):
             quality = "enhanced"  # 기본값으로 설정
 
         logger.info(
-            f"채팅 요청 수신: user_id={user_id}, quality={quality}, message_length={len(message)}"
+            f"대화 요청 수신: user_id={user_id}, quality={quality}, message_length={len(message)}"
         )
 
         # 성능 모니터링 시작
@@ -235,6 +338,53 @@ async def unified_chat(request: UnifiedChatRequest):
         elif isinstance(request.context, list):
             normalized_context = {"conversationContext": request.context}
 
+        # 2단계: 한국어 이해 계층 프로필 수신 검증 (Genspark형 파이프라인 v3)
+        korean_profile = normalized_context.get("korean_understanding")
+        genre_control = normalized_context.get("genre_control")
+        enable_korean_depth = normalized_context.get("enable_korean_depth", False)
+        
+        if korean_profile:
+            logger.info(
+                f"[Korean Layer] Received profile: genre={korean_profile.get('genre', 'unknown')}, "
+                f"speech_act={korean_profile.get('speech_act', 'unknown')}, "
+                f"formality={korean_profile.get('formality', 'unknown')}, "
+                f"tone_hint={korean_profile.get('tone_hint', 'unspecified')}"
+            )
+            if genre_control:
+                logger.info(
+                    f"[Korean Layer] Genre control: output_genre={genre_control.get('output_genre')}, "
+                    f"sentence_length={genre_control.get('sentence_length')}, "
+                    f"line_break_style={genre_control.get('line_break_style')}, "
+                    f"politeness={genre_control.get('politeness')}"
+                )
+            # 생략 복원 힌트가 있으면 로그
+            ellipsis_notes = korean_profile.get("ellipsis_resolution_notes", [])
+            if ellipsis_notes:
+                logger.debug(
+                    f"[Korean Layer] Ellipsis resolution notes: {len(ellipsis_notes)} hints found"
+                )
+        elif enable_korean_depth:
+            logger.warning(
+                "[Korean Layer] enable_korean_depth is True but korean_understanding is missing"
+            )
+
+        _mlh = normalized_context.get("multilayer_style_hint")
+        if _mlh:
+            logger.info(
+                "[Multi-layer style hint] client context present (keys=%s)",
+                list(_mlh.keys()) if isinstance(_mlh, dict) else type(_mlh).__name__,
+            )
+
+        if normalized_context.get("agentic_genspark_style"):
+            logger.info(
+                "[Genspark Agentic] agentic_genspark_style enabled — 과업 완결형 지시·템플릿이 context에 포함됨"
+            )
+
+        if normalized_context.get("deepseek_review_layer_hints"):
+            logger.info(
+                "[DeepSeek v2] deepseek_review_layer_hints enabled — Chat/Reasoner 프롬프트·라우팅 힌트가 context에 포함됨"
+            )
+
         # context에 다양성 파라미터 추가
         enhanced_context = normalized_context
 
@@ -244,6 +394,18 @@ async def unified_chat(request: UnifiedChatRequest):
             writing_style = request.options.get("writing_style")
             if writing_style:
                 logger.info(f"📝 글쓰기 스타일 감지: {writing_style}")
+
+        # project_id: 요청 최상위 또는 context.projectId (프론트가 context만 보낼 때)
+        _project_id = request.project_id
+        if not _project_id and isinstance(normalized_context.get("projectId"), str):
+            _project_id = normalized_context.get("projectId")
+        # diversity_level(프론트) -> variation_mode 매핑
+        _variation = request.variation_mode
+        if request.diversity_level:
+            if request.diversity_level == "stable":
+                _variation = "normal"
+            elif request.diversity_level in ("varied", "exploratory"):
+                _variation = "high"
 
         enhanced_context.update(
             {
@@ -258,14 +420,16 @@ async def unified_chat(request: UnifiedChatRequest):
                 "avoid_repetition": request.avoid_repetition
                 if request.avoid_repetition is not None
                 else True,
-                "variation_mode": request.variation_mode or "high",
+                "variation_mode": _variation or "high",
                 "user_id": user_id,
                 "conversation_id": request.conversation_id,
                 # 글쓰기 스타일 추가
                 "writing_style": writing_style,
                 "person_style": writing_style,  # person_style도 동일하게 설정
+                "project_id": _project_id,
             }
         )
+        _ensure_original_message_and_adapt_defaults(enhanced_context, message)
 
         logger.info(
             f"다양성 설정: diversity={enhanced_context.get('diversity')}, "
@@ -273,8 +437,32 @@ async def unified_chat(request: UnifiedChatRequest):
             f"variation_mode={enhanced_context.get('variation_mode')}"
         )
 
-        # 통합된 응답 생성 로직 사용 (전문 분야 도메인 및 노트북 LLM 통합)
-        response_text = await generate_chat_response(message, quality, enhanced_context)
+        # 통합된 응답 생성 로직 사용 (워크스페이스 도구 결과는 chat_metadata로 전달)
+        chat_metadata = {}
+        response_text = await generate_chat_response(
+            message, quality, enhanced_context, out_metadata=chat_metadata
+        )
+
+        # 워크스페이스 도구 실행으로 조기 반환된 경우: 검증/향상 생략 후 즉시 반환
+        if chat_metadata.get("workspace_tool_result"):
+            processing_time = int((time.time() - request_start_time) * 1000)
+            response_data = {
+                "status": "success",
+                "success": True,
+                "response": response_text,
+                "message": response_text,
+                "content": response_text,
+                "data": {
+                    "response": response_text,
+                    "processing_time": processing_time,
+                    "user_id": user_id,
+                    "conversation_id": request.conversation_id,
+                    "timestamp": datetime.now().isoformat(),
+                },
+                "workspace_tool_result": chat_metadata["workspace_tool_result"],
+                "timestamp": datetime.now().isoformat(),
+            }
+            return response_data
 
         # 도메인 감지 (응답 생성 후) - enhanced_context 사용하여 writing_style 포함
         try:
@@ -318,8 +506,7 @@ async def unified_chat(request: UnifiedChatRequest):
             logger.warning(
                 f"⚠️ 응답이 너무 짧거나 기본 메시지: response_length={len(response_text) if response_text else 0}, 재생성 시도"
             )
-            # generate_default_response로 재생성 (긴 질문과 여러 요구사항 처리 포함)
-            response_text = generate_default_response(message)
+            response_text = generate_default_response(message, enhanced_context)
             logger.info(
                 f"📥 재생성된 응답: response_length={len(response_text) if response_text else 0}"
             )
@@ -348,7 +535,7 @@ async def unified_chat(request: UnifiedChatRequest):
                 or len(response_text.strip()) < 5
             ):
                 logger.warning("생성된 응답이 유효하지 않음, 기본 응답 생성")
-                response_text = generate_default_response(message)
+                response_text = generate_default_response(message, enhanced_context)
 
         processing_time = int((time.time() - start_time) * 1000)
 
@@ -431,15 +618,36 @@ async def unified_chat(request: UnifiedChatRequest):
                         )
                 except Exception as e:
                     logger.warning(f"⚠️ 상세한 기본 응답 생성 실패: {e}, 기본 응답 사용")
-                    response_text = generate_default_response(message)
+                    response_text = generate_default_response(message, enhanced_context)
             else:
                 logger.info("📝 일반 질문, generate_default_response 사용")
-                response_text = generate_default_response(message)
+                response_text = generate_default_response(message, enhanced_context)
 
             # 재생성된 응답에서도 "응답:" 접두사 제거
             if response_text and response_text.strip().startswith("응답:"):
                 logger.info("⚠️ 재생성된 응답에서 '응답:' 접두사 감지, 제거 중")
                 response_text = response_text.strip()[3:].strip()
+
+        # 최종 빈 응답 방지 (질문 답변 생성 안정화)
+        if (
+            not response_text
+            or not isinstance(response_text, str)
+            or len(response_text.strip()) < 2
+        ):
+            logger.warning(
+                "⚠️ 최종 검증: 응답이 비어있어 기본 응답으로 대체합니다."
+            )
+            response_text = generate_default_response(message, enhanced_context)
+            if response_text and response_text.strip().startswith("응답:"):
+                response_text = response_text.strip()[3:].strip()
+
+        # 같은 질문·요구에도 n번 다르게 나오도록 다양성 적용 (요청마다 다른 시드)
+        if response_text and enhanced_context.get("diversity", True):
+            _temp = enhanced_context.get("temperature", 0.8)
+            _variation = enhanced_context.get("variation_mode", "high")
+            _rid = enhanced_context.get("request_id") or f"req-{int(time.time() * 1000)}"
+            _seed = (hash(f"{_rid}-{message[:50]}") + int(time.time() * 1000)) % 10000
+            response_text = _add_response_diversity(response_text, _temp, _seed, _variation)
 
         # 표준화된 응답 형식 반환 (프론트엔드 호환성 최우선)
         response_data = {
@@ -464,6 +672,88 @@ async def unified_chat(request: UnifiedChatRequest):
             },
             "timestamp": datetime.now().isoformat(),
         }
+        if chat_metadata.get("workspace_tool_result"):
+            response_data["workspace_tool_result"] = chat_metadata["workspace_tool_result"]
+        if chat_metadata.get("next_actions"):
+            na = chat_metadata["next_actions"]
+            response_data["next_actions"] = na
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["next_actions"] = na
+        if chat_metadata.get("answer_blueprint"):
+            ab = chat_metadata["answer_blueprint"]
+            response_data["answer_blueprint"] = ab
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["answer_blueprint"] = ab
+        if chat_metadata.get("generation_scenario"):
+            gs = chat_metadata["generation_scenario"]
+            response_data["generation_scenario"] = gs
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["generation_scenario"] = gs
+        if chat_metadata.get("korean_style_notes"):
+            ks = chat_metadata["korean_style_notes"]
+            response_data["korean_style_notes"] = ks
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["korean_style_notes"] = ks
+        if chat_metadata.get("korean_quality_scores"):
+            kqs = chat_metadata["korean_quality_scores"]
+            response_data["korean_quality_scores"] = kqs
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["korean_quality_scores"] = kqs
+        if chat_metadata.get("deepseek_refine_meta"):
+            drm = chat_metadata["deepseek_refine_meta"]
+            response_data["deepseek_refine_meta"] = drm
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["deepseek_refine_meta"] = drm
+        if chat_metadata.get("deepseek_critique"):
+            dc = chat_metadata["deepseek_critique"]
+            response_data["deepseek_critique"] = dc
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["deepseek_critique"] = dc
+        if chat_metadata.get("deepseek_reasoner_meta"):
+            drm2 = chat_metadata["deepseek_reasoner_meta"]
+            response_data["deepseek_reasoner_meta"] = drm2
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["deepseek_reasoner_meta"] = drm2
+        if chat_metadata.get("task_plan"):
+            tpl = chat_metadata["task_plan"]
+            response_data["task_plan"] = tpl
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["task_plan"] = tpl
+        if chat_metadata.get("verification_summary"):
+            vs = chat_metadata["verification_summary"]
+            response_data["verification_summary"] = vs
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["verification_summary"] = vs
+        if chat_metadata.get("verification_pass") is not None:
+            vp = chat_metadata["verification_pass"]
+            response_data["verification_pass"] = vp
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["verification_pass"] = vp
+        if chat_metadata.get("follow_up_questions"):
+            fuq = chat_metadata["follow_up_questions"]
+            response_data["follow_up_questions"] = fuq
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["follow_up_questions"] = fuq
+        if chat_metadata.get("response_alternatives"):
+            ralt = chat_metadata["response_alternatives"]
+            response_data["response_alternatives"] = ralt
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["response_alternatives"] = ralt
+        if chat_metadata.get("evidence_coverage") is not None:
+            ecov = chat_metadata["evidence_coverage"]
+            response_data["evidence_coverage"] = ecov
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["evidence_coverage"] = ecov
+        if chat_metadata.get("answer_mode"):
+            am = chat_metadata["answer_mode"]
+            response_data["answer_mode"] = am
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["answer_mode"] = am
+        if chat_metadata.get("response_style"):
+            rs = chat_metadata["response_style"]
+            response_data["response_style"] = rs
+            if isinstance(response_data.get("data"), dict):
+                response_data["data"]["response_style"] = rs
 
         return response_data
 
@@ -486,13 +776,13 @@ async def unified_chat(request: UnifiedChatRequest):
             )
         except ImportError:
             # 에러 핸들러를 사용할 수 없는 경우 기본 처리
-            logger.error(f"통합 채팅 API 오류: {e}", exc_info=True)
+            logger.error(f"통합 대화 API 오류: {e}", exc_info=True)
             return _json_error(
-                error=f"채팅 처리 중 오류가 발생했습니다: {str(e)}", status_code=500
+                error=f"대화 처리 중 오류가 발생했습니다: {str(e)}", status_code=500
             )
 
 
-@router.post("/unified/chat", summary="통합 채팅 응답 생성 (호환 엔드포인트)")
+@router.post("/unified/chat", summary="통합 대화 응답 생성 (호환 엔드포인트)")
 async def unified_chat_compat(request: UnifiedChatRequest):
     """
     하위 호환을 위한 별칭 엔드포인트.
@@ -501,10 +791,10 @@ async def unified_chat_compat(request: UnifiedChatRequest):
     return await unified_chat(request)
 
 
-@router.post("/chat/stream", summary="통합 채팅 응답 스트리밍(SSE)")
+@router.post("/chat/stream", summary="통합 대화 응답 스트리밍(SSE)")
 async def unified_chat_stream(request: ChatStreamRequest):
     """
-    Server-Sent Events 기반 스트리밍 채팅 응답.
+    Server-Sent Events 기반 스트리밍 대화 응답.
     프론트의 `src/utils/streamingClient.ts`가 기대하는 형식:
     - 각 이벤트: `data: {"content": "...", "done": false}\n\n`
     - 종료 이벤트: `data: {"done": true, "fullContent": "..."}\n\n`
@@ -535,6 +825,24 @@ async def unified_chat_stream(request: ChatStreamRequest):
     elif isinstance(request.context, list):
         normalized_context = {"conversationContext": request.context}
 
+    # 2단계: 한국어 이해 계층 프로필 수신 검증 (스트리밍 경로)
+    korean_profile = normalized_context.get("korean_understanding")
+    genre_control = normalized_context.get("genre_control")
+    enable_korean_depth = normalized_context.get("enable_korean_depth", False)
+    
+    if korean_profile:
+        logger.info(
+            f"[Korean Layer Stream] Received profile: genre={korean_profile.get('genre', 'unknown')}, "
+            f"speech_act={korean_profile.get('speech_act', 'unknown')}"
+        )
+
+    _mlh_stream = normalized_context.get("multilayer_style_hint")
+    if _mlh_stream:
+        logger.info(
+            "[Multi-layer style hint Stream] client context present (keys=%s)",
+            list(_mlh_stream.keys()) if isinstance(_mlh_stream, dict) else type(_mlh_stream).__name__,
+        )
+
     writing_style = None
     if request.options and isinstance(request.options, dict):
         writing_style = request.options.get("writing_style")
@@ -542,7 +850,7 @@ async def unified_chat_stream(request: ChatStreamRequest):
     # 응답 스타일 및 관점 설정
     response_style = request.response_style or "balanced"
     perspective = request.perspective
-    max_tokens = request.max_tokens or 4096
+    max_tokens = request.max_tokens or 16384
     handle_multiple = (
         request.handle_multiple_questions
         if request.handle_multiple_questions is not None
@@ -551,6 +859,13 @@ async def unified_chat_stream(request: ChatStreamRequest):
 
     # 응답 스타일 프롬프트 생성
     style_prompt = _get_response_style_prompt(response_style, perspective)
+
+    _variation = request.variation_mode or "high"
+    if request.diversity_level:
+        if request.diversity_level == "stable":
+            _variation = "normal"
+        elif request.diversity_level in ("varied", "exploratory"):
+            _variation = "high"
 
     normalized_context.update(
         {
@@ -563,7 +878,7 @@ async def unified_chat_stream(request: ChatStreamRequest):
             "avoid_repetition": request.avoid_repetition
             if request.avoid_repetition is not None
             else True,
-            "variation_mode": request.variation_mode or "high",
+            "variation_mode": _variation,
             "user_id": user_id,
             "conversation_id": conversation_id,
             "writing_style": writing_style,
@@ -574,17 +889,33 @@ async def unified_chat_stream(request: ChatStreamRequest):
             "perspective": perspective,
             "max_tokens": max_tokens,
             "handle_multiple_questions": handle_multiple,
+            "project_id": getattr(request, "project_id", None)
+            or (normalized_context.get("projectId") if isinstance(normalized_context.get("projectId"), str) else None),
         }
     )
+    _ensure_original_message_and_adapt_defaults(normalized_context, message)
+    attach_advanced_memory_instruction(normalized_context)
 
     async def generate_stream():
         try:
-            # 다중 질문 처리
+            # 구조화 프롬프트(질문+요구 도우미 등)는 분리하지 않음 — 프론트에서 이미 통합 지시 포함
+            STRUCTURED_MARKERS = [
+                "[출력 형식 지시]",
+                "[입력 해석]",
+                "[가이드라인",
+                "[출력 스켈레톤]",
+            ]
+            is_structured_prompt = any(m in message for m in STRUCTURED_MARKERS)
+
+            # 다중 질문 처리 (구조화 프롬프트가 아닐 때만)
+            # 프론트 multi_request_mode면 항목 목록·_multi_request_instruction으로 통합 처리 — 서버 분할과 중복 방지
             questions = [message]
-            if handle_multiple:
-                questions = _split_multiple_questions(message)
+            if handle_multiple and not is_structured_prompt:
+                if not normalized_context.get("multi_request_mode"):
+                    questions = _split_multiple_questions(message)
 
             full_responses = []
+            aggregated_stream_metadata: Dict[str, Any] = {}
 
             for idx, question in enumerate(questions):
                 # 여러 질문인 경우 구분자 추가
@@ -597,14 +928,15 @@ async def unified_chat_stream(request: ChatStreamRequest):
                     full_responses.append(header)
                     yield f"data: {json.dumps({'content': header, 'done': False})}\n\n"
 
-                # 각 질문에 대한 응답 생성 (고급 엔진 우선)
+                # 각 질문에 대한 응답 생성 — 라운드별 out_metadata를 누적(다중 질문 시 마지막만 남던 문제 방지)
+                round_meta: Dict[str, Any] = {}
                 try:
                     # 1. 질문 의도 분석
                     intent = _analyze_query_intent(question)
 
-                    # 2. 기존 generate_chat_response 시도 (MD 문서/전문 엔진)
+                    # 2. 기존 generate_chat_response 시도 (워크스페이스 도구 실행 시 조기 반환 포함)
                     response = await generate_chat_response(
-                        question, quality, normalized_context
+                        question, quality, normalized_context, out_metadata=round_meta
                     )
 
                     # 3. 응답이 부실하면 고급 구조화 엔진 사용
@@ -632,13 +964,17 @@ async def unified_chat_stream(request: ChatStreamRequest):
                     )
 
                 if not isinstance(response, str):
-                    response = str(response)
+                    response = str(response or "")
+                # 빈/짧은 응답 방지: 프론트 출력 보장 (context 전달로 검색·자료 활용 등 동일 적용)
+                if not response or len(response.strip()) < 10:
+                    response = generate_default_response(question, normalized_context)
 
-                # 다양성 추가 (temperature에 따라)
+                # 다양성 추가 (temperature·variation_mode에 따라)
                 temperature = normalized_context.get("temperature", 0.8)
+                variation_mode = normalized_context.get("variation_mode", "high")
                 variation_seed = hash(f"{question}-{time.time()}-{idx}") % 10000
                 response = _add_response_diversity(
-                    response, temperature, variation_seed
+                    response, temperature, variation_seed, variation_mode
                 )
 
                 full_responses.append(response)
@@ -649,31 +985,85 @@ async def unified_chat_stream(request: ChatStreamRequest):
                     chunk = response[i : i + chunk_size]
                     yield f"data: {json.dumps({'content': chunk, 'done': False})}\n\n"
 
+                merge_round_into_aggregated_stream_metadata(
+                    aggregated_stream_metadata, round_meta
+                )
+
             # 전체 응답 조합
             full = "".join(full_responses)
 
-            # 종료 이벤트
+            # 종료 이벤트 (워크스페이스 도구 결과가 있으면 metadata에 포함)
+            meta = {
+                "progress": 100,
+                "model": "unified-chat-api",
+                "response_style": response_style,
+                "perspective": perspective,
+                "questions_processed": len(questions),
+                "max_tokens": max_tokens,
+            }
+            if aggregated_stream_metadata.get("workspace_tool_result"):
+                meta["workspace_tool_result"] = aggregated_stream_metadata[
+                    "workspace_tool_result"
+                ]
+            if aggregated_stream_metadata.get("next_actions"):
+                meta["next_actions"] = aggregated_stream_metadata["next_actions"]
+            if aggregated_stream_metadata.get("answer_blueprint"):
+                meta["answer_blueprint"] = aggregated_stream_metadata["answer_blueprint"]
+            if aggregated_stream_metadata.get("generation_scenario"):
+                meta["generation_scenario"] = aggregated_stream_metadata["generation_scenario"]
+            if aggregated_stream_metadata.get("qa_pipeline_trace_id"):
+                meta["qa_pipeline_trace_id"] = aggregated_stream_metadata[
+                    "qa_pipeline_trace_id"
+                ]
+            if aggregated_stream_metadata.get("trace_id"):
+                meta["trace_id"] = aggregated_stream_metadata["trace_id"]
+            if aggregated_stream_metadata.get("evidence_coverage") is not None:
+                meta["evidence_coverage"] = aggregated_stream_metadata["evidence_coverage"]
+            if aggregated_stream_metadata.get("route_decision"):
+                meta["route_decision"] = aggregated_stream_metadata["route_decision"]
+            if aggregated_stream_metadata.get("korean_style_notes"):
+                meta["korean_style_notes"] = aggregated_stream_metadata["korean_style_notes"]
+            if aggregated_stream_metadata.get("korean_quality_scores"):
+                meta["korean_quality_scores"] = aggregated_stream_metadata[
+                    "korean_quality_scores"
+                ]
+            if aggregated_stream_metadata.get("deepseek_refine_meta"):
+                meta["deepseek_refine_meta"] = aggregated_stream_metadata[
+                    "deepseek_refine_meta"
+                ]
+            if aggregated_stream_metadata.get("deepseek_critique"):
+                meta["deepseek_critique"] = aggregated_stream_metadata["deepseek_critique"]
+            if aggregated_stream_metadata.get("deepseek_reasoner_meta"):
+                meta["deepseek_reasoner_meta"] = aggregated_stream_metadata[
+                    "deepseek_reasoner_meta"
+                ]
+            if aggregated_stream_metadata.get("task_plan"):
+                meta["task_plan"] = aggregated_stream_metadata["task_plan"]
+            if aggregated_stream_metadata.get("verification_summary"):
+                meta["verification_summary"] = aggregated_stream_metadata[
+                    "verification_summary"
+                ]
+            if aggregated_stream_metadata.get("verification_pass") is not None:
+                meta["verification_pass"] = aggregated_stream_metadata["verification_pass"]
+            if aggregated_stream_metadata.get("follow_up_questions"):
+                meta["follow_up_questions"] = aggregated_stream_metadata[
+                    "follow_up_questions"
+                ]
+            if aggregated_stream_metadata.get("response_alternatives"):
+                meta["response_alternatives"] = aggregated_stream_metadata[
+                    "response_alternatives"
+                ]
+            if aggregated_stream_metadata.get("answer_mode"):
+                meta["answer_mode"] = aggregated_stream_metadata["answer_mode"]
+            if aggregated_stream_metadata.get("response_style"):
+                meta["response_style"] = aggregated_stream_metadata["response_style"]
             yield (
                 "data: "
-                + json.dumps(
-                    {
-                        "content": "",
-                        "done": True,
-                        "fullContent": full,
-                        "metadata": {
-                            "progress": 100,
-                            "model": "unified-chat-api",
-                            "response_style": response_style,
-                            "perspective": perspective,
-                            "questions_processed": len(questions),
-                            "max_tokens": max_tokens,
-                        },
-                    }
-                )
+                + json.dumps({"content": "", "done": True, "fullContent": full, "metadata": meta})
                 + "\n\n"
             )
         except Exception as e:
-            logger.error(f"채팅 스트리밍 오류: {e}", exc_info=True)
+            logger.error(f"대화 스트리밍 오류: {e}", exc_info=True)
             yield (
                 "data: "
                 + json.dumps({"error": f"스트리밍 중 오류: {str(e)}", "done": True})
@@ -692,7 +1082,7 @@ async def unified_chat_stream(request: ChatStreamRequest):
 
 
 @router.post(
-    "/unified/chat/stream", summary="통합 채팅 응답 스트리밍(SSE) (호환 엔드포인트)"
+    "/unified/chat/stream", summary="통합 대화 응답 스트리밍(SSE) (호환 엔드포인트)"
 )
 async def unified_chat_stream_compat(request: ChatStreamRequest):
     """하위 호환: `/api/unified/chat/stream` 별칭"""
@@ -700,10 +1090,186 @@ async def unified_chat_stream_compat(request: ChatStreamRequest):
 
 
 async def generate_chat_response(
-    message: str, quality: str, context: Optional[Dict[str, Any]] = None
+    message: str, quality: str, context: Optional[Dict[str, Any]] = None,
+    out_metadata: Optional[Dict[str, Any]] = None,
 ) -> str:
-    """채팅 응답 생성 - MD 문서 기반 QA 우선, 웹 연구 통합, 그 다음 혁신적인 답변 생성 엔진 사용"""
+    """대화 응답 생성 - MD 문서 기반 QA 우선, 웹 연구 통합, 그 다음 혁신적인 답변 생성 엔진 사용. 파이프라인 튜닝 설정 적용."""
     try:
+        # 파이프라인 튜닝: 품질별 프리셋 로드 (timeout, temperature, max_tokens, 파이프라인 단계 on/off)
+        try:
+            from pipeline_tuning import get_preset
+            _tuning_preset = get_preset(quality)
+        except ImportError:
+            _tuning_preset = {}
+        if context is None:
+            context = {}
+        context = dict(context)
+        context["_pipeline_tuning_preset"] = _tuning_preset
+        attach_advanced_memory_instruction(context)
+        # 클라이언트 시나리오 → Q→A·직경로 LLM 공통 힌트(파이프라인은 orchestrator에서 서버 시나리오와 병합)
+        if not (context.get("_generation_scenario_markdown") or "").strip():
+            _cg0 = context.get("client_generation_scenario")
+            if isinstance(_cg0, str) and _cg0.strip():
+                context["_generation_scenario_markdown"] = _cg0.strip()
+        # 다중 질문·요구: _build_unified_response_context보다 앞선 경로(Q→A run_pipeline 등)에도 전달
+        _mri_early = _compose_multi_request_instruction(context)
+        if _mri_early:
+            context["_multi_request_instruction"] = _mri_early
+
+        # 요청 UI 모드를 응답·SSE 메타에 에코 (task_plan 외 최상위·프론트 파싱용)
+        if out_metadata is not None:
+            for _ui_k in ("answer_mode", "response_style"):
+                _ui_v = context.get(_ui_k)
+                if isinstance(_ui_v, str) and _ui_v.strip():
+                    out_metadata.setdefault(_ui_k, _ui_v.strip())
+
+        # 한국어 프로필이 generate_chat_response에 전달되었는지 확인 (3단계 준비)
+        korean_profile = context.get("korean_understanding")
+        if korean_profile:
+            logger.debug(
+                f"[Korean Layer] Profile passed to generate_chat_response: "
+                f"genre={korean_profile.get('genre')}, speech_act={korean_profile.get('speech_act')}"
+            )
+
+        # AI Workspace 의도 감지 (요청 시 생성 기능 라우팅용, WORKSPACE_INTENT_ROUTING.md)
+        try:
+            from api.workspace_intent_router import detect_workspace_intent, route_to_tool
+            wi = detect_workspace_intent(message, context=context)
+            context["_workspace_intent"] = {
+                "intent": wi.intent,
+                "confidence": wi.confidence,
+                "slots": wi.slots,
+                "suggested_tool": wi.suggested_tool,
+            }
+            route = route_to_tool(wi)
+            if route:
+                context["_workspace_tool_route"] = route
+                logger.info("workspace_intent: %s -> %s", wi.intent, wi.suggested_tool)
+        except Exception as e:
+            logger.debug("workspace intent detection skipped: %s", e)
+
+        # AI Workspace 도구 실행: 라우트가 있으면 실행 후 조기 반환 (마무리 개발)
+        route = context.get("_workspace_tool_route")
+        if route and isinstance(route, dict):
+            try:
+                from api.workspace_tool_executor import execute_workspace_tool
+                tool_result = await execute_workspace_tool(route, context)
+                if tool_result is not None:
+                    # 스텁(미구현 도구)이면 메시지 반환하지 않고 정상 LLM 경로로 진행 — ChatGPT/Gemini처럼 질문에 대한 실제 답변 생성
+                    if tool_result.get("success") is True:
+                        context["_workspace_tool_result"] = tool_result
+                        if out_metadata is not None:
+                            out_metadata["workspace_tool_result"] = tool_result
+                        msg = (tool_result.get("message") or "").strip()
+                        if msg:
+                            return msg
+                    else:
+                        logger.debug("workspace tool stub(success=False), LLM 경로로 진행: %s", route.get("tool"))
+            except Exception as e:
+                logger.warning("workspace tool execution failed: %s", e)
+
+        # 프로젝트별 노트북 LLM 컨텍스트 로드 (project_id가 있으면 해당 프로젝트 학습 정보 반영)
+        if context is not None:
+            project_id = (
+                (context.get("project_id") or context.get("projectId"))
+                if isinstance(context, dict) else None
+            )
+            if project_id:
+                try:
+                    from api.project_session_api import load_project_notebook_context_filtered
+                    source_ids = None
+                    if isinstance(context, dict):
+                        source_ids = context.get("source_ids")
+                        if source_ids is not None and not isinstance(source_ids, list):
+                            source_ids = None
+                    project_context_text = load_project_notebook_context_filtered(
+                        project_id, source_ids=source_ids
+                    )
+                    context = dict(context)
+                    # 프로젝트별 조합 정관 기본 지식 병합 (현장별·프로젝트별 기본 지식)
+                    bylaws_knowledge = context.get("bylaws_base_knowledge") if isinstance(context.get("bylaws_base_knowledge"), str) else None
+                    if project_context_text or bylaws_knowledge:
+                        parts = []
+                        if project_context_text:
+                            parts.append(project_context_text)
+                        if bylaws_knowledge:
+                            parts.append("\n\n" + bylaws_knowledge.strip())
+                        context["projectKnowledge"] = "\n".join(parts).strip()
+                        log_msg = f"프로젝트 노트북 컨텍스트 적용: project_id={project_id}"
+                        if source_ids is not None:
+                            log_msg += f", source_ids={len(source_ids)}개"
+                        logger.info(log_msg)
+                except Exception as e:
+                    logger.warning(f"프로젝트 노트북 컨텍스트 로드 실패(무시하고 진행): {e}")
+
+        # 프로젝트 지침(instructions): context.project_instructions가 있으면 projectKnowledge에 반영
+        if context is not None and isinstance(context, dict):
+            project_instructions = context.get("project_instructions")
+            if isinstance(project_instructions, str) and project_instructions.strip():
+                instructions_hint = (
+                    "프로젝트 지침(이 프로젝트 내 모든 대화에 적용):\n"
+                    + project_instructions.strip()
+                )
+                existing = (context.get("projectKnowledge") or "").strip()
+                context["projectKnowledge"] = (
+                    (existing + "\n\n" + instructions_hint) if existing else instructions_hint
+                )
+                logger.info("프로젝트 지침 맥락 적용")
+
+        # 프로젝트 참고 파일 맥락: context.project_files가 있으면 projectKnowledge에 힌트 추가
+        if context is not None and isinstance(context, dict):
+            project_files = context.get("project_files")
+            if isinstance(project_files, list) and len(project_files) > 0:
+                names = []
+                for f in project_files:
+                    if isinstance(f, dict) and f.get("name"):
+                        names.append(str(f["name"]))
+                    elif isinstance(f, dict):
+                        names.append("(이름 없음)")
+                if names:
+                    files_hint = (
+                        "참고 파일(이 프로젝트에 첨부된 문서·이미지 등): "
+                        + ", ".join(names)
+                    )
+                    existing = (context.get("projectKnowledge") or "").strip()
+                    context["projectKnowledge"] = (
+                        (existing + "\n\n" + files_hint) if existing else files_hint
+                    )
+                    logger.info("프로젝트 참고 파일 맥락 적용: %d개", len(names))
+
+        # 입력창에 포함된 YouTube URL → 자막 추출·이해 후 이번 턴 지식으로 반영(별도 UI 없이 대화 과정에 통합)
+        try:
+            from api.video_knowledge import extract_youtube_urls, fetch_knowledge_from_url_async
+            urls = extract_youtube_urls(message or "")
+            if urls:
+                project_id = context.get("project_id") or context.get("projectId")
+                knowledge_parts = []
+                for url in urls:
+                    try:
+                        result = await fetch_knowledge_from_url_async(url, understand=True)
+                        if result:
+                            title, knowledge_text = result
+                            knowledge_parts.append(f"[영상: {title}]\n{knowledge_text}")
+                            if project_id:
+                                try:
+                                    from api.project_session_api import add_project_notebook_source
+                                    add_project_notebook_source(
+                                        project_id, title=title, content=knowledge_text, source_type="youtube"
+                                    )
+                                except Exception as e_psa:
+                                    logger.debug("영상 지식 프로젝트 저장 실패: %s", e_psa)
+                    except Exception as e_url:
+                        logger.warning("영상 URL 지식 추출 실패 %s: %s", url[:50], e_url)
+                if knowledge_parts:
+                    existing = (context.get("projectKnowledge") or "").strip()
+                    context["projectKnowledge"] = (
+                        (existing + "\n\n" + "\n\n".join(knowledge_parts)) if existing else "\n\n".join(knowledge_parts)
+                    )
+                    logger.info("입력 메시지 내 YouTube 영상 %d개 지식으로 반영", len(knowledge_parts))
+        except ImportError:
+            pass
+        except Exception as e:
+            logger.debug("영상 지식 반영 단계 무시: %s", e)
 
         def _as_bool(v: Any) -> bool:
             try:
@@ -801,21 +1367,21 @@ async def generate_chat_response(
                 samples = ctx.get("comment_samples")
                 if isinstance(samples, list):
                     out = []
-                    for s in samples[:1000]:
+                    for s in samples:
                         if not isinstance(s, str):
                             continue
                         v = _mask_pii(s).strip()
                         if len(v) >= 2:
-                            out.append(v[:500])
+                            out.append(v)
                     return out
                 blob = ctx.get("comment_text")
                 if isinstance(blob, str) and blob.strip():
                     lines = [l.strip() for l in blob.splitlines() if l.strip()]
                     out = []
-                    for l in lines[:1000]:
+                    for l in lines:
                         v = _mask_pii(l).strip()
                         if len(v) >= 2:
-                            out.append(v[:500])
+                            out.append(v)
                     return out
             except Exception:
                 pass
@@ -898,9 +1464,9 @@ async def generate_chat_response(
 
             # 빈도 키워드(가벼운 토큰)
             tokens = []
-            for c in cleaned[:400]:
+            for c in cleaned:
                 toks = re.findall(r"[가-힣]{2,}", c)
-                tokens.extend(toks[:40])
+                tokens.extend(toks)
             common = [w for w, _ in Counter(tokens).most_common(12)]
 
             return {
@@ -1143,7 +1709,7 @@ async def generate_chat_response(
             topics = _extract_topic_terms(user_message)
             topics.extend(_topic_terms_from_context(ctx))
             # 중복 제거
-            topics = list(dict.fromkeys([t for t in topics if t]))[:6]
+            topics = list(dict.fromkeys([t for t in topics if t]))
 
             # 생성 풀: 너무 길/짧은 것 제외
             pool = [c for c in cleaned if 6 <= len(c) <= 140]
@@ -1274,8 +1840,7 @@ async def generate_chat_response(
                 if (not want_q) and "?" in s and random.random() < 0.65:
                     s = s.replace("?", "")
 
-                # 길이 제한
-                s = s[:200].strip()
+                s = s.strip()
                 if len(s) < 4:
                     continue
 
@@ -1289,7 +1854,6 @@ async def generate_chat_response(
             while len(out) < count:
                 filler = random.choice(pool).strip()
                 filler = _mask_pii(filler).strip()
-                filler = filler[:120]
                 if filler and filler.lower() not in seen:
                     seen.add(filler.lower())
                     out.append(filler)
@@ -1335,7 +1899,7 @@ async def generate_chat_response(
             length_hint = tone.get("avg_len", 40)
             common_terms = tone.get("common_terms", [])
             common_hint = (
-                ", ".join(common_terms[:8]) if isinstance(common_terms, list) else ""
+                ", ".join(common_terms) if isinstance(common_terms, list) else ""
             )
 
             return f"""너는 온라인 커뮤니티 댓글 작성기다.
@@ -1363,7 +1927,7 @@ async def generate_chat_response(
 - 번호/불릿 없이 텍스트만 출력
 
 [샘플 댓글]
-{chr(10).join([f"- {s[:160]}" for s in samples])}
+{chr(10).join([f"- {s}" for s in samples])}
 """
 
         # (기능) 댓글 전체 톤을 학습해 "댓글 생성" 요청을 처리
@@ -1480,7 +2044,7 @@ async def generate_chat_response(
                     missing = getattr(research_context, "missing_info", None)
                     missing_txt = ""
                     if isinstance(missing, list) and missing:
-                        missing_txt = ", ".join([str(x) for x in missing[:6]])
+                        missing_txt = ", ".join([str(x) for x in missing])
                     lines.append(f"- 조사 쿼리: {query}" if query else "- 조사 수행")
                     lines.append(f"- 의도/유형: {intent}")
                     if missing_txt:
@@ -1492,7 +2056,7 @@ async def generate_chat_response(
                 # 교차확인(간단): 출처 다양성/분포로 신뢰도 힌트 제공
                 try:
                     domains = []
-                    for r in research_results[:8]:
+                    for r in research_results:
                         url = getattr(r, "url", "") or ""
                         d = _extract_domain(url)
                         if d:
@@ -1501,7 +2065,7 @@ async def generate_chat_response(
                     lines.append("## 교차확인(간단)")
                     if uniq:
                         lines.append(
-                            f"- 출처 도메인 수: {len(uniq)} (예: {', '.join(uniq[:4])})"
+                            f"- 출처 도메인 수: {len(uniq)} (예: {', '.join(uniq)})"
                         )
                         if len(uniq) < 2:
                             lines.append(
@@ -1513,7 +2077,7 @@ async def generate_chat_response(
                     # 불일치 후보(휴리스틱): 상반 표현/수치 분포만 간단히 표시
                     try:
                         texts = []
-                        for idx, r in enumerate(research_results[:6], 1):
+                        for idx, r in enumerate(research_results, 1):
                             title = getattr(r, "title", "") or ""
                             snippet = getattr(r, "snippet", "") or ""
                             texts.append((idx, f"{title} {snippet}".lower()))
@@ -1548,12 +2112,12 @@ async def generate_chat_response(
                             )
                             nums = [n for n in nums if n and len(n) <= 10]
                             if nums:
-                                nums_by_idx[i] = nums[:4]
+                                nums_by_idx[i] = nums
                         if len(nums_by_idx) >= 2:
                             sample = "; ".join(
                                 [
                                     f"[{i}] {', '.join(v)}"
-                                    for i, v in list(nums_by_idx.items())[:3]
+                                    for i, v in list(nums_by_idx.items())
                                 ]
                             )
                             lines.append(
@@ -1569,7 +2133,7 @@ async def generate_chat_response(
 
                 lines.append("")
                 lines.append("## 근거/출처")
-                for idx, r in enumerate(research_results[:5], 1):
+                for idx, r in enumerate(research_results, 1):
                     try:
                         title = getattr(r, "title", "") or ""
                         url = getattr(r, "url", "") or ""
@@ -1598,9 +2162,8 @@ async def generate_chat_response(
                 hist = ctx.get("conversation_history")
                 if not isinstance(hist, list) or not hist:
                     return ""
-                # 최근 6개 정도만, 너무 긴 텍스트는 컷
                 parts = []
-                for item in hist[-6:]:
+                for item in hist:
                     if not isinstance(item, dict):
                         continue
                     role = item.get("role")
@@ -1609,8 +2172,7 @@ async def generate_chat_response(
                         continue
                     if role not in ["user", "assistant"]:
                         continue
-                    # 과도한 길이 제한
-                    parts.append(f"{role}: {content[:400]}")
+                    parts.append(f"{role}: {content}")
                 return "\n".join(parts)
             except Exception:
                 return ""
@@ -1648,7 +2210,7 @@ async def generate_chat_response(
                 if not t:
                     return {}
                 years = re.findall(r"\\b(20\\d{2})\\b", t)
-                years = list(dict.fromkeys(years))[:3]
+                years = list(dict.fromkeys(years))
 
                 regions = [
                     "서울",
@@ -1670,7 +2232,7 @@ async def generate_chat_response(
                     "제주",
                 ]
                 found_regions = [r for r in regions if r in t]
-                found_regions = list(dict.fromkeys(found_regions))[:3]
+                found_regions = list(dict.fromkeys(found_regions))
 
                 return {"years": years, "regions": found_regions}
             except Exception:
@@ -1731,10 +2293,334 @@ async def generate_chat_response(
                 hint_parts.append(f"기간:{', '.join(yrs)}")
             hint = " / ".join(hint_parts)
 
-            anchor_short = anchor[:220]
             if hint:
-                return f"{anchor_short}\n\n검색 힌트: {hint}\n\n질문: {msg}"
-            return f"{anchor_short}\n\n질문: {msg}"
+                return f"{anchor}\n\n검색 힌트: {hint}\n\n질문: {msg}"
+            return f"{anchor}\n\n질문: {msg}"
+
+        def _run_pre_generation_pipeline(
+            message: str,
+            ctx: Optional[Dict[str, Any]],
+            web_research_result: Optional[str],
+            web_research_evidence: Optional[str],
+            investigative_mode: bool,
+        ) -> Dict[str, Any]:
+            """
+            생성 전 파이프라인: 정보 수집·학습·정보 찾기 능력을 활용해 자료 수집 → 내용 정리 → 논리 구성 → 스타일 지시
+            파이프라인 튜닝 preset의 pipeline_steps에 따라 단계별로 생략 가능
+            """
+            out: Dict[str, Any] = {}
+            # 시스템이 가진 세 가지 능력: 정보 수집·학습·정보 찾기 (답변 시 활용하도록 지시)
+            out["_information_abilities_hint"] = (
+                "이 시스템은 (1) 정보 수집: 웹·프로젝트 소스·대화에서 답변에 필요한 자료를 수집하고, "
+                "(2) 학습: 프로젝트에 등록한 파일·지침을 저장·활용하며, "
+                "(3) 정보 찾기: 웹 검색·문서 검색·프로젝트 컨텍스트 조회로 관련 정보를 찾습니다. "
+                "수집·학습·검색된 자료를 활용해 답변하세요."
+            )
+            steps = (ctx.get("_pipeline_tuning_preset") if ctx else {}).get("pipeline_steps") or {}
+            material_ok = steps.get("material_collection", True)
+            logical_ok = steps.get("logical_structure", True)
+            style_ok = steps.get("style_instruction", True)
+
+            # === 1단계: 답변에 필요한 자료 수집 (요구·질문에 맞는 논리적 사고로 활용) ===
+            collected = []
+            if material_ok and (web_research_result or web_research_evidence):
+                w = (
+                    web_research_evidence
+                    if investigative_mode and web_research_evidence
+                    else web_research_result
+                )
+                if w and w.strip():
+                    collected.append(("웹_연구", w.strip()))
+
+            if material_ok:
+                pk = (ctx.get("projectKnowledge") if ctx else None) or ""
+                if isinstance(pk, str) and pk.strip():
+                    collected.append(("프로젝트_지식", pk.strip()))
+
+            _genspark_dialog = _as_bool(ctx.get("agentic_genspark_style")) if ctx else False
+            hist = ctx.get("conversation_history") or ctx.get("conversationHistory") if ctx else []
+            _include_hist = material_ok or _genspark_dialog
+            if _include_hist and isinstance(hist, list) and hist:
+                recent = []
+                for item in hist:
+                    if isinstance(item, dict):
+                        role = item.get("role", "")
+                        content = (item.get("content") or "").strip()
+                        if content:
+                            recent.append(f"{role}: {content}")
+                if recent:
+                    collected.append(("대화_맥락", "\n".join(recent)))
+
+            # === 2단계: 내용 정리 ===
+            if collected:
+                summary_parts = []
+                for source, content in collected:
+                    summary_parts.append(f"[{source}]\n{content}")
+                out["_collected_materials_summary"] = "\n\n---\n\n".join(summary_parts)
+                out["_materials_collection_hint"] = (
+                    "위 [수집 자료]는 답변에 필요한 참고 자료입니다. "
+                    "요구와 질문에 맞는 논리적 사고로 이 자료를 활용해 답변을 구성하세요. "
+                    "중복을 피하고 핵심 내용만 선별해 논리적으로 정리하세요."
+                )
+
+            # === 2.5단계: 기능 안내 요청 시 capabilities 힌트 주입 ===
+            request_capability_help = _as_bool(ctx.get("request_capability_help")) if ctx else False
+            available_capabilities = ctx.get("available_capabilities") if ctx else None
+            if request_capability_help and available_capabilities:
+                caps = str(available_capabilities).strip()
+                out["_capability_help_instruction"] = (
+                    "사용자가 기능·단축키·사용법을 물었습니다. "
+                    "아래 [사용 가능 기능]을 친절하게 정리해 답변하세요. "
+                    f"[사용 가능 기능] {caps}"
+                )
+            elif available_capabilities and isinstance(available_capabilities, str):
+                out["_available_capabilities"] = available_capabilities.strip()
+
+            # === 3단계: 질문·요구에 맞는 논리적 사고·논리 구성 ===
+            structure_parts = []
+            if logical_ok:
+                parsed = ctx.get("parsed_input") if ctx else None
+            else:
+                parsed = None
+            if isinstance(parsed, dict):
+                q = (parsed.get("question") or "").strip()
+                r = (parsed.get("requirements") or "").strip()
+                intent = parsed.get("intent_type", "general")
+
+                if q or r:
+                    if q:
+                        structure_parts.append("1) [질문에 대한 직접 답변] — 사용자 질문에 먼저 답한 뒤")
+                    if r:
+                        structure_parts.append("2) [요구사항별 상세] — 기능/형식/제약 등 요구사항을 순서대로 충족")
+                    structure_parts.append("3) [참고·출처] — 근거가 있으면 후반부에 배치")
+
+                    if intent == "question":
+                        structure_parts.insert(
+                            0,
+                            "구성 원칙: 질문 유형에 맞게 핵심 답변 → 설명 → 예시 순으로 전개",
+                        )
+                    elif intent == "requirement":
+                        structure_parts.insert(
+                            0,
+                            "구성 원칙: 요구사항을 항목별로 충족하며, 각 항목에 근거·예시를 포함",
+                        )
+
+            if structure_parts:
+                out["_logical_structure_outline"] = "\n".join(structure_parts)
+                out["_structure_hint"] = (
+                    "아래 [논리 구성 지침]에 따라 요구와 질문에 맞는 논리적 사고로 답변 구조를 잡으세요. "
+                    "수집된 자료를 이 구조에 맞게 활용하세요."
+                )
+
+            # === 4단계: 어투·말투·스타일 지시 ===
+            style_parts = []
+            if style_ok:
+                # 한국어 이해 계층(v3): 프론트에서 전달한 지시를 스타일 블록 최상단에 둠
+                if ctx and isinstance(ctx, dict):
+                    kli = (ctx.get("korean_layer_instruction") or "").strip()
+                    if kli:
+                        style_parts.append(
+                            "[한국어 이해·출력 계층 — 우선 반영]\n" + kli
+                        )
+                    genre_ctrl = ctx.get("genre_control")
+                    if isinstance(genre_ctrl, dict) and genre_ctrl:
+                        gc_bits = []
+                        for key in (
+                            "output_genre",
+                            "sentence_length",
+                            "line_break_style",
+                            "politeness",
+                        ):
+                            val = genre_ctrl.get(key)
+                            if val is not None and str(val).strip():
+                                gc_bits.append(f"{key}={val}")
+                        if gc_bits:
+                            style_parts.append(
+                                "[장르 제어 프로필] " + ", ".join(gc_bits)
+                            )
+
+                resp_style = (ctx.get("response_style") or "balanced") if ctx else "balanced"
+                perspective = ctx.get("perspective") or ""
+                writing_style = ctx.get("writing_style") or ctx.get("person_style") or ""
+
+                style_map = {
+                    "concise": "간결하고 핵심 위주. 3–5문장 내외.",
+                    "balanced": "핵심과 설명의 균형. 읽기 쉽게 구조화.",
+                    "detailed": "상세하고 포괄적. 배경·단계·예시·주의사항 포함.",
+                    "comprehensive": "매우 종합적. 분석·다각도 시각·사례 포함.",
+                }
+                style_parts.append(
+                    f"응답 스타일: {style_map.get(resp_style.lower(), style_map['balanced'])}"
+                )
+
+                perspective_map = {
+                    "practical": "실용적·현실적. 즉시 적용 가능한 조언.",
+                    "theoretical": "이론적·학술적. 개념·원리·근거 중심.",
+                    "creative": "창의적·혁신적. 독창적 관점·반직관적 인사이트·대안 2개 이상 제시.",
+                    "critical": "비판적·분석적. 장단점·문제점·대안 검토.",
+                    "empathetic": "공감적·따뜻한. 이해와 지지 표현.",
+                }
+                if perspective and perspective.lower() in perspective_map:
+                    style_parts.append(f"관점: {perspective_map[perspective.lower()]}")
+
+                if writing_style and isinstance(writing_style, str):
+                    style_parts.append(f"글쓰기/말투: {writing_style}에 맞게 변형하여 작성")
+                # 노트북 LLM: 지식(도메인)·전문가 관점
+                domain_instruction = (ctx.get("domain_instruction") or "") if ctx else ""
+                if domain_instruction and isinstance(domain_instruction, str):
+                    style_parts.append(f"지식/도메인: {domain_instruction}")
+                expert_instruction = (ctx.get("expert_instruction") or "") if ctx else ""
+                if expert_instruction and isinstance(expert_instruction, str):
+                    style_parts.append(f"전문가: {expert_instruction}")
+
+                innovative_parts = [
+                    "혁신적 답변 품질:",
+                    "• 논리 구조: 전제→논리 전개→결론 순으로 설득력 있게 작성.",
+                    "• 결론 선행: 핵심 요약·결론을 먼저 제시한 뒤 상세를 풀어가기.",
+                    "• 독창적 관점: 흔한 수식어 대신 날카로운 관점·반직관적 인사이트 포함.",
+                    "• 수식어 지양: '혁신적', '획기적' 등 빈번한 수식어는 피하고 구체적 근거로 대체.",
+                ]
+                if perspective and perspective.lower() == "creative":
+                    innovative_parts.append("• 창의 모드: 기존과 다른 접근법, 위트 있는 표현(적절히), 2개 이상 대안 제시.")
+                style_parts.append("\n".join(innovative_parts))
+
+                if out.get("_capability_help_instruction"):
+                    style_parts.append(out["_capability_help_instruction"])
+                elif out.get("_available_capabilities"):
+                    style_parts.append(
+                        f"참고(질문에 맞을 때 활용): [사용 가능 기능] {out['_available_capabilities']}"
+                    )
+
+                if style_parts:
+                    out["_style_and_tone_instruction"] = "\n".join(style_parts)
+
+            # 요구·질문에 맞게 유연하게 생성 (프론트 adapt_answer_to_request, 없으면 기본 지시 사용)
+            adapt_instr = (ctx.get("adapt_answer_to_request") or "").strip() if ctx else ""
+            if not adapt_instr:
+                adapt_instr = (
+                    "답변의 길이·형식·깊이는 사용자의 질문과 요구에 맞춰 유연하게 조절하세요. "
+                    "글쓰기 형식(보고서·칼럼·요약·단계별 가이드·Q&A·사건조사 형식 등)과 스타일(어투·톤·길이)은 요구에 맞게 구성하고, "
+                    "결과물의 구성(서론·본론·결론, 항목·섹션)을 질문과 요구사항에 맞게 잡으세요. 요구에 형식이 명시되면 반드시 따르세요. "
+                    "답변 작성 시 생성로직(사실 정리→맥락·원인→분석·조사 내용→결론·시사점)을 갖추어 단계적으로 서술하세요. "
+                    "사건조사 형식을 요청하면 개요·경과·원인 분석·관계자·결론·시사점 등 조사보고 구조에 맞게 작성하세요. "
+                    "짧은 질문·단순 요청(예: 1+1은?, 뭐야?)에는 그 질문에 대한 직접적인 짧은 답을 먼저 제시하세요. "
+                    "한 줄로·짧게·요약만 요청했으면 한 줄 또는 매우 짧은 답만 제시하세요. "
+                    "반대되는 논리로만·반대 논리로 작성해달라 요청했으면 찬성 논리나 양론 정리가 아닌, 제시된 문장에 대한 반대 논리만 서술하세요. "
+                    "찬성 논리로만·찬성 입장으로 작성해달라 요청했으면 반대 논리나 양론 정리가 아닌, 제시된 문장에 대한 찬성 논리만 서술하세요. "
+                    "상세·분석·비교·단계별·예시를 요청하면 그에 맞게 충실히 답하고, 요구사항이 명시된 경우 형식·항목·구조를 지키세요."
+                )
+            out["_adapt_answer_to_request_instruction"] = adapt_instr
+
+            # 사용자 원문이 있으면 "이 요청에 맞게 답변" 힌트로 명시 (요청에 맞는 답변 생성 보장)
+            original_msg = (ctx.get("original_user_message") or "").strip() if ctx else ""
+            if original_msg:
+                hint = (
+                    "반드시 아래 [사용자 원문] 요청에 맞게 답변하세요. 형식·길이·깊이는 이 요청을 기준으로 조절하세요.\n"
+                    f"[사용자 원문]\n{original_msg}"
+                )
+                # 반대 논리로만 작성 요청 시: 찬성·양론 없이 반대 입장만 서술하도록 명시
+                if "반대" in original_msg and ("논리" in original_msg or "반대로" in original_msg):
+                    hint += "\n\n※ 이 요청은 '반대 논리로만 글 작성'이므로, 찬성 논리나 양론 정리 없이 제시된 문장에 대한 반대 입장만 서술하세요."
+                # 찬성 논리로만 작성 요청 시: 반대·양론 없이 찬성 입장만 서술하도록 명시
+                elif "찬성" in original_msg and ("논리" in original_msg or "찬성으로" in original_msg or "찬성 입장" in original_msg):
+                    hint += "\n\n※ 이 요청은 '찬성 논리로만 글 작성'이므로, 반대 논리나 양론 정리 없이 제시된 문장에 대한 찬성 입장만 서술하세요."
+                # 사건조사·조사 형식 요청 시: 조사보고 구조로 작성하도록 명시
+                elif "사건조사" in original_msg or "조사 형식" in original_msg or "조사보고" in original_msg:
+                    hint += "\n\n※ 사건조사 형식으로 작성하세요: 개요·경과·원인 분석·관계자·결론·시사점 등 조사보고 구조에 맞게 구성하세요."
+                # 생성로직 요청 시: 단계적 생성 로직에 맞게 서술하도록 명시
+                elif "생성로직" in original_msg:
+                    hint += "\n\n※ 생성로직(사실 정리→맥락·원인→분석·조사 내용→결론·시사점)에 맞게 단계적으로 서술하세요."
+                out["_user_message_priority_hint"] = hint
+
+            _mri = _compose_multi_request_instruction(ctx)
+            if _mri:
+                out["_multi_request_instruction"] = _mri
+
+            return out
+
+        def _build_unified_response_context(
+            ctx: Optional[Dict[str, Any]],
+            web_research_result: Optional[str],
+            web_research_evidence: Optional[str],
+            investigative_mode: bool,
+        ) -> Dict[str, Any]:
+            """
+            모든 개발 기능의 결과를 통합해 생성기에 전달할 컨텍스트를 만듭니다.
+            - 사전 파이프라인(자료 수집·정리·논리 구성·스타일) 결과는 파이프라인 튜닝 preset에 따라 생략 가능
+            """
+            out = dict(ctx) if ctx and isinstance(ctx, dict) else {}
+            preset = out.get("_pipeline_tuning_preset") or {}
+            if preset.get("use_pre_generation_pipeline", True):
+                pipeline_result = _run_pre_generation_pipeline(
+                    "", ctx, web_research_result, web_research_evidence, investigative_mode
+                )
+                out.update(pipeline_result)
+
+            if not out.get("_multi_request_instruction"):
+                _mri_fill = _compose_multi_request_instruction(out)
+                if _mri_fill:
+                    out["_multi_request_instruction"] = _mri_fill
+
+            # 파이프라인 밖 LLM 경로: 클라이언트 시나리오 힌트 → llm_service._enhance_with_knowledge
+            if not (out.get("_generation_scenario_markdown") or "").strip():
+                _cg = out.get("client_generation_scenario")
+                if isinstance(_cg, str) and _cg.strip():
+                    out["_generation_scenario_markdown"] = _cg.strip()
+
+            if web_research_result or web_research_evidence:
+                out["_precomputed_web_research"] = (
+                    web_research_evidence
+                    if investigative_mode and web_research_evidence
+                    else web_research_result
+                )
+                out["_web_research_merge_hint"] = (
+                    "아래 [선행 웹 연구 결과]를 본문과 논리적으로 통합하여 답변하세요. "
+                    "중복 없이 핵심 답변 → 상세 설명 → 출처 순으로 구조화하세요."
+                )
+
+            parsed = out.get("parsed_input")
+            if isinstance(parsed, dict) and (parsed.get("question") or parsed.get("requirements")):
+                q = parsed.get("question", "")
+                r = parsed.get("requirements", "")
+                hint_parts = []
+                if q:
+                    hint_parts.append(f"[질문] {str(q)}")
+                if r:
+                    hint_parts.append(f"[요구사항] {str(r)}")
+                if hint_parts:
+                    out["_parsed_input_hint"] = "\n".join(hint_parts)
+            return out
+
+        def _synthesize_responses_logically(
+            base_response: str,
+            web_part: Optional[str],
+            investigative_mode: bool,
+        ) -> str:
+            """
+            기본 응답과 웹 연구 결과를 논리적 구조로 통합합니다.
+            - 핵심 답변 우선, 출처는 후반부에 배치
+            """
+            if not web_part or not web_part.strip():
+                return base_response or ""
+            if not base_response or not base_response.strip():
+                return web_part.strip()
+            if investigative_mode and "## 근거/출처" in web_part:
+                return _merge_investigative_evidence(base_response, web_part)
+            if "## " in base_response and "## " in web_part:
+                return base_response.rstrip() + "\n\n---\n\n" + web_part.strip()
+            return base_response.rstrip() + "\n\n**추가 참고 (웹 검색):**\n\n" + web_part.strip()
+
+        def _validate_response_logic(text: Optional[str]) -> bool:
+            """응답이 논리에 맞는 최소 조건을 만족하는지 검증"""
+            if not text or not isinstance(text, str):
+                return False
+            t = text.strip()
+            if len(t) < 10:
+                return False
+            placeholder_patterns = ["응답:", "에 대한 답변입니다", "질문이 없습니다", "입력이 비어"]
+            if any(p in t for p in placeholder_patterns) and len(t) < 80:
+                return False
+            return True
 
         def _merge_investigative_evidence(
             response_text: str, evidence_block: str
@@ -1904,12 +2790,12 @@ async def generate_chat_response(
                             warns = analysis.get("warnings")
                             if isinstance(warns, list) and warns:
                                 parts.append("- 주의 포인트:")
-                                for w in warns[:3]:
+                                for w in warns:
                                     parts.append(f"  - {w}")
                             checklist = analysis.get("checklist")
                             if isinstance(checklist, list) and checklist:
                                 parts.append("- 체크리스트(요약):")
-                                for c in checklist[:4]:
+                                for c in checklist:
                                     parts.append(f"  - {c}")
                         parts.append(
                             "\n※ 주의: 본 응답은 시스템에 **미리 등록된 등기부 텍스트** 기반 요약입니다. 공식 원문 확인이 필요합니다."
@@ -2192,7 +3078,7 @@ async def generate_chat_response(
                             if isinstance(key_factors, list) and key_factors:
                                 parts.append(
                                     "- 주요 요인: "
-                                    + ", ".join([str(x) for x in key_factors[:5]])
+                                    + ", ".join([str(x) for x in key_factors])
                                 )
                             parts.extend(
                                 [
@@ -2211,26 +3097,147 @@ async def generate_chat_response(
         except Exception:
             pass
 
-        # 유시민 스타일인 경우 웹 연구와 MD QA를 건너뛰고 바로 intelligent_answer_generator로
+        # 메시지 본문에서 "유시민 스타일로" 등 요청 감지 시 context에 반영 (프론트 옵션 없이도 동작)
+        _msg_lower = (message or "").strip()
+        if _msg_lower and "유시민" in _msg_lower and any(
+            x in _msg_lower for x in ("스타일", "처럼", "어투", "화법", "되묻", "만들어줘")
+        ):
+            context = dict(context) if context else {}
+            context["writing_style"] = "yoo_simin"
+            context["person_style"] = "yoo_simin"
+
+        # 유시민 스타일인 경우 웹 연구와 MD QA를 건너뛰고 바로 생성
         writing_style = context.get("writing_style") if context else None
         person_style = context.get("person_style") if context else None
 
         if writing_style == "yoo_simin" or person_style == "yoo_simin":
             logger.info("🎯 유시민 스타일 감지: 웹 연구/MD QA 건너뛰고 직접 생성")
-            from api.intelligent_answer_generator import intelligent_answer_generator
+            yoo_ctx = _build_unified_response_context(context, None, None, False)
 
-            analysis = intelligent_answer_generator.analyze_request(message, context)
+            # 원문 재작성 요청(긴 원문 + "위 글을~만들어줘" 등): LLM으로 유시민·되묻기·취지 반영해 재작성 (ChatGPT/Gemini 품질)
+            is_rewrite_request = (
+                len(_msg_lower) > 700
+                and any(x in _msg_lower for x in ("위 글", "위 내용", "위 텍스트", "만들어줘", "작성해줘", "취지"))
+            )
+            if is_rewrite_request and LLM_SERVICE_AVAILABLE and llm_service_instance:
+                logger.info("🔄 유시민 재작성: LLM 경로 시도 (타임아웃 90초, max_tokens 4096)")
+                try:
+                    rewrite_instruction = (
+                        "[지시] 아래 원문을 유시민 작가의 어투와 화법으로 재작성하세요. "
+                        "되묻는 방식(독자에게 질문을 던지며 논지를 전개)을 사용하고, "
+                        "사용자가 요청한 취지를 분명히 드러내세요. "
+                        "원문의 사실과 논지는 유지하되 유시민 스타일(논리적·날카로운·풍자적)로 표현하세요. "
+                        "불필요한 서두 없이 본론부터 전개하세요.\n\n---\n\n"
+                    )
+                    enhanced_message = rewrite_instruction + message
+                    yoo_ctx["_user_message_priority_hint"] = (
+                        "반드시 원문을 유시민 스타일·되묻는 방식으로 재작성하세요. "
+                        "사용자가 명시한 취지(예: 유동성 위기 해결이 아니라 미룬 것)를 논지의 중심에 두세요."
+                    )
+                    yoo_ctx["temperature"] = 0.75
+                    yoo_ctx["max_tokens"] = 4096
+                    yoo_ctx["is_long_form"] = True  # 재작성은 긴 글 생성으로 처리
+                    import asyncio
+                    _timeout = float(_tuning_preset.get("llm_timeout_seconds", 90))  # 재작성은 90초까지
+                    llm_result = await asyncio.wait_for(
+                        llm_service_instance.generate_response(
+                            message=enhanced_message,
+                            conversation_id=yoo_ctx.get("conversation_id"),
+                            context=yoo_ctx,
+                        ),
+                        timeout=_timeout,
+                    )
+                    response_text = (llm_result.get("content") or "").strip()
+                    # 재작성 요청: 원문과 동일한 복사가 아니고, 충분한 길이일 때만 LLM 결과 사용
+                    _msg_start = message.strip()[:80]
+                    _res_start = response_text[:80] if response_text else ""
+                    _not_copy = _msg_start != _res_start and not (response_text or "").strip().startswith(
+                        _msg_start[:50]
+                    )
+                    if response_text and len(response_text) >= 200 and _not_copy:
+                        logger.info(
+                            "✅ 유시민 스타일 원문 재작성(LLM) 사용: %d자", len(response_text)
+                        )
+                        return response_text
+                except asyncio.TimeoutError:
+                    logger.debug("유시민 재작성 LLM 타임아웃, intelligent_answer_generator로 진행")
+                except Exception as e:
+                    logger.debug("유시민 재작성 LLM 실패, intelligent_answer_generator로 진행: %s", e)
+            elif is_rewrite_request and not (LLM_SERVICE_AVAILABLE and llm_service_instance):
+                logger.info(
+                    "유시민 재작성: LLM 미사용(연결 없음), intelligent_answer_generator 템플릿으로 진행. "
+                    "재작성 품질 향상을 위해 DEEPSEEK_USE_LOCAL 또는 OPENAI_API_KEY 등 LLM 설정을 권장합니다."
+                )
+
+            from api.intelligent_answer_generator import intelligent_answer_generator
+            analysis = intelligent_answer_generator.analyze_request(message, yoo_ctx)
             response = await intelligent_answer_generator.generate_answer(
-                message, analysis, quality, context
+                message, analysis, quality, yoo_ctx
             )
             if response and len(response.strip()) >= 20:
                 return response
 
+        # 직접 LLM 우선 (ChatGPT/Gemini처럼 답변): prefer_direct_chat 또는 preset prefer_direct_llm 시
+        prefer_direct_chat = _as_bool(context.get("prefer_direct_chat")) if context else False
+        prefer_direct_llm = _as_bool(_tuning_preset.get("prefer_direct_llm")) if _tuning_preset else False
+        if (prefer_direct_chat or prefer_direct_llm) and LLM_SERVICE_AVAILABLE and llm_service_instance:
+            try:
+                unified_ctx_minimal = _build_unified_response_context(
+                    context, None, None, False
+                )
+                unified_ctx_minimal["temperature"] = (_tuning_preset.get("temperature") or 0.7)
+                unified_ctx_minimal["max_tokens"] = (
+                    context.get("max_tokens")
+                    or _tuning_preset.get("max_tokens")
+                    or 2048
+                )
+                import asyncio
+                _timeout = float(_tuning_preset.get("llm_timeout_seconds", 25))
+                llm_result = await asyncio.wait_for(
+                    llm_service_instance.generate_response(
+                        message=message,
+                        conversation_id=context.get("conversation_id"),
+                        context=unified_ctx_minimal,
+                    ),
+                    timeout=_timeout,
+                )
+                if (
+                    llm_result
+                    and llm_result.get("content")
+                    and len((llm_result.get("content") or "").strip()) >= 20
+                ):
+                    response_text = (llm_result.get("content") or "").strip()
+                    logger.info(
+                        f"✅ 직접 LLM 우선 경로 응답 사용 (ChatGPT/Gemini 스타일): {len(response_text)}자"
+                    )
+                    return response_text
+            except asyncio.TimeoutError:
+                logger.debug("직접 LLM 우선 경로 타임아웃, 기존 파이프라인으로 진행")
+            except Exception as e:
+                logger.debug("직접 LLM 우선 경로 실패, 기존 파이프라인으로 진행: %s", e)
+
         # 0단계: 웹 연구 필요성 판단 및 수행 (다양성 고려)
-        # 기본값은 "비활성" (속도/안정성). 필요 시 요청 context에서 명시적으로 켬.
+        # 기본값은 "비활성" (속도/안정성). enable_web_research 또는 prefer_informed_answer 시 허용.
         enable_web_research = (
             _as_bool(context.get("enable_web_research")) if context else False
         )
+        prefer_informed = _as_bool(context.get("prefer_informed_answer")) if context else False
+        # 내부 보안: 외부로 나가 정보를 수집하는 경로 차단(LLM_BLOCK_OUTBOUND_COLLECTION 등)
+        try:
+            from llm_internal_security import is_outbound_collection_blocked
+
+            if is_outbound_collection_blocked():
+                enable_web_research = False
+                prefer_informed = False
+                if context and isinstance(context, dict):
+                    context = dict(context)
+                    context["enable_web_research"] = False
+                    context["prefer_informed_answer"] = False
+                logger.info("🔒 서버 정책: 외부 웹·수집 연구 비활성화(내부 보안)")
+        except ImportError:
+            pass
+        if prefer_informed and not enable_web_research:
+            enable_web_research = True
         investigative_mode = (
             _as_bool(context.get("investigative_mode")) if context else False
         )
@@ -2247,6 +3254,9 @@ async def generate_chat_response(
 
             # 웹 연구 필요성 판단
             research_seed = _build_research_seed(message, context)
+            research_seed = _append_multi_request_items_to_research_seed(
+                research_seed, context
+            )
             should_do_research = web_researcher.should_research(research_seed, "")
             # 조사/검증 모드면 필요성 판단과 무관하게 강제 수행
             if investigative_mode:
@@ -2287,6 +3297,119 @@ async def generate_chat_response(
         except Exception as e:
             logger.warning(f"웹 연구 실패: {e}")
 
+        # 0.7단계: 질문→답변 파이프라인 v2 (프로젝트·근거 중심)
+        # context.use_pipeline_v2 또는 agentic_pipeline + (프로젝트 지식/프로젝트 ID/명시적 허용)
+        # basic 품질·qa_pipeline_fast_path·answer_mode fast → 직경로(1턴) 우선 (pipeline_gate)
+        try:
+            from api.question_answer_pipeline.pipeline_gate import (
+                should_skip_qa_pipeline_for_speed,
+            )
+
+            _qa_speed_skip = should_skip_qa_pipeline_for_speed(
+                quality=quality, context=context
+            )
+        except Exception:
+            _qa_speed_skip = (quality or "").strip().lower() == "basic"
+
+        if (
+            not context.get("_skip_qa_pipeline")
+            and not _qa_speed_skip
+            and (
+                _as_bool(context.get("use_pipeline_v2"))
+                or _as_bool(context.get("agentic_pipeline"))
+            )
+        ):
+            pk = (context.get("projectKnowledge") or "").strip()
+            pid = context.get("project_id") or context.get("projectId")
+            allow_empty = _as_bool(context.get("qa_pipeline_allow_empty_project"))
+            # 프로젝트 없이도 Genspark·Q→A 모드(agentic_genspark_style)면 파이프라인 시도
+            _genspark_ctx = _as_bool(context.get("agentic_genspark_style"))
+            if pk or pid or allow_empty or _genspark_ctx:
+                try:
+                    import asyncio
+                    from api.question_answer_pipeline.orchestrator import run_pipeline
+
+                    def _run_qa_pipeline_sync():
+                        return run_pipeline(message or "", context=dict(context))
+
+                    pl_res = await asyncio.to_thread(_run_qa_pipeline_sync)
+                    if pl_res.get("success"):
+                        rt = (pl_res.get("response") or "").strip()
+                        # 짧은 정답(예: 한 줄 사실 응답)도 유효 — 과거 12자 미만 폐기로 메타/UI가 빠지던 문제 방지
+                        if rt:
+                            logger.info(
+                                "[QA Pipeline v2] 조기 응답 trace_id=%s",
+                                pl_res.get("trace_id"),
+                            )
+                            if out_metadata is not None:
+                                out_metadata["qa_pipeline_trace_id"] = pl_res.get(
+                                    "trace_id"
+                                )
+                                if pl_res.get("trace_id"):
+                                    out_metadata["trace_id"] = pl_res.get("trace_id")
+                                if pl_res.get("evidence_coverage") is not None:
+                                    out_metadata["evidence_coverage"] = pl_res.get(
+                                        "evidence_coverage"
+                                    )
+                                out_metadata["route_decision"] = pl_res.get(
+                                    "route_decision"
+                                )
+                                if pl_res.get("next_actions"):
+                                    out_metadata["next_actions"] = pl_res[
+                                        "next_actions"
+                                    ]
+                                if pl_res.get("answer_blueprint"):
+                                    out_metadata["answer_blueprint"] = pl_res[
+                                        "answer_blueprint"
+                                    ]
+                                if pl_res.get("korean_style_notes"):
+                                    out_metadata["korean_style_notes"] = pl_res[
+                                        "korean_style_notes"
+                                    ]
+                                if pl_res.get("korean_quality_scores"):
+                                    out_metadata["korean_quality_scores"] = pl_res[
+                                        "korean_quality_scores"
+                                    ]
+                                if pl_res.get("deepseek_refine_meta"):
+                                    out_metadata["deepseek_refine_meta"] = pl_res[
+                                        "deepseek_refine_meta"
+                                    ]
+                                if pl_res.get("deepseek_critique"):
+                                    out_metadata["deepseek_critique"] = pl_res[
+                                        "deepseek_critique"
+                                    ]
+                                if pl_res.get("deepseek_reasoner_meta"):
+                                    out_metadata["deepseek_reasoner_meta"] = pl_res[
+                                        "deepseek_reasoner_meta"
+                                    ]
+                                if pl_res.get("task_plan"):
+                                    out_metadata["task_plan"] = pl_res["task_plan"]
+                                if pl_res.get("verification_summary"):
+                                    out_metadata["verification_summary"] = pl_res[
+                                        "verification_summary"
+                                    ]
+                                if pl_res.get("verification_pass") is not None:
+                                    out_metadata["verification_pass"] = pl_res.get(
+                                        "verification_pass"
+                                    )
+                                if pl_res.get("follow_up_questions"):
+                                    out_metadata["follow_up_questions"] = pl_res[
+                                        "follow_up_questions"
+                                    ]
+                                if pl_res.get("response_alternatives"):
+                                    out_metadata["response_alternatives"] = pl_res[
+                                        "response_alternatives"
+                                    ]
+                                if pl_res.get("generation_scenario"):
+                                    out_metadata["generation_scenario"] = pl_res[
+                                        "generation_scenario"
+                                    ]
+                            return rt
+                except Exception as pl_err:
+                    logger.warning(
+                        "QA Pipeline v2 실패, 기존 경로로 진행: %s", pl_err
+                    )
+
         # 1단계: MD 문서 기반 질문-답변 시도
         try:
             from api.md_qa_generator import get_md_qa_generator
@@ -2310,23 +3433,20 @@ async def generate_chat_response(
                         sources = md_result.get("sources", [])
                         if sources:
                             sources_text = "\n\n**📚 참고 문서:**\n"
-                            for source in sources[:3]:
+                            for source in sources:
                                 file_name = source.get(
                                     "file_name", source.get("file", "")
                                 )
                                 sources_text += f"- `{source.get('file', file_name)}`\n"
                             response_text += sources_text
 
-                        # 웹 연구 결과가 있으면 추가
+                        # 웹 연구 결과가 있으면 논리적 통합
                         if web_research_result:
-                            if investigative_mode and web_research_evidence:
-                                response_text = _merge_investigative_evidence(
-                                    response_text, web_research_evidence
-                                )
-                            else:
-                                response_text += "\n\n" + (
-                                    web_research_evidence or web_research_result
-                                )
+                            response_text = _synthesize_responses_logically(
+                                response_text,
+                                web_research_evidence or web_research_result,
+                                investigative_mode,
+                            )
 
                         # 응답이 유효하면 반환
                         if response_text and len(response_text.strip()) >= 20:
@@ -2349,141 +3469,114 @@ async def generate_chat_response(
         except Exception as e:
             logger.warning(f"MD 문서 기반 QA 실패, 다음 단계로 진행: {e}")
 
-        # 2단계: 혁신적인 답변 생성 엔진 사용
-        try:
-            from api.intelligent_answer_generator import intelligent_answer_generator
+        # 통합 컨텍스트 사전 구성 (자료 수집·정리·논리 구성·스타일 파이프라인 포함)
+        # 폴백 경로(intelligent_engine, llm_service)에서도 동일 컨텍스트 사용
+        unified_ctx = _build_unified_response_context(
+            context, web_research_result, web_research_evidence, investigative_mode
+        )
 
-            # 요청 분석
-            analysis = intelligent_answer_generator.analyze_request(message, context)
-            logger.info(
-                f"📊 요청 분석 완료: 도메인={analysis.get('domain')}, 타입={analysis.get('message_type')}, 여러요구사항={analysis.get('is_multiple_requests')}"
-            )
+        # 2단계: 혁신적인 답변 생성 엔진 사용 (파이프라인 튜닝에서 use_intelligent_engine 비활성화 시 건너뜀)
+        if _tuning_preset.get("use_intelligent_engine", True):
+            try:
+                from api.intelligent_answer_generator import intelligent_answer_generator
+                analysis = intelligent_answer_generator.analyze_request(message, unified_ctx)
+                logger.info(
+                    f"📊 요청 분석 완료: 도메인={analysis.get('domain')}, 타입={analysis.get('message_type')}, 여러요구사항={analysis.get('is_multiple_requests')}"
+                )
 
-            # 질문과 요구사항에 맞는 답변 생성 (비동기)
-            logger.info(
-                f"🔄 답변 생성 시작: message_length={len(message)}, quality={quality}"
-            )
-            response_text = await intelligent_answer_generator.generate_answer(
-                message, analysis, quality, context
-            )
-            logger.info(
-                f"📥 답변 생성 완료: response_length={len(response_text) if response_text else 0}, response_preview={response_text[:100] if response_text else 'None'}"
-            )
+                # 질문과 요구사항에 맞는 답변 생성 (비동기)
+                logger.info(
+                    f"🔄 답변 생성 시작: message_length={len(message)}, quality={quality}"
+                )
+                response_text = await intelligent_answer_generator.generate_answer(
+                    message, analysis, quality, unified_ctx
+                )
+                logger.info(
+                    f"📥 답변 생성 완료: response_length={len(response_text) if response_text else 0}, response_preview={response_text[:100] if response_text else 'None'}"
+                )
 
-            # 웹 연구 결과가 있으면 답변에 통합
-            if web_research_result and response_text:
-                # 웹 연구 결과를 답변에 자연스럽게 통합
-                if investigative_mode and web_research_evidence:
-                    response_text = _merge_investigative_evidence(
-                        response_text, web_research_evidence
+                # 웹 연구 결과가 있으면 논리적 통합
+                if web_research_result and response_text:
+                    response_text = _synthesize_responses_logically(
+                        response_text,
+                        web_research_evidence or web_research_result,
+                        investigative_mode,
                     )
-                else:
-                    response_text = (
-                        response_text
-                        + "\n\n"
-                        + (web_research_evidence or web_research_result)
-                    )
-                logger.info("✅ 웹 연구 결과를 답변에 통합했습니다")
+                    logger.info("✅ 웹 연구 결과를 논리적으로 통합했습니다")
 
-            # 응답 검증 및 품질 향상
-            if response_text:
-                # 응답이 너무 짧거나 기본 메시지만 있는 경우 재생성 시도
-                if len(response_text.strip()) < 20 or response_text.strip().startswith(
-                    "응답:"
-                ):
-                    logger.warning(
-                        f"응답이 너무 짧거나 기본 메시지: {response_text[:100]}, 재생성 시도"
-                    )
-                    # 더 상세한 프롬프트로 재시도
-                    try:
-                        enhanced_analysis = (
-                            intelligent_answer_generator.analyze_request(
-                                message, context
-                            )
-                        )
-                        # 여러 요구사항이 있는 경우 처리
-                        if enhanced_analysis.get("is_multiple_requests", False):
-                            split_requests = enhanced_analysis.get("split_requests", [])
-                            if split_requests and len(split_requests) > 1:
-                                logger.info(
-                                    f"여러 요구사항 감지, 통합 답변 생성: {len(split_requests)}개"
-                                )
-                                response_text = await intelligent_answer_generator._generate_multiple_requests_answer(
-                                    split_requests, enhanced_analysis, quality, context
-                                )
-                            else:
-                                # 단일 요구사항이지만 더 상세한 답변 생성
-                                enhanced_context = context or {}
-                                enhanced_context.update(
-                                    {
-                                        "require_detailed": True,
-                                        "min_length": 200,
-                                        "include_examples": True,
-                                    }
-                                )
-                                response_text = (
-                                    await intelligent_answer_generator.generate_answer(
-                                        message,
-                                        enhanced_analysis,
-                                        quality,
-                                        enhanced_context,
-                                    )
-                                )
-                        else:
-                            # 단일 질문이지만 더 상세한 답변 생성
-                            enhanced_context = context or {}
-                            enhanced_context.update(
-                                {
-                                    "require_detailed": True,
-                                    "min_length": 200,
-                                    "include_examples": True,
-                                }
-                            )
-                            response_text = (
-                                await intelligent_answer_generator.generate_answer(
-                                    message,
-                                    enhanced_analysis,
-                                    quality,
-                                    enhanced_context,
-                                )
-                            )
-                    except Exception as e:
-                        logger.warning(f"재생성 시도 실패: {e}")
-
-                try:
-                    from api.response_enhancer import response_enhancer
-
-                    response_text = response_enhancer.validate_and_fix_response(
-                        response_text, analysis.get("domain", "general")
-                    )
-                    if len(response_text.strip()) >= 10:
-                        response_text = response_enhancer.enhance_response(
-                            response_text,
-                            analysis.get("domain", "general"),
-                            quality,
-                            user_message=message,
-                        )
-                        logger.info(
-                            f"✅ 혁신적인 답변 생성 엔진으로 응답 생성 완료 (도메인: {analysis.get('domain', 'general')}, 길이: {len(response_text)})"
-                        )
-                        return response_text
-                except Exception as e:
-                    logger.warning(f"응답 향상 실패: {e}")
-                    if (
-                        isinstance(response_text, str)
-                        and len(response_text.strip()) >= 10
+                # 응답 검증 및 품질 향상 (논리 검증 포함)
+                if response_text and not _validate_response_logic(response_text):
+                    logger.warning("응답 논리 검증 실패, 다음 단계로 진행")
+                    response_text = None
+                if response_text:
+                    if len(response_text.strip()) < 20 or response_text.strip().startswith(
+                        "응답:"
                     ):
-                        logger.info(
-                            f"✅ 기본 검증 통과 (도메인: {analysis.get('domain', 'general')}, 길이: {len(response_text)})"
+                        logger.warning(
+                            f"응답이 너무 짧거나 기본 메시지: {response_text[:100]}, 재생성 시도"
                         )
-                        return response_text
-        except (ImportError, AttributeError, TypeError) as e:
-            logger.warning(f"혁신적인 답변 생성 엔진 사용 불가, 폴백 사용: {e}")
+                        try:
+                            enhanced_analysis = (
+                                intelligent_answer_generator.analyze_request(
+                                    message, unified_ctx
+                                )
+                            )
+                            if enhanced_analysis.get("is_multiple_requests", False):
+                                split_requests = enhanced_analysis.get("split_requests", [])
+                                if split_requests and len(split_requests) > 1:
+                                    logger.info(
+                                        f"여러 요구사항 감지, 통합 답변 생성: {len(split_requests)}개"
+                                    )
+                                    response_text = await intelligent_answer_generator._generate_multiple_requests_answer(
+                                        split_requests, enhanced_analysis, quality, unified_ctx
+                                    )
+                                else:
+                                    enhanced_context = dict(unified_ctx) if unified_ctx else {}
+                                    enhanced_context.update(
+                                        {"require_detailed": True, "min_length": 200, "include_examples": True}
+                                    )
+                                    response_text = await intelligent_answer_generator.generate_answer(
+                                        message, enhanced_analysis, quality, enhanced_context
+                                    )
+                            else:
+                                enhanced_context = dict(unified_ctx) if unified_ctx else {}
+                                enhanced_context.update(
+                                    {"require_detailed": True, "min_length": 200, "include_examples": True}
+                                )
+                                response_text = await intelligent_answer_generator.generate_answer(
+                                    message, enhanced_analysis, quality, enhanced_context
+                                )
+                        except Exception as e:
+                            logger.warning(f"재생성 시도 실패: {e}")
 
-            # 웹 연구 결과만이라도 반환
-            if web_research_result:
-                logger.info("✅ 웹 연구 결과를 기본 응답으로 사용")
-                return web_research_evidence or web_research_result
+                    try:
+                        from api.response_enhancer import response_enhancer
+                        response_text = response_enhancer.validate_and_fix_response(
+                            response_text, analysis.get("domain", "general")
+                        )
+                        if len(response_text.strip()) >= 10:
+                            response_text = response_enhancer.enhance_response(
+                                response_text,
+                                analysis.get("domain", "general"),
+                                quality,
+                                user_message=message,
+                            )
+                            logger.info(
+                                f"✅ 혁신적인 답변 생성 엔진으로 응답 생성 완료 (도메인: {analysis.get('domain', 'general')}, 길이: {len(response_text)})"
+                            )
+                            return response_text
+                    except Exception as e:
+                        logger.warning(f"응답 향상 실패: {e}")
+                        if isinstance(response_text, str) and len(response_text.strip()) >= 10:
+                            logger.info(
+                                f"✅ 기본 검증 통과 (도메인: {analysis.get('domain', 'general')}, 길이: {len(response_text)})"
+                            )
+                            return response_text
+            except (ImportError, AttributeError, TypeError) as e:
+                logger.warning(f"혁신적인 답변 생성 엔진 사용 불가, 폴백 사용: {e}")
+                if web_research_result:
+                    logger.info("✅ 웹 연구 결과를 기본 응답으로 사용")
+                    return web_research_evidence or web_research_result
 
         # 3단계: 향상된 응답 생성기 사용 시도 (폴백)
         try:
@@ -2491,25 +3584,15 @@ async def generate_chat_response(
 
             response_text = enhanced_generator.generate_response(message, quality)
 
-            # 웹 연구 결과 통합
+            # 웹 연구 결과 논리적 통합
             if web_research_result and response_text:
-                if investigative_mode and web_research_evidence:
-                    response_text = _merge_investigative_evidence(
-                        response_text, web_research_evidence
-                    )
-                else:
-                    response_text = (
-                        response_text
-                        + "\n\n"
-                        + (web_research_evidence or web_research_result)
-                    )
+                response_text = _synthesize_responses_logically(
+                    response_text,
+                    web_research_evidence or web_research_result,
+                    investigative_mode,
+                )
 
-            # 응답 검증
-            if (
-                response_text
-                and isinstance(response_text, str)
-                and len(response_text.strip()) >= 10
-            ):
+            if response_text and _validate_response_logic(response_text):
                 return response_text
         except (ImportError, AttributeError, TypeError) as e:
             logger.debug(f"향상된 응답 생성기 사용 불가: {e}")
@@ -2519,15 +3602,51 @@ async def generate_chat_response(
             logger.info("✅ 웹 연구 결과를 최종 응답으로 사용")
             return web_research_evidence or web_research_result
 
-        # 0. 고급 AI 응답 엔진 시도 (ChatGPT 수준)
+        # 딥시크(DeepSeek) 설정 시 LLM 서비스를 우선 시도 — 대화이 설치형/API DeepSeek으로 동작하도록
+        import asyncio
+        _provider = getattr(llm_service_instance, "provider", None) if (LLM_SERVICE_AVAILABLE and llm_service_instance) else None
+        if _provider in ("deepseek", "deepseek-local"):
+            try:
+                logger.info(f"🤖 DeepSeek 우선 시도 (provider={_provider}): {message[:50]}...")
+                enhanced_ctx = dict(unified_ctx) if unified_ctx else (context.copy() if context else {})
+                enhanced_ctx["is_long_form"] = quality in ("ultimate", "detailed")
+                preset = enhanced_ctx.get("_pipeline_tuning_preset") or {}
+                enhanced_ctx["temperature"] = preset.get("temperature", 0.7)
+                enhanced_ctx["max_tokens"] = enhanced_ctx.get("max_tokens") or preset.get("max_tokens") or 16384
+                llm_timeout = float(preset.get("llm_timeout_seconds", 30))
+                llm_result = await asyncio.wait_for(
+                    llm_service_instance.generate_response(
+                        message=message,
+                        conversation_id=enhanced_ctx.get("conversation_id"),
+                        context=enhanced_ctx,
+                    ),
+                    timeout=llm_timeout,
+                )
+                if llm_result and llm_result.get("content") and len((llm_result.get("content") or "").strip()) >= 10:
+                    response_text = (llm_result.get("content") or "").strip()
+                    logger.info(f"✅ DeepSeek 응답 사용: {len(response_text)}자")
+                    if web_research_result and (web_research_evidence or web_research_result):
+                        response_text = _synthesize_responses_logically(
+                            response_text,
+                            web_research_evidence or web_research_result,
+                            investigative_mode,
+                        )
+                    return response_text
+            except asyncio.TimeoutError:
+                logger.warning("⚠️ DeepSeek 우선 시도 타임아웃, 다음 단계로 진행")
+            except Exception as e:
+                logger.warning(f"⚠️ DeepSeek 우선 시도 실패: {e}, 다음 단계로 진행")
+
+        # 0. 고급 AI 응답 엔진 시도 (ChatGPT 수준, 파이프라인 컨텍스트 포함)
         if INTELLIGENT_ENGINE_AVAILABLE and intelligent_engine:
             try:
+                hist = (unified_ctx.get("conversation_history") or unified_ctx.get("conversationHistory")) if unified_ctx else None
+                if not isinstance(hist, list):
+                    hist = None
                 intelligent_response = intelligent_engine.generate_response(
                     query=message,
-                    context=context,
-                    conversation_history=context.get("conversationHistory")
-                    if context
-                    else None,
+                    context=unified_ctx,
+                    conversation_history=hist,
                 )
                 if intelligent_response and len(intelligent_response.strip()) > 200:
                     logger.info(
@@ -2548,14 +3667,21 @@ async def generate_chat_response(
             try:
                 logger.info(f"🤖 LLM 서비스로 응답 생성 시도: {message[:50]}...")
 
-                # 대화 히스토리를 context에 포함
-                enhanced_ctx = context.copy() if context else {}
+                # 파이프라인·통합 컨텍스트 포함 (요청 max_tokens 우선, 요구·질문에 맞게 생성)
+                enhanced_ctx = dict(unified_ctx) if unified_ctx else (context.copy() if context else {})
                 enhanced_ctx["is_long_form"] = (
                     quality == "ultimate" or quality == "detailed"
                 )
+                preset = enhanced_ctx.get("_pipeline_tuning_preset") or {}
+                enhanced_ctx["temperature"] = preset.get("temperature", 0.7)
+                enhanced_ctx["max_tokens"] = (
+                    enhanced_ctx.get("max_tokens")
+                    or preset.get("max_tokens")
+                    or 16384
+                )
 
-                # 타임아웃 30초로 제한
                 import asyncio
+                llm_timeout = float(preset.get("llm_timeout_seconds", 30))
 
                 try:
                     llm_result = await asyncio.wait_for(
@@ -2564,10 +3690,10 @@ async def generate_chat_response(
                             conversation_id=enhanced_ctx.get("conversation_id"),
                             context=enhanced_ctx,
                         ),
-                        timeout=30.0,
+                        timeout=llm_timeout,
                     )
                 except asyncio.TimeoutError:
-                    logger.warning("⚠️ LLM 서비스 타임아웃 (30초)")
+                    logger.warning("⚠️ LLM 서비스 타임아웃 (%s초)", llm_timeout)
                     llm_result = None
 
                 if llm_result and llm_result.get("content"):
@@ -2578,19 +3704,31 @@ async def generate_chat_response(
             except Exception as e:
                 logger.warning(f"⚠️ LLM 서비스 응답 실패: {e}")
 
-        # 3. 최종 폴백: 기본 응답 생성
+        # 3. 최종 폴백: 기본 응답 생성 (파이프라인·통합 컨텍스트 전달)
         logger.info(
             f"⚠️ 모든 단계 실패, generate_intelligent_response로 폴백: message_length={len(message)}"
         )
-        fallback_response = generate_intelligent_response(message, quality)
+        fallback_response = generate_intelligent_response(message, quality, unified_ctx)
         logger.info(
             f"📥 폴백 응답 생성 완료: response_length={len(fallback_response) if fallback_response else 0}"
         )
-        return fallback_response
+        # 웹 연구 결과가 있으면 폴백과 통합 (모든 기능이 답변에 기여하도록)
+        if web_research_result and fallback_response:
+            fallback_response = _synthesize_responses_logically(
+                fallback_response,
+                web_research_evidence or web_research_result,
+                investigative_mode,
+            )
+        if fallback_response and isinstance(fallback_response, str) and len(fallback_response.strip()) >= 10:
+            return fallback_response
+        # 웹 연구만 있으면 그것을 최종 응답으로 (개발된 기능 활용)
+        if web_research_result:
+            return web_research_evidence or web_research_result
+        return generate_default_response(message, context)
 
     except Exception as e:
         logger.error(f"응답 생성 오류: {e}", exc_info=True)
-        return generate_default_response(message)
+        return generate_default_response(message, context)
 
 
 def _generate_knowledge_based_response(message: str, quality: str) -> Optional[str]:
@@ -2641,7 +3779,7 @@ def crawl_webpage(url):
         links = soup.find_all('a', href=True)
         print(f"\\n발견된 링크 수: {len(links)}")
         
-        for link in links[:10]:  # 처음 10개만 출력
+        for link in links:
             print(f"  - {link['href']}")
         
         # 본문 텍스트 추출
@@ -2691,7 +3829,7 @@ def crawl_multiple_pages(start_url, max_pages=10):
             visited.add(url)
             
             # 새로운 링크 추가
-            for link in data['links'][:5]:
+            for link in data['links']:
                 full_url = urljoin(url, link)
                 if full_url not in visited:
                     to_visit.append(full_url)
@@ -2927,7 +4065,7 @@ React는 대규모 애플리케이션 개발에 적합한 강력한 라이브러
     ):
         return """안녕하세요! 👋
 
-저는 CORBU AI 어시스턴트입니다. 다양한 질문에 답변해드릴 수 있어요.
+저는 CORBU.AI 어시스턴트입니다. 다양한 질문에 답변해드릴 수 있어요.
 
 ## 도움드릴 수 있는 분야
 
@@ -4226,9 +5364,9 @@ const response = await axios.post('https://api.deepl.com/v2/translate', {
         or "뭘 할 수" in message_lower
         or "무엇을" in message_lower
     ):
-        return """# CORBU AI 소개
+        return """# CORBU.AI 소개
 
-안녕하세요! 저는 **CORBU AI**입니다. 🤖
+안녕하세요! 저는 **CORBU.AI**입니다. 🤖
 
 ## 저에 대해
 
@@ -4824,10 +5962,17 @@ async def add_security_headers(request, call_next):
     return None  # 지식 베이스에 없는 주제
 
 
+def _wrap_project_knowledge_notice(response: str, context: Optional[Dict[str, Any]]) -> str:
+    """노트북 LLM 프로젝트 지식이 있으면 답변 앞에 안내 문구 추가"""
+    if not response or not context or not (context.get("projectKnowledge") or "").strip():
+        return response
+    return "※ 현재 프로젝트의 학습 정보를 반영하여 답변했습니다.\n\n" + response
+
+
 def generate_intelligent_response(
     message: str, quality: str, context: Optional[Dict[str, Any]] = None
 ) -> str:
-    """지능형 응답 생성 - 구조화된 고품질 응답 생성 (폴백용)"""
+    """지능형 응답 생성 - 구조화된 고품질 응답 생성 (폴백용). context.projectKnowledge 있으면 반영."""
     # LLM 서비스 호출은 generate_chat_response에서 이미 시도됨
     # 여기서는 지식 기반 응답 생성
 
@@ -4836,7 +5981,7 @@ def generate_intelligent_response(
     # 주제별 지식 베이스 응답 시도
     knowledge_response = _generate_knowledge_based_response(message, quality)
     if knowledge_response:
-        return knowledge_response
+        return _wrap_project_knowledge_notice(knowledge_response, context)
 
     # 폴백: 구조화된 응답 생성
     logger.info("📝 폴백: 구조화된 응답 생성기 사용")
@@ -4943,7 +6088,7 @@ def generate_intelligent_response(
             # 여러 요구사항이 있는 경우 구조화된 답변 생성
             answer_parts = []
             answer_parts.append(
-                f"# {message[:100]}{'...' if len(message) > 100 else ''}에 대한 답변\n"
+                f"# {message}에 대한 답변\n"
             )
             answer_parts.append(f"\n{message}에 대해 상세히 답변드리겠습니다.\n")
 
@@ -4954,11 +6099,11 @@ def generate_intelligent_response(
                 )
                 if numbered_matches:
                     answer_parts.append("## 요구사항별 답변\n\n")
-                    for num, content in numbered_matches[:6]:
+                    for num, content in numbered_matches:
                         content = content.strip()
                         if content:
                             answer_parts.append(
-                                f"### {num}. {content[:60]}{'...' if len(content) > 60 else ''}\n\n"
+                                f"### {num}. {content}\n\n"
                             )
                             answer_parts.append(
                                 f"{content}에 대해 설명드리겠습니다.\n\n"
@@ -4993,11 +6138,12 @@ def generate_intelligent_response(
                 )
                 if len(ordered_parts) > 1:
                     answer_parts.append("## 요구사항별 답변\n\n")
-                    for i, part in enumerate(ordered_parts[1:6], 1):  # 최대 5개
+                    _ordered_body = ordered_parts[1:]
+                    for i, part in enumerate(_ordered_body, 1):
                         part = part.strip()
                         if part:
                             answer_parts.append(
-                                f"### {i}. {part[:60]}{'...' if len(part) > 60 else ''}\n\n"
+                                f"### {i}. {part}\n\n"
                             )
                             answer_parts.append(f"{part}에 대해 설명드리겠습니다.\n\n")
                             answer_parts.append(
@@ -5007,7 +6153,7 @@ def generate_intelligent_response(
                             answer_parts.append("2. **주요 특징**: 특징과 원리\n")
                             answer_parts.append("3. **실제 사례**: 구체적인 사례\n")
                             answer_parts.append("4. **시사점**: 의미와 향후 전망\n\n")
-                            if i < len(ordered_parts[1:6]):
+                            if i < len(_ordered_body):
                                 answer_parts.append("---\n\n")
                     return "\n".join(answer_parts)
 
@@ -5016,7 +6162,7 @@ def generate_intelligent_response(
             answer_parts.append("이 질문에 대해 다음과 같이 답변드리겠습니다:\n\n")
             answer_parts.append("### 1. 핵심 개념\n\n")
             answer_parts.append(
-                f"먼저 질문의 핵심 개념을 정리하면, {message[:100]}와 관련된 주요 개념들을 이해하는 것이 중요합니다.\n\n"
+                f"먼저 질문의 핵심 개념을 정리하면, {message}와 관련된 주요 개념들을 이해하는 것이 중요합니다.\n\n"
             )
             answer_parts.append("### 2. 배경과 맥락\n\n")
             answer_parts.append(
@@ -5072,7 +6218,7 @@ def generate_intelligent_response(
             ]
             tip = random.choice(tips)
 
-            return f"""# {message[:50]}{"..." if len(message) > 50 else ""}에 대해
+            return f"""# {message}에 대해
 
 죄송합니다. 이 주제에 대한 상세한 정보를 제공하기 어렵습니다.
 
@@ -5103,13 +6249,13 @@ def generate_intelligent_response(
 어떤 주제로 다시 질문해주시겠어요?"""
 
         else:
-            return f"""**{message[:30]}{"..." if len(message) > 30 else ""}**에 대한 답변을 준비하지 못했습니다.
+            return f"""**{message}**에 대한 답변을 준비하지 못했습니다.
 
 Python, JavaScript, React, Docker, Git, SQL 등 프로그래밍 관련 질문을 해보세요!"""
 
     elif is_generation:
         # 생성 요청 응답
-        return f"""요청하신 '{message}'를 생성해드리겠습니다.
+        out = f"""요청하신 '{message}'를 생성해드리겠습니다.
 
 ## 생성된 내용
 
@@ -5124,6 +6270,7 @@ Python, JavaScript, React, Docker, Git, SQL 등 프로그래밍 관련 질문을
 ## 결론
 
 {message}에 대한 내용을 생성했습니다. 추가로 수정하거나 보완할 부분이 있으시면 말씀해주세요."""
+        return _wrap_project_knowledge_notice(out, context)
 
     else:
         # 일반 대화 응답
@@ -5180,7 +6327,8 @@ Python, JavaScript, React, Docker, Git, SQL 등 프로그래밍 관련 질문을
 {message}에 대해 요약했습니다."""
 
         else:
-            return f"{message}에 대해 답변드리겠습니다.\n\n{message}에 대한 내용입니다."
+            out = f"{message}에 대해 답변드리겠습니다.\n\n{message}에 대한 내용입니다."
+            return _wrap_project_knowledge_notice(out, context)
 
 
 @router.get("/md/search", summary="MD 문서 검색")
@@ -5270,11 +6418,13 @@ async def get_md_stats():
         )
 
 
-def generate_default_response(message: str) -> str:
-    """기본 응답 생성 (마크다운 형식) - 개선된 버전"""
-    logger.info(f"🔄 generate_default_response 호출: message_length={len(message)}")
+def generate_default_response(message: str, context: Optional[Dict[str, Any]] = None) -> str:
+    """기본 응답 생성 (마크다운 형식) - 질문/요구(parsed_input)·품질 지침(context) 반영"""
+    if context is None:
+        context = {}
+    logger.info(f"🔄 generate_default_response 호출: message_length={len(message)}, context_keys={list(context.keys())[:10]}")
 
-    # intelligent_answer_generator를 사용하여 더 나은 기본 응답 생성 시도
+    # intelligent_answer_generator를 사용하여 질문/요구에 맞는 답변 생성 시도 (context 전달)
     try:
         from api.intelligent_answer_generator import intelligent_answer_generator
         import asyncio
@@ -5286,18 +6436,17 @@ def generate_default_response(message: str) -> str:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        # 간단한 분석 수행
-        analysis = intelligent_answer_generator.analyze_request(message, {})
+        # context에 parsed_input·answer_quality_instruction이 있으면 분석·생성에 반영
+        analysis = intelligent_answer_generator.analyze_request(message, context)
         logger.info(
             f"📊 기본 응답용 분석 완료: 도메인={analysis.get('domain')}, 타입={analysis.get('message_type')}"
         )
 
-        # 비동기 답변 생성 시도 (타임아웃 설정)
+        # 비동기 답변 생성 시도 (타임아웃 설정, context 전달로 질문/요구 반영)
         try:
             logger.info(
-                "🔄 기본 응답 생성 시도: intelligent_answer_generator.generate_answer 호출"
+                "🔄 기본 응답 생성 시도: intelligent_answer_generator.generate_answer 호출 (context 반영)"
             )
-            # 긴 질문이나 복잡한 요청의 경우 타임아웃을 더 길게 설정
             message_length = len(message)
             is_long_question = message_length > 500
             has_multiple_requirements = bool(
@@ -5305,12 +6454,12 @@ def generate_default_response(message: str) -> str:
             )
             dynamic_timeout = (
                 60.0 if (is_long_question or has_multiple_requirements) else 30.0
-            )  # 긴 질문: 60초, 일반: 30초
+            )
 
             response = loop.run_until_complete(
                 asyncio.wait_for(
                     intelligent_answer_generator.generate_answer(
-                        message, analysis, "enhanced", {}
+                        message, analysis, "enhanced", context
                     ),
                     timeout=dynamic_timeout,
                 )
@@ -5526,7 +6675,7 @@ def _analyze_query_intent(message: str) -> Dict[str, Any]:
         "무엇",
         "왜",
     }
-    intent["keywords"] = [w for w in potential_keywords if w not in stopwords][:10]
+    intent["keywords"] = [w for w in potential_keywords if w not in stopwords]
 
     return intent
 
@@ -5542,7 +6691,7 @@ def _generate_thinking_process(message: str, intent: Dict[str, Any]) -> str:
         f"1. 질문 분석: {intent['type']} 유형의 {intent['complexity']} 복잡도 질문"
     )
     thinking.append(f"2. 도메인: {intent['domain']}")
-    thinking.append(f"3. 핵심 키워드: {', '.join(intent['keywords'][:5])}")
+    thinking.append(f"3. 핵심 키워드: {', '.join(intent['keywords'])}")
 
     if intent["expects_steps"]:
         thinking.append("4. 단계별 설명이 필요함")
@@ -5573,6 +6722,21 @@ def _generate_structured_response(
     domain = intent.get("domain", "general")
 
     parts = []
+
+    # 스트리밍/엔진 폴백 시 템플릿 답에도 다중 요청 항목을 명시 (LLM 미경로)
+    if context and isinstance(context, dict) and context.get("multi_request_mode"):
+        m_items = context.get("multi_request_items")
+        if isinstance(m_items, list) and m_items:
+            bl: List[str] = []
+            for idx, it in enumerate(m_items, 1):
+                st = str(it).strip() if it is not None else ""
+                if st:
+                    bl.append(f"{idx}. {st}")
+            if bl:
+                parts.append(
+                    "**[다중 요청]** 아래 각 항목을 이후 본문에서 빠짐없이 다룹니다.\n\n"
+                    + "\n".join(bl)
+                )
 
     # 스타일에 따른 응답 길이 조절
     if style == "concise":
@@ -5636,7 +6800,7 @@ def _generate_intro(
     msg: str, query_type: str, keywords: List[str], perspective: str = None
 ) -> str:
     """도입부 생성"""
-    topic = keywords[0] if keywords else msg[:30]
+    topic = keywords[0] if keywords else msg
 
     intros = {
         "how_to": f"**{topic}**에 대해 실용적인 방법을 안내해 드리겠습니다.",
@@ -5950,7 +7114,7 @@ def _generate_general_response(
     msg: str, keywords: List[str], detail_level: str, max_sections: int, domain: str
 ) -> str:
     """일반 응답 생성"""
-    topic = keywords[0] if keywords else msg[:30]
+    topic = keywords[0] if keywords else msg
     parts = []
 
     parts.append(f"## {topic}에 대한 답변\n")
@@ -6126,55 +7290,74 @@ def _get_response_style_prompt(style: str, perspective: str = None) -> str:
         if perspective_key in perspective_prompts:
             prompt_parts.append(perspective_prompts[perspective_key])
 
+    # 요구·질문에 맞는 생성 및 글 생성 품질 (길이 제한 없이 사용자 요청에 맞게)
+    prompt_parts.append(
+        "답변 길이와 형식은 사용자 질문과 요구에 맞게 조절하세요. 요청이 상세할수록 그에 맞게 충분히 답변하세요. "
+        "질문에는 핵심에 정확히 답하고, 글을 생성할 때는 논리적 구조(서론·본론·결론)·가독성·명확한 문장을 갖추세요."
+    )
+
     return "\n\n".join(prompt_parts)
 
 
 def _add_response_diversity(
-    base_response: str, temperature: float = 0.8, variation_seed: int = None
+    base_response: str,
+    temperature: float = 0.8,
+    variation_seed: int = None,
+    variation_mode: Optional[str] = "high",
 ) -> str:
     """
     응답에 다양성을 추가합니다.
-    같은 질문에도 다른 시작, 구조, 표현을 사용합니다.
+    같은 질문·요구에도 n번 요청 시 다른 시작/마무리·표현이 나오도록 합니다.
+    variation_mode: "normal"이면 다양성 축소, "high"면 풀 적용.
     """
     if variation_seed is None:
         variation_seed = random.randint(0, 10000)
 
     random.seed(variation_seed)
 
-    # 시작 문구 다양화
+    # variation_mode가 normal이면 다양성 축소 (안정 모드)
+    effective_temp = temperature
+    if (variation_mode or "high").lower() == "normal":
+        effective_temp = temperature * 0.2
+
+    # 시작 문구 다양화 (같은 질문에도 다른 인트로)
     opening_phrases = [
-        "",  # 바로 시작
+        "",
         "좋은 질문입니다. ",
         "말씀하신 부분에 대해 설명드리겠습니다. ",
         "이 부분을 자세히 살펴보면, ",
         "핵심적인 내용부터 말씀드리면, ",
         "여러 측면에서 살펴볼 수 있는데, ",
         "우선 중요한 점부터 짚어드리면, ",
+        "정리해 보면, ",
+        "요약하면, ",
+        "다음과 같이 설명드릴 수 있습니다. ",
     ]
 
     # 마무리 문구 다양화
     closing_phrases = [
-        "",  # 추가 없음
+        "",
         "\n\n추가로 궁금한 점이 있으시면 말씀해주세요.",
         "\n\n더 자세한 설명이 필요하시면 알려주세요.",
         "\n\n다른 관점에서의 설명이 필요하시면 말씀해주세요.",
+        "\n\n필요하시면 같은 주제를 다른 각도로도 설명해 드리겠습니다.",
+        "\n\n추가 질문 있으시면 이어서 남겨주세요.",
     ]
 
-    # 높은 temperature에서만 시작/마무리 추가
-    if temperature >= 0.7:
-        opening = random.choice(opening_phrases)
-        closing = random.choice(closing_phrases)
+    # temperature·variation_seed에 따라 매번 다른 조합 적용
+    use_opening = effective_temp >= 0.5 and random.random() < (0.3 + 0.5 * effective_temp)
+    use_closing = effective_temp >= 0.4 and random.random() < (0.2 + 0.5 * effective_temp)
 
-        # 이미 인사로 시작하면 opening 추가 안함
-        if any(
-            base_response.startswith(phrase)
-            for phrase in ["좋은", "말씀", "이 부분", "핵심", "여러", "우선"]
-        ):
-            opening = ""
+    opening = random.choice(opening_phrases) if use_opening else ""
+    closing = random.choice(closing_phrases) if use_closing else ""
 
-        return opening + base_response + closing
+    if opening and any(
+        base_response.startswith(phrase)
+        for phrase in ["좋은", "말씀", "이 부분", "핵심", "여러", "우선", "정리", "요약", "다음과"]
+    ):
+        opening = ""
 
-    return base_response
+    return opening + base_response + closing
 
 
 class VariationsRequest(BaseModel):
@@ -6611,7 +7794,7 @@ async def generate_conversation_title(request: GenerateTitleRequest):
         return success_response(
             data={
                 "title": title,
-                "original_message": request.message[:100],
+                "original_message": request.message,
                 "processing_time_ms": processing_time,
             },
             message="대화 제목 생성 완료",

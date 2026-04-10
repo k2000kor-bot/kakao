@@ -8,6 +8,7 @@
 - 소통 효과성 측정
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -685,4 +686,5 @@ if __name__ == "__main__":
     print("   💭 감정적 어필 최적화")
     print("   🔄 통합적 접근법 개발")
     
-    uvicorn.run(app, host="0.0.0.0", port=8093) 
+    _p = int(os.environ.get("ADVANCED_MESSAGE_RESEARCH_PORT", os.environ.get("PORT", "8093")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

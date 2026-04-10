@@ -7,6 +7,7 @@
 - 음성 명령 시스템
 """
 
+import os
 import asyncio
 import json
 import logging
@@ -24,6 +25,8 @@ import queue
 import base64
 import io
 
+from cors_config import get_cors_allow_origins
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,7 +36,7 @@ app = FastAPI(title="실시간 음성 인식 시스템", version="1.0.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -657,14 +660,17 @@ async def voice_websocket_endpoint(websocket: WebSocket, session_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     try:
+        _p = int(
+            os.environ.get("VOICE_RECOGNITION_PORT", os.environ.get("PORT", "8001"))
+        )
         print("🎤 실시간 음성 인식 시스템 시작 중...")
-        print("📍 서버 주소: http://localhost:8001")
-        print("📚 API 문서: http://localhost:8001/docs")
-        print("🔗 WebSocket: ws://localhost:8001/ws/voice/{session_id}")
-        
-        uvicorn.run(app, host="0.0.0.0", port=8001)
+        print(f"📍 서버 주소: http://localhost:{_p}")
+        print(f"📚 API 문서: http://localhost:{_p}/docs")
+        print(f"🔗 WebSocket: ws://localhost:{_p}/ws/voice/{{session_id}}")
+
+        uvicorn.run(app, host="0.0.0.0", port=_p)
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

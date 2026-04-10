@@ -19,7 +19,7 @@ export const useNotifications = () => {
       try {
         const parsed = JSON.parse(stored);
         // Date 객체 복원
-        const restored = parsed.map((n: any) => ({
+        const restored = parsed.map((n: { timestamp: string; [key: string]: unknown }) => ({
           ...n,
           timestamp: new Date(n.timestamp),
         }));

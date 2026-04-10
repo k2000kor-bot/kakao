@@ -2950,7 +2950,7 @@ async def analyze_conversation_enhanced(request: Dict[str, Any]):
         if not chat_file_path:
             return {
                 "success": False,
-                "error": "채팅 파일 경로가 필요합니다."
+                "error": "대화 파일 경로가 필요합니다."
             }
         
         # 향상된 대화 분석 실행
@@ -3086,10 +3086,11 @@ async def get_conversation_insights():
 
 # 서버 시작
 if __name__ == "__main__":
+    _p = int(os.environ.get("ADVANCED_MESSAGE_GENERATION_PORT", os.environ.get("PORT", "8011")))
     print("🚀 고도화된 메시지 생성 서버 시작")
     print("=" * 60)
-    print("📍 서버 주소: http://localhost:8011")
-    print("📖 API 문서: http://localhost:8011/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 엔드포인트:")
     print("   POST /api/generate-advanced-message - 고도화된 메시지 생성")
     print("   POST /api/update-user-profile - 사용자 프로필 업데이트")
@@ -3106,7 +3107,7 @@ if __name__ == "__main__":
         
         # 서버 시작
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8011, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=_p, log_level="info")
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

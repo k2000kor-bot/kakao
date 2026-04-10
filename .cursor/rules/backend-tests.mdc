@@ -1,0 +1,25 @@
+---
+description: 백엔드 API 테스트 작성 규칙
+globs: backend/tests/**/*.py
+alwaysApply: false
+---
+
+# 백엔드 테스트 규칙
+
+- **클라이언트**: `TestClient(app)` 사용. app은 `main_server`에서 import.
+- **마커**: `@pytest.mark.api` 로 API 테스트 표시. `@pytest.mark.skipif(not APP_AVAILABLE, ...)` 로 앱 미사용 시 스킵.
+- **정리**: `cleanup_test_data` 픽스처로 `project_data/projects/test_*.json` 등 테스트 데이터 삭제.
+- **assert**: status_code, `response.json()` 의 `success`, `data` 구조 확인. 에러 케이스도 함께 작성.
+
+## Q→A 파이프라인 빠른 검증 (로컬)
+
+- **백엔드 전체 pytest**: `npm run test:backend` → `scripts/run-backend-pytest.sh` + `lib-backend-python.sh`(`import pytest`).
+- **백엔드 재시작(5002)**: `npm run restart:backend` → `scripts/restart-backend.sh`도 `lib-backend-python.sh`로 `import uvicorn` 성공 인터프리터(`venv`→`.venv`→시스템) 우선; 없으면 `backend/.venv`를 `requirements-core.txt`로 재생성.
+- **백엔드만(Verifier·오케스트라·라우터·플래너)**: `npm run test:backend:pipeline-smoke` → `scripts/run-backend-pipeline-smoke.sh`가 `scripts/lib-backend-python.sh`의 `backend_python_resolve`로 **`backend/venv` → `.venv` → 시스템 `python3`** 순, `import pytest` 성공 인터프리터 사용.
+- **파이프라인 튜닝 API + 노트북 context**: `npm run test:backend:pipeline-tuning` → `run-backend-pipeline-tuning.sh`, `import pytest, fastapi` 검사.
+- **프론트 메타·SSE·패널·context**: `npm run test:frontend:chat-pipeline`
+- **둘 다**: `npm run test:dev:dual-pipeline` (루트 `package.json`)
+
+- `tests/test_writer_verifier_polish_hints.py`는 `api.unified_chat_api`를 **import 하지 않도록** `sys.modules` 스텁을 씀(venv 없이 돌려도 해당 파일은 통과하기 쉬움).
+
+파이프라인 코드 수정 후 위 중 하나를 돌리면 회귀를 빠르게 잡을 수 있음.

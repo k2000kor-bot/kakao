@@ -177,7 +177,7 @@ export class ImageAnalysisService {
         const colorCounts: { [key: string]: number } = {};
         let totalBrightness = 0;
         let totalSaturation = 0;
-        let totalContrast = 0;
+        let _totalContrast = 0;
 
         for (let i = 0; i < data.length; i += 4) {
             const r = data[i];
@@ -275,7 +275,7 @@ export class ImageAnalysisService {
     }
 
     // 감정 분석 (시뮬레이션)
-    private async analyzeEmotions(img: HTMLImageElement): Promise<EmotionAnalysis> {
+    private async analyzeEmotions(_img: HTMLImageElement): Promise<EmotionAnalysis> {
         // 실제 감정 분석 API 호출 대신 시뮬레이션
         // 실제 구현에서는 Face API나 감정 분석 모델 사용
         return new Promise((resolve) => {

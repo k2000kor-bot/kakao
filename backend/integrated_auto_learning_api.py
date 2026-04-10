@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI 통합 자동 학습 API",
+    title="CORBU.AI 통합 자동 학습 API",
     description="기존 시스템과 자동 학습 시스템이 통합된 고도화된 API 서버",
     version="2.0.0"
 )
@@ -241,7 +241,7 @@ class AutoLearningResponse(BaseModel):
 # WebSocket 엔드포인트
 @app.websocket("/ws/chat/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    """WebSocket 채팅 엔드포인트"""
+    """WebSocket 대화 엔드포인트"""
     await manager.connect(websocket, room_id)
     try:
         while True:
@@ -320,7 +320,7 @@ async def start_learning_session(project_id: Optional[str], chat_id: Optional[st
 async def run_background_learning(session_id: str, project_id: Optional[str], chat_id: Optional[str]):
     """백그라운드 학습 실행"""
     try:
-        # 프로젝트/채팅 관련 메시지 수집
+        # 프로젝트/대화 관련 메시지 수집
         messages = await collect_relevant_messages(project_id, chat_id)
         
         # 지식 베이스 구축
@@ -491,7 +491,7 @@ async def complete_learning_session(session_id: str, knowledge_items: int, model
             WHERE id = ?
         ''', (datetime.now().isoformat(), session_id))
         
-        # 프로젝트/채팅 학습 진행률 업데이트
+        # 프로젝트/대화 학습 진행률 업데이트
         cursor.execute('''
             UPDATE projects 
             SET learning_progress = learning_progress + 0.1,
@@ -530,7 +530,7 @@ def classify_topics(text: str) -> List[str]:
 async def root():
     """루트 엔드포인트"""
     return {
-        "message": "CORBU AI 통합 자동 학습 API 서버",
+        "message": "CORBU.AI 통합 자동 학습 API 서버",
         "version": "2.0.0",
         "status": "running",
         "features": [
@@ -794,10 +794,15 @@ async def health_check():
 if __name__ == "__main__":
     # 업로드 디렉토리 생성
     os.makedirs("backend/uploads", exist_ok=True)
-    
+    _p = int(
+        os.environ.get(
+            "INTEGRATED_AUTO_LEARNING_API_PORT",
+            os.environ.get("BACKEND_PORT", os.environ.get("API_PORT", os.environ.get("PORT", "5002"))),
+        )
+    )
     uvicorn.run(
         "integrated_auto_learning_api:app",
         host="0.0.0.0",
-        port=5002,
+        port=_p,
         reload=True
     )

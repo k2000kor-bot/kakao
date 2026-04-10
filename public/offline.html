@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오프라인 - CORBU AI</title>
+    <title>오프라인 - CORBU.AI</title>
     <style>
         * {
             margin: 0;
@@ -143,11 +143,11 @@
         <h1>오프라인 상태</h1>
         <p>인터넷 연결이 없습니다.<br>네트워크 연결을 확인하고 다시 시도해주세요.</p>
         
-        <button class="retry-btn" onclick="retryConnection()">
+        <button type="button" class="retry-btn" onclick="retryConnection()" aria-label="연결 다시 시도">
             다시 시도
         </button>
         
-        <div class="status">
+        <div class="status" role="status" aria-live="polite" aria-label="연결 상태">
             <span class="status-indicator"></span>
             <span class="connection-status" id="connectionStatus">연결 확인 중...</span>
         </div>
@@ -193,7 +193,10 @@
             retryCount++;
             
             if (retryCount > maxRetries) {
-                alert('최대 재시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.');
+                const statusEl = document.getElementById('connectionStatus');
+                statusEl.textContent = '최대 재시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.';
+                statusEl.style.color = '#ffd700';
+                statusEl.setAttribute('role', 'alert');
                 retryCount = 0;
                 return;
             }

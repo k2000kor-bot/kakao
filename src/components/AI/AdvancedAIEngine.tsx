@@ -1,88 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Brain,
     Zap,
     Computer as Cpu,
-    Database,
-    Network,
-    Layers,
     Sparkles,
     Target,
     BarChart,
     Settings,
-    Play,
-    Pause,
     RotateCcw,
-    Download,
-    Upload,
-    Search,
-    Filter,
-    Eye,
-    EyeOff,
     Clock,
-    TrendingUp,
     Activity,
-    AlertTriangle,
     CheckCircle,
-    X,
-    Plus,
-    Minus,
-    ArrowRight,
-    ArrowLeft,
-    ChevronDown,
-    ChevronUp,
-    Star,
-    Heart,
     MessageSquare,
     FileText,
-    Code,
-    Palette,
-    Globe,
-    Shield,
-    Lock,
-    Unlock,
-    Wifi,
-    Signal,
-    Battery,
-    Volume2,
-    Mic,
-    MicOff,
-    Camera,
-    Video,
-    Image,
-    Music,
-    File,
-    Folder,
-    Archive,
-    Trash2,
-    Edit,
-    Copy,
-    Share2,
-    Bookmark,
-    Tag,
-    Hash,
-    AtSign,
-    Percent,
-    DollarSign,
-    Euro,
-    DollarSign as Yen,
-    Bitcoin,
-    Hash as HashIcon,
-    Hash as HashIcon2,
-    Hash as HashIcon3
+    DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { errorLogger } from '../../utils/errorLogger';
-
-// Helper function to safely convert unknown error types to Error objects
-const toError = (err: unknown): Error => {
-    if (err instanceof Error) {
-        return err as Error;
-    }
-    // Error 생성자를 명시적으로 사용
-    const ErrorConstructor = globalThis.Error;
-    return new ErrorConstructor(String(err)) as Error;
-};
+import { errorLogger, toError } from '../../utils/errorLogger';
+import { coerceTrimmedString } from '../../utils/chatInputUtils';
+import { getQualityScoreColor } from '../../styles/themeColors';
 
 interface AIProcessingConfig {
     model: 'gpt-4' | 'claude-3' | 'gemini-pro' | 'custom';
@@ -261,16 +197,16 @@ interface AdvancedAIEngineProps {
     onModelChange?: (model: string) => void;
     onConfigUpdate?: (config: Partial<AIProcessingConfig>) => void;
     onExportResults?: (results: ProcessingResult[], format: string) => void;
-    onImportData?: (data: any) => void;
+    onImportData?: (data: unknown) => void;
 }
 
 const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
     onProcessingStart,
     onProcessingComplete,
-    onModelChange,
+    onModelChange: _onModelChange,
     onConfigUpdate,
-    onExportResults,
-    onImportData
+    onExportResults: _onExportResults,
+    onImportData: _onImportData
 }) => {
     const [inputText, setInputText] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -329,7 +265,7 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
     });
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
-    const processingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const _processingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // 고도화된 AI 처리 시뮬레이션
     const simulateAdvancedProcessing = async (input: string): Promise<ProcessingResult> => {
@@ -467,7 +403,7 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
         return responses[Math.floor(Math.random() * responses.length)];
     };
 
-    const generateContextAnalysis = (input: string): ContextAnalysis => {
+    const generateContextAnalysis = (_input: string): ContextAnalysis => {
         return {
             topicExtraction: ['AI 처리', '고급 분석', '문맥 이해'],
             intentRecognition: '정보 요청',
@@ -500,7 +436,7 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
         };
     };
 
-    const generateSemanticUnderstanding = (input: string): SemanticUnderstanding => {
+    const generateSemanticUnderstanding = (_input: string): SemanticUnderstanding => {
         return {
             semanticSimilarity: 0.87,
             conceptMapping: [
@@ -529,7 +465,7 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
         };
     };
 
-    const generateReasoningChain = (input: string): ReasoningChain => {
+    const generateReasoningChain = (_input: string): ReasoningChain => {
         return {
             steps: [
                 {
@@ -568,7 +504,7 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
         };
     };
 
-    const generateKnowledgeRetrieval = (input: string): KnowledgeRetrieval => {
+    const generateKnowledgeRetrieval = (_input: string): KnowledgeRetrieval => {
         return {
             relevantDocuments: [
                 {
@@ -618,14 +554,15 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
     };
 
     const handleProcess = async () => {
-        if (!inputText.trim()) return;
+        const trimmed = coerceTrimmedString(inputText, '');
+        if (!trimmed) return;
 
         setIsProcessing(true);
         setProcessingProgress(0);
         onProcessingStart?.(config);
 
         try {
-            const result = await simulateAdvancedProcessing(inputText);
+            const result = await simulateAdvancedProcessing(trimmed);
             setResults(prev => [result, ...prev]);
             setSelectedResult(result);
             onProcessingComplete?.(result);
@@ -661,23 +598,24 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
+        <div className="rounded-lg shadow-sm border h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
             {/* Header */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b" style={{ borderColor: 'var(--bg-tertiary)' }}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                            <Brain className="h-5 w-5 text-purple-600" />
+                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--accent-secondary-muted)' }}>
+                            <Brain className="h-5 w-5" style={{ color: 'var(--accent-secondary)' }} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-900">고급 AI 처리 엔진</h2>
-                            <p className="text-sm text-gray-500">딥러닝, 머신러닝, NLP, 인지컴퓨팅 통합 시스템</p>
+                            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>고급 AI 처리 엔진</h2>
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>딥러닝, 머신러닝, NLP, 인지컴퓨팅 통합 시스템</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
                         <button
                             onClick={() => setActiveTab('config')}
-                            className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            className="flex items-center space-x-2 px-3 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+                            style={{ backgroundColor: 'var(--accent-secondary)' }}
                         >
                             <Settings className="h-4 w-4" />
                             <span>설정</span>
@@ -686,23 +624,28 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                 </div>
 
                 {/* Tabs */}
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mt-4">
-                    {[
-                        { id: 'input', label: '입력', icon: MessageSquare },
-                        { id: 'processing', label: '처리', icon: Cpu },
-                        { id: 'results', label: '결과', icon: FileText },
-                        { id: 'analysis', label: '분석', icon: BarChart },
-                        { id: 'monitoring', label: '모니터링', icon: Activity }
-                    ].map((tab) => {
+                <div className="flex space-x-1 p-1 rounded-lg mt-4" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                    {(
+                        [
+                            { id: 'input', label: '입력', icon: MessageSquare },
+                            { id: 'processing', label: '처리', icon: Cpu },
+                            { id: 'results', label: '결과', icon: FileText },
+                            { id: 'analysis', label: '분석', icon: BarChart },
+                            { id: 'monitoring', label: '모니터링', icon: Activity }
+                        ] as const
+                    ).map((tab) => {
                         const IconComponent = tab.icon;
+                        const isActive = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id
-                                    ? 'bg-white text-purple-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                onClick={() => setActiveTab(tab.id)}
+                                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                                style={{
+                                    backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
+                                    color: isActive ? 'var(--accent-secondary)' : 'var(--text-secondary)',
+                                    boxShadow: isActive ? 'var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05))' : undefined,
+                                }}
                             >
                                 <IconComponent className="h-4 w-4" />
                                 <span>{tab.label}</span>
@@ -725,39 +668,43 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                         >
                             <div className="max-w-4xl mx-auto space-y-6">
                                 {/* AI 모델 선택 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 모델 선택</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>AI 모델 선택</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         {[
                                             { id: 'gpt-4', name: 'GPT-4', icon: Brain, description: '고급 언어 모델' },
                                             { id: 'claude-3', name: 'Claude-3', icon: Sparkles, description: '추론 중심 모델' },
                                             { id: 'gemini-pro', name: 'Gemini Pro', icon: Target, description: '멀티모달 모델' },
                                             { id: 'custom', name: 'Custom', icon: Settings, description: '커스텀 모델' }
-                                        ].map((model) => (
-                                            <button
-                                                key={model.id}
-                                                onClick={() => handleConfigUpdate({ model: model.id as any })}
-                                                className={`p-4 border rounded-lg text-left transition-colors ${config.model === model.id
-                                                    ? 'border-purple-500 bg-purple-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center space-x-3 mb-2">
-                                                    <model.icon className="h-6 w-6 text-purple-600" />
-                                                    <span className="font-medium text-gray-900">{model.name}</span>
-                                                </div>
-                                                <p className="text-sm text-gray-600">{model.description}</p>
-                                            </button>
-                                        ))}
+                                        ].map((model) => {
+                                            const isSelected = config.model === model.id;
+                                            return (
+                                                <button
+                                                    key={model.id}
+                                                    onClick={() => handleConfigUpdate({ model: model.id as AIProcessingConfig['model'] })}
+                                                    className="p-4 border rounded-lg text-left transition-colors"
+                                                    style={{
+                                                        borderColor: isSelected ? 'var(--accent-secondary)' : 'var(--bg-tertiary)',
+                                                        backgroundColor: isSelected ? 'var(--accent-secondary-muted)' : 'transparent',
+                                                    }}
+                                                >
+                                                    <div className="flex items-center space-x-3 mb-2">
+                                                        <model.icon className="h-6 w-6" style={{ color: 'var(--accent-secondary)' }} />
+                                                        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{model.name}</span>
+                                                    </div>
+                                                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{model.description}</p>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
                                 {/* 입력 영역 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">고급 AI 처리 입력</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>고급 AI 처리 입력</h3>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 질문 또는 요청을 입력하세요
                                             </label>
                                             <textarea
@@ -765,14 +712,17 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                                 value={inputText}
                                                 onChange={(e) => setInputText(e.target.value)}
                                                 placeholder="고급 AI 처리 기능을 활용한 질문을 입력하세요. 문맥 이해, 의미 분석, 추론 체인, 지식 검색 등이 자동으로 수행됩니다."
-                                                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                                className="w-full p-4 rounded-lg border focus:ring-2 focus:border-transparent resize-none"
+                                                style={{ borderColor: 'var(--bg-tertiary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                                                 rows={8}
                                             />
                                         </div>
                                         <button
-                                            onClick={handleProcess}
-                                            disabled={!inputText.trim() || isProcessing}
-                                            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            type="button"
+                                            onClick={() => void handleProcess()}
+                                            disabled={!coerceTrimmedString(inputText, '') || isProcessing}
+                                            className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                                            style={{ backgroundColor: 'var(--accent-secondary)' }}
                                         >
                                             {isProcessing ? (
                                                 <>
@@ -791,74 +741,48 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
 
                                 {/* 고도화된 처리 진행률 */}
                                 {isProcessing && (
-                                    <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">🚀 고도화된 AI 처리 진행률</h3>
+                                    <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                        <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>🚀 고도화된 AI 처리 진행률</h3>
                                         <div className="space-y-4">
-                                            <div className="w-full bg-gray-200 rounded-full h-3">
+                                            <div className="w-full rounded-full h-3" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                                                 <div
-                                                    className="bg-gradient-to-r from-purple-600 to-blue-600 h-3 rounded-full transition-all duration-300"
-                                                    style={{ width: `${processingProgress}%` }}
+                                                    className="h-3 rounded-full transition-all duration-300"
+                                                    style={{ width: `${processingProgress}%`, background: 'linear-gradient(to right, var(--accent-secondary), var(--accent-info))' }}
                                                 />
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
                                                 <div className="text-center">
-                                                    <div className="text-purple-600 font-semibold">수학적/물리적 모델링</div>
-                                                    <div className="text-gray-500">Mathematical/Physical Modeling</div>
+                                                    <div className="font-semibold" style={{ color: 'var(--accent-secondary)' }}>수학적/물리적 모델링</div>
+                                                    <div style={{ color: 'var(--text-secondary)' }}>Mathematical/Physical Modeling</div>
                                                 </div>
                                                 <div className="text-center">
-                                                    <div className="text-purple-600 font-semibold">고급 문맥 분석</div>
-                                                    <div className="text-gray-500">Advanced Context Analysis</div>
+                                                    <div className="font-semibold" style={{ color: 'var(--accent-secondary)' }}>고급 문맥 분석</div>
+                                                    <div style={{ color: 'var(--text-secondary)' }}>Advanced Context Analysis</div>
                                                 </div>
                                                 <div className="text-center">
-                                                    <div className="text-purple-600 font-semibold">심층 의미 이해</div>
-                                                    <div className="text-gray-500">Deep Semantic Understanding</div>
+                                                    <div className="font-semibold" style={{ color: 'var(--accent-secondary)' }}>심층 의미 이해</div>
+                                                    <div style={{ color: 'var(--text-secondary)' }}>Deep Semantic Understanding</div>
                                                 </div>
                                                 <div className="text-center">
-                                                    <div className="text-purple-600 font-semibold">다층 추론 체인</div>
-                                                    <div className="text-gray-500">Multi-layer Reasoning</div>
+                                                    <div className="font-semibold" style={{ color: 'var(--accent-secondary)' }}>다층 추론 체인</div>
+                                                    <div style={{ color: 'var(--text-secondary)' }}>Multi-layer Reasoning</div>
                                                 </div>
                                                 <div className="text-center">
-                                                    <div className="text-purple-600 font-semibold">실시간 최적화</div>
-                                                    <div className="text-gray-500">Real-time Optimization</div>
+                                                    <div className="font-semibold" style={{ color: 'var(--accent-secondary)' }}>실시간 최적화</div>
+                                                    <div style={{ color: 'var(--text-secondary)' }}>Real-time Optimization</div>
                                                 </div>
                                             </div>
 
                                             {/* 고도화된 기능 상태 */}
-                                            <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
-                                                <h4 className="font-semibold text-gray-900 mb-2">활성화된 고도화 기능</h4>
+                                            <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--accent-info-muted)' }}>
+                                                <h4 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>활성화된 고도화 기능</h4>
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                                                    <div className="flex items-center space-x-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                        <span>수학적 모델링</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                        <span>물리적 모델링</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                        <span>실시간 최적화</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                        <span>컨텍스트 인식</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                        <span>의미 압축</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                        <span>동적 스케일링</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                        <span>적응형 학습</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-1">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                        <span>분산 처리</span>
-                                                    </div>
+                                                    {['수학적 모델링', '물리적 모델링', '실시간 최적화', '컨텍스트 인식', '의미 압축', '동적 스케일링', '적응형 학습', '분산 처리'].map((label) => (
+                                                        <div key={label} className="flex items-center space-x-1">
+                                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-success)' }} />
+                                                            <span style={{ color: 'var(--text-primary)' }}>{label}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
@@ -882,21 +806,25 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                         key={result.id}
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+                                        className="rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer border"
+                                        style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}
                                         onClick={() => setSelectedResult(result)}
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div>
-                                                <h3 className="font-semibold text-gray-900">AI 처리 결과</h3>
-                                                <p className="text-sm text-gray-500">
+                                                <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>AI 처리 결과</h3>
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                     {result.timestamp.toLocaleString()}
                                                 </p>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                                                <span
+                                                    className="px-2 py-1 text-xs font-medium rounded-full"
+                                                    style={{ color: getQualityScoreColor(Math.round(result.confidence * 100)), backgroundColor: 'var(--bg-tertiary)' }}
+                                                >
                                                     {Math.round(result.confidence * 100)}% 신뢰도
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                     {result.processingTime}ms
                                                 </span>
                                             </div>
@@ -904,20 +832,20 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
 
                                         <div className="space-y-3">
                                             <div>
-                                                <h4 className="text-sm font-medium text-gray-700 mb-1">입력</h4>
-                                                <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                                <h4 className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>입력</h4>
+                                                <p className="text-sm p-2 rounded" style={{ color: 'var(--text-primary)', backgroundColor: 'var(--bg-secondary)' }}>
                                                     {result.input}
                                                 </p>
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-medium text-gray-700 mb-1">고급 AI 응답</h4>
-                                                <p className="text-sm text-gray-900 bg-blue-50 p-2 rounded whitespace-pre-wrap">
+                                                <h4 className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>고급 AI 응답</h4>
+                                                <p className="text-sm p-2 rounded whitespace-pre-wrap" style={{ color: 'var(--text-primary)', backgroundColor: 'var(--accent-info-muted)' }}>
                                                     {result.output}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                                        <div className="mt-4 flex items-center justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
                                             <span>모델: {result.model}</span>
                                             <span>토큰: {result.tokens}</span>
                                             <span>비용: ${result.cost.toFixed(4)}</span>
@@ -938,16 +866,16 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                         >
                             <div className="space-y-6">
                                 {/* 품질 메트릭 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">품질 메트릭</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>품질 메트릭</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                         {Object.entries(selectedResult.metadata.qualityMetrics).map(([key, value]) => (
                                             <div key={key} className="text-center">
-                                                <div className="text-2xl font-bold text-purple-600">
+                                                <div className="text-2xl font-bold" style={{ color: 'var(--accent-secondary)' }}>
                                                     {Math.round(value * 100)}%
                                                 </div>
-                                                <div className="text-sm text-gray-600 capitalize">
-                                                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                                                <div className="text-sm capitalize" style={{ color: 'var(--text-secondary)' }}>
+                                                    {coerceTrimmedString(key.replace(/([A-Z])/g, ' $1'), '')}
                                                 </div>
                                             </div>
                                         ))}
@@ -955,22 +883,22 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                 </div>
 
                                 {/* 문맥 분석 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">문맥 분석</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>문맥 분석</h3>
                                     <div className="space-y-4">
                                         <div>
-                                            <h4 className="font-medium text-gray-700 mb-2">주제 추출</h4>
+                                            <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>주제 추출</h4>
                                             <div className="flex flex-wrap gap-2">
                                                 {selectedResult.metadata.contextAnalysis.topicExtraction.map((topic, index) => (
-                                                    <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                                                    <span key={index} className="px-2 py-1 rounded-full text-sm" style={{ backgroundColor: 'var(--accent-info-muted)', color: 'var(--accent-info)' }}>
                                                         {topic}
                                                     </span>
                                                 ))}
                                             </div>
                                         </div>
                                         <div>
-                                            <h4 className="font-medium text-gray-700 mb-2">의도 인식</h4>
-                                            <p className="text-sm text-gray-600">
+                                            <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>의도 인식</h4>
+                                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                 {selectedResult.metadata.contextAnalysis.intentRecognition}
                                             </p>
                                         </div>
@@ -978,21 +906,21 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                 </div>
 
                                 {/* 추론 체인 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">추론 체인</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>추론 체인</h3>
                                     <div className="space-y-3">
                                         {selectedResult.metadata.reasoningChain.steps.map((step, index) => (
-                                            <div key={index} className="border-l-4 border-purple-500 pl-4">
+                                            <div key={index} className="pl-4 border-l-4" style={{ borderColor: 'var(--accent-secondary)' }}>
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <h4 className="font-medium text-gray-700">단계 {step.step}</h4>
-                                                    <span className="text-sm text-gray-500">
+                                                    <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>단계 {step.step}</h4>
+                                                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                         {Math.round(step.confidence * 100)}% 신뢰도
                                                     </span>
                                                 </div>
-                                                <p className="text-sm text-gray-600 mb-2">{step.reasoning}</p>
+                                                <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{step.reasoning}</p>
                                                 <div className="flex flex-wrap gap-1">
                                                     {step.evidence.map((evidence, idx) => (
-                                                        <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                                                        <span key={idx} className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
                                                             {evidence}
                                                         </span>
                                                     ))}
@@ -1016,69 +944,59 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                             <div className="space-y-6">
                                 {/* 실시간 메트릭 */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">총 요청</p>
-                                                <p className="text-2xl font-bold text-blue-600">
-                                                    {processingMetrics.totalRequests}
-                                                </p>
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>총 요청</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-info)' }}>{processingMetrics.totalRequests}</p>
                                             </div>
-                                            <Activity className="h-8 w-8 text-blue-600" />
+                                            <Activity className="h-8 w-8" style={{ color: 'var(--accent-info)' }} />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">평균 응답시간</p>
-                                                <p className="text-2xl font-bold text-green-600">
-                                                    {Math.round(processingMetrics.averageResponseTime)}ms
-                                                </p>
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>평균 응답시간</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-success)' }}>{Math.round(processingMetrics.averageResponseTime)}ms</p>
                                             </div>
-                                            <Clock className="h-8 w-8 text-green-600" />
+                                            <Clock className="h-8 w-8" style={{ color: 'var(--accent-success)' }} />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">성공률</p>
-                                                <p className="text-2xl font-bold text-purple-600">
-                                                    {Math.round(processingMetrics.successRate * 100)}%
-                                                </p>
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>성공률</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-secondary)' }}>{Math.round(processingMetrics.successRate * 100)}%</p>
                                             </div>
-                                            <CheckCircle className="h-8 w-8 text-purple-600" />
+                                            <CheckCircle className="h-8 w-8" style={{ color: 'var(--accent-secondary)' }} />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">총 비용</p>
-                                                <p className="text-2xl font-bold text-orange-600">
-                                                    ${processingMetrics.costIncurred.toFixed(4)}
-                                                </p>
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>총 비용</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-orange)' }}>${processingMetrics.costIncurred.toFixed(4)}</p>
                                             </div>
-                                            <DollarSign className="h-8 w-8 text-orange-600" />
+                                            <DollarSign className="h-8 w-8" style={{ color: 'var(--accent-orange)' }} />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* 모델 사용량 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">모델 사용량</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>모델 사용량</h3>
                                     <div className="space-y-3">
                                         {Object.entries(processingMetrics.modelUsage).map(([model, count]) => (
                                             <div key={model} className="flex items-center justify-between">
-                                                <span className="text-sm font-medium text-gray-700 capitalize">
-                                                    {model}
-                                                </span>
+                                                <span className="text-sm font-medium capitalize" style={{ color: 'var(--text-primary)' }}>{model}</span>
                                                 <div className="flex items-center space-x-2">
-                                                    <div className="w-32 bg-gray-200 rounded-full h-2">
+                                                    <div className="w-32 rounded-full h-2" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                                                         <div
-                                                            className="bg-purple-600 h-2 rounded-full"
-                                                            style={{ width: `${(count / processingMetrics.totalRequests) * 100}%` }}
+                                                            className="h-2 rounded-full"
+                                                            style={{ width: `${(count / processingMetrics.totalRequests) * 100}%`, backgroundColor: 'var(--accent-secondary)' }}
                                                         />
                                                     </div>
-                                                    <span className="text-sm text-gray-500">{count}</span>
+                                                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{count}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -1098,11 +1016,11 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                         >
                             <div className="max-w-4xl mx-auto space-y-6">
                                 {/* 기본 설정 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">기본 설정</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>기본 설정</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 Temperature
                                             </label>
                                             <input
@@ -1114,29 +1032,30 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                                 onChange={(e) => handleConfigUpdate({ temperature: parseFloat(e.target.value) })}
                                                 className="w-full"
                                             />
-                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>0 (집중)</span>
                                                 <span>{config.temperature}</span>
                                                 <span>2 (창의적)</span>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 Max Tokens
                                             </label>
                                             <input
                                                 type="number"
                                                 value={config.maxTokens}
                                                 onChange={(e) => handleConfigUpdate({ maxTokens: parseInt(e.target.value) })}
-                                                className="w-full p-2 border border-gray-300 rounded-lg"
+                                                className="w-full p-2 rounded-lg border"
+                                                style={{ borderColor: 'var(--bg-tertiary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* 고도화된 AI 기능 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">🚀 고도화된 AI 기능</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>🚀 고도화된 AI 기능</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {[
                                             { key: 'parallelProcessing', label: '병렬 처리', description: '여러 작업을 동시에 처리', icon: '⚡' },
@@ -1162,21 +1081,20 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                             { key: 'edgeComputing', label: '엣지 컴퓨팅', description: '엣지 디바이스 처리', icon: '📱' },
                                             { key: 'distributedProcessing', label: '분산 처리', description: '분산 시스템 활용', icon: '🖥️' }
                                         ].map((feature) => (
-                                            <div key={feature.key} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                                            <div key={feature.key} className="flex items-center justify-between p-3 rounded-lg hover:shadow-md transition-shadow border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                 <div className="flex items-center space-x-3">
                                                     <span className="text-lg">{feature.icon}</span>
                                                     <div>
-                                                        <h4 className="font-medium text-gray-900">{feature.label}</h4>
-                                                        <p className="text-sm text-gray-500">{feature.description}</p>
+                                                        <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>{feature.label}</h4>
+                                                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{feature.description}</p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => handleConfigUpdate({ [feature.key]: !config[feature.key as keyof AIProcessingConfig] })}
-                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config[feature.key as keyof AIProcessingConfig] ? 'bg-purple-600' : 'bg-gray-200'
-                                                        }`}
+                                                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                                    style={{ backgroundColor: config[feature.key as keyof AIProcessingConfig] ? 'var(--accent-secondary)' : 'var(--bg-tertiary)' }}
                                                 >
-                                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config[feature.key as keyof AIProcessingConfig] ? 'translate-x-6' : 'translate-x-1'
-                                                        }`} />
+                                                    <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${config[feature.key as keyof AIProcessingConfig] ? 'translate-x-6' : 'translate-x-1'}`} style={{ backgroundColor: 'var(--bg-primary)' }} />
                                                 </button>
                                             </div>
                                         ))}
@@ -1184,17 +1102,18 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                 </div>
 
                                 {/* 신경망 아키텍처 설정 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">🧠 신경망 아키텍처 설정</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>🧠 신경망 아키텍처 설정</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 신경망 아키텍처
                                             </label>
                                             <select
                                                 value={config.neuralArchitecture}
-                                                onChange={(e) => handleConfigUpdate({ neuralArchitecture: e.target.value as any })}
-                                                className="w-full p-2 border border-gray-300 rounded-lg"
+                                                onChange={(e) => handleConfigUpdate({ neuralArchitecture: e.target.value as AIProcessingConfig['neuralArchitecture'] })}
+                                                className="w-full p-2 rounded-lg border"
+                                                style={{ borderColor: 'var(--bg-tertiary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                                             >
                                                 <option value="transformer">Transformer</option>
                                                 <option value="cnn">CNN (Convolutional Neural Network)</option>
@@ -1203,13 +1122,14 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 최적화 알고리즘
                                             </label>
                                             <select
                                                 value={config.optimizationAlgorithm}
-                                                onChange={(e) => handleConfigUpdate({ optimizationAlgorithm: e.target.value as any })}
-                                                className="w-full p-2 border border-gray-300 rounded-lg"
+                                                onChange={(e) => handleConfigUpdate({ optimizationAlgorithm: e.target.value as AIProcessingConfig['optimizationAlgorithm'] })}
+                                                className="w-full p-2 rounded-lg border"
+                                                style={{ borderColor: 'var(--bg-tertiary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                                             >
                                                 <option value="adam">Adam</option>
                                                 <option value="sgd">SGD (Stochastic Gradient Descent)</option>
@@ -1218,7 +1138,7 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 학습률 (Learning Rate)
                                             </label>
                                             <input
@@ -1230,14 +1150,14 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                                 onChange={(e) => handleConfigUpdate({ learningRate: parseFloat(e.target.value) })}
                                                 className="w-full"
                                             />
-                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>0.0001</span>
                                                 <span>{config.learningRate}</span>
                                                 <span>0.1</span>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 모멘텀 (Momentum)
                                             </label>
                                             <input
@@ -1249,14 +1169,14 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                                 onChange={(e) => handleConfigUpdate({ momentum: parseFloat(e.target.value) })}
                                                 className="w-full"
                                             />
-                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>0</span>
                                                 <span>{config.momentum}</span>
                                                 <span>1</span>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 정규화 (Regularization)
                                             </label>
                                             <input
@@ -1268,14 +1188,14 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                                 onChange={(e) => handleConfigUpdate({ regularization: parseFloat(e.target.value) })}
                                                 className="w-full"
                                             />
-                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>0</span>
                                                 <span>{config.regularization}</span>
                                                 <span>0.1</span>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 드롭아웃 (Dropout Rate)
                                             </label>
                                             <input
@@ -1287,7 +1207,7 @@ const AdvancedAIEngine: React.FC<AdvancedAIEngineProps> = ({
                                                 onChange={(e) => handleConfigUpdate({ dropoutRate: parseFloat(e.target.value) })}
                                                 className="w-full"
                                             />
-                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>0</span>
                                                 <span>{config.dropoutRate}</span>
                                                 <span>0.5</span>

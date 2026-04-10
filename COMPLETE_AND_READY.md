@@ -1,7 +1,7 @@
 # 완료 및 준비 완료
 
 **작성일**: 2025년 1월 27일  
-**프로젝트**: CORBU AI  
+**프로젝트**: CORBU.AI  
 **버전**: 1.0.0  
 **상태**: ✅ **완전히 준비 완료**
 
@@ -9,7 +9,7 @@
 
 ## 🎉 모든 작업 완료!
 
-CORBU AI 시스템이 완전히 구축되었고 모든 기능이 정상 작동합니다!
+CORBU.AI 시스템이 완전히 구축되었고 모든 기능이 정상 작동합니다!
 
 ---
 
@@ -88,17 +88,16 @@ cd .. && npm install
 ### 접속 주소
 
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API (5001)**: http://localhost:5001/docs
-- **통합 API (5002)**: http://localhost:5002/api/docs
+- **백엔드 API·통합 API (기본 5002)**: http://localhost:5002/api/docs
 
-> 모든 API 호출은 5002 포트(통합 API)로 통일됨. `config/api.ts`의 API_BASE_URL 사용.
+> 포트는 `BACKEND_PORT`/`API_PORT`/`PORT`로 변경 가능. 프론트는 `src/config/api.ts`, `docs/PORTS.md` 참고.
 
 ---
 
 ## 🎯 주요 기능
 
 ### 즉시 사용 가능
-1. **ChatGPT 스타일 채팅**: 직관적인 인터페이스
+1. **ChatGPT 스타일 대화**: 직관적인 인터페이스
 2. **프로젝트 관리**: 프로젝트별 대화 분리
 3. **LLM 연동**: OpenAI, Anthropic, Ollama, 노트북 LLM
 4. **긴 글 자동 생성**: 질문/요구 시 상세한 글 생성
@@ -109,6 +108,7 @@ cd .. && npm install
 ## 📚 빠른 참조
 
 ### 시작하기
+- [개발 범위 마스터](./docs/DEVELOPMENT_SCOPE_MASTER.md) - 비전·아키텍처·단계·품질 기준 통합
 - [빠른 참조](./QUICK_REFERENCE.md) - 명령어·접속 주소 한눈에
 - [빠른 시작](./START_HERE.md)
 - [5분 안에 시작하기](./QUICK_START.md)
@@ -116,7 +116,7 @@ cd .. && npm install
 - [플러그인 설치](./PLUGINS_SETUP.md) - OCR, yt-dlp, Ollama 등
 
 ### 디자인
-- [CORBU AI UI Kit (Figma)](./docs/BRAINWAVE-UI.md) - theme 토큰·디자인 참조·적용 가이드
+- [CORBU.AI UI Kit (Figma)](./docs/BRAINWAVE-UI.md) - theme 토큰·디자인 참조·적용 가이드
 
 ### 기능
 - [긴 글 생성 기능](./LONG_FORM_WRITING_FEATURE.md)

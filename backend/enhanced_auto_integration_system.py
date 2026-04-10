@@ -169,7 +169,7 @@ class EnhancedAutoIntegrationSystem:
             'priority': 4
         })
         
-        # 5. 채팅 통합 시스템
+        # 5. 대화 통합 시스템
         self.integration_queue.put({
             **base_task,
             'system': 'chat_integration',
@@ -320,7 +320,7 @@ class EnhancedAutoIntegrationSystem:
             self.processing_status[file_id]['systems']['project_analysis'] = 'failed'
     
     def _integrate_with_chat(self, task: Dict[str, Any]):
-        """채팅 시스템 통합"""
+        """대화 시스템 통합"""
         try:
             file_id = task['file_id']
             chat_id = task['chat_id']
@@ -329,13 +329,13 @@ class EnhancedAutoIntegrationSystem:
             analysis_result = self.processing_status[file_id]['results'].get('file_analysis', {})
             
             if analysis_result and chat_id:
-                # 채팅에 자동 메시지 생성
+                # 대화에 자동 메시지 생성
                 auto_message = self._generate_auto_message(analysis_result)
                 
-                # 채팅에 메시지 추가
+                # 대화에 메시지 추가
                 self._add_chat_message(chat_id, auto_message)
                 
-                # 채팅 상태 업데이트
+                # 대화 상태 업데이트
                 self._update_chat_status(chat_id, 'file_processed')
                 
                 # 상태 업데이트
@@ -345,10 +345,10 @@ class EnhancedAutoIntegrationSystem:
                     'chat_updated': True
                 }
                 
-                logger.info(f"채팅 통합 완료: {file_id}")
+                logger.info(f"대화 통합 완료: {file_id}")
             
         except Exception as e:
-            logger.error(f"채팅 통합 실패: {e}")
+            logger.error(f"대화 통합 실패: {e}")
             self.processing_status[file_id]['systems']['chat_integration'] = 'failed'
     
     def _send_notifications(self, task: Dict[str, Any]):
@@ -453,7 +453,7 @@ class EnhancedAutoIntegrationSystem:
             return 'video'
         elif ext in ['.mp3', '.wav', '.aac', '.flac']:
             return 'audio'
-        elif ext in ['.pdf', '.doc', '.docx', '.txt']:
+        elif ext in ['.pdf', '.doc', '.docx', '.txt', '.md', '.csv']:
             return 'document'
         else:
             return 'other'
@@ -559,13 +559,13 @@ class EnhancedAutoIntegrationSystem:
         return message
     
     def _add_chat_message(self, chat_id: str, message: str):
-        """채팅에 메시지 추가"""
-        # 채팅에 메시지 추가 (실제 구현 필요)
+        """대화에 메시지 추가"""
+        # 대화에 메시지 추가 (실제 구현 필요)
         pass
     
     def _update_chat_status(self, chat_id: str, status: str):
-        """채팅 상태 업데이트"""
-        # 채팅 상태 업데이트 (실제 구현 필요)
+        """대화 상태 업데이트"""
+        # 대화 상태 업데이트 (실제 구현 필요)
         pass
     
     def _send_notification(self, notification: Dict[str, Any]):

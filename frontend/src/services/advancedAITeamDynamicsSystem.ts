@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // 팀 역학 분석 인터페이스 정의
 export interface TeamDynamicsSession {
@@ -237,12 +238,18 @@ class AdvancedAITeamDynamicsSystem {
     };
 
     constructor() {
-        console.log('👥 고급 AI 팀 역학 분석 시스템 초기화 중...');
+        errorLogger.info('👥 고급 AI 팀 역학 분석 시스템 초기화 중', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'constructor',
+        });
     }
 
     public start(): void {
         if (this.isRunning) {
-            console.log('⚠️ 고급 AI 팀 역학 분석 시스템이 이미 실행 중입니다.');
+            errorLogger.warn('⚠️ 고급 AI 팀 역학 분석 시스템이 이미 실행 중입니다', {
+                component: 'advancedAITeamDynamicsSystem',
+                action: 'start',
+            });
             return;
         }
 
@@ -251,31 +258,63 @@ class AdvancedAITeamDynamicsSystem {
         this.createInitialSessions();
         this.startMetricsUpdate();
 
-        console.log('✅ 고급 AI 팀 역학 분석 시스템이 시작되었습니다.');
+        errorLogger.info('✅ 고급 AI 팀 역학 분석 시스템이 시작되었습니다', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'start',
+        });
         realTimeAIAlertSystem.sendAlert('info', '고급 AI 팀 역학 분석 시스템이 시작되었습니다.');
     }
 
     public stop(): void {
         if (!this.isRunning) {
-            console.log('⚠️ 고급 AI 팀 역학 분석 시스템이 실행 중이 아닙니다.');
+            errorLogger.warn('⚠️ 고급 AI 팀 역학 분석 시스템이 실행 중이 아닙니다', {
+                component: 'advancedAITeamDynamicsSystem',
+                action: 'stop',
+            });
             return;
         }
 
         this.isRunning = false;
         this.cleanupData();
 
-        console.log('🛑 고급 AI 팀 역학 분석 시스템이 중지되었습니다.');
+        errorLogger.info('🛑 고급 AI 팀 역학 분석 시스템이 중지되었습니다', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'stop',
+        });
         realTimeAIAlertSystem.sendAlert('info', '고급 AI 팀 역학 분석 시스템이 중지되었습니다.');
     }
 
     private initializeSystem(): void {
-        console.log('🔧 팀 역학 분석 시스템 초기화 중...');
+        errorLogger.info('🔧 팀 역학 분석 시스템 초기화 중', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'initializeSystem',
+        });
 
-        console.log('🧠 성격 프로필 분석 엔진 초기화 완료');
-        console.log('💬 의사소통 패턴 분석기 초기화 완료');
-        console.log('👑 리더십 스타일 분석기 초기화 완료');
-        console.log('🔍 팀 상호작용 분석기 초기화 완료');
-        console.log('🎯 팀 역학 최적화 엔진 초기화 완료');
+        errorLogger.info('🧠 성격 프로필 분석 엔진 초기화 완료', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'initializeSystem',
+            engine: 'personalityProfile',
+        });
+        errorLogger.info('💬 의사소통 패턴 분석기 초기화 완료', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'initializeSystem',
+            engine: 'communicationPattern',
+        });
+        errorLogger.info('👑 리더십 스타일 분석기 초기화 완료', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'initializeSystem',
+            engine: 'leadershipStyle',
+        });
+        errorLogger.info('🔍 팀 상호작용 분석기 초기화 완료', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'initializeSystem',
+            engine: 'teamInteraction',
+        });
+        errorLogger.info('🎯 팀 역학 최적화 엔진 초기화 완료', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'initializeSystem',
+            engine: 'teamDynamicsOptimization',
+        });
     }
 
     private createInitialSessions(): void {
@@ -421,7 +460,13 @@ class AdvancedAITeamDynamicsSystem {
 
         this.sessions.set(session1.sessionId, session1);
         this.analyzeTeamDynamics(session1.sessionId);
-        console.log('📋 초기 팀 역학 분석 세션 생성 완료');
+        errorLogger.info('📋 초기 팀 역학 분석 세션 생성 완료', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'createInitialSessions',
+            sessionId: session1.sessionId,
+            teamId: session1.teamId,
+            teamName: session1.teamName,
+        });
     }
 
     public addTeamInteraction(sessionId: string, interaction: Omit<TeamInteraction, 'interactionId' | 'analysis'>): TeamInteraction {
@@ -431,7 +476,7 @@ class AdvancedAITeamDynamicsSystem {
         }
 
         const interactionId = `interaction-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const analysis = this.analyzeTeamInteraction(interaction);
+        const analysis = this.analyzeTeamInteraction(interaction as TeamInteraction);
 
         const fullInteraction: TeamInteraction = {
             ...interaction,
@@ -446,18 +491,25 @@ class AdvancedAITeamDynamicsSystem {
         this.generateRecommendations(sessionId);
         this.predictTeamPerformance(sessionId);
 
-        console.log(`👥 팀 상호작용 추가: ${interactionId}`);
+        errorLogger.info('👥 팀 상호작용 추가', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'addTeamInteraction',
+            sessionId,
+            interactionId,
+            interactionType: interaction.type,
+            participants: interaction.participants,
+        });
         return fullInteraction;
     }
 
-    private analyzeTeamInteraction(interaction: any): InteractionAnalysis {
+    private analyzeTeamInteraction(interaction: TeamInteraction): InteractionAnalysis {
         const analysis: InteractionAnalysis = {
             sentiment: this.analyzeSentiment(interaction),
             engagement: this.calculateEngagement(interaction),
             effectiveness: this.assessEffectiveness(interaction),
             impact: this.measureImpact(interaction),
             conflictLevel: this.detectConflict(interaction),
-            collaborationLevel: this.assessCollaboration(interaction),
+            collaborationLevel: this.assessCollaborationInteraction(interaction),
             leadershipPresence: this.detectLeadership(interaction),
             innovationPotential: this.assessInnovation(interaction)
         };
@@ -465,36 +517,36 @@ class AdvancedAITeamDynamicsSystem {
         return analysis;
     }
 
-    private analyzeSentiment(interaction: any): string {
+    private analyzeSentiment(_interaction: TeamInteraction): string {
         const sentiments = ['positive', 'neutral', 'negative'];
         return sentiments[Math.floor(Math.random() * sentiments.length)];
     }
 
-    private calculateEngagement(interaction: any): number {
+    private calculateEngagement(_interaction: TeamInteraction): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 
-    private assessEffectiveness(interaction: any): number {
+    private assessEffectiveness(_interaction: TeamInteraction): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private measureImpact(interaction: any): number {
+    private measureImpact(_interaction: TeamInteraction): number {
         return Math.random() * 0.5 + 0.5; // 0.5-1.0
     }
 
-    private detectConflict(interaction: any): number {
+    private detectConflict(_interaction: TeamInteraction): number {
         return Math.random() * 0.3; // 0-0.3
     }
 
-    private assessCollaborationInteraction(interaction: any): number {
+    private assessCollaborationInteraction(_interaction: TeamInteraction): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 
-    private detectLeadership(interaction: any): number {
+    private detectLeadership(_interaction: TeamInteraction): number {
         return Math.random() * 0.5 + 0.5; // 0.5-1.0
     }
 
-    private assessInnovation(interaction: any): number {
+    private assessInnovation(_interaction: TeamInteraction): number {
         return Math.random() * 0.4 + 0.6; // 0.6-1.0
     }
 
@@ -516,43 +568,43 @@ class AdvancedAITeamDynamicsSystem {
         dynamics.productivity = this.assessProductivity(session);
     }
 
-    private calculateCohesion(session: TeamDynamicsSession): number {
+    private calculateCohesion(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private assessCommunication(session: TeamDynamicsSession): number {
+    private assessCommunication(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private assessConflict(session: TeamDynamicsSession): number {
+    private assessConflict(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3; // 0-0.3
     }
 
-    private assessCollaboration(session: TeamDynamicsSession): number {
+    private assessCollaboration(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private assessCreativity(session: TeamDynamicsSession): number {
+    private assessCreativity(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private assessDecisionMaking(session: TeamDynamicsSession): number {
+    private assessDecisionMaking(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private assessLeadership(session: TeamDynamicsSession): number {
+    private assessLeadership(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private assessTrust(session: TeamDynamicsSession): number {
+    private assessTrust(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private assessMotivation(session: TeamDynamicsSession): number {
+    private assessMotivation(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
-    private assessProductivity(session: TeamDynamicsSession): number {
+    private assessProductivity(_session: TeamDynamicsSession): number {
         return Math.random() * 0.3 + 0.7; // 0.7-1.0
     }
 
@@ -718,7 +770,10 @@ class AdvancedAITeamDynamicsSystem {
 
     private cleanupData(): void {
         this.sessions.clear();
-        console.log('🧹 팀 역학 분석 데이터 정리 완료');
+        errorLogger.info('🧹 팀 역학 분석 데이터 정리 완료', {
+            component: 'advancedAITeamDynamicsSystem',
+            action: 'cleanupData',
+        });
     }
 
     public getSessions(): TeamDynamicsSession[] {

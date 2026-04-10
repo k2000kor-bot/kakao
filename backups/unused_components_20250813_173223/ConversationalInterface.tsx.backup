@@ -609,7 +609,7 @@ const ConversationalInterface: React.FC<ConversationalInterfaceProps> = ({ onCom
 
   // 초기 환영 메시지
   useEffect(() => {
-    addSystemMessage('안녕하세요! CORBU AI 대화형 인터페이스입니다. 무엇을 도와드릴까요?', 'system', {
+    addSystemMessage('안녕하세요! CORBU.AI 대화형 인터페이스입니다. 무엇을 도와드릴까요?', 'system', {
       suggestions: ['/guide - 사용 가이드', '/performance - 시스템 성능', '/upload - 파일 업로드', '/search - 검색 기능', '/settings - 설정', '/help - 도움말', '/clear - 대화 초기화', '/status - 시스템 상태'],
       actions: ['시작하기', '가이드 보기', '성능 확인']
     });
@@ -1691,7 +1691,7 @@ const ConversationalInterface: React.FC<ConversationalInterfaceProps> = ({ onCom
             <span className="text-white font-bold text-sm">C</span>
           </div>
           <div>
-            <h1 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>CORBU AI</h1>
+            <h1 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>CORBU.AI</h1>
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>대화형 인터페이스</p>
           </div>
         </div>

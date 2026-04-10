@@ -1,7 +1,9 @@
 /**
- * CORBU AI PWA(Progressive Web App) 서비스
+ * CORBU.AI PWA(Progressive Web App) 서비스
  * Service Worker 관리, 오프라인 지원, 푸시 알림, 백그라운드 동기화
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface PWAConfig {
     enableServiceWorker: boolean;
@@ -40,10 +42,10 @@ export interface NotificationOptions {
         title: string;
         icon?: string;
     }>;
-    data?: any;
+    data?: unknown;
 }
 
-class PWAService {
+export class PWAService {
     private config: PWAConfig;
     private registration: ServiceWorkerRegistration | null = null;
     private deferredPrompt: InstallPromptEvent | null = null;
@@ -69,7 +71,10 @@ class PWAService {
      */
     private async initialize(): Promise<void> {
         if (!this.isServiceWorkerSupported()) {
-            console.warn('[PWA] Service Worker가 지원되지 않습니다.');
+            errorLogger.warn('Service Worker가 지원되지 않습니다', {
+                component: 'pwaService',
+                action: 'initialize',
+            });
             return;
         }
 
@@ -86,9 +91,16 @@ class PWAService {
             // 앱 업데이트 확인
             this.checkForUpdates();
 
-            console.log('[PWA] 🎉 PWA 서비스가 초기화되었습니다.');
+            errorLogger.info('PWA 서비스가 초기화되었습니다', {
+                component: 'pwaService',
+                action: 'initialize',
+            });
         } catch (error) {
-            console.error('[PWA] ❌ 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('초기화 실패', err, {
+                component: 'pwaService',
+                action: 'initialize',
+            });
         }
     }
 
@@ -108,11 +120,18 @@ class PWAService {
         try {
             this.registration = await navigator.serviceWorker.register('/sw.js');
 
-            console.log('[PWA] ✅ Service Worker 등록 완료:', this.registration.scope);
+            errorLogger.info('Service Worker 등록 완료', {
+                component: 'pwaService',
+                action: 'registerServiceWorker',
+                scope: this.registration.scope,
+            });
 
             // 상태 변경 리스너
             this.registration.addEventListener('updatefound', () => {
-                console.log('[PWA] 🔄 새로운 Service Worker 버전 발견');
+                errorLogger.info('새로운 Service Worker 버전 발견', {
+                    component: 'pwaService',
+                    action: 'registerServiceWorker',
+                });
                 this.handleServiceWorkerUpdate();
             });
 
@@ -123,7 +142,11 @@ class PWAService {
 
             this.notifySubscribers();
         } catch (error) {
-            console.error('[PWA] ❌ Service Worker 등록 실패:', error);
+            const err = toError(error);
+            errorLogger.error('Service Worker 등록 실패', err, {
+                component: 'pwaService',
+                action: 'registerServiceWorker',
+            });
             throw error;
         }
     }
@@ -154,11 +177,19 @@ class PWAService {
         const { data } = event;
 
         if (data.type === 'CACHE_UPDATED') {
-            console.log('[PWA] 📦 캐시가 업데이트되었습니다.');
+            errorLogger.info('캐시가 업데이트되었습니다', {
+                component: 'pwaService',
+                action: 'handleServiceWorkerMessage',
+                messageType: data.type,
+            });
         }
 
         if (data.type === 'OFFLINE_FALLBACK') {
-            console.log('[PWA] 📡 오프라인 모드로 전환되었습니다.');
+            errorLogger.info('오프라인 모드로 전환되었습니다', {
+                component: 'pwaService',
+                action: 'handleServiceWorkerMessage',
+                messageType: data.type,
+            });
         }
     }
 
@@ -170,13 +201,19 @@ class PWAService {
             e.preventDefault();
             this.deferredPrompt = e as InstallPromptEvent;
             this.notifySubscribers();
-            console.log('[PWA] 📱 설치 프롬프트 준비됨');
+            errorLogger.info('설치 프롬프트 준비됨', {
+                component: 'pwaService',
+                action: 'setupInstallPromptListener',
+            });
         });
 
         window.addEventListener('appinstalled', () => {
             this.deferredPrompt = null;
             this.notifySubscribers();
-            console.log('[PWA] 🎉 앱이 설치되었습니다.');
+            errorLogger.info('앱이 설치되었습니다', {
+                component: 'pwaService',
+                action: 'setupInstallPromptListener',
+            });
         });
     }
 
@@ -188,10 +225,16 @@ class PWAService {
             this.notifySubscribers();
 
             if (navigator.onLine) {
-                console.log('[PWA] 🌐 온라인 상태로 전환');
+                errorLogger.info('온라인 상태로 전환', {
+                    component: 'pwaService',
+                    action: 'setupNetworkStatusMonitoring',
+                });
                 this.processOfflineQueue();
             } else {
-                console.log('[PWA] 📡 오프라인 상태로 전환');
+                errorLogger.info('오프라인 상태로 전환', {
+                    component: 'pwaService',
+                    action: 'setupNetworkStatusMonitoring',
+                });
             }
         };
 
@@ -207,9 +250,16 @@ class PWAService {
 
         try {
             await this.registration.update();
-            console.log('[PWA] 🔍 업데이트 확인 완료');
+            errorLogger.info('업데이트 확인 완료', {
+                component: 'pwaService',
+                action: 'checkForUpdates',
+            });
         } catch (error) {
-            console.error('[PWA] ❌ 업데이트 확인 실패:', error);
+            const err = toError(error);
+            errorLogger.error('업데이트 확인 실패', err, {
+                component: 'pwaService',
+                action: 'checkForUpdates',
+            });
         }
     }
 
@@ -218,7 +268,10 @@ class PWAService {
      */
     public async showInstallPrompt(): Promise<boolean> {
         if (!this.deferredPrompt) {
-            console.warn('[PWA] 설치 프롬프트를 사용할 수 없습니다.');
+            errorLogger.warn('설치 프롬프트를 사용할 수 없습니다', {
+                component: 'pwaService',
+                action: 'showInstallPrompt',
+            });
             return false;
         }
 
@@ -226,14 +279,22 @@ class PWAService {
             await this.deferredPrompt.prompt();
             const { outcome } = await this.deferredPrompt.userChoice;
 
-            console.log(`[PWA] 설치 프롬프트 결과: ${outcome}`);
+            errorLogger.info('설치 프롬프트 결과', {
+                component: 'pwaService',
+                action: 'showInstallPrompt',
+                outcome,
+            });
 
             this.deferredPrompt = null;
             this.notifySubscribers();
 
             return outcome === 'accepted';
         } catch (error) {
-            console.error('[PWA] ❌ 설치 프롬프트 실패:', error);
+            const err = toError(error);
+            errorLogger.error('설치 프롬프트 실패', err, {
+                component: 'pwaService',
+                action: 'showInstallPrompt',
+            });
             return false;
         }
     }
@@ -250,7 +311,11 @@ class PWAService {
             // 페이지 새로고침으로 새 버전 활성화
             window.location.reload();
         } catch (error) {
-            console.error('[PWA] ❌ 업데이트 적용 실패:', error);
+            const err = toError(error);
+            errorLogger.error('업데이트 적용 실패', err, {
+                component: 'pwaService',
+                action: 'applyUpdate',
+            });
         }
     }
 
@@ -259,16 +324,27 @@ class PWAService {
      */
     public async requestNotificationPermission(): Promise<NotificationPermission> {
         if (!('Notification' in window)) {
-            console.warn('[PWA] 푸시 알림이 지원되지 않습니다.');
+            errorLogger.warn('푸시 알림이 지원되지 않습니다', {
+                component: 'pwaService',
+                action: 'requestNotificationPermission',
+            });
             return 'denied';
         }
 
         try {
             const permission = await Notification.requestPermission();
-            console.log(`[PWA] 알림 권한: ${permission}`);
+            errorLogger.info('알림 권한', {
+                component: 'pwaService',
+                action: 'requestNotificationPermission',
+                permission,
+            });
             return permission;
         } catch (error) {
-            console.error('[PWA] ❌ 알림 권한 요청 실패:', error);
+            const err = toError(error);
+            errorLogger.error('알림 권한 요청 실패', err, {
+                component: 'pwaService',
+                action: 'requestNotificationPermission',
+            });
             return 'denied';
         }
     }
@@ -278,7 +354,10 @@ class PWAService {
      */
     public async subscribeToPush(): Promise<PushSubscription | null> {
         if (!this.registration || !this.config.vapidPublicKey) {
-            console.warn('[PWA] 푸시 구독 설정이 완료되지 않았습니다.');
+            errorLogger.warn('푸시 구독 설정이 완료되지 않았습니다', {
+                component: 'pwaService',
+                action: 'subscribeToPush',
+            });
             return null;
         }
 
@@ -288,10 +367,17 @@ class PWAService {
                 applicationServerKey: this.urlBase64ToUint8Array(this.config.vapidPublicKey)
             });
 
-            console.log('[PWA] ✅ 푸시 구독 완료');
+            errorLogger.info('푸시 구독 완료', {
+                component: 'pwaService',
+                action: 'subscribeToPush',
+            });
             return subscription;
         } catch (error) {
-            console.error('[PWA] ❌ 푸시 구독 실패:', error);
+            const err = toError(error);
+            errorLogger.error('푸시 구독 실패', err, {
+                component: 'pwaService',
+                action: 'subscribeToPush',
+            });
             return null;
         }
     }
@@ -301,13 +387,20 @@ class PWAService {
      */
     public async showNotification(options: NotificationOptions): Promise<void> {
         if (!this.registration) {
-            console.warn('[PWA] Service Worker가 등록되지 않았습니다.');
+            errorLogger.warn('Service Worker가 등록되지 않았습니다', {
+                component: 'pwaService',
+                action: 'showNotification',
+            });
             return;
         }
 
         const permission = await this.requestNotificationPermission();
         if (permission !== 'granted') {
-            console.warn('[PWA] 알림 권한이 거부되었습니다.');
+            errorLogger.warn('알림 권한이 거부되었습니다', {
+                component: 'pwaService',
+                action: 'showNotification',
+                permission,
+            });
             return;
         }
 
@@ -322,9 +415,19 @@ class PWAService {
                 data: options.data
             });
 
-            console.log('[PWA] 📢 알림 표시 완료');
+            errorLogger.info('알림 표시 완료', {
+                component: 'pwaService',
+                action: 'showNotification',
+                title: options.title,
+                tag: options.tag,
+            });
         } catch (error) {
-            console.error('[PWA] ❌ 알림 표시 실패:', error);
+            const err = toError(error);
+            errorLogger.error('알림 표시 실패', err, {
+                component: 'pwaService',
+                action: 'showNotification',
+                title: options.title,
+            });
         }
     }
 
@@ -333,20 +436,37 @@ class PWAService {
      */
     public async registerBackgroundSync(tag: string): Promise<void> {
         if (!this.registration) {
-            console.warn('[PWA] Service Worker가 등록되지 않았습니다.');
+            errorLogger.warn('Service Worker가 등록되지 않았습니다', {
+                component: 'pwaService',
+                action: 'registerBackgroundSync',
+                tag,
+            });
             return;
         }
 
         try {
             // Background Sync API가 지원되는 경우에만 사용
             if ('sync' in this.registration) {
-                await (this.registration as any).sync.register(tag);
-                console.log(`[PWA] 🔄 백그라운드 동기화 등록: ${tag}`);
+                await (this.registration as ServiceWorkerRegistration & { sync?: { register: (tag: string) => Promise<void> } }).sync!.register(tag);
+                errorLogger.info('백그라운드 동기화 등록', {
+                    component: 'pwaService',
+                    action: 'registerBackgroundSync',
+                    tag,
+                });
             } else {
-                console.warn('[PWA] ⚠️ 백그라운드 동기화가 지원되지 않습니다.');
+                errorLogger.warn('백그라운드 동기화가 지원되지 않습니다', {
+                    component: 'pwaService',
+                    action: 'registerBackgroundSync',
+                    tag,
+                });
             }
         } catch (error) {
-            console.error('[PWA] ❌ 백그라운드 동기화 등록 실패:', error);
+            const err = toError(error);
+            errorLogger.error('백그라운드 동기화 등록 실패', err, {
+                component: 'pwaService',
+                action: 'registerBackgroundSync',
+                tag,
+            });
         }
     }
 
@@ -355,7 +475,12 @@ class PWAService {
      */
     public addToOfflineQueue(url: string, options: RequestInit = {}): void {
         this.offlineQueue.push({ url, options });
-        console.log(`[PWA] 📦 오프라인 큐에 추가: ${url}`);
+        errorLogger.info('오프라인 큐에 추가', {
+            component: 'pwaService',
+            action: 'addToOfflineQueue',
+            url,
+            queueLength: this.offlineQueue.length,
+        });
     }
 
     /**
@@ -364,7 +489,11 @@ class PWAService {
     private async processOfflineQueue(): Promise<void> {
         if (this.offlineQueue.length === 0) return;
 
-        console.log(`[PWA] 🔄 오프라인 큐 처리 시작 (${this.offlineQueue.length}개 항목)`);
+        errorLogger.info('오프라인 큐 처리 시작', {
+            component: 'pwaService',
+            action: 'processOfflineQueue',
+            queueLength: this.offlineQueue.length,
+        });
 
         const queue = [...this.offlineQueue];
         this.offlineQueue = [];
@@ -372,9 +501,18 @@ class PWAService {
         for (const { url, options } of queue) {
             try {
                 await fetch(url, options);
-                console.log(`[PWA] ✅ 큐 항목 처리 완료: ${url}`);
+                errorLogger.info('큐 항목 처리 완료', {
+                    component: 'pwaService',
+                    action: 'processOfflineQueue',
+                    url,
+                });
             } catch (error) {
-                console.error(`[PWA] ❌ 큐 항목 처리 실패: ${url}`, error);
+                const err = toError(error);
+                errorLogger.error('큐 항목 처리 실패', err, {
+                    component: 'pwaService',
+                    action: 'processOfflineQueue',
+                    url,
+                });
                 // 실패한 항목은 다시 큐에 추가
                 this.offlineQueue.push({ url, options });
             }
@@ -386,7 +524,7 @@ class PWAService {
      */
     private async showUpdateNotification(): Promise<void> {
         await this.showNotification({
-            title: 'CORBU AI 업데이트',
+            title: 'CORBU.AI 업데이트',
             body: '새로운 버전이 사용 가능합니다. 지금 업데이트하시겠습니까?',
             tag: 'app-update',
             requireInteraction: true,
@@ -464,20 +602,32 @@ class PWAService {
      */
     public updateConfig(newConfig: Partial<PWAConfig>): void {
         this.config = { ...this.config, ...newConfig };
-        console.log('[PWA] 설정 업데이트 완료');
+        errorLogger.info('설정 업데이트 완료', {
+            component: 'pwaService',
+            action: 'updateConfig',
+            updatedKeys: Object.keys(newConfig),
+        });
     }
 
     /**
      * Service Worker에 메시지 전송
      */
-    public async sendMessageToServiceWorker(message: any): Promise<void> {
+    public async sendMessageToServiceWorker(message: unknown): Promise<void> {
         if (!this.registration?.active) return;
 
         try {
             this.registration.active.postMessage(message);
-            console.log('[PWA] 📨 Service Worker에 메시지 전송:', message);
+            errorLogger.info('Service Worker에 메시지 전송', {
+                component: 'pwaService',
+                action: 'sendMessageToServiceWorker',
+                messageType: typeof message === 'object' && message !== null && 'type' in message ? String((message as { type: unknown }).type) : 'unknown',
+            });
         } catch (error) {
-            console.error('[PWA] ❌ Service Worker 메시지 전송 실패:', error);
+            const err = toError(error);
+            errorLogger.error('Service Worker 메시지 전송 실패', err, {
+                component: 'pwaService',
+                action: 'sendMessageToServiceWorker',
+            });
         }
     }
 
@@ -488,9 +638,17 @@ class PWAService {
         try {
             const cacheNames = await caches.keys();
             await Promise.all(cacheNames.map(name => caches.delete(name)));
-            console.log('[PWA] 🗑️ 캐시 정리 완료');
+            errorLogger.info('캐시 정리 완료', {
+                component: 'pwaService',
+                action: 'clearCache',
+                cacheCount: cacheNames.length,
+            });
         } catch (error) {
-            console.error('[PWA] ❌ 캐시 정리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('캐시 정리 실패', err, {
+                component: 'pwaService',
+                action: 'clearCache',
+            });
         }
     }
 
@@ -499,7 +657,7 @@ class PWAService {
      */
     public isInstalled(): boolean {
         return window.matchMedia('(display-mode: standalone)').matches ||
-            (window.navigator as any).standalone === true;
+            (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     }
 
     /**

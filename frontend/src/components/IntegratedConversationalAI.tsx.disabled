@@ -277,7 +277,7 @@ const generateAIResponse = (userMessage: string): ConversationMessage => {
         return {
             id: Date.now().toString(),
             type: 'ai',
-            content: `현재 CORBU AI 시스템의 상태입니다:\n\n📊 **전체 시스템 상태**: ${activeSystems.length}/${aiSystems.length}개 시스템 활성화\n📈 **평균 성능**: ${avgPerformance.toFixed(1)}%\n🟢 **모든 시스템 정상 작동 중**\n\n어떤 시스템에 대해 더 자세히 알고 싶으신가요?`,
+            content: `현재 CORBU.AI 시스템의 상태입니다:\n\n📊 **전체 시스템 상태**: ${activeSystems.length}/${aiSystems.length}개 시스템 활성화\n📈 **평균 성능**: ${avgPerformance.toFixed(1)}%\n🟢 **모든 시스템 정상 작동 중**\n\n어떤 시스템에 대해 더 자세히 알고 싶으신가요?`,
             timestamp: new Date(),
             systemInfo: aiSystems,
             confidence: 0.95
@@ -330,7 +330,7 @@ const generateAIResponse = (userMessage: string): ConversationMessage => {
         return {
             id: Date.now().toString(),
             type: 'ai',
-            content: `CORBU AI 시스템에서 제공하는 주요 기능들입니다:\n\n${uniqueFeatures.map(f => `• ${f}`).join('\n')}\n\n총 ${uniqueFeatures.length}개의 고유 기능을 제공하며, 각 시스템별로 특화된 서비스를 제공합니다. 특정 기능에 대해 더 자세히 알고 싶으시면 말씀해 주세요!`,
+            content: `CORBU.AI 시스템에서 제공하는 주요 기능들입니다:\n\n${uniqueFeatures.map(f => `• ${f}`).join('\n')}\n\n총 ${uniqueFeatures.length}개의 고유 기능을 제공하며, 각 시스템별로 특화된 서비스를 제공합니다. 특정 기능에 대해 더 자세히 알고 싶으시면 말씀해 주세요!`,
             timestamp: new Date(),
             confidence: 0.88
         };
@@ -361,7 +361,7 @@ const generateAIResponse = (userMessage: string): ConversationMessage => {
     return {
         id: Date.now().toString(),
         type: 'ai',
-        content: `안녕하세요! 저는 CORBU AI 시스템의 통합 어시스턴트입니다. 🤖\n\n다음과 같은 질문을 할 수 있습니다:\n\n• "시스템 상태는 어때?" - 전체 시스템 현황\n• "심리학 시스템은 뭐야?" - 특정 시스템 정보\n• "어떤 기능들이 있어?" - 제공 기능 목록\n• "성능은 어때?" - 시스템 성능 현황\n• "AI 통합 플랫폼에 대해 알려줘" - 특정 시스템 상세 정보\n\n무엇이든 물어보세요!`,
+        content: `안녕하세요! 저는 CORBU.AI 시스템의 통합 어시스턴트입니다. 🤖\n\n다음과 같은 질문을 할 수 있습니다:\n\n• "시스템 상태는 어때?" - 전체 시스템 현황\n• "심리학 시스템은 뭐야?" - 특정 시스템 정보\n• "어떤 기능들이 있어?" - 제공 기능 목록\n• "성능은 어때?" - 시스템 성능 현황\n• "AI 통합 플랫폼에 대해 알려줘" - 특정 시스템 상세 정보\n\n무엇이든 물어보세요!`,
         timestamp: new Date(),
         confidence: 0.85
     };
@@ -372,7 +372,7 @@ const IntegratedConversationalAI: React.FC = () => {
         {
             id: '1',
             type: 'ai',
-            content: '안녕하세요! 저는 CORBU AI 시스템의 통합 어시스턴트입니다. 🤖\n\n전체 AI 시스템에 대한 질문이나 정보를 원하시면 언제든 말씀해 주세요. 시스템 상태, 기능, 성능 등 모든 것을 알려드릴 수 있습니다!',
+            content: '안녕하세요! 저는 CORBU.AI 시스템의 통합 어시스턴트입니다. 🤖\n\n전체 AI 시스템에 대한 질문이나 정보를 원하시면 언제든 말씀해 주세요. 시스템 상태, 기능, 성능 등 모든 것을 알려드릴 수 있습니다!',
             timestamp: new Date(),
             confidence: 0.95
         }
@@ -452,7 +452,7 @@ const IntegratedConversationalAI: React.FC = () => {
                                 <SmartToy />
                             </Avatar>
                             <Box>
-                                <Typography variant="h6">CORBU AI 통합 대화형 시스템</Typography>
+                                <Typography variant="h6">CORBU.AI 통합 대화형 시스템</Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     전체 AI 시스템에 대한 질문-답변 서비스
                                 </Typography>
@@ -476,7 +476,7 @@ const IntegratedConversationalAI: React.FC = () => {
 
             {/* 메인 컨텐츠 */}
             <Box sx={{ display: 'flex', flex: 1, gap: 2 }}>
-                {/* 채팅 영역 */}
+                {/* 대화 영역 */}
                 <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
                         {/* 메시지 영역 */}
@@ -567,7 +567,7 @@ const IntegratedConversationalAI: React.FC = () => {
                                 <TextField
                                     fullWidth
                                     variant="outlined"
-                                    placeholder="CORBU AI 시스템에 대해 무엇이든 물어보세요..."
+                                    placeholder="CORBU.AI 시스템에 대해 무엇이든 물어보세요..."
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
                                     onKeyPress={handleKeyPress}

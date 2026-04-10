@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-CORBU AI 보안 관리 시스템
+CORBU.AI 보안 관리 시스템
 입력 검증, SQL 인젝션 방지, XSS 방지, Rate Limiting
 """
 
+import os
 import re
 import time
 import hashlib
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Security Manager API",
-    description="Security and input validation for CORBU AI",
+    description="Security and input validation for CORBU.AI",
     version="1.0.0",
 )
 
@@ -329,7 +330,7 @@ async def validate_user_input(text: str, request: Request):
 
 @app.post("/validate/message")
 async def validate_chat_message(message: str, user_id: str, request: Request):
-    """채팅 메시지 검증"""
+    """대화 메시지 검증"""
     client_ip = get_client_ip(request)
     security_stats["total_requests"] += 1
     
@@ -464,4 +465,5 @@ if __name__ == "__main__":
     init_security_database()
     
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8015)
+    _p = int(os.environ.get("SECURITY_MANAGER_PORT", os.environ.get("PORT", "8015")))
+    uvicorn.run(app, host="0.0.0.0", port=_p)

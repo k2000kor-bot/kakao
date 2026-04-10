@@ -99,7 +99,7 @@
 - ✅ lazyLoading.spec.ts - 지연 로딩
 - ✅ pwa.spec.ts - PWA 기능
 - ✅ performance.spec.ts - 성능 모니터링
-- ✅ chat.spec.ts - 채팅 기능
+- ✅ chat.spec.ts - 대화 기능
 - ✅ projectManagement.spec.ts - 프로젝트 관리
 
 ---

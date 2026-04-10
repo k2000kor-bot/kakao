@@ -20,14 +20,14 @@ export interface SimpleUserProfile {
     totalInteractions: number;
 }
 
-class SimpleAdvancedAIService {
-    private userData: Map<string, any[]> = new Map();
+export class SimpleAdvancedAIService {
+    private userData: Map<string, Record<string, unknown>[]> = new Map();
 
     async generateAdvancedResponse(
         message: string,
         userId: string,
         baseResponse: string,
-        nlpAnalysis: any
+        nlpAnalysis: Record<string, unknown>
     ): Promise<SimpleAdvancedAIResponse> {
         // 사용자 데이터 업데이트
         this.updateUserData(userId, message, baseResponse, nlpAnalysis);
@@ -57,7 +57,7 @@ class SimpleAdvancedAIService {
 
     getUserProfile(userId: string): SimpleUserProfile {
         const userData = this.userData.get(userId) || [];
-        
+
         return {
             expertise: ['AI', '기술', '분석'],
             interests: ['뉴스', '트렌드', '인사이트'],
@@ -67,7 +67,7 @@ class SimpleAdvancedAIService {
         };
     }
 
-    private updateUserData(userId: string, message: string, response: string, nlpAnalysis: any) {
+    private updateUserData(userId: string, message: string, response: string, nlpAnalysis: Record<string, unknown>) {
         const userData = this.userData.get(userId) || [];
         userData.push({
             message,
@@ -78,10 +78,10 @@ class SimpleAdvancedAIService {
         this.userData.set(userId, userData);
     }
 
-    private calculateConfidence(message: string, nlpAnalysis: any): number {
+    private calculateConfidence(message: string, nlpAnalysis: Record<string, unknown>): number {
         let confidence = 0.7; // 기본 신뢰도
 
-        if (nlpAnalysis?.keywords?.length > 0) {
+        if (Array.isArray(nlpAnalysis?.keywords) && nlpAnalysis.keywords.length > 0) {
             confidence += 0.1;
         }
 
@@ -106,7 +106,7 @@ class SimpleAdvancedAIService {
         return Math.min(userData.length * 0.05, 1.0);
     }
 
-    private generateRecommendations(message: string, nlpAnalysis: any): string[] {
+    private generateRecommendations(message: string, nlpAnalysis: Record<string, unknown>): string[] {
         const recommendations: string[] = [];
 
         if (message.toLowerCase().includes('원베일리')) {
@@ -125,7 +125,7 @@ class SimpleAdvancedAIService {
         return recommendations;
     }
 
-    private generateNextActions(message: string, nlpAnalysis: any): string[] {
+    private generateNextActions(message: string, _nlpAnalysis: Record<string, unknown>): string[] {
         const actions: string[] = [];
 
         if (message.toLowerCase().includes('뉴스')) {
@@ -144,12 +144,12 @@ class SimpleAdvancedAIService {
         return actions;
     }
 
-    private generateUserInsights(userId: string, message: string): {
+    private generateUserInsights(userId: string, _message: string): {
         preferences: string[];
         behaviorPatterns: string[];
         improvementAreas: string[];
     } {
-        const userData = this.userData.get(userId) || [];
+        const _userData = this.userData.get(userId) || [];
 
         const preferences = [
             '상세한 분석을 선호함',

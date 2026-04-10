@@ -17,7 +17,7 @@ processor = RealKakaoDataProcessor()
 
 @app.route('/api/chat-rooms', methods=['GET'])
 def get_chat_rooms():
-    """모든 채팅방 목록 조회"""
+    """모든 대화방 목록 조회"""
     try:
         rooms = processor.get_all_chat_rooms()
         return jsonify({
@@ -33,13 +33,13 @@ def get_chat_rooms():
 
 @app.route('/api/chat-rooms/<int:room_id>', methods=['GET'])
 def get_chat_room(room_id):
-    """특정 채팅방 정보 조회"""
+    """특정 대화방 정보 조회"""
     try:
         room = processor.get_chat_room(room_id)
         if not room:
             return jsonify({
                 'success': False,
-                'error': '채팅방을 찾을 수 없습니다.'
+                'error': '대화방을 찾을 수 없습니다.'
             }), 404
         
         return jsonify({
@@ -54,7 +54,7 @@ def get_chat_room(room_id):
 
 @app.route('/api/chat-rooms/<int:room_id>/messages', methods=['GET'])
 def get_messages(room_id):
-    """채팅방 메시지 조회 (교육 목적으로 제한 완전 해제)"""
+    """대화방 메시지 조회 (교육 목적으로 제한 완전 해제)"""
     try:
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 1000000))  # 제한을 1000000으로 증가
@@ -104,12 +104,12 @@ def get_messages(room_id):
 
 @app.route('/api/process-chat-files', methods=['POST'])
 def process_chat_files():
-    """채팅 파일 처리"""
+    """대화 파일 처리"""
     try:
         processor.process_all_chat_files()
         return jsonify({
             'success': True,
-            'message': '채팅 파일 처리가 완료되었습니다.'
+            'message': '대화 파일 처리가 완료되었습니다.'
         })
     except Exception as e:
         return jsonify({
@@ -120,7 +120,7 @@ def process_chat_files():
 
 @app.route('/api/upload-chat-file', methods=['POST'])
 def upload_chat_file():
-    """새로운 채팅 파일 업로드 (중복 방지)"""
+    """새로운 대화 파일 업로드 (중복 방지)"""
     try:
         if 'file' not in request.files:
             return jsonify({
@@ -139,7 +139,7 @@ def upload_chat_file():
         if not file.filename.endswith('.txt'):
             return jsonify({
                 'success': False,
-                'error': '카카오톡 채팅 파일(.txt)만 업로드 가능합니다.'
+                'error': '카카오톡 대화 파일(.txt)만 업로드 가능합니다.'
             }), 400
         
         # 업로드 디렉토리 생성
@@ -163,7 +163,7 @@ def upload_chat_file():
         
         if room_info:
             room_name, participant_count, save_date = room_info
-            message = f"파일이 성공적으로 처리되었습니다.\n채팅방: {room_name}\n참여자: {participant_count}명\n저장 날짜: {save_date}"
+            message = f"파일이 성공적으로 처리되었습니다.\n대화방: {room_name}\n참여자: {participant_count}명\n저장 날짜: {save_date}"
         else:
             message = "파일이 성공적으로 업로드되고 처리되었습니다."
         
@@ -188,7 +188,7 @@ def upload_chat_file():
 
 @app.route('/api/scan-chat-rooms', methods=['GET'])
 def scan_chat_rooms():
-    """채팅방 폴더 스캔"""
+    """대화방 폴더 스캔"""
     try:
         rooms = processor.scan_chat_rooms()
         return jsonify({
@@ -213,14 +213,15 @@ def health_check():
 
 if __name__ == '__main__':
     print("🚀 Real Kakao API Server 시작 중...")
-    print("📁 채팅방 폴더 스캔 중...")
+    print("📁 대화방 폴더 스캔 중...")
     
     # 초기 스캔
     rooms = processor.scan_chat_rooms()
-    print(f"📋 발견된 채팅방: {len(rooms)}개")
+    print(f"📋 발견된 대화방: {len(rooms)}개")
     
     for room in rooms:
         print(f"  - {room['name']} ({room['size']} bytes)")
     
-    print("🌐 API 서버 시작: http://localhost:8003")
-    app.run(host='0.0.0.0', port=8003, debug=True) 
+    _p = int(os.environ.get("REAL_KAKAO_API_PORT", os.environ.get("PORT", "8003")))
+    print(f"🌐 API 서버 시작: http://localhost:{_p}")
+    app.run(host='0.0.0.0', port=_p, debug=True) 

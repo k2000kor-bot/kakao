@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ChatMessage:
-    """채팅 메시지 데이터"""
+    """대화 메시지 데이터"""
     message_id: str
     chat_room: str
     sender: str
@@ -63,7 +63,7 @@ class PersonProfile:
 
 
 class ChatConversationAnalyzer:
-    """채팅방 대화 분석 시스템"""
+    """대화방 대화 분석 시스템"""
     
     def __init__(self, db_path: str = "chat_analysis.db"):
         self.db_path = db_path
@@ -141,7 +141,7 @@ class ChatConversationAnalyzer:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # 채팅 메시지 테이블
+        # 대화 메시지 테이블
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS chat_messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -213,11 +213,11 @@ class ChatConversationAnalyzer:
         conn.close()
         
     def parse_chat_file(self, chat_file_path: str) -> List[ChatMessage]:
-        """채팅 파일 파싱"""
+        """대화 파일 파싱"""
         chat_file = Path(chat_file_path)
         
         if not chat_file.exists():
-            raise FileNotFoundError(f"채팅 파일을 찾을 수 없습니다: {chat_file_path}")
+            raise FileNotFoundError(f"대화 파일을 찾을 수 없습니다: {chat_file_path}")
             
         messages = []
         
@@ -235,7 +235,7 @@ class ChatConversationAnalyzer:
         return messages
         
     def _parse_txt_format(self, content: str, chat_room: str) -> List[ChatMessage]:
-        """텍스트 형식 채팅 파싱"""
+        """텍스트 형식 대화 파싱"""
         messages = []
         lines = content.strip().split('\n')
         
@@ -298,7 +298,7 @@ class ChatConversationAnalyzer:
         return messages
         
     def _parse_json_format(self, content: str, chat_room: str) -> List[ChatMessage]:
-        """JSON 형식 채팅 파싱"""
+        """JSON 형식 대화 파싱"""
         try:
             data = json.loads(content)
             messages = []
@@ -689,7 +689,7 @@ class ChatConversationAnalyzer:
         conn.close()
         
     def get_conversation_participants(self, chat_room: str) -> List[Dict[str, Any]]:
-        """채팅방 참여자 목록 및 통계"""
+        """대화방 참여자 목록 및 통계"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -721,14 +721,14 @@ if __name__ == "__main__":
     # 분석기 초기화
     analyzer = ChatConversationAnalyzer()
     
-    # 샘플 채팅 파일 분석
+    # 샘플 대화 파일 분석
     try:
-        # 실제 채팅 파일 경로
-        chat_file_path = "../chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt"
+        # 실제 대화 파일 경로
+        chat_file_path = "../chat_rooms/sample_chat_room/sample_chat_room.txt"
         
-        print("📱 채팅방 대화 분석 시작...")
+        print("📱 대화방 대화 분석 시작...")
         
-        # 채팅 파일 파싱
+        # 대화 파일 파싱
         messages = analyzer.parse_chat_file(chat_file_path)
         print(f"✅ {len(messages)}개 메시지 파싱 완료")
         
@@ -737,8 +737,8 @@ if __name__ == "__main__":
         print("✅ 메시지 데이터베이스 저장 완료")
         
         # 참여자 분석
-        participants = analyzer.get_conversation_participants("개포우성7차")
-        print(f"✅ 채팅방 참여자: {len(participants)}명")
+        participants = analyzer.get_conversation_participants("샘플 프로젝트")
+        print(f"✅ 대화방 참여자: {len(participants)}명")
         
         for participant in participants[:5]:
             print(f"   - {participant['name']}: {participant['message_count']}건")
@@ -754,7 +754,7 @@ if __name__ == "__main__":
             print(f"   - 상호작용: {len(profile.interaction_partners)}명")
             
     except FileNotFoundError:
-        print("❌ 채팅 파일을 찾을 수 없습니다. 샘플 데이터로 테스트합니다.")
+        print("❌ 대화 파일을 찾을 수 없습니다. 샘플 데이터로 테스트합니다.")
         
         # 샘플 메시지 생성
         sample_messages = [

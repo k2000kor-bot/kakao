@@ -126,7 +126,7 @@ app.post('/api/sessions/:sessionId/messages', (req, res) => {
     // AI 응답
     const aiMessage = {
         id: (Date.now() + 1).toString(),
-        content: `"${content}"에 대한 CORBU AI의 분석 결과입니다.
+        content: `"${content}"에 대한 CORBU.AI의 분석 결과입니다.
 
 **🔍 분석 요약:**
 - 핵심 키워드 추출 완료
@@ -226,7 +226,7 @@ app.use('*', (req, res) => {
 
 // 서버 시작
 app.listen(PORT, () => {
-    console.log(`🚀 CORBU AI 최소 서버가 포트 ${PORT}에서 실행 중입니다`);
+    console.log(`🚀 CORBU.AI 최소 서버가 포트 ${PORT}에서 실행 중입니다`);
     console.log(`📊 API 엔드포인트: http://localhost:${PORT}/api`);
     console.log(`🔍 헬스체크: http://localhost:${PORT}/api/health`);
 });

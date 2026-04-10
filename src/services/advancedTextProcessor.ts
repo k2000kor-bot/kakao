@@ -32,8 +32,8 @@ export interface TextProcessingRequest {
 export interface ProcessingStage {
     name: string;
     description: string;
-    input: any;
-    output: any;
+    input: unknown;
+    output: unknown;
     processingTime: number;
     confidence: number;
 }
@@ -62,7 +62,7 @@ export interface ProcessedText {
 }
 
 class AdvancedTextProcessor {
-    private processingModules: Map<string, (input: any) => Promise<any>> = new Map();
+    private processingModules: Map<string, (input: unknown) => Promise<unknown>> = new Map();
 
     constructor() {
         this.initializeModules();
@@ -70,18 +70,19 @@ class AdvancedTextProcessor {
 
     private initializeModules() {
         // 1. 텍스트 분석 모듈
-        this.processingModules.set('textAnalyzer', async (input: string) => {
+        this.processingModules.set('textAnalyzer', async (input: unknown) => {
+            const text = input as string;
             const startTime = Date.now();
 
             const analysis = {
-                length: input.length,
-                wordCount: input.split(/\s+/).length,
-                sentenceCount: input.split(/[.!?]+/).length - 1,
-                paragraphCount: input.split(/\n\s*\n/).length,
-                complexity: this.analyzeComplexity(input),
-                sentiment: this.analyzeSentiment(input),
-                keyThemes: this.extractThemes(input),
-                readability: this.calculateReadability(input)
+                length: text.length,
+                wordCount: text.split(/\s+/).length,
+                sentenceCount: text.split(/[.!?]+/).length - 1,
+                paragraphCount: text.split(/\n\s*\n/).length,
+                complexity: this.analyzeComplexity(text),
+                sentiment: this.analyzeSentiment(text),
+                keyThemes: this.extractThemes(text),
+                readability: this.calculateReadability(text)
             };
 
             return {
@@ -93,10 +94,11 @@ class AdvancedTextProcessor {
         });
 
         // 2. 스타일 변환 모듈
-        this.processingModules.set('styleTransformer', async (input: { text: string, targetStyle: WritingStyle }) => {
+        this.processingModules.set('styleTransformer', async (input: unknown) => {
+            const { text, targetStyle } = input as { text: string; targetStyle: WritingStyle };
             const startTime = Date.now();
 
-            const transformed = this.applyWritingStyle(input.text, input.targetStyle);
+            const transformed = this.applyWritingStyle(text, targetStyle);
 
             return {
                 success: true,
@@ -107,10 +109,11 @@ class AdvancedTextProcessor {
         });
 
         // 3. 정치적 성향 조정 모듈
-        this.processingModules.set('politicalBalancer', async (input: { text: string, context: PoliticalTendency }) => {
+        this.processingModules.set('politicalBalancer', async (input: unknown) => {
+            const { text, context } = input as { text: string; context: PoliticalTendency };
             const startTime = Date.now();
 
-            const balanced = this.adjustPoliticalTendency(input.text, input.context);
+            const balanced = this.adjustPoliticalTendency(text, context);
 
             return {
                 success: true,
@@ -121,10 +124,11 @@ class AdvancedTextProcessor {
         });
 
         // 4. 형식 구조화 모듈
-        this.processingModules.set('formatStructuring', async (input: { text: string, format: MessageFormat }) => {
+        this.processingModules.set('formatStructuring', async (input: unknown) => {
+            const { text, format } = input as { text: string; format: MessageFormat };
             const startTime = Date.now();
 
-            const structured = this.structureMessage(input.text, input.format);
+            const structured = this.structureMessage(text, format);
 
             return {
                 success: true,
@@ -135,10 +139,11 @@ class AdvancedTextProcessor {
         });
 
         // 5. 품질 검증 모듈
-        this.processingModules.set('qualityValidator', async (input: { text: string, requirements: any }) => {
+        this.processingModules.set('qualityValidator', async (input: unknown) => {
+            const { text, requirements } = input as { text: string; requirements: { targetLength?: number; keywords?: string[] } };
             const startTime = Date.now();
 
-            const validation = this.validateQuality(input.text, input.requirements);
+            const validation = this.validateQuality(text, requirements);
 
             return {
                 success: true,
@@ -164,7 +169,7 @@ class AdvancedTextProcessor {
             targetStyle: request.targetStyle
         });
         stages.push(styleStage);
-        currentText = styleStage.output.data;
+        currentText = (styleStage.output as { data: string }).data;
 
         // 3단계: 정치적 성향 조정
         const politicalStage = await this.executeStage('politicalBalancer', {
@@ -172,7 +177,7 @@ class AdvancedTextProcessor {
             context: request.politicalContext
         });
         stages.push(politicalStage);
-        currentText = politicalStage.output.data;
+        currentText = (politicalStage.output as { data: string }).data;
 
         // 4단계: 형식 구조화
         const formatStage = await this.executeStage('formatStructuring', {
@@ -180,7 +185,7 @@ class AdvancedTextProcessor {
             format: request.format
         });
         stages.push(formatStage);
-        currentText = formatStage.output.data;
+        currentText = (formatStage.output as { data: string }).data;
 
         // 5단계: 품질 검증 및 최종 조정
         const validationStage = await this.executeStage('qualityValidator', {
@@ -194,7 +199,9 @@ class AdvancedTextProcessor {
         stages.push(validationStage);
 
         // 최종 텍스트 조정
-        const finalText = this.finalizeText(currentText, request, validationStage.output.data);
+        const validationData = (validationStage.output as { data: { meetsLength?: boolean; includesKeywords?: boolean; readability?: number; coherence?: number; completeness?: number } }).data;
+        const validationForFinalize = { meetsLength: validationData.meetsLength ?? false, includesKeywords: validationData.includesKeywords ?? false };
+        const finalText = this.finalizeText(currentText, request, validationForFinalize);
 
         // 대안 버전 생성
         const alternatives = this.generateAlternatives(finalText, request);
@@ -218,14 +225,14 @@ class AdvancedTextProcessor {
         };
     }
 
-    private async executeStage(stageName: string, input: any): Promise<ProcessingStage> {
+    private async executeStage(stageName: string, input: unknown): Promise<ProcessingStage> {
         const module = this.processingModules.get(stageName);
         if (!module) {
             throw new Error(`Unknown processing module: ${stageName}`);
         }
 
         const startTime = Date.now();
-        const result = await module(input);
+        const result = await module(input) as { confidence?: number };
         const processingTime = Date.now() - startTime;
 
         return {
@@ -234,7 +241,7 @@ class AdvancedTextProcessor {
             input,
             output: result,
             processingTime,
-            confidence: result.confidence
+            confidence: result.confidence ?? 0
         };
     }
 
@@ -535,7 +542,13 @@ A안 vs B안:
 종합 평가: 각각의 장단점을 고려한 최적 선택`;
     }
 
-    private validateQuality(text: string, requirements: any): any {
+    private validateQuality(text: string, requirements: { targetLength?: number; keywords?: string[] }): {
+        meetsLength: boolean;
+        includesKeywords: boolean;
+        readability: number;
+        coherence: number;
+        completeness: number;
+    } {
         const validation = {
             meetsLength: true,
             includesKeywords: true,
@@ -579,7 +592,7 @@ A안 vs B안:
         return score;
     }
 
-    private finalizeText(text: string, request: TextProcessingRequest, validation: any): string {
+    private finalizeText(text: string, request: TextProcessingRequest, validation: { meetsLength: boolean; includesKeywords: boolean }): string {
         let finalText = text;
 
         // 길이 조정
@@ -604,7 +617,7 @@ A안 vs B안:
         return finalText;
     }
 
-    private generateAlternatives(text: string, request: TextProcessingRequest): any {
+    private generateAlternatives(text: string, _request: TextProcessingRequest): ProcessedText['alternatives'] {
         return {
             brief: this.createBriefVersion(text),
             detailed: this.createDetailedVersion(text),

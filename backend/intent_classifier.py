@@ -1,5 +1,5 @@
 """
-CORBU AI 의도 분류 및 스마트 라우팅 시스템
+CORBU.AI 의도 분류 및 스마트 라우팅 시스템
 사용자의 질문을 분석하여 적절한 기능으로 라우팅합니다.
 """
 
@@ -8,16 +8,43 @@ from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
 import json
 import re
+import os
 from datetime import datetime
 import logging
 import hashlib
 import requests
 
+def _default_main_api_origin() -> str:
+    p = os.environ.get("API_PORT") or os.environ.get("BACKEND_PORT") or "5002"
+    return f"http://localhost:{p}"
+
+
+def _default_intent_cache_origin() -> str:
+    p = os.environ.get("CACHE_MANAGER_PORT") or "8014"
+    return f"http://localhost:{p}"
+
+
+# 통합 API 기본 오리진. CORBU_MAIN_API_BASE 미설정 시 API_PORT/BACKEND_PORT(기본 5002).
+_DEFAULT_SERVICE_ORIGIN = os.environ.get(
+    "CORBU_MAIN_API_BASE", _default_main_api_origin()
+).rstrip("/")
+# 의도 캐시 전용(선택). CORBU_INTENT_CACHE_BASE 미설정 시 CACHE_MANAGER_PORT(기본 8014).
+_INTENT_CACHE_BASE = os.environ.get(
+    "CORBU_INTENT_CACHE_BASE", _default_intent_cache_origin()
+).rstrip("/")
+# 컨텍스트/분석 트래킹(선택). 미설정 시 통합 오리진으로 시도(엔드포인트 없으면 무시).
+_CONTEXT_MANAGER_BASE = os.environ.get(
+    "CORBU_CONTEXT_MANAGER_BASE", _DEFAULT_SERVICE_ORIGIN
+).rstrip("/")
+_ANALYTICS_TRACKER_BASE = os.environ.get(
+    "CORBU_ANALYTICS_TRACKER_BASE", _DEFAULT_SERVICE_ORIGIN
+).rstrip("/")
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="CORBU AI Intent Classifier", version="1.0.0")
+app = FastAPI(title="CORBU.AI Intent Classifier", version="1.0.0")
 
 class ChatMessage(BaseModel):
     message: str
@@ -53,7 +80,7 @@ INTENT_PATTERNS = {
             r".*커뮤니티.*분석.*"
         ],
         "service": "apartment_community_analyzer",
-        "endpoint": "http://localhost:8005"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     },
     "construction_company": {
         "keywords": ["시공사", "건설회사", "하자", "품질", "시공", "건설업체", "시공업체", "정보"],
@@ -65,7 +92,7 @@ INTENT_PATTERNS = {
             r".*시공사.*정보.*"
         ],
         "service": "construction_company_info_system",
-        "endpoint": "http://localhost:8006"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     },
     "market_analysis": {
         "keywords": ["시장", "부동산", "가격", "분석", "투자", "시세", "매매", "전세", "월세", "강남구", "서초구", "송파구", "강동구", "가격", "동향", "예측"],
@@ -79,7 +106,7 @@ INTENT_PATTERNS = {
             r".*지역.*부동산.*가격.*"
         ],
         "service": "market_analysis_engine",
-        "endpoint": "http://localhost:8007"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     },
     "dream_visualization": {
         "keywords": ["꿈", "목표", "계획", "미래", "희망", "비전", "설계", "계획"],
@@ -90,7 +117,7 @@ INTENT_PATTERNS = {
             r".*비전.*수립.*"
         ],
         "service": "dream_visualization_system",
-        "endpoint": "http://localhost:8008"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     },
     "performance_optimization": {
         "keywords": ["성능", "최적화", "속도", "개선", "효율", "최적화"],
@@ -100,7 +127,7 @@ INTENT_PATTERNS = {
             r".*효율.*향상.*"
         ],
         "service": "performance_optimizer",
-        "endpoint": "http://localhost:8009"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     },
     "scalability": {
         "keywords": ["확장", "스케일", "용량", "부하", "확장성"],
@@ -110,7 +137,7 @@ INTENT_PATTERNS = {
             r".*용량.*계획.*"
         ],
         "service": "scalability_manager",
-        "endpoint": "http://localhost:8010"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     },
     "advanced_ai": {
         "keywords": ["AI", "인공지능", "고급", "분석", "예측", "추천"],
@@ -120,7 +147,7 @@ INTENT_PATTERNS = {
             r".*고급.*예측.*"
         ],
         "service": "advanced_ai_features",
-        "endpoint": "http://localhost:8011"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     },
     "long_term_planning": {
         "keywords": ["장기", "계획", "전략", "목표", "로드맵", "미래"],
@@ -130,7 +157,7 @@ INTENT_PATTERNS = {
             r".*로드맵.*계획.*"
         ],
         "service": "long_term_planning",
-        "endpoint": "http://localhost:8012"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     },
     "general_chat": {
         "keywords": ["안녕", "도움", "정보", "질문", "궁금"],
@@ -140,7 +167,7 @@ INTENT_PATTERNS = {
             r".*정보.*"
         ],
         "service": "chatgpt_unified_system",
-        "endpoint": "http://localhost:8001"
+        "endpoint": _DEFAULT_SERVICE_ORIGIN
     }
 }
 
@@ -151,7 +178,7 @@ def generate_cache_key(message: str) -> str:
 def get_cached_intent(cache_key: str) -> Optional[IntentResponse]:
     """캐시에서 의도 분류 결과 조회"""
     try:
-        response = requests.get(f"http://localhost:8014/cache/intent/{cache_key}", timeout=1)
+        response = requests.get(f"{_INTENT_CACHE_BASE}/cache/intent/{cache_key}", timeout=1)
         if response.status_code == 200:
             data = response.json()
             return IntentResponse(**data["result"])
@@ -162,8 +189,11 @@ def get_cached_intent(cache_key: str) -> Optional[IntentResponse]:
 def cache_intent_result(cache_key: str, intent_result: IntentResponse) -> None:
     """의도 분류 결과를 캐시에 저장"""
     try:
-        requests.post(f"http://localhost:8014/cache/intent/{cache_key}", 
-                    json=intent_result.dict(), timeout=1)
+        requests.post(
+            f"{_INTENT_CACHE_BASE}/cache/intent/{cache_key}",
+            json=intent_result.dict(),
+            timeout=1,
+        )
     except Exception as e:
         logger.warning(f"Cache store failed: {e}")
 
@@ -201,7 +231,7 @@ def classify_intent(message: str) -> IntentResponse:
     
     # 가장 높은 점수의 의도 선택
     if not intent_scores or max(intent_scores.values()) == 0:
-        # 기본적으로 일반 채팅으로 분류
+        # 기본적으로 일반 대화로 분류
         best_intent = "general_chat"
         confidence = 0.1
     else:
@@ -221,7 +251,7 @@ def classify_intent(message: str) -> IntentResponse:
         "scalability": "확장성 관리 방안을 제안해드리겠습니다.",
         "advanced_ai": "고급 AI 기능을 활용한 분석을 시작하겠습니다.",
         "long_term_planning": "장기 계획 수립을 도와드리겠습니다.",
-        "general_chat": "안녕하세요! CORBU AI가 도와드리겠습니다."
+        "general_chat": "안녕하세요! CORBU.AI가 도와드리겠습니다."
     }
     
     result = IntentResponse(
@@ -295,7 +325,7 @@ async def process_chat_message(message: ChatMessage):
         try:
             import requests
             context_response = requests.post(
-                f"http://localhost:8003/analyze-context",
+                f"{_CONTEXT_MANAGER_BASE}/analyze-context",
                 params={"session_id": message.session_id or "default", "current_message": message.message},
                 timeout=1
             )
@@ -316,7 +346,7 @@ async def process_chat_message(message: ChatMessage):
         # 컨텍스트 업데이트
         try:
             requests.post(
-                "http://localhost:8003/update-context",
+                f"{_CONTEXT_MANAGER_BASE}/update-context",
                 json={
                     "session_id": message.session_id or "default",
                     "user_id": message.user_id,
@@ -333,7 +363,7 @@ async def process_chat_message(message: ChatMessage):
         try:
             # 질문 이벤트 추적
             requests.post(
-                "http://localhost:8004/track-event",
+                f"{_ANALYTICS_TRACKER_BASE}/track-event",
                 json={
                     "user_id": message.user_id,
                     "session_id": message.session_id or "default",
@@ -346,7 +376,7 @@ async def process_chat_message(message: ChatMessage):
             
             # 의도 분류 이벤트 추적
             requests.post(
-                "http://localhost:8004/track-event",
+                f"{_ANALYTICS_TRACKER_BASE}/track-event",
                 json={
                     "user_id": message.user_id,
                     "session_id": message.session_id or "default",
@@ -363,7 +393,7 @@ async def process_chat_message(message: ChatMessage):
             
             # 서비스 사용 이벤트 추적
             requests.post(
-                "http://localhost:8004/track-event",
+                f"{_ANALYTICS_TRACKER_BASE}/track-event",
                 json={
                     "user_id": message.user_id,
                     "session_id": message.session_id or "default",
@@ -378,8 +408,8 @@ async def process_chat_message(message: ChatMessage):
         
         # 서비스별 처리
         if intent_result.intent == "general_chat":
-            # 일반 채팅은 메인 시스템으로 라우팅
-            response_text = f"안녕하세요! CORBU AI입니다. '{message.message}'에 대해 도움을 드리겠습니다."
+            # 일반 대화은 메인 시스템으로 라우팅
+            response_text = f"안녕하세요! CORBU.AI입니다. '{message.message}'에 대해 도움을 드리겠습니다."
             suggestions = [
                 "아파트 커뮤니티 분석해주세요",
                 "시공사 정보를 알려주세요",
@@ -455,7 +485,7 @@ async def health_check():
 async def root():
     """루트 엔드포인트"""
     return {
-        "message": "CORBU AI Intent Classifier",
+        "message": "CORBU.AI Intent Classifier",
         "version": "1.0.0",
         "description": "사용자 질문을 분석하여 적절한 AI 서비스로 라우팅합니다.",
         "endpoints": {
@@ -468,4 +498,8 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    _ic_port = int(
+        os.environ.get("INTENT_CLASSIFIER_PORT", os.environ.get("PORT", "8000"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_ic_port)

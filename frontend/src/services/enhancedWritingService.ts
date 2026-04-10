@@ -1,3 +1,11 @@
+import {
+    API_SESSION_ENHANCED_WRITING_SEGMENT,
+    API_SESSIONS_LIST_PATH,
+    joinApiHealthCheckUrl,
+    resolveApiBaseUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+
 export interface WritingRequest {
     writingType: string;
     targetAudience: string;
@@ -6,7 +14,7 @@ export interface WritingRequest {
     length: string;
     keywords: string[];
     context: string;
-    fileContexts: any[];
+    fileContexts: unknown[];
 }
 
 export interface WritingResponse {
@@ -22,11 +30,11 @@ export interface WritingResponse {
     error?: string;
 }
 
-class EnhancedWritingService {
+export class EnhancedWritingService {
     private baseUrl: string;
 
     constructor() {
-        this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8008';
+        this.baseUrl = resolveApiBaseUrl();
     }
 
     /**
@@ -37,13 +45,19 @@ class EnhancedWritingService {
         request: WritingRequest
     ): Promise<WritingResponse> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/enhanced-writing`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    this.baseUrl,
+                    `${API_SESSIONS_LIST_PATH}/${encodeURIComponent(sessionId)}${API_SESSION_ENHANCED_WRITING_SEGMENT}`,
+                ),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
                 },
-                body: JSON.stringify(request),
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -52,7 +66,13 @@ class EnhancedWritingService {
             const result = await response.json();
             return result;
         } catch (error) {
-            console.error('고도화된 글쓰기 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('고도화된 글쓰기 생성 실패', err, {
+                component: 'enhancedWritingService',
+                action: 'generateEnhancedWriting',
+                writingType: request.writingType,
+                targetAudience: request.targetAudience,
+            });
             return {
                 success: false,
                 content: '',
@@ -116,16 +136,16 @@ class EnhancedWritingService {
     /**
      * 파일 문맥 분석
      */
-    analyzeFileContexts(files: any[]): any[] {
+    analyzeFileContexts(files: Record<string, unknown>[]): Record<string, unknown>[] {
         return files.map(file => ({
             fileId: file.id,
             fileName: file.name,
             fileType: file.type,
-            extractedText: file.extractedText || '',
-            summary: file.summary || '파일 분석 완료',
-            keywords: file.keywords || [],
-            sentiment: file.sentiment || 'neutral',
-            confidence: file.confidence || 0.8,
+            extractedText: file.extractedText ?? '',
+            summary: file.summary ?? '파일 분석 완료',
+            keywords: file.keywords ?? [],
+            sentiment: file.sentiment ?? 'neutral',
+            confidence: file.confidence ?? 0.8,
             relevance: this.calculateRelevance(file)
         }));
     }
@@ -133,9 +153,10 @@ class EnhancedWritingService {
     /**
      * 관련성 계산
      */
-    private calculateRelevance(file: any): number {
-        const keywordScore = (file.keywords?.length || 0) * 0.1;
-        const confidenceScore = file.confidence || 0;
+    private calculateRelevance(file: Record<string, unknown>): number {
+        const keywords = file.keywords as unknown[] | undefined;
+        const keywordScore = (keywords?.length ?? 0) * 0.1;
+        const confidenceScore = (file.confidence as number) ?? 0;
         const sentimentScore = file.sentiment === 'positive' ? 0.2 : 0;
 
         return Math.min(keywordScore + confidenceScore + sentimentScore, 1.0);
@@ -144,13 +165,17 @@ class EnhancedWritingService {
     /**
      * 문맥 기반 인사이트 생성
      */
-    generateContextualInsights(fileContexts: any[]): string[] {
+    generateContextualInsights(fileContexts: Record<string, unknown>[]): string[] {
         return fileContexts.map(context => {
+            const keywords = (context.keywords as unknown[]) ?? [];
+            const confidence = (context.confidence as number) ?? 0;
+            const summary = String(context.summary ?? '');
+            const relevance = (context.relevance as number) ?? 0;
             const insights = [
-                `${context.fileName}에서 "${context.keywords.slice(0, 3).join(', ')}" 키워드가 발견되었습니다.`,
-                `${context.fileName}의 감정 분석 결과: ${context.sentiment} (신뢰도: ${(context.confidence * 100).toFixed(1)}%)`,
-                `${context.fileName}의 요약: ${context.summary.substring(0, 100)}...`,
-                `${context.fileName}의 관련성 점수: ${(context.relevance * 100).toFixed(1)}%`
+                `${context.fileName}에서 "${keywords.join(', ')}" 키워드가 발견되었습니다.`,
+                `${context.fileName}의 감정 분석 결과: ${context.sentiment} (신뢰도: ${(confidence * 100).toFixed(1)}%)`,
+                `${context.fileName}의 요약: ${summary}`,
+                `${context.fileName}의 관련성 점수: ${(relevance * 100).toFixed(1)}%`
             ];
 
             return insights[Math.floor(Math.random() * insights.length)];
@@ -191,5 +216,5 @@ class EnhancedWritingService {
     }
 }
 
-const enhancedWritingService = new EnhancedWritingService();
+export const enhancedWritingService = new EnhancedWritingService();
 export default enhancedWritingService; 

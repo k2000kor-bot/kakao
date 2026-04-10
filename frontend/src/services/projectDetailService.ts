@@ -35,15 +35,15 @@ export interface ProjectDetail {
 const projectDetails: { [key: string]: ProjectDetail } = {
   '1': {
     id: '1',
-    name: '개포우성7차',
-    description: '개포우성7차 재건축 프로젝트 - 삼성물산 설계 오류 논란 및 조합원 의견 수렴',
+    name: '샘플 재건축 프로젝트',
+    description: '데모용 재건축·정비 프로젝트 — 설계 검토·조합원 소통 이슈 예시',
     status: 'active',
     createdAt: new Date('2025-01-15'),
     updatedAt: new Date('2025-07-14'),
     files: [
       {
         id: '1',
-        name: '[인증] 행복한소유☆개포우성7차.txt',
+        name: '샘플_대화로그_export.txt',
         type: 'document',
         size: 245760,
         uploadedAt: new Date('2025-07-14'),
@@ -59,7 +59,7 @@ const projectDetails: { [key: string]: ProjectDetail } = {
       },
       {
         id: '3',
-        name: '250727_개포우성7_전단_삼성설계오류.pdf',
+        name: '검토의견_전단_설계이슈.pdf',
         type: 'document',
         size: 512000,
         uploadedAt: new Date('2025-07-12'),
@@ -69,14 +69,14 @@ const projectDetails: { [key: string]: ProjectDetail } = {
     guidelines: [
       {
         id: '1',
-        title: '대우 금리 기준',
-        content: '대우 금리: cd금리+0% (약 2.5%) - 삼성 금리 : 회사자체보증 시 cd금리+0.3% (약 2.8%)',
+        title: '금융 조건 비교',
+        content: '시공사별 금리·보증 조건을 표로 비교하고 조합원에게 설명 가능한 수준으로 요약',
         category: 'financial'
       },
       {
         id: '2',
-        title: '설계 오류 관련 지침',
-        content: '지하주차장 설계 오류, 정북일조 위반, 출입구 위치 위반 등 주요 문제점들을 중심으로 분석',
+        title: '설계 검토 지침',
+        content: '주차·일조·동선 등 주요 설계 이슈를 규정 대비 체크리스트로 점검',
         category: 'design'
       },
       {
@@ -90,22 +90,22 @@ const projectDetails: { [key: string]: ProjectDetail } = {
       {
         id: '1',
         title: '시공사 평가 기준 및 설명회 기대',
-        summary: '이재헌: 조합원이 제안서를 보고 선택하는 시스템을 신뢰하자. 박재우: 시공사 평가 내용 검증이 중요하다. 박은진: 설명회 발표자 확인이 필요하다.',
+        summary: '참가자 A: 제안서 기반 선택 절차의 투명성 강조. 참가자 B: 평가 항목 검증 필요. 참가자 C: 설명회 구성 확인.',
         date: new Date('2025-07-14'),
-        participants: ['이재헌', '박재우', '박은진']
+        participants: ['참가자 A', '참가자 B', '참가자 C']
       },
       {
         id: '2',
         title: '공사비 관련 견해',
-        summary: '이재헌: 공사비가 비슷하면 브랜드 등 다른 요소를 고려해야 한다. 박재우: GS와 삼성은 직접 비교할 수 없다. 정지혜: 제안서 검토 후 판단해야 한다.',
+        summary: '참가자 A: 단가 외 브랜드·사후관리 요소 고려. 참가자 B: 후보별 비교 시 동일 기준 적용. 참가자 C: 제안서 검토 후 결정.',
         date: new Date('2025-07-14'),
-        participants: ['이재헌', '박재우', '정지혜']
+        participants: ['참가자 A', '참가자 B', '참가자 C']
       }
     ],
     analysis: {
-      keywords: ['삼성물산', '설계오류', '지하주차장', '공사비', '조합원'],
-      sentiment: 'negative',
-      topics: ['설계 문제', '비용 비교', '조합원 의견']
+      keywords: ['시공사', '설계검토', '주차동선', '공사비', '조합원'],
+      sentiment: 'neutral',
+      topics: ['설계 검토', '비용 비교', '의견 수렴']
     }
   },
   '2': {
@@ -247,12 +247,12 @@ class ProjectDetailService {
     return newFile;
   }
 
-  async deleteFile(projectId: string, fileId: string): Promise<void> {
+  async deleteFile(_projectId: string, _fileId: string): Promise<void> {
     // 실제로는 서버에서 파일을 삭제
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  async addGuideline(projectId: string, guideline: { title: string; content: string; category: string }): Promise<void> {
+  async addGuideline(_projectId: string, _guideline: { title: string; content: string; category: string }): Promise<void> {
     // 실제로는 서버에 지침을 추가
     await new Promise(resolve => setTimeout(resolve, 500));
   }

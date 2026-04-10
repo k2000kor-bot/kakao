@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import datetime
 from typing import List, Dict, Any
@@ -7,7 +8,7 @@ from pydantic import BaseModel
 import uvicorn
 
 
-app = FastAPI(title="CORBU AI Advanced Conversational System", version="1.0.0")
+app = FastAPI(title="CORBU.AI Advanced Conversational System", version="1.0.0")
 
 # CORS 설정
 app.add_middleware(
@@ -386,7 +387,7 @@ async def create_conversation(request: ConversationRequest):
     try:
         # 간단한 응답 생성
         response = f"사용자 메시지: {request.user_message}\n\n"
-        response += "안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?"
+        response += "안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?"
         
         return {
             "success": True,
@@ -508,4 +509,9 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8004) 
+    _p = int(
+        os.environ.get(
+            "ADVANCED_CONVERSATIONAL_LLM_PORT", os.environ.get("PORT", "8004")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

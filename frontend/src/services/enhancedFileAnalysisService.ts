@@ -1,4 +1,5 @@
 import unifiedAPI from './unifiedAPI';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface FileAnalysis {
     id: string;
@@ -25,7 +26,7 @@ export interface FileAnalysis {
 export interface AnalysisRequest {
     fileId: string;
     analysisType: string;
-    options?: Record<string, any>;
+    options?: Record<string, unknown>;
 }
 
 export interface AnalysisResponse {
@@ -38,8 +39,8 @@ class EnhancedFileAnalysisService {
     private analyses: Map<string, FileAnalysis> = new Map();
 
     async analyzeFile(file: File, analysisType: string = 'auto'): Promise<AnalysisResponse> {
+        const fileId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
         try {
-            const fileId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
             // 파일 업로드
             const uploadResponse = await unifiedAPI.uploadFile(file);
@@ -53,6 +54,7 @@ class EnhancedFileAnalysisService {
 
             // 분석 요청
             const analysisRequest = {
+                file: file,
                 query: `파일 "${file.name}"을 분석해주세요.`,
                 context: {
                     fileType: detectedType,
@@ -69,21 +71,21 @@ class EnhancedFileAnalysisService {
                     id: fileId,
                     filename: file.name,
                     fileType: detectedType,
-                    analysisType: detectedType as any,
+                    analysisType: detectedType as 'text' | 'image' | 'document' | 'audio' | 'video',
                     status: 'completed',
                     results: {
-                        summary: (response.data as any)?.response || '분석 완료',
-                        keywords: this.extractKeywords((response.data as any)?.response || ''),
-                        sentiment: this.analyzeSentiment((response.data as any)?.response || ''),
-                        entities: this.extractEntities((response.data as any)?.response || ''),
-                        confidence: (response.data as any)?.confidence || 0.8,
-                        processingTime: (response.data as any)?.processing_time || 0
+                        summary: (response.data as Record<string, unknown>)?.response as string || '분석 완료',
+                        keywords: this.extractKeywords((response.data as Record<string, unknown>)?.response as string || ''),
+                        sentiment: this.analyzeSentiment((response.data as Record<string, unknown>)?.response as string || ''),
+                        entities: this.extractEntities((response.data as Record<string, unknown>)?.response as string || ''),
+                        confidence: (response.data as Record<string, unknown>)?.confidence as number || 0.8,
+                        processingTime: (response.data as Record<string, unknown>)?.processing_time as number || 0
                     },
                     metadata: {
                         fileSize: file.size,
                         uploadTime: new Date().toISOString(),
                         model: 'enhanced-analysis',
-                        tokens: (response.data as any)?.tokens || 0
+                        tokens: (response.data as Record<string, unknown>)?.tokens as number || 0
                     }
                 };
 
@@ -92,8 +94,12 @@ class EnhancedFileAnalysisService {
             } else {
                 throw new Error('파일 분석에 실패했습니다.');
             }
-        } catch (error) {
-            console.error('파일 분석 오류:', error);
+        } catch (error: unknown) {
+            errorLogger.error('파일 분석 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'EnhancedFileAnalysisService',
+                action: 'analyzeFile',
+                fileId,
+            });
             return {
                 success: false,
                 analysis: {
@@ -119,6 +125,7 @@ class EnhancedFileAnalysisService {
     }
 
     async analyzeImage(imageFile: File): Promise<AnalysisResponse> {
+        const fileId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
         try {
             // 이미지를 base64로 변환
             const base64 = await this.fileToBase64(imageFile);
@@ -139,14 +146,19 @@ class EnhancedFileAnalysisService {
                     fileType: 'image',
                     analysisType: 'image',
                     status: 'completed',
-                    results: {
-                        summary: `이미지 분석 결과: ${(response.data as any)?.analysis?.objects_detected?.join(', ') || '분석 완료'}`,
-                        keywords: (response.data as any)?.analysis?.objects_detected || [],
-                        sentiment: this.analyzeImageSentiment((response.data as any)?.analysis?.emotions || {}),
-                        entities: (response.data as any)?.analysis?.objects_detected || [],
-                        confidence: (response.data as any)?.confidence || 0.8,
-                        processingTime: (response.data as any)?.processing_time || 0
-                    },
+                    results: (() => {
+                        const data = response.data as Record<string, unknown>;
+                        const analysis = data?.analysis as Record<string, unknown> | undefined;
+                        const objects = analysis?.objects_detected as string[] | undefined;
+                        return {
+                            summary: `이미지 분석 결과: ${Array.isArray(objects) ? objects.join(', ') : '분석 완료'}`,
+                            keywords: objects || [],
+                            sentiment: this.analyzeImageSentiment(typeof analysis?.emotions === 'string' ? analysis.emotions as string : JSON.stringify(analysis?.emotions || {})),
+                            entities: objects || [],
+                            confidence: (data?.confidence as number) || 0.8,
+                            processingTime: (data?.processing_time as number) || 0
+                        };
+                    })(),
                     metadata: {
                         fileSize: imageFile.size,
                         uploadTime: new Date().toISOString(),
@@ -160,8 +172,12 @@ class EnhancedFileAnalysisService {
             } else {
                 throw new Error('이미지 분석에 실패했습니다.');
             }
-        } catch (error) {
-            console.error('이미지 분석 오류:', error);
+        } catch (error: unknown) {
+            errorLogger.error('이미지 분석 오류', error instanceof Error ? error : new Error(String(error)), {
+                component: 'EnhancedFileAnalysisService',
+                action: 'analyzeImage',
+                fileId,
+            });
             return {
                 success: false,
                 analysis: {
@@ -301,7 +317,7 @@ class EnhancedFileAnalysisService {
         }
 
         // 간단한 비교 로직
-        const summaries = successfulAnalyses.map(a => a.analysis.results.summary || '');
+        const _summaries = successfulAnalyses.map(a => a.analysis.results.summary || '');
         const keywords = successfulAnalyses.map(a => a.analysis.results.keywords || []);
 
         const allKeywords = keywords.flat();

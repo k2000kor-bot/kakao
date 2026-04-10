@@ -1,8 +1,48 @@
-import { Message, AIResponse, AISystem } from '../types/chat';
+import type { AxiosResponse } from 'axios';
+import { AISystem } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  API_BASE_URL,
+  API_FORM_FIELD_FILE,
+  CHAT_POST_PATH,
+  FALLBACK_API_ORIGIN,
+  FILE_UPLOAD_PATH,
+  FILES_COLLECTION_PATH,
+  GUIDANCE_GENERATE_PATH,
+  INTEGRATED_POST_PATH_ANALYZE,
+  INTEGRATED_POST_PATH_FILE,
+  INTEGRATED_POST_PATH_GUIDANCE,
+  INTEGRATED_POST_PATH_PROJECT,
+  LEARNING_FEEDBACK_PATH,
+  SYSTEMS_STATUS_PATH,
+  joinApiHealthCheckUrl,
+} from '../config/api';
+import {
+  DEFAULT_CHAT_POST_AXIOS_OPTIONS,
+  DEFAULT_CHAT_POST_FALLBACK_OPTIONS,
+  postChatAxiosWithFallback,
+} from '../utils/apiClient';
+import {
+  mergeApiChatContextPayload,
+  normalizeChatTurnsForApiMerge,
+  resolveMergeOptionsFromHistoryAndExplicit,
+  type ChatTurn,
+  type MergeApiChatContextPayloadOptions,
+} from './modernChatContextBuilder';
+import { enrichChatContextRecordWithOptionalMultilayerStyleHint } from './multiLayerStyleAnalysisSystem';
+import { DEFAULT_CHAT_PERSPECTIVE, DEFAULT_CHAT_RESPONSE_STYLE } from '../utils/modernChatUrlStyle';
 
 interface IntegratedMessageRequest {
   content: string;
   context?: string;
+  /**
+   * `mergeApiChatContextPayload` 2번째 인자에 합쳐짐 (`conversation_history`·Genspark id 등).
+   * `projectId` 등 서비스 필드는 이 객체 위에 덮어씀.
+   */
+  chatContext?: Record<string, unknown>;
+  /** merge 3번째 인자 — `pipelineExtras`는 시나리오 상속·파이프라인 히스토리에 사용 */
+  conversationHistory?: ChatTurn[];
+  mergeApiChatContextOptions?: MergeApiChatContextPayloadOptions;
   systemType?: 'analysis' | 'guidance' | 'conversation' | 'project' | 'file';
   userPreferences?: {
     tone: 'formal' | 'casual' | 'professional';
@@ -22,14 +62,14 @@ interface IntegratedMessageResponse {
   metadata?: {
     suggestions?: string[];
     actions?: string[];
-    data?: any;
+    data?: unknown;
     usedSystems?: string[];
     learningScore?: number;
   };
 }
 
-class IntegratedMessageService {
-  private baseURL = 'http://localhost:8003';
+export class IntegratedMessageService {
+  private baseURL = API_BASE_URL || FALLBACK_API_ORIGIN;
   private systems: AISystem[] = [];
 
   constructor() {
@@ -89,18 +129,91 @@ class IntegratedMessageService {
       const systemType = this.determineSystemType(request.content);
       const endpoint = this.getEndpointForSystem(systemType);
 
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
+      let body: Record<string, unknown>;
+      if (endpoint === CHAT_POST_PATH) {
+        const ctx: Record<string, unknown> = { ...(request.chatContext && typeof request.chatContext === 'object' ? request.chatContext : {}) };
+        if (request.projectId) ctx.project_id = request.projectId;
+        if (request.knowledgeBaseId) ctx.knowledge_base_id = request.knowledgeBaseId;
+        if (request.context && request.context.trim()) {
+          ctx.integrated_context_note = request.context;
+        }
+        if (request.userPreferences) {
+          ctx.user_preferences = request.userPreferences;
+        }
+        const optHist = request.conversationHistory;
+        const rawHist = Array.isArray(optHist) ? optHist : [];
+        const history = normalizeChatTurnsForApiMerge(rawHist);
+        const mergeForPayload = resolveMergeOptionsFromHistoryAndExplicit(
+          history,
+          request.mergeApiChatContextOptions
+        );
+        const ctxEnriched = await enrichChatContextRecordWithOptionalMultilayerStyleHint(
+          request.content,
+          ctx
+        );
+        const { quality, contextForBody } = mergeApiChatContextPayload(
+          request.content,
+          ctxEnriched,
+          history.length > 0 ? history : undefined,
+          mergeForPayload
+        );
+        body = {
+          message: request.content,
+          quality,
+          response_style: DEFAULT_CHAT_RESPONSE_STYLE,
+          perspective: DEFAULT_CHAT_PERSPECTIVE,
+          ...(contextForBody && Object.keys(contextForBody).length > 0 ? { context: contextForBody } : {}),
+          systemType,
+          timestamp: new Date().toISOString(),
+        };
+      } else {
+        body = {
+          ...request,
+          systemType,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      if (endpoint === CHAT_POST_PATH) {
+        const axRes = (await postChatAxiosWithFallback(
+          this.baseURL,
+          body,
+          DEFAULT_CHAT_POST_AXIOS_OPTIONS,
+          DEFAULT_CHAT_POST_FALLBACK_OPTIONS
+        )) as AxiosResponse<Record<string, unknown>>;
+        const data = axRes.data;
+        const processingTime = Date.now() - startTime;
+        const msgVal = data.message;
+        const fromMessage = typeof msgVal === 'string' ? msgVal : '';
+        const content =
+          (typeof data.response === 'string' ? data.response : undefined) ??
+          (typeof data.content === 'string' ? data.content : undefined) ??
+          fromMessage;
+        return {
+          id: `msg_${Date.now()}`,
+          content,
+          type: (typeof data.type === 'string' ? data.type : 'text') as IntegratedMessageResponse['type'],
+          confidence: typeof data.confidence === 'number' ? data.confidence : 0.8,
+          processingTime,
+          metadata: {
+            suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+            actions: Array.isArray(data.actions) ? data.actions : [],
+            data: data.data ?? {},
+            usedSystems: [systemType],
+            learningScore: typeof data.learningScore === 'number' ? data.learningScore : 0.7,
+          },
+        };
+      }
+
+      const init: RequestInit = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...request,
-          systemType,
-          timestamp: new Date().toISOString()
-        }),
-      });
+        body: JSON.stringify(body),
+      };
 
+      const response = await fetch(joinApiHealthCheckUrl(this.baseURL, endpoint), init);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -121,9 +234,15 @@ class IntegratedMessageService {
           usedSystems: [systemType],
           learningScore: data.learningScore || 0.7
         }
-      };
+        };
     } catch (error) {
-      console.error('메시지 전송 실패:', error);
+      const err = toError(error);
+      errorLogger.error('메시지 전송 실패', err, {
+        component: 'integratedMessageService',
+        action: 'sendMessage',
+        contentPreview: request.content,
+        systemType: request.systemType,
+      });
 
       // 폴백 응답
       return {
@@ -148,11 +267,19 @@ class IntegratedMessageService {
       return 'analysis';
     }
 
-    if (lowerContent.includes('가이드') || lowerContent.includes('guidance') || lowerContent.includes('메시지')) {
+    // 단독 '메시지'는 일상 대화에 흔해 CHAT_POST_PATH로 두고, 가이드·guidance·문구 도움만 라우팅
+    if (
+      lowerContent.includes('가이드') ||
+      lowerContent.includes('guidance') ||
+      lowerContent.includes('메시지 가이드') ||
+      lowerContent.includes('문구 추천') ||
+      lowerContent.includes('어떻게 쓰') ||
+      lowerContent.includes('어떻게 말')
+    ) {
       return 'guidance';
     }
 
-    if (lowerContent.includes('프로젝트') || lowerContent.includes('project') || lowerContent.includes('개포우성')) {
+    if (lowerContent.includes('프로젝트') || lowerContent.includes('project') || lowerContent.includes('개발')) {
       return 'project';
     }
 
@@ -166,37 +293,41 @@ class IntegratedMessageService {
   private getEndpointForSystem(systemType: string): string {
     switch (systemType) {
       case 'analysis':
-        return '/api/analyze';
+        return INTEGRATED_POST_PATH_ANALYZE;
       case 'guidance':
-        return '/api/guidance';
+        return INTEGRATED_POST_PATH_GUIDANCE;
       case 'project':
-        return '/api/project';
+        return INTEGRATED_POST_PATH_PROJECT;
       case 'file':
-        return '/api/file';
+        return INTEGRATED_POST_PATH_FILE;
       default:
-        return '/api/chat';
+        return CHAT_POST_PATH;
     }
   }
 
   async getSystemStatus(): Promise<AISystem[]> {
     try {
-      const response = await fetch(`${this.baseURL}/api/systems/status`);
+      const response = await fetch(joinApiHealthCheckUrl(this.baseURL, SYSTEMS_STATUS_PATH));
       if (response.ok) {
         const data = await response.json();
         return data.systems || this.systems;
       }
     } catch (error) {
-      console.error('시스템 상태 조회 실패:', error);
+      const err = toError(error);
+      errorLogger.error('시스템 상태 조회 실패', err, {
+        component: 'integratedMessageService',
+        action: 'getSystemStatus',
+      });
     }
     return this.systems;
   }
 
   async uploadFile(file: File): Promise<{ success: boolean; fileId?: string; error?: string }> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append(API_FORM_FIELD_FILE, file);
 
     try {
-      const response = await fetch(`${this.baseURL}/api/upload`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseURL, FILE_UPLOAD_PATH), {
         method: 'POST',
         body: formData,
       });
@@ -212,34 +343,48 @@ class IntegratedMessageService {
     }
   }
 
-  async getProjectInfo(projectId: string): Promise<any> {
+  async getProjectInfo(projectId: string): Promise<Record<string, unknown> | null> {
     try {
-      const response = await fetch(`${this.baseURL}/api/project/${projectId}`);
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          this.baseURL,
+          `${INTEGRATED_POST_PATH_PROJECT}/${encodeURIComponent(projectId)}`,
+        ),
+      );
       if (response.ok) {
         return await response.json();
       }
     } catch (error) {
-      console.error('프로젝트 정보 조회 실패:', error);
+      const err = toError(error);
+      errorLogger.error('프로젝트 정보 조회 실패', err, {
+        component: 'integratedMessageService',
+        action: 'getProjectInfo',
+        projectId,
+      });
     }
     return null;
   }
 
-  async getFileList(): Promise<any[]> {
+  async getFileList(): Promise<Record<string, unknown>[]> {
     try {
-      const response = await fetch(`${this.baseURL}/api/files`);
+      const response = await fetch(joinApiHealthCheckUrl(this.baseURL, FILES_COLLECTION_PATH));
       if (response.ok) {
         const data = await response.json();
         return data.files || [];
       }
     } catch (error) {
-      console.error('파일 목록 조회 실패:', error);
+      const err = toError(error);
+      errorLogger.error('파일 목록 조회 실패', err, {
+        component: 'integratedMessageService',
+        action: 'getFileList',
+      });
     }
     return [];
   }
 
-  async generateGuidance(context: string, preferences: any): Promise<any> {
+  async generateGuidance(context: string, preferences: Record<string, unknown>): Promise<Record<string, unknown> | null> {
     try {
-      const response = await fetch(`${this.baseURL}/api/guidance/generate`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseURL, GUIDANCE_GENERATE_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -248,10 +393,15 @@ class IntegratedMessageService {
       });
 
       if (response.ok) {
-        return await response.json();
+        return (await response.json()) as Record<string, unknown>;
       }
     } catch (error) {
-      console.error('가이드 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('가이드 생성 실패', err, {
+        component: 'integratedMessageService',
+        action: 'generateGuidance',
+        contextPreview: context,
+      });
     }
     return null;
   }
@@ -259,13 +409,18 @@ class IntegratedMessageService {
   // 실시간 연결 상태 확인
   async checkConnection(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseURL}/health`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseURL), {
         method: 'GET',
         signal: AbortSignal.timeout(5000) // 5초 타임아웃
       });
       return response.ok;
     } catch (error) {
-      console.log('백엔드 연결 실패:', error);
+      const err = toError(error);
+      errorLogger.warn('백엔드 연결 실패', {
+        component: 'integratedMessageService',
+        action: 'checkConnection',
+        error: err.message,
+      });
       return false;
     }
   }
@@ -273,7 +428,7 @@ class IntegratedMessageService {
   // 학습 데이터 업데이트
   async updateLearningData(messageId: string, feedback: 'positive' | 'negative' | 'neutral'): Promise<void> {
     try {
-      await fetch(`${this.baseURL}/api/learning/feedback`, {
+      await fetch(joinApiHealthCheckUrl(this.baseURL, LEARNING_FEEDBACK_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,10 +436,16 @@ class IntegratedMessageService {
         body: JSON.stringify({ messageId, feedback }),
       });
     } catch (error) {
-      console.error('학습 데이터 업데이트 실패:', error);
+      const err = toError(error);
+      errorLogger.error('학습 데이터 업데이트 실패', err, {
+        component: 'integratedMessageService',
+        action: 'updateLearningData',
+        messageId,
+        feedback,
+      });
     }
   }
 }
 
-const integratedMessageService = new IntegratedMessageService();
+export const integratedMessageService = new IntegratedMessageService();
 export default integratedMessageService; 

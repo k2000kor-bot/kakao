@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CORBU AI 시스템 배포 스크립트
+# CORBU.AI 시스템 배포 스크립트
 # 버전: 2.0.0
 # 작성일: 2024년 12월 19일
 
@@ -34,7 +34,7 @@ log_error() {
 
 log_header() {
     echo -e "${PURPLE}================================${NC}"
-    echo -e "${PURPLE}  CORBU AI 시스템 배포 시작${NC}"
+    echo -e "${PURPLE}  CORBU.AI 시스템 배포 시작${NC}"
     echo -e "${PURPLE}================================${NC}"
 }
 
@@ -74,7 +74,7 @@ setup_environment() {
     if [ ! -f .env ]; then
         log_info ".env 파일 생성 중..."
         cat > .env << EOF
-# CORBU AI 환경 설정
+# CORBU.AI 환경 설정
 REACT_APP_API_URL=http://localhost:3001
 REACT_APP_OPENAI_API_KEY=your_openai_api_key
 REACT_APP_LEARNING_ENABLED=true
@@ -105,6 +105,9 @@ install_dependencies() {
 # 빌드 전 검사
 pre_build_check() {
     log_info "빌드 전 검사 중..."
+
+    log_info "Jest 테스트 import 패턴 검사..."
+    npm run check:test-imports || { log_error "check:test-imports 실패"; exit 1; }
     
     # TypeScript 컴파일 검사
     log_info "TypeScript 컴파일 검사 중..."
@@ -245,7 +248,7 @@ check_system_status() {
 # 배포 완료 보고서
 deployment_report() {
     log_header
-    log_success "CORBU AI 시스템 배포 완료!"
+    log_success "CORBU.AI 시스템 배포 완료!"
     echo ""
     echo -e "${CYAN}배포 정보:${NC}"
     echo "• 배포 시간: $(date)"
@@ -267,7 +270,7 @@ deployment_report() {
     echo "• 학습 진행률: 75%"
     echo "• 개선률: +12.5%"
     echo ""
-    log_success "CORBU AI 시스템이 성공적으로 배포되었습니다! 🎉"
+    log_success "CORBU.AI 시스템이 성공적으로 배포되었습니다! 🎉"
 }
 
 # 메인 함수

@@ -859,4 +859,8 @@ async def get_user_dream_goals(user_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8008)
+
+    _dv = int(
+        os.environ.get("DREAM_VISUALIZATION_PORT", os.environ.get("PORT", "8008"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_dv)

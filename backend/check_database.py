@@ -26,21 +26,21 @@ def check_database():
     for table in tables:
         print(f"  - {table[0]}")
     
-    # 채팅방 개수 확인
+    # 대화방 개수 확인
     cursor.execute("SELECT COUNT(*) FROM chat_rooms")
     room_count = cursor.fetchone()[0]
-    print(f"\n🏠 채팅방 개수: {room_count}개")
+    print(f"\n🏠 대화방 개수: {room_count}개")
     
     if room_count > 0:
-        # 채팅방 목록
+        # 대화방 목록
         cursor.execute("SELECT id, room_name, participant_count, save_date FROM chat_rooms")
         rooms = cursor.fetchall()
-        print(f"\n📱 채팅방 목록:")
+        print(f"\n📱 대화방 목록:")
         for room in rooms:
             room_id, room_name, participant_count, save_date = room
             print(f"  - ID: {room_id}, 이름: {room_name}, 참여자: {participant_count}명, 날짜: {save_date}")
             
-            # 각 채팅방의 메시지 개수 확인
+            # 각 대화방의 메시지 개수 확인
             cursor.execute("SELECT COUNT(*) FROM messages WHERE room_id = ?", (room_id,))
             message_count = cursor.fetchone()[0]
             print(f"    💬 메시지 개수: {message_count}개")

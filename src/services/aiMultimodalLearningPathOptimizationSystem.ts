@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // AI 멀티모달 학습 경로 최적화 인터페이스 정의
 export interface LearningPath {
@@ -56,7 +57,7 @@ export interface AdaptiveRule {
   ruleId: string;
   condition: string;
   action: 'show' | 'hide' | 'modify' | 'skip' | 'repeat';
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   priority: number;
 }
 
@@ -134,7 +135,7 @@ export interface PathOptimization {
   type: 'content' | 'sequence' | 'difficulty' | 'timing' | 'collaboration';
   status: 'pending' | 'in-progress' | 'completed' | 'failed';
   algorithm: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   results: OptimizationResult[];
   recommendations: OptimizationRecommendation[];
   timestamp: number;
@@ -252,12 +253,18 @@ export class AIMultimodalLearningPathOptimizationSystem {
   };
 
   constructor() {
-    console.log('🎯 AI 멀티모달 학습 경로 최적화 시스템 초기화 중...');
+    errorLogger.info('AI 멀티모달 학습 경로 최적화 시스템 초기화 중', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'constructor',
+    });
   }
 
   public start(): void {
     if (this.isRunning) {
-      console.log('⚠️ AI 멀티모달 학습 경로 최적화 시스템이 이미 실행 중입니다.');
+      errorLogger.warn('AI 멀티모달 학습 경로 최적화 시스템이 이미 실행 중입니다', {
+        component: 'aiMultimodalLearningPathOptimizationSystem',
+        action: 'start',
+      });
       return;
     }
 
@@ -266,32 +273,68 @@ export class AIMultimodalLearningPathOptimizationSystem {
     this.createInitialPaths();
     this.startOptimizationMonitoring();
 
-    console.log('✅ AI 멀티모달 학습 경로 최적화 시스템이 시작되었습니다.');
+    errorLogger.info('AI 멀티모달 학습 경로 최적화 시스템이 시작되었습니다', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'start',
+    });
     realTimeAIAlertSystem.sendAlert('info', 'AI 멀티모달 학습 경로 최적화 시스템이 시작되었습니다.');
   }
 
   public stop(): void {
     if (!this.isRunning) {
-      console.log('⚠️ AI 멀티모달 학습 경로 최적화 시스템이 실행 중이 아닙니다.');
+      errorLogger.warn('AI 멀티모달 학습 경로 최적화 시스템이 실행 중이 아닙니다', {
+        component: 'aiMultimodalLearningPathOptimizationSystem',
+        action: 'stop',
+      });
       return;
     }
 
     this.isRunning = false;
     this.cleanupData();
 
-    console.log('🛑 AI 멀티모달 학습 경로 최적화 시스템이 중지되었습니다.');
+    errorLogger.info('AI 멀티모달 학습 경로 최적화 시스템이 중지되었습니다', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'stop',
+    });
     realTimeAIAlertSystem.sendAlert('info', 'AI 멀티모달 학습 경로 최적화 시스템이 중지되었습니다.');
   }
 
   private initializeSystem(): void {
-    console.log('🔧 학습 경로 최적화 시스템 초기화 중...');
+    errorLogger.info('학습 경로 최적화 시스템 초기화 중', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'initializeSystem',
+    });
 
-    console.log('📊 적응형 학습 엔진 초기화 완료');
-    console.log('🎯 개인화 알고리즘 초기화 완료');
-    console.log('🔄 실시간 최적화 엔진 초기화 완료');
-    console.log('📈 품질 분석 시스템 초기화 완료');
-    console.log('🤝 협업 학습 모듈 초기화 완료');
-    console.log('📋 평가 및 피드백 시스템 초기화 완료');
+    errorLogger.info('적응형 학습 엔진 초기화 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'adaptiveLearningEngine',
+    });
+    errorLogger.info('개인화 알고리즘 초기화 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'personalizationAlgorithm',
+    });
+    errorLogger.info('실시간 최적화 엔진 초기화 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'realtimeOptimizationEngine',
+    });
+    errorLogger.info('품질 분석 시스템 초기화 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'qualityAnalysisSystem',
+    });
+    errorLogger.info('협업 학습 모듈 초기화 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'collaborationLearningModule',
+    });
+    errorLogger.info('평가 및 피드백 시스템 초기화 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'initializeSystem',
+      subsystem: 'assessmentFeedbackSystem',
+    });
   }
 
   private createInitialPaths(): void {
@@ -512,7 +555,12 @@ export class AIMultimodalLearningPathOptimizationSystem {
 
     this.learningPaths.set(path1.pathId, path1);
     this.optimizePath(path1.pathId);
-    console.log('📋 초기 학습 경로 생성 완료');
+    errorLogger.info('초기 학습 경로 생성 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'createInitialPaths',
+      pathId: path1.pathId,
+      pathName: path1.name,
+    });
   }
 
   public createLearningPath(path: Omit<LearningPath, 'pathId' | 'progress' | 'optimization' | 'qualityMetrics' | 'recommendations' | 'timestamp'>): LearningPath {
@@ -562,7 +610,14 @@ export class AIMultimodalLearningPathOptimizationSystem {
     this.optimizePath(pathId);
     this.updateAnalytics();
 
-    console.log(`🎯 새로운 학습 경로 생성: ${pathId}`);
+    errorLogger.info('새로운 학습 경로 생성', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'createLearningPath',
+      pathId,
+      pathName: path.name,
+      pathType: path.type,
+      modulesCount: path.modules.length,
+    });
     return fullPath;
   }
 
@@ -644,7 +699,13 @@ export class AIMultimodalLearningPathOptimizationSystem {
 
         path.progress.achievements.push(achievement);
 
-        console.log(`🎉 마일스톤 달성: ${milestone.name}`);
+        errorLogger.info('마일스톤 달성', {
+          component: 'aiMultimodalLearningPathOptimizationSystem',
+          action: 'checkMilestonesAndAchievements',
+          pathId: path.pathId,
+          milestoneId: milestone.milestoneId,
+          milestoneName: milestone.name,
+        });
         realTimeAIAlertSystem.sendAlert('success', `마일스톤 달성: ${milestone.name}`);
       }
     });
@@ -768,7 +829,14 @@ export class AIMultimodalLearningPathOptimizationSystem {
 
       module.adaptiveContent.push(additionalContent);
 
-      console.log(`📚 추가 학습 콘텐츠 제공: ${module.name}`);
+      errorLogger.info('추가 학습 콘텐츠 제공', {
+        component: 'aiMultimodalLearningPathOptimizationSystem',
+        action: 'adaptContentBasedOnAssessment',
+        pathId: path.pathId,
+        moduleId: module.moduleId,
+        moduleName: module.name,
+        score,
+      });
     } else if (score > 0.9) {
       // 높은 점수: 심화 콘텐츠 제공
       const advancedContent: AdaptiveContent = {
@@ -792,7 +860,14 @@ export class AIMultimodalLearningPathOptimizationSystem {
 
       module.adaptiveContent.push(advancedContent);
 
-      console.log(`🚀 심화 콘텐츠 제공: ${module.name}`);
+      errorLogger.info('심화 콘텐츠 제공', {
+        component: 'aiMultimodalLearningPathOptimizationSystem',
+        action: 'adaptContentBasedOnAssessment',
+        pathId: path.pathId,
+        moduleId: module.moduleId,
+        moduleName: module.name,
+        score,
+      });
     }
   }
 
@@ -800,7 +875,12 @@ export class AIMultimodalLearningPathOptimizationSystem {
     const path = this.learningPaths.get(pathId);
     if (!path) return;
 
-    console.log(`🔧 학습 경로 최적화 시작: ${pathId}`);
+    errorLogger.info('학습 경로 최적화 시작', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'optimizePath',
+      pathId,
+      pathName: path.name,
+    });
 
     // 최적화 알고리즘 실행
     const optimization = path.optimization;
@@ -827,7 +907,13 @@ export class AIMultimodalLearningPathOptimizationSystem {
     // 권장사항 생성
     this.generateRecommendations(path);
 
-    console.log(`✅ 학습 경로 최적화 완료: ${pathId}`);
+    errorLogger.info('학습 경로 최적화 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'optimizePath',
+      pathId,
+      pathName: path.name,
+      optimizationStatus: optimization.status,
+    });
   }
 
   private optimizeModuleSequence(path: LearningPath): void {
@@ -916,9 +1002,25 @@ export class AIMultimodalLearningPathOptimizationSystem {
 
     results.forEach(result => {
       if (result.improvement > 0.1) {
-        console.log(`📈 상당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
+        errorLogger.info('상당한 개선', {
+          component: 'aiMultimodalLearningPathOptimizationSystem',
+          action: 'analyzeOptimizationResults',
+          pathId: path.pathId,
+          metric: result.metric,
+          improvement: parseFloat((result.improvement * 100).toFixed(1)),
+          beforeValue: result.beforeValue,
+          afterValue: result.afterValue,
+        });
       } else if (result.improvement > 0.05) {
-        console.log(`📊 적당한 개선: ${result.metric} (${(result.improvement * 100).toFixed(1)}% 향상)`);
+        errorLogger.info('적당한 개선', {
+          component: 'aiMultimodalLearningPathOptimizationSystem',
+          action: 'analyzeOptimizationResults',
+          pathId: path.pathId,
+          metric: result.metric,
+          improvement: parseFloat((result.improvement * 100).toFixed(1)),
+          beforeValue: result.beforeValue,
+          afterValue: result.afterValue,
+        });
       }
     });
   }
@@ -972,7 +1074,13 @@ export class AIMultimodalLearningPathOptimizationSystem {
 
     // 자동 최적화 조건 확인
     if (settings.optimization && path.qualityMetrics.overallQuality < settings.qualityThresholds.minimumQuality) {
-      console.log(`🔄 품질 기준 미달로 자동 최적화 실행: ${pathId}`);
+      errorLogger.info('품질 기준 미달로 자동 최적화 실행', {
+        component: 'aiMultimodalLearningPathOptimizationSystem',
+        action: 'checkOptimizationNeeds',
+        pathId,
+        overallQuality: path.qualityMetrics.overallQuality,
+        minimumQuality: settings.qualityThresholds.minimumQuality,
+      });
       this.optimizePath(pathId);
     }
   }
@@ -1023,7 +1131,10 @@ export class AIMultimodalLearningPathOptimizationSystem {
 
   private cleanupData(): void {
     this.learningPaths.clear();
-    console.log('🧹 학습 경로 데이터 정리 완료');
+    errorLogger.info('학습 경로 데이터 정리 완료', {
+      component: 'aiMultimodalLearningPathOptimizationSystem',
+      action: 'cleanupData',
+    });
   }
 
   public getLearningPaths(): LearningPath[] {

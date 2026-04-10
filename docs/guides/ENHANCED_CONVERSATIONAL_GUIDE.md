@@ -1,8 +1,11 @@
 # 🚀 고도화된 대화형 인터페이스 사용자 가이드
 
+> **베이스 URL**: 통합 백엔드 `main_server` 기본 포트 **5002** (`http://localhost:5002`).  
+> 단독 실행 시에만 `ENHANCED_CONV_PORT`(기본 8003)를 사용할 수 있습니다.
+
 ## 📋 개요
 
-CORBU AI의 고도화된 대화형 인터페이스는 기존 채팅 기능을 넘어서는 고급 AI 기능들을 제공합니다.
+CORBU.AI의 고도화된 대화형 인터페이스는 기존 대화 기능을 넘어서는 고급 AI 기능들을 제공합니다.
 
 ## ✨ 새로운 기능들
 
@@ -49,11 +52,11 @@ CORBU AI의 고도화된 대화형 인터페이스는 기존 채팅 기능을 �
 
 ## 🎮 사용 방법
 
-### 1. 기본 채팅
+### 1. 기본 대화
 
 ```typescript
 // 메시지 전송
-const response = await fetch('http://localhost:8003/api/v2/enhanced/chat', {
+const response = await fetch('http://localhost:5002/api/v2/enhanced/chat', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -84,7 +87,7 @@ const response = await fetch('http://localhost:8003/api/v2/enhanced/chat', {
 
 ```typescript
 // 대화 분석
-const analysis = await fetch('http://localhost:8003/api/v2/enhanced/analyze', {
+const analysis = await fetch('http://localhost:5002/api/v2/enhanced/analyze', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -97,7 +100,7 @@ const analysis = await fetch('http://localhost:8003/api/v2/enhanced/analyze', {
 
 ```typescript
 // 인사이트 생성
-const insights = await fetch('http://localhost:8003/api/v2/enhanced/insights', {
+const insights = await fetch('http://localhost:5002/api/v2/enhanced/insights', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -110,7 +113,7 @@ const insights = await fetch('http://localhost:8003/api/v2/enhanced/insights', {
 
 ### POST /api/v2/enhanced/chat
 
-고도화된 채팅 기능
+고도화된 대화 기능
 
 **요청 본문:**
 
@@ -217,7 +220,7 @@ const insights = await fetch('http://localhost:8003/api/v2/enhanced/insights', {
 실시간 통신을 위한 WebSocket 엔드포인트도 제공됩니다:
 
 ```
-ws://localhost:8003/ws/v2/enhanced/{conversation_id}
+ws://localhost:5002/ws/v2/enhanced/{conversation_id}
 ```
 
 **메시지 형식:**
@@ -275,7 +278,7 @@ python test_enhanced_conversational.py
 
 ### 3. API 문서 확인
 
-브라우저에서 `http://localhost:8003/docs` 접속
+브라우저에서 `http://localhost:5002/api/docs` 접속 (통합 main_server)
 
 ## 📊 성능 지표
 

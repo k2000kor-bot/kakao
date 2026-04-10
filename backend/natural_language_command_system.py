@@ -1228,4 +1228,10 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.info("WebSocket client disconnected")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8005) 
+    _p = int(
+        os.environ.get(
+            "NATURAL_LANGUAGE_COMMAND_SYSTEM_PORT",
+            os.environ.get("PORT", "8005"),
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

@@ -405,3 +405,19 @@
 2025-12-11 13:44:51,592 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:51] "[33mGET / HTTP/1.1[0m" 404 -
 2025-12-11 13:44:51,720 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:51] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
 2025-12-11 13:44:51,985 - werkzeug - INFO - 127.0.0.1 - - [11/Dec/2025 13:44:51] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-08 22:13:44,111 - __main__ - WARNING - ⚠️ Intelligent Response Engine 로드 실패: No module named 'api'
+2026-02-08 22:13:44,149 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2026-02-08 22:13:44,149 - __main__ - INFO - 📍 API 서버: http://localhost:5002 (프론트엔드는 PORT=3000, docs/PORTS.md 참고)
+2026-02-08 22:13:44,149 - __main__ - INFO - 🔗 헬스: http://localhost:5002/api/integrated/health
+2026-02-08 22:13:44,322 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://172.30.1.74:5002
+2026-02-08 22:13:44,322 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 22:13:44,324 - werkzeug - INFO -  * Restarting with stat
+2026-02-08 22:13:44,790 - __main__ - WARNING - ⚠️ Intelligent Response Engine 로드 실패: No module named 'api'
+2026-02-08 22:13:44,843 - __main__ - INFO - 🚀 CORBU AI 간단한 통합 API 서버를 시작합니다...
+2026-02-08 22:13:44,844 - __main__ - INFO - 📍 API 서버: http://localhost:5002 (프론트엔드는 PORT=3000, docs/PORTS.md 참고)
+2026-02-08 22:13:44,844 - __main__ - INFO - 🔗 헬스: http://localhost:5002/api/integrated/health
+2026-02-08 22:13:44,889 - werkzeug - WARNING -  * Debugger is active!
+2026-02-08 22:13:44,967 - werkzeug - INFO -  * Debugger PIN: 138-311-913

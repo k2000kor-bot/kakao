@@ -1,4 +1,4 @@
-# CORBU AI 완전한 시스템 요약
+# CORBU.AI 완전한 시스템 요약
 
 **작성일**: 2025년 1월 27일  
 **버전**: 1.0.0  
@@ -8,7 +8,7 @@
 
 ## 🎯 시스템 개요
 
-CORBU AI는 ChatGPT 스타일의 인터페이스와 실제 LLM 연동을 지원하는 종합 AI 어시스턴트 시스템입니다.
+CORBU.AI는 ChatGPT 스타일의 인터페이스와 실제 LLM 연동을 지원하는 종합 AI 어시스턴트 시스템입니다.
 
 ---
 
@@ -32,7 +32,7 @@ CORBU AI는 ChatGPT 스타일의 인터페이스와 실제 LLM 연동을 지원�
 
 **API 엔드포인트 (29개)**:
 - ✅ 인증 시스템 (7개)
-- ✅ 채팅 API (1개) - LLM 연동
+- ✅ 대화 API (1개) - LLM 연동
 - ✅ 보안 시스템 (5개)
 - ✅ 사용자 관리 (4개)
 - ✅ 시스템 모니터링 (6개)
@@ -116,22 +116,19 @@ export LLM_MODEL="gpt-3.5-turbo"
 ### 3. 시스템 실행
 
 ```bash
-# 통합 실행
+# 권장: 프로젝트 루트에서
+npm run restart:backend   # 터미널 1
+npm start                 # 터미널 2
+
+# 또는
 ./start_all.sh
-
-# 또는 개별 실행
-# 백엔드
-cd backend && python app.py
-
-# 프론트엔드 (새 터미널)
-npm start
 ```
 
 ### 4. 접속
 
 - **프론트엔드**: http://localhost:3000
-- **백엔드 API**: http://localhost:5001
-- **API 문서**: http://localhost:5001/docs
+- **백엔드 API**: http://localhost:5002
+- **API 문서**: http://localhost:5002/api/docs
 
 ---
 
@@ -152,8 +149,8 @@ npm start
 ### 수동 테스트
 
 ```bash
-# 채팅 API 테스트
-curl -X POST http://localhost:5001/api/chat \
+# 대화 API 테스트
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "안녕하세요",
@@ -323,7 +320,7 @@ curl -X POST http://localhost:5001/api/chat \
 
 ## 🎉 결론
 
-**CORBU AI 시스템이 완전히 구축되었습니다!**
+**CORBU.AI 시스템이 완전히 구축되었습니다!**
 
 **주요 성과**:
 - ✅ ChatGPT 스타일 인터페이스

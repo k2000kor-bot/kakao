@@ -548,4 +548,5 @@ async def get_user_goals(user_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8012)
+    _p = int(os.environ.get("LONG_TERM_PLANNING_PORT", os.environ.get("PORT", "8012")))
+    uvicorn.run(app, host="0.0.0.0", port=_p)

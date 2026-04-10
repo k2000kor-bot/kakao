@@ -13,7 +13,7 @@ cd backend
 python3 app.py
 ```
 
-백엔드가 `http://localhost:5001`에서 실행되어야 합니다.
+백엔드가 `http://localhost:5002`에서 실행되어야 합니다.
 
 ### 2. 프론트엔드 실행 (선택사항)
 
@@ -33,7 +33,7 @@ npm start
 
 이 스크립트는 다음을 테스트합니다:
 - ✅ 헬스 체크 엔드포인트
-- ✅ 채팅 API
+- ✅ 대화 API
 - ✅ 인증 API
 - ✅ 시스템 상태 API
 
@@ -42,7 +42,7 @@ npm start
 ### 1. 헬스 체크
 
 ```bash
-curl http://localhost:5001/api/health
+curl http://localhost:5002/api/health
 ```
 
 **예상 응답:**
@@ -54,10 +54,10 @@ curl http://localhost:5001/api/health
 }
 ```
 
-### 2. 채팅 API 테스트
+### 2. 대화 API 테스트
 
 ```bash
-curl -X POST http://localhost:5001/api/chat \
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "안녕하세요",
@@ -80,7 +80,7 @@ curl -X POST http://localhost:5001/api/chat \
 ### 3. 회원가입 테스트
 
 ```bash
-curl -X POST http://localhost:5001/api/auth/register \
+curl -X POST http://localhost:5002/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -94,7 +94,7 @@ curl -X POST http://localhost:5001/api/auth/register \
 
 #### 빈 메시지 테스트
 ```bash
-curl -X POST http://localhost:5001/api/chat \
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "",
@@ -113,7 +113,7 @@ curl -X POST http://localhost:5001/api/chat \
 
 #### 긴 메시지 테스트
 ```bash
-curl -X POST http://localhost:5001/api/chat \
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d "{
     \"message\": \"$(python3 -c 'print(\"a\" * 10001)\")\",
@@ -178,7 +178,7 @@ curl -X POST http://localhost:5001/api/chat \
 ### 응답 시간 측정
 
 ```bash
-time curl -X POST http://localhost:5001/api/chat \
+time curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "테스트 메시지",
@@ -190,7 +190,7 @@ time curl -X POST http://localhost:5001/api/chat \
 
 ```bash
 for i in {1..10}; do
-  curl -X POST http://localhost:5001/api/chat \
+  curl -X POST http://localhost:5002/api/chat \
     -H "Content-Type: application/json" \
     -d "{\"message\": \"테스트 $i\", \"quality\": \"enhanced\"}" &
 done

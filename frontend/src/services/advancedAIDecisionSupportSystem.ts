@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // 의사결정 지원 인터페이스
 interface DecisionContext {
@@ -12,7 +13,7 @@ interface DecisionContext {
     stakeholders: string[];
     constraints: string[];
     objectives: string[];
-    available_data: any[];
+    available_data: Record<string, unknown>[];
     historical_decisions: DecisionHistory[];
     risk_tolerance: number; // 0-1
     time_horizon: 'short' | 'medium' | 'long';
@@ -113,7 +114,7 @@ interface DecisionRecommendation {
     implementation_plan: {
         phases: ImplementationPhase[];
         timeline: number;
-        resource_allocation: any;
+        resource_allocation: Record<string, unknown>;
         success_metrics: string[];
     };
     monitoring_plan: {
@@ -173,7 +174,10 @@ class AdvancedAIDecisionSupportSystem {
 
     // 시스템 초기화
     public initializeSystem(): void {
-        console.log('🧠 고급 AI 의사결정 지원 시스템 초기화 중...');
+        errorLogger.info('🧠 고급 AI 의사결정 지원 시스템 초기화 중', {
+            component: 'advancedAIDecisionSupportSystem',
+            action: 'initializeSystem',
+        });
 
         // 초기 의사결정 컨텍스트 생성
         this.createInitialDecisionContexts();
@@ -184,7 +188,10 @@ class AdvancedAIDecisionSupportSystem {
         // 위험 모델 초기화
         this.initializeRiskModels();
 
-        console.log('✅ 고급 AI 의사결정 지원 시스템이 초기화되었습니다.');
+        errorLogger.info('✅ 고급 AI 의사결정 지원 시스템이 초기화되었습니다', {
+            component: 'advancedAIDecisionSupportSystem',
+            action: 'initializeSystem',
+        });
     }
 
     // 최적화 알고리즘 초기화
@@ -277,7 +284,14 @@ class AdvancedAIDecisionSupportSystem {
         };
 
         this.decisionContexts.set(id, newContext);
-        console.log(`📋 의사결정 컨텍스트 생성됨: ${id}`);
+        errorLogger.info('📋 의사결정 컨텍스트 생성됨', {
+            component: 'advancedAIDecisionSupportSystem',
+            action: 'createDecisionContext',
+            contextId: id,
+            decisionType: context.decision_type,
+            domain: context.domain,
+            complexity: context.complexity,
+        });
 
         // 알림 생성
         realTimeAIAlertSystem.createAlert({
@@ -336,7 +350,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 전략적 옵션 생성
-    private generateStrategicOptions(context: DecisionContext): DecisionOption[] {
+    private generateStrategicOptions(_context: DecisionContext): DecisionOption[] {
         return [
             {
                 id: 'opt-strat-001',
@@ -392,7 +406,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 운영적 옵션 생성
-    private generateOperationalOptions(context: DecisionContext): DecisionOption[] {
+    private generateOperationalOptions(_context: DecisionContext): DecisionOption[] {
         return [
             {
                 id: 'opt-op-001',
@@ -423,7 +437,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 전술적 옵션 생성
-    private generateTacticalOptions(context: DecisionContext): DecisionOption[] {
+    private generateTacticalOptions(_context: DecisionContext): DecisionOption[] {
         return [
             {
                 id: 'opt-tact-001',
@@ -454,7 +468,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 긴급 옵션 생성
-    private generateEmergencyOptions(context: DecisionContext): DecisionOption[] {
+    private generateEmergencyOptions(_context: DecisionContext): DecisionOption[] {
         return [
             {
                 id: 'opt-emerg-001',
@@ -485,7 +499,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 위험 평가
-    private assessRisks(option: DecisionOption, context: DecisionContext): RiskAssessment[] {
+    private assessRisks(option: DecisionOption, _context: DecisionContext): RiskAssessment[] {
         const risks: RiskAssessment[] = [];
 
         // 재무적 위험
@@ -621,7 +635,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 최적 케이스 결과 계산
-    private calculateBestCaseOutcome(option: DecisionOption, context: DecisionContext): DecisionOutcome {
+    private calculateBestCaseOutcome(option: DecisionOption, _context: DecisionContext): DecisionOutcome {
         return {
             financial_impact: option.estimated_impact.financial * 1.3,
             operational_impact: option.estimated_impact.operational * 1.2,
@@ -635,7 +649,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 가장 가능성 높은 결과 계산
-    private calculateMostLikelyOutcome(option: DecisionOption, context: DecisionContext): DecisionOutcome {
+    private calculateMostLikelyOutcome(option: DecisionOption, _context: DecisionContext): DecisionOutcome {
         return {
             financial_impact: option.estimated_impact.financial,
             operational_impact: option.estimated_impact.operational,
@@ -649,7 +663,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 최악 케이스 결과 계산
-    private calculateWorstCaseOutcome(option: DecisionOption, context: DecisionContext): DecisionOutcome {
+    private calculateWorstCaseOutcome(option: DecisionOption, _context: DecisionContext): DecisionOutcome {
         return {
             financial_impact: option.estimated_impact.financial * 0.5,
             operational_impact: option.estimated_impact.operational * 0.6,
@@ -663,7 +677,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 민감도 분석 수행
-    private performSensitivityAnalysis(option: DecisionOption, context: DecisionContext): SensitivityFactor[] {
+    private performSensitivityAnalysis(_option: DecisionOption, _context: DecisionContext): SensitivityFactor[] {
         return [
             {
                 factor_name: '시장 상황',
@@ -724,25 +738,25 @@ class AdvancedAIDecisionSupportSystem {
         })).sort((a, b) => b.ranking_score - a.ranking_score);
     }
 
-    private dynamicProgrammingOptimization(options: DecisionOption[], constraints: any): DecisionOption[] {
+    private dynamicProgrammingOptimization(options: DecisionOption[], _constraints: Record<string, unknown>): DecisionOption[] {
         // 동적 프로그래밍 최적화
         // 복잡한 제약 조건 하에서 최적 조합 찾기
         return options;
     }
 
-    private geneticAlgorithmOptimization(options: DecisionOption[], generations: number): DecisionOption[] {
+    private geneticAlgorithmOptimization(options: DecisionOption[], _generations: number): DecisionOption[] {
         // 유전 알고리즘 최적화
         // 진화적 접근으로 최적 해 찾기
         return options;
     }
 
-    private simulationOptimization(options: DecisionOption[], iterations: number): DecisionOption[] {
+    private simulationOptimization(options: DecisionOption[], _iterations: number): DecisionOption[] {
         // 시뮬레이션 최적화
         // Monte Carlo 시뮬레이션 기반 최적화
         return options;
     }
 
-    private bayesianOptimization(options: DecisionOption[], priorKnowledge: any): DecisionOption[] {
+    private bayesianOptimization(options: DecisionOption[], _priorKnowledge: Record<string, unknown>): DecisionOption[] {
         // 베이지안 최적화
         // 불확실성 하에서의 최적화
         return options;
@@ -756,17 +770,17 @@ class AdvancedAIDecisionSupportSystem {
         return sortedReturns[index];
     }
 
-    private monteCarloSimulation(parameters: any, iterations: number): any[] {
+    private monteCarloSimulation(parameters: Record<string, unknown>, iterations: number): Record<string, unknown>[] {
         // Monte Carlo 시뮬레이션
-        const results = [];
+        const results: Record<string, unknown>[] = [];
         for (let i = 0; i < iterations; i++) {
             // 랜덤 시뮬레이션 수행
-            results.push(Math.random());
+            results.push({ value: Math.random() });
         }
         return results;
     }
 
-    private stressTesting(scenarios: any[]): any[] {
+    private stressTesting(scenarios: Record<string, unknown>[]): Record<string, unknown>[] {
         // 스트레스 테스트
         return scenarios.map(scenario => ({
             ...scenario,
@@ -774,12 +788,12 @@ class AdvancedAIDecisionSupportSystem {
         }));
     }
 
-    private scenarioAnalysis(scenarios: any[]): any[] {
+    private scenarioAnalysis(scenarios: Record<string, unknown>[]): Record<string, unknown>[] {
         // 시나리오 분석
         return scenarios;
     }
 
-    private sensitivityAnalysis(factors: any[]): any[] {
+    private sensitivityAnalysis(factors: Record<string, unknown>[]): Record<string, unknown>[] {
         // 민감도 분석
         return factors.map(factor => ({
             ...factor,
@@ -862,7 +876,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 구현 계획 생성
-    private createImplementationPlan(option: DecisionOption, context: DecisionContext): DecisionRecommendation['implementation_plan'] {
+    private createImplementationPlan(option: DecisionOption, _context: DecisionContext): DecisionRecommendation['implementation_plan'] {
         const phases: ImplementationPhase[] = [
             {
                 phase_name: '준비 단계',
@@ -909,7 +923,7 @@ class AdvancedAIDecisionSupportSystem {
     }
 
     // 모니터링 계획 생성
-    private createMonitoringPlan(option: DecisionOption, context: DecisionContext): DecisionRecommendation['monitoring_plan'] {
+    private createMonitoringPlan(option: DecisionOption, _context: DecisionContext): DecisionRecommendation['monitoring_plan'] {
         const checkpoints: Date[] = [];
         const startDate = new Date();
 
@@ -940,7 +954,10 @@ class AdvancedAIDecisionSupportSystem {
     // 시스템 시작
     public start(): void {
         if (this.isRunning) {
-            console.log('⚠️ 고급 AI 의사결정 지원 시스템이 이미 실행 중입니다.');
+            errorLogger.warn('⚠️ 고급 AI 의사결정 지원 시스템이 이미 실행 중입니다', {
+                component: 'advancedAIDecisionSupportSystem',
+                action: 'start',
+            });
             return;
         }
 
@@ -953,13 +970,19 @@ class AdvancedAIDecisionSupportSystem {
             this.cleanupOldData();
         }, 30000); // 30초마다 업데이트
 
-        console.log('🚀 고급 AI 의사결정 지원 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 고급 AI 의사결정 지원 시스템이 시작되었습니다', {
+            component: 'advancedAIDecisionSupportSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
     public stop(): void {
         if (!this.isRunning) {
-            console.log('⚠️ 고급 AI 의사결정 지원 시스템이 실행 중이 아닙니다.');
+            errorLogger.warn('⚠️ 고급 AI 의사결정 지원 시스템이 실행 중이 아닙니다', {
+                component: 'advancedAIDecisionSupportSystem',
+                action: 'stop',
+            });
             return;
         }
 
@@ -970,7 +993,10 @@ class AdvancedAIDecisionSupportSystem {
             this.updateInterval = null;
         }
 
-        console.log('🛑 고급 AI 의사결정 지원 시스템이 중지되었습니다.');
+        errorLogger.info('🛑 고급 AI 의사결정 지원 시스템이 중지되었습니다', {
+            component: 'advancedAIDecisionSupportSystem',
+            action: 'stop',
+        });
     }
 
     // 메트릭 업데이트
@@ -1049,7 +1075,7 @@ class AdvancedAIDecisionSupportSystem {
         return { ...this.metrics };
     }
 
-    public getSystemHealth(): { status: string; details: any } {
+    public getSystemHealth(): { status: string; details: Record<string, unknown> } {
         return {
             status: this.isRunning ? 'healthy' : 'stopped',
             details: {

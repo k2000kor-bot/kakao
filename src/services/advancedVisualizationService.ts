@@ -1,14 +1,17 @@
 /**
- * CORBU AI 고급 데이터 시각화 및 차트 생성 서비스
+ * CORBU.AI 고급 데이터 시각화 및 차트 생성 서비스
  * 인터랙티브한 차트와 데이터 시각화를 제공합니다.
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
+import { CHART_COLORS_HEX } from '../styles/themeColors';
 
 export interface ChartData {
     id: string;
     type: 'line' | 'bar' | 'pie' | 'scatter' | 'area' | 'heatmap' | 'radar' | 'treemap';
     title: string;
     description?: string;
-    data: any[];
+    data: unknown[];
     config: ChartConfig;
     interactive: boolean;
     realtime?: boolean;
@@ -48,7 +51,7 @@ export interface ChartConfig {
 }
 
 export interface VisualizationRequest {
-    data: any[];
+    data: unknown[];
     chartType?: string;
     title?: string;
     description?: string;
@@ -83,7 +86,7 @@ class AdvancedVisualizationService {
             responsive: true,
             legend: { show: true, position: 'top' },
             tooltip: { show: true },
-            colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+            colors: [...CHART_COLORS_HEX]
         });
 
         // 바 차트 템플릿
@@ -93,7 +96,7 @@ class AdvancedVisualizationService {
             responsive: true,
             legend: { show: true, position: 'top' },
             tooltip: { show: true },
-            colors: ['#6366F1', '#EC4899', '#14B8A6', '#F97316', '#84CC16']
+            colors: [...CHART_COLORS_HEX]
         });
 
         // 파이 차트 템플릿
@@ -103,7 +106,7 @@ class AdvancedVisualizationService {
             responsive: true,
             legend: { show: true, position: 'right' },
             tooltip: { show: true, format: '{b}: {c} ({d}%)' },
-            colors: ['#EF4444', '#F97316', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#8B5CF6', '#EC4899']
+            colors: [...CHART_COLORS_HEX]
         });
 
         // 히트맵 템플릿
@@ -112,14 +115,14 @@ class AdvancedVisualizationService {
             animation: true,
             responsive: true,
             tooltip: { show: true },
-            colors: ['#FEF3C7', '#FCD34D', '#F59E0B', '#D97706', '#92400E']
+            colors: [CHART_COLORS_HEX[1], CHART_COLORS_HEX[2], CHART_COLORS_HEX[2], CHART_COLORS_HEX[3], CHART_COLORS_HEX[3]]
         });
     }
 
     /**
      * 데이터에서 최적의 차트 타입 추천
      */
-    public recommendChartType(data: any[]): string {
+    public recommendChartType(data: Record<string, unknown>[]): string {
         if (!data || data.length === 0) return 'bar';
 
         const firstRow = data[0];
@@ -169,7 +172,7 @@ class AdvancedVisualizationService {
     /**
      * 문자열이 날짜인지 확인
      */
-    private isDateString(value: any): boolean {
+    private isDateString(value: unknown): boolean {
         if (typeof value !== 'string') return false;
         const date = new Date(value);
         return !isNaN(date.getTime());
@@ -179,6 +182,7 @@ class AdvancedVisualizationService {
      * 차트 생성
      */
     public async generateChart(request: VisualizationRequest): Promise<VisualizationResponse> {
+        const { chartType: requestedChartType } = request;
         try {
             const { data, chartType, title, description, customConfig, interactiveFeatures } = request;
 
@@ -189,8 +193,10 @@ class AdvancedVisualizationService {
                 };
             }
 
+            const dataArr = data as Record<string, unknown>[];
+
             // 차트 타입 결정
-            const recommendedType = chartType || this.recommendChartType(data);
+            const recommendedType = chartType || this.recommendChartType(dataArr);
 
             // 차트 데이터 생성
             const chartData: ChartData = {
@@ -198,14 +204,14 @@ class AdvancedVisualizationService {
                 type: recommendedType as ChartData['type'],
                 title: title || `${recommendedType.toUpperCase()} 차트`,
                 description: description || '자동 생성된 차트입니다.',
-                data: this.processDataForChart(data, recommendedType),
+                data: this.processDataForChart(dataArr, recommendedType),
                 config: this.generateChartConfig(recommendedType, customConfig),
                 interactive: interactiveFeatures ? interactiveFeatures.length > 0 : true,
                 metadata: {
                     source: 'user_data',
                     lastUpdated: new Date().toISOString(),
-                    accuracy: this.calculateDataAccuracy(data),
-                    tags: this.generateDataTags(data)
+                    accuracy: this.calculateDataAccuracy(dataArr),
+                    tags: this.generateDataTags(dataArr)
                 }
             };
 
@@ -213,17 +219,22 @@ class AdvancedVisualizationService {
             this.charts.set(chartData.id, chartData);
 
             // 대안 차트 제안
-            const alternativeCharts = await this.generateAlternativeCharts(data, recommendedType);
+            const alternativeCharts = await this.generateAlternativeCharts(dataArr, recommendedType);
 
             return {
                 success: true,
                 chartData,
-                suggestions: this.generateChartSuggestions(data, recommendedType),
+                suggestions: this.generateChartSuggestions(dataArr, recommendedType),
                 alternativeCharts
             };
 
         } catch (error) {
-            console.error('차트 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('차트 생성 오류', err, {
+                component: 'advancedVisualizationService',
+                action: 'createChart',
+                chartType: requestedChartType || 'unknown',
+            });
             return {
                 success: false,
                 error: '차트 생성 중 오류가 발생했습니다.'
@@ -234,7 +245,7 @@ class AdvancedVisualizationService {
     /**
      * 차트 데이터 처리
      */
-    private processDataForChart(data: any[], chartType: string): any[] {
+    private processDataForChart(data: Record<string, unknown>[], chartType: string): unknown[] {
         switch (chartType) {
             case 'line':
                 return this.processLineChartData(data);
@@ -256,7 +267,7 @@ class AdvancedVisualizationService {
     /**
      * 라인 차트 데이터 처리
      */
-    private processLineChartData(data: any[]): any[] {
+    private processLineChartData(data: Record<string, unknown>[]): unknown[] {
         const processedData = data.map((item, index) => {
             const keys = Object.keys(item);
             const timeKey = keys.find(key =>
@@ -270,7 +281,7 @@ class AdvancedVisualizationService {
             return {
                 x: timeKey ? item[timeKey] : index,
                 y: valueKey ? item[valueKey] : 0,
-                label: item.name || item.label || `Data ${index + 1}`
+                label: (item as Record<string, unknown>).name ?? (item as Record<string, unknown>).label ?? `Data ${index + 1}`
             };
         });
 
@@ -280,7 +291,7 @@ class AdvancedVisualizationService {
     /**
      * 바 차트 데이터 처리
      */
-    private processBarChartData(data: any[]): any[] {
+    private processBarChartData(data: Record<string, unknown>[]): unknown[] {
         return data.map(item => {
             const keys = Object.keys(item);
             const nameKey = keys.find(key => typeof item[key] === 'string') || keys[0];
@@ -296,7 +307,7 @@ class AdvancedVisualizationService {
     /**
      * 파이 차트 데이터 처리
      */
-    private processPieChartData(data: any[]): any[] {
+    private processPieChartData(data: Record<string, unknown>[]): unknown[] {
         return data.map(item => {
             const keys = Object.keys(item);
             const nameKey = keys.find(key => typeof item[key] === 'string') || keys[0];
@@ -312,7 +323,7 @@ class AdvancedVisualizationService {
     /**
      * 산점도 데이터 처리
      */
-    private processScatterChartData(data: any[]): any[] {
+    private processScatterChartData(data: Record<string, unknown>[]): unknown[] {
         const numericKeys = Object.keys(data[0]).filter(key =>
             typeof data[0][key] === 'number'
         );
@@ -334,9 +345,9 @@ class AdvancedVisualizationService {
     /**
      * 히트맵 데이터 처리
      */
-    private processHeatmapData(data: any[]): any[] {
+    private processHeatmapData(data: Record<string, unknown>[]): unknown[] {
         // 히트맵을 위한 2차원 배열 생성
-        const processed: any[] = [];
+        const processed: unknown[] = [];
 
         data.forEach((item, rowIndex) => {
             Object.keys(item).forEach((key, colIndex) => {
@@ -352,7 +363,7 @@ class AdvancedVisualizationService {
     /**
      * 레이더 차트 데이터 처리
      */
-    private processRadarChartData(data: any[]): any[] {
+    private processRadarChartData(data: Record<string, unknown>[]): unknown[] {
         const indicators = Object.keys(data[0]).filter(key =>
             typeof data[0][key] === 'number'
         );
@@ -385,7 +396,7 @@ class AdvancedVisualizationService {
     /**
      * 데이터 정확도 계산
      */
-    private calculateDataAccuracy(data: any[]): number {
+    private calculateDataAccuracy(data: Record<string, unknown>[]): number {
         let accuracy = 100;
 
         // 빈 값이나 null 값이 있으면 정확도 감소
@@ -407,7 +418,7 @@ class AdvancedVisualizationService {
     /**
      * 데이터 태그 생성
      */
-    private generateDataTags(data: any[]): string[] {
+    private generateDataTags(data: Record<string, unknown>[]): string[] {
         const tags: string[] = [];
 
         if (data.length > 100) tags.push('big-data');
@@ -433,7 +444,7 @@ class AdvancedVisualizationService {
     /**
      * 차트 제안사항 생성
      */
-    private generateChartSuggestions(data: any[], chartType: string): string[] {
+    private generateChartSuggestions(data: Record<string, unknown>[], chartType: string): string[] {
         const suggestions: string[] = [];
 
         suggestions.push(`${chartType} 차트가 이 데이터에 최적화되어 있습니다.`);
@@ -460,7 +471,7 @@ class AdvancedVisualizationService {
     /**
      * 대안 차트 생성
      */
-    private async generateAlternativeCharts(data: any[], currentType: string): Promise<ChartData[]> {
+    private async generateAlternativeCharts(data: Record<string, unknown>[], currentType: string): Promise<ChartData[]> {
         const alternatives: ChartData[] = [];
         const chartTypes = ['bar', 'line', 'pie', 'scatter'];
 
@@ -484,7 +495,13 @@ class AdvancedVisualizationService {
 
                 alternatives.push(altChart);
             } catch (error) {
-                console.warn(`대안 차트 생성 실패 (${type}):`, error);
+                const err = toError(error);
+                errorLogger.warn('대안 차트 생성 실패', {
+                    component: 'advancedVisualizationService',
+                    action: 'generateAlternativeCharts',
+                    chartType: type,
+                    error: err.message,
+                });
             }
         }
 
@@ -494,7 +511,7 @@ class AdvancedVisualizationService {
     /**
      * 실시간 차트 업데이트
      */
-    public updateChartData(chartId: string, newData: any[]): boolean {
+    public updateChartData(chartId: string, newData: Record<string, unknown>[]): boolean {
         const chart = this.charts.get(chartId);
         if (!chart) return false;
 
@@ -508,7 +525,12 @@ class AdvancedVisualizationService {
             this.charts.set(chartId, chart);
             return true;
         } catch (error) {
-            console.error('차트 업데이트 오류:', error);
+            const err = toError(error);
+            errorLogger.error('차트 업데이트 오류', err, {
+                component: 'advancedVisualizationService',
+                action: 'updateChartData',
+                chartId,
+            });
             return false;
         }
     }

@@ -1,5 +1,19 @@
 // 고도화된 AI 시스템 API 서비스
-const ADVANCED_AI_API_BASE = 'http://localhost:8003';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  ANALYZE_EMOTION_PATH,
+  ANALYZE_PATTERNS_PATH,
+  API_BASE_URL,
+  API_SMOKE_TEST_PATH,
+  API_STATUS_PATH,
+  FALLBACK_API_ORIGIN,
+  GENERATE_ADVANCED_MESSAGE_PATH,
+  PREDICT_BEHAVIOR_PATH,
+  USER_PERFORMANCE_METRICS_PATH_PREFIX,
+  joinApiHealthCheckUrl,
+} from '../config/api';
+
+const ADVANCED_AI_API_BASE = API_BASE_URL || FALLBACK_API_ORIGIN;
 
 export interface AdvancedMessageRequest {
   original_message: string;
@@ -23,7 +37,7 @@ export interface PatternAnalysisRequest {
 export interface PredictionRequest {
   user_id: string;
   prediction_type: 'response_time' | 'success_rate' | 'conflict_probability';
-  context_data: Record<string, any>;
+  context_data: Record<string, unknown>;
 }
 
 export interface AdvancedAnalytics {
@@ -99,7 +113,7 @@ export interface AdvancedGeneratedMessage {
 // API 호출 헬퍼 함수
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   try {
-    const response = await fetch(`${ADVANCED_AI_API_BASE}${endpoint}`, {
+    const response = await fetch(joinApiHealthCheckUrl(ADVANCED_AI_API_BASE, endpoint), {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -113,7 +127,13 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 
     return await response.json();
   } catch (error) {
-    console.error('API 호출 오류:', error);
+    const err = toError(error);
+    errorLogger.error('API 호출 오류', err, {
+      component: 'advancedAISystemAPI',
+      action: 'apiCall',
+      endpoint,
+      method: options?.method || 'GET',
+    });
     throw error;
   }
 };
@@ -122,44 +142,44 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 export class AdvancedAISystemAPI {
   // 시스템 상태 확인
   static async getStatus() {
-    return apiCall('/api/status');
+    return apiCall(API_STATUS_PATH);
   }
 
   // 고급 메시지 생성
   static async generateAdvancedMessage(request: AdvancedMessageRequest): Promise<{ success: boolean; message: AdvancedGeneratedMessage }> {
-    return apiCall('/api/generate-advanced-message', {
+    return apiCall(GENERATE_ADVANCED_MESSAGE_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   // 감정 분석
-  static async analyzeEmotion(request: EmotionAnalysisRequest): Promise<{ success: boolean; analysis: any }> {
-    return apiCall('/api/analyze-emotion', {
+  static async analyzeEmotion(request: EmotionAnalysisRequest): Promise<{ success: boolean; analysis: unknown }> {
+    return apiCall(ANALYZE_EMOTION_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   // 패턴 분석
-  static async analyzePatterns(request: PatternAnalysisRequest): Promise<{ success: boolean; analysis: any }> {
-    return apiCall('/api/analyze-patterns', {
+  static async analyzePatterns(request: PatternAnalysisRequest): Promise<{ success: boolean; analysis: unknown }> {
+    return apiCall(ANALYZE_PATTERNS_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   // 행동 예측
-  static async predictBehavior(request: PredictionRequest): Promise<{ success: boolean; prediction: any }> {
-    return apiCall('/api/predict-behavior', {
+  static async predictBehavior(request: PredictionRequest): Promise<{ success: boolean; prediction: unknown }> {
+    return apiCall(PREDICT_BEHAVIOR_PATH, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   // 성능 메트릭 조회
-  static async getPerformanceMetrics(userId: string): Promise<{ success: boolean; metrics: any }> {
-    return apiCall(`/api/performance-metrics/${userId}`);
+  static async getPerformanceMetrics(userId: string): Promise<{ success: boolean; metrics: unknown }> {
+    return apiCall(`${USER_PERFORMANCE_METRICS_PATH_PREFIX}/${encodeURIComponent(userId)}`);
   }
 
   // 서버 연결 테스트
@@ -168,7 +188,11 @@ export class AdvancedAISystemAPI {
       await this.getStatus();
       return true;
     } catch (error) {
-      console.error('서버 연결 실패:', error);
+      const err = toError(error);
+      errorLogger.error('서버 연결 실패', err, {
+        component: 'advancedAISystemAPI',
+        action: 'testConnection',
+      });
       return false;
     }
   }
@@ -182,7 +206,12 @@ export const advancedAISystemAPI = {
       const response = await AdvancedAISystemAPI.generateAdvancedMessage(request);
       return response.message;
     } catch (error) {
-      console.error('고급 메시지 생성 실패:', error);
+      const err = toError(error);
+      errorLogger.error('고급 메시지 생성 실패', err, {
+        component: 'advancedAISystemAPI',
+        action: 'generateAdvanced',
+        userId: request.user_id,
+      });
       throw error;
     }
   },
@@ -193,7 +222,13 @@ export const advancedAISystemAPI = {
       const response = await AdvancedAISystemAPI.analyzeEmotion(request);
       return response.analysis;
     } catch (error) {
-      console.error('감정 분석 실패:', error);
+      const err = toError(error);
+      errorLogger.error('감정 분석 실패', err, {
+        component: 'advancedAISystemAPI',
+        action: 'analyzeEmotion',
+        userId: request.user_id,
+        messagesCount: request.messages?.length || 0,
+      });
       throw error;
     }
   },
@@ -204,7 +239,13 @@ export const advancedAISystemAPI = {
       const response = await AdvancedAISystemAPI.analyzePatterns(request);
       return response.analysis;
     } catch (error) {
-      console.error('패턴 분석 실패:', error);
+      const err = toError(error);
+      errorLogger.error('패턴 분석 실패', err, {
+        component: 'advancedAISystemAPI',
+        action: 'analyzePatterns',
+        userId: request.user_id,
+        conversationDataLength: request.conversation_data?.length || 0,
+      });
       throw error;
     }
   },
@@ -215,7 +256,13 @@ export const advancedAISystemAPI = {
       const response = await AdvancedAISystemAPI.predictBehavior(request);
       return response.prediction;
     } catch (error) {
-      console.error('행동 예측 실패:', error);
+      const err = toError(error);
+      errorLogger.error('행동 예측 실패', err, {
+        component: 'advancedAISystemAPI',
+        action: 'predictBehavior',
+        userId: request.user_id,
+        predictionType: request.prediction_type,
+      });
       throw error;
     }
   },
@@ -226,7 +273,12 @@ export const advancedAISystemAPI = {
       const response = await AdvancedAISystemAPI.getPerformanceMetrics(userId);
       return response.metrics;
     } catch (error) {
-      console.error('성능 메트릭 조회 실패:', error);
+      const err = toError(error);
+      errorLogger.error('성능 메트릭 조회 실패', err, {
+        component: 'advancedAISystemAPI',
+        action: 'getPerformanceMetrics',
+        userId,
+      });
       throw error;
     }
   },
@@ -237,7 +289,11 @@ export const advancedAISystemAPI = {
       const response = await AdvancedAISystemAPI.getStatus();
       return response.status === 'healthy';
     } catch (error) {
-      console.error('서버 상태 확인 실패:', error);
+      const err = toError(error);
+      errorLogger.error('서버 상태 확인 실패', err, {
+        component: 'advancedAISystemAPI',
+        action: 'checkStatus',
+      });
       return false;
     }
   },
@@ -245,10 +301,14 @@ export const advancedAISystemAPI = {
   // 테스트 엔드포인트
   testEndpoint: async () => {
     try {
-      const response = await apiCall('/api/test');
+      const response = await apiCall(API_SMOKE_TEST_PATH);
       return response;
     } catch (error) {
-      console.error('테스트 엔드포인트 실패:', error);
+      const err = toError(error);
+      errorLogger.error('테스트 엔드포인트 실패', err, {
+        component: 'advancedAISystemAPI',
+        action: 'testEndpoint',
+      });
       throw error;
     }
   },

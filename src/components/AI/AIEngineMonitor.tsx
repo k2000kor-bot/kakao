@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import './AIEngineMonitor.css';
+import { getSentimentColor } from '../../styles/themeColors';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
+import { AppDispatch } from '../../store';
 import {
     selectAIEngine,
     selectRealtimeAnalysis,
@@ -26,10 +28,11 @@ import {
     Settings,
     BarChart,
     MessageSquare,
-    Lightbulb,
     Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { resolveGenericWebSocketClientUrl } from '../../config/api';
+import { coerceTrimmedString } from '../../utils/chatInputUtils';
 
 interface AIEngineMonitorProps {
     isOpen: boolean;
@@ -63,31 +66,23 @@ const AIEngineMonitor: React.FC<AIEngineMonitorProps> = ({ isOpen, onClose }) =>
     };
 
     const handleSentimentAnalysis = () => {
-        if (testText.trim()) {
+        if (coerceTrimmedString(testText, '')) {
             dispatch(analyzeSentiment(testText));
         }
     };
 
     const handleIntentDetection = () => {
-        if (testText.trim()) {
+        if (coerceTrimmedString(testText, '')) {
             dispatch(detectIntent(testText));
         }
     };
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'connected': return 'text-green-500';
-            case 'connecting': return 'text-yellow-500';
-            case 'error': return 'text-red-500';
-            default: return 'text-gray-500';
-        }
-    };
-
-    const getSentimentColor = (sentiment: string) => {
-        switch (sentiment) {
-            case 'positive': return 'text-green-500';
-            case 'negative': return 'text-red-500';
-            default: return 'text-gray-500';
+            case 'connected': return 'var(--accent-success)';
+            case 'connecting': return 'var(--accent-warning)';
+            case 'error': return 'var(--accent-error)';
+            default: return 'var(--text-tertiary)';
         }
     };
 
@@ -96,58 +91,36 @@ const AIEngineMonitor: React.FC<AIEngineMonitorProps> = ({ isOpen, onClose }) =>
         { id: 'models', label: 'AI 모델', icon: Brain },
         { id: 'analytics', label: '분석', icon: TrendingUp },
         { id: 'settings', label: '설정', icon: Settings },
-    ];
+    ] as const;
 
     return (
         <AnimatePresence>
             {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                    onClick={onClose}
-                >
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="aem-overlay" onClick={onClose}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="aem-panel" onClick={(e) => e.stopPropagation()}>
                         {/* 헤더 */}
-                        <div className="flex items-center justify-between p-6 border-b">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                                    <Brain className="w-6 h-6 text-white" />
+                        <div className="aem-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                                <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'var(--accent-info)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Brain className="w-6 h-6" aria-hidden />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-semibold text-gray-900">AI 엔진 모니터</h2>
-                                    <p className="text-sm text-gray-500">고급 AI 시스템 상태 및 제어</p>
+                                    <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 600, color: 'var(--text-primary)' }}>AI 엔진 모니터</h2>
+                                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)' }}>고급 AI 시스템 상태 및 제어</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5 text-gray-500" />
+                            <button type="button" onClick={onClose} className="bw-btn-ghost">
+                                <X className="w-5 h-5" aria-hidden />
                             </button>
                         </div>
 
                         {/* 탭 네비게이션 */}
-                        <div className="flex border-b">
+                        <div className="aem-tabs">
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
                                 return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setSelectedTab(tab.id as any)}
-                                        className={`flex items-center space-x-2 px-6 py-3 border-b-2 transition-colors ${selectedTab === tab.id
-                                            ? 'border-blue-500 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700'
-                                            }`}
-                                    >
-                                        <Icon className="w-4 h-4" />
+                                    <button key={tab.id} type="button" onClick={() => setSelectedTab(tab.id)} className={`aem-tab ${selectedTab === tab.id ? 'active' : ''}`}>
+                                        <Icon className="w-4 h-4" aria-hidden />
                                         <span>{tab.label}</span>
                                     </button>
                                 );
@@ -155,94 +128,68 @@ const AIEngineMonitor: React.FC<AIEngineMonitorProps> = ({ isOpen, onClose }) =>
                         </div>
 
                         {/* 컨텐츠 */}
-                        <div className="flex-1 overflow-y-auto p-6">
+                        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--spacing-lg)' }}>
                             <AnimatePresence mode="wait">
                                 {selectedTab === 'overview' && (
-                                    <motion.div
-                                        key="overview"
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -20 }}
-                                        className="space-y-6"
-                                    >
+                                    <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
                                         {/* 연결 상태 */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <Activity className="w-5 h-5 text-blue-500" />
-                                                    <span className="font-medium">연결 상태</span>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}>
+                                            <div className="aem-stat-card">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-sm)' }}>
+                                                    <Activity className="w-5 h-5" style={{ color: 'var(--accent-info)' }} aria-hidden />
+                                                    <span style={{ fontWeight: 500 }}>연결 상태</span>
                                                 </div>
-                                                <div className={`text-lg font-semibold ${getStatusColor(aiEngine.websocket.connectionStatus)}`}>
-                                                    {aiEngine.websocket.connectionStatus === 'connected' ? '연결됨' :
-                                                        aiEngine.websocket.connectionStatus === 'connecting' ? '연결 중' :
-                                                            aiEngine.websocket.connectionStatus === 'error' ? '오류' : '연결 끊김'}
+                                                <div className="aem-metric-value" style={{ fontSize: 'var(--font-size-lg)', color: getStatusColor(aiEngine.websocket.connectionStatus) }}>
+                                                    {aiEngine.websocket.connectionStatus === 'connected' ? '연결됨' : aiEngine.websocket.connectionStatus === 'connecting' ? '연결 중' : aiEngine.websocket.connectionStatus === 'error' ? '오류' : '연결 끊김'}
                                                 </div>
                                             </div>
-
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <Brain className="w-5 h-5 text-purple-500" />
-                                                    <span className="font-medium">현재 모델</span>
+                                            <div className="aem-stat-card">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-sm)' }}>
+                                                    <Brain className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} aria-hidden />
+                                                    <span style={{ fontWeight: 500 }}>현재 모델</span>
                                                 </div>
-                                                <div className="text-lg font-semibold text-gray-900">
+                                                <div className="aem-metric-value" style={{ fontSize: 'var(--font-size-lg)' }}>
                                                     {aiModels.currentModel}
                                                 </div>
                                             </div>
-
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <Zap className="w-5 h-5 text-yellow-500" />
-                                                    <span className="font-medium">실시간 분석</span>
+                                            <div className="aem-stat-card">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-sm)' }}>
+                                                    <Zap className="w-5 h-5" style={{ color: 'var(--accent-warning)' }} aria-hidden />
+                                                    <span style={{ fontWeight: 500 }}>실시간 분석</span>
                                                 </div>
-                                                <div className="text-lg font-semibold text-gray-900">
+                                                <div className="aem-metric-value" style={{ fontSize: 'var(--font-size-lg)' }}>
                                                     {realtimeAnalysis.isActive ? '활성' : '비활성'}
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* 성능 지표 */}
-                                        <div className="bg-white border rounded-lg p-6">
-                                            <h3 className="text-lg font-semibold mb-4">성능 지표</h3>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <div className="text-center">
-                                                    <div className="text-2xl font-bold text-blue-600">
-                                                        {intelligentResponse.responseQuality}%
+                                        <div className="bw-card" style={{ padding: 'var(--spacing-lg)' }}>
+                                            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--spacing-md)' }}>성능 지표</h3>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 'var(--spacing-md)' }}>
+                                                {[
+                                                    { value: `${intelligentResponse.responseQuality}%`, label: '응답 품질', color: 'var(--accent-info)' },
+                                                    { value: `${intelligentResponse.contextUnderstanding}%`, label: '컨텍스트 이해', color: 'var(--accent-success)' },
+                                                    { value: `${realtimeAnalysis.confidence}%`, label: '분석 신뢰도', color: 'var(--accent-secondary)' },
+                                                    { value: `${realtimeAnalysis.processingTime}ms`, label: '처리 시간', color: 'var(--accent-orange)' }
+                                                ].map((m) => (
+                                                    <div key={m.label} style={{ textAlign: 'center' }}>
+                                                        <div className="aem-metric-value" style={{ color: m.color }}>{m.value}</div>
+                                                        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)' }}>{m.label}</div>
                                                     </div>
-                                                    <div className="text-sm text-gray-500">응답 품질</div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-2xl font-bold text-green-600">
-                                                        {intelligentResponse.contextUnderstanding}%
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">컨텍스트 이해</div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-2xl font-bold text-purple-600">
-                                                        {realtimeAnalysis.confidence}%
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">분석 신뢰도</div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-2xl font-bold text-orange-600">
-                                                        {realtimeAnalysis.processingTime}ms
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">처리 시간</div>
-                                                </div>
+                                                ))}
                                             </div>
                                         </div>
 
                                         {/* 에러 상태 */}
                                         {errors.hasError && (
-                                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <AlertTriangle className="w-5 h-5 text-red-500" />
-                                                    <span className="font-medium text-red-800">오류 발생</span>
+                                            <div className="bw-alert-error" style={{ padding: 'var(--spacing-md)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-sm)' }}>
+                                                    <AlertTriangle className="w-5 h-5" style={{ color: 'var(--accent-error)' }} aria-hidden />
+                                                    <span style={{ fontWeight: 500 }}>오류 발생</span>
                                                 </div>
-                                                <p className="text-red-700 mb-2">{errors.errorMessage}</p>
-                                                <button
-                                                    onClick={() => dispatch(clearError())}
-                                                    className="text-red-600 hover:text-red-800 text-sm font-medium"
-                                                >
+                                                <p style={{ marginBottom: 'var(--spacing-sm)' }}>{errors.errorMessage}</p>
+                                                <button type="button" onClick={() => dispatch(clearError())} className="bw-btn-ghost" style={{ color: 'var(--accent-error)' }}>
                                                     오류 해제
                                                 </button>
                                             </div>
@@ -251,46 +198,43 @@ const AIEngineMonitor: React.FC<AIEngineMonitorProps> = ({ isOpen, onClose }) =>
                                 )}
 
                                 {selectedTab === 'models' && (
-                                    <motion.div
-                                        key="models"
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -20 }}
-                                        className="space-y-6"
-                                    >
-                                        <div className="bg-white border rounded-lg p-6">
-                                            <h3 className="text-lg font-semibold mb-4">AI 모델 관리</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <motion.div key="models" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
+                                        <div className="bw-card" style={{ padding: 'var(--spacing-lg)' }}>
+                                            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--spacing-md)' }}>AI 모델 관리</h3>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--spacing-md)' }}>
                                                 {aiModels.availableModels.map((model) => (
                                                     <div
                                                         key={model}
-                                                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${aiModels.currentModel === model
-                                                            ? 'border-blue-500 bg-blue-50'
-                                                            : 'border-gray-200 hover:border-gray-300'
-                                                            }`}
+                                                        role="button"
+                                                        tabIndex={0}
                                                         onClick={() => handleModelSwitch(model)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleModelSwitch(model)}
+                                                        style={{
+                                                            padding: 'var(--spacing-md)',
+                                                            border: 'var(--border-width) solid',
+                                                            borderColor: aiModels.currentModel === model ? 'var(--accent-info)' : 'var(--border-color)',
+                                                            backgroundColor: aiModels.currentModel === model ? 'var(--accent-info-muted)' : 'transparent',
+                                                            borderRadius: 'var(--radius-lg)',
+                                                            cursor: 'pointer',
+                                                            transition: 'border-color var(--transition-base), background var(--transition-base)'
+                                                        }}
                                                     >
-                                                        <div className="flex items-center justify-between">
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                             <div>
-                                                                <div className="font-medium text-gray-900">{model}</div>
-                                                                <div className="text-sm text-gray-500">
-                                                                    성능: {aiModels.modelPerformance[model] || 0}%
-                                                                </div>
+                                                                <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{model}</div>
+                                                                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)' }}>성능: {aiModels.modelPerformance[model] || 0}%</div>
                                                             </div>
-                                                            {aiModels.currentModel === model && (
-                                                                <CheckCircle className="w-5 h-5 text-blue-500" />
-                                                            )}
+                                                            {aiModels.currentModel === model && <CheckCircle className="w-5 h-5" style={{ color: 'var(--accent-info)' }} aria-hidden />}
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-
                                         {aiModels.isModelLoading && (
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                                                    <span className="text-blue-700">모델 전환 중...</span>
+                                            <div style={{ padding: 'var(--spacing-md)', backgroundColor: 'var(--accent-info-muted)', border: 'var(--border-width) solid var(--accent-info)', borderRadius: 'var(--radius-lg)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                                                    <div className="bw-spinner" style={{ width: 16, height: 16 }} />
+                                                    <span style={{ color: 'var(--accent-info)' }}>모델 전환 중...</span>
                                                 </div>
                                             </div>
                                         )}
@@ -298,89 +242,53 @@ const AIEngineMonitor: React.FC<AIEngineMonitorProps> = ({ isOpen, onClose }) =>
                                 )}
 
                                 {selectedTab === 'analytics' && (
-                                    <motion.div
-                                        key="analytics"
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -20 }}
-                                        className="space-y-6"
-                                    >
-                                        {/* 실시간 분석 제어 */}
-                                        <div className="bg-white border rounded-lg p-6">
-                                            <h3 className="text-lg font-semibold mb-4">실시간 분석</h3>
-                                            <div className="flex items-center space-x-4">
-                                                <button
-                                                    onClick={handleStartRealtimeAnalysis}
-                                                    disabled={realtimeAnalysis.isActive}
-                                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${realtimeAnalysis.isActive
-                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                                                        }`}
-                                                >
+                                    <motion.div key="analytics" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
+                                        <div className="bw-card" style={{ padding: 'var(--spacing-lg)' }}>
+                                            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--spacing-md)' }}>실시간 분석</h3>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                                                <button type="button" onClick={handleStartRealtimeAnalysis} disabled={realtimeAnalysis.isActive} className="bw-btn-primary">
                                                     {realtimeAnalysis.isActive ? '분석 중...' : '분석 시작'}
                                                 </button>
                                                 {realtimeAnalysis.isActive && (
-                                                    <div className="flex items-center space-x-2 text-green-600">
-                                                        <div className="animate-pulse w-2 h-2 bg-green-500 rounded-full"></div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', color: 'var(--accent-success)' }}>
+                                                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-success)', animation: 'pulse 1.5s ease-in-out infinite' }} />
                                                         <span>실시간 분석 활성</span>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* 감정 분석 테스트 */}
-                                        <div className="bg-white border rounded-lg p-6">
-                                            <h3 className="text-lg font-semibold mb-4">감정 분석 테스트</h3>
-                                            <div className="space-y-4">
-                                                <textarea
-                                                    value={testText}
-                                                    onChange={(e) => setTestText(e.target.value)}
-                                                    placeholder="분석할 텍스트를 입력하세요..."
-                                                    className="w-full p-3 border rounded-lg resize-none"
-                                                    rows={3}
-                                                />
-                                                <div className="flex space-x-2">
-                                                    <button
-                                                        onClick={handleSentimentAnalysis}
-                                                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                                                    >
-                                                        감정 분석
-                                                    </button>
-                                                    <button
-                                                        onClick={handleIntentDetection}
-                                                        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-                                                    >
-                                                        의도 감지
-                                                    </button>
+                                        <div className="bw-card" style={{ padding: 'var(--spacing-lg)' }}>
+                                            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--spacing-md)' }}>감정 분석 테스트</h3>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                                                <textarea value={testText} onChange={(e) => setTestText(e.target.value)} placeholder="분석할 텍스트를 입력하세요..." className="bw-input" rows={3} style={{ resize: 'none' }} />
+                                                <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                                                    <button type="button" onClick={handleSentimentAnalysis} className="bw-btn-primary" style={{ background: 'var(--accent-success)', borderColor: 'var(--accent-success)' }}>감정 분석</button>
+                                                    <button type="button" onClick={handleIntentDetection} className="bw-btn-secondary" style={{ color: 'var(--accent-secondary)', borderColor: 'var(--accent-secondary)' }}>의도 감지</button>
                                                 </div>
                                             </div>
-
-                                            {/* 분석 결과 */}
                                             {(advancedAnalytics.sentimentAnalysis.isActive || advancedAnalytics.intentRecognition.isActive) && (
-                                                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                                                <div style={{ marginTop: 'var(--spacing-md)', padding: 'var(--spacing-md)', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
                                                     {advancedAnalytics.sentimentAnalysis.isActive && (
-                                                        <div className="mb-3">
-                                                            <div className="flex items-center space-x-2 mb-1">
-                                                                <MessageSquare className="w-4 h-4 text-gray-500" />
-                                                                <span className="font-medium">감정 분석 결과:</span>
+                                                        <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-xs)' }}>
+                                                                <MessageSquare className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} aria-hidden />
+                                                                <span style={{ fontWeight: 500 }}>감정 분석 결과:</span>
                                                             </div>
-                                                            <div className={`font-semibold ${getSentimentColor(advancedAnalytics.sentimentAnalysis.currentSentiment)}`}>
-                                                                {advancedAnalytics.sentimentAnalysis.currentSentiment === 'positive' ? '긍정적' :
-                                                                    advancedAnalytics.sentimentAnalysis.currentSentiment === 'negative' ? '부정적' : '중립적'}
+                                                            <div style={{ fontWeight: 600, color: getSentimentColor(advancedAnalytics.sentimentAnalysis.currentSentiment) }}>
+                                                                {advancedAnalytics.sentimentAnalysis.currentSentiment === 'positive' ? '긍정적' : advancedAnalytics.sentimentAnalysis.currentSentiment === 'negative' ? '부정적' : '중립적'}
                                                                 ({advancedAnalytics.sentimentAnalysis.confidence}% 신뢰도)
                                                             </div>
                                                         </div>
                                                     )}
-
                                                     {advancedAnalytics.intentRecognition.isActive && (
                                                         <div>
-                                                            <div className="flex items-center space-x-2 mb-1">
-                                                                <Target className="w-4 h-4 text-gray-500" />
-                                                                <span className="font-medium">의도 감지 결과:</span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-xs)' }}>
+                                                                <Target className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} aria-hidden />
+                                                                <span style={{ fontWeight: 500 }}>의도 감지 결과:</span>
                                                             </div>
-                                                            <div className="font-semibold text-gray-900">
-                                                                {advancedAnalytics.intentRecognition.detectedIntent}
-                                                                ({advancedAnalytics.intentRecognition.confidence}% 신뢰도)
+                                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                                {advancedAnalytics.intentRecognition.detectedIntent} ({advancedAnalytics.intentRecognition.confidence}% 신뢰도)
                                                             </div>
                                                         </div>
                                                     )}
@@ -391,50 +299,30 @@ const AIEngineMonitor: React.FC<AIEngineMonitorProps> = ({ isOpen, onClose }) =>
                                 )}
 
                                 {selectedTab === 'settings' && (
-                                    <motion.div
-                                        key="settings"
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -20 }}
-                                        className="space-y-6"
-                                    >
-                                        <div className="bg-white border rounded-lg p-6">
-                                            <h3 className="text-lg font-semibold mb-4">AI 엔진 설정</h3>
-                                            <div className="space-y-4">
+                                    <motion.div key="settings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                                        <div className="bw-card" style={{ padding: 'var(--spacing-lg)' }}>
+                                            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--spacing-md)' }}>AI 엔진 설정</h3>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        웹소켓 연결 URL
-                                                    </label>
+                                                    <label className="as-label" style={{ display: 'block', marginBottom: 'var(--spacing-xs)' }}>웹소켓 연결 URL</label>
                                                     <input
                                                         type="text"
-                                                        defaultValue={process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:5000/ws'}
-                                                        className="w-full p-3 border rounded-lg"
+                                                        defaultValue={
+                                                            process.env.REACT_APP_WEBSOCKET_URL ||
+                                                            process.env.REACT_APP_WS_URL ||
+                                                            resolveGenericWebSocketClientUrl()
+                                                        }
+                                                        className="bw-input"
                                                         readOnly
                                                     />
                                                 </div>
-
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        재연결 시도 횟수
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        defaultValue={5}
-                                                        className="w-full p-3 border rounded-lg"
-                                                        readOnly
-                                                    />
+                                                    <label className="as-label" style={{ display: 'block', marginBottom: 'var(--spacing-xs)' }}>재연결 시도 횟수</label>
+                                                    <input type="number" defaultValue={5} className="bw-input" readOnly />
                                                 </div>
-
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        하트비트 간격 (초)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        defaultValue={30}
-                                                        className="w-full p-3 border rounded-lg"
-                                                        readOnly
-                                                    />
+                                                    <label className="as-label" style={{ display: 'block', marginBottom: 'var(--spacing-xs)' }}>하트비트 간격 (초)</label>
+                                                    <input type="number" defaultValue={30} className="bw-input" readOnly />
                                                 </div>
                                             </div>
                                         </div>

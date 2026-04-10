@@ -1,0 +1,44 @@
+/**
+ * RBAC 시스템 — CORBU.AI Brainwave 테마
+ */
+.rbac-root { max-width: 1200px; margin: 0 auto; }
+.rbac-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: var(--spacing-lg); margin-bottom: var(--spacing-xl); }
+.rbac-title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); }
+.rbac-desc { font-size: var(--font-size-sm); color: var(--text-secondary); margin-top: var(--spacing-xs); }
+.rbac-actions { display: flex; align-items: center; gap: var(--spacing-md); flex-wrap: wrap; }
+.rbac-tabs { border-bottom: var(--border-width) solid var(--border-color); }
+.rbac-tab { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md) var(--spacing-xs); border-bottom: 2px solid transparent; font-size: var(--font-size-sm); font-weight: 500; background: none; border-top: none; border-left: none; border-right: none; color: var(--text-secondary); cursor: pointer; transition: color var(--transition-base), border-color var(--transition-base); }
+.rbac-tab:hover { color: var(--text-primary); }
+.rbac-tab.active { border-bottom-color: var(--accent-info); color: var(--accent-info); }
+.rbac-card { background: var(--bg-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); border: var(--border-width) solid var(--border-color); }
+.rbac-card-header { padding: var(--spacing-lg); border-bottom: var(--border-width) solid var(--border-color); }
+.rbac-card-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--text-primary); }
+.rbac-filter-bar { display: flex; align-items: center; gap: var(--spacing-md); flex-wrap: wrap; padding: var(--spacing-md); }
+.rbac-search-wrap { position: relative; flex: 1; min-width: 200px; }
+.rbac-search-icon { position: absolute; left: var(--spacing-md); top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-tertiary); }
+.rbac-search-input { width: 100%; padding-left: 2.5rem; }
+.rbac-row { padding: var(--spacing-lg); transition: background var(--transition-base); }
+.rbac-row:hover { background: var(--bg-hover); }
+.rbac-row + .rbac-row { border-top: var(--border-width) solid var(--border-color); }
+.rbac-user-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--accent-info-muted); color: var(--accent-info); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rbac-role-icon { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rbac-name { font-weight: 500; color: var(--text-primary); }
+.rbac-email { font-size: var(--font-size-sm); color: var(--text-secondary); }
+.rbac-meta { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--spacing-xs); }
+.rbac-badge { padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-xs); font-weight: 500; border-radius: 9999px; }
+.rbac-action-btn { padding: var(--spacing-sm); border-radius: var(--radius-md); background: none; border: none; cursor: pointer; color: var(--text-tertiary); transition: background var(--transition-base), color var(--transition-base); }
+.rbac-action-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.rbac-action-btn.danger:hover { background: var(--accent-error-muted); color: var(--accent-error); }
+.rbac-perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--spacing-md); }
+.rbac-perm-card { padding: var(--spacing-md); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-lg); }
+.rbac-audit-icon { padding: var(--spacing-sm); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rbac-settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--spacing-lg); }
+.rbac-settings-card { padding: var(--spacing-lg); }
+.rbac-settings-row { display: flex; align-items: center; justify-content: space-between; padding: var(--spacing-md) 0; }
+.rbac-settings-row + .rbac-settings-row { border-top: var(--border-width) solid var(--border-color); }
+.rbac-settings-title { font-weight: 500; color: var(--text-primary); }
+.rbac-settings-desc { font-size: var(--font-size-sm); color: var(--text-secondary); }
+.rbac-toggle { width: 48px; height: 24px; border-radius: 12px; padding: 3px; border: none; cursor: pointer; display: flex; align-items: center; transition: background var(--transition-base); }
+.rbac-toggle.on { background: var(--accent-info); justify-content: flex-end; }
+.rbac-toggle.off { background: var(--bg-tertiary); justify-content: flex-start; }
+.rbac-toggle-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--bg-primary); flex-shrink: 0; }

@@ -8,17 +8,10 @@ import {
     Chip,
     LinearProgress,
     IconButton,
-    Tooltip,
     Alert,
     AlertTitle,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
     Avatar,
-    Badge,
     CircularProgress,
-    Button
 } from '@mui/material';
 import {
     Refresh,
@@ -27,16 +20,11 @@ import {
     Warning,
     Info,
     Speed,
-    Memory,
-    Storage,
-    NetworkCheck,
-    Security,
-    Psychology,
-    AutoAwesome,
     Timeline,
-    Assessment
 } from '@mui/icons-material';
 import integratedSystemAPI, { SystemStatus } from '../../services/integratedSystemAPI';
+import { getStatusColor } from '../../styles/themeColors';
+import { errorLogger, toError } from '../../utils/errorLogger';
 
 interface HealthMetric {
     name: string;
@@ -51,7 +39,7 @@ const SystemHealthMonitor: React.FC = () => {
     const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [autoRefresh, _setAutoRefresh] = useState(true);
 
     useEffect(() => {
         loadSystemStatus();
@@ -69,7 +57,11 @@ const SystemHealthMonitor: React.FC = () => {
             setSystemStatus(status);
             setLastUpdate(new Date());
         } catch (error) {
-            console.error('시스템 상태 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('시스템 상태 로드 실패', err, {
+                component: 'SystemHealthMonitor',
+                action: 'loadSystemStatus',
+            });
         } finally {
             setIsLoading(false);
         }
@@ -87,21 +79,6 @@ const SystemHealthMonitor: React.FC = () => {
                 return <Warning color="warning" />;
             default:
                 return <Info color="info" />;
-        }
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'up':
-            case 'healthy':
-                return '#4CAF50';
-            case 'down':
-            case 'unhealthy':
-                return '#F44336';
-            case 'degraded':
-                return '#FF9800';
-            default:
-                return '#9E9E9E';
         }
     };
 
@@ -197,7 +174,7 @@ const SystemHealthMonitor: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Typography variant="h5" gutterBottom sx={{
-                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(45deg, var(--accent-info) 0%, var(--accent-secondary) 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -236,8 +213,8 @@ const SystemHealthMonitor: React.FC = () => {
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                     <Avatar sx={{
-                                        bgcolor: metric.status === 'good' ? '#4CAF50' :
-                                            metric.status === 'warning' ? '#FF9800' : '#F44336',
+                                        bgcolor: metric.status === 'good' ? 'var(--accent-success)' :
+                                            metric.status === 'warning' ? 'var(--accent-warning)' : 'var(--accent-error)',
                                         mr: 2
                                     }}>
                                         {metric.icon}
@@ -257,10 +234,10 @@ const SystemHealthMonitor: React.FC = () => {
                                     sx={{
                                         height: 6,
                                         borderRadius: 3,
-                                        bgcolor: 'rgba(0,0,0,0.1)',
+                                        bgcolor: 'var(--bg-tertiary)',
                                         '& .MuiLinearProgress-bar': {
-                                            bgcolor: metric.status === 'good' ? '#4CAF50' :
-                                                metric.status === 'warning' ? '#FF9800' : '#F44336'
+                                            bgcolor: metric.status === 'good' ? 'var(--accent-success)' :
+                                                metric.status === 'warning' ? 'var(--accent-warning)' : 'var(--accent-error)'
                                         }
                                     }}
                                 />

@@ -1,3 +1,5 @@
+import { errorLogger, toError } from '../utils/errorLogger';
+
 export interface VoiceRecognitionConfig {
   language: string;
   continuous: boolean;
@@ -22,7 +24,7 @@ export interface VoiceSynthesisConfig {
 }
 
 class VoiceRecognitionService {
-  private recognition: any = null;
+  private recognition: SpeechRecognition | null = null;
   private synthesis: SpeechSynthesis | null = null;
   private isListening = false;
   private isSpeaking = false;
@@ -39,13 +41,16 @@ class VoiceRecognitionService {
   // 음성 인식 초기화
   private initializeRecognition() {
     if ('webkitSpeechRecognition' in window) {
-      this.recognition = new (window as any).webkitSpeechRecognition();
+      this.recognition = new (window as Window & { webkitSpeechRecognition: typeof SpeechRecognition }).webkitSpeechRecognition();
       this.setupRecognitionHandlers();
     } else if ('SpeechRecognition' in window) {
-      this.recognition = new (window as any).SpeechRecognition();
+      this.recognition = new (window as Window & { SpeechRecognition: typeof SpeechRecognition }).SpeechRecognition();
       this.setupRecognitionHandlers();
     } else {
-      console.warn('음성 인식이 지원되지 않는 브라우저입니다.');
+      errorLogger.warn('음성 인식이 지원되지 않는 브라우저입니다.', {
+        component: 'voiceRecognitionService',
+        action: 'initializeRecognition',
+      });
     }
   }
 
@@ -54,7 +59,10 @@ class VoiceRecognitionService {
     if ('speechSynthesis' in window) {
       this.synthesis = window.speechSynthesis;
     } else {
-      console.warn('음성 합성이 지원되지 않는 브라우저입니다.');
+      errorLogger.warn('음성 합성이 지원되지 않는 브라우저입니다.', {
+        component: 'voiceRecognitionService',
+        action: 'initializeSynthesis',
+      });
     }
   }
 
@@ -72,12 +80,13 @@ class VoiceRecognitionService {
       this.onEndCallback?.();
     };
 
-    this.recognition.onerror = (event: any) => {
-      const errorMessage = this.getErrorMessage(event.error);
+    this.recognition.onerror = (event: Event) => {
+      const err = (event as { error?: string }).error;
+      const errorMessage = this.getErrorMessage(err ?? 'Unknown error');
       this.onErrorCallback?.(errorMessage);
     };
 
-    this.recognition.onresult = (event: any) => {
+    this.recognition.onresult = (event: SpeechRecognitionEvent) => {
       const result = this.processRecognitionResult(event);
       this.onResultCallback?.(result);
     };
@@ -97,13 +106,17 @@ class VoiceRecognitionService {
       this.recognition.maxAlternatives = config.maxAlternatives;
 
       if (config.grammars) {
-        this.recognition.grammars = config.grammars;
+        (this.recognition as unknown as { grammars?: unknown }).grammars = config.grammars;
       }
 
       this.recognition.start();
       return true;
     } catch (error) {
-      console.error('음성 인식 시작 오류:', error);
+      const err = toError(error);
+      errorLogger.error('음성 인식 시작 오류', err, {
+        component: 'voiceRecognitionService',
+        action: 'startRecognition',
+      });
       this.onErrorCallback?.('음성 인식을 시작할 수 없습니다.');
       return false;
     }
@@ -117,14 +130,14 @@ class VoiceRecognitionService {
   }
 
   // 음성 인식 결과 처리
-  private processRecognitionResult(event: any): VoiceRecognitionResult {
+  private processRecognitionResult(event: SpeechRecognitionEvent): VoiceRecognitionResult {
     let finalTranscript = '';
     let interimTranscript = '';
     const alternatives: string[] = [];
 
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const transcript = event.results[i][0].transcript;
-      const confidence = event.results[i][0].confidence;
+      const _confidence = event.results[i][0].confidence;
       const isFinal = event.results[i].isFinal;
 
       if (isFinal) {
@@ -151,7 +164,10 @@ class VoiceRecognitionService {
   // 음성 합성
   speak(text: string, config: VoiceSynthesisConfig = this.getDefaultSynthesisConfig()) {
     if (!this.synthesis) {
-      console.warn('음성 합성이 지원되지 않습니다.');
+      errorLogger.warn('음성 합성이 지원되지 않습니다.', {
+        component: 'voiceRecognitionService',
+        action: 'speak',
+      });
       return false;
     }
 
@@ -174,14 +190,23 @@ class VoiceRecognitionService {
       };
 
       utterance.onerror = (event) => {
-        console.error('음성 합성 오류:', event);
+        const err = event.error ? toError(event.error) : new Error('음성 합성 오류');
+        errorLogger.error('음성 합성 오류', err, {
+          component: 'voiceRecognitionService',
+          action: 'speak',
+          eventType: event.type,
+        });
         this.isSpeaking = false;
       };
 
       this.synthesis.speak(utterance);
       return true;
     } catch (error) {
-      console.error('음성 합성 오류:', error);
+      const err = toError(error);
+      errorLogger.error('음성 합성 오류', err, {
+        component: 'voiceRecognitionService',
+        action: 'speak',
+      });
       return false;
     }
   }
@@ -309,7 +334,7 @@ class VoiceRecognitionService {
   // 음성 명령 인식
   recognizeCommand(transcript: string): { command: string; params: string[] } | null {
     const commands = [
-      { pattern: /^(새|새로운)\s*채팅/i, command: 'new_chat', params: [] },
+      { pattern: /^(새|새로운)\s*(채팅|대화)/i, command: 'new_chat', params: [] },
       { pattern: /^(프로젝트|프로젝트로)\s*이동/i, command: 'switch_project', params: [] },
       { pattern: /^(분석|대시보드)\s*보기/i, command: 'show_analytics', params: [] },
       { pattern: /^(저장|저장하기)/i, command: 'save', params: [] },

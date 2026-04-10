@@ -1,4 +1,5 @@
 import { Message } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface QualityDimension {
     name: string;
@@ -58,12 +59,15 @@ class AdvancedQualityEvaluator {
         context: {
             conversationHistory: Message[];
             projectContext?: Record<string, unknown>;
-            userPreferences?: any;
+            userPreferences?: Record<string, unknown>;
         }
     ): Promise<ResponseAnalysis> {
-        console.log('🔍 고급 품질 평가 시작...');
-
         const startTime = Date.now();
+        errorLogger.info('🔍 고급 품질 평가 시작', {
+            component: 'advancedQualityEvaluator',
+            action: 'evaluateAdvancedQuality',
+            userInput: userInput.substring(0, 100),
+        });
 
         try {
             // 1. 각 차원별 품질 평가
@@ -127,7 +131,12 @@ class AdvancedQualityEvaluator {
             const recommendations = this.generateRecommendations(improvements, context);
 
             const processingTime = Date.now() - startTime;
-            console.log(`✅ 고급 품질 평가 완료 (${processingTime}ms)`);
+            errorLogger.info('✅ 고급 품질 평가 완료', {
+                component: 'advancedQualityEvaluator',
+                action: 'evaluateAdvancedQuality',
+                processingTime,
+                overallScore: overall,
+            });
 
             return {
                 qualityMetrics: {
@@ -158,7 +167,12 @@ class AdvancedQualityEvaluator {
             };
 
         } catch (error) {
-            console.error('고급 품질 평가 오류:', error);
+            const err = toError(error);
+            errorLogger.error('고급 품질 평가 오류', err, {
+                component: 'advancedQualityEvaluator',
+                action: 'evaluateAdvancedQuality',
+                userInput: userInput.substring(0, 100),
+            });
             return this.createFallbackAnalysis();
         }
     }
@@ -169,7 +183,7 @@ class AdvancedQualityEvaluator {
     private async evaluateRelevance(
         response: string,
         userInput: string,
-        context: any
+        context: Record<string, unknown>
     ): Promise<QualityDimension> {
         const userKeywords = this.extractKeywords(userInput);
         const responseKeywords = this.extractKeywords(response);
@@ -197,7 +211,7 @@ class AdvancedQualityEvaluator {
     /**
      * 정확성 평가
      */
-    private async evaluateAccuracy(response: string, context: any): Promise<QualityDimension> {
+    private async evaluateAccuracy(response: string, context: Record<string, unknown>): Promise<QualityDimension> {
         // 사실 검증
         const factualAccuracy = this.verifyFactualAccuracy(response);
 
@@ -224,7 +238,7 @@ class AdvancedQualityEvaluator {
     private async evaluateCompleteness(
         response: string,
         userInput: string,
-        context: any
+        context: Record<string, unknown>
     ): Promise<QualityDimension> {
         // 질문 요구사항 충족도
         const requirementFulfillment = this.analyzeRequirementFulfillment(response, userInput);
@@ -276,7 +290,7 @@ class AdvancedQualityEvaluator {
     private async evaluateHelpfulness(
         response: string,
         userInput: string,
-        context: any
+        context: Record<string, unknown>
     ): Promise<QualityDimension> {
         // 실용성 분석
         const practicality = this.analyzePracticality(response, userInput);
@@ -301,7 +315,7 @@ class AdvancedQualityEvaluator {
     /**
      * 일관성 평가
      */
-    private async evaluateCoherence(response: string, context: any): Promise<QualityDimension> {
+    private async evaluateCoherence(response: string, context: Record<string, unknown>): Promise<QualityDimension> {
         // 논리적 흐름 분석
         const logicalFlow = this.analyzeLogicalFlow(response);
 
@@ -325,7 +339,7 @@ class AdvancedQualityEvaluator {
     /**
      * 창의성 평가
      */
-    private async evaluateCreativity(response: string, context: any): Promise<QualityDimension> {
+    private async evaluateCreativity(response: string, context: Record<string, unknown>): Promise<QualityDimension> {
         // 독창성 분석
         const originality = this.analyzeOriginality(response, context);
 
@@ -349,7 +363,7 @@ class AdvancedQualityEvaluator {
     /**
      * 기술적 깊이 평가
      */
-    private async evaluateTechnicalDepth(response: string, context: any): Promise<QualityDimension> {
+    private async evaluateTechnicalDepth(response: string, context: Record<string, unknown>): Promise<QualityDimension> {
         // 기술적 복잡성 분석
         const technicalComplexity = this.analyzeTechnicalComplexity(response);
 
@@ -413,11 +427,11 @@ class AdvancedQualityEvaluator {
         return this.extractKeywords(text);
     }
 
-    private analyzeContextRelevance(response: string, context: any): number {
+    private analyzeContextRelevance(response: string, context: Record<string, unknown>): number {
         if (!context.projectContext) return 0.8; // 기본값
 
         // 프로젝트 컨텍스트와의 관련성 분석
-        const projectKeywords = this.extractProjectKeywords(context.projectContext);
+        const projectKeywords = this.extractProjectKeywords((context.projectContext ?? {}) as Record<string, unknown>);
         const responseKeywords = this.extractKeywords(response);
 
         if (projectKeywords.length === 0) return 0.8;
@@ -438,108 +452,108 @@ class AdvancedQualityEvaluator {
     }
 
     // 기타 분석 메서드들 (간단한 구현)
-    private verifyFactualAccuracy(response: string): number {
+    private verifyFactualAccuracy(_response: string): number {
         // 실제로는 사실 검증 API나 데이터베이스 사용
         return 0.85; // 기본값
     }
 
-    private checkLogicalConsistency(response: string): number {
+    private checkLogicalConsistency(_response: string): number {
         // 논리적 일관성 검사
         return 0.9; // 기본값
     }
 
-    private verifyTechnicalAccuracy(response: string, context: any): number {
+    private verifyTechnicalAccuracy(_response: string, _context: Record<string, unknown>): number {
         // 기술적 정확성 검증
         return 0.88; // 기본값
     }
 
-    private analyzeRequirementFulfillment(response: string, userInput: string): number {
+    private analyzeRequirementFulfillment(_response: string, _userInput: string): number {
         // 요구사항 충족도 분석
         return 0.87; // 기본값
     }
 
-    private analyzeDetailLevel(response: string, context: any): number {
+    private analyzeDetailLevel(response: string, _context: Record<string, unknown>): number {
         // 상세도 분석
         const wordCount = response.split(' ').length;
         return Math.min(wordCount / 100, 1.0); // 100단어당 1점
     }
 
-    private analyzeComprehensiveness(response: string, userInput: string): number {
+    private analyzeComprehensiveness(_response: string, _userInput: string): number {
         // 포괄성 분석
         return 0.82; // 기본값
     }
 
-    private analyzeSentenceStructure(response: string): number {
+    private analyzeSentenceStructure(_response: string): number {
         // 문장 구조 분석
         return 0.9; // 기본값
     }
 
-    private analyzeTerminologyUsage(response: string): number {
+    private analyzeTerminologyUsage(_response: string): number {
         // 용어 사용 분석
         return 0.85; // 기본값
     }
 
-    private analyzeReadability(response: string): number {
+    private analyzeReadability(_response: string): number {
         // 가독성 분석
         return 0.88; // 기본값
     }
 
-    private analyzePracticality(response: string, userInput: string): number {
+    private analyzePracticality(_response: string, _userInput: string): number {
         // 실용성 분석
         return 0.86; // 기본값
     }
 
-    private analyzeActionability(response: string): number {
+    private analyzeActionability(_response: string): number {
         // 실행 가능성 분석
         return 0.84; // 기본값
     }
 
-    private analyzeValueProvision(response: string, context: any): number {
+    private analyzeValueProvision(_response: string, _context: Record<string, unknown>): number {
         // 가치 제공 분석
         return 0.83; // 기본값
     }
 
-    private analyzeLogicalFlow(response: string): number {
+    private analyzeLogicalFlow(_response: string): number {
         // 논리적 흐름 분석
         return 0.89; // 기본값
     }
 
-    private analyzeStructuralConsistency(response: string): number {
+    private analyzeStructuralConsistency(_response: string): number {
         // 구조적 일관성 분석
         return 0.87; // 기본값
     }
 
-    private analyzeStyleConsistency(response: string, context: any): number {
+    private analyzeStyleConsistency(_response: string, _context: Record<string, unknown>): number {
         // 스타일 일관성 분석
         return 0.85; // 기본값
     }
 
-    private analyzeOriginality(response: string, context: any): number {
+    private analyzeOriginality(_response: string, _context: Record<string, unknown>): number {
         // 독창성 분석
         return 0.75; // 기본값
     }
 
-    private analyzeInnovation(response: string): number {
+    private analyzeInnovation(_response: string): number {
         // 혁신성 분석
         return 0.7; // 기본값
     }
 
-    private analyzeExpressionVariety(response: string): number {
+    private analyzeExpressionVariety(_response: string): number {
         // 표현의 다양성 분석
         return 0.8; // 기본값
     }
 
-    private analyzeTechnicalComplexity(response: string): number {
+    private analyzeTechnicalComplexity(_response: string): number {
         // 기술적 복잡성 분석
         return 0.78; // 기본값
     }
 
-    private analyzeExpertiseLevel(response: string, context: any): number {
+    private analyzeExpertiseLevel(_response: string, _context: Record<string, unknown>): number {
         // 전문성 수준 분석
         return 0.82; // 기본값
     }
 
-    private analyzeDepthAnalysis(response: string): number {
+    private analyzeDepthAnalysis(_response: string): number {
         // 심화 분석 수준 분석
         return 0.8; // 기본값
     }
@@ -631,7 +645,7 @@ class AdvancedQualityEvaluator {
     /**
      * 권장사항 생성
      */
-    private generateRecommendations(improvements: QualityImprovement[], context: any): string[] {
+    private generateRecommendations(improvements: QualityImprovement[], _context: Record<string, unknown>): string[] {
         const recommendations: string[] = [];
 
         improvements.forEach(improvement => {
@@ -646,42 +660,42 @@ class AdvancedQualityEvaluator {
     }
 
     // 제안 생성 메서드들
-    private generateRelevanceSuggestions(score: number, userKeywords: string[], responseKeywords: string[]): string[] {
+    private generateRelevanceSuggestions(score: number, _userKeywords: string[], _responseKeywords: string[]): string[] {
         if (score >= 0.8) return ['관련성이 우수합니다.'];
         return ['사용자 질문의 핵심 키워드를 더 많이 포함하세요.', '주제에서 벗어나지 않도록 주의하세요.'];
     }
 
-    private generateAccuracySuggestions(score: number, response: string): string[] {
+    private generateAccuracySuggestions(score: number, _response: string): string[] {
         if (score >= 0.8) return ['정확성이 우수합니다.'];
         return ['사실 확인을 더 철저히 하세요.', '논리적 일관성을 유지하세요.'];
     }
 
-    private generateCompletenessSuggestions(score: number, userInput: string, response: string): string[] {
+    private generateCompletenessSuggestions(score: number, _userInput: string, _response: string): string[] {
         if (score >= 0.8) return ['완성도가 우수합니다.'];
         return ['사용자 질문의 모든 측면을 다루세요.', '더 구체적인 예시를 포함하세요.'];
     }
 
-    private generateClaritySuggestions(score: number, response: string): string[] {
+    private generateClaritySuggestions(score: number, _response: string): string[] {
         if (score >= 0.8) return ['명확성이 우수합니다.'];
         return ['문장을 더 간결하게 작성하세요.', '복잡한 용어를 쉽게 설명하세요.'];
     }
 
-    private generateHelpfulnessSuggestions(score: number, response: string, userInput: string): string[] {
+    private generateHelpfulnessSuggestions(score: number, _response: string, _userInput: string): string[] {
         if (score >= 0.8) return ['도움성이 우수합니다.'];
         return ['실행 가능한 구체적인 조언을 제공하세요.', '사용자의 실제 상황에 맞는 해결책을 제시하세요.'];
     }
 
-    private generateCoherenceSuggestions(score: number, response: string): string[] {
+    private generateCoherenceSuggestions(score: number, _response: string): string[] {
         if (score >= 0.8) return ['일관성이 우수합니다.'];
         return ['논리적 흐름을 개선하세요.', '문단 간 연결을 더 자연스럽게 하세요.'];
     }
 
-    private generateCreativitySuggestions(score: number, response: string): string[] {
+    private generateCreativitySuggestions(score: number, _response: string): string[] {
         if (score >= 0.8) return ['창의성이 우수합니다.'];
         return ['독창적인 관점을 추가하세요.', '다양한 표현 방식을 사용하세요.'];
     }
 
-    private generateTechnicalDepthSuggestions(score: number, response: string): string[] {
+    private generateTechnicalDepthSuggestions(score: number, _response: string): string[] {
         if (score >= 0.8) return ['기술적 깊이가 우수합니다.'];
         return ['더 심화된 분석을 포함하세요.', '전문적인 용어와 개념을 활용하세요.'];
     }

@@ -797,4 +797,5 @@ async def get_scaling_history():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8010)
+    _p = int(os.environ.get("SCALABILITY_MANAGER_PORT", os.environ.get("PORT", "8010")))
+    uvicorn.run(app, host="0.0.0.0", port=_p)

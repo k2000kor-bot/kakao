@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-개포우성 재개발 프로젝트 고도화된 종합 분석 시스템
+샘플 재개발 프로젝트 고도화된 종합 분석 시스템
 Gaepo Woosung Redevelopment Project Advanced Comprehensive Analysis System
 
 다층적 분석 프레임워크:
@@ -63,7 +63,7 @@ class MediaFile:
 
 
 class GaepoSungAdvancedAnalysisSystem:
-    """개포우성 고도화된 종합 분석 시스템"""
+    """샘플 프로젝트 고도화된 종합 분석 시스템"""
     
     def __init__(self, db_path: str = "gaeposung_advanced_analysis.db"):
         self.db_path = db_path
@@ -723,7 +723,7 @@ class GaepoSungAdvancedAnalysisSystem:
     
     def _generate_executive_summary(self, analysis_results: Dict[str, Any]) -> str:
         """실행 요약 생성"""
-        summary = "개포우성 재개발 프로젝트 종합 분석 보고서\n\n"
+        summary = "샘플 재개발 프로젝트 종합 분석 보고서\n\n"
         summary += "주요 발견사항:\n"
         
         # 각 분석 결과에서 핵심 내용 추출
@@ -857,4 +857,4 @@ if __name__ == "__main__":
     # 종합 분석 실행
     # system.queue_comprehensive_analysis([file_id])
     
-    print("개포우성 고도화된 종합 분석 시스템이 준비되었습니다.")
+    print("샘플 프로젝트 고도화된 종합 분석 시스템이 준비되었습니다.")

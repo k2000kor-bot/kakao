@@ -1,7 +1,9 @@
 /**
- * CORBU AI 바이럴 콘텐츠 최적화 시스템
+ * CORBU.AI 바이럴 콘텐츠 최적화 시스템
  * 소셜 미디어에서 최대 확산을 위한 고도화된 콘텐츠 최적화 엔진
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface ViralContent {
     originalContent: string;
@@ -81,12 +83,104 @@ export interface PlatformOptimization {
     algorithmFactors: string[];
 }
 
+// Internal types for method signatures and returns
+type TargetAudience = ViralOptimizationRequest['targetAudience'];
+
+interface OriginalContentAnalysis {
+    viralScore: number;
+    strengths: string[];
+    weaknesses: string[];
+    emotionalElements: string[];
+    recommendedImprovements: string[];
+}
+
+interface ShareabilityEnhancement {
+    type: string;
+    enhancement: string;
+    implementation: string;
+}
+
+interface PlatformOptimizationResult {
+    platform: string;
+    optimized_text: string;
+    viral_score: number;
+    shareability_factors: string[];
+    emotional_hooks: string[];
+    timing_strategy: string;
+    hashtag_strategy: string[];
+    visual_suggestions: string[];
+    formula_applied?: string;
+    [key: string]: unknown;
+}
+
+interface RiskAssessment {
+    controversy: number;
+    backlash: number;
+    platform_penalties: number;
+    brand_damage: number;
+    legal_issues: number;
+    ethical_concerns: number;
+    overall: number;
+    mitigation_strategies: string[];
+}
+
+interface RealTimeTrendsResult {
+    hot: string[];
+    emerging: string[];
+    declining: string[];
+    opportunities: string[];
+}
+
+interface TrendMappingResult {
+    direct_match: string[];
+    indirect_match: string[];
+    opportunity_match: string[];
+}
+
+interface CompetitorAnalysisResult {
+    topPerformers: string[];
+    contentGaps: string[];
+    differentiationPoints: string[];
+}
+
+interface TrendActionPlanResult {
+    immediate: string[];
+    shortTerm: string[];
+    longTerm: string[];
+}
+
+interface ViralStrategyResult {
+    primaryApproach: string;
+    keyTactics: string[];
+    timingPlan: string;
+    crossPlatformPlan: CrossPlatformPlanResult;
+}
+
+interface ViralPredictionsResult {
+    expectedShares: number;
+    expectedEngagement: number;
+    viralProbability: number;
+    peakTiming: string;
+}
+
+interface CrossPlatformPlanResult {
+    sequence: Array<{ platform: string; order: number }>;
+    coordination: string;
+    adaptation: string;
+}
+
+interface ViralAlertsResult {
+    criticalAlerts: string[];
+    opportunities: string[];
+    threats: string[];
+}
+
 class ViralContentOptimizer {
-    private viralFormulas: Map<string, any> = new Map();
+    private viralFormulas: Map<string, Record<string, unknown>> = new Map();
     private emotionalTriggers: Map<string, EmotionalTrigger> = new Map();
-    private platformAlgorithms: Map<string, any> = new Map();
+    private platformAlgorithms: Map<string, Record<string, unknown>> = new Map();
     private trendDatabase: Map<string, TrendAnalysis> = new Map();
-    private shareabilityPatterns: Map<string, any> = new Map();
+    private shareabilityPatterns: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializeViralFormulas();
@@ -107,13 +201,13 @@ class ViralContentOptimizer {
             originalScore: number;
             improvementAreas: string[];
             viralPotential: number;
-            riskAssessment: any;
+            riskAssessment: RiskAssessment;
         };
         strategy: {
             primaryApproach: string;
             keyTactics: string[];
             timingPlan: string;
-            crossPlatformPlan: any;
+            crossPlatformPlan: CrossPlatformPlanResult;
         };
         predictions: {
             expectedShares: number;
@@ -123,9 +217,11 @@ class ViralContentOptimizer {
         };
     }> {
         try {
-            console.log('🚀 바이럴 콘텐츠 최적화 시작...', {
+            errorLogger.info('🚀 바이럴 콘텐츠 최적화 시작', {
+                component: 'viralContentOptimizer',
+                action: 'optimizeForViral',
                 platform: request.targetPlatform,
-                goal: request.viralGoal
+                goal: request.viralGoal,
             });
 
             // 1. 원본 콘텐츠 분석
@@ -195,7 +291,13 @@ class ViralContentOptimizer {
             };
 
         } catch (error) {
-            console.error('❌ 바이럴 콘텐츠 최적화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 바이럴 콘텐츠 최적화 실패', err, {
+                component: 'viralContentOptimizer',
+                action: 'optimizeForViral',
+                platform: request.targetPlatform,
+                goal: request.viralGoal,
+            });
             throw new Error('바이럴 콘텐츠 최적화에 실패했습니다.');
         }
     }
@@ -206,7 +308,7 @@ class ViralContentOptimizer {
     public async generateTrendingContent(
         topic: string,
         platform: string,
-        targetAudience: any,
+        targetAudience: TargetAudience,
         urgency: 'immediate' | 'scheduled' | 'planned'
     ): Promise<{
         trendingContent: ViralContent[];
@@ -228,7 +330,12 @@ class ViralContentOptimizer {
         };
     }> {
         try {
-            console.log('📈 실시간 트렌드 기반 콘텐츠 생성...', { topic, urgency });
+            errorLogger.info('📈 실시간 트렌드 기반 콘텐츠 생성', {
+                component: 'viralContentOptimizer',
+                action: 'generateTrendingContent',
+                topic,
+                urgency,
+            });
 
             // 실시간 트렌드 분석
             const realTimeTrends = await this.analyzeRealTimeTrends(platform, targetAudience);
@@ -237,7 +344,7 @@ class ViralContentOptimizer {
             const topicTrendMapping = await this.mapTopicToTrends(topic, realTimeTrends);
 
             // 경쟁사 분석
-            const competitorAnalysis = await this.analyzeCompetitors(topic, platform, realTimeTrends);
+            const competitorAnalysis = await this.analyzeCompetitors(topic, platform, realTimeTrends as unknown as TrendAnalysis);
 
             // 트렌드 기반 콘텐츠 생성
             const trendingContents = await this.createTrendBasedContent(
@@ -251,7 +358,7 @@ class ViralContentOptimizer {
             // 액션 플랜 수립
             const actionPlan = await this.developTrendActionPlan(
                 trendingContents,
-                realTimeTrends,
+                realTimeTrends as unknown as TrendAnalysis,
                 urgency
             );
 
@@ -268,7 +375,13 @@ class ViralContentOptimizer {
             };
 
         } catch (error) {
-            console.error('❌ 트렌드 기반 콘텐츠 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 트렌드 기반 콘텐츠 생성 실패', err, {
+                component: 'viralContentOptimizer',
+                action: 'generateTrendingContent',
+                topic,
+                urgency,
+            });
             throw new Error('트렌드 기반 콘텐츠 생성에 실패했습니다.');
         }
     }
@@ -302,7 +415,11 @@ class ViralContentOptimizer {
         };
     }> {
         try {
-            console.log('🧪 A/B 테스트용 바이럴 변형 생성...', { variantCount });
+            errorLogger.info('🧪 A/B 테스트용 바이럴 변형 생성', {
+                component: 'viralContentOptimizer',
+                action: 'generateViralVariants',
+                variantCount,
+            });
 
             const variants = [];
 
@@ -350,7 +467,12 @@ class ViralContentOptimizer {
             };
 
         } catch (error) {
-            console.error('❌ 바이럴 변형 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 바이럴 변형 생성 실패', err, {
+                component: 'viralContentOptimizer',
+                action: 'generateViralVariants',
+                variantCount,
+            });
             throw new Error('바이럴 변형 생성에 실패했습니다.');
         }
     }
@@ -389,7 +511,12 @@ class ViralContentOptimizer {
         };
     }> {
         try {
-            console.log('📊 바이럴 성능 실시간 모니터링 시작...', { contentId, monitoringDuration });
+            errorLogger.info('📊 바이럴 성능 실시간 모니터링 시작', {
+                component: 'viralContentOptimizer',
+                action: 'monitorViralPerformance',
+                contentId,
+                monitoringDuration,
+            });
 
             // 플랫폼별 실시간 메트릭 수집
             const realTimeMetrics = await Promise.all(
@@ -416,7 +543,13 @@ class ViralContentOptimizer {
             };
 
         } catch (error) {
-            console.error('❌ 바이럴 성능 모니터링 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 바이럴 성능 모니터링 실패', err, {
+                component: 'viralContentOptimizer',
+                action: 'monitorViralPerformance',
+                contentId,
+                monitoringDuration,
+            });
             throw new Error('바이럴 성능 모니터링에 실패했습니다.');
         }
     }
@@ -454,7 +587,12 @@ class ViralContentOptimizer {
         }[];
     }> {
         try {
-            console.log('🌐 크로스 플랫폼 바이럴 전략 개발...', { platforms: platforms.length, timeline });
+            errorLogger.info('🌐 크로스 플랫폼 바이럴 전략 개발', {
+                component: 'viralContentOptimizer',
+                action: 'developCrossPlatformStrategy',
+                platformCount: platforms.length,
+                timeline,
+            });
 
             // 플랫폼별 최적화된 콘텐츠 생성
             const platformContents = await Promise.all(
@@ -485,7 +623,13 @@ class ViralContentOptimizer {
             };
 
         } catch (error) {
-            console.error('❌ 크로스 플랫폼 전략 개발 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 크로스 플랫폼 전략 개발 실패', err, {
+                component: 'viralContentOptimizer',
+                action: 'developCrossPlatformStrategy',
+                platformCount: platforms.length,
+                timeline,
+            });
             throw new Error('크로스 플랫폼 전략 개발에 실패했습니다.');
         }
     }
@@ -860,13 +1004,13 @@ class ViralContentOptimizer {
     // 핵심 분석 메서드들
     // ============================
 
-    private async analyzeOriginalContent(content: string, platform: string): Promise<any> {
+    private async analyzeOriginalContent(content: string, platform: string): Promise<OriginalContentAnalysis> {
         let viralScore = 30; // 기본 점수
         const weaknesses = [];
         const strengths = [];
 
         // 길이 분석
-        const platformOptimal = this.platformAlgorithms.get(platform)?.optimal_posting;
+        const _platformOptimal = this.platformAlgorithms.get(platform)?.optimal_posting;
         if (content.length < 50) {
             weaknesses.push('내용이 너무 짧음');
             viralScore -= 10;
@@ -910,7 +1054,7 @@ class ViralContentOptimizer {
         };
     }
 
-    private async analyzeTrends(targetAudience: any, platform: string): Promise<TrendAnalysis> {
+    private async analyzeTrends(targetAudience: TargetAudience, platform: string): Promise<TrendAnalysis> {
         // 실제로는 API를 통해 실시간 트렌드를 가져옴
         const trends = this.trendDatabase.get('general') || {
             currentTrends: {
@@ -939,7 +1083,7 @@ class ViralContentOptimizer {
     private async generateEmotionalHooks(
         content: string,
         goal: string,
-        audience: any,
+        audience: TargetAudience,
         riskTolerance: string
     ): Promise<string[]> {
         const hooks = [];
@@ -969,9 +1113,9 @@ class ViralContentOptimizer {
 
     private async enhanceShareability(
         content: string,
-        audience: any,
+        audience: TargetAudience,
         goal: string
-    ): Promise<any> {
+    ): Promise<ShareabilityEnhancement[]> {
         const enhancements = [];
         const sharePatterns = this.shareabilityPatterns.get('high_shareability');
 
@@ -1007,8 +1151,8 @@ class ViralContentOptimizer {
         content: string,
         targetPlatform: string,
         emotionalHooks: string[],
-        shareabilityEnhancements: any[]
-    ): Promise<any[]> {
+        shareabilityEnhancements: ShareabilityEnhancement[]
+    ): Promise<PlatformOptimizationResult[]> {
         const optimizations = [];
 
         if (targetPlatform === 'all') {
@@ -1036,10 +1180,10 @@ class ViralContentOptimizer {
     }
 
     private async applyViralFormulas(
-        platformOptimizations: any[],
+        platformOptimizations: PlatformOptimizationResult[],
         request: ViralOptimizationRequest,
         trends: TrendAnalysis
-    ): Promise<any[]> {
+    ): Promise<PlatformOptimizationResult[]> {
         const formulaResults = [];
 
         for (const optimization of platformOptimizations) {
@@ -1056,10 +1200,10 @@ class ViralContentOptimizer {
     }
 
     private async assessViralRisks(
-        optimizedContents: any[],
+        optimizedContents: PlatformOptimizationResult[],
         request: ViralOptimizationRequest,
         trends: TrendAnalysis
-    ): Promise<any> {
+    ): Promise<RiskAssessment> {
         const risks = {
             controversy: 0,
             backlash: 0,
@@ -1087,17 +1231,17 @@ class ViralContentOptimizer {
         // 트렌드의 논란성 반영
         if (trends.competition > 80) risks.backlash += 15;
 
+        const risksWithOverall = { ...risks, overall: Math.max(...Object.values(risks)) };
         return {
-            ...risks,
-            overall: Math.max(...Object.values(risks)),
-            mitigation_strategies: this.generateRiskMitigationStrategies(risks, request)
+            ...risksWithOverall,
+            mitigation_strategies: this.generateRiskMitigationStrategies(risksWithOverall, request)
         };
     }
 
     private async generateOptimizedVersions(
-        formulaResults: any[],
+        formulaResults: PlatformOptimizationResult[],
         request: ViralOptimizationRequest,
-        riskAssessment: any
+        _riskAssessment: RiskAssessment
     ): Promise<ViralContent[]> {
         const optimizedVersions: ViralContent[] = [];
 
@@ -1105,7 +1249,7 @@ class ViralContentOptimizer {
             const viralContent: ViralContent = {
                 originalContent: request.content,
                 optimizedContent: result.optimized_text,
-                platform: result.platform,
+                platform: result.platform as ViralContent['platform'],
                 viralScore: result.viral_score,
                 shareabilityFactors: result.shareability_factors,
                 emotionalHooks: result.emotional_hooks,
@@ -1157,7 +1301,7 @@ class ViralContentOptimizer {
         return suggestions[weakness as keyof typeof suggestions] || '콘텐츠 품질을 향상시키세요';
     }
 
-    private filterTrendsForAudience(trends: any, audience: any): TrendAnalysis {
+    private filterTrendsForAudience(trends: TrendAnalysis, audience: TargetAudience): TrendAnalysis {
         // 오디언스 연령대에 맞는 트렌드 필터링
         const ageGroupTrends = {
             '10s': ['tiktok_trends', 'gaming', 'school_life'],
@@ -1208,7 +1352,7 @@ class ViralContentOptimizer {
         return trigger.intensity <= limit;
     }
 
-    private async createEmotionalHook(content: string, trigger: EmotionalTrigger, audience: any): Promise<string> {
+    private async createEmotionalHook(content: string, trigger: EmotionalTrigger, audience: TargetAudience): Promise<string> {
         const examples = trigger.examples;
         const selectedExample = examples[Math.floor(Math.random() * examples.length)];
 
@@ -1226,8 +1370,8 @@ class ViralContentOptimizer {
         content: string,
         platform: string,
         emotionalHooks: string[],
-        shareabilityEnhancements: any[]
-    ): Promise<any> {
+        shareabilityEnhancements: ShareabilityEnhancement[]
+    ): Promise<PlatformOptimizationResult> {
         const platformSettings = this.platformAlgorithms.get(platform);
 
         return {
@@ -1236,13 +1380,13 @@ class ViralContentOptimizer {
             viral_score: await this.calculatePlatformViralScore(content, platform),
             shareability_factors: shareabilityEnhancements.map(e => e.type),
             emotional_hooks: emotionalHooks,
-            timing_strategy: platformSettings?.optimal_posting?.times[0] || '적절한 시간',
+            timing_strategy: (platformSettings?.optimal_posting as { times?: string[] } | undefined)?.times?.[0] || '적절한 시간',
             hashtag_strategy: await this.generatePlatformHashtags(content, platform),
             visual_suggestions: await this.generateVisualSuggestions(content, platform)
         };
     }
 
-    private selectOptimalFormula(request: ViralOptimizationRequest, trends: TrendAnalysis): any {
+    private selectOptimalFormula(request: ViralOptimizationRequest, _trends: TrendAnalysis): Record<string, unknown> | undefined {
         // 목표와 리스크 톨러런스에 따른 공식 선택
         if (request.viralGoal === 'shares' && request.riskTolerance === 'aggressive') {
             return this.viralFormulas.get('controversy_based');
@@ -1255,26 +1399,35 @@ class ViralContentOptimizer {
         }
     }
 
-    private async applyFormula(optimization: any, formula: any, request: ViralOptimizationRequest, trends: TrendAnalysis): Promise<any> {
+    private async applyFormula(
+        optimization: PlatformOptimizationResult,
+        formula: Record<string, unknown> | undefined,
+        _request: ViralOptimizationRequest,
+        _trends: TrendAnalysis
+    ): Promise<PlatformOptimizationResult> {
         let viralScore = optimization.viral_score;
+        const formulaObj = formula as { structure?: string[]; multipliers?: { curiosity?: number } } | undefined;
 
         // 공식의 구조에 따른 점수 조정
-        if (formula.structure.includes('hook')) viralScore += 15;
-        if (formula.structure.includes('story')) viralScore += 10;
-        if (formula.structure.includes('call_to_action')) viralScore += 20;
+        if (formulaObj?.structure?.includes('hook')) viralScore += 15;
+        if (formulaObj?.structure?.includes('story')) viralScore += 10;
+        if (formulaObj?.structure?.includes('call_to_action')) viralScore += 20;
 
         // 멀티플라이어 적용
-        const relevantMultiplier = formula.multipliers?.curiosity || 1.0;
+        const relevantMultiplier = formulaObj?.multipliers?.curiosity ?? 1.0;
         viralScore *= relevantMultiplier;
+
+        const structure = formulaObj?.structure;
+        const formulaApplied = Array.isArray(structure) ? structure.join('_') : (structure != null ? String(structure) : undefined);
 
         return {
             ...optimization,
             viral_score: Math.min(viralScore, 100),
-            formula_applied: formula.structure
+            formula_applied: formulaApplied
         };
     }
 
-    private generateRiskMitigationStrategies(risks: any, request: ViralOptimizationRequest): string[] {
+    private generateRiskMitigationStrategies(risks: Omit<RiskAssessment, 'mitigation_strategies'>, request: ViralOptimizationRequest): string[] {
         const strategies = [];
 
         if (risks.controversy > 50) {
@@ -1298,7 +1451,7 @@ class ViralContentOptimizer {
 
     // 추가 메서드들 (간략화)
     private async optimizeTextForPlatform(content: string, platform: string, emotionalHook?: string): Promise<string> {
-        const platformSettings = this.platformAlgorithms.get(platform);
+        const _platformSettings = this.platformAlgorithms.get(platform);
         let optimized = content;
 
         // 감정적 훅 추가
@@ -1324,7 +1477,8 @@ class ViralContentOptimizer {
 
         // 플랫폼별 선호도 적용
         if (platformSettings) {
-            if (content.includes('영상') && platformSettings.content_preferences.video > 1.0) {
+            const prefs = platformSettings.content_preferences as { video?: number } | undefined;
+            if (content.includes('영상') && (prefs?.video ?? 0) > 1.0) {
                 score += 20;
             }
             if (content.includes('#') && platform === 'instagram') {
@@ -1371,7 +1525,7 @@ class ViralContentOptimizer {
     }
 
     // 실시간 트렌드 분석 관련 메서드들 (간략화)
-    private async analyzeRealTimeTrends(platform: string, audience: any): Promise<any> {
+    private async analyzeRealTimeTrends(_platform: string, _audience: TargetAudience): Promise<RealTimeTrendsResult> {
         return {
             hot: ['#trending_now', '#viral_moment', '#breaking'],
             emerging: ['#new_trend', '#rising_topic'],
@@ -1380,7 +1534,7 @@ class ViralContentOptimizer {
         };
     }
 
-    private async mapTopicToTrends(topic: string, trends: any): Promise<any> {
+    private async mapTopicToTrends(topic: string, trends: RealTimeTrendsResult): Promise<TrendMappingResult> {
         return {
             direct_match: trends.hot.filter((t: string) => t.includes(topic)),
             indirect_match: trends.emerging,
@@ -1388,7 +1542,7 @@ class ViralContentOptimizer {
         };
     }
 
-    private async analyzeCompetitors(topic: string, platform: string, trends: any): Promise<any> {
+    private async analyzeCompetitors(_topic: string, _platform: string, _trends: TrendAnalysis): Promise<CompetitorAnalysisResult> {
         return {
             topPerformers: ['competitor1', 'competitor2'],
             contentGaps: ['gap1', 'gap2'],
@@ -1398,9 +1552,9 @@ class ViralContentOptimizer {
 
     private async createTrendBasedContent(
         topic: string,
-        trendMapping: any,
+        trendMapping: TrendMappingResult,
         platform: string,
-        audience: any,
+        audience: TargetAudience,
         urgency: string
     ): Promise<ViralContent[]> {
         const contents: ViralContent[] = [];
@@ -1417,7 +1571,7 @@ class ViralContentOptimizer {
         return contents;
     }
 
-    private async generateUrgentContent(topic: string, trendMapping: any, platform: string): Promise<ViralContent> {
+    private async generateUrgentContent(topic: string, trendMapping: TrendMappingResult, platform: string): Promise<ViralContent> {
         return {
             originalContent: topic,
             optimizedContent: `🔥 지금 핫한 ${topic}! ${trendMapping.direct_match[0] || '#trending'}`,
@@ -1431,7 +1585,7 @@ class ViralContentOptimizer {
         };
     }
 
-    private async generatePlannedContent(topic: string, trendMapping: any, platform: string, audience: any): Promise<ViralContent> {
+    private async generatePlannedContent(topic: string, trendMapping: TrendMappingResult, platform: string, _audience: TargetAudience): Promise<ViralContent> {
         return {
             originalContent: topic,
             optimizedContent: `${topic}에 대한 심층 분석 ${trendMapping.indirect_match[0] || ''}`,
@@ -1445,7 +1599,7 @@ class ViralContentOptimizer {
         };
     }
 
-    private async developTrendActionPlan(contents: ViralContent[], trends: any, urgency: string): Promise<any> {
+    private async developTrendActionPlan(_contents: ViralContent[], _trends: TrendAnalysis, urgency: string): Promise<TrendActionPlanResult> {
         return {
             immediate: urgency === 'immediate' ? ['post_now', 'monitor_response'] : ['prepare_content'],
             shortTerm: ['engage_with_comments', 'cross_promote'],
@@ -1499,16 +1653,19 @@ class ViralContentOptimizer {
         return factors;
     }
 
-    private async developTestingStrategy(variants: any[], goals: string[]): Promise<any> {
+    private async developTestingStrategy(
+        variants: Array<{ content: ViralContent }>,
+        goals: string[]
+    ): Promise<{ duration: string; audience_split: number[]; success_metrics: string[]; analysis_framework: string }> {
         return {
             duration: '7_days',
-            audience_split: variants.map(() => Math.floor(100 / variants.length)),
+            audience_split: variants.map(() => Math.floor(100 / Math.max(1, variants.length))),
             success_metrics: goals,
             analysis_framework: 'statistical_significance'
         };
     }
 
-    private async generateOptimizationInsights(variants: any[]): Promise<any> {
+    private async generateOptimizationInsights(_variants: Array<{ content: ViralContent }>): Promise<{ key_variables: string[]; testing_hypotheses: string[]; learning_objectives: string[] }> {
         return {
             key_variables: ['content_format', 'emotional_triggers', 'call_to_action'],
             testing_hypotheses: ['emotional_hooks_increase_engagement', 'questions_drive_comments'],
@@ -1517,7 +1674,7 @@ class ViralContentOptimizer {
     }
 
     // 성능 모니터링 관련 메서드들 (간략화)
-    private async collectPlatformMetrics(contentId: string, platform: string): Promise<any> {
+    private async collectPlatformMetrics(contentId: string, platform: string): Promise<{ platform: string; shares: number; engagement: number; reach: number; velocity: number; sentiment: string }> {
         // 실제로는 각 플랫폼 API를 호출하여 메트릭 수집
         return {
             platform,
@@ -1529,7 +1686,10 @@ class ViralContentOptimizer {
         };
     }
 
-    private async analyzeViralTrajectory(metrics: any[], duration: number): Promise<any> {
+    private async analyzeViralTrajectory(
+        metrics: Array<{ shares: number; velocity: number }>,
+        _duration: number
+    ): Promise<{ phase: 'ignition' | 'growth' | 'peak' | 'decline' | 'revival'; currentVelocity: number; peakPrediction: string; sustainability: number }> {
         const totalShares = metrics.reduce((sum, m) => sum + m.shares, 0);
         const avgVelocity = metrics.reduce((sum, m) => sum + m.velocity, 0) / metrics.length;
 
@@ -1546,7 +1706,10 @@ class ViralContentOptimizer {
         };
     }
 
-    private async generateRealTimeOptimizations(metrics: any[], trajectory: any): Promise<any> {
+    private async generateRealTimeOptimizations(
+        metrics: Array<{ shares: number; velocity: number }>,
+        trajectory: { phase: string; currentVelocity: number; peakPrediction: string; sustainability: number }
+    ): Promise<{ immediate: string[]; shortTerm: string[]; nextCycle: string[] }> {
         return {
             immediate: trajectory.phase === 'growth' ? ['boost_promotion', 'engage_comments'] : ['analyze_performance'],
             shortTerm: ['adjust_targeting', 'create_follow_up'],
@@ -1554,19 +1717,22 @@ class ViralContentOptimizer {
         };
     }
 
-    private async generateViralAlerts(metrics: any[], trajectory: any): Promise<any> {
-        const alerts = {
+    private async generateViralAlerts(
+        metrics: Array<{ shares: number; velocity: number; sentiment: string }>,
+        trajectory: { phase: string; currentVelocity: number; peakPrediction: string; sustainability: number }
+    ): Promise<ViralAlertsResult> {
+        const alerts: ViralAlertsResult = {
             criticalAlerts: [],
             opportunities: [],
             threats: []
         };
 
         if (trajectory.currentVelocity > 40) {
-            (alerts.opportunities as any[]).push('high_viral_velocity_detected');
+            alerts.opportunities.push('high_viral_velocity_detected');
         }
 
         if (metrics.some(m => m.sentiment === 'negative')) {
-            (alerts.threats as any[]).push('negative_sentiment_rising');
+            alerts.threats.push('negative_sentiment_rising');
         }
 
         return alerts;
@@ -1587,19 +1753,26 @@ class ViralContentOptimizer {
         };
     }
 
-    private async developPlatformSpecificStrategy(content: ViralContent, platform: string, timeline: string): Promise<any> {
+    private async developPlatformSpecificStrategy(
+        content: ViralContent,
+        platform: string,
+        _timeline: string
+    ): Promise<{ platform: string; content: ViralContent; timing: string; adaptations: string[]; crossPromotion: string[] }> {
         const platformSettings = this.platformAlgorithms.get(platform);
 
         return {
             platform,
             content,
-            timing: platformSettings?.optimal_posting?.times[0] || 'optimal_time',
+            timing: (platformSettings?.optimal_posting as { times?: string[] } | undefined)?.times?.[0] || 'optimal_time',
             adaptations: [`${platform}_specific_optimization`],
             crossPromotion: ['cross_platform_mention', 'unified_hashtag']
         };
     }
 
-    private async optimizeReleaseSequencing(strategies: any[], timeline: string): Promise<any> {
+    private async optimizeReleaseSequencing(
+        strategies: Array<{ platform: string }>,
+        timeline: string
+    ): Promise<{ primary: string; secondary: string[]; supportive: string[]; timeline: string[] }> {
         return {
             primary: strategies[0]?.platform || 'instagram',
             secondary: strategies.slice(1, 3).map(s => s.platform),
@@ -1608,7 +1781,9 @@ class ViralContentOptimizer {
         };
     }
 
-    private async identifyCrossPlatformSynergies(strategies: any[]): Promise<any> {
+    private async identifyCrossPlatformSynergies(
+        _strategies: Array<{ platform: string }>
+    ): Promise<{ crossReferences: string[]; amplificationTactics: string[]; momentumBuilding: string[] }> {
         return {
             crossReferences: ['platform_cross_mention', 'unified_campaign_hashtag'],
             amplificationTactics: ['simultaneous_posting', 'cascade_effect'],
@@ -1616,7 +1791,9 @@ class ViralContentOptimizer {
         };
     }
 
-    private async developContingencyPlans(strategies: any[]): Promise<any[]> {
+    private async developContingencyPlans(
+        _strategies: Array<{ platform: string }>
+    ): Promise<Array<{ scenario: string; response: string[]; redirections: string[] }>> {
         return [
             {
                 scenario: 'low_engagement',
@@ -1632,7 +1809,11 @@ class ViralContentOptimizer {
     }
 
     // 전략 개발 관련 메서드들
-    private async developViralStrategy(request: ViralOptimizationRequest, trends: TrendAnalysis, contents: ViralContent[]): Promise<any> {
+    private async developViralStrategy(
+        request: ViralOptimizationRequest,
+        trends: TrendAnalysis,
+        contents: ViralContent[]
+    ): Promise<ViralStrategyResult> {
         return {
             primaryApproach: this.determinePrimaryApproach(request, trends),
             keyTactics: this.generateKeyTactics(request, contents),
@@ -1641,7 +1822,11 @@ class ViralContentOptimizer {
         };
     }
 
-    private async predictViralPerformance(content: ViralContent, request: ViralOptimizationRequest, trends: TrendAnalysis): Promise<any> {
+    private async predictViralPerformance(
+        content: ViralContent,
+        request: ViralOptimizationRequest,
+        trends: TrendAnalysis
+    ): Promise<ViralPredictionsResult> {
         const baseShares = content.viralScore * 10;
         const trendMultiplier = trends.opportunity / 50;
         const platformMultiplier = this.getPlatformMultiplier(content.platform);
@@ -1680,7 +1865,7 @@ class ViralContentOptimizer {
         return 'strategic_scheduling';
     }
 
-    private async createCrossPlatformPlan(contents: ViralContent[]): Promise<any> {
+    private async createCrossPlatformPlan(contents: ViralContent[]): Promise<CrossPlatformPlanResult> {
         return {
             sequence: contents.map((c, i) => ({ platform: c.platform, order: i + 1 })),
             coordination: 'unified_messaging',
@@ -1701,7 +1886,7 @@ class ViralContentOptimizer {
         return multipliers[platform as keyof typeof multipliers] || 1.0;
     }
 
-    private calculatePeakTiming(platform: string, trends: TrendAnalysis): string {
+    private calculatePeakTiming(platform: string, _trends: TrendAnalysis): string {
         const platformTimings = {
             tiktok: '2-6시간',
             instagram: '4-12시간',

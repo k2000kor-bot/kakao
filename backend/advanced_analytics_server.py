@@ -19,6 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 
+from cors_config import get_cors_allow_origins
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,7 +30,7 @@ app = FastAPI(title="고급 분석 서버 v1.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -274,7 +276,7 @@ async def health_check():
 
 @app.post("/api/analyze", response_model=AnalysisResponse)
 async def analyze_chat(request: AnalysisRequest):
-    """채팅 분석 수행"""
+    """대화 분석 수행"""
     try:
         analysis_type = request.analysis_type
         chat_room_id = request.chat_room_id
@@ -314,7 +316,7 @@ async def analyze_chat(request: AnalysisRequest):
 
 @app.get("/api/chat-rooms")
 async def get_analyzable_chat_rooms():
-    """분석 가능한 채팅방 목록"""
+    """분석 가능한 대화방 목록"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -343,8 +345,8 @@ async def get_analyzable_chat_rooms():
         return {"success": True, "chat_rooms": rooms}
         
     except Exception as e:
-        logger.error(f"채팅방 목록 조회 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"채팅방 목록 조회 중 오류 발생: {str(e)}")
+        logger.error(f"대화방 목록 조회 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"대화방 목록 조회 중 오류 발생: {str(e)}")
 
 @app.get("/api/analysis-types")
 async def get_analysis_types():
@@ -376,10 +378,16 @@ async def get_analysis_types():
 
 if __name__ == "__main__":
     import uvicorn
+
+    _p = int(
+        os.environ.get(
+            "ADVANCED_ANALYTICS_SERVER_PORT", os.environ.get("PORT", "8005")
+        )
+    )
     print("🚀 고급 분석 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8005")
-    print("📖 API 문서: http://localhost:8005/docs")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
     print("🎯 주요 기능:")
     print("   - 참여자 분석")
     print("   - 대화 패턴 분석")
@@ -387,4 +395,4 @@ if __name__ == "__main__":
     print("   - 통계 분석")
     print("=" * 50)
     
-    uvicorn.run(app, host="0.0.0.0", port=8005) 
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

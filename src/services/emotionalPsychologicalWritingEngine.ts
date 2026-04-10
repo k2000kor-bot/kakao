@@ -1,7 +1,9 @@
 /**
- * CORBU AI 감정 및 심리 분석 글쓰기 엔진
+ * CORBU.AI 감정 및 심리 분석 글쓰기 엔진
  * 인간의 감정과 심리 상태를 깊이 있게 분석하고 이를 바탕으로 한 글쓰기 시스템
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface EmotionalProfile {
     primary_emotions: {
@@ -189,15 +191,290 @@ export interface EmotionalState {
     overall_wellbeing: number;
 }
 
+// Internal type definitions
+interface TherapeuticTechniqueData {
+    description: string;
+    methods: string[];
+    benefits: string[];
+    contraindications: string[];
+    duration: string;
+    frequency: string;
+    special_requirements?: string[];
+}
+
+interface CulturalEmotionPattern {
+    collectivist_emotions?: string[];
+    individualist_emotions?: string[];
+    emotional_expression_norms: {
+        direct_expression: string;
+        indirect_expression: string;
+        emotional_intensity: string;
+        group_harmony?: string;
+        individual_rights?: string;
+    };
+    therapeutic_considerations: string[];
+    communication_patterns: {
+        high_context?: boolean;
+        low_context?: boolean;
+        emotional_restraint?: boolean;
+        emotional_openness?: boolean;
+        hierarchical_respect?: boolean;
+        egalitarian_values?: boolean;
+        conflict_avoidance?: boolean;
+        conflict_engagement?: boolean;
+    };
+}
+
+interface TherapeuticModality {
+    focus: string;
+    techniques: string[];
+    writing_applications: string[];
+    effectiveness: {
+        depression: number;
+        anxiety: number;
+        trauma: number;
+        personality: number;
+    };
+}
+
+interface EmotionalRegulationStrategy {
+    strategy: string;
+    description: string;
+    techniques: string[];
+    writing_applications: string[];
+    effectiveness: number;
+    difficulty: string;
+    cautions?: string[];
+}
+
+interface ReaderAnalysisResult {
+    vulnerability_level: string;
+    risk_factors: string[];
+    protective_factors: string[];
+    therapeutic_readiness: number;
+    personalization_needs: string[];
+}
+
+interface TherapeuticStrategyResult {
+    primary_approach: string;
+    techniques: string[];
+    safety_measures: string[];
+    pacing: string;
+    adaptation_triggers: string[];
+}
+
+interface SafetyAssessmentResult {
+    safety_score: number;
+    risk_factors: string[];
+    protective_factors: string[];
+    recommendations: string[];
+}
+
+interface ContentStructure {
+    introduction: string;
+    exploration: string;
+    processing: string;
+    integration: string;
+    closure: string;
+    [key: string]: string | { therapeutic_elements: string[] };
+}
+
+interface VulnerabilityAssessment {
+    level: string;
+    risk_factors: string[];
+    protective_factors: string[];
+}
+
+interface EmotionalComplexityAnalysis {
+    identified_emotions: Array<{
+        emotion: EmotionType;
+        confidence: number;
+        evidence: string[];
+        relationships: string[];
+    }>;
+}
+
+interface EmotionalConflict {
+    conflicting_emotions: EmotionType[];
+    conflict_type: string;
+    resolution_strategies: string[];
+}
+
+interface ExpressionVariation {
+    approach: string;
+    content: string;
+    therapeutic_value: number;
+    accessibility: number;
+    emotional_safety: number;
+}
+
+interface IntegrationPathway {
+    pathway: string;
+    steps: string[];
+    expected_outcomes: string[];
+    timeframe: string;
+}
+
+interface DefenseAnalysisResult {
+    identified_defenses: Array<{
+        mechanism: DefenseMechanism;
+        evidence_markers: string[];
+        function_analysis: string;
+        adaptive_vs_maladaptive: string;
+    }>;
+}
+
+interface TherapeuticWritingResult {
+    gentle_exploration: string;
+    deeper_inquiry: string;
+    reframing_narrative: string;
+    integration_story: string;
+}
+
+interface HealingPathway {
+    pathway_name: string;
+    approach: string;
+    stages: string[];
+    writing_exercises: TherapeuticExercise[];
+    expected_timeline: string;
+}
+
+interface AttachmentInsights {
+    style_explanation: string;
+    relationship_patterns: string[];
+    communication_tendencies: string[];
+    growth_opportunities: string[];
+}
+
+interface TailoredWritingResult {
+    self_reflection: string;
+    partner_letter: string;
+    healing_narrative: string;
+    growth_affirmations: string[];
+}
+
+interface CommunicationStrategy {
+    strategy: string;
+    explanation: string;
+    script_examples: string[];
+    practice_exercises: string[];
+}
+
+interface HealingJourneyResult {
+    stages: string[];
+    writing_prompts: string[];
+    milestone_markers: string[];
+    support_strategies: string[];
+}
+
+interface SessionProgress {
+    session_id: string;
+    completed_exercises: number;
+    emotional_responses: string[];
+    insights_generated: string[];
+}
+
+interface TherapeuticInsightsResult {
+    insights: string[];
+    breakthroughs: string[];
+    breakthrough_indicators: string[];
+    resistance_patterns: string[];
+    integration_opportunities: string[];
+}
+
+interface EmotionalShift {
+    timestamp: Date;
+    from_emotion: EmotionType;
+    to_emotion: EmotionType;
+    trigger: string;
+    significance: number;
+}
+
+interface SafetyMonitoringResult {
+    risk_level: 'low' | 'medium' | 'high' | 'critical';
+    warning_signs: string[];
+    protective_factors: string[];
+    intervention_recommendations: string[];
+}
+
+interface EmotionalLayers {
+    surface: string;
+    underlying: string;
+    unconscious: string;
+}
+
+interface EmotionalAnalysisResult {
+    emotional_arc: EmotionalArc;
+    psychological_mechanisms: string[];
+    therapeutic_value: number;
+    emotional_resonance: number;
+    psychological_safety: number;
+}
+
+interface ImpactAssessmentResult {
+    potential_healing: number;
+    risk_factors: string[];
+    contraindications: string[];
+    recommended_follow_up: string[];
+}
+
+interface PersonalizationResult {
+    reader_profile_match: number;
+    cultural_appropriateness: number;
+    developmental_suitability: number;
+    contextual_relevance: number;
+}
+
+interface TherapeuticPlanResult {
+    immediate_goals: string[];
+    long_term_objectives: string[];
+    recommended_follow_up: string[];
+    safety_measures: string[];
+}
+
+interface PersonalizationReportResult {
+    profile_alignment: number;
+    adaptation_strategies: string[];
+    cultural_considerations: string[];
+    risk_mitigation: string[];
+}
+
+interface EmotionalInputData {
+    described_feelings: string;
+    context: string;
+    intensity: number;
+    confusion_level: number;
+}
+
+interface RelationshipContextData {
+    relationship_type: string;
+    current_dynamics: string[];
+    desired_changes: string[];
+    communication_goals: string[];
+}
+
+interface GenerationOptions {
+    personalization_level?: 'low' | 'medium' | 'high';
+    therapeutic_approach?: 'cognitive' | 'humanistic' | 'psychodynamic' | 'integrative';
+    safety_priority?: 'standard' | 'high' | 'maximum';
+    cultural_adaptation?: boolean;
+}
+
+interface SessionOptions {
+    duration?: number;
+    supervision_level?: 'none' | 'basic' | 'clinical';
+    emergency_protocols?: boolean;
+}
+
 export class EmotionalPsychologicalWritingEngine {
     private emotionDatabase: Map<string, EmotionType> = new Map();
-    private therapeuticTechniques: Map<string, any> = new Map();
+    private therapeuticTechniques: Map<string, TherapeuticTechniqueData> = new Map();
     private personalityProfiles: Map<string, PersonalityType> = new Map();
-    private culturalEmotionPatterns: Map<string, any> = new Map();
+    private culturalEmotionPatterns: Map<string, CulturalEmotionPattern> = new Map();
     private defenseMechanisms: Map<string, DefenseMechanism> = new Map();
     private attachmentPatterns: Map<string, AttachmentStyle> = new Map();
-    private therapeuticModalities: Map<string, any> = new Map();
-    private emotionalRegulationStrategies: Map<string, any> = new Map();
+    private therapeuticModalities: Map<string, TherapeuticModality> = new Map();
+    private emotionalRegulationStrategies: Map<string, EmotionalRegulationStrategy> = new Map();
 
     constructor() {
         this.initializeEmotionDatabase();
@@ -238,14 +515,16 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }> {
         try {
-            console.log('🧠 감정 심리 분석 글쓰기 시작...', {
-                target_emotion: request.target_emotion.name,
+            errorLogger.info('🧠 감정 심리 분석 글쓰기 시작', {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'generateEmotionalPsychologicalWriting',
+                targetEmotion: request.target_emotion.name,
                 depth: request.psychological_depth,
-                purpose: request.writing_purpose
+                purpose: request.writing_purpose,
             });
 
             // 1. 독자 프로필 심층 분석
-            const readerAnalysis = await this.analyzeReaderEmotionalProfile(readerProfile, request);
+            const _readerAnalysis = await this.analyzeReaderEmotionalProfile(readerProfile, request);
 
             // 2. 치료적 접근법 설계
             const therapeuticStrategy = await this.designTherapeuticStrategy(
@@ -314,7 +593,12 @@ export class EmotionalPsychologicalWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ 감정 심리 분석 글쓰기 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 감정 심리 분석 글쓰기 실패', err, {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'generateEmotionalPsychologicalWriting',
+                targetEmotion: request.target_emotion.name,
+            });
             throw new Error('감정 심리 분석 글쓰기에 실패했습니다.');
         }
     }
@@ -353,9 +637,11 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }> {
         try {
-            console.log('🔬 치료적 글쓰기 세션 시작...', {
+            errorLogger.info('🔬 치료적 글쓰기 세션 시작', {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'conductTherapeuticWritingSession',
                 sessionType,
-                goalsCount: sessionGoals.length
+                goalsCount: sessionGoals.length,
             });
 
             const sessionId = this.generateSessionId();
@@ -432,7 +718,12 @@ export class EmotionalPsychologicalWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ 치료적 글쓰기 세션 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 치료적 글쓰기 세션 실패', err, {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'conductTherapeuticWritingSession',
+                sessionType,
+            });
             throw new Error('치료적 글쓰기 세션에 실패했습니다.');
         }
     }
@@ -479,9 +770,11 @@ export class EmotionalPsychologicalWritingEngine {
         }>;
     }> {
         try {
-            console.log('🔍 감정 복잡성 분석 시작...', {
+            errorLogger.info('🔍 감정 복잡성 분석 시작', {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'analyzeAndExpressEmotionalComplexity',
                 intensity: emotionalInput.intensity,
-                goal: expressionGoal
+                goal: expressionGoal,
             });
 
             // 1. 다층적 감정 분석
@@ -533,7 +826,12 @@ export class EmotionalPsychologicalWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ 감정 복잡성 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 감정 복잡성 분석 실패', err, {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'analyzeAndExpressEmotionalComplexity',
+                goal: expressionGoal,
+            });
             throw new Error('감정 복잡성 분석에 실패했습니다.');
         }
     }
@@ -572,9 +870,11 @@ export class EmotionalPsychologicalWritingEngine {
         }>;
     }> {
         try {
-            console.log('🛡️ 심리적 방어기제 분석 시작...', {
+            errorLogger.info('🛡️ 심리적 방어기제 분석 시작', {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'recognizeAndAddressDefenseMechanisms',
                 suspectedCount: suspectedDefenses.length,
-                goal: therapeuticGoal
+                goal: therapeuticGoal,
             });
 
             // 1. 방어기제 식별 및 분석
@@ -623,7 +923,12 @@ export class EmotionalPsychologicalWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ 방어기제 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 방어기제 분석 실패', err, {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'recognizeAndAddressDefenseMechanisms',
+                goal: therapeuticGoal,
+            });
             throw new Error('방어기제 분석에 실패했습니다.');
         }
     }
@@ -667,9 +972,11 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }> {
         try {
-            console.log('💝 애착 스타일 기반 글쓰기 시작...', {
+            errorLogger.info('💝 애착 스타일 기반 글쓰기 시작', {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'generateAttachmentBasedWriting',
                 primaryStyle: attachmentStyle.primary,
-                purpose: writingPurpose
+                purpose: writingPurpose,
             });
 
             // 1. 애착 스타일 심층 분석
@@ -707,7 +1014,12 @@ export class EmotionalPsychologicalWritingEngine {
             };
 
         } catch (error) {
-            console.error('❌ 애착 기반 글쓰기 실패:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 애착 기반 글쓰기 실패', err, {
+                component: 'emotionalPsychologicalWritingEngine',
+                action: 'generateAttachmentBasedWriting',
+                primaryStyle: attachmentStyle.primary,
+            });
             throw new Error('애착 기반 글쓰기에 실패했습니다.');
         }
     }
@@ -1299,7 +1611,7 @@ export class EmotionalPsychologicalWritingEngine {
     private async analyzeReaderEmotionalProfile(
         readerProfile: EmotionalProfile,
         request: PsychologicalWritingRequest
-    ): Promise<any> {
+    ): Promise<ReaderAnalysisResult> {
         // 독자의 감정적 취약성 평가
         const vulnerabilityAssessment = await this.assessEmotionalVulnerability(readerProfile);
 
@@ -1324,8 +1636,8 @@ export class EmotionalPsychologicalWritingEngine {
     private async designTherapeuticStrategy(
         request: PsychologicalWritingRequest,
         readerProfile: EmotionalProfile,
-        options: any
-    ): Promise<any> {
+        options: GenerationOptions
+    ): Promise<TherapeuticStrategyResult> {
         // 치료적 접근법 선택
         const selectedApproach = options.therapeutic_approach ||
             await this.selectOptimalTherapeuticApproach(request, readerProfile);
@@ -1356,8 +1668,8 @@ export class EmotionalPsychologicalWritingEngine {
     private async assessEmotionalSafety(
         request: PsychologicalWritingRequest,
         readerProfile: EmotionalProfile,
-        options: any
-    ): Promise<any> {
+        _options: GenerationOptions
+    ): Promise<SafetyAssessmentResult> {
         let safetyScore = 100;
         const riskFactors = [];
         const protectiveFactors = [];
@@ -1410,9 +1722,9 @@ export class EmotionalPsychologicalWritingEngine {
     private async generatePersonalizedContent(
         request: PsychologicalWritingRequest,
         readerProfile: EmotionalProfile,
-        therapeuticStrategy: any,
-        safetyAssessment: any
-    ): Promise<any> {
+        therapeuticStrategy: TherapeuticStrategyResult,
+        safetyAssessment: SafetyAssessmentResult
+    ): Promise<ContentStructure> {
         // 기본 콘텐츠 구조 생성
         const baseStructure = await this.createContentStructure(request, readerProfile);
 
@@ -1434,8 +1746,8 @@ export class EmotionalPsychologicalWritingEngine {
 
     private async designEmotionalArc(
         request: PsychologicalWritingRequest,
-        readerProfile: EmotionalProfile,
-        therapeuticStrategy: any
+        _readerProfile: EmotionalProfile,
+        _therapeuticStrategy: TherapeuticStrategyResult
     ): Promise<EmotionalArc> {
         const phases = [];
 
@@ -1475,10 +1787,10 @@ export class EmotionalPsychologicalWritingEngine {
     }
 
     private async integrateTherapeuticElements(
-        personalizedContent: any,
+        personalizedContent: ContentStructure,
         emotionalArc: EmotionalArc,
-        therapeuticStrategy: any
-    ): Promise<any> {
+        therapeuticStrategy: TherapeuticStrategyResult
+    ): Promise<ContentStructure> {
         // 치료적 기법들을 콘텐츠에 자연스럽게 통합
         const integratedContent = { ...personalizedContent };
 
@@ -1489,17 +1801,24 @@ export class EmotionalPsychologicalWritingEngine {
                 therapeuticStrategy
             );
 
-            integratedContent[phase.phase] = {
-                ...integratedContent[phase.phase],
-                therapeutic_elements: therapeuticElements
-            };
+            const currentPhaseContent = integratedContent[phase.phase];
+            if (typeof currentPhaseContent === 'string') {
+                integratedContent[phase.phase] = {
+                    therapeutic_elements: therapeuticElements
+                };
+            } else {
+                integratedContent[phase.phase] = {
+                    ...currentPhaseContent,
+                    therapeutic_elements: therapeuticElements
+                };
+            }
         }
 
         return integratedContent;
     }
 
     private async constructFinalOutput(
-        therapeuticIntegration: any,
+        therapeuticIntegration: ContentStructure,
         emotionalArc: EmotionalArc,
         request: PsychologicalWritingRequest,
         readerProfile: EmotionalProfile
@@ -1566,7 +1885,7 @@ export class EmotionalPsychologicalWritingEngine {
     // 유틸리티 메서드들 (간략화)
     // ============================
 
-    private async assessEmotionalVulnerability(profile: EmotionalProfile): Promise<any> {
+    private async assessEmotionalVulnerability(profile: EmotionalProfile): Promise<VulnerabilityAssessment> {
         let vulnerabilityLevel = 0;
         const riskFactors = [];
         const protectiveFactors = [];
@@ -1691,7 +2010,7 @@ export class EmotionalPsychologicalWritingEngine {
     private async designSafetyMeasures(
         request: PsychologicalWritingRequest,
         profile: EmotionalProfile,
-        options: any
+        options: GenerationOptions
     ): Promise<string[]> {
         const measures = [];
 
@@ -1726,7 +2045,7 @@ export class EmotionalPsychologicalWritingEngine {
         }
     }
 
-    private async identifyAdaptationTriggers(profile: EmotionalProfile): Promise<string[]> {
+    private async identifyAdaptationTriggers(_profile: EmotionalProfile): Promise<string[]> {
         return [
             '과도한 감정적 반응',
             '회피 행동 증가',
@@ -1754,9 +2073,9 @@ export class EmotionalPsychologicalWritingEngine {
 
     // 콘텐츠 생성 관련 메서드들 (간략화)
     private async createContentStructure(
-        request: PsychologicalWritingRequest,
-        profile: EmotionalProfile
-    ): Promise<any> {
+        _request: PsychologicalWritingRequest,
+        _profile: EmotionalProfile
+    ): Promise<ContentStructure> {
         return {
             introduction: '감정 인정과 공감',
             exploration: '감정의 탐구와 이해',
@@ -1767,10 +2086,10 @@ export class EmotionalPsychologicalWritingEngine {
     }
 
     private async applyPersonalization(
-        structure: any,
+        structure: ContentStructure,
         profile: EmotionalProfile,
-        strategy: any
-    ): Promise<any> {
+        _strategy: TherapeuticStrategyResult
+    ): Promise<ContentStructure> {
         const personalized = { ...structure };
 
         // 애착 스타일에 따른 개인화
@@ -1781,7 +2100,7 @@ export class EmotionalPsychologicalWritingEngine {
         return personalized;
     }
 
-    private async ensureContentSafety(content: any, safetyAssessment: any): Promise<any> {
+    private async ensureContentSafety(content: ContentStructure, safetyAssessment: SafetyAssessmentResult): Promise<ContentStructure> {
         if (safetyAssessment.safety_score < 50) {
             // 안전성이 낮으면 내용을 더 부드럽게 조정
             return this.softenContent(content);
@@ -1789,7 +2108,7 @@ export class EmotionalPsychologicalWritingEngine {
         return content;
     }
 
-    private async softenContent(content: any): Promise<any> {
+    private async softenContent(content: ContentStructure): Promise<ContentStructure> {
         // 내용을 더 부드럽고 안전하게 만드는 로직
         const softened = { ...content };
 
@@ -1828,16 +2147,13 @@ export class EmotionalPsychologicalWritingEngine {
         return [targetEmotion];
     }
 
-    // 기타 복잡한 메서드들은 간략화하여 구현...
-    private async generatePhaseTherapeuticElements(phase: any, strategy: any): Promise<string[]> {
-        return ['공감적 검증', '점진적 탐구', '안전한 표현'];
-    }
+    // 기타 복잡한 메서드들은 간략화하여 구현 - method moved to class end
 
-    private async assembleNarrativeText(integration: any, arc: EmotionalArc): Promise<string> {
+    private async assembleNarrativeText(_integration: ContentStructure, arc: EmotionalArc): Promise<string> {
         return `${arc.phases[0].psychological_work}를 통해 시작하여, ${arc.phases[1].psychological_work}의 과정을 거쳐, 마침내 ${arc.phases[2].psychological_work}에 이르는 감정적 여정입니다.`;
     }
 
-    private async analyzeEmotionalLayers(text: string, arc: EmotionalArc): Promise<any> {
+    private async analyzeEmotionalLayers(_text: string, _arc: EmotionalArc): Promise<EmotionalLayers> {
         return {
             surface: '표면적으로 드러나는 감정',
             underlying: '숨겨진 깊은 감정',
@@ -1845,11 +2161,11 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async extractTherapeuticElements(integration: any): Promise<string[]> {
+    private async extractTherapeuticElements(_integration: ContentStructure): Promise<string[]> {
         return ['공감', '수용', '탐구', '통합'];
     }
 
-    private async generatePsychologicalInsights(text: string, arc: EmotionalArc, request: PsychologicalWritingRequest): Promise<string[]> {
+    private async generatePsychologicalInsights(_text: string, _arc: EmotionalArc, _request: PsychologicalWritingRequest): Promise<string[]> {
         return [
             '감정의 적응적 기능 이해',
             '개인적 성장 기회 발견',
@@ -1857,7 +2173,7 @@ export class EmotionalPsychologicalWritingEngine {
         ];
     }
 
-    private async performEmotionalAnalysis(text: string, arc: EmotionalArc, integration: any): Promise<any> {
+    private async performEmotionalAnalysis(_text: string, arc: EmotionalArc, _integration: ContentStructure): Promise<EmotionalAnalysisResult> {
         return {
             emotional_arc: arc,
             psychological_mechanisms: ['방어기제 완화', '감정 조절 개선'],
@@ -1867,7 +2183,7 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async assessTherapeuticImpact(text: string, profile: EmotionalProfile, request: PsychologicalWritingRequest): Promise<any> {
+    private async assessTherapeuticImpact(_text: string, _profile: EmotionalProfile, _request: PsychologicalWritingRequest): Promise<ImpactAssessmentResult> {
         return {
             potential_healing: 0.8,
             risk_factors: ['일시적 감정 증폭'],
@@ -1876,7 +2192,7 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async evaluatePersonalization(text: string, profile: EmotionalProfile, request: PsychologicalWritingRequest): Promise<any> {
+    private async evaluatePersonalization(_text: string, _profile: EmotionalProfile, _request: PsychologicalWritingRequest): Promise<PersonalizationResult> {
         return {
             reader_profile_match: 0.85,
             cultural_appropriateness: 0.9,
@@ -1903,9 +2219,9 @@ export class EmotionalPsychologicalWritingEngine {
 
     private async designSessionExercises(
         sessionType: string,
-        goals: string[],
-        profile: EmotionalProfile,
-        options: any
+        _goals: string[],
+        _profile: EmotionalProfile,
+        _options: SessionOptions
     ): Promise<TherapeuticExercise[]> {
         const exercises: TherapeuticExercise[] = [];
 
@@ -1926,9 +2242,9 @@ export class EmotionalPsychologicalWritingEngine {
 
     private async activateSafetyMonitoring(
         profile: EmotionalProfile,
-        goals: string[],
-        options: any
-    ): Promise<any> {
+        _goals: string[],
+        _options: SessionOptions
+    ): Promise<SafetyMonitoringResult> {
         let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
 
         if (profile.primary_emotions.stability < 30) {
@@ -1948,9 +2264,9 @@ export class EmotionalPsychologicalWritingEngine {
     private async conductRealTimeSession(
         sessionId: string,
         exercises: TherapeuticExercise[],
-        profile: EmotionalProfile,
-        initialState: EmotionalState
-    ): Promise<any> {
+        _profile: EmotionalProfile,
+        _initialState: EmotionalState
+    ): Promise<SessionProgress> {
         // 실시간 세션 진행 시뮬레이션
         return {
             session_id: sessionId,
@@ -1960,7 +2276,7 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async trackEmotionalShifts(progress: any, initialState: EmotionalState): Promise<any[]> {
+    private async trackEmotionalShifts(_progress: SessionProgress, initialState: EmotionalState): Promise<EmotionalShift[]> {
         return [{
             timestamp: new Date(),
             from_emotion: initialState.emotions[0].emotion,
@@ -1970,7 +2286,7 @@ export class EmotionalPsychologicalWritingEngine {
         }];
     }
 
-    private async extractTherapeuticInsights(progress: any, shifts: any[], goals: string[]): Promise<any> {
+    private async extractTherapeuticInsights(_progress: SessionProgress, _shifts: EmotionalShift[], _goals: string[]): Promise<TherapeuticInsightsResult> {
         return {
             insights: ['감정의 적응적 기능 인식', '자기 수용 증진'],
             breakthroughs: ['핵심 감정 인식'],
@@ -1980,7 +2296,7 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async assessFinalEmotionalState(progress: any, profile: EmotionalProfile): Promise<EmotionalState> {
+    private async assessFinalEmotionalState(_progress: SessionProgress, profile: EmotionalProfile): Promise<EmotionalState> {
         return {
             timestamp: new Date(),
             emotions: [{
@@ -1996,7 +2312,7 @@ export class EmotionalPsychologicalWritingEngine {
     }
 
     // 복잡성 분석 관련 메서드들 (간략화)
-    private async performMultiLayerEmotionalAnalysis(input: any): Promise<any> {
+    private async performMultiLayerEmotionalAnalysis(_input: EmotionalInputData): Promise<EmotionalComplexityAnalysis> {
         return {
             identified_emotions: [{
                 emotion: this.emotionDatabase.get('sadness')!,
@@ -2007,7 +2323,7 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async identifyEmotionalConflicts(emotions: any[]): Promise<any[]> {
+    private async identifyEmotionalConflicts(_emotions: EmotionalComplexityAnalysis['identified_emotions']): Promise<EmotionalConflict[]> {
         return [{
             conflicting_emotions: [
                 this.emotionDatabase.get('joy')!,
@@ -2018,15 +2334,15 @@ export class EmotionalPsychologicalWritingEngine {
         }];
     }
 
-    private async exploreUnderlyingNeeds(analysis: any, context: string): Promise<string[]> {
+    private async exploreUnderlyingNeeds(_analysis: EmotionalComplexityAnalysis, _context: string): Promise<string[]> {
         return ['안전감 욕구', '연결 욕구', '인정 욕구'];
     }
 
-    private async extractCoreIssues(analysis: any, conflicts: any[], needs: string[]): Promise<string[]> {
+    private async extractCoreIssues(_analysis: EmotionalComplexityAnalysis, _conflicts: EmotionalConflict[], _needs: string[]): Promise<string[]> {
         return ['정체성 혼란', '관계적 어려움', '자존감 문제'];
     }
 
-    private async generateExpressionVariations(analysis: any, goal: string, input: any): Promise<any[]> {
+    private async generateExpressionVariations(_analysis: EmotionalComplexityAnalysis, _goal: string, _input: EmotionalInputData): Promise<ExpressionVariation[]> {
         return [{
             approach: '직접적 표현',
             content: '현재 느끼는 감정을 솔직하게 표현합니다.',
@@ -2036,7 +2352,7 @@ export class EmotionalPsychologicalWritingEngine {
         }];
     }
 
-    private async designIntegrationPathways(analysis: any, goal: string, conflicts: any[]): Promise<any[]> {
+    private async designIntegrationPathways(_analysis: EmotionalComplexityAnalysis, _goal: string, _conflicts: EmotionalConflict[]): Promise<IntegrationPathway[]> {
         return [{
             pathway: '단계적 통합',
             steps: ['감정 인식', '수용', '통합'],
@@ -2046,7 +2362,7 @@ export class EmotionalPsychologicalWritingEngine {
     }
 
     // 방어기제 관련 메서드들도 간략화...
-    private async analyzeDefenseMechanisms(text: string, suspected: string[]): Promise<any> {
+    private async analyzeDefenseMechanisms(_text: string, _suspected: string[]): Promise<DefenseAnalysisResult> {
         return {
             identified_defenses: [{
                 mechanism: this.defenseMechanisms.get('rationalization')!,
@@ -2057,19 +2373,19 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async establishDefenseHierarchy(defenses: any[]): Promise<string[]> {
+    private async establishDefenseHierarchy(_defenses: DefenseAnalysisResult['identified_defenses']): Promise<string[]> {
         return ['1차: 합리화', '2차: 투사', '3차: 부정'];
     }
 
-    private async understandDevelopmentalContext(defenses: any[]): Promise<string> {
+    private async understandDevelopmentalContext(_defenses: DefenseAnalysisResult['identified_defenses']): Promise<string> {
         return '초기 애착 관계에서 형성된 보호 전략';
     }
 
-    private async analyzeTriggeringFactors(text: string, defenses: any[]): Promise<string[]> {
+    private async analyzeTriggeringFactors(_text: string, _defenses: DefenseAnalysisResult['identified_defenses']): Promise<string[]> {
         return ['비판적 피드백', '거절 경험', '취약함 노출'];
     }
 
-    private async generateDefenseExplorationWriting(analysis: any, goal: string): Promise<any> {
+    private async generateDefenseExplorationWriting(_analysis: DefenseAnalysisResult, _goal: string): Promise<TherapeuticWritingResult> {
         return {
             gentle_exploration: '방어기제의 긍정적 기능을 인정하며 탐구',
             deeper_inquiry: '방어 뒤에 숨은 진정한 욕구와 감정 탐색',
@@ -2078,7 +2394,7 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async designDefenseHealingPathways(analysis: any, goal: string): Promise<any[]> {
+    private async designDefenseHealingPathways(_analysis: DefenseAnalysisResult, _goal: string): Promise<HealingPathway[]> {
         return [{
             pathway_name: '점진적 방어 완화',
             approach: '안전한 환경에서 단계적 탐구',
@@ -2097,7 +2413,7 @@ export class EmotionalPsychologicalWritingEngine {
     }
 
     // 애착 관련 메서드들도 간략화...
-    private async analyzeAttachmentStyleDepth(style: AttachmentStyle, context: any): Promise<any> {
+    private async analyzeAttachmentStyleDepth(style: AttachmentStyle, _context: RelationshipContextData): Promise<AttachmentInsights> {
         return {
             style_explanation: `${style.primary} 애착 스타일의 특성과 영향`,
             relationship_patterns: style.relationship_patterns,
@@ -2108,10 +2424,10 @@ export class EmotionalPsychologicalWritingEngine {
 
     private async generateAttachmentTailoredWriting(
         style: AttachmentStyle,
-        context: any,
-        purpose: string,
-        insights: any
-    ): Promise<any> {
+        _context: RelationshipContextData,
+        _purpose: string,
+        _insights: AttachmentInsights
+    ): Promise<TailoredWritingResult> {
         return {
             self_reflection: `${style.primary} 애착 스타일로서의 자기 이해`,
             partner_letter: '파트너에게 애착 욕구를 표현하는 편지',
@@ -2120,7 +2436,7 @@ export class EmotionalPsychologicalWritingEngine {
         };
     }
 
-    private async developAttachmentCommunicationStrategies(style: AttachmentStyle, context: any): Promise<any[]> {
+    private async developAttachmentCommunicationStrategies(_style: AttachmentStyle, _context: RelationshipContextData): Promise<CommunicationStrategy[]> {
         return [{
             strategy: '감정 표현 연습',
             explanation: '안전한 방식으로 감정과 욕구 표현하기',
@@ -2129,7 +2445,7 @@ export class EmotionalPsychologicalWritingEngine {
         }];
     }
 
-    private async designAttachmentHealingJourney(style: AttachmentStyle, context: any, purpose: string): Promise<any> {
+    private async designAttachmentHealingJourney(_style: AttachmentStyle, _context: RelationshipContextData, _purpose: string): Promise<HealingJourneyResult> {
         return {
             stages: ['애착 패턴 인식', '상처 치유', '새로운 경험', '통합'],
             writing_prompts: [
@@ -2144,11 +2460,11 @@ export class EmotionalPsychologicalWritingEngine {
 
     // 치료 계획 및 보고서 생성 메서드들
     private async developTherapeuticPlan(
-        output: EmotionalWritingOutput,
-        request: PsychologicalWritingRequest,
-        profile: EmotionalProfile,
-        options: any
-    ): Promise<any> {
+        _output: EmotionalWritingOutput,
+        _request: PsychologicalWritingRequest,
+        _profile: EmotionalProfile,
+        _options: GenerationOptions
+    ): Promise<TherapeuticPlanResult> {
         return {
             immediate_goals: ['감정 안정화', '자기 인식 증진'],
             long_term_objectives: ['감정 조절 능력 향상', '관계 기능 개선'],
@@ -2159,10 +2475,10 @@ export class EmotionalPsychologicalWritingEngine {
 
     private async generatePersonalizationReport(
         output: EmotionalWritingOutput,
-        profile: EmotionalProfile,
-        request: PsychologicalWritingRequest,
-        options: any
-    ): Promise<any> {
+        _profile: EmotionalProfile,
+        _request: PsychologicalWritingRequest,
+        _options: GenerationOptions
+    ): Promise<PersonalizationReportResult> {
         return {
             profile_alignment: output.personalization.reader_profile_match,
             adaptation_strategies: ['개인 맞춤 언어 사용', '문화적 민감성 반영'],
@@ -2173,12 +2489,17 @@ export class EmotionalPsychologicalWritingEngine {
 
     // 매핑 메서드
     private mapTherapeuticGoal(goal?: string): "transcendence" | "growth" | "healing" | "acceptance" | "integration" {
-        const mapping: Record<string, any> = {
+        const mapping: Record<string, "transcendence" | "growth" | "healing" | "acceptance" | "integration"> = {
             'insight': 'growth',
             'connection': 'integration',
             'catharsis': 'healing'
         };
         return mapping[goal || 'healing'] || 'healing';
+    }
+
+    // Fix remaining methods with `any` return type
+    private async generatePhaseTherapeuticElements(_phase: EmotionalArc['phases'][0], _strategy: TherapeuticStrategyResult): Promise<string[]> {
+        return ['공감적 검증', '점진적 탐구', '안전한 표현'];
     }
 }
 

@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // 감정 인식 인터페이스
 interface EmotionData {
@@ -106,12 +107,18 @@ class RealTimeAIEmotionRecognitionSystem {
 
     // 시스템 초기화
     public initializeSystem(): void {
-        console.log('😊 실시간 AI 감정 인식 및 대응 시스템 초기화 중...');
+        errorLogger.info('😊 실시간 AI 감정 인식 및 대응 시스템 초기화 중', {
+            component: 'realTimeAIEmotionRecognitionSystem',
+            action: 'initializeSystem',
+        });
 
         // 초기 감정 컨텍스트 생성
         this.createInitialEmotionContexts();
 
-        console.log('✅ 실시간 AI 감정 인식 및 대응 시스템이 초기화되었습니다.');
+        errorLogger.info('✅ 실시간 AI 감정 인식 및 대응 시스템이 초기화되었습니다', {
+            component: 'realTimeAIEmotionRecognitionSystem',
+            action: 'initializeSystem',
+        });
     }
 
     // 초기 감정 컨텍스트 생성
@@ -149,7 +156,7 @@ class RealTimeAIEmotionRecognitionSystem {
     }
 
     // 감정 데이터 생성
-    public detectEmotion(userId: string, sessionId: string, input: any): EmotionData {
+    public detectEmotion(userId: string, sessionId: string, input: unknown): EmotionData {
         const emotionData: EmotionData = {
             id: `emotion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             user_id: userId,
@@ -196,38 +203,38 @@ class RealTimeAIEmotionRecognitionSystem {
     }
 
     // 감정 유형 분석
-    private analyzeEmotionType(input: any): EmotionData['emotion_type'] {
+    private analyzeEmotionType(_input: unknown): EmotionData['emotion_type'] {
         // 실제 구현에서는 NLP, 음성 분석, 표정 분석 등을 사용
         const emotions: EmotionData['emotion_type'][] = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'neutral', 'confusion', 'excitement', 'frustration'];
         return emotions[Math.floor(Math.random() * emotions.length)];
     }
 
     // 감정 신뢰도 계산
-    private calculateEmotionConfidence(input: any): number {
+    private calculateEmotionConfidence(_input: unknown): number {
         // 실제 구현에서는 다양한 신호의 일관성을 분석
         return 0.7 + Math.random() * 0.3;
     }
 
     // 감정 강도 계산
-    private calculateEmotionIntensity(input: any): number {
+    private calculateEmotionIntensity(_input: unknown): number {
         // 실제 구현에서는 감정 표현의 강도를 분석
         return Math.random();
     }
 
     // 감정 가치 계산 (긍정/부정)
-    private calculateEmotionValence(input: any): number {
+    private calculateEmotionValence(_input: unknown): number {
         // -1 (매우 부정적) ~ 1 (매우 긍정적)
         return (Math.random() - 0.5) * 2;
     }
 
     // 감정 각성도 계산 (평온/흥분)
-    private calculateEmotionArousal(input: any): number {
+    private calculateEmotionArousal(_input: unknown): number {
         // 0 (평온) ~ 1 (흥분)
         return Math.random();
     }
 
     // 감정 컨텍스트 추출
-    private extractEmotionContext(input: any): string {
+    private extractEmotionContext(_input: unknown): string {
         const contexts = [
             '업무 환경에서의 스트레스',
             '개인적인 성취감',
@@ -240,7 +247,7 @@ class RealTimeAIEmotionRecognitionSystem {
     }
 
     // 감정 트리거 식별
-    private identifyEmotionTriggers(input: any): string[] {
+    private identifyEmotionTriggers(_input: unknown): string[] {
         const triggers = [
             '데드라인 압박',
             '동료와의 협업',
@@ -253,7 +260,7 @@ class RealTimeAIEmotionRecognitionSystem {
     }
 
     // 생리학적 신호 추출
-    private extractPhysiologicalSignals(input: any): EmotionData['physiological_signals'] {
+    private extractPhysiologicalSignals(_input: unknown): EmotionData['physiological_signals'] {
         return {
             heart_rate: 60 + Math.random() * 40,
             skin_conductance: Math.random(),
@@ -305,9 +312,7 @@ class RealTimeAIEmotionRecognitionSystem {
     }
 
     // 응답 유형 결정
-    private determineResponseType(emotionData: EmotionData, context?: EmotionContext): EmotionResponse['response_type'] {
-        const responseTypes: EmotionResponse['response_type'][] = ['empathic', 'supportive', 'encouraging', 'calming', 'motivational', 'analytical', 'humorous', 'professional'];
-
+    private determineResponseType(emotionData: EmotionData, _context?: EmotionContext): EmotionResponse['response_type'] {
         // 감정 유형에 따른 응답 유형 선택
         switch (emotionData.emotion_type) {
             case 'sadness':
@@ -326,9 +331,7 @@ class RealTimeAIEmotionRecognitionSystem {
     }
 
     // 응답 톤 결정
-    private determineResponseTone(emotionData: EmotionData, context?: EmotionContext): EmotionResponse['tone'] {
-        const tones: EmotionResponse['tone'][] = ['warm', 'neutral', 'formal', 'casual', 'enthusiastic', 'calm', 'energetic'];
-
+    private determineResponseTone(emotionData: EmotionData, _context?: EmotionContext): EmotionResponse['tone'] {
         if (emotionData.valence < -0.5) {
             return 'warm';
         } else if (emotionData.arousal > 0.7) {
@@ -352,7 +355,7 @@ class RealTimeAIEmotionRecognitionSystem {
     }
 
     // 응답 내용 생성
-    private generateResponseContent(emotionData: EmotionData, responseType: EmotionResponse['response_type'], tone: EmotionResponse['tone']): string {
+    private generateResponseContent(emotionData: EmotionData, responseType: EmotionResponse['response_type'], _tone: EmotionResponse['tone']): string {
         const responses = {
             empathic: [
                 '당신의 감정을 이해합니다. 지금 어떤 상황이신지 말씀해 주세요.',
@@ -631,7 +634,10 @@ class RealTimeAIEmotionRecognitionSystem {
     // 시스템 시작
     public start(): void {
         if (this.isRunning) {
-            console.log('⚠️ 실시간 AI 감정 인식 및 대응 시스템이 이미 실행 중입니다.');
+            errorLogger.warn('⚠️ 실시간 AI 감정 인식 및 대응 시스템이 이미 실행 중입니다', {
+                component: 'realTimeAIEmotionRecognitionSystem',
+                action: 'start',
+            });
             return;
         }
 
@@ -644,13 +650,19 @@ class RealTimeAIEmotionRecognitionSystem {
             this.cleanupOldData();
         }, 30000); // 30초마다 업데이트
 
-        console.log('🚀 실시간 AI 감정 인식 및 대응 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 실시간 AI 감정 인식 및 대응 시스템이 시작되었습니다', {
+            component: 'realTimeAIEmotionRecognitionSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
     public stop(): void {
         if (!this.isRunning) {
-            console.log('⚠️ 실시간 AI 감정 인식 및 대응 시스템이 실행 중이 아닙니다.');
+            errorLogger.warn('⚠️ 실시간 AI 감정 인식 및 대응 시스템이 실행 중이 아닙니다', {
+                component: 'realTimeAIEmotionRecognitionSystem',
+                action: 'stop',
+            });
             return;
         }
 
@@ -661,7 +673,10 @@ class RealTimeAIEmotionRecognitionSystem {
             this.updateInterval = null;
         }
 
-        console.log('🛑 실시간 AI 감정 인식 및 대응 시스템이 중지되었습니다.');
+        errorLogger.info('🛑 실시간 AI 감정 인식 및 대응 시스템이 중지되었습니다', {
+            component: 'realTimeAIEmotionRecognitionSystem',
+            action: 'stop',
+        });
     }
 
     // 메트릭 업데이트
@@ -761,7 +776,13 @@ class RealTimeAIEmotionRecognitionSystem {
                     const timestamp = emotion.timestamp instanceof Date ? emotion.timestamp : new Date(emotion.timestamp);
                     return timestamp && timestamp.getTime && timestamp.getTime() >= cutoffDate.getTime();
                 } catch (error) {
-                    console.warn('Invalid timestamp in emotion data:', emotion.timestamp);
+                    errorLogger.warn('Invalid timestamp in emotion data', {
+                        component: 'realTimeAIEmotionRecognitionSystem',
+                        action: 'cleanupOldData',
+                        userId,
+                        emotionId: emotion.id,
+                        timestamp: String(emotion.timestamp),
+                    });
                     return false;
                 }
             }));
@@ -774,7 +795,13 @@ class RealTimeAIEmotionRecognitionSystem {
                     const timestamp = response.timestamp instanceof Date ? response.timestamp : new Date(response.timestamp);
                     return timestamp && timestamp.getTime && timestamp.getTime() >= cutoffDate.getTime();
                 } catch (error) {
-                    console.warn('Invalid timestamp in response data:', response.timestamp);
+                    errorLogger.warn('Invalid timestamp in response data', {
+                        component: 'realTimeAIEmotionRecognitionSystem',
+                        action: 'cleanupOldData',
+                        userId,
+                        responseId: response.id,
+                        timestamp: String(response.timestamp),
+                    });
                     return false;
                 }
             }));
@@ -782,7 +809,7 @@ class RealTimeAIEmotionRecognitionSystem {
 
         // 오래된 트렌드 데이터 정리
         for (const [userId, trends] of this.emotionTrends.entries()) {
-            this.emotionTrends.set(userId, trends.filter(trend => {
+            this.emotionTrends.set(userId, trends.filter(_trend => {
                 const trendDate = new Date();
                 trendDate.setDate(trendDate.getDate() - 7); // 7일 이전 트렌드
                 return trendDate >= cutoffDate;
@@ -795,7 +822,7 @@ class RealTimeAIEmotionRecognitionSystem {
         return { ...this.metrics };
     }
 
-    public getSystemHealth(): { status: string; details: any } {
+    public getSystemHealth(): { status: string; details: Record<string, unknown> } {
         return {
             status: this.isRunning ? 'healthy' : 'stopped',
             details: {

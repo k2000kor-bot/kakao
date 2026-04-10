@@ -1,4 +1,5 @@
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
+import { errorLogger } from '../utils/errorLogger';
 
 // 협업 학습 인터페이스
 interface CollaborativeSession {
@@ -30,7 +31,7 @@ interface CollaborativeInteraction {
     user_id: string;
     interaction_type: 'message' | 'idea' | 'question' | 'feedback' | 'resource' | 'vote' | 'action';
     content: string;
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
     timestamp: Date;
     response_to?: string;
     reactions: CollaborativeReaction[];
@@ -118,12 +119,18 @@ class RealTimeAICollaborativeLearningSystem {
 
     // 시스템 초기화
     public initializeSystem(): void {
-        console.log('🤝 실시간 AI 협업 학습 시스템 초기화 중...');
+        errorLogger.info('🤝 실시간 AI 협업 학습 시스템 초기화 중', {
+            component: 'realTimeAICollaborativeLearningSystem',
+            action: 'initializeSystem',
+        });
 
         // 초기 협업 세션 생성
         this.createInitialCollaborativeSessions();
 
-        console.log('✅ 실시간 AI 협업 학습 시스템이 초기화되었습니다.');
+        errorLogger.info('✅ 실시간 AI 협업 학습 시스템이 초기화되었습니다.', {
+            component: 'realTimeAICollaborativeLearningSystem',
+            action: 'initializeSystem',
+        });
     }
 
     // 초기 협업 세션 생성
@@ -370,7 +377,7 @@ class RealTimeAICollaborativeLearningSystem {
     }
 
     // 협업 영향도 평가
-    private assessCollaborationImpact(interaction: CollaborativeInteraction, session: CollaborativeSession): number {
+    private assessCollaborationImpact(interaction: CollaborativeInteraction, _session: CollaborativeSession): number {
         let impact = 0.5;
 
         // 다른 참가자들의 반응 고려
@@ -389,7 +396,7 @@ class RealTimeAICollaborativeLearningSystem {
     }
 
     // 제안 응답 생성
-    private generateSuggestedResponses(interaction: CollaborativeInteraction, session: CollaborativeSession): string[] {
+    private generateSuggestedResponses(interaction: CollaborativeInteraction, _session: CollaborativeSession): string[] {
         const responses: string[] = [];
 
         switch (interaction.interaction_type) {
@@ -411,7 +418,7 @@ class RealTimeAICollaborativeLearningSystem {
     }
 
     // 인사이트 생성
-    private generateInsights(interaction: CollaborativeInteraction, session: CollaborativeSession): string[] {
+    private generateInsights(interaction: CollaborativeInteraction, _session: CollaborativeSession): string[] {
         const insights: string[] = [];
 
         if (interaction.ai_analysis?.sentiment === 'positive') {
@@ -556,7 +563,7 @@ class RealTimeAICollaborativeLearningSystem {
     }
 
     // 그룹 응집력 계산
-    private calculateGroupCohesion(interactions: CollaborativeInteraction[], session: CollaborativeSession): number {
+    private calculateGroupCohesion(interactions: CollaborativeInteraction[], _session: CollaborativeSession): number {
         if (interactions.length === 0) return 0;
 
         let positiveInteractions = 0;
@@ -609,7 +616,7 @@ class RealTimeAICollaborativeLearningSystem {
     }
 
     // 협업 효율성 계산
-    private calculateCollaborationEfficiency(interactions: CollaborativeInteraction[], session: CollaborativeSession): number {
+    private calculateCollaborationEfficiency(interactions: CollaborativeInteraction[], _session: CollaborativeSession): number {
         if (interactions.length === 0) return 0;
 
         const averageImpact = interactions.reduce((sum, interaction) =>
@@ -634,7 +641,7 @@ class RealTimeAICollaborativeLearningSystem {
     }
 
     // 그룹 인사이트 생성
-    private generateGroupInsights(interactions: CollaborativeInteraction[], session: CollaborativeSession): string[] {
+    private generateGroupInsights(interactions: CollaborativeInteraction[], _session: CollaborativeSession): string[] {
         const insights: string[] = [];
 
         const positiveInteractions = interactions.filter(i =>
@@ -657,7 +664,7 @@ class RealTimeAICollaborativeLearningSystem {
     }
 
     // 그룹 추천사항 생성
-    private generateGroupRecommendations(interactions: CollaborativeInteraction[], session: CollaborativeSession): string[] {
+    private generateGroupRecommendations(interactions: CollaborativeInteraction[], _session: CollaborativeSession): string[] {
         const recommendations: string[] = [];
 
         const questionCount = interactions.filter(i => i.interaction_type === 'question').length;
@@ -715,7 +722,7 @@ class RealTimeAICollaborativeLearningSystem {
             frequency,
             effectiveness,
             description: '그룹 내 활발한 의사소통이 이루어지고 있습니다.',
-            examples: messageInteractions.slice(0, 3).map(i => i.content.substring(0, 50) + '...'),
+            examples: messageInteractions.map(i => i.content),
             recommendations: ['의사소통의 질을 더욱 향상시키기 위해 구체적인 피드백을 제공해보세요.'],
             created_at: new Date()
         };
@@ -748,7 +755,7 @@ class RealTimeAICollaborativeLearningSystem {
             frequency,
             effectiveness,
             description: '다양한 참가자로부터 창의적인 아이디어가 생성되고 있습니다.',
-            examples: ideaInteractions.slice(0, 3).map(i => i.content.substring(0, 50) + '...'),
+            examples: ideaInteractions.map(i => i.content),
             recommendations: ['아이디어를 더욱 발전시키기 위해 구체적인 실행 방안을 논의해보세요.'],
             created_at: new Date()
         };
@@ -783,7 +790,7 @@ class RealTimeAICollaborativeLearningSystem {
             frequency,
             effectiveness,
             description: '그룹 의사결정이 체계적으로 이루어지고 있습니다.',
-            examples: decisionInteractions.slice(0, 3).map(i => i.content.substring(0, 50) + '...'),
+            examples: decisionInteractions.map(i => i.content),
             recommendations: ['의사결정의 효율성을 높이기 위해 명확한 기준을 설정해보세요.'],
             created_at: new Date()
         };
@@ -899,7 +906,10 @@ class RealTimeAICollaborativeLearningSystem {
     // 시스템 시작
     public start(): void {
         if (this.isRunning) {
-            console.log('⚠️ 실시간 AI 협업 학습 시스템이 이미 실행 중입니다.');
+            errorLogger.info('⚠️ 실시간 AI 협업 학습 시스템이 이미 실행 중입니다.', {
+                component: 'realTimeAICollaborativeLearningSystem',
+                action: 'start',
+            });
             return;
         }
 
@@ -912,13 +922,19 @@ class RealTimeAICollaborativeLearningSystem {
             this.cleanupOldData();
         }, 30000); // 30초마다 업데이트
 
-        console.log('🚀 실시간 AI 협업 학습 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 실시간 AI 협업 학습 시스템이 시작되었습니다.', {
+            component: 'realTimeAICollaborativeLearningSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
     public stop(): void {
         if (!this.isRunning) {
-            console.log('⚠️ 실시간 AI 협업 학습 시스템이 실행 중이 아닙니다.');
+            errorLogger.info('⚠️ 실시간 AI 협업 학습 시스템이 실행 중이 아닙니다.', {
+                component: 'realTimeAICollaborativeLearningSystem',
+                action: 'stop',
+            });
             return;
         }
 
@@ -929,7 +945,10 @@ class RealTimeAICollaborativeLearningSystem {
             this.updateInterval = null;
         }
 
-        console.log('🛑 실시간 AI 협업 학습 시스템이 중지되었습니다.');
+        errorLogger.info('🛑 실시간 AI 협업 학습 시스템이 중지되었습니다.', {
+            component: 'realTimeAICollaborativeLearningSystem',
+            action: 'stop',
+        });
     }
 
     // 오래된 데이터 정리
@@ -957,7 +976,7 @@ class RealTimeAICollaborativeLearningSystem {
         return { ...this.metrics };
     }
 
-    public getSystemHealth(): { status: string; details: any } {
+    public getSystemHealth(): { status: string; details: Record<string, unknown> } {
         return {
             status: this.isRunning ? 'healthy' : 'stopped',
             details: {

@@ -12,8 +12,8 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 백엔드 URL
-BACKEND_URL="http://localhost:5001"
+# 백엔드 URL (통합 main_server 기본 5002)
+BACKEND_URL="${BACKEND_URL:-http://localhost:5002}"
 
 # 테스트 결과 추적
 PASSED=0
@@ -58,9 +58,9 @@ test_endpoint "기본 헬스 체크" "GET" "/health"
 test_endpoint "API 헬스 체크" "GET" "/api/health"
 echo ""
 
-# 2. 채팅 API 테스트
-echo "📋 2. 채팅 API 테스트"
-test_endpoint "채팅 메시지 전송" "POST" "/api/chat" '{"message": "안녕하세요", "quality": "enhanced"}'
+# 2. 대화 API 테스트
+echo "📋 2. 대화 API 테스트"
+test_endpoint "대화 메시지 전송" "POST" "/api/chat" '{"message": "안녕하세요", "quality": "enhanced"}'
 test_endpoint "빈 메시지 검증" "POST" "/api/chat" '{"message": "", "quality": "enhanced}'
 echo ""
 

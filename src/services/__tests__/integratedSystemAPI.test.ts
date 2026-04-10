@@ -1,29 +1,80 @@
-// axios 모킹을 먼저 설정
-jest.mock('axios', () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(() => ({
-      post: jest.fn(),
-      get: jest.fn(),
-      put: jest.fn(),
-      interceptors: {
-        request: { use: jest.fn() },
-        response: { use: jest.fn() },
-      },
-    })),
-    get: jest.fn(),
-  },
-}));
+/* eslint-disable jest/no-conditional-expect */
 
 import axios from 'axios';
-import integratedSystemAPI, { IntegratedSystemAPI, APIResponse, SystemStatus } from '../integratedSystemAPI';
+import {
+  API_BASE_URL,
+  API_HEALTH_PATH,
+  API_PROJECTS_LIST_PATH,
+  COMPREHENSIVE_ANALYSIS_PATH,
+  DATA_ANALYTICS_SOURCES_PATH,
+  EMOTION_RECOGNITION_ANALYZE_PATH,
+  FALLBACK_API_ORIGIN,
+  FILES_COLLECTION_PATH,
+  getChatPostUrlsForConfigBase,
+  INTEGRATED_FILE_UPLOAD_PATH,
+  PERFORMANCE_OPTIMIZATION_HEALTH_PATH,
+  PERFORMANCE_OPTIMIZATION_METRICS_PATH,
+  QUALITY_ASSURANCE_AUTOMATED_EXECUTION_PATH,
+  QUALITY_ASSURANCE_TEST_SUITES_PATH,
+  QUALITY_ASSURANCE_TESTS_PATH,
+  REAL_TIME_METRICS_PATH,
+  resolveAxiosHttpOriginBaseUrl,
+  SYSTEM_CONFIG_PATH,
+} from '../../config/api';
+import {
+  AGENTS_QUERY_PARAM_ID,
+  AGENTS_QUERY_PARAM_TYPE,
+  GENSPARK_AGENTS_TYPE_SUPER_AGENT,
+} from '../../config/routes';
+import { GENSPARK_REFERENCE_AGENT_ID } from '../gensparkReferenceAgentPreset';
+import type { Message } from '../../types';
+import {
+  buildModernChatPipelineContext,
+  scenarioInheritMergeOptionsFromPipelineLikeMessages,
+} from '../modernChatContextBuilder';
+import multiLayerStyleAnalysisSystem, {
+  CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS,
+} from '../multiLayerStyleAnalysisSystem';
+import integratedSystemAPI, { IntegratedSystemAPI } from '../integratedSystemAPI';
 
-const mockedAxios = axios as jest.Mocked<typeof axios>;
-const mockedAxiosCreate = axios.create as jest.MockedFunction<typeof axios.create>;
+/** `IntegratedSystemAPI`의 `this.baseURL`과 동일 기준 — `API_BASE_URL`만 쓰면 빈 문자열일 때 폴백 오리진과 어긋날 수 있음 */
+const INTEGRATED_CHAT_URLS = getChatPostUrlsForConfigBase(
+  resolveAxiosHttpOriginBaseUrl((API_BASE_URL || FALLBACK_API_ORIGIN).trim())
+);
+
+const CHAT_POST_MOCK_AXIOS_CONFIG = expect.objectContaining({
+  timeout: 60000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// axios 모킹: `create`/`get`만 대체하고 `isAxiosError` 등은 실제 구현 유지(apiClient·postChatAxiosWithFallback 폴백)
+jest.mock('axios', () => {
+  const actual = jest.requireActual<typeof import('axios')>('axios');
+  return {
+    __esModule: true,
+    default: {
+      ...actual.default,
+      create: jest.fn(() => ({
+        post: jest.fn(),
+        get: jest.fn(),
+        put: jest.fn(),
+        interceptors: {
+          request: { use: jest.fn() },
+          response: { use: jest.fn() },
+        },
+      })),
+      get: jest.fn(),
+    },
+  };
+});
+
+const mockedAxios = jest.mocked(axios);
+const mockedAxiosCreate: jest.MockedFunction<typeof axios.create> = jest.mocked(axios.create);
+const mockedAxiosGet = mockedAxios.get as jest.MockedFunction<typeof axios.get>;
 
 describe('IntegratedSystemAPI', () => {
   let api: IntegratedSystemAPI;
-  let mockApiInstance: any;
+  let mockApiInstance: { get: jest.Mock; post: jest.Mock; put: jest.Mock; delete: jest.Mock; interceptors: { request: { use: jest.Mock }; response: { use: jest.Mock } } };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -35,13 +86,14 @@ describe('IntegratedSystemAPI', () => {
       post: jest.fn(),
       get: jest.fn(),
       put: jest.fn(),
+      delete: jest.fn(),
       interceptors: {
         request: { use: jest.fn() },
         response: { use: jest.fn() },
       },
     };
 
-    mockedAxiosCreate.mockReturnValue(mockApiInstance as any);
+    mockedAxiosCreate.mockReturnValue(mockApiInstance as never);
     api = new IntegratedSystemAPI();
   });
 
@@ -67,7 +119,7 @@ describe('IntegratedSystemAPI', () => {
 
   describe('checkSystemHealth', () => {
     it('모든 서비스가 정상일 때 healthy 상태를 반환해야 함', async () => {
-      mockedAxios.get.mockResolvedValue({ status: 200 });
+      mockedAxiosGet.mockResolvedValue({ status: 200 } as never);
 
       const result = await api.checkSystemHealth();
 
@@ -78,11 +130,11 @@ describe('IntegratedSystemAPI', () => {
     });
 
     it('일부 서비스가 실패하면 degraded 상태를 반환해야 함', async () => {
-      mockedAxios.get
-        .mockResolvedValueOnce({ status: 200 })
+      mockedAxiosGet
+        .mockResolvedValueOnce({ status: 200 } as never)
         .mockRejectedValueOnce(new Error('Service down'))
-        .mockResolvedValueOnce({ status: 200 })
-        .mockResolvedValueOnce({ status: 200 });
+        .mockResolvedValueOnce({ status: 200 } as never)
+        .mockResolvedValueOnce({ status: 200 } as never);
 
       const result = await api.checkSystemHealth();
 
@@ -91,7 +143,7 @@ describe('IntegratedSystemAPI', () => {
     });
 
     it('서비스 상태 정보를 포함해야 함', async () => {
-      mockedAxios.get.mockResolvedValue({ status: 200 });
+      mockedAxiosGet.mockResolvedValue({ status: 200 } as never);
 
       const result = await api.checkSystemHealth();
 
@@ -115,10 +167,16 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.sendMessage('테스트 메시지');
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/api/chat', {
-        message: '테스트 메시지',
-        context: undefined,
-      });
+      expect(mockApiInstance.post).toHaveBeenCalledWith(
+        INTEGRATED_CHAT_URLS[0],
+        expect.objectContaining({
+          message: '테스트 메시지',
+          quality: 'enhanced',
+        }),
+        CHAT_POST_MOCK_AXIOS_CONFIG
+      );
+      const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+      expect(posted.context).toMatchObject({ original_user_message: '테스트 메시지' });
       expect(result.success).toBe(true);
     });
 
@@ -135,10 +193,232 @@ describe('IntegratedSystemAPI', () => {
       const context = { project_id: 'test' };
       await api.sendMessage('테스트 메시지', context);
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/api/chat', {
-        message: '테스트 메시지',
-        context,
+      expect(mockApiInstance.post).toHaveBeenCalledWith(
+        INTEGRATED_CHAT_URLS[0],
+        expect.objectContaining({
+          message: '테스트 메시지',
+          quality: 'enhanced',
+        }),
+        CHAT_POST_MOCK_AXIOS_CONFIG
+      );
+      const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+      expect(posted.context).toMatchObject({
+        project_id: 'test',
+        original_user_message: '테스트 메시지',
       });
+    });
+
+    it('REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT=1이면 URL에 id가 있어도 빈 context에 genspark_*를 넣지 않는다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = '1';
+      mockApiInstance.post.mockResolvedValue({
+        data: { success: true, data: { message: 'ok' } },
+      });
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_ID}=7c36051a-2b94-4e9e-bd36-05dfabfe3e07`,
+        );
+        await api.sendMessage('안녕', {});
+        const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+        const ctx = posted.context as Record<string, unknown> | undefined;
+        expect(ctx?.genspark_route_agent_id).toBeUndefined();
+        expect(ctx?.genspark_reference_agent_id).toBeUndefined();
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('URL type=super_agent만 있으면 sendMessage context에 참조 Super Agent id가 실린다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      if (prevDisable !== undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      mockApiInstance.post.mockResolvedValue({
+        data: { success: true, data: { message: 'ok' } },
+      });
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_TYPE}=${encodeURIComponent(GENSPARK_AGENTS_TYPE_SUPER_AGENT)}`,
+        );
+        await api.sendMessage('안녕', {});
+        const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+        const ctx = posted.context as Record<string, unknown> | undefined;
+        expect(ctx?.genspark_reference_agent_id).toBe(GENSPARK_REFERENCE_AGENT_ID);
+        expect(ctx?.genspark_route_agent_id).toBe(GENSPARK_REFERENCE_AGENT_ID);
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('GENSPARK_DISABLE이면 type=super_agent만 있어도 sendMessage context에 genspark_*를 넣지 않는다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = '1';
+      mockApiInstance.post.mockResolvedValue({
+        data: { success: true, data: { message: 'ok' } },
+      });
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_TYPE}=${encodeURIComponent(GENSPARK_AGENTS_TYPE_SUPER_AGENT)}`,
+        );
+        await api.sendMessage('안녕', {});
+        const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+        const ctx = posted.context as Record<string, unknown> | undefined;
+        expect(ctx?.genspark_route_agent_id).toBeUndefined();
+        expect(ctx?.genspark_reference_agent_id).toBeUndefined();
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('ModernChat 파이프라인 context로 sendMessage 시 GENSPARK_DISABLE이면 URL id가 context에 끼지 않는다', async () => {
+      delete process.env.REACT_APP_MODERN_CHAT_UNIFIED_CONTEXT;
+      const windowUuid = '7c36051a-2b94-4e9e-bd36-05dfabfe3e07';
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = '1';
+      mockApiInstance.post.mockResolvedValue({
+        data: { success: true, data: { message: 'ok' } },
+      });
+      try {
+        window.history.replaceState({}, '', `/?${AGENTS_QUERY_PARAM_ID}=${windowUuid}`);
+        const recent: Message[] = [
+          { id: 1, sender: 'user', text: '이전', timestamp: 't', analysis: null },
+        ];
+        const unifiedCtx = buildModernChatPipelineContext('질문: a\n요구사항: b', recent);
+        expect(unifiedCtx).toBeDefined();
+        const mergeOpts = scenarioInheritMergeOptionsFromPipelineLikeMessages(recent);
+        await api.sendMessage('질문: a\n요구사항: b', unifiedCtx as Record<string, unknown>, {
+          ...(mergeOpts != null ? { mergeApiChatContextOptions: mergeOpts } : {}),
+        });
+        const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+        const ctx = posted.context as Record<string, unknown> | undefined;
+        expect(ctx?.genspark_route_agent_id).not.toBe(windowUuid);
+        expect(ctx?.genspark_reference_agent_id).not.toBe(windowUuid);
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('ModernChat 파이프라인 옵션(gensparkRouteAgentId)으로 sendMessage 시 context에 해당 에이전트 id가 실린다', async () => {
+      delete process.env.REACT_APP_MODERN_CHAT_UNIFIED_CONTEXT;
+      const routeId = '7c36051a-2b94-4e9e-bd36-05dfabfe3e07';
+      mockApiInstance.post.mockResolvedValue({
+        data: { success: true, data: { message: 'ok' } },
+      });
+      const unifiedCtx = buildModernChatPipelineContext('질문: a\n요구사항: b', [], {
+        gensparkRouteAgentId: routeId,
+      });
+      expect(unifiedCtx).toBeDefined();
+      await api.sendMessage('질문: a\n요구사항: b', unifiedCtx as Record<string, unknown>);
+      const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+      const ctx = posted.context as Record<string, unknown> | undefined;
+      expect(ctx?.genspark_reference_agent_id).toBe(routeId);
+      expect(String(ctx?.genspark_external_agent_profile ?? '')).toContain(routeId);
+    });
+
+    it('멀티레이어 힌트 env 활성화 시 초장문은 surface 분석 입력이 상한으로 잘린다', async () => {
+      const prev = process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT;
+      process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT = 'true';
+      const spy = jest
+        .spyOn(multiLayerStyleAnalysisSystem, 'performMultiLayerAnalysis')
+        .mockRejectedValue(new Error('short-circuit'));
+      mockApiInstance.post.mockResolvedValue({
+        data: { success: true, data: { message: 'ok' } },
+      });
+      try {
+        const longMsg = 'i'.repeat(CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS + 50);
+        await api.sendMessage(longMsg);
+        expect(spy).toHaveBeenCalledWith(
+          'i'.repeat(CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS),
+          'surface'
+        );
+      } finally {
+        spy.mockRestore();
+        if (prev === undefined) delete process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT;
+        else process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT = prev;
+      }
+    });
+
+    it('conversationHistory의 pipelineExtras만으로(merge 옵션 없이) 상속 env 시 client_generation_scenario를 넣는다', async () => {
+      const prev = process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+      process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = 'true';
+      mockApiInstance.post.mockResolvedValueOnce({
+        data: { success: true, data: { message: 'ok' } },
+      });
+      try {
+        await api.sendMessage('질문: A\n요구사항: B', undefined, {
+          conversationHistory: [
+            {
+              role: 'assistant',
+              content: '이전',
+              pipelineExtras: { generationScenarioMarkdown: '## intSysHist\n시나리오' },
+            },
+          ],
+        });
+        const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+        const ctx = posted.context as Record<string, unknown>;
+        expect(String(ctx?.client_generation_scenario)).toContain('intSysHist');
+      } finally {
+        if (prev === undefined) delete process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+        else process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = prev;
+      }
+    });
+
+    it('mergeApiChatContextOptions+상속 env 시 client_generation_scenario를 넣는다', async () => {
+      const prev = process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+      process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = 'true';
+      mockApiInstance.post.mockResolvedValue({
+        data: { success: true, data: { message: 'ok' } },
+      });
+      try {
+        await api.sendMessage('질문: A\n요구사항: B', undefined, {
+          mergeApiChatContextOptions: {
+            recentMessagesForScenarioInherit: [
+              {
+                role: 'assistant',
+                pipelineExtras: { generationScenarioMarkdown: '## integratedSystem\n시나리오' },
+              },
+            ],
+          },
+        });
+        const posted = mockApiInstance.post.mock.calls[0][1] as Record<string, unknown>;
+        const ctx = posted.context as Record<string, unknown>;
+        expect(String(ctx?.client_generation_scenario)).toContain('integratedSystem');
+      } finally {
+        if (prev === undefined) delete process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO;
+        else process.env.REACT_APP_INHERIT_CLIENT_GENERATION_SCENARIO = prev;
+      }
+    });
+
+    it('첫 /api/chat이 404면 /api/unified/chat으로 재시도한다', async () => {
+      const err404 = Object.assign(new Error('Not Found'), { response: { status: 404 } });
+      mockApiInstance.post
+        .mockRejectedValueOnce(err404)
+        .mockResolvedValueOnce({
+          data: { success: true, data: { message: 'unified ok' } },
+        });
+
+      const result = await api.sendMessage('테스트 메시지');
+
+      expect(mockApiInstance.post).toHaveBeenCalledTimes(2);
+      expect(mockApiInstance.post.mock.calls[0][0]).toBe(INTEGRATED_CHAT_URLS[0]);
+      expect(mockApiInstance.post.mock.calls[1][0]).toBe(INTEGRATED_CHAT_URLS[1]);
+      expect(result.success).toBe(true);
     });
 
     it('전송 실패 시 에러를 반환해야 함', async () => {
@@ -164,7 +444,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.analyzeEmotion('기쁜 내용');
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/api/emotion-recognition/analyze', {
+      expect(mockApiInstance.post).toHaveBeenCalledWith(EMOTION_RECOGNITION_ANALYZE_PATH, {
         content: '기쁜 내용',
         type: 'text',
       });
@@ -183,7 +463,7 @@ describe('IntegratedSystemAPI', () => {
 
       await api.analyzeEmotion('슬픈 내용', 'audio');
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/api/emotion-recognition/analyze', {
+      expect(mockApiInstance.post).toHaveBeenCalledWith(EMOTION_RECOGNITION_ANALYZE_PATH, {
         content: '슬픈 내용',
         type: 'audio',
       });
@@ -212,7 +492,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getDataSources();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/data-analytics/sources');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(DATA_ANALYTICS_SOURCES_PATH);
       expect(result.success).toBe(true);
     });
 
@@ -229,7 +509,7 @@ describe('IntegratedSystemAPI', () => {
       const sourceData = { name: 'New Source', type: 'database' };
       const result = await api.createDataSource(sourceData);
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/api/data-analytics/sources', sourceData);
+      expect(mockApiInstance.post).toHaveBeenCalledWith(DATA_ANALYTICS_SOURCES_PATH, sourceData);
       expect(result.success).toBe(true);
     });
 
@@ -256,7 +536,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getQualityTests();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/quality-assurance/tests');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(QUALITY_ASSURANCE_TESTS_PATH);
       expect(result.success).toBe(true);
     });
 
@@ -272,7 +552,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getQualityTestSuites();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/quality-assurance/test-suites');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(QUALITY_ASSURANCE_TEST_SUITES_PATH);
       expect(result.success).toBe(true);
     });
 
@@ -288,7 +568,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.startQualityTest('suite-1');
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/api/quality-assurance/automated-execution', {
+      expect(mockApiInstance.post).toHaveBeenCalledWith(QUALITY_ASSURANCE_AUTOMATED_EXECUTION_PATH, {
         test_suite_id: 'suite-1',
       });
       expect(result.success).toBe(true);
@@ -308,7 +588,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getPerformanceMetrics();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/performance-optimization/metrics');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(PERFORMANCE_OPTIMIZATION_METRICS_PATH);
       expect(result.success).toBe(true);
     });
 
@@ -324,7 +604,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getSystemHealth();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/performance-optimization/health');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(PERFORMANCE_OPTIMIZATION_HEALTH_PATH);
       expect(result.success).toBe(true);
     });
   });
@@ -343,7 +623,7 @@ describe('IntegratedSystemAPI', () => {
       const data = { content: '분석할 데이터' };
       const result = await api.performComprehensiveAnalysis(data);
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/api/comprehensive-analysis', data);
+      expect(mockApiInstance.post).toHaveBeenCalledWith(COMPREHENSIVE_ANALYSIS_PATH, data);
       expect(result.success).toBe(true);
     });
 
@@ -372,7 +652,7 @@ describe('IntegratedSystemAPI', () => {
       const result = await api.uploadFile(file);
 
       expect(mockApiInstance.post).toHaveBeenCalledWith(
-        '/api/file/upload',
+        INTEGRATED_FILE_UPLOAD_PATH,
         expect.any(FormData),
         {
           headers: {
@@ -411,7 +691,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getFileList();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/files');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(FILES_COLLECTION_PATH);
       expect(result.success).toBe(true);
     });
   });
@@ -429,7 +709,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getProjects();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/projects');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(API_PROJECTS_LIST_PATH);
       expect(result.success).toBe(true);
     });
 
@@ -446,7 +726,7 @@ describe('IntegratedSystemAPI', () => {
       const projectData = { name: 'New Project', description: 'Description' };
       const result = await api.createProject(projectData);
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/api/projects', projectData);
+      expect(mockApiInstance.post).toHaveBeenCalledWith(API_PROJECTS_LIST_PATH, projectData);
       expect(result.success).toBe(true);
     });
   });
@@ -464,7 +744,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getRealTimeMetrics();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/real-time/metrics');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(REAL_TIME_METRICS_PATH);
       expect(result.success).toBe(true);
     });
   });
@@ -482,7 +762,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.getSystemConfig();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/system/config');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(SYSTEM_CONFIG_PATH);
       expect(result.success).toBe(true);
     });
 
@@ -499,7 +779,7 @@ describe('IntegratedSystemAPI', () => {
       const config = { setting: 'value' };
       const result = await api.updateSystemConfig(config);
 
-      expect(mockApiInstance.put).toHaveBeenCalledWith('/api/system/config', config);
+      expect(mockApiInstance.put).toHaveBeenCalledWith(SYSTEM_CONFIG_PATH, config);
       expect(result.success).toBe(true);
     });
   });
@@ -537,7 +817,7 @@ describe('IntegratedSystemAPI', () => {
 
       const result = await api.testConnection();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/api/health');
+      expect(mockApiInstance.get).toHaveBeenCalledWith(API_HEALTH_PATH);
       expect(result).toBe(true);
     });
 

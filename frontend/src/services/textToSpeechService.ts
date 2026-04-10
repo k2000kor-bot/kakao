@@ -1,7 +1,9 @@
 /**
- * CORBU AI 고급 텍스트 음성 변환(TTS) 서비스
+ * CORBU.AI 고급 텍스트 음성 변환(TTS) 서비스
  * Web Speech API와 고급 음성 합성 기능을 활용
  */
+
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface TTSConfig {
     language: string;
@@ -45,7 +47,7 @@ export interface TTSEvents {
     onVoiceChange?: (voice: SpeechSynthesisVoice) => void;
 }
 
-class TextToSpeechService {
+export class TextToSpeechService {
     private synthesis: SpeechSynthesis;
     private supportStatus: boolean = false;
     private availableVoices: SpeechSynthesisVoice[] = [];
@@ -229,7 +231,7 @@ class TextToSpeechService {
             return '';
         }
 
-        if (!text.trim()) {
+        if (!coerceTrimmedString(text, '')) {
             console.warn('빈 텍스트는 음성으로 변환할 수 없습니다.');
             return '';
         }
@@ -304,7 +306,7 @@ class TextToSpeechService {
         processedText = processedText.replace(/[#]+/g, '');
 
         // 연속된 공백 정리
-        processedText = processedText.replace(/\s+/g, ' ').trim();
+        processedText = coerceTrimmedString(processedText.replace(/\s+/g, ' '), '');
 
         // 문장 끝 처리
         if (!processedText.match(/[.!?]$/)) {

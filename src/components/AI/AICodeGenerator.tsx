@@ -1,44 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Code,
     Play,
-    Save,
     Download,
-    Copy,
     RefreshCw,
     Settings,
     Zap,
-    Lightbulb,
     CheckCircle,
-    AlertTriangle,
-    Clock,
-    Star,
-    Eye,
-    FileText,
-    GitBranch,
     Bug,
     Shield,
-    Computer as Cpu,
-    Database,
-    Globe,
-    Smartphone,
-    Monitor,
-    Server,
-    Wifi,
-    Lock,
-    Unlock,
-    ArrowRight,
     Plus,
     Trash2,
     Edit,
     Share2,
-    History,
-    TrendingUp,
     BarChart,
     Target,
-    Sparkles
+    Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getStatusColor, getPriorityColor } from '../../styles/themeColors';
+import { coerceTrimmedString } from '../../utils/chatInputUtils';
 
 interface CodeProject {
     id: string;
@@ -113,22 +94,22 @@ interface AICodeGeneratorProps {
     onProjectCreate?: (project: CodeProject) => void;
     onProjectUpdate?: (projectId: string, updates: Partial<CodeProject>) => void;
     onProjectDelete?: (projectId: string) => void;
-    onCodeGenerate?: (prompt: string, context: any) => void;
+    onCodeGenerate?: (prompt: string, context: Record<string, unknown>) => void;
     onCodeOptimize?: (fileId: string, optimizations: Optimization[]) => void;
     onTestRun?: (projectId: string, tests: TestCase[]) => void;
     onExportProject?: (projectId: string, format: string) => void;
-    onShareProject?: (projectId: string, shareOptions: any) => void;
+    onShareProject?: (projectId: string, shareOptions: Record<string, unknown>) => void;
 }
 
 const AICodeGenerator: React.FC<AICodeGeneratorProps> = ({
     onProjectCreate,
-    onProjectUpdate,
-    onProjectDelete,
-    onCodeGenerate,
+    onProjectUpdate: _onProjectUpdate,
+    onProjectDelete: _onProjectDelete,
+    onCodeGenerate: _onCodeGenerate,
     onCodeOptimize,
     onTestRun,
-    onExportProject,
-    onShareProject
+    onExportProject: _onExportProject,
+    onShareProject: _onShareProject
 }) => {
     const [projects, setProjects] = useState<CodeProject[]>([]);
     const [selectedProject, setSelectedProject] = useState<CodeProject | null>(null);
@@ -140,11 +121,6 @@ const AICodeGenerator: React.FC<AICodeGeneratorProps> = ({
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
-    const [selectedFile, setSelectedFile] = useState<CodeFile | null>(null);
-    const [codeEditorContent, setCodeEditorContent] = useState('');
-
-    const codeEditorRef = useRef<HTMLTextAreaElement>(null);
-
     // Mock projects
     useEffect(() => {
         const mockProjects: CodeProject[] = [
@@ -166,7 +142,7 @@ const AICodeGenerator: React.FC<AICodeGeneratorProps> = ({
 import { motion } from 'framer-motion';
 
 interface DashboardProps {
-  data: any[];
+  data: unknown[];
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
@@ -284,7 +260,8 @@ export default Dashboard;`,
     };
 
     const handleGenerateCode = async () => {
-        if (!generationPrompt.trim()) return;
+        const trimmedPrompt = coerceTrimmedString(generationPrompt, '');
+        if (!trimmedPrompt) return;
 
         setIsGenerating(true);
         setGenerationProgress(0);
@@ -298,7 +275,7 @@ export default Dashboard;`,
         const newProject: CodeProject = {
             id: `project-${Date.now()}`,
             name: `AI 생성 프로젝트 ${projects.length + 1}`,
-            description: generationPrompt,
+            description: trimmedPrompt,
             language: selectedLanguage,
             framework: selectedFramework,
             status: 'completed',
@@ -316,20 +293,20 @@ const GeneratedComponent: React.FC = () => {
   return (
     <div className="generated-component">
       <h1>AI 생성 코드</h1>
-      <p>${generationPrompt}</p>
+      <p>${trimmedPrompt}</p>
     </div>
   );
 };
 
 export default GeneratedComponent;`,
                     language: selectedLanguage,
-                    size: generationPrompt.length * 2,
+                    size: trimmedPrompt.length * 2,
                     lastModified: new Date(),
                     status: 'generated'
                 }
             ],
             metrics: {
-                linesOfCode: Math.ceil(generationPrompt.length / 10),
+                linesOfCode: Math.ceil(trimmedPrompt.length / 10),
                 complexity: 0.3 + Math.random() * 0.4,
                 performance: 0.7 + Math.random() * 0.2,
                 security: 0.8 + Math.random() * 0.1,
@@ -423,40 +400,35 @@ export default GeneratedComponent;`,
         return lang?.icon || '📄';
     };
 
-    const getFrameworkIcon = (framework: string) => {
-        const frameworkList = frameworks[selectedLanguage as keyof typeof frameworks] || [];
-        const fw = frameworkList.find(f => f.value === framework);
-        return fw?.icon || '⚙️';
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'completed': return 'text-green-600 bg-green-50';
-            case 'generating': return 'text-blue-600 bg-blue-50';
-            case 'optimizing': return 'text-yellow-600 bg-yellow-50';
-            case 'error': return 'text-red-600 bg-red-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
+    const getStatusStyle = (status: string) => {
+        const colorMap: Record<string, string> = {
+            completed: getStatusColor('success'),
+            generating: 'var(--accent-info)',
+            optimizing: getStatusColor('warning'),
+            error: getStatusColor('error'),
+        };
+        return { color: colorMap[status] ?? 'var(--text-tertiary)', backgroundColor: 'var(--bg-tertiary)' };
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
+        <div className="rounded-lg shadow-sm border h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
             {/* Header */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b" style={{ borderColor: 'var(--bg-tertiary)' }}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                            <Code className="h-5 w-5 text-purple-600" />
+                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--accent-secondary-muted)' }}>
+                            <Code className="h-5 w-5" style={{ color: 'var(--accent-secondary)' }} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-900">AI 코드 생성기</h2>
-                            <p className="text-sm text-gray-500">AI가 코드를 생성하고 최적화합니다</p>
+                            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>AI 코드 생성기</h2>
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>AI가 코드를 생성하고 최적화합니다</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
                         <button
                             onClick={() => setActiveTab('generator')}
-                            className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            className="flex items-center space-x-2 px-3 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+                            style={{ backgroundColor: 'var(--accent-secondary)' }}
                         >
                             <Plus className="h-4 w-4" />
                             <span>새 프로젝트</span>
@@ -465,24 +437,27 @@ export default GeneratedComponent;`,
                 </div>
 
                 {/* Tabs */}
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mt-4">
-                    {[
+                <div className="flex space-x-1 p-1 rounded-lg mt-4" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                    {([
                         { id: 'projects', label: '프로젝트', icon: Code },
                         { id: 'generator', label: '코드 생성', icon: Sparkles },
                         { id: 'optimizer', label: '최적화', icon: Zap },
                         { id: 'tester', label: '테스트', icon: Bug },
                         { id: 'analytics', label: '분석', icon: BarChart },
                         { id: 'settings', label: '설정', icon: Settings }
-                    ].map((tab) => {
+                    ] as const).map((tab) => {
                         const IconComponent = tab.icon;
+                        const isActive = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id
-                                        ? 'bg-white text-purple-600 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                onClick={() => setActiveTab(tab.id)}
+                                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                                style={{
+                                    backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
+                                    color: isActive ? 'var(--accent-secondary)' : 'var(--text-secondary)',
+                                    boxShadow: isActive ? 'var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05))' : undefined,
+                                }}
                             >
                                 <IconComponent className="h-4 w-4" />
                                 <span>{tab.label}</span>
@@ -509,48 +484,49 @@ export default GeneratedComponent;`,
                                         key={project.id}
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                        className="rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer border"
+                                        style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}
                                         onClick={() => setSelectedProject(project)}
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-purple-100 rounded-lg">
-                                                    <Code className="h-5 w-5 text-purple-600" />
+                                                <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--accent-secondary-muted)' }}>
+                                                    <Code className="h-5 w-5" style={{ color: 'var(--accent-secondary)' }} />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                                                    <p className="text-sm text-gray-500">{project.description}</p>
+                                                    <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{project.name}</h3>
+                                                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{project.description}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+                                                <span className="px-2 py-1 text-xs font-medium rounded-full" style={getStatusStyle(project.status)}>
                                                     {project.status}
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                     {getLanguageIcon(project.language)} {project.language}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="mt-3 space-y-2">
-                                            <div className="flex items-center justify-between text-sm text-gray-500">
+                                            <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>파일: {project.files.length}개</span>
                                                 <span>코드 라인: {project.metrics.linesOfCode}</span>
                                                 <span>성능: {Math.round(project.metrics.performance * 100)}%</span>
                                             </div>
 
                                             <div className="flex items-center space-x-2">
-                                                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                    <Edit className="h-4 w-4 text-gray-500" />
+                                                <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                                                    <Edit className="h-4 w-4" />
                                                 </button>
-                                                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                    <Share2 className="h-4 w-4 text-gray-500" />
+                                                <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                                                    <Share2 className="h-4 w-4" />
                                                 </button>
-                                                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                    <Download className="h-4 w-4 text-gray-500" />
+                                                <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                                                    <Download className="h-4 w-4" />
                                                 </button>
-                                                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--accent-error)' }}>
+                                                    <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         </div>
@@ -570,17 +546,18 @@ export default GeneratedComponent;`,
                         >
                             <div className="max-w-4xl mx-auto space-y-6">
                                 {/* 언어 및 프레임워크 선택 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">프로젝트 설정</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>프로젝트 설정</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 프로그래밍 언어
                                             </label>
                                             <select
                                                 value={selectedLanguage}
                                                 onChange={(e) => setSelectedLanguage(e.target.value)}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                className="w-full p-3 rounded-lg border focus:ring-2 focus:border-transparent"
+                                                style={{ borderColor: 'var(--bg-tertiary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                                             >
                                                 {languages.map((lang) => (
                                                     <option key={lang.value} value={lang.value}>
@@ -590,13 +567,14 @@ export default GeneratedComponent;`,
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 프레임워크
                                             </label>
                                             <select
                                                 value={selectedFramework}
                                                 onChange={(e) => setSelectedFramework(e.target.value)}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                className="w-full p-3 rounded-lg border focus:ring-2 focus:border-transparent"
+                                                style={{ borderColor: 'var(--bg-tertiary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                                             >
                                                 {(frameworks[selectedLanguage as keyof typeof frameworks] || []).map((fw) => (
                                                     <option key={fw.value} value={fw.value}>
@@ -609,25 +587,27 @@ export default GeneratedComponent;`,
                                 </div>
 
                                 {/* 코드 생성 프롬프트 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">코드 생성 요청</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>코드 생성 요청</h3>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 원하는 기능을 설명하세요
                                             </label>
                                             <textarea
                                                 value={generationPrompt}
                                                 onChange={(e) => setGenerationPrompt(e.target.value)}
                                                 placeholder="예: React 컴포넌트로 사용자 대시보드를 만들어주세요. 차트와 데이터 테이블이 포함되어야 합니다."
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                                className="w-full p-3 rounded-lg border focus:ring-2 focus:border-transparent resize-none"
+                                                style={{ borderColor: 'var(--bg-tertiary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                                                 rows={6}
                                             />
                                         </div>
                                         <button
-                                            onClick={handleGenerateCode}
-                                            disabled={!generationPrompt.trim() || isGenerating}
-                                            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={() => void handleGenerateCode()}
+                                            disabled={!coerceTrimmedString(generationPrompt, '') || isGenerating}
+                                            className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                                            style={{ backgroundColor: 'var(--accent-secondary)' }}
                                         >
                                             {isGenerating ? (
                                                 <>
@@ -646,16 +626,16 @@ export default GeneratedComponent;`,
 
                                 {/* 생성 진행률 */}
                                 {isGenerating && (
-                                    <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">생성 진행률</h3>
+                                    <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                        <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>생성 진행률</h3>
                                         <div className="space-y-4">
-                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                                                 <div
-                                                    className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                                                    style={{ width: `${generationProgress}%` }}
+                                                    className="h-2 rounded-full transition-all duration-300"
+                                                    style={{ width: `${generationProgress}%`, backgroundColor: 'var(--accent-secondary)' }}
                                                 />
                                             </div>
-                                            <div className="flex items-center justify-between text-sm text-gray-600">
+                                            <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>AI가 코드를 분석하고 생성하고 있습니다...</span>
                                                 <span>{generationProgress}%</span>
                                             </div>
@@ -676,16 +656,17 @@ export default GeneratedComponent;`,
                         >
                             <div className="space-y-6">
                                 {/* 프로젝트 정보 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">{selectedProject.name}</h3>
-                                            <p className="text-gray-500">{selectedProject.description}</p>
+                                            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{selectedProject.name}</h3>
+                                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{selectedProject.description}</p>
                                         </div>
                                         <button
                                             onClick={() => handleOptimizeCode(selectedProject.files[0]?.id || '')}
                                             disabled={isOptimizing}
-                                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                            className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 hover:opacity-90"
+                                            style={{ backgroundColor: 'var(--accent-info)' }}
                                         >
                                             {isOptimizing ? (
                                                 <>
@@ -703,28 +684,25 @@ export default GeneratedComponent;`,
                                 </div>
 
                                 {/* 최적화 제안 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 최적화 제안</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>AI 최적화 제안</h3>
                                     <div className="space-y-4">
                                         {selectedProject.aiSuggestions.map((suggestion) => (
-                                            <div key={suggestion.id} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={suggestion.id} className="rounded-lg p-4 border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
-                                                        <h4 className="font-medium text-gray-900">{suggestion.title}</h4>
-                                                        <p className="text-sm text-gray-600 mt-1">{suggestion.description}</p>
-                                                        <div className="mt-2 p-2 bg-gray-50 rounded text-sm font-mono">
+                                                        <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>{suggestion.title}</h4>
+                                                        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{suggestion.description}</p>
+                                                        <div className="mt-2 p-2 rounded text-sm font-mono" style={{ backgroundColor: 'var(--bg-secondary)' }}>
                                                             {suggestion.code}
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center space-x-2 ml-4">
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${suggestion.impact === 'high' ? 'bg-red-100 text-red-700' :
-                                                                suggestion.impact === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                                                    'bg-green-100 text-green-700'
-                                                            }`}>
+                                                        <span className="px-2 py-1 text-xs font-medium rounded-full" style={{ color: getPriorityColor(suggestion.impact), backgroundColor: 'var(--bg-tertiary)' }}>
                                                             {suggestion.impact} impact
                                                         </span>
-                                                        <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                            <CheckCircle className="h-4 w-4 text-green-600" />
+                                                        <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--accent-success)' }}>
+                                                            <CheckCircle className="h-4 w-4" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -734,36 +712,36 @@ export default GeneratedComponent;`,
                                 </div>
 
                                 {/* 최적화 히스토리 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">최적화 히스토리</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>최적화 히스토리</h3>
                                     <div className="space-y-4">
                                         {selectedProject.optimizations.map((optimization) => (
-                                            <div key={optimization.id} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={optimization.id} className="rounded-lg p-4 border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
-                                                        <h4 className="font-medium text-gray-900">{optimization.title}</h4>
-                                                        <p className="text-sm text-gray-600 mt-1">{optimization.description}</p>
+                                                        <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>{optimization.title}</h4>
+                                                        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{optimization.description}</p>
                                                         <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div>
-                                                                <p className="text-xs font-medium text-gray-500 mb-1">Before</p>
-                                                                <div className="p-2 bg-red-50 rounded text-sm font-mono">
+                                                                <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Before</p>
+                                                                <div className="p-2 rounded text-sm font-mono" style={{ backgroundColor: 'var(--accent-error-muted, rgba(239,68,68,0.1))' }}>
                                                                     {optimization.beforeCode}
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <p className="text-xs font-medium text-gray-500 mb-1">After</p>
-                                                                <div className="p-2 bg-green-50 rounded text-sm font-mono">
+                                                                <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>After</p>
+                                                                <div className="p-2 rounded text-sm font-mono" style={{ backgroundColor: 'var(--accent-success-muted, rgba(63,221,120,0.1))' }}>
                                                                     {optimization.afterCode}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center space-x-2 ml-4">
-                                                        <span className="text-sm font-medium text-green-600">
+                                                        <span className="text-sm font-medium" style={{ color: 'var(--accent-success)' }}>
                                                             +{optimization.improvement}%
                                                         </span>
                                                         {optimization.applied && (
-                                                            <CheckCircle className="h-4 w-4 text-green-600" />
+                                                            <CheckCircle className="h-4 w-4" style={{ color: 'var(--accent-success)' }} />
                                                         )}
                                                     </div>
                                                 </div>
@@ -785,16 +763,17 @@ export default GeneratedComponent;`,
                         >
                             <div className="space-y-6">
                                 {/* 테스트 실행 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">테스트 실행</h3>
-                                            <p className="text-gray-500">프로젝트의 모든 테스트를 실행합니다</p>
+                                            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>테스트 실행</h3>
+                                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>프로젝트의 모든 테스트를 실행합니다</p>
                                         </div>
                                         <button
                                             onClick={() => handleRunTests(selectedProject.id)}
                                             disabled={isTesting}
-                                            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                            className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 hover:opacity-90"
+                                            style={{ backgroundColor: 'var(--accent-success)' }}
                                         >
                                             {isTesting ? (
                                                 <>
@@ -812,38 +791,41 @@ export default GeneratedComponent;`,
                                 </div>
 
                                 {/* 테스트 결과 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">테스트 결과</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>테스트 결과</h3>
                                     <div className="space-y-4">
                                         {selectedProject.tests.map((test) => (
-                                            <div key={test.id} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={test.id} className="rounded-lg p-4 border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
-                                                        <h4 className="font-medium text-gray-900">{test.name}</h4>
-                                                        <p className="text-sm text-gray-600 mt-1">{test.description}</p>
+                                                        <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>{test.name}</h4>
+                                                        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{test.description}</p>
                                                         <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                                             <div>
-                                                                <p className="font-medium text-gray-500">Input</p>
-                                                                <p className="font-mono">{test.input}</p>
+                                                                <p className="font-medium" style={{ color: 'var(--text-secondary)' }}>Input</p>
+                                                                <p className="font-mono" style={{ color: 'var(--text-primary)' }}>{test.input}</p>
                                                             </div>
                                                             <div>
-                                                                <p className="font-medium text-gray-500">Expected</p>
-                                                                <p className="font-mono">{test.expectedOutput}</p>
+                                                                <p className="font-medium" style={{ color: 'var(--text-secondary)' }}>Expected</p>
+                                                                <p className="font-mono" style={{ color: 'var(--text-primary)' }}>{test.expectedOutput}</p>
                                                             </div>
                                                             <div>
-                                                                <p className="font-medium text-gray-500">Actual</p>
-                                                                <p className="font-mono">{test.actualOutput}</p>
+                                                                <p className="font-medium" style={{ color: 'var(--text-secondary)' }}>Actual</p>
+                                                                <p className="font-mono" style={{ color: 'var(--text-primary)' }}>{test.actualOutput}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center space-x-2 ml-4">
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${test.status === 'pass' ? 'bg-green-100 text-green-700' :
-                                                                test.status === 'fail' ? 'bg-red-100 text-red-700' :
-                                                                    'bg-yellow-100 text-yellow-700'
-                                                            }`}>
+                                                        <span
+                                                            className="px-2 py-1 text-xs font-medium rounded-full"
+                                                            style={{
+                                                                color: test.status === 'pass' ? getStatusColor('success') : test.status === 'fail' ? getStatusColor('error') : getStatusColor('warning'),
+                                                                backgroundColor: 'var(--bg-tertiary)',
+                                                            }}
+                                                        >
                                                             {test.status}
                                                         </span>
-                                                        <span className="text-sm text-gray-500">
+                                                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                             {test.executionTime}s
                                                         </span>
                                                     </div>
@@ -867,56 +849,56 @@ export default GeneratedComponent;`,
                             <div className="space-y-6">
                                 {/* 메트릭 카드 */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">성능</p>
-                                                <p className="text-2xl font-bold text-blue-600">
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>성능</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-info)' }}>
                                                     {Math.round(selectedProject.metrics.performance * 100)}%
                                                 </p>
                                             </div>
-                                            <Zap className="h-8 w-8 text-blue-600" />
+                                            <Zap className="h-8 w-8" style={{ color: 'var(--accent-info)' }} />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">보안</p>
-                                                <p className="text-2xl font-bold text-green-600">
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>보안</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-success)' }}>
                                                     {Math.round(selectedProject.metrics.security * 100)}%
                                                 </p>
                                             </div>
-                                            <Shield className="h-8 w-8 text-green-600" />
+                                            <Shield className="h-8 w-8" style={{ color: 'var(--accent-success)' }} />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">테스트 커버리지</p>
-                                                <p className="text-2xl font-bold text-purple-600">
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>테스트 커버리지</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-secondary)' }}>
                                                     {Math.round(selectedProject.metrics.testCoverage * 100)}%
                                                 </p>
                                             </div>
-                                            <Target className="h-8 w-8 text-purple-600" />
+                                            <Target className="h-8 w-8" style={{ color: 'var(--accent-secondary)' }} />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* 상세 메트릭 */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">상세 분석</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>상세 분석</h3>
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">코드 라인 수</span>
-                                            <span className="text-sm text-gray-600">{selectedProject.metrics.linesOfCode}</span>
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>코드 라인 수</span>
+                                            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{selectedProject.metrics.linesOfCode}</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">복잡도</span>
-                                            <span className="text-sm text-gray-600">{Math.round(selectedProject.metrics.complexity * 100)}%</span>
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>복잡도</span>
+                                            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{Math.round(selectedProject.metrics.complexity * 100)}%</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">유지보수성</span>
-                                            <span className="text-sm text-gray-600">{Math.round(selectedProject.metrics.maintainability * 100)}%</span>
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>유지보수성</span>
+                                            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{Math.round(selectedProject.metrics.maintainability * 100)}%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -932,25 +914,25 @@ export default GeneratedComponent;`,
                             exit={{ opacity: 0, y: -20 }}
                             className="h-full overflow-y-auto p-4"
                         >
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 코드 생성기 설정</h3>
+                            <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>AI 코드 생성기 설정</h3>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">자동 최적화</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+                                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>자동 최적화</span>
+                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full" style={{ backgroundColor: 'var(--accent-info)' }}>
+                                            <span className="inline-block h-4 w-4 transform rounded-full translate-x-6" style={{ backgroundColor: 'var(--bg-primary)' }} />
                                         </button>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">자동 테스트 생성</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+                                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>자동 테스트 생성</span>
+                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full" style={{ backgroundColor: 'var(--accent-info)' }}>
+                                            <span className="inline-block h-4 w-4 transform rounded-full translate-x-6" style={{ backgroundColor: 'var(--bg-primary)' }} />
                                         </button>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">코드 리뷰</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-1" />
+                                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>코드 리뷰</span>
+                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                                            <span className="inline-block h-4 w-4 transform rounded-full translate-x-1" style={{ backgroundColor: 'var(--bg-primary)' }} />
                                         </button>
                                     </div>
                                 </div>

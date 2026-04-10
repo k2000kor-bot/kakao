@@ -88,7 +88,7 @@ class EnhancedMediaProcessor:
             'image': {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'},
             'video': {'.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.m4v'},
             'audio': {'.mp3', '.wav', '.aac', '.ogg', '.m4a', '.flac', '.wma'},
-            'document': {'.pdf', '.doc', '.docx', '.txt', '.rtf', '.hwp'},
+            'document': {'.pdf', '.doc', '.docx', '.txt', '.md', '.rtf', '.hwp'},
             'spreadsheet': {'.xls', '.xlsx', '.csv', '.ods'},
             'presentation': {'.ppt', '.pptx', '.odp'},
             'archive': {'.zip', '.rar', '.7z', '.tar', '.gz'}
@@ -853,8 +853,8 @@ if __name__ == "__main__":
     
     # 테스트 파일들 (실제 파일이 있는 경우)
     test_files = [
-        "../chat_rooms/[인증]행복한소유☆개포우성7차/문서/sample.pdf",
-        "../chat_rooms/[인증]행복한소유☆개포우성7차/미디어/sample.jpg",
+        "../chat_rooms/sample_chat_room/문서/sample.pdf",
+        "../chat_rooms/sample_chat_room/미디어/sample.jpg",
     ]
     
     processed_results = []
@@ -880,7 +880,7 @@ if __name__ == "__main__":
             print(f"❌ 파일 없음: {test_file}")
     
     # 디렉토리 일괄 처리 테스트
-    media_dir = "../chat_rooms/[인증]행복한소유☆개포우성7차/미디어"
+    media_dir = "../chat_rooms/sample_chat_room/미디어"
     if os.path.exists(media_dir):
         print(f"\n📂 디렉토리 일괄 처리: {media_dir}")
         

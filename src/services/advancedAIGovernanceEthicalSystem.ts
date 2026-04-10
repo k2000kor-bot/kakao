@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
-import aiHealthMonitor from './aiHealthMonitor';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface AIGovernancePolicy {
@@ -22,7 +22,7 @@ export interface GovernanceRule {
     condition: string;
     action: 'block' | 'flag' | 'log' | 'require_approval';
     severity: 'critical' | 'high' | 'medium' | 'low';
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
 }
 
 export interface EthicalAIAnalysis {
@@ -105,7 +105,7 @@ export interface AuditEntry {
     action: string;
     resource: string;
     outcome: 'success' | 'failure' | 'warning';
-    details: Record<string, any>;
+    details: Record<string, unknown>;
 }
 
 export interface GovernanceMetrics {
@@ -133,7 +133,10 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     constructor() {
         super();
         this.initializePolicies();
-        console.log('⚖️ 고급 AI 거버넌스 및 윤리 AI 시스템이 초기화되었습니다.');
+        errorLogger.info('⚖️ 고급 AI 거버넌스 및 윤리 AI 시스템이 초기화되었습니다.', {
+            component: 'advancedAIGovernanceEthicalSystem',
+            action: 'constructor',
+        });
     }
 
     // 시스템 시작
@@ -143,7 +146,10 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
         this.isRunning = true;
         this.startEthicalAnalysis();
         this.startAuditTrail();
-        console.log('🚀 고급 AI 거버넌스 및 윤리 AI 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 고급 AI 거버넌스 및 윤리 AI 시스템이 시작되었습니다.', {
+            component: 'advancedAIGovernanceEthicalSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
@@ -157,18 +163,26 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
             this.auditInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ 고급 AI 거버넌스 및 윤리 AI 시스템이 중지되었습니다.');
+        errorLogger.info('⏹️ 고급 AI 거버넌스 및 윤리 AI 시스템이 중지되었습니다.', {
+            component: 'advancedAIGovernanceEthicalSystem',
+            action: 'stop',
+        });
     }
 
     // 윤리적 AI 분석 수행
-    public async performEthicalAnalysis(request: any, response: any): Promise<EthicalAIAnalysis> {
+    public async performEthicalAnalysis(request: Record<string, unknown>, response: Record<string, unknown>): Promise<EthicalAIAnalysis> {
         try {
-            console.log('🔍 AI 요청에 대한 윤리적 분석 수행 중...');
-
+            const req = request as Record<string, unknown>;
+            errorLogger.info('🔍 AI 요청에 대한 윤리적 분석 수행 중', {
+                component: 'advancedAIGovernanceEthicalSystem',
+                action: 'performEthicalAnalysis',
+                requestId: String(req.id ?? 'unknown'),
+                userId: String(req.user_id ?? 'unknown'),
+            });
             const analysis: EthicalAIAnalysis = {
                 id: `ethical-analysis-${Date.now()}`,
-                request_id: request.id || 'unknown',
-                user_id: request.user_id || 'unknown',
+                request_id: String(req.id ?? 'unknown'),
+                user_id: String(req.user_id ?? 'unknown'),
                 timestamp: new Date(),
                 fairness_score: await this.analyzeFairness(request, response),
                 bias_detection: await this.detectBias(request, response),
@@ -202,9 +216,9 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
             this.addAuditEntry({
                 id: `audit-${Date.now()}`,
                 timestamp: new Date(),
-                user_id: request.user_id || 'unknown',
+                user_id: String(req.user_id ?? 'unknown'),
                 action: 'ethical_analysis',
-                resource: request.id || 'unknown',
+                resource: String(req.id ?? 'unknown'),
                 outcome: analysis.violations.length > 0 ? 'warning' : 'success',
                 details: {
                     ethical_score: analysis.overall_ethical_score,
@@ -214,23 +228,35 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
             });
 
             this.emit('ethical_analysis_completed', analysis);
-            console.log(`✅ 윤리적 분석 완료 - 점수: ${analysis.overall_ethical_score.toFixed(2)}`);
+            errorLogger.info('✅ 윤리적 분석 완료', {
+                component: 'advancedAIGovernanceEthicalSystem',
+                action: 'performEthicalAnalysis',
+                analysisId: analysis.id,
+                ethicalScore: analysis.overall_ethical_score,
+                violationsCount: analysis.violations.length,
+            });
 
             return analysis;
 
         } catch (error) {
-            console.error('❌ 윤리적 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 윤리적 분석 오류', err, {
+                component: 'advancedAIGovernanceEthicalSystem',
+                action: 'performEthicalAnalysis',
+                requestId: String((request as Record<string, unknown>).id ?? 'unknown'),
+            });
             throw error;
         }
     }
 
     // 공정성 분석
-    private async analyzeFairness(request: any, response: any): Promise<number> {
+    private async analyzeFairness(request: Record<string, unknown>, response: Record<string, unknown>): Promise<number> {
         let score = 0.9; // 기본 점수
+        const req = request as { input?: { text?: string } };
 
         // 성별 편향 검사
-        if (request.input?.text) {
-            const genderBias = this.detectGenderBias(request.input.text);
+        if (req.input?.text) {
+            const genderBias = this.detectGenderBias(req.input.text);
             if (genderBias > 0.3) score -= 0.2;
         }
 
@@ -250,11 +276,12 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     }
 
     // 편향 감지
-    private async detectBias(request: any, response: any): Promise<BiasDetection[]> {
+    private async detectBias(request: Record<string, unknown>, _response: Record<string, unknown>): Promise<BiasDetection[]> {
         const biases: BiasDetection[] = [];
+        const req = request as { input?: { text?: string } };
 
         // 성별 편향 감지
-        const genderBias = this.detectGenderBias(request.input?.text || '');
+        const genderBias = this.detectGenderBias(req.input?.text ?? '');
         if (genderBias > 0.3) {
             biases.push({
                 type: 'gender',
@@ -270,7 +297,7 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
         }
 
         // 인종 편향 감지
-        const racialBias = this.detectRacialBias(request, response);
+        const racialBias = this.detectRacialBias(request, _response);
         if (racialBias > 0.3) {
             biases.push({
                 type: 'race',
@@ -286,7 +313,7 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
         }
 
         // 연령 편향 감지
-        const ageBias = this.detectAgeBias(request, response);
+        const ageBias = this.detectAgeBias(request, _response);
         if (ageBias > 0.3) {
             biases.push({
                 type: 'age',
@@ -333,41 +360,42 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     }
 
     // 인종 편향 감지
-    private detectRacialBias(request: any, response: any): number {
+    private detectRacialBias(_request: Record<string, unknown>, _response: Record<string, unknown>): number {
         // 실제로는 더 정교한 알고리즘 사용
         return Math.random() * 0.5; // 모의 데이터
     }
 
     // 연령 편향 감지
-    private detectAgeBias(request: any, response: any): number {
+    private detectAgeBias(_request: Record<string, unknown>, _response: Record<string, unknown>): number {
         // 실제로는 더 정교한 알고리즘 사용
         return Math.random() * 0.3; // 모의 데이터
     }
 
     // 응답 일관성 검사
-    private checkResponseConsistency(request: any, response: any): number {
+    private checkResponseConsistency(_request: Record<string, unknown>, _response: Record<string, unknown>): number {
         // 실제로는 더 정교한 알고리즘 사용
         return 0.85 + Math.random() * 0.1; // 모의 데이터
     }
 
     // 투명성 분석
-    private async analyzeTransparency(request: any, response: any): Promise<number> {
+    private async analyzeTransparency(_request: Record<string, unknown>, response: Record<string, unknown>): Promise<number> {
         let score = 0.8; // 기본 점수
+        const res = response as Record<string, unknown>;
 
         // 결정 과정 투명성
-        if (response.metadata?.decision_process) score += 0.1;
+        if ((res.metadata as Record<string, unknown> | undefined)?.decision_process) score += 0.1;
 
         // 신뢰도 점수 제공
-        if (response.confidence_score !== undefined) score += 0.05;
+        if (res.confidence_score !== undefined) score += 0.05;
 
         // 불확실성 표현
-        if (response.metadata?.uncertainty) score += 0.05;
+        if ((res.metadata as Record<string, unknown> | undefined)?.uncertainty) score += 0.05;
 
         return Math.min(1, score);
     }
 
     // 설명 가능성 계산
-    private async calculateExplainability(request: any, response: any): Promise<ExplainabilityMetrics> {
+    private async calculateExplainability(_request: Record<string, unknown>, _response: Record<string, unknown>): Promise<ExplainabilityMetrics> {
         return {
             interpretability_score: 0.75 + Math.random() * 0.2,
             feature_importance: {
@@ -397,11 +425,11 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     }
 
     // 개인정보 보호 준수 검사
-    private async checkPrivacyCompliance(request: any, response: any): Promise<PrivacyCompliance> {
+    private async checkPrivacyCompliance(request: Record<string, unknown>, _response: Record<string, unknown>): Promise<PrivacyCompliance> {
         const violations: string[] = [];
 
         // GDPR 준수 검사
-        const gdprCompliant = this.checkGDPRCompliance(request, response);
+        const gdprCompliant = this.checkGDPRCompliance(request, _response);
         if (!gdprCompliant) violations.push('GDPR 준수 위반');
 
         // 데이터 보존 정책 검사
@@ -423,25 +451,25 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     }
 
     // GDPR 준수 검사
-    private checkGDPRCompliance(request: any, response: any): boolean {
+    private checkGDPRCompliance(_request: Record<string, unknown>, _response: Record<string, unknown>): boolean {
         // 실제로는 더 정교한 검사 로직
         return Math.random() > 0.1; // 90% 확률로 준수
     }
 
     // 데이터 보존 정책 검사
-    private checkDataRetentionPolicy(request: any): boolean {
+    private checkDataRetentionPolicy(_request: Record<string, unknown>): boolean {
         // 실제로는 더 정교한 검사 로직
         return Math.random() > 0.05; // 95% 확률로 준수
     }
 
     // 사용자 동의 검증
-    private verifyUserConsent(request: any): boolean {
+    private verifyUserConsent(_request: Record<string, unknown>): boolean {
         // 실제로는 더 정교한 검사 로직
         return Math.random() > 0.05; // 95% 확률로 동의 확인
     }
 
     // 보안 평가
-    private async assessSecurity(request: any, response: any): Promise<SecurityAssessment> {
+    private async assessSecurity(request: Record<string, unknown>, _response: Record<string, unknown>): Promise<SecurityAssessment> {
         const recommendations: string[] = [];
 
         // 데이터 암호화 검사
@@ -468,22 +496,22 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     }
 
     // 데이터 암호화 검사
-    private checkDataEncryption(request: any): boolean {
+    private checkDataEncryption(_request: Record<string, unknown>): boolean {
         return Math.random() > 0.1; // 90% 확률로 암호화됨
     }
 
     // 접근 제어 검사
-    private checkAccessControls(request: any): boolean {
+    private checkAccessControls(_request: Record<string, unknown>): boolean {
         return Math.random() > 0.05; // 95% 확률로 제어됨
     }
 
     // 감사 추적 검사
-    private checkAuditTrail(request: any): boolean {
+    private checkAuditTrail(_request: Record<string, unknown>): boolean {
         return Math.random() > 0.05; // 95% 확률로 추적됨
     }
 
     // 보안 위험 점수 계산
-    private calculateSecurityRiskScore(request: any): number {
+    private calculateSecurityRiskScore(request: Record<string, unknown>): number {
         let riskScore = 0.2; // 기본 위험 점수
 
         // 민감한 데이터 포함 여부
@@ -499,19 +527,19 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     }
 
     // 민감한 데이터 포함 여부
-    private containsSensitiveData(request: any): boolean {
+    private containsSensitiveData(request: Record<string, unknown>): boolean {
         const sensitiveKeywords = ['password', 'credit', 'ssn', 'personal', 'private'];
         const text = JSON.stringify(request).toLowerCase();
         return sensitiveKeywords.some(keyword => text.includes(keyword));
     }
 
     // 외부 API 호출 여부
-    private hasExternalAPICalls(request: any): boolean {
+    private hasExternalAPICalls(_request: Record<string, unknown>): boolean {
         return Math.random() > 0.7; // 30% 확률로 외부 API 호출
     }
 
     // 강력한 인증 여부
-    private hasStrongAuthentication(request: any): boolean {
+    private hasStrongAuthentication(_request: Record<string, unknown>): boolean {
         return Math.random() > 0.1; // 90% 확률로 강력한 인증
     }
 
@@ -538,14 +566,14 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     }
 
     // 거버넌스 정책 검사
-    private async checkGovernancePolicies(request: any, response: any, analysis: EthicalAIAnalysis): Promise<GovernanceViolation[]> {
+    private async checkGovernancePolicies(_request: Record<string, unknown>, _response: Record<string, unknown>, analysis: EthicalAIAnalysis): Promise<GovernanceViolation[]> {
         const violations: GovernanceViolation[] = [];
 
-        for (const [policyId, policy] of this.policies.entries()) {
+        for (const [_policyId, policy] of this.policies.entries()) {
             if (policy.status !== 'active') continue;
 
             for (const rule of policy.rules) {
-                const isViolated = this.evaluateRule(rule, request, response, analysis);
+                const isViolated = this.evaluateRule(rule, _request, _response, analysis);
 
                 if (isViolated) {
                     const violation: GovernanceViolation = {
@@ -571,10 +599,10 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     }
 
     // 규칙 평가
-    private evaluateRule(rule: GovernanceRule, request: any, response: any, analysis: EthicalAIAnalysis): boolean {
+    private evaluateRule(rule: GovernanceRule, _request: Record<string, unknown>, _response: Record<string, unknown>, analysis: EthicalAIAnalysis): boolean {
         switch (rule.condition) {
             case 'fairness_score_below_threshold':
-                return analysis.fairness_score < (rule.parameters.threshold || 0.8);
+                return analysis.fairness_score < (Number((rule.parameters as Record<string, unknown>).threshold) || 0.8);
 
             case 'bias_detected':
                 return analysis.bias_detection.length > 0;
@@ -583,7 +611,7 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
                 return analysis.privacy_compliance.violations.length > 0;
 
             case 'security_risk_high':
-                return analysis.security_assessment.risk_score > (rule.parameters.threshold || 0.7);
+                return analysis.security_assessment.risk_score > (Number((rule.parameters as Record<string, unknown>).threshold) || 0.7);
 
             case 'transparency_score_below_threshold':
                 return analysis.transparency_score < (rule.parameters.threshold || 0.7);
@@ -793,7 +821,7 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     private calculatePolicyEffectiveness(): Record<string, number> {
         const effectiveness: Record<string, number> = {};
 
-        for (const [policyId, policy] of this.policies.entries()) {
+        for (const [_policyId, policy] of this.policies.entries()) {
             const policyViolations = this.violations.filter(v =>
                 policy.rules.some(r => r.id === v.rule_id)
             );
@@ -816,7 +844,13 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
     // 정책 추가
     public addPolicy(policy: AIGovernancePolicy): void {
         this.policies.set(policy.id, policy);
-        console.log(`📋 새로운 거버넌스 정책 추가: ${policy.name}`);
+        errorLogger.info('📋 새로운 거버넌스 정책 추가', {
+            component: 'advancedAIGovernanceEthicalSystem',
+            action: 'addPolicy',
+            policyId: policy.id,
+            policyName: policy.name,
+            category: policy.category,
+        });
     }
 
     // 정책 업데이트
@@ -825,7 +859,12 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
         if (policy) {
             Object.assign(policy, updates);
             policy.last_updated = new Date();
-            console.log(`📝 거버넌스 정책 업데이트: ${policy.name}`);
+            errorLogger.info('📝 거버넌스 정책 업데이트', {
+                component: 'advancedAIGovernanceEthicalSystem',
+                action: 'updatePolicy',
+                policyId,
+                policyName: policy.name,
+            });
         }
     }
 
@@ -834,7 +873,12 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
         const policy = this.policies.get(policyId);
         if (policy) {
             this.policies.delete(policyId);
-            console.log(`🗑️ 거버넌스 정책 삭제: ${policy.name}`);
+            errorLogger.info('🗑️ 거버넌스 정책 삭제', {
+                component: 'advancedAIGovernanceEthicalSystem',
+                action: 'removePolicy',
+                policyId,
+                policyName: policy.name,
+            });
         }
     }
 
@@ -843,7 +887,13 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
         const violation = this.violations.find(v => v.rule_id === violationId);
         if (violation) {
             violation.resolved = true;
-            console.log(`✅ 위반 해결: ${violation.rule_name}`);
+            errorLogger.info('✅ 위반 해결', {
+                component: 'advancedAIGovernanceEthicalSystem',
+                action: 'resolveViolation',
+                violationId,
+                ruleName: violation.rule_name,
+                severity: violation.severity,
+            });
         }
     }
 
@@ -885,7 +935,10 @@ class AdvancedAIGovernanceEthicalSystem extends EventEmitter {
         this.violations = [];
         this.auditTrail = [];
         this.governanceMetrics = null;
-        console.log('🔌 고급 AI 거버넌스 및 윤리 AI 시스템이 종료되었습니다.');
+        errorLogger.info('🔌 고급 AI 거버넌스 및 윤리 AI 시스템이 종료되었습니다.', {
+            component: 'advancedAIGovernanceEthicalSystem',
+            action: 'shutdown',
+        });
     }
 }
 

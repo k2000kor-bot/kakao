@@ -27,7 +27,7 @@
 ### 1. MobileNavigation.test.tsx (16개 테스트)
 
 - 렌더링, 메뉴 아이템, 클릭 이벤트
-- 현재 선택된 채팅 하이라이트, 알림 배지
+- 현재 선택된 대화 하이라이트, 알림 배지
 - 모바일/데스크톱 드로어, 닫기 버튼
 
 ### 2. MessageModifyRequestDialog.test.tsx (21개 테스트)

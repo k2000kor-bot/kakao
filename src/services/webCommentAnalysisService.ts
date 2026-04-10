@@ -3,6 +3,8 @@
  * 웹 검색 결과의 댓글을 분석하여 적절한 댓글이나 글을 생성
  */
 
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface WebComment {
   id: string;
   content: string;
@@ -291,7 +293,7 @@ class WebCommentAnalysisService {
   /**
    * 컨텍스트 분석
    */
-  private analyzeContext(originalContent: string, comments: WebComment[]): any {
+  private analyzeContext(originalContent: string, comments: WebComment[]): Record<string, unknown> {
     return {
       mainTopic: this.extractMainTopic(originalContent),
       commentTrends: this.analyzeCommentTrends(comments),
@@ -321,7 +323,7 @@ class WebCommentAnalysisService {
   /**
    * 댓글 트렌드 분석
    */
-  private analyzeCommentTrends(comments: WebComment[]): any {
+  private analyzeCommentTrends(comments: WebComment[]): Record<string, unknown> {
     const recentComments = comments
       .filter(comment => {
         const daysAgo = (Date.now() - comment.timestamp.getTime()) / (1000 * 60 * 60 * 24);
@@ -338,7 +340,7 @@ class WebCommentAnalysisService {
   /**
    * 감정 분포 계산
    */
-  private calculateSentimentDistribution(comments: WebComment[]): any {
+  private calculateSentimentDistribution(comments: WebComment[]): Record<string, unknown> {
     const sentiments = comments.map(comment => this.analyzeSentiment(comment.content));
     const total = sentiments.length;
     
@@ -363,7 +365,7 @@ class WebCommentAnalysisService {
           const sentences = comment.content.split(/[.!?]/);
           sentences.forEach(sentence => {
             if (sentence.includes(keyword) && sentence.length > 10) {
-              issues.push(sentence.trim());
+              issues.push(coerceTrimmedString(sentence, ''));
             }
           });
         }
@@ -430,14 +432,14 @@ class WebCommentAnalysisService {
    */
   private async generateContent(
     template: string,
-    context: any,
+    context: Record<string, unknown>,
     keywords: string[],
     tone: string,
     length: string
   ): Promise<string> {
     // 템플릿에 키워드 삽입
     let content = template
-      .replace('{topic}', context.mainTopic)
+      .replace('{topic}', String(context.mainTopic ?? ''))
       .replace('{keyword}', keywords[0] || '관련');
 
     // 톤에 맞게 조정
@@ -490,7 +492,7 @@ class WebCommentAnalysisService {
       }
     }
     
-    return result.trim();
+    return coerceTrimmedString(result, '');
   }
 
   /**
@@ -499,7 +501,7 @@ class WebCommentAnalysisService {
   private generateReasoning(
     analysis: CommentAnalysis,
     request: CommentGenerationRequest,
-    context: any
+    _context: Record<string, unknown>
   ): string {
     const reasons = [
       `전체 댓글의 감정은 ${analysis.overallSentiment}적입니다.`,

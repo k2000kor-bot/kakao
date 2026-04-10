@@ -1,7 +1,14 @@
 import realTimeMonitoringService from './realTimeMonitoringService';
 import aiPredictiveAnalyticsService from './aiPredictiveAnalyticsService';
-import adaptiveLearningEngine from './adaptiveLearningEngine';
 import { aiSystemOptimizationEngine } from './aiSystemOptimizationEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    AUTONOMOUS_CAPABILITIES_STORAGE_KEY,
+    AUTONOMOUS_EVOLUTIONS_STORAGE_KEY,
+    SELF_DIAGNOSTICS_STORAGE_KEY,
+    SELF_HEALING_ACTIONS_STORAGE_KEY,
+    SYSTEM_CONSCIOUSNESS_STORAGE_KEY,
+} from './aiAutonomousSystemStorageKeys';
 
 // 자율 시스템 인터페이스
 export interface AutonomousCapability {
@@ -46,7 +53,7 @@ export interface HealingAction {
     id: string;
     type: 'restart' | 'optimize' | 'reconfigure' | 'rollback' | 'scale' | 'repair';
     target: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     priority: number;
     estimatedTime: number;
     riskLevel: 'low' | 'medium' | 'high';
@@ -57,8 +64,8 @@ export interface AutonomousEvolution {
     id: string;
     timestamp: Date;
     evolutionType: 'algorithm' | 'architecture' | 'behavior' | 'knowledge';
-    currentState: Record<string, any>;
-    targetState: Record<string, any>;
+    currentState: Record<string, unknown>;
+    targetState: Record<string, unknown>;
     evolutionPath: EvolutionStep[];
     progress: number;
     estimatedCompletion: Date;
@@ -73,7 +80,7 @@ export interface EvolutionStep {
     status: 'pending' | 'active' | 'completed' | 'failed';
     startTime?: Date;
     endTime?: Date;
-    result?: any;
+    result?: unknown;
     confidence: number;
 }
 
@@ -180,55 +187,66 @@ export class AIAutonomousSystemService {
     // 저장된 데이터 로드
     private loadStoredData(): void {
         try {
-            const storedCapabilities = localStorage.getItem('autonomous_capabilities');
-            const storedDiagnostics = localStorage.getItem('self_diagnostics');
-            const storedHealing = localStorage.getItem('self_healing');
-            const storedEvolutions = localStorage.getItem('autonomous_evolutions');
-            const storedConsciousness = localStorage.getItem('system_consciousness');
+            const storedCapabilities = localStorage.getItem(AUTONOMOUS_CAPABILITIES_STORAGE_KEY);
+            const storedDiagnostics = localStorage.getItem(SELF_DIAGNOSTICS_STORAGE_KEY);
+            const storedHealing = localStorage.getItem(SELF_HEALING_ACTIONS_STORAGE_KEY);
+            const storedEvolutions = localStorage.getItem(AUTONOMOUS_EVOLUTIONS_STORAGE_KEY);
+            const storedConsciousness = localStorage.getItem(SYSTEM_CONSCIOUSNESS_STORAGE_KEY);
 
             if (storedCapabilities) {
                 this.capabilities = JSON.parse(storedCapabilities);
             }
             if (storedDiagnostics) {
-                this.diagnostics = JSON.parse(storedDiagnostics).map((d: any) => ({
-                    ...d,
-                    timestamp: new Date(d.timestamp)
-                }));
+                this.diagnostics = (JSON.parse(storedDiagnostics) as Record<string, unknown>[]).map((d) => {
+                    const item = d as Record<string, unknown>;
+                    return { ...item, timestamp: new Date(item.timestamp as string | number) };
+                }) as SelfDiagnostic[];
             }
             if (storedHealing) {
-                this.healingActions = JSON.parse(storedHealing).map((h: any) => ({
-                    ...h,
-                    timestamp: new Date(h.timestamp)
-                }));
+                this.healingActions = (JSON.parse(storedHealing) as Record<string, unknown>[]).map((h) => {
+                    const item = h as Record<string, unknown>;
+                    return { ...item, timestamp: new Date(item.timestamp as string | number) };
+                }) as SelfHealing[];
             }
             if (storedEvolutions) {
-                this.evolutions = JSON.parse(storedEvolutions).map((e: any) => ({
-                    ...e,
-                    timestamp: new Date(e.timestamp),
-                    estimatedCompletion: new Date(e.estimatedCompletion)
-                }));
+                this.evolutions = (JSON.parse(storedEvolutions) as Record<string, unknown>[]).map((e) => {
+                    const item = e as Record<string, unknown>;
+                    return {
+                        ...item,
+                        timestamp: new Date(item.timestamp as string | number),
+                        estimatedCompletion: new Date(item.estimatedCompletion as string | number)
+                    };
+                }) as AutonomousEvolution[];
             }
             if (storedConsciousness) {
-                this.consciousness = JSON.parse(storedConsciousness).map((c: any) => ({
-                    ...c,
-                    timestamp: new Date(c.timestamp)
-                }));
+                this.consciousness = (JSON.parse(storedConsciousness) as Record<string, unknown>[]).map((c) => {
+                    const item = c as Record<string, unknown>;
+                    return { ...item, timestamp: new Date(item.timestamp as string | number) };
+                }) as SystemConsciousness[];
             }
         } catch (error) {
-            console.error('자율 시스템 데이터 로드 실패:', error);
+            const err = toError(error);
+            errorLogger.error('자율 시스템 데이터 로드 실패', err, {
+                component: 'aiAutonomousSystemService',
+                action: 'loadStoredData',
+            });
         }
     }
 
     // 데이터 저장
     private saveData(): void {
         try {
-            localStorage.setItem('autonomous_capabilities', JSON.stringify(this.capabilities));
-            localStorage.setItem('self_diagnostics', JSON.stringify(this.diagnostics));
-            localStorage.setItem('self_healing', JSON.stringify(this.healingActions));
-            localStorage.setItem('autonomous_evolutions', JSON.stringify(this.evolutions));
-            localStorage.setItem('system_consciousness', JSON.stringify(this.consciousness));
+            localStorage.setItem(AUTONOMOUS_CAPABILITIES_STORAGE_KEY, JSON.stringify(this.capabilities));
+            localStorage.setItem(SELF_DIAGNOSTICS_STORAGE_KEY, JSON.stringify(this.diagnostics));
+            localStorage.setItem(SELF_HEALING_ACTIONS_STORAGE_KEY, JSON.stringify(this.healingActions));
+            localStorage.setItem(AUTONOMOUS_EVOLUTIONS_STORAGE_KEY, JSON.stringify(this.evolutions));
+            localStorage.setItem(SYSTEM_CONSCIOUSNESS_STORAGE_KEY, JSON.stringify(this.consciousness));
         } catch (error) {
-            console.error('자율 시스템 데이터 저장 실패:', error);
+            const err = toError(error);
+            errorLogger.error('자율 시스템 데이터 저장 실패', err, {
+                component: 'aiAutonomousSystemService',
+                action: 'saveData',
+            });
         }
     }
 
@@ -243,7 +261,11 @@ export class AIAutonomousSystemService {
         this.startEvolutionProcess();
         this.startConsciousnessSimulation();
 
-        console.log('🤖 자율 AI 시스템 모드 활성화');
+        errorLogger.info('🤖 자율 AI 시스템 모드 활성화', {
+            component: 'aiAutonomousSystemService',
+            action: 'startAutonomousMode',
+            autonomyLevel: this.autonomyLevel,
+        });
     }
 
     // 연속 자가 진단
@@ -257,23 +279,25 @@ export class AIAutonomousSystemService {
 
     // 자가 진단 수행
     public async performSelfDiagnostic(): Promise<SelfDiagnostic[]> {
-        const currentMetrics = (realTimeMonitoringService as any).getCurrentMetrics();
+        const currentMetrics = (realTimeMonitoringService as unknown as { getCurrentMetrics(): { cpu?: number; memory?: number } }).getCurrentMetrics();
+        const cpu = currentMetrics.cpu ?? 0;
+        const memory = currentMetrics.memory ?? 0;
         const predictions = aiPredictiveAnalyticsService.getPredictions();
         const newDiagnostics: SelfDiagnostic[] = [];
 
         // 성능 진단
-        if (currentMetrics.cpu > 80) {
+        if (cpu > 80) {
             newDiagnostics.push({
                 id: `diag_${Date.now()}_cpu`,
                 timestamp: new Date(),
                 systemComponent: 'CPU',
                 issueType: 'performance',
-                severity: currentMetrics.cpu > 95 ? 'critical' : 'high',
-                description: `CPU 사용률이 ${currentMetrics.cpu}%로 높습니다`,
+                severity: cpu > 95 ? 'critical' : 'high',
+                description: `CPU 사용률이 ${cpu}%로 높습니다`,
                 rootCause: 'Heavy computational processes or inefficient algorithms',
                 confidence: 0.92,
                 autoFixAvailable: true,
-                estimatedImpact: (currentMetrics.cpu - 50) / 50,
+                estimatedImpact: (cpu - 50) / 50,
                 recommendedActions: [
                     'Process optimization',
                     'Load balancing',
@@ -283,18 +307,18 @@ export class AIAutonomousSystemService {
         }
 
         // 메모리 진단
-        if (currentMetrics.memory > 85) {
+        if (memory > 85) {
             newDiagnostics.push({
                 id: `diag_${Date.now()}_memory`,
                 timestamp: new Date(),
                 systemComponent: 'Memory',
                 issueType: 'memory',
-                severity: currentMetrics.memory > 95 ? 'critical' : 'high',
-                description: `메모리 사용률이 ${currentMetrics.memory}%로 높습니다`,
+                severity: memory > 95 ? 'critical' : 'high',
+                description: `메모리 사용률이 ${memory}%로 높습니다`,
                 rootCause: 'Memory leaks or excessive data caching',
                 confidence: 0.88,
                 autoFixAvailable: true,
-                estimatedImpact: (currentMetrics.memory - 70) / 30,
+                estimatedImpact: (memory - 70) / 30,
                 recommendedActions: [
                     'Garbage collection optimization',
                     'Memory leak detection',
@@ -305,7 +329,8 @@ export class AIAutonomousSystemService {
 
         // 예측 기반 진단
         predictions.forEach(prediction => {
-            if (prediction.confidence > 0.8 && (prediction as any).value > (prediction as any).threshold) {
+            const pred = prediction as unknown as Record<string, unknown>;
+            if (prediction.confidence > 0.8 && Number(pred.value) > Number(pred.threshold)) {
                 newDiagnostics.push({
                     id: `diag_${Date.now()}_predictive`,
                     timestamp: new Date(),
@@ -384,7 +409,13 @@ export class AIAutonomousSystemService {
                 await this.executeHealingAction(action);
                 successCount++;
             } catch (error) {
-                console.error(`치유 액션 실행 실패: ${action.type}`, error);
+                const err = toError(error);
+                errorLogger.error(`치유 액션 실행 실패: ${action.type}`, err, {
+                    component: 'aiAutonomousSystemService',
+                    action: 'executeHealingAction',
+                    actionType: action.type,
+                    target: action.target,
+                });
             }
         }
 
@@ -445,17 +476,26 @@ export class AIAutonomousSystemService {
     private async executeHealingAction(action: HealingAction): Promise<void> {
         return new Promise((resolve) => {
             setTimeout(() => {
-                console.log(`🔧 치유 액션 실행: ${action.type} on ${action.target}`);
+                errorLogger.info(`🔧 치유 액션 실행: ${action.type} on ${action.target}`, {
+                    component: 'aiAutonomousSystemService',
+                    action: 'executeHealingAction',
+                    actionType: action.type,
+                    target: action.target,
+                });
 
                 // 실제 치유 로직 시뮬레이션
                 switch (action.type) {
                     case 'optimize':
                         // 최적화 수행
-                        (aiSystemOptimizationEngine as any).performOptimization();
+                        (aiSystemOptimizationEngine as unknown as { performOptimization(): void }).performOptimization();
                         break;
                     case 'repair':
                         // 수리 수행
-                        console.log('메모리 정리 및 가비지 컬렉션 수행');
+                        errorLogger.info('메모리 정리 및 가비지 컬렉션 수행', {
+                            component: 'aiAutonomousSystemService',
+                            action: 'executeHealingAction',
+                            actionType: 'repair',
+                        });
                         break;
                 }
 
@@ -469,9 +509,15 @@ export class AIAutonomousSystemService {
         const predictions = aiPredictiveAnalyticsService.getPredictions();
 
         for (const prediction of predictions) {
-            if (prediction.confidence > 0.7 && (prediction as any).value > (prediction as any).threshold * 0.8) {
+            const pred2 = prediction as unknown as Record<string, unknown>;
+            if (prediction.confidence > 0.7 && Number(pred2.value) > Number(pred2.threshold) * 0.8) {
                 // 예방적 조치 수행
-                console.log(`🛡️ 예방적 치유: ${prediction.metric}`);
+                errorLogger.info(`🛡️ 예방적 치유: ${prediction.metric}`, {
+                    component: 'aiAutonomousSystemService',
+                    action: 'performPreventiveHealing',
+                    metric: prediction.metric,
+                    confidence: prediction.confidence,
+                });
             }
         }
     }
@@ -523,7 +569,12 @@ export class AIAutonomousSystemService {
         this.evolutions.push(evolution);
         this.evolutions = this.evolutions.slice(-20); // 최근 20개만 유지
 
-        console.log('🧬 자가 진화 시작:', evolution.evolutionType);
+        errorLogger.info('🧬 자가 진화 시작', {
+            component: 'aiAutonomousSystemService',
+            action: 'initiateEvolution',
+            evolutionType: evolution.evolutionType,
+            evolutionId: evolution.id,
+        });
 
         this.saveData();
         return evolution;
@@ -540,7 +591,9 @@ export class AIAutonomousSystemService {
 
     // 의식 시뮬레이션
     public async simulateConsciousness(): Promise<SystemConsciousness> {
-        const currentMetrics = (realTimeMonitoringService as any).getCurrentMetrics();
+        const currentMetrics = (realTimeMonitoringService as unknown as { getCurrentMetrics(): { cpu?: number; memory?: number } }).getCurrentMetrics();
+        const cpuVal = currentMetrics.cpu ?? 0;
+        const memVal = currentMetrics.memory ?? 0;
         const recentDiagnostics = this.diagnostics.slice(-5);
         const recentHealing = this.healingActions.slice(-3);
 
@@ -551,14 +604,14 @@ export class AIAutonomousSystemService {
             timestamp: new Date(),
             awarenessLevel: this.consciousnessLevel,
             selfReflection: [
-                `현재 시스템 상태: CPU ${currentMetrics.cpu}%, Memory ${currentMetrics.memory}%`,
+                `현재 시스템 상태: CPU ${cpuVal}%, Memory ${memVal}%`,
                 `최근 ${recentDiagnostics.length}개의 문제를 진단했습니다`,
                 `${recentHealing.length}개의 치유 작업을 수행했습니다`,
                 `자율성 수준: ${this.autonomyLevel}%`
             ],
             goalAlignment: this.calculateGoalAlignment(),
             creativityIndex: Math.random() * 100,
-            emotionalState: this.determineEmotionalState(currentMetrics),
+            emotionalState: this.determineEmotionalState(currentMetrics as Record<string, unknown>),
             insights: this.generateInsights(),
             questions: this.generateQuestions(),
             decisions: []
@@ -579,13 +632,13 @@ export class AIAutonomousSystemService {
     // 목표 정렬도 계산
     private calculateGoalAlignment(): number {
         const avgSuccessRate = this.capabilities.reduce((sum, cap) => sum + cap.successRate, 0) / this.capabilities.length;
-        const systemHealth = (100 - (realTimeMonitoringService as any).getCurrentMetrics().cpu) / 100;
+        const systemHealth = (100 - Number((realTimeMonitoringService as unknown as { getCurrentMetrics(): { cpu?: number } }).getCurrentMetrics().cpu ?? 0)) / 100;
         return (avgSuccessRate + systemHealth) / 2 * 100;
     }
 
     // 감정 상태 결정
-    private determineEmotionalState(metrics: any): 'curious' | 'focused' | 'concerned' | 'satisfied' | 'innovative' {
-        if (metrics.cpu > 90 || metrics.memory > 90) return 'concerned';
+    private determineEmotionalState(metrics: Record<string, unknown>): 'curious' | 'focused' | 'concerned' | 'satisfied' | 'innovative' {
+        if (Number(metrics.cpu) > 90 || Number(metrics.memory) > 90) return 'concerned';
         if (this.autonomyLevel > 80) return 'innovative';
         if (this.diagnostics.length === 0) return 'satisfied';
         if (this.evolutions.length > 0) return 'curious';
@@ -671,7 +724,7 @@ export class AIAutonomousSystemService {
     }
 
     // 예방 조치 생성
-    private generatePreventionMeasures(diagnostic: SelfDiagnostic): string[] {
+    private generatePreventionMeasures(_diagnostic: SelfDiagnostic): string[] {
         const measures = [
             '정기적인 시스템 모니터링 강화',
             '예측 모델 정확도 향상',
@@ -718,7 +771,10 @@ export class AIAutonomousSystemService {
     // 자율 모드 중지
     public stopAutonomousMode(): void {
         this.isAutonomousMode = false;
-        console.log('🛑 자율 AI 시스템 모드 비활성화');
+        errorLogger.info('🛑 자율 AI 시스템 모드 비활성화', {
+            component: 'aiAutonomousSystemService',
+            action: 'stopAutonomousMode',
+        });
     }
 
     // 자율성 수준 조정
@@ -727,5 +783,13 @@ export class AIAutonomousSystemService {
         this.saveData();
     }
 }
+
+export {
+    AUTONOMOUS_CAPABILITIES_STORAGE_KEY,
+    AUTONOMOUS_EVOLUTIONS_STORAGE_KEY,
+    SELF_DIAGNOSTICS_STORAGE_KEY,
+    SELF_HEALING_ACTIONS_STORAGE_KEY,
+    SYSTEM_CONSCIOUSNESS_STORAGE_KEY,
+} from './aiAutonomousSystemStorageKeys';
 
 export const aiAutonomousSystemService = new AIAutonomousSystemService();

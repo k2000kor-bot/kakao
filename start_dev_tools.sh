@@ -1,124 +1,98 @@
 #!/bin/bash
 
-# CORBU.AI 개발 도구 시작 스크립트
+# CORBU.AI 개발 도구 시작 스크립트 (레거시 — 하드코딩 경로 제거)
+
 echo "🚀 CORBU.AI 개발 도구를 시작합니다..."
 
-# 색상 정의
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# 프로젝트 루트 디렉토리
-PROJECT_ROOT="/Users/aD/kakao-frontend"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PROJECT_ROOT" || exit 1
 
-# 백업 디렉토리 생성
-echo -e "${BLUE}📁 백업 디렉토리를 생성합니다...${NC}"
+# shellcheck source=scripts/lib-activate-backend-venv.sh
+source "$PROJECT_ROOT/scripts/lib-activate-backend-venv.sh"
+
+echo -e "${BLUE}📁 백업 디렉터리 생성...${NC}"
 mkdir -p "$PROJECT_ROOT/code_backups"
 
-# 가상환경 활성화
-echo -e "${BLUE}🐍 Python 가상환경을 활성화합니다...${NC}"
-cd "$PROJECT_ROOT"
-source venv/bin/activate
+echo -e "${BLUE}🐍 Python 가상환경 활성화...${NC}"
+if ! backend_venv_activate "$PROJECT_ROOT"; then
+    echo -e "${RED}❌ venv 없음. ./setup.sh 또는 backend/.venv 생성 후 재시도.${NC}"
+    exit 1
+fi
 
-# 백엔드 서버 시작 (백그라운드)
-echo -e "${GREEN}🔧 백엔드 서버를 시작합니다...${NC}"
-python app.py &
+echo -e "${GREEN}🔧 백엔드 app.py 시작 (백그라운드)...${NC}"
+(
+  cd "$PROJECT_ROOT/backend" || exit 1
+  python3 app.py
+) &
 BACKEND_PID=$!
 
-# 잠시 대기
 sleep 3
 
-# 프론트엔드 서버 시작 (백그라운드)
-echo -e "${GREEN}🎨 프론트엔드 서버를 시작합니다...${NC}"
+echo -e "${GREEN}🎨 프론트엔드 시작...${NC}"
 cd "$PROJECT_ROOT"
 BROWSER=none PORT=3000 npm start &
 FRONTEND_PID=$!
 
-# 잠시 대기
 sleep 5
 
-# 웹 코드 편집기 서버 시작 (백그라운드)
-echo -e "${GREEN}💻 웹 코드 편집기를 시작합니다...${NC}"
+echo -e "${GREEN}💻 정적 서버 8080...${NC}"
 cd "$PROJECT_ROOT"
-python -m http.server 8080 &
+python3 -m http.server 8080 &
 EDITOR_PID=$!
 
-# 서버 상태 확인
-echo -e "${YELLOW}📊 서버 상태를 확인합니다...${NC}"
+echo -e "${YELLOW}📊 서버 상태 확인...${NC}"
 sleep 2
 
-# 백엔드 상태 확인
-if curl -s http://localhost:5001/api/health > /dev/null; then
-    echo -e "${GREEN}✅ 백엔드 서버: http://localhost:5001${NC}"
+APP_PORT="${API_PORT:-${BACKEND_PORT:-5002}}"
+if curl -s "http://localhost:${APP_PORT}/api/health" > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ 백엔드(app.py): http://localhost:${APP_PORT} (API_PORT/BACKEND_PORT, 기본 5002)${NC}"
 else
-    echo -e "${RED}❌ 백엔드 서버 연결 실패${NC}"
+    echo -e "${YELLOW}⚠️  app.py 헬스 없음 — 통합: npm run restart:backend → http://localhost:5002${NC}"
 fi
 
-# 프론트엔드 상태 확인
 if curl -s http://localhost:3000 > /dev/null; then
-    echo -e "${GREEN}✅ 프론트엔드 서버: http://localhost:3000${NC}"
+    echo -e "${GREEN}✅ 프론트엔드: http://localhost:3000${NC}"
 else
-    echo -e "${RED}❌ 프론트엔드 서버 연결 실패${NC}"
+    echo -e "${RED}❌ 프론트엔드 연결 실패${NC}"
 fi
 
-# 웹 코드 편집기 상태 확인
-if curl -s http://localhost:8080/web_code_editor.html > /dev/null; then
+if curl -s http://localhost:8080/web_code_editor.html > /dev/null 2>&1; then
     echo -e "${GREEN}✅ 웹 코드 편집기: http://localhost:8080/web_code_editor.html${NC}"
 else
     echo -e "${RED}❌ 웹 코드 편집기 연결 실패${NC}"
 fi
 
 echo ""
-echo -e "${BLUE}🎯 사용 가능한 도구들:${NC}"
-echo -e "${GREEN}  • 채팅 인터페이스: http://localhost:3000${NC}"
-echo -e "${GREEN}  • 웹 코드 편집기: http://localhost:8080/web_code_editor.html${NC}"
-echo -e "${GREEN}  • 백엔드 API: http://localhost:5001${NC}"
-echo ""
-echo -e "${YELLOW}💡 개발 팁:${NC}"
-echo -e "  • Ctrl+C를 눌러 모든 서버를 종료할 수 있습니다"
-echo -e "  • 코드 편집기에서 파일을 수정하면 자동으로 백업이 생성됩니다"
-echo -e "  • 긴 코드는 여러 탭으로 나누어 편집할 수 있습니다"
+echo -e "${BLUE}🎯 사용 가능한 도구${NC}"
+echo -e "${GREEN}  • 대화: http://localhost:3000${NC}"
+echo -e "${GREEN}  • 코드 편집기: http://localhost:8080/web_code_editor.html${NC}"
 echo ""
 
-# 프로세스 ID 저장
-echo $BACKEND_PID > .backend_pid
-echo $FRONTEND_PID > .frontend_pid
-echo $EDITOR_PID > .editor_pid
+echo "$BACKEND_PID" > "$PROJECT_ROOT/.backend_pid"
+echo "$FRONTEND_PID" > "$PROJECT_ROOT/.frontend_pid"
+echo "$EDITOR_PID" > "$PROJECT_ROOT/.editor_pid"
 
-# 사용자 입력 대기
-echo -e "${BLUE}⏳ 서버가 실행 중입니다. 종료하려면 Ctrl+C를 누르세요...${NC}"
+echo -e "${BLUE}⏳ 종료: Ctrl+C${NC}"
 
-# 종료 시그널 처리
 cleanup() {
     echo ""
-    echo -e "${YELLOW}🛑 서버를 종료합니다...${NC}"
-    
-    # 프로세스 종료
-    if [ -f .backend_pid ]; then
-        kill $(cat .backend_pid) 2>/dev/null
-        rm .backend_pid
-    fi
-    
-    if [ -f .frontend_pid ]; then
-        kill $(cat .frontend_pid) 2>/dev/null
-        rm .frontend_pid
-    fi
-    
-    if [ -f .editor_pid ]; then
-        kill $(cat .editor_pid) 2>/dev/null
-        rm .editor_pid
-    fi
-    
-    echo -e "${GREEN}✅ 모든 서버가 종료되었습니다.${NC}"
+    echo -e "${YELLOW}🛑 서버 종료...${NC}"
+    for f in .backend_pid .frontend_pid .editor_pid; do
+        if [ -f "$PROJECT_ROOT/$f" ]; then
+            kill "$(cat "$PROJECT_ROOT/$f")" 2>/dev/null || true
+            rm -f "$PROJECT_ROOT/$f"
+        fi
+    done
+    echo -e "${GREEN}✅ 종료 완료${NC}"
     exit 0
 }
 
-# 시그널 트랩 설정
 trap cleanup SIGINT SIGTERM
 
-# 무한 대기
-while true; do
-    sleep 1
-done
+while true; do sleep 1; done

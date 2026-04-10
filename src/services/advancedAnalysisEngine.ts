@@ -83,7 +83,7 @@ class AdvancedAnalysisEngine {
     }
 
     // 제안사항 생성
-    private generateSuggestions(sentiment: string, text: string): string[] {
+    private generateSuggestions(sentiment: string, _text: string): string[] {
         const suggestions: string[] = [];
 
         if (sentiment === 'negative') {

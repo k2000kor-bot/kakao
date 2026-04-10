@@ -2,7 +2,7 @@
   "name": "corbu-ai",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:8000",
+  "proxy": "http://localhost:5002",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -51,10 +51,29 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "BROWSER=none PORT=3000 react-scripts start",
-    "build": "react-scripts build",
+    "start": "NODE_OPTIONS=--max-old-space-size=8192 BROWSER=none PORT=3000 DISABLE_ESLINT_PLUGIN=true react-scripts start",
+    "build": "NODE_OPTIONS=--max-old-space-size=8192 DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "pretest": "npm run check:test-imports && npm run check:src-frontend-parity",
     "test": "react-scripts test",
+    "test:ci": "npm run pretest && CI=true react-scripts test --coverage --watchAll=false",
+    "test:chat-merge": "npm run pretest && CI=true react-scripts test --watchAll=false unifiedAPI.chatMerge",
+    "test:unified-api": "npm run pretest && CI=true react-scripts test --watchAll=false --testPathPattern='unifiedAPI|generationPromptBuilder\\.test|intelligentKnowledgeProcessor\\.test|enhancedBackendAPI|modernChatContextBuilder|enhancedResponseProcessor\\.test|chatService\\.test|integratedMessageService\\.test|unifiedMessageService\\.test|integratedSystemAPI\\.test|messageResponseAPI\\.test'",
+    "test:adaptive-learning": "npm run pretest && CI=true react-scripts test --testPathPattern=adaptiveLearningEngine --watchAll=false",
+    "typecheck:adaptive-learning-tests": "npx tsc --noEmit -p src/services/__tests__/tsconfig.json",
+    "typecheck:adaptive-learning-tests:all": "npm run typecheck:adaptive-learning-tests && (cd .. && npm run typecheck:adaptive-learning-tests)",
+    "check:test-imports": "node scripts/check-broken-test-imports.mjs src ../src",
+    "check:src-frontend-parity": "node ../scripts/check-src-frontend-parity.mjs",
+    "apply:install-jest-fetch-mock": "node scripts/apply-installJestFetchMock.mjs src ../src",
+    "apply:install-jest-fetch-mock:dry": "node scripts/apply-installJestFetchMock.mjs --dry-run src ../src",
+    "sync:from-root": "npm run sync:frontend-src --prefix ..",
     "eject": "react-scripts eject"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^react-router-dom$": "<rootDir>/../node_modules/react-router-dom/dist/index.js",
+      "^react-router/dom$": "<rootDir>/../node_modules/react-router/dist/development/dom-export.js",
+      "^react-router$": "<rootDir>/../node_modules/react-router/dist/development/index.js"
+    }
   },
   "eslintConfig": {
     "extends": [

@@ -308,7 +308,7 @@ class AIResponseGenerator {
 
 추가로 궁금한 점이나 더 자세한 설명이 필요한 부분이 있으시면 언제든 말씀해 주세요!`,
 
-            `"${message}"에 대한 CORBU AI의 분석 결과입니다.
+            `"${message}"에 대한 CORBU.AI의 분석 결과입니다.
 
 **🔍 분석 요약:**
 - 핵심 키워드 추출 완료
@@ -607,7 +607,7 @@ app.post('/api/initialize', (req, res) => {
     res.json({
         success: true,
         data: {
-            message: 'CORBU AI 고급 시스템이 초기화되었습니다',
+            message: 'CORBU.AI 고급 시스템이 초기화되었습니다',
             timestamp: new Date(),
             version: '2.0.0',
             features: [
@@ -642,7 +642,7 @@ app.use('*', (req, res) => {
 
 // 서버 시작
 app.listen(PORT, () => {
-    console.log(`🚀 CORBU AI 고급 백엔드 서버가 포트 ${PORT}에서 실행 중입니다`);
+    console.log(`🚀 CORBU.AI 고급 백엔드 서버가 포트 ${PORT}에서 실행 중입니다`);
     console.log(`📊 API 엔드포인트: http://localhost:${PORT}/api`);
     console.log(`🔍 헬스체크: http://localhost:${PORT}/api/health`);
     console.log(`📈 분석 API: http://localhost:${PORT}/api/analytics`);

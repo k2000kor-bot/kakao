@@ -1,12 +1,23 @@
 // addNotification은 useNotifications 훅을 통해 사용해야 합니다
 
+import {
+  API_FORM_FIELD_FILE,
+  API_SESSIONS_LIST_PATH,
+  API_SESSION_SCOPED_FILE_ANALYSIS_SEGMENT,
+  API_SESSION_SCOPED_FILES_SEGMENT,
+  API_SESSION_UPLOAD_SEGMENT,
+  joinApiHealthCheckUrl,
+  resolveApiBaseUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+
 export interface FileUploadResponse {
   success: boolean;
   file_id?: string;
   filename?: string;
   file_type?: string;
   file_size?: number;
-  analysis?: any;
+  analysis?: unknown;
   error?: string;
 }
 
@@ -24,7 +35,7 @@ class FileUploadService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    this.baseUrl = resolveApiBaseUrl();
   }
 
   /**
@@ -33,12 +44,18 @@ class FileUploadService {
   async uploadFile(sessionId: string, file: File): Promise<FileUploadResponse> {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append(API_FORM_FIELD_FILE, file);
 
-      const response = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          this.baseUrl,
+          `${API_SESSIONS_LIST_PATH}/${encodeURIComponent(sessionId)}${API_SESSION_UPLOAD_SEGMENT}`,
+        ),
+        {
+          method: 'POST',
+          body: formData,
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -48,15 +65,39 @@ class FileUploadService {
 
       if (result.success) {
         // 성공 알림은 컴포넌트에서 처리
-        console.log(`${file.name} 파일이 성공적으로 업로드되었습니다.`);
+        errorLogger.info('파일이 성공적으로 업로드되었습니다', {
+          component: 'fileUploadService',
+          action: 'uploadFile',
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          sessionId,
+          fileId: result.file_id,
+        });
       } else {
         // 실패 알림은 컴포넌트에서 처리
-        console.error('파일 업로드 실패:', result.error || '파일 업로드 중 오류가 발생했습니다.');
+        errorLogger.error('파일 업로드 실패', new Error(result.error || '파일 업로드 중 오류가 발생했습니다.'), {
+          component: 'fileUploadService',
+          action: 'uploadFile',
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          sessionId,
+          error: result.error,
+        });
       }
 
       return result;
     } catch (error) {
-      console.error('파일 업로드 실패:', error);
+      const err = toError(error);
+      errorLogger.error('파일 업로드 실패', err, {
+        component: 'fileUploadService',
+        action: 'uploadFile',
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        sessionId,
+      });
       // 오류 알림은 컴포넌트에서 처리
 
       return {
@@ -79,7 +120,12 @@ class FileUploadService {
    */
   async getFileAnalysis(sessionId: string, fileId: string): Promise<FileAnalysisResult | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/files/${fileId}/analysis`);
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          this.baseUrl,
+          `${API_SESSIONS_LIST_PATH}/${encodeURIComponent(sessionId)}${API_SESSION_SCOPED_FILES_SEGMENT}/${encodeURIComponent(fileId)}${API_SESSION_SCOPED_FILE_ANALYSIS_SEGMENT}`,
+        ),
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -88,7 +134,13 @@ class FileUploadService {
       const result = await response.json();
       return result.success ? result.analysis : null;
     } catch (error) {
-      console.error('파일 분석 조회 실패:', error);
+      const err = toError(error);
+      errorLogger.error('파일 분석 조회 실패', err, {
+        component: 'fileUploadService',
+        action: 'getFileAnalysis',
+        sessionId,
+        fileId,
+      });
       return null;
     }
   }
@@ -96,9 +148,14 @@ class FileUploadService {
   /**
    * 업로드된 파일 목록 조회
    */
-  async getUploadedFiles(sessionId: string): Promise<any[]> {
+  async getUploadedFiles(sessionId: string): Promise<Record<string, unknown>[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/files`);
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          this.baseUrl,
+          `${API_SESSIONS_LIST_PATH}/${encodeURIComponent(sessionId)}${API_SESSION_SCOPED_FILES_SEGMENT}`,
+        ),
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -107,7 +164,12 @@ class FileUploadService {
       const result = await response.json();
       return result.success ? result.files : [];
     } catch (error) {
-      console.error('업로드된 파일 목록 조회 실패:', error);
+      const err = toError(error);
+      errorLogger.error('업로드된 파일 목록 조회 실패', err, {
+        component: 'fileUploadService',
+        action: 'getUploadedFiles',
+        sessionId,
+      });
       return [];
     }
   }
@@ -117,9 +179,15 @@ class FileUploadService {
    */
   async deleteFile(sessionId: string, fileId: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/files/${fileId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        joinApiHealthCheckUrl(
+          this.baseUrl,
+          `${API_SESSIONS_LIST_PATH}/${encodeURIComponent(sessionId)}${API_SESSION_SCOPED_FILES_SEGMENT}/${encodeURIComponent(fileId)}`,
+        ),
+        {
+          method: 'DELETE',
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -129,15 +197,32 @@ class FileUploadService {
 
       if (result.success) {
         // 성공 알림은 컴포넌트에서 처리
-        console.log('파일이 성공적으로 삭제되었습니다.');
+        errorLogger.info('파일이 성공적으로 삭제되었습니다', {
+          component: 'fileUploadService',
+          action: 'deleteFile',
+          sessionId,
+          fileId,
+        });
       } else {
         // 실패 알림은 컴포넌트에서 처리
-        console.error('파일 삭제 실패:', result.error || '파일 삭제 중 오류가 발생했습니다.');
+        errorLogger.error('파일 삭제 실패', new Error(result.error || '파일 삭제 중 오류가 발생했습니다.'), {
+          component: 'fileUploadService',
+          action: 'deleteFile',
+          sessionId,
+          fileId,
+          error: result.error,
+        });
       }
 
       return result.success;
     } catch (error) {
-      console.error('파일 삭제 실패:', error);
+      const err = toError(error);
+      errorLogger.error('파일 삭제 실패', err, {
+        component: 'fileUploadService',
+        action: 'deleteFile',
+        sessionId,
+        fileId,
+      });
       // 오류 알림은 컴포넌트에서 처리
       return false;
     }
@@ -167,13 +252,21 @@ class FileUploadService {
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'text/plain',
+      'text/csv',
+      'application/csv',
+      'text/comma-separated-values',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-powerpoint',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation'
     ];
 
-    return allowedTypes.includes(file.type);
+    if (allowedTypes.includes(file.type)) return true;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext === 'csv' && (!file.type || file.type === 'application/octet-stream')) {
+      return true;
+    }
+    return false;
   }
 
   /**

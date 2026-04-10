@@ -1,10 +1,131 @@
 # 업데이트 로그
 
-**최신 업데이트**: 2026년 2월 13일
+**최신 업데이트**: 2026년 2월 12일
 
 ---
 
 ## 🆕 최신 업데이트
+
+### 전문 분야·도메인 지식 지속 보강 (2026-02-12)
+
+**Phase 2 도메인 심화**:
+- 도시정비: 조합분양·분담금·청산금·정비사업전문평가사
+- 세무: 세무조사 대응·납부고지 절차
+- 법무: 민사소송·형사소송·판례 검색
+- 회계: 감가상각·처분손익·부동산 회계처리
+
+**generateDomainInsights 확장**: 세무+회계, 도시정비+금융, 법무+계약 조합
+
+**문서**: NOTEBOOK_LLM_DOMAIN_KNOWLEDGE_COMPLETE.md 15개 도메인·기능 현황 갱신
+
+### 전문 분야·딥러닝·질문 맞춤 생성 강화 (2026-02-12)
+
+**딥러닝 활용 심화**:
+- `buildDLPromptEnhancement`: 복잡도·주제·긴급도에 따른 답변 지시 (단계별 상세·핵심 강조·결론 선제시)
+- NotebookLLM: DL 분석 결과를 프롬프트에 반영
+
+**전문가 관점 선택**:
+- `EXPERT_VIEW_PATTERNS`: 변호사·세무사·감정평가사·회계사·법무사·중개사 관점 지시
+- `buildResponseFormatInstructions`: 형식 패턴과 전문가 관점 패턴 병합 반환
+
+**문서 갱신**:
+- DOMAIN_EXPERTISE_ROADMAP: 15개 도메인 완료, 보강 목표 달성 상태 반영
+- NOTEBOOKLM_FEATURE_AND_KNOWLEDGE_CHECKLIST: 15개 도메인, 추가 보강 완료 섹션
+
+### 린트·테스트 수정 (2026-02-14)
+
+**lint:strict 8건 해소**:
+- ChatGPTInterface.test: waitFor 다중 assertion 분리, no-node-access (proBadge.closest → getByTitle)
+- DeepResearchModal·WebResearchModal: container.firstChild → screen.queryByRole('dialog')
+- ProjectShareDialog: waitFor 다중 assertion 분리, 삭제 확인 버튼 getByRole(/공유 링크 삭제 확인/)
+
+**테스트 수정**:
+- ChatGPTInterface.test: rehypeHighlightSearch 모킹 (unist-util-visit ESM 파싱 이슈 회피)
+- ProjectShareDialog: getMultipleElementsFoundError 해결
+- **추가 (6 suites, 141 tests)**:
+  - SessionManager: window.confirm 제거 → 인라인 확인 모달 검증 (삭제/취소 버튼)
+  - WritingAssistant: showToast 모킹, window.alert → mockShowToast (필수 필드·에러·클립보드 복사)
+  - realTimeCollaborationService: errorLogger 모킹, console → mockErrorLogger*, leave/cursor_move 이벤트 리스너 검증
+  - webResearchService: console.error 검증 완화
+  - exportService: console.log → document.createElement·mockClick 검증
+  - aiEnhancedResponseSystem: originalQuestion null 처리 (이미 적용됨)
+
+**문서**:
+- DEVELOPMENT_SCOPE_MASTER.md 추가 (개발 범위 통합)
+- BACKLOG, COMPLETION_CHECKLIST, AGENTS 갱신
+
+**전문 분야 지식 로드맵 (2026-02-14)**:
+- DOMAIN_EXPERTISE_ROADMAP.md 신규: 도시정비법·세무·회계·금융·변호사·계약·감정평가·건축법·서울시 행정·조례·민사·형사·국세
+- 딥러닝·노트북 LLM으로 질문·요구 맞춤 생성 목표
+- 신규 도메인: 서울시 행정·조례, 건축법, 형사, 계약
+- DEVELOPMENT_SCOPE_MASTER 4.15, BACKLOG, NOTEBOOKLM_FEATURE_AND_KNOWLEDGE_CHECKLIST 반영
+
+**개발 범위 7차 확장 (2026-02-14)**:
+- 도메인: 윤리·AI 거버넌스, 엣지 AI, 업종별(의료·금융·법률), 지속가능성·ESG, 오픈소스·커뮤니티(/community), 라이선스·콘텐츠, 멀티에이전트 오케스트레이션
+- 4.15 윤리·업종별·미래 기술
+- 6단계: 엣지 AI·업종별·멀티에이전트
+- 9.10 장기 비전
+
+**개발 범위 6차 확장 (2026-02-14)**:
+- 도메인: AI 품질·안전, 자동화·워크플로우(/automation), 고객 성공, API 관리, 관찰성·모니터링, 멀티모달 생성
+- 4.14 AI 품질·자동화·관찰성
+- 4단계: AI 품질·API 관리·관찰성
+- 5~6단계: 자동화·고객 성공·멀티모달 생성
+- 9.9 확장 3
+
+**개발 범위 5차 확장 (2026-02-14)**:
+- 도메인: 교육·학습(/learn), 템플릿·스니펫(/templates), A/B 테스트·실험, 게이미피케이션, 피드백·NPS, 데이터 레지던시, 파트너·리셀러
+- 4.13 교육·템플릿·실험·피드백
+- 6단계: 교육·템플릿·실험·게이미피케이션·데이터 레지던시·파트너
+- 9.8 확장 2 (6~12개월)
+
+**개발 범위 4차 확장 (2026-02-14)**:
+- 도메인: 엔터프라이즈(SSO·SAML·LDAP·조직·승인), 화이트라벨·커스터마이징, 버전·이력, 검색·디스커버리, 멀티테넌시, 배포 옵션(온프레미스·에어갭), 음성·비디오
+- 라우팅: /search, /workspace
+- 4.12 버전·검색·엔터프라이즈
+- 5단계: 버전·검색·화이트라벨
+- 6단계: 엔터프라이즈·멀티테넌시·배포·음성·비디오
+
+**개발 범위 3차 확장 (2026-02-14)**:
+- 도메인: 협업·소셜, 구독·모네타이징, AI/ML 고급, 보안·컴플라이언스, 알림·커뮤니케이션, 데이터·스토리지, 테스트·품질 확장, 문서화·온보딩
+- 라우팅: /team, /billing, /docs
+- 4.10 협업·구독·보안, 4.11 알림·데이터·문서화
+- 4단계: 협업·구독·알림·데이터·품질 확장
+- 6단계: AI/ML 고급
+
+**개발 범위 2차 확장 (2026-02-14)**:
+- 도메인 추가: 분석·리포팅, 통합·API, 오프라인·동기화, 개발자 생태계
+- 라우팅 확장: /analytics, /settings, /integrations (예정)
+- 4.8 분석·리포팅, 4.9 통합·API·오프라인 섹션
+- 5단계: 통합·분석 확장
+- 6단계: 개발자 생태계·국제화·모바일 앱
+- BACKLOG 확장 범위: 분석·오프라인·통합·개발자 생태계
+
+**개발 범위 확장 (2026-02-14)**:
+- DEVELOPMENT_SCOPE_MASTER: 1.3 확장 비전 추가 (NotebookLM·품질·플랫폼·인프라·기능 확장)
+- 도메인: NotebookLM 확장·PWA·모바일·실시간 웹 검색·품질·인프라
+- 2단계: 성능·UX·a11y 1차, PWA·웹 검색 검증
+- 3단계: NotebookLM Drive·분석 대시보드
+- 5단계: 에이전트·플러그인·규모
+- BACKLOG: 확장 범위 섹션·기능·품질 항목 보강
+- COMPLETION_CHECKLIST: 확장 액션 반영
+
+**Figma 디자인 정합 (2026-02-14)**:
+- theme.css: `--accent-info-figma-muted` 추가 (rgba(52, 120, 246, 0.15))
+- App.css·ChatGPTInterface.css·brainwave-global.css: 하드코딩 rgba → theme 변수
+- 환영 화면: "Unlock the power of AI" 헤드라인, `.brainwave-welcome-*` 클래스, 프로젝트 프롬프트 `brainwave-project-prompt`
+- 환영 카테고리 카드: themeStyles·인라인 스타일 제거 → `.brainwave-welcome-categories`, `.brainwave-welcome-category-card`, `.brainwave-welcome-question-btn` 등 Figma 클래스 적용
+
+**dev-check 개선**:
+- scripts/dev-check.sh: backend/.venv 우선 사용, venv 실패 시 python3 fallback, pytest 미설치 시 명확한 안내
+- DEV_CHECK_SKIP_BACKEND=1 또는 npm run dev:check:frontend — 백엔드 스킵, 프론트 타입·린트만 검사
+
+**문서·체크리스트 갱신**:
+- docs/COMPLETION_CHECKLIST: dev:check:frontend, 2026-02-14 테스트 수정 반영
+- docs/DEVELOPER_QUICK_CHECKLIST: dev:check:frontend, test:p4:services, 배포 전 체크 보강
+- e2e/README.md: npx playwright install 사전 준비 안내
+
+---
 
 ### Figma 디자인 적용 (2026-02-13)
 

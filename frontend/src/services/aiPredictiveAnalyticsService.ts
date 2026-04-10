@@ -1,7 +1,13 @@
 import { Project, Chat, Message } from '../types/project';
-import aiSystemOptimizationEngine from './aiSystemOptimizationEngine';
-import adaptiveLearningEngine from './adaptiveLearningEngine';
 import realTimeMonitoringService from './realTimeMonitoringService';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    AI_PREDICTIVE_ANOMALIES_STORAGE_KEY,
+    AI_PREDICTIVE_DECISIONS_STORAGE_KEY,
+    AI_PREDICTIVE_INSIGHTS_STORAGE_KEY,
+    AI_PREDICTIVE_PREDICTIONS_STORAGE_KEY,
+    AI_PREDICTIVE_TRENDS_STORAGE_KEY,
+} from './aiPredictiveAnalyticsStorageKeys';
 
 export interface PredictiveModel {
     id: string;
@@ -12,7 +18,7 @@ export interface PredictiveModel {
     lastUpdated: Date;
     lastTrained: Date;
     version: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     learningRate: number;
     confidence: number;
     autoOptimize: boolean;
@@ -122,7 +128,7 @@ export interface PredictiveInsight {
     timestamp: Date;
     category: string;
     tags: string[];
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     recommendations: string[];
     actions: string[];
     priority: 'low' | 'medium' | 'high' | 'critical';
@@ -147,7 +153,7 @@ interface LearningPattern {
     lastObserved: Date;
     impact: 'positive' | 'negative' | 'neutral';
     category: 'user_behavior' | 'system_performance' | 'resource_usage' | 'error_patterns';
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
 }
 
 interface AdaptiveThreshold {
@@ -172,9 +178,9 @@ interface AdaptiveThreshold {
 interface RealTimeLearning {
     id: string;
     timestamp: Date;
-    input: Record<string, any>;
-    prediction: Record<string, any>;
-    actual: Record<string, any>;
+    input: Record<string, unknown>;
+    prediction: Record<string, unknown>;
+    actual: Record<string, unknown>;
     error: number;
     learning: {
         parameterUpdates: Record<string, number>;
@@ -184,7 +190,7 @@ interface RealTimeLearning {
     modelId: string;
 }
 
-class AIPredictiveAnalyticsService {
+export class AIPredictiveAnalyticsService {
     private predictiveModels: PredictiveModel[] = [];
     private predictions: Prediction[] = [];
     private anomalies: AnomalyDetection[] = [];
@@ -305,66 +311,74 @@ class AIPredictiveAnalyticsService {
 
     private loadStoredData(): void {
         try {
-            const storedPredictions = localStorage.getItem('ai_predictive_predictions');
+            const storedPredictions = localStorage.getItem(AI_PREDICTIVE_PREDICTIONS_STORAGE_KEY);
             if (storedPredictions) {
-                this.predictions = JSON.parse(storedPredictions).map((p: any) => ({
+                this.predictions = (JSON.parse(storedPredictions) as Record<string, unknown>[]).map((p: Record<string, unknown>) => ({
                     ...p,
-                    timestamp: new Date(p.timestamp),
-                    actualValue: p.actualValue ? new Date(p.actualValue) : undefined
-                }));
+                    timestamp: new Date(p.timestamp as string | number),
+                    actualValue: p.actualValue as number | undefined
+                })) as Prediction[];
             }
 
-            const storedAnomalies = localStorage.getItem('ai_predictive_anomalies');
+            const storedAnomalies = localStorage.getItem(AI_PREDICTIVE_ANOMALIES_STORAGE_KEY);
             if (storedAnomalies) {
-                this.anomalies = JSON.parse(storedAnomalies).map((a: any) => ({
+                this.anomalies = (JSON.parse(storedAnomalies) as Record<string, unknown>[]).map((a: Record<string, unknown>) => ({
                     ...a,
-                    timestamp: new Date(a.timestamp)
-                }));
+                    timestamp: new Date(a.timestamp as string | number)
+                })) as AnomalyDetection[];
             }
 
-            const storedTrends = localStorage.getItem('ai_predictive_trends');
+            const storedTrends = localStorage.getItem(AI_PREDICTIVE_TRENDS_STORAGE_KEY);
             if (storedTrends) {
-                this.trends = JSON.parse(storedTrends).map((t: any) => ({
+                this.trends = (JSON.parse(storedTrends) as Record<string, unknown>[]).map((t: Record<string, unknown>) => ({
                     ...t,
-                    timestamp: new Date(t.timestamp)
-                }));
+                    timestamp: new Date(t.timestamp as string | number)
+                })) as unknown as TrendAnalysis[];
             }
 
-            const storedDecisions = localStorage.getItem('ai_predictive_decisions');
+            const storedDecisions = localStorage.getItem(AI_PREDICTIVE_DECISIONS_STORAGE_KEY);
             if (storedDecisions) {
-                this.autoDecisions = JSON.parse(storedDecisions).map((d: any) => ({
+                this.autoDecisions = (JSON.parse(storedDecisions) as Record<string, unknown>[]).map((d: Record<string, unknown>) => ({
                     ...d,
-                    createdAt: new Date(d.createdAt),
-                    executedAt: d.executedAt ? new Date(d.executedAt) : undefined
-                }));
+                    timestamp: new Date((d.timestamp ?? d.createdAt) as string | number),
+                    executedAt: d.executedAt ? new Date(d.executedAt as string | number) : undefined
+                })) as AutoDecision[];
             }
 
-            const storedInsights = localStorage.getItem('ai_predictive_insights');
+            const storedInsights = localStorage.getItem(AI_PREDICTIVE_INSIGHTS_STORAGE_KEY);
             if (storedInsights) {
-                this.insights = JSON.parse(storedInsights).map((i: any) => ({
+                this.insights = (JSON.parse(storedInsights) as Record<string, unknown>[]).map((i: Record<string, unknown>) => ({
                     ...i,
-                    lastUpdated: new Date(i.lastUpdated)
-                }));
+                    timestamp: new Date((i.timestamp ?? i.lastUpdated) as string | number)
+                })) as PredictiveInsight[];
             }
         } catch (error) {
-            console.error('예측 분석 데이터 로드 중 오류:', error);
+            const err = toError(error);
+            errorLogger.error('예측 분석 데이터 로드 중 오류', err, {
+                component: 'aiPredictiveAnalyticsService',
+                action: 'loadData',
+            });
         }
     }
 
     private saveData(): void {
         try {
-            localStorage.setItem('ai_predictive_predictions', JSON.stringify(this.predictions));
-            localStorage.setItem('ai_predictive_anomalies', JSON.stringify(this.anomalies));
-            localStorage.setItem('ai_predictive_trends', JSON.stringify(this.trends));
-            localStorage.setItem('ai_predictive_decisions', JSON.stringify(this.autoDecisions));
-            localStorage.setItem('ai_predictive_insights', JSON.stringify(this.insights));
+            localStorage.setItem(AI_PREDICTIVE_PREDICTIONS_STORAGE_KEY, JSON.stringify(this.predictions));
+            localStorage.setItem(AI_PREDICTIVE_ANOMALIES_STORAGE_KEY, JSON.stringify(this.anomalies));
+            localStorage.setItem(AI_PREDICTIVE_TRENDS_STORAGE_KEY, JSON.stringify(this.trends));
+            localStorage.setItem(AI_PREDICTIVE_DECISIONS_STORAGE_KEY, JSON.stringify(this.autoDecisions));
+            localStorage.setItem(AI_PREDICTIVE_INSIGHTS_STORAGE_KEY, JSON.stringify(this.insights));
         } catch (error) {
-            console.error('예측 분석 데이터 저장 중 오류:', error);
+            const err = toError(error);
+            errorLogger.error('예측 분석 데이터 저장 중 오류', err, {
+                component: 'aiPredictiveAnalyticsService',
+                action: 'saveData',
+            });
         }
     }
 
     // 성능 예측 실행
-    async runPerformancePredictions(projects: Project[], chats: Chat[], messages: Message[]): Promise<Prediction[]> {
+    async runPerformancePredictions(_projects: Project[], _chats: Chat[], _messages: Message[]): Promise<Prediction[]> {
         const predictions: Prediction[] = [];
         const metrics = realTimeMonitoringService.getMetrics();
 
@@ -394,13 +408,14 @@ class AIPredictiveAnalyticsService {
         return predictions;
     }
 
-    private async predictMetric(metricName: string, currentMetrics: any[], timeframe: '1h' | '6h' | '24h' | '7d' | '30d'): Promise<Prediction | null> {
-        const metric = currentMetrics.find(m => m.id === metricName);
+    private async predictMetric(metricName: string, currentMetrics: Record<string, unknown>[], timeframe: '1h' | '6h' | '24h' | '7d' | '30d'): Promise<Prediction | null> {
+        if (!currentMetrics || !Array.isArray(currentMetrics)) return null;
+        const metric = currentMetrics.find(m => (m as Record<string, unknown>).id === metricName) as Record<string, unknown> | undefined;
         if (!metric) return null;
 
         // 시뮬레이션된 예측 로직
-        const baseValue = metric.value;
-        const trend = metric.trend;
+        const baseValue = Number(metric.value);
+        const trend = metric.trend as string;
         const confidence = 0.7 + Math.random() * 0.2; // 70-90% 신뢰도
 
         let predictedValue = baseValue;
@@ -418,7 +433,7 @@ class AIPredictiveAnalyticsService {
             id: `pred-${metricName}-${Date.now()}`,
             modelId: 'performance-predictor',
             metric: metricName,
-            target: metricName,
+            target: String(metric.id ?? metricName),
             predictedValue: Math.max(0, Math.min(100, predictedValue)),
             confidence,
             timeframe,
@@ -433,10 +448,12 @@ class AIPredictiveAnalyticsService {
     }
 
     // 이상 징후 감지
-    async detectAnomalies(projects: Project[], chats: Chat[], messages: Message[]): Promise<AnomalyDetection[]> {
+    async detectAnomalies(_projects: Project[], _chats: Chat[], _messages: Message[]): Promise<AnomalyDetection[]> {
         const anomalies: AnomalyDetection[] = [];
         const metrics = realTimeMonitoringService.getMetrics();
-
+        
+        if (!metrics || !Array.isArray(metrics)) return anomalies;
+        
         for (const metric of metrics) {
             const anomaly = this.checkForAnomaly(metric);
             if (anomaly) {
@@ -450,21 +467,22 @@ class AIPredictiveAnalyticsService {
         return anomalies;
     }
 
-    private checkForAnomaly(metric: any): AnomalyDetection | null {
-        const { value, threshold } = metric;
+    private checkForAnomaly(metric: Record<string, unknown>): AnomalyDetection | null {
+        const value = Number(metric.value);
+        const threshold = metric.threshold as { warning?: number; critical?: number };
         const expectedRange = {
-            min: threshold.warning * 0.8,
-            max: threshold.critical * 1.1
+            min: (threshold.warning ?? 80) * 0.8,
+            max: (threshold.critical ?? 100) * 1.1
         };
 
         if (value < expectedRange.min || value > expectedRange.max) {
-            const severity = value >= threshold.critical ? 'critical' :
-                value >= threshold.warning ? 'high' :
+            const severity = value >= (threshold.critical ?? 100) ? 'critical' :
+                value >= (threshold.warning ?? 80) ? 'high' :
                     value < expectedRange.min * 0.5 ? 'medium' : 'low';
 
             return {
                 id: `anomaly-${metric.id}-${Date.now()}`,
-                metric: metric.id,
+                metric: String(metric.id),
                 detectedValue: value,
                 expectedRange,
                 severity,
@@ -474,26 +492,26 @@ class AIPredictiveAnalyticsService {
                 autoResolve: false,
                 resolved: false,
                 impact: severity as 'low' | 'medium' | 'high' | 'critical',
-                affectedServices: [metric.id]
+                affectedServices: [String(metric.id)]
             };
         }
 
         return null;
     }
 
-    private generateAnomalyRecommendations(metric: any, severity: string): string[] {
+    private generateAnomalyRecommendations(metric: Record<string, unknown>, severity: string): string[] {
         const recommendations: string[] = [];
 
-        if (metric.id === 'cpu_usage' && severity === 'critical') {
+        if (String(metric.id) === 'cpu_usage' && severity === 'critical') {
             recommendations.push('CPU 사용률이 임계치를 초과했습니다. 서버 리소스를 즉시 확장하세요.');
             recommendations.push('불필요한 프로세스를 종료하여 CPU 부하를 줄이세요.');
-        } else if (metric.id === 'memory_usage' && severity === 'high') {
+        } else if (String(metric.id) === 'memory_usage' && severity === 'high') {
             recommendations.push('메모리 사용률이 높습니다. 메모리 정리를 실행하세요.');
             recommendations.push('캐시 크기를 조정하여 메모리 효율성을 개선하세요.');
-        } else if (metric.id === 'response_time' && severity === 'critical') {
+        } else if (String(metric.id) === 'response_time' && severity === 'critical') {
             recommendations.push('응답 시간이 임계치를 초과했습니다. 데이터베이스 쿼리를 최적화하세요.');
             recommendations.push('CDN을 사용하여 응답 시간을 개선하세요.');
-        } else if (metric.id === 'error_rate' && severity === 'high') {
+        } else if (String(metric.id) === 'error_rate' && severity === 'high') {
             recommendations.push('오류율이 증가하고 있습니다. 오류 로그를 분석하세요.');
             recommendations.push('시스템 안정성을 점검하고 백업을 준비하세요.');
         }
@@ -502,9 +520,11 @@ class AIPredictiveAnalyticsService {
     }
 
     // 트렌드 분석
-    async analyzeTrends(projects: Project[], chats: Chat[], messages: Message[]): Promise<TrendAnalysis[]> {
+    async analyzeTrends(_projects: Project[], _chats: Chat[], _messages: Message[]): Promise<TrendAnalysis[]> {
         const trends: TrendAnalysis[] = [];
         const metrics = realTimeMonitoringService.getMetrics();
+
+        if (!metrics || !Array.isArray(metrics)) return trends;
 
         for (const metric of metrics) {
             const trend = this.calculateTrend(metric);
@@ -519,23 +539,24 @@ class AIPredictiveAnalyticsService {
         return trends;
     }
 
-    private calculateTrend(metric: any): TrendAnalysis | null {
-        if (metric.history.length < 5) return null;
+    private calculateTrend(metric: Record<string, unknown>): TrendAnalysis | null {
+        const history = (metric.history as unknown[]) ?? [];
+        if (history.length < 5) return null;
 
-        const recentValues = metric.history.slice(-5).map((h: any) => h.value);
+        const recentValues = history.slice(-5).map((h: unknown) => Number((h as Record<string, unknown>).value));
         const trend = this.determineTrendDirection(recentValues);
         const strength = this.calculateTrendStrength(recentValues);
         const confidence = 0.6 + strength * 0.3;
 
         const forecast = {
-            nextValue: this.forecastValue(metric.value, trend, 1),
+            nextValue: this.forecastValue(Number(metric.value), trend, 1),
             confidence: confidence,
             timeframe: new Date(Date.now() + 24 * 60 * 60 * 1000)
         };
 
         return {
             id: `trend-${metric.id}-${Date.now()}`,
-            metric: metric.id,
+            metric: String(metric.id),
             period: '24h',
             trend: trend.trend === 'fluctuating' ? 'cyclical' : trend.trend,
             direction: trend.direction,
@@ -546,7 +567,7 @@ class AIPredictiveAnalyticsService {
             dataPoints: 5,
             forecast,
             insights: this.identifyTrendFactors(metric),
-            recommendations: [`${metric.id} 트렌드 모니터링 지속`]
+            recommendations: [`${String(metric.id)} 트렌드 모니터링 지속`]
         };
     }
 
@@ -589,24 +610,25 @@ class AIPredictiveAnalyticsService {
         return Math.min(1, avgChange * 10); // 0-1 범위로 정규화
     }
 
-    private forecastValue(currentValue: number, trend: any, days: number): number {
+    private forecastValue(currentValue: number, trend: { direction: string }, days: number): number {
         const dailyChange = trend.direction === 'positive' ? -0.02 : 0.02; // 2% 일일 변화
         return Math.max(0, Math.min(100, currentValue * (1 + dailyChange * days)));
     }
 
-    private identifyTrendFactors(metric: any): string[] {
+    private identifyTrendFactors(metric: Record<string, unknown>): string[] {
         const factors: string[] = [];
+        const id = String(metric.id);
 
-        if (metric.id === 'cpu_usage') {
+        if (id === 'cpu_usage') {
             factors.push('사용자 활동 증가');
             factors.push('백그라운드 프로세스');
-        } else if (metric.id === 'memory_usage') {
+        } else if (id === 'memory_usage') {
             factors.push('데이터 처리량');
             factors.push('캐시 사용량');
-        } else if (metric.id === 'response_time') {
+        } else if (id === 'response_time') {
             factors.push('네트워크 지연');
             factors.push('데이터베이스 성능');
-        } else if (metric.id === 'error_rate') {
+        } else if (id === 'error_rate') {
             factors.push('시스템 안정성');
             factors.push('코드 품질');
         }
@@ -757,7 +779,7 @@ class AIPredictiveAnalyticsService {
         const insights: PredictiveInsight[] = [];
         const predictions = this.predictions.slice(-20);
         const trends = this.trends.slice(-10);
-        const decisions = this.autoDecisions.slice(-10);
+        const _decisions = this.autoDecisions.slice(-10);
 
         // 성능 인사이트
         const performanceInsights = this.generatePerformanceInsights(predictions, trends);
@@ -777,7 +799,7 @@ class AIPredictiveAnalyticsService {
         return insights;
     }
 
-    private generatePerformanceInsights(predictions: Prediction[], trends: TrendAnalysis[]): PredictiveInsight[] {
+    private generatePerformanceInsights(predictions: Prediction[], _trends: TrendAnalysis[]): PredictiveInsight[] {
         const insights: PredictiveInsight[] = [];
 
         // CPU 사용률 예측 인사이트
@@ -853,7 +875,7 @@ class AIPredictiveAnalyticsService {
         return insights;
     }
 
-    private generateHealthInsights(predictions: Prediction[], trends: TrendAnalysis[]): PredictiveInsight[] {
+    private generateHealthInsights(predictions: Prediction[], _trends: TrendAnalysis[]): PredictiveInsight[] {
         const insights: PredictiveInsight[] = [];
 
         // 시스템 안정성 인사이트
@@ -1035,17 +1057,21 @@ class AIPredictiveAnalyticsService {
             await this.generateRealTimeInsights();
 
         } catch (error) {
-            console.error('Continuous learning error:', error);
+            const err = toError(error);
+            errorLogger.error('Continuous learning error', err, {
+                component: 'aiPredictiveAnalyticsService',
+                action: 'performContinuousLearning',
+            });
         } finally {
             this.isLearning = false;
         }
     }
 
-    private async updateAdaptiveThresholds(metrics: any[]): Promise<void> {
+    private async updateAdaptiveThresholds(metrics: Record<string, unknown>[]): Promise<void> {
         for (const threshold of this.adaptiveThresholds) {
-            const metric = metrics.find(m => m.name === threshold.metric);
+            const metric = metrics.find(m => (m as Record<string, unknown>).name === threshold.metric) as Record<string, unknown> | undefined;
             if (metric) {
-                const currentValue = metric.value;
+                const currentValue = Number(metric.value);
                 const learningRate = threshold.learningRate;
 
                 // Adaptive threshold adjustment based on current performance
@@ -1122,7 +1148,13 @@ class AIPredictiveAnalyticsService {
                 model.lastUpdated = new Date();
                 model.status = 'active';
 
-                console.log(`Model ${model.name} optimized: accuracy improved to ${model.accuracy.toFixed(3)}`);
+                errorLogger.info(`Model ${model.name} optimized: accuracy improved to ${model.accuracy.toFixed(3)}`, {
+                    component: 'aiPredictiveAnalyticsService',
+                    action: 'optimizeModels',
+                    modelId: model.id,
+                    modelName: model.name,
+                    accuracy: model.accuracy,
+                });
             }
         }
     }
@@ -1140,19 +1172,20 @@ class AIPredictiveAnalyticsService {
         );
 
         // Performance optimization insight
-        const cpuMetric = Array.isArray(recentMetrics) ? recentMetrics.find((m: any) => m.name === 'cpu') : null;
-        if (cpuMetric && (cpuMetric as any).value > 80) {
+        const cpuMetric = Array.isArray(recentMetrics) ? recentMetrics.find((m: unknown) => (m as Record<string, unknown>).name === 'cpu') as Record<string, unknown> | undefined : null;
+        const cpuValue = cpuMetric ? Number((cpuMetric as Record<string, unknown>).value) : 0;
+        if (cpuMetric && cpuValue > 80) {
             const insight: PredictiveInsight = {
                 id: `insight-${Date.now()}-${Math.random()}`,
                 type: 'optimization',
                 title: 'CPU 사용률 최적화 필요',
-                description: `현재 CPU 사용률이 ${(cpuMetric as any).value.toFixed(1)}%로 높은 수준입니다. 시스템 성능 최적화가 권장됩니다.`,
+                description: `현재 CPU 사용률이 ${cpuValue.toFixed(1)}%로 높은 수준입니다. 시스템 성능 최적화가 권장됩니다.`,
                 confidence: 0.92,
                 impact: 'high',
                 timestamp: new Date(),
                 category: 'performance',
                 tags: ['cpu', 'optimization', 'performance'],
-                data: { currentCpu: (cpuMetric as any).value, threshold: 80 },
+                data: { currentCpu: cpuValue, threshold: 80 },
                 recommendations: [
                     '불필요한 백그라운드 프로세스 종료',
                     '캐시 최적화',
@@ -1286,12 +1319,12 @@ class AIPredictiveAnalyticsService {
     public getAdvancedAnalytics(): {
         modelVersions: Record<string, string>;
         learningProgress: Record<string, number>;
-        optimizationHistory: Record<string, any[]>;
+        optimizationHistory: Record<string, RealTimeLearning[]>;
         performanceMetrics: Record<string, number>;
     } {
         const modelVersions: Record<string, string> = {};
         const learningProgress: Record<string, number> = {};
-        const optimizationHistory: Record<string, any[]> = {};
+        const optimizationHistory: Record<string, RealTimeLearning[]> = {};
         const performanceMetrics: Record<string, number> = {};
 
         for (const model of this.predictiveModels) {
@@ -1309,6 +1342,14 @@ class AIPredictiveAnalyticsService {
         };
     }
 }
+
+export {
+    AI_PREDICTIVE_ANOMALIES_STORAGE_KEY,
+    AI_PREDICTIVE_DECISIONS_STORAGE_KEY,
+    AI_PREDICTIVE_INSIGHTS_STORAGE_KEY,
+    AI_PREDICTIVE_PREDICTIONS_STORAGE_KEY,
+    AI_PREDICTIVE_TRENDS_STORAGE_KEY,
+} from './aiPredictiveAnalyticsStorageKeys';
 
 const aiPredictiveAnalyticsService = new AIPredictiveAnalyticsService();
 export default aiPredictiveAnalyticsService;

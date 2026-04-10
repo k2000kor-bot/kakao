@@ -24,24 +24,24 @@ class SimpleWebResearchEngine:
         sources = [
             {
                 'url': 'https://example.com/gaeposung-analysis',
-                'title': f'개포우성 재개발 프로젝트 분석 - {question[:20]}...',
-                'content': f'개포우성 재개발 프로젝트에 대한 종합적인 분석 결과입니다. {question}에 대한 상세한 정보를 제공합니다.',
+                'title': f'샘플 재개발 프로젝트 분석 - {question[:20]}...',
+                'content': f'샘플 재개발 프로젝트에 대한 종합적인 분석 결과입니다. {question}에 대한 상세한 정보를 제공합니다.',
                 'domain': 'example.com',
                 'credibility_score': 0.8,
                 'source_type': 'news'
             },
             {
                 'url': 'https://blog.naver.com/gaeposung-info',
-                'title': f'개포우성 재개발 최신 정보 - {question[:20]}...',
-                'content': f'개포우성 재개발 프로젝트의 최신 동향과 {question}에 대한 분석입니다.',
+                'title': f'샘플 재개발 최신 정보 - {question[:20]}...',
+                'content': f'샘플 재개발 프로젝트의 최신 동향과 {question}에 대한 분석입니다.',
                 'domain': 'blog.naver.com',
                 'credibility_score': 0.6,
                 'source_type': 'community'
             },
             {
                 'url': 'https://cafe.daum.net/gaeposung-community',
-                'title': f'개포우성 주민 커뮤니티 - {question[:20]}...',
-                'content': f'개포우성 재개발에 대한 주민들의 의견과 {question}에 대한 토론입니다.',
+                'title': f'샘플 프로젝트 주민 커뮤니티 - {question[:20]}...',
+                'content': f'샘플 재개발에 대한 주민들의 의견과 {question}에 대한 토론입니다.',
                 'domain': 'cafe.daum.net',
                 'credibility_score': 0.5,
                 'source_type': 'community'
@@ -110,8 +110,8 @@ class SimpleWebResearchEngine:
         """핵심 키워드 추출"""
         keywords = []
         
-        if '개포우성' in question:
-            keywords.extend(['개포우성', '개포동', '강남구'])
+        if '샘플 프로젝트' in question:
+            keywords.extend(['샘플 프로젝트', '○○동', '강남구'])
         
         if any(word in question for word in ['재개발', '개발', '투자']):
             keywords.extend(['재개발', '도시개발', '투자'])
@@ -128,7 +128,7 @@ class SimpleWebResearchEngine:
 async def test_web_research():
     engine = SimpleWebResearchEngine()
     
-    test_question = "개포우성 재개발 프로젝트의 투자 가치를 분석해주세요. 주민들의 반응도 함께 고려해서 종합적으로 평가해주시면 감사하겠습니다."
+    test_question = "샘플 재개발 프로젝트의 투자 가치를 분석해주세요. 주민들의 반응도 함께 고려해서 종합적으로 평가해주시면 감사하겠습니다."
     
     print("🔍 웹 연구 테스트 시작...")
     print(f"질문: {test_question}")

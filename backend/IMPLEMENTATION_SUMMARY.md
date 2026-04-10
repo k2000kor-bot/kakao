@@ -1,4 +1,4 @@
-# CORBU AI Backend API 구현 요약
+# CORBU.AI Backend API 구현 요약
 
 ## 구현 완료 사항
 
@@ -298,5 +298,5 @@ pip install fastapi uvicorn pydantic psutil
 
 - [API 상세 문서](./API_DOCUMENTATION.md)
 - [FastAPI 공식 문서](https://fastapi.tiangolo.com/)
-- [Swagger UI](http://localhost:5001/docs)
+- [Swagger UI](http://localhost:5002/api/docs)
 

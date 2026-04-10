@@ -9,6 +9,10 @@ import sqlite3
 import threading
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
+
+# Python 3.12+: silence DeprecationWarning for sqlite3 datetime adapter
+if hasattr(sqlite3, 'register_adapter'):
+    sqlite3.register_adapter(datetime, lambda d: d.isoformat())
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 import psutil

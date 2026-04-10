@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
-import advancedAIAnalyticsOptimizationSystem from './advancedAIAnalyticsOptimizationSystem';
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
 import aiCacheManager from './aiCacheManager';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface LearningData {
@@ -15,7 +15,7 @@ export interface LearningData {
         output: string;
         user_feedback?: number; // 1-5 rating
         correction?: string;
-        context: any;
+        context: Record<string, unknown>;
     };
     learning_signals: {
         success: boolean;
@@ -60,7 +60,7 @@ export interface LearningPattern {
     detected_at: Date;
     last_seen: Date;
     user_ids: string[];
-    pattern_data: any;
+    pattern_data: Record<string, unknown>;
 }
 
 export interface ModelAdaptation {
@@ -68,7 +68,7 @@ export interface ModelAdaptation {
     model_component: string;
     adaptation_type: 'weight_update' | 'architecture_change' | 'hyperparameter_tuning' | 'feature_engineering';
     trigger_pattern: string;
-    changes_made: any;
+    changes_made: Record<string, unknown>;
     performance_before: {
         accuracy: number;
         response_time: number;
@@ -109,7 +109,10 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
     constructor() {
         super();
         this.initializeAdaptationRules();
-        console.log('🧠 실시간 AI 학습 및 적응 시스템이 초기화되었습니다.');
+        errorLogger.info('🧠 실시간 AI 학습 및 적응 시스템이 초기화되었습니다.', {
+            component: 'realTimeAILearningAdaptationSystem',
+            action: 'constructor',
+        });
     }
 
     // 시스템 시작
@@ -120,7 +123,10 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
         this.startLearning();
         this.startPatternDetection();
         this.startAdaptation();
-        console.log('🚀 실시간 AI 학습 및 적응 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 실시간 AI 학습 및 적응 시스템이 시작되었습니다.', {
+            component: 'realTimeAILearningAdaptationSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
@@ -138,7 +144,10 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
             this.patternDetectionInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ 실시간 AI 학습 및 적응 시스템이 중지되었습니다.');
+        errorLogger.info('⏹️ 실시간 AI 학습 및 적응 시스템이 중지되었습니다.', {
+            component: 'realTimeAILearningAdaptationSystem',
+            action: 'stop',
+        });
     }
 
     // 학습 데이터 수집
@@ -199,7 +208,12 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
                 });
             }
         } catch (error) {
-            console.error('즉시 패턴 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('즉시 패턴 분석 오류', err, {
+                component: 'realTimeAILearningAdaptationSystem',
+                action: 'analyzeImmediatePattern',
+                userId: data.user_id,
+            });
         }
     }
 
@@ -237,7 +251,11 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
             return patterns;
 
         } catch (error) {
-            console.error('패턴 감지 오류:', error);
+            const err = toError(error);
+            errorLogger.error('패턴 감지 오류', err, {
+                component: 'realTimeAILearningAdaptationSystem',
+                action: 'detectPatterns',
+            });
             return [];
         }
     }
@@ -388,7 +406,12 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
             const pattern = this.detectedPatterns.get(patternId);
             if (!pattern) return null;
 
-            console.log(`🔄 모델 적응 시작: ${pattern.description}`);
+            errorLogger.info(`🔄 모델 적응 시작: ${pattern.description}`, {
+                component: 'realTimeAILearningAdaptationSystem',
+                action: 'executeModelAdaptation',
+                patternId,
+                patternDescription: pattern.description,
+            });
 
             const adaptation: ModelAdaptation = {
                 adaptation_id: `adapt-${Date.now()}`,
@@ -419,12 +442,22 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
             this.modelAdaptations.set(adaptation.model_component, componentAdaptations);
 
             this.emit('model_adapted', adaptation);
-            console.log(`✅ 모델 적응 완료: ${adaptation.improvement_score.toFixed(2)}% 개선`);
+            errorLogger.info(`✅ 모델 적응 완료: ${adaptation.improvement_score.toFixed(2)}% 개선`, {
+                component: 'realTimeAILearningAdaptationSystem',
+                action: 'executeModelAdaptation',
+                adaptationId: adaptation.adaptation_id,
+                improvementScore: adaptation.improvement_score,
+            });
 
             return adaptation;
 
         } catch (error) {
-            console.error('모델 적응 실행 오류:', error);
+            const err = toError(error);
+            errorLogger.error('모델 적응 실행 오류', err, {
+                component: 'realTimeAILearningAdaptationSystem',
+                action: 'executeModelAdaptation',
+                patternId,
+            });
             return null;
         }
     }
@@ -456,7 +489,7 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
     }
 
     // 적응 변경사항 생성
-    private async generateAdaptationChanges(pattern: LearningPattern): Promise<any> {
+    private async generateAdaptationChanges(pattern: LearningPattern): Promise<Record<string, unknown>> {
         switch (pattern.pattern_type) {
             case 'user_preference':
                 return {
@@ -470,7 +503,7 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
                 };
             case 'domain_expertise':
                 return {
-                    domain_weights: { [pattern.pattern_data.domain]: pattern.confidence },
+                    domain_weights: { [String(pattern.pattern_data.domain)]: pattern.confidence },
                     expertise_level: pattern.pattern_data.expertise_level
                 };
             default:
@@ -486,7 +519,12 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
         // 캐시 무효화
         aiCacheManager.invalidateByTag(`model-${adaptation.model_component}`);
 
-        console.log(`🔧 ${adaptation.model_component} 컴포넌트에 적응 적용됨`);
+        errorLogger.info(`🔧 ${adaptation.model_component} 컴포넌트에 적응 적용됨`, {
+            component: 'realTimeAILearningAdaptationSystem',
+            action: 'applyAdaptation',
+            modelComponent: adaptation.model_component,
+            adaptationId: adaptation.adaptation_id,
+        });
     }
 
     // 현재 성능 측정
@@ -500,11 +538,16 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
     }
 
     // 개선 점수 계산
-    private calculateImprovementScore(before: any, after: any): number {
-        const accuracyImprovement = ((after.accuracy - before.accuracy) / before.accuracy) * 100;
-        const responseTimeImprovement = ((before.response_time - after.response_time) / before.response_time) * 100;
-        const satisfactionImprovement = ((after.user_satisfaction - before.user_satisfaction) / before.user_satisfaction) * 100;
-
+    private calculateImprovementScore(before: Record<string, unknown>, after: Record<string, unknown>): number {
+        const bAcc = Number(before.accuracy) || 0;
+        const aAcc = Number(after.accuracy) || 0;
+        const bRt = Number(before.response_time) || 0;
+        const aRt = Number(after.response_time) || 0;
+        const bSat = Number(before.user_satisfaction) || 0;
+        const aSat = Number(after.user_satisfaction) || 0;
+        const accuracyImprovement = bAcc ? ((aAcc - bAcc) / bAcc) * 100 : 0;
+        const responseTimeImprovement = aRt ? ((bRt - aRt) / aRt) * 100 : 0;
+        const satisfactionImprovement = bSat ? ((aSat - bSat) / bSat) * 100 : 0;
         return (accuracyImprovement + responseTimeImprovement + satisfactionImprovement) / 3;
     }
 
@@ -601,7 +644,11 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
             const patterns = await this.detectLearningPatterns();
 
             if (patterns.length > 0) {
-                console.log(`🧠 ${patterns.length}개의 새로운 학습 패턴 감지됨`);
+                errorLogger.info(`🧠 ${patterns.length}개의 새로운 학습 패턴 감지됨`, {
+                    component: 'realTimeAILearningAdaptationSystem',
+                    action: 'startLearning',
+                    patternsCount: patterns.length,
+                });
             }
         }, 180000); // 3분마다
     }
@@ -637,7 +684,11 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
                 return false;
             }
 
-            console.log(`🔄 적응 롤백 시작: ${adaptationId}`);
+            errorLogger.info(`🔄 적응 롤백 시작: ${adaptationId}`, {
+                component: 'realTimeAILearningAdaptationSystem',
+                action: 'rollbackAdaptation',
+                adaptationId,
+            });
 
             // 롤백 로직 (시뮬레이션)
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -646,11 +697,20 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
             aiCacheManager.invalidateByTag(`model-${adaptation.model_component}`);
 
             this.emit('adaptation_rolled_back', adaptation);
-            console.log(`✅ 적응 롤백 완료: ${adaptationId}`);
+            errorLogger.info(`✅ 적응 롤백 완료: ${adaptationId}`, {
+                component: 'realTimeAILearningAdaptationSystem',
+                action: 'rollbackAdaptation',
+                adaptationId,
+            });
 
             return true;
         } catch (error) {
-            console.error('적응 롤백 오류:', error);
+            const err = toError(error);
+            errorLogger.error('적응 롤백 오류', err, {
+                component: 'realTimeAILearningAdaptationSystem',
+                action: 'rollbackAdaptation',
+                adaptationId,
+            });
             return false;
         }
     }
@@ -662,7 +722,10 @@ class RealTimeAILearningAdaptationSystem extends EventEmitter {
         this.adaptationRules.clear();
         this.detectedPatterns.clear();
         this.modelAdaptations.clear();
-        console.log('🔌 실시간 AI 학습 및 적응 시스템이 종료되었습니다.');
+        errorLogger.info('🔌 실시간 AI 학습 및 적응 시스템이 종료되었습니다.', {
+            component: 'realTimeAILearningAdaptationSystem',
+            action: 'shutdown',
+        });
     }
 }
 

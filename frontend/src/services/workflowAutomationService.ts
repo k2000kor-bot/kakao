@@ -1,6 +1,6 @@
-import { Project, Chat, Message } from '../types/project';
 import { collaborationService } from './collaborationService';
 import { projectKnowledgeService } from './projectKnowledgeService';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface WorkflowStep {
     id: string;
@@ -12,7 +12,7 @@ export interface WorkflowStep {
     assignee?: string;
     dueDate?: Date;
     completedAt?: Date;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     conditions?: WorkflowCondition[];
     actions?: WorkflowAction[];
 }
@@ -21,7 +21,7 @@ export interface WorkflowCondition {
     id: string;
     type: 'message_count' | 'time_elapsed' | 'user_activity' | 'knowledge_threshold' | 'custom';
     operator: 'equals' | 'greater_than' | 'less_than' | 'contains' | 'not_contains';
-    value: any;
+    value: unknown;
     field?: string;
     description: string;
 }
@@ -30,7 +30,7 @@ export interface WorkflowAction {
     id: string;
     type: 'send_notification' | 'create_task' | 'update_status' | 'trigger_ai_analysis' | 'assign_user' | 'create_reminder' | 'export_data';
     target: string;
-    parameters: any;
+    parameters: Record<string, unknown>;
     description: string;
 }
 
@@ -62,7 +62,7 @@ export interface WorkflowInstance {
     steps: WorkflowStep[];
     startedAt: Date;
     completedAt?: Date;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     history: WorkflowHistoryEntry[];
 }
 
@@ -72,7 +72,7 @@ export interface WorkflowHistoryEntry {
     action: string;
     stepId?: string;
     userId?: string;
-    details: any;
+    details: Record<string, unknown>;
 }
 
 export interface Notification {
@@ -87,10 +87,10 @@ export interface Notification {
     createdAt: Date;
     readAt?: Date;
     actionUrl?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
 }
 
-class WorkflowAutomationService {
+export class WorkflowAutomationService {
     private readonly WORKFLOW_TEMPLATES_KEY = 'workflow_templates';
     private readonly WORKFLOW_INSTANCES_KEY = 'workflow_instances_';
     private readonly NOTIFICATIONS_KEY = 'notifications_';
@@ -208,7 +208,13 @@ class WorkflowAutomationService {
         } catch (error) {
             step.status = 'failed';
             this.updateWorkflowInstance(instance);
-            console.error('워크플로우 단계 실행 실패:', error);
+            const err = toError(error);
+            errorLogger.error('워크플로우 단계 실행 실패', err, {
+                component: 'workflowAutomationService',
+                action: 'executeStep',
+                workflowId: instance.id,
+                stepId: step.id,
+            });
         }
     }
 
@@ -273,14 +279,15 @@ class WorkflowAutomationService {
     private evaluateMessageCount(projectId: string, condition: WorkflowCondition): boolean {
         const chats = collaborationService.getProjectComments(projectId);
         const count = chats.length;
+        const val = Number(condition.value);
 
         switch (condition.operator) {
             case 'equals':
-                return count === condition.value;
+                return count === val;
             case 'greater_than':
-                return count > condition.value;
+                return count > val;
             case 'less_than':
-                return count < condition.value;
+                return count < val;
             default:
                 return true;
         }
@@ -294,11 +301,12 @@ class WorkflowAutomationService {
         const elapsed = Date.now() - startTime.getTime();
         const elapsedHours = elapsed / (1000 * 60 * 60);
 
+        const val = Number(condition.value);
         switch (condition.operator) {
             case 'greater_than':
-                return elapsedHours > condition.value;
+                return elapsedHours > val;
             case 'less_than':
-                return elapsedHours < condition.value;
+                return elapsedHours < val;
             default:
                 return true;
         }
@@ -312,13 +320,14 @@ class WorkflowAutomationService {
             return lastActive > oneDayAgo;
         });
 
+        const val = Number(condition.value);
         switch (condition.operator) {
             case 'equals':
-                return activeUsers.length === condition.value;
+                return activeUsers.length === val;
             case 'greater_than':
-                return activeUsers.length > condition.value;
+                return activeUsers.length > val;
             case 'less_than':
-                return activeUsers.length < condition.value;
+                return activeUsers.length < val;
             default:
                 return true;
         }
@@ -327,14 +336,15 @@ class WorkflowAutomationService {
     private evaluateKnowledgeThreshold(projectId: string, condition: WorkflowCondition): boolean {
         const knowledge = projectKnowledgeService.getProjectKnowledge(projectId);
         const count = knowledge.length;
+        const val = Number(condition.value);
 
         switch (condition.operator) {
             case 'equals':
-                return count === condition.value;
+                return count === val;
             case 'greater_than':
-                return count > condition.value;
+                return count > val;
             case 'less_than':
-                return count < condition.value;
+                return count < val;
             default:
                 return true;
         }
@@ -366,52 +376,87 @@ class WorkflowAutomationService {
     }
 
     // 액션 실행 메서드들
-    private async sendNotification(projectId: string, parameters: any): Promise<void> {
+    private async sendNotification(projectId: string, parameters: Record<string, unknown>): Promise<void> {
         const users = collaborationService.getProjectUsers(projectId);
+        const userId = parameters.userId ?? users[0]?.id;
+        const title = parameters.title ?? '워크플로우 알림';
+        const message = parameters.message ?? '새로운 워크플로우 단계가 시작되었습니다.';
+        const priority = parameters.priority ?? 'medium';
+        const actionUrl = parameters.actionUrl;
         const notification: Notification = {
             id: this.generateId(),
             projectId,
-            userId: parameters.userId || users[0]?.id,
+            userId: String(userId ?? ''),
             type: 'workflow',
-            title: parameters.title || '워크플로우 알림',
-            message: parameters.message || '새로운 워크플로우 단계가 시작되었습니다.',
-            priority: parameters.priority || 'medium',
+            title: String(title),
+            message: String(message),
+            priority: (['low', 'medium', 'high', 'urgent'].includes(String(priority)) ? priority : 'medium') as Notification['priority'],
             isRead: false,
             createdAt: new Date(),
-            actionUrl: parameters.actionUrl
+            actionUrl: typeof actionUrl === 'string' ? actionUrl : undefined
         };
 
         this.addNotification(notification);
     }
 
-    private async createTask(projectId: string, parameters: any): Promise<void> {
+    private async createTask(projectId: string, parameters: Record<string, unknown>): Promise<void> {
         // 태스크 생성 로직 (실제 구현에서는 별도 서비스 필요)
-        console.log('태스크 생성:', parameters);
+        errorLogger.info('태스크 생성', {
+            component: 'workflowAutomationService',
+            action: 'createTask',
+            projectId,
+            parameters,
+        });
     }
 
-    private async updateProjectStatus(projectId: string, parameters: any): Promise<void> {
+    private async updateProjectStatus(projectId: string, parameters: Record<string, unknown>): Promise<void> {
         // 프로젝트 상태 업데이트 로직
-        console.log('프로젝트 상태 업데이트:', parameters);
+        errorLogger.info('프로젝트 상태 업데이트', {
+            component: 'workflowAutomationService',
+            action: 'updateProjectStatus',
+            projectId,
+            parameters,
+        });
     }
 
-    private async triggerAIAnalysis(projectId: string, parameters: any): Promise<void> {
+    private async triggerAIAnalysis(projectId: string, parameters: Record<string, unknown>): Promise<void> {
         // AI 분석 트리거 로직
-        console.log('AI 분석 트리거:', parameters);
+        errorLogger.info('AI 분석 트리거', {
+            component: 'workflowAutomationService',
+            action: 'triggerAIAnalysis',
+            projectId,
+            parameters,
+        });
     }
 
-    private async assignUser(projectId: string, parameters: any): Promise<void> {
+    private async assignUser(projectId: string, parameters: Record<string, unknown>): Promise<void> {
         // 사용자 할당 로직
-        console.log('사용자 할당:', parameters);
+        errorLogger.info('사용자 할당', {
+            component: 'workflowAutomationService',
+            action: 'assignUser',
+            projectId,
+            parameters,
+        });
     }
 
-    private async createReminder(projectId: string, parameters: any): Promise<void> {
+    private async createReminder(projectId: string, parameters: Record<string, unknown>): Promise<void> {
         // 리마인더 생성 로직
-        console.log('리마인더 생성:', parameters);
+        errorLogger.info('리마인더 생성', {
+            component: 'workflowAutomationService',
+            action: 'createReminder',
+            projectId,
+            parameters,
+        });
     }
 
-    private async exportProjectData(projectId: string, parameters: any): Promise<void> {
+    private async exportProjectData(projectId: string, parameters: Record<string, unknown>): Promise<void> {
         // 데이터 내보내기 로직
-        console.log('데이터 내보내기:', parameters);
+        errorLogger.info('데이터 내보내기', {
+            component: 'workflowAutomationService',
+            action: 'exportProjectData',
+            projectId,
+            parameters,
+        });
     }
 
     // 알림 관리
@@ -525,7 +570,7 @@ class WorkflowAutomationService {
                                 type: 'message_count',
                                 operator: 'greater_than',
                                 value: 5,
-                                description: '채팅 메시지가 5개 이상일 때'
+                                description: '대화 메시지가 5개 이상일 때'
                             }
                         ],
                         actions: [

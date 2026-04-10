@@ -7,7 +7,7 @@
 ```typescript
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5001';
+const API_BASE_URL = 'http://localhost:5002';
 
 // Axios 인스턴스 생성
 const api = axios.create({
@@ -136,7 +136,7 @@ import requests
 from typing import Optional, Dict, Any
 
 class CORBUAPIClient:
-    def __init__(self, base_url: str = "http://localhost:5001"):
+    def __init__(self, base_url: str = "http://localhost:5002"):
         self.base_url = base_url
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
@@ -263,7 +263,7 @@ if __name__ == "__main__":
 
 ### 회원가입
 ```bash
-curl -X POST http://localhost:5001/api/auth/register \
+curl -X POST http://localhost:5002/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -275,7 +275,7 @@ curl -X POST http://localhost:5001/api/auth/register \
 
 ### 로그인
 ```bash
-curl -X POST http://localhost:5001/api/auth/login \
+curl -X POST http://localhost:5002/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -285,13 +285,13 @@ curl -X POST http://localhost:5001/api/auth/login \
 
 ### 현재 사용자 정보 조회 (토큰 필요)
 ```bash
-curl http://localhost:5001/api/auth/me \
+curl http://localhost:5002/api/auth/me \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
 ### 프로필 업데이트
 ```bash
-curl -X POST http://localhost:5001/api/update-user-profile \
+curl -X POST http://localhost:5002/api/update-user-profile \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -303,7 +303,7 @@ curl -X POST http://localhost:5001/api/update-user-profile \
 
 ### 헬스 체크
 ```bash
-curl http://localhost:5001/api/health
+curl http://localhost:5002/api/health
 ```
 
 ## React Hook 예제
@@ -312,7 +312,7 @@ curl http://localhost:5001/api/health
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5001';
+const API_BASE_URL = 'http://localhost:5002';
 
 // 인증 Hook
 export function useAuth() {
@@ -393,7 +393,7 @@ async function apiCall<T>(
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   try {
     const token = localStorage.getItem('accessToken');
-    const response = await fetch(`http://localhost:5001${endpoint}`, {
+    const response = await fetch(`http://localhost:5002${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',

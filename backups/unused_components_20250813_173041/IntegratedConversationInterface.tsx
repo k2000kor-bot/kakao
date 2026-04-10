@@ -849,7 +849,7 @@ const IntegratedConversationInterface: React.FC<IntegratedConversationInterfaceP
           <div className="bg-white border-b border-gray-200 p-4">
             <div className="flex items-center space-x-3">
               <FolderIcon className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">CORBU AI</h1>
+              <h1 className="text-xl font-bold text-gray-900">CORBU.AI</h1>
             </div>
             <p className="text-sm text-gray-600 mt-1">프로젝트를 선택하여 시작하세요</p>
           </div>
@@ -1237,7 +1237,7 @@ const IntegratedConversationInterface: React.FC<IntegratedConversationInterfaceP
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <SparklesIcon className="w-16 h-16 mb-4" />
-                <h3 className="text-lg font-medium mb-2">CORBU AI 초기화 중...</h3>
+                <h3 className="text-lg font-medium mb-2">CORBU.AI 초기화 중...</h3>
                 <p className="text-sm text-center max-w-md">
                   백엔드 서버와의 연결을 확인하고 시스템 상태를 로드하고 있습니다.
                 </p>
@@ -1245,7 +1245,7 @@ const IntegratedConversationInterface: React.FC<IntegratedConversationInterfaceP
             ) : messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <SparklesIcon className="w-16 h-16 mb-4" />
-                <h3 className="text-lg font-medium mb-2">CORBU AI와 대화를 시작하세요</h3>
+                <h3 className="text-lg font-medium mb-2">CORBU.AI와 대화를 시작하세요</h3>
                 <p className="text-sm text-center max-w-md">
                   분석, 가이드, 프로젝트 관리 등 다양한 AI 기능을 대화를 통해 이용할 수 있습니다.
                 </p>

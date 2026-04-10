@@ -1,19 +1,21 @@
 import { Message, ChatRoom } from './types';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 // 실제 대화 데이터 파싱 함수
 export const parseKakaoChatData = (content: string): Message[] => {
   const messages: Message[] = [];
   const lines = content.split('\n');
   
-  let currentDate = '';
+  let _currentDate = '';
   let messageId = 0;
   
   for (const line of lines) {
-    if (!line.trim()) continue;
+    if (!coerceTrimmedString(line, '')) continue;
     
     // 날짜 라인 확인 (예: 2025년 6월 24일 오전 9:22)
     if (line.match(/^\d{4}년 \d{1,2}월 \d{1,2}일/)) {
-      currentDate = line.trim();
+      const _currentDate = coerceTrimmedString(line, '');
       continue;
     }
     
@@ -24,9 +26,9 @@ export const parseKakaoChatData = (content: string): Message[] => {
       
       messages.push({
         id: `msg_${messageId++}`,
-        sender: sender.trim(),
-        content: content.trim(),
-        timestamp: timestamp.trim(),
+        sender: coerceTrimmedString(sender, ''),
+        content: coerceTrimmedString(content, ''),
+        timestamp: coerceTrimmedString(timestamp, ''),
         type: 'text'
       });
     }
@@ -35,18 +37,18 @@ export const parseKakaoChatData = (content: string): Message[] => {
   return messages;
 };
 
-// 실제 채팅방 데이터
+// 실제 대화방 데이터
 export const realChatRooms: ChatRoom[] = [
   {
     id: '우성7차_아파트_조합원',
-    name: '[인증]행복한소유☆개포우성7차',
-    description: '개포우성7차 아파트 조합원 대화방',
+    name: '[데모] 샘플 조합원 대화방',
+    description: '데모용 조합원 대화방 (실제 현장명은 등록 데이터에 따름)',
     participantCount: 112,
     messageCount: 6727
   }
 ];
 
-// 실제 채팅 데이터 파싱 함수 개선
+// 실제 대화 데이터 파싱 함수 개선
 export const parseRealChatData = (rawData: string): Message[] => {
   const messages: Message[] = [];
   const lines = rawData.split('\n');
@@ -64,7 +66,7 @@ export const parseRealChatData = (rawData: string): Message[] => {
       
       // 새 메시지 시작
       const timestamp = dateTimeMatch[1];
-      const remainingText = line.substring(timestamp.length).trim();
+      const remainingText = coerceTrimmedString(line.substring(timestamp.length), '');
       
       // 발신자 패턴 매칭 (예: [홍길동] 또는 홍길동:)
       const senderMatch = remainingText.match(/^\[([^\]]+)\]\s*(.*)/) || 
@@ -73,8 +75,8 @@ export const parseRealChatData = (rawData: string): Message[] => {
       if (senderMatch) {
         currentMessage = {
           id: `msg_${messages.length + 1}`,
-          sender: senderMatch[1].trim(),
-          content: senderMatch[2].trim(),
+          sender: coerceTrimmedString(senderMatch[1], ''),
+          content: coerceTrimmedString(senderMatch[2], ''),
           timestamp: timestamp,
           type: 'text'
         };
@@ -88,9 +90,9 @@ export const parseRealChatData = (rawData: string): Message[] => {
           type: 'text'
         };
       }
-    } else if (currentMessage.content && line.trim()) {
+    } else if (currentMessage.content && coerceTrimmedString(line, '')) {
       // 멀티라인 메시지 처리
-      currentMessage.content += '\n' + line.trim();
+      currentMessage.content += '\n' + coerceTrimmedString(line, '');
     }
   }
   
@@ -108,7 +110,7 @@ export const parseSampleChatData = (rawData: string): Message[] => {
   const lines = rawData.split('\n');
   
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = coerceTrimmedString(lines[i], '');
     if (!line) continue;
     
     // [2025년 7월 15일] [12:40] 0035_우성7차 : 메시지 내용
@@ -120,8 +122,8 @@ export const parseSampleChatData = (rawData: string): Message[] => {
       
       messages.push({
         id: `msg_${i + 1}`,
-        sender: sender.trim(),
-        content: content.trim(),
+        sender: coerceTrimmedString(sender, ''),
+        content: coerceTrimmedString(content, ''),
         timestamp: timestamp,
         type: 'text'
       });
@@ -131,7 +133,7 @@ export const parseSampleChatData = (rawData: string): Message[] => {
   return messages;
 };
 
-// 채팅 데이터 분석 함수 추가
+// 대화 데이터 분석 함수 추가
 export const analyzeChatData = (messages: Message[]) => {
   const analysis = {
     totalMessages: messages.length,
@@ -160,8 +162,7 @@ export const analyzeChatData = (messages: Message[]) => {
   
   analysis.topParticipants = Object.entries(participantCounts)
     .map(([sender, count]) => ({ sender, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+    .sort((a, b) => b.count - a.count);
   
   // 키워드 추출 (간단한 버전)
   const commonWords = ['조합', '아파트', '건설', '협의', '회의', '안건', '투표', '결의'];
@@ -171,9 +172,9 @@ export const analyzeChatData = (messages: Message[]) => {
   return analysis;
 };
 
-// 채팅방 ID에 따라 실제 파일 경로 생성
+// 대화방 ID에 따라 실제 파일 경로 생성
 function getChatFilePath(chatRoomId: string): string {
-  // 예시: [인증]행복한소유☆개포우성7차 → chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt
+  // 예시: chat_rooms/<방이름>/<방이름>.txt
   return `/chat_rooms/${chatRoomId}/${chatRoomId}.txt`;
 }
 
@@ -189,7 +190,12 @@ export const loadRealChatData = async (chatRoomId: string): Promise<Message[]> =
     const messages = parseKakaoChatData(rawData);
     return messages;
   } catch (error) {
-    console.error('실제 채팅 데이터 로드 실패:', error);
+    const err = toError(error);
+    errorLogger.error('실제 대화 데이터 로드 실패', err, {
+      component: 'chatDataService',
+      action: 'loadRealChatData',
+      chatRoomId,
+    });
     // 폴백: 빈 배열 반환
     return [];
   }
@@ -200,9 +206,19 @@ export const saveMessagesToDatabase = (messages: Message[], chatRoomId: string):
   try {
     const key = `chat_messages_${chatRoomId}`;
     localStorage.setItem(key, JSON.stringify(messages));
-    console.log(`${messages.length}개의 메시지를 데이터베이스에 저장했습니다.`);
+    errorLogger.info(`${messages.length}개의 메시지를 데이터베이스에 저장했습니다.`, {
+      component: 'chatDataService',
+      action: 'saveMessagesToDatabase',
+      chatRoomId,
+      messageCount: messages.length,
+    });
   } catch (error) {
-    console.error('메시지 저장 실패:', error);
+    const err = toError(error);
+    errorLogger.error('메시지 저장 실패', err, {
+      component: 'chatDataService',
+      action: 'saveMessagesToDatabase',
+      chatRoomId,
+    });
   }
 };
 
@@ -213,11 +229,21 @@ export const loadMessagesFromDatabase = (chatRoomId: string): Message[] => {
     const data = localStorage.getItem(key);
     if (data) {
       const messages = JSON.parse(data) as Message[];
-      console.log(`데이터베이스에서 ${messages.length}개의 메시지를 로드했습니다.`);
+      errorLogger.info(`데이터베이스에서 ${messages.length}개의 메시지를 로드했습니다.`, {
+        component: 'chatDataService',
+        action: 'loadMessagesFromDatabase',
+        chatRoomId,
+        messageCount: messages.length,
+      });
       return messages;
     }
   } catch (error) {
-    console.error('데이터베이스에서 메시지 로드 실패:', error);
+    const err = toError(error);
+    errorLogger.error('데이터베이스에서 메시지 로드 실패', err, {
+      component: 'chatDataService',
+      action: 'loadMessagesFromDatabase',
+      chatRoomId,
+    });
   }
   return [];
 };
@@ -235,7 +261,12 @@ export const checkDatabaseStatus = (chatRoomId: string): { hasData: boolean; mes
       };
     }
   } catch (error) {
-    console.error('데이터베이스 상태 확인 실패:', error);
+    const err = toError(error);
+    errorLogger.error('데이터베이스 상태 확인 실패', err, {
+      component: 'chatDataService',
+      action: 'checkDatabaseStatus',
+      chatRoomId,
+    });
   }
   return {
     hasData: false,
@@ -247,14 +278,19 @@ export const checkDatabaseStatus = (chatRoomId: string): { hasData: boolean; mes
 export const loadChatData = async (chatRoomId: string): Promise<Message[]> => {
   // 데이터베이스에서 먼저 확인
   const dbStatus = checkDatabaseStatus(chatRoomId);
-  console.log('데이터베이스 상태:', dbStatus);
+  errorLogger.info('데이터베이스 상태 확인', {
+    component: 'chatDataService',
+    action: 'loadChatData',
+    chatRoomId,
+    dbStatus,
+  });
   
   if (dbStatus.hasData) {
     // 데이터베이스에 데이터가 있으면 로드
     return loadMessagesFromDatabase(chatRoomId);
   }
   
-  // 실제 채팅방인지 확인
+  // 실제 대화방인지 확인
   if (chatRoomId === '우성7차_아파트_조합원') {
     const messages = await loadRealChatData(chatRoomId);
     

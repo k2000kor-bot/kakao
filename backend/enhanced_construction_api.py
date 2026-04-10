@@ -556,6 +556,8 @@ async def get_system_status():
 
 
 if __name__ == "__main__":
+    import os
+    _p = int(os.environ.get("ENHANCED_CONSTRUCTION_API_PORT", os.environ.get("PORT", "8002")))
     print("🚀 Enhanced Construction Company Selection API 시작")
     print("📊 고도화된 메시지 생성 시스템 활성화")
     print("🎯 지능형 컨텍스트 분석 준비 완료")
@@ -565,6 +567,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "enhanced_construction_api:app",
         host="0.0.0.0",
-        port=8002,
+        port=_p,
         reload=True
     ) 

@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { DEFAULT_CHAT_RESPONSE_STYLE, type ChatResponseStyleUi } from '../utils/modernChatUrlStyle';
 
 export interface AIInsight {
   id: string;
@@ -34,7 +35,7 @@ export interface UserPattern {
 }
 
 export interface UserPreferences {
-  responseStyle: 'concise' | 'detailed' | 'balanced';
+  responseStyle: ChatResponseStyleUi;
   tone: 'formal' | 'casual' | 'professional';
   detailLevel: 'basic' | 'intermediate' | 'advanced';
   topics: string[];
@@ -75,7 +76,7 @@ class UltraAdvancedAIService extends EventEmitter {
   private learningData: Map<string, AdaptiveLearningData> = new Map();
   private workflows: Map<string, IntelligentWorkflow> = new Map();
   private insights: AIInsight[] = [];
-  private analysisCache: Map<string, any> = new Map();
+  private analysisCache: Map<string, unknown> = new Map();
 
   /**
    * 초고도화 분석 수행
@@ -85,7 +86,7 @@ class UltraAdvancedAIService extends EventEmitter {
     context: {
       sessionId: string;
       userId: string;
-      messageHistory: any[];
+      messageHistory: unknown[];
       metadata?: Record<string, unknown>;
     }
   ): Promise<{
@@ -149,8 +150,8 @@ class UltraAdvancedAIService extends EventEmitter {
    */
   async updateLearningData(
     userId: string,
-    analysis: any,
-    input: string
+    analysis: { intent: string; entities: string[]; sentiment?: { score: number }; complexity?: number },
+    _input: string
   ): Promise<void> {
     let learningData = this.learningData.get(userId);
 
@@ -159,7 +160,7 @@ class UltraAdvancedAIService extends EventEmitter {
         userId,
         patterns: [],
         preferences: {
-          responseStyle: 'balanced',
+          responseStyle: DEFAULT_CHAT_RESPONSE_STYLE,
           tone: 'professional',
           detailLevel: 'intermediate',
           topics: [],
@@ -193,9 +194,9 @@ class UltraAdvancedAIService extends EventEmitter {
     }
 
     // 선호도 업데이트
-    if (analysis.sentiment.score > 0.7) {
+    if (analysis.sentiment && analysis.sentiment.score > 0.7) {
       learningData.preferences.responseStyle = 'detailed';
-    } else if (analysis.complexity < 0.3) {
+    } else if (typeof analysis.complexity === 'number' && analysis.complexity < 0.3) {
       learningData.preferences.responseStyle = 'concise';
     }
 
@@ -236,13 +237,13 @@ class UltraAdvancedAIService extends EventEmitter {
   async executeWorkflow(
     workflowId: string,
     context: Record<string, unknown>
-  ): Promise<{ success: boolean; results: any[]; errors: Error[] }> {
+  ): Promise<{ success: boolean; results: unknown[]; errors: Error[] }> {
     const workflow = this.workflows.get(workflowId);
     if (!workflow) {
       throw new Error(`Workflow ${workflowId} not found`);
     }
 
-    const results: any[] = [];
+    const results: unknown[] = [];
     const errors: Error[] = [];
 
     for (const step of workflow.steps) {
@@ -281,13 +282,16 @@ class UltraAdvancedAIService extends EventEmitter {
    * 고급 인사이트 생성
    */
   private async generateAdvancedInsights(
-    analysis: any,
-    context: any
+    analysis: Record<string, unknown>,
+    _context: Record<string, unknown>
   ): Promise<AIInsight[]> {
     const insights: AIInsight[] = [];
+    const complexity = Number(analysis.complexity) ?? 0;
+    const contextRelevance = Number(analysis.contextRelevance) ?? 0;
+    const urgency = analysis.urgency as string | undefined;
 
     // 패턴 인사이트
-    if (analysis.complexity > 0.7) {
+    if (complexity > 0.7) {
       insights.push({
         id: `insight-${Date.now()}-1`,
         type: 'pattern',
@@ -297,12 +301,12 @@ class UltraAdvancedAIService extends EventEmitter {
         priority: 'medium',
         timestamp: new Date(),
         actionable: true,
-        metadata: { complexity: analysis.complexity },
+        metadata: { complexity },
       });
     }
 
     // 트렌드 인사이트
-    if (analysis.contextRelevance > 0.8) {
+    if (contextRelevance > 0.8) {
       insights.push({
         id: `insight-${Date.now()}-2`,
         type: 'trend',
@@ -316,7 +320,7 @@ class UltraAdvancedAIService extends EventEmitter {
     }
 
     // 최적화 인사이트
-    if (analysis.urgency === 'high') {
+    if (urgency === 'high') {
       insights.push({
         id: `insight-${Date.now()}-3`,
         type: 'optimization',
@@ -336,17 +340,19 @@ class UltraAdvancedAIService extends EventEmitter {
    * 추천사항 생성
    */
   private async generateRecommendations(
-    analysis: any,
+    analysis: Record<string, unknown>,
     insights: AIInsight[],
-    context: any
+    _context: Record<string, unknown>
   ): Promise<string[]> {
     const recommendations: string[] = [];
+    const complexity = Number(analysis.complexity) ?? 0;
+    const urgency = analysis.urgency as string | undefined;
 
-    if (analysis.complexity > 0.7) {
+    if (complexity > 0.7) {
       recommendations.push('더 상세한 설명이 필요할 수 있습니다.');
     }
 
-    if (analysis.urgency === 'high') {
+    if (urgency === 'high') {
       recommendations.push('즉시 응답을 제공하는 것이 좋습니다.');
     }
 
@@ -361,8 +367,8 @@ class UltraAdvancedAIService extends EventEmitter {
    * 액션 예측
    */
   private async predictActions(
-    analysis: any,
-    context: any
+    analysis: { intent: string; urgency?: string },
+    _context: Record<string, unknown>
   ): Promise<Array<{ action: string; probability: number }>> {
     const actions: Array<{ action: string; probability: number }> = [];
 
@@ -382,7 +388,7 @@ class UltraAdvancedAIService extends EventEmitter {
   }
 
   // 헬퍼 메서드들
-  private async analyzeIntent(input: string, context: any): Promise<string> {
+  private async analyzeIntent(input: string, _context: Record<string, unknown>): Promise<string> {
     // 의도 분석 로직
     if (input.includes('?')) return 'question';
     if (input.includes('해줘') || input.includes('해주세요')) return 'request';
@@ -426,30 +432,33 @@ class UltraAdvancedAIService extends EventEmitter {
     return 0.3;
   }
 
-  private async detectUrgency(input: string, context: any): Promise<'low' | 'medium' | 'high'> {
+  private async detectUrgency(input: string, _context: Record<string, unknown>): Promise<'low' | 'medium' | 'high'> {
     const urgentKeywords = ['급해', '빨리', '즉시', '긴급', '당장'];
     if (urgentKeywords.some(k => input.includes(k))) return 'high';
     if (input.includes('가능한')) return 'medium';
     return 'low';
   }
 
-  private async calculateContextRelevance(input: string, context: any): Promise<number> {
+  private async calculateContextRelevance(input: string, context: Record<string, unknown>): Promise<number> {
     // 컨텍스트 관련성 계산
-    if (context.messageHistory && context.messageHistory.length > 0) {
-      const lastMessage = context.messageHistory[context.messageHistory.length - 1];
-      const commonWords = input.split(' ').filter(w => 
-        lastMessage.text && lastMessage.text.includes(w)
+    const messageHistory = context.messageHistory as Array<{ text?: string }> | undefined;
+    if (messageHistory && messageHistory.length > 0) {
+      const lastMessage = messageHistory[messageHistory.length - 1];
+      const commonWords = input.split(' ').filter(w =>
+        lastMessage?.text?.includes(w)
       );
       return Math.min(1.0, commonWords.length / 5);
     }
     return 0.5;
   }
 
-  private calculateConfidence(analysis: any, insights: AIInsight[]): number {
+  private calculateConfidence(analysis: Record<string, unknown>, insights: AIInsight[]): number {
     let confidence = 0.5;
-    
-    if (analysis.entities.length > 0) confidence += 0.1;
-    if (analysis.contextRelevance > 0.7) confidence += 0.15;
+    const entities = analysis.entities as unknown[] | undefined;
+    const contextRelevance = Number(analysis.contextRelevance) ?? 0;
+
+    if (entities && entities.length > 0) confidence += 0.1;
+    if (contextRelevance > 0.7) confidence += 0.15;
     if (insights.length > 0) confidence += 0.1;
     
     return Math.min(1.0, confidence);
@@ -462,7 +471,7 @@ class UltraAdvancedAIService extends EventEmitter {
     return 'feedback';
   }
 
-  private async executeStep(step: WorkflowStep, context: Record<string, unknown>): Promise<any> {
+  private async executeStep(step: WorkflowStep, context: Record<string, unknown>): Promise<Record<string, unknown>> {
     switch (step.type) {
       case 'analysis':
         return { type: 'analysis', result: 'completed' };
@@ -477,14 +486,9 @@ class UltraAdvancedAIService extends EventEmitter {
     }
   }
 
-  private evaluateCondition(condition: string, context: Record<string, unknown>): boolean {
-    // 간단한 조건 평가
-    try {
-      // 실제로는 더 복잡한 평가 로직 필요
-      return true;
-    } catch {
-      return false;
-    }
+  private evaluateCondition(_condition: string, _context: Record<string, unknown>): boolean {
+    // 간단한 조건 평가 (실제로는 더 복잡한 평가 로직 필요)
+    return true;
   }
 
   /**

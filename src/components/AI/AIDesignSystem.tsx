@@ -1,51 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Palette,
     Layout,
     Type,
-    Image,
     Sparkles,
     Download,
-    Copy,
     RefreshCw,
     Settings,
-    Eye,
-    EyeOff,
     Grid,
-    Layers,
-    CheckCircle,
-    AlertTriangle,
-    Clock,
     Star,
-    Heart,
-    Zap,
-    ArrowRight,
     Plus,
     Trash2,
     Edit,
     Share2,
-    History,
-    TrendingUp,
     BarChart,
-    Target,
     Palette as PaletteIcon,
-    Droplets,
-    Sun,
-    Moon,
-    Monitor,
-    Smartphone,
-    Tablet,
-    Globe,
-    Lock,
-    Unlock,
-    Save,
-    Upload,
-    Search,
-    Filter,
-    SortAsc,
-    SortDesc
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getStatusColor } from '../../styles/themeColors';
+import { coerceTrimmedString } from '../../utils/chatInputUtils';
 
 interface DesignSystem {
     id: string;
@@ -162,14 +135,14 @@ interface ComponentVariant {
     description: string;
     code: string;
     preview: string;
-    props: Record<string, any>;
+    props: Record<string, unknown>;
 }
 
 interface ComponentProp {
     name: string;
     type: string;
     required: boolean;
-    default: any;
+    default: unknown;
     description: string;
 }
 
@@ -198,22 +171,22 @@ interface AIDesignSystemProps {
     onSystemCreate?: (system: DesignSystem) => void;
     onSystemUpdate?: (systemId: string, updates: Partial<DesignSystem>) => void;
     onSystemDelete?: (systemId: string) => void;
-    onComponentGenerate?: (prompt: string, context: any) => void;
-    onColorGenerate?: (prompt: string, context: any) => void;
-    onTypographyGenerate?: (prompt: string, context: any) => void;
+    onComponentGenerate?: (prompt: string, context: Record<string, unknown>) => void;
+    onColorGenerate?: (prompt: string, context: Record<string, unknown>) => void;
+    onTypographyGenerate?: (prompt: string, context: Record<string, unknown>) => void;
     onExportSystem?: (systemId: string, format: string) => void;
-    onShareSystem?: (systemId: string, shareOptions: any) => void;
+    onShareSystem?: (systemId: string, shareOptions: Record<string, unknown>) => void;
 }
 
 const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
     onSystemCreate,
-    onSystemUpdate,
-    onSystemDelete,
-    onComponentGenerate,
-    onColorGenerate,
-    onTypographyGenerate,
-    onExportSystem,
-    onShareSystem
+    onSystemUpdate: _onSystemUpdate,
+    onSystemDelete: _onSystemDelete,
+    onComponentGenerate: _onComponentGenerate,
+    onColorGenerate: _onColorGenerate,
+    onTypographyGenerate: _onTypographyGenerate,
+    onExportSystem: _onExportSystem,
+    onShareSystem: _onShareSystem
 }) => {
     const [designSystems, setDesignSystems] = useState<DesignSystem[]>([]);
     const [selectedSystem, setSelectedSystem] = useState<DesignSystem | null>(null);
@@ -222,9 +195,6 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
     const [selectedCategory, setSelectedCategory] = useState<'component' | 'color' | 'typography'>('component');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
-    const [selectedComponent, setSelectedComponent] = useState<Component | null>(null);
-    const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
-
     // Mock design systems
     useEffect(() => {
         const mockSystems: DesignSystem[] = [
@@ -463,7 +433,8 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
     }, []);
 
     const handleGenerateDesign = async () => {
-        if (!generationPrompt.trim()) return;
+        const trimmedPrompt = coerceTrimmedString(generationPrompt, '');
+        if (!trimmedPrompt) return;
 
         setIsGenerating(true);
         setGenerationProgress(0);
@@ -477,7 +448,7 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
         const newSystem: DesignSystem = {
             id: `system-${Date.now()}`,
             name: `AI 생성 디자인 시스템 ${designSystems.length + 1}`,
-            description: generationPrompt,
+            description: trimmedPrompt,
             theme: 'light',
             version: '1.0.0',
             status: 'draft',
@@ -499,42 +470,43 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
         onSystemCreate?.(newSystem);
     };
 
-    const getAccessibilityColor = (wcag: string) => {
-        switch (wcag) {
-            case 'AAA': return 'text-green-600 bg-green-50';
-            case 'AA': return 'text-blue-600 bg-blue-50';
-            case 'fail': return 'text-red-600 bg-red-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
+    const getAccessibilityStyle = (wcag: string) => {
+        const colorMap: Record<string, string> = {
+            AAA: getStatusColor('success'),
+            AA: 'var(--accent-info)',
+            fail: getStatusColor('error'),
+        };
+        return { color: colorMap[wcag] ?? 'var(--text-tertiary)', backgroundColor: 'var(--bg-tertiary)' };
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'published': return 'text-green-600 bg-green-50';
-            case 'draft': return 'text-yellow-600 bg-yellow-50';
-            case 'archived': return 'text-gray-600 bg-gray-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
+    const getStatusStyle = (status: string) => {
+        const colorMap: Record<string, string> = {
+            published: getStatusColor('success'),
+            draft: getStatusColor('warning'),
+            archived: 'var(--text-tertiary)',
+        };
+        return { color: colorMap[status] ?? 'var(--text-tertiary)', backgroundColor: 'var(--bg-tertiary)' };
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
+        <div className="rounded-lg shadow-sm border h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
             {/* Header */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b" style={{ borderColor: 'var(--bg-tertiary)' }}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                            <Palette className="h-5 w-5 text-purple-600" />
+                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--accent-secondary-muted)' }}>
+                            <Palette className="h-5 w-5" style={{ color: 'var(--accent-secondary)' }} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-900">AI 디자인 시스템</h2>
-                            <p className="text-sm text-gray-500">AI가 디자인 시스템을 생성하고 관리합니다</p>
+                            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>AI 디자인 시스템</h2>
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>AI가 디자인 시스템을 생성하고 관리합니다</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
                         <button
                             onClick={() => setActiveTab('generator')}
-                            className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            className="flex items-center space-x-2 px-3 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+                            style={{ backgroundColor: 'var(--accent-secondary)' }}
                         >
                             <Plus className="h-4 w-4" />
                             <span>새 디자인 시스템</span>
@@ -543,8 +515,8 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                 </div>
 
                 {/* Tabs */}
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mt-4">
-                    {[
+                <div className="flex space-x-1 p-1 rounded-lg mt-4" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                    {([
                         { id: 'systems', label: '시스템', icon: Layout },
                         { id: 'colors', label: '색상', icon: PaletteIcon },
                         { id: 'typography', label: '타이포그래피', icon: Type },
@@ -552,16 +524,19 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                         { id: 'generator', label: '생성기', icon: Sparkles },
                         { id: 'analytics', label: '분석', icon: BarChart },
                         { id: 'settings', label: '설정', icon: Settings }
-                    ].map((tab) => {
+                    ] as const).map((tab) => {
                         const IconComponent = tab.icon;
+                        const isActive = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id
-                                    ? 'bg-white text-purple-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                onClick={() => setActiveTab(tab.id)}
+                                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                                style={{
+                                    backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
+                                    color: isActive ? 'var(--accent-secondary)' : 'var(--text-secondary)',
+                                    boxShadow: isActive ? 'var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05))' : undefined,
+                                }}
                             >
                                 <IconComponent className="h-4 w-4" />
                                 <span>{tab.label}</span>
@@ -588,46 +563,47 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                                         key={system.id}
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                        className="rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer border"
+                                        style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}
                                         onClick={() => setSelectedSystem(system)}
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-purple-100 rounded-lg">
-                                                    <Palette className="h-5 w-5 text-purple-600" />
+                                                <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--accent-secondary-muted)' }}>
+                                                    <Palette className="h-5 w-5" style={{ color: 'var(--accent-secondary)' }} />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">{system.name}</h3>
-                                                    <p className="text-sm text-gray-500">{system.description}</p>
+                                                    <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{system.name}</h3>
+                                                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{system.description}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(system.status)}`}>
+                                                <span className="px-2 py-1 text-xs font-medium rounded-full" style={getStatusStyle(system.status)}>
                                                     {system.status}
                                                 </span>
-                                                <span className="text-xs text-gray-500">v{system.version}</span>
+                                                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>v{system.version}</span>
                                             </div>
                                         </div>
 
                                         <div className="mt-3 space-y-2">
-                                            <div className="flex items-center justify-between text-sm text-gray-500">
+                                            <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>프로젝트: {system.usage.projects}</span>
                                                 <span>컴포넌트: {system.usage.components}</span>
                                                 <span>다운로드: {system.usage.downloads}</span>
                                             </div>
 
                                             <div className="flex items-center space-x-2">
-                                                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                    <Edit className="h-4 w-4 text-gray-500" />
+                                                <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                                                    <Edit className="h-4 w-4" />
                                                 </button>
-                                                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                    <Share2 className="h-4 w-4 text-gray-500" />
+                                                <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                                                    <Share2 className="h-4 w-4" />
                                                 </button>
-                                                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                    <Download className="h-4 w-4 text-gray-500" />
+                                                <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                                                    <Download className="h-4 w-4" />
                                                 </button>
-                                                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                <button className="p-1 rounded transition-colors hover:opacity-80" style={{ color: 'var(--accent-error)' }}>
+                                                    <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         </div>
@@ -647,33 +623,33 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                         >
                             <div className="space-y-6">
                                 {/* Primary Colors */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Primary Colors</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Primary Colors</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {selectedSystem.colors.primary.map((color, index) => (
-                                            <div key={index} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={index} className="rounded-lg p-4 border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                 <div className="flex items-center space-x-3 mb-3">
                                                     <div
-                                                        className="w-12 h-12 rounded-lg border border-gray-200"
-                                                        style={{ backgroundColor: color.hex }}
+                                                        className="w-12 h-12 rounded-lg border"
+                                                        style={{ backgroundColor: color.hex, borderColor: 'var(--bg-tertiary)' }}
                                                     />
                                                     <div className="flex-1">
-                                                        <h4 className="font-medium text-gray-900">{color.name}</h4>
-                                                        <p className="text-sm text-gray-500">{color.hex}</p>
+                                                        <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>{color.name}</h4>
+                                                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{color.hex}</p>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2 text-sm">
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">RGB:</span>
-                                                        <span className="font-mono">{color.rgb}</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>RGB:</span>
+                                                        <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{color.rgb}</span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">HSL:</span>
-                                                        <span className="font-mono">{color.hsl}</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>HSL:</span>
+                                                        <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{color.hsl}</span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">WCAG:</span>
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAccessibilityColor(color.accessibility.wcag)}`}>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>WCAG:</span>
+                                                        <span className="px-2 py-1 text-xs font-medium rounded-full" style={getAccessibilityStyle(color.accessibility.wcag)}>
                                                             {color.accessibility.wcag}
                                                         </span>
                                                     </div>
@@ -684,25 +660,25 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                                 </div>
 
                                 {/* Semantic Colors */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Semantic Colors</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Semantic Colors</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                         {Object.entries(selectedSystem.colors.semantic).map(([category, colors]) => (
                                             <div key={category} className="space-y-3">
-                                                <h4 className="font-medium text-gray-900 capitalize">{category}</h4>
+                                                <h4 className="font-medium capitalize" style={{ color: 'var(--text-primary)' }}>{category}</h4>
                                                 {colors.map((color, index) => (
-                                                    <div key={index} className="border border-gray-200 rounded-lg p-3">
+                                                    <div key={index} className="rounded-lg p-3 border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                         <div className="flex items-center space-x-2 mb-2">
                                                             <div
-                                                                className="w-8 h-8 rounded border border-gray-200"
-                                                                style={{ backgroundColor: color.hex }}
+                                                                className="w-8 h-8 rounded border"
+                                                                style={{ backgroundColor: color.hex, borderColor: 'var(--bg-tertiary)' }}
                                                             />
                                                             <div className="flex-1">
-                                                                <p className="text-sm font-medium">{color.name}</p>
-                                                                <p className="text-xs text-gray-500">{color.hex}</p>
+                                                                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{color.name}</p>
+                                                                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{color.hex}</p>
                                                             </div>
                                                         </div>
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAccessibilityColor(color.accessibility.wcag)}`}>
+                                                        <span className="px-2 py-1 text-xs font-medium rounded-full" style={getAccessibilityStyle(color.accessibility.wcag)}>
                                                             {color.accessibility.wcag}
                                                         </span>
                                                     </div>
@@ -713,26 +689,26 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                                 </div>
 
                                 {/* Gradients */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Gradients</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Gradients</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {selectedSystem.colors.gradients.map((gradient, index) => (
-                                            <div key={index} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={index} className="rounded-lg p-4 border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                 <div
                                                     className="w-full h-20 rounded-lg mb-3"
                                                     style={{
                                                         background: `linear-gradient(${gradient.angle}deg, ${gradient.colors.join(', ')})`
                                                     }}
                                                 />
-                                                <h4 className="font-medium text-gray-900 mb-2">{gradient.name}</h4>
+                                                <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>{gradient.name}</h4>
                                                 <div className="space-y-1 text-sm">
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Direction:</span>
-                                                        <span className="capitalize">{gradient.direction}</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Direction:</span>
+                                                        <span className="capitalize" style={{ color: 'var(--text-primary)' }}>{gradient.direction}</span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Angle:</span>
-                                                        <span>{gradient.angle}°</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Angle:</span>
+                                                        <span style={{ color: 'var(--text-primary)' }}>{gradient.angle}°</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -753,25 +729,25 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                         >
                             <div className="space-y-6">
                                 {/* Font Families */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Font Families</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Font Families</h3>
                                     <div className="space-y-4">
                                         {selectedSystem.typography.fonts.map((font, index) => (
-                                            <div key={index} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={index} className="rounded-lg p-4 border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                 <div className="flex items-center justify-between mb-3">
-                                                    <h4 className="font-medium text-gray-900">{font.name}</h4>
-                                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 capitalize">
+                                                    <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>{font.name}</h4>
+                                                    <span className="px-2 py-1 text-xs font-medium rounded-full capitalize" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
                                                         {font.category}
                                                     </span>
                                                 </div>
                                                 <div className="space-y-2 text-sm">
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Category:</span>
-                                                        <span className="capitalize">{font.category}</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Category:</span>
+                                                        <span className="capitalize" style={{ color: 'var(--text-primary)' }}>{font.category}</span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Fallback:</span>
-                                                        <span className="font-mono">{font.fallback.join(', ')}</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Fallback:</span>
+                                                        <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{font.fallback.join(', ')}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -780,15 +756,16 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                                 </div>
 
                                 {/* Typography Scale */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Typography Scale</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Typography Scale</h3>
                                     <div className="space-y-4">
                                         {selectedSystem.typography.scales.map((scale, index) => (
-                                            <div key={index} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={index} className="rounded-lg p-4 border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                 <div className="flex items-center justify-between mb-3">
                                                     <h4
-                                                        className="font-medium text-gray-900"
+                                                        className="font-medium"
                                                         style={{
+                                                            color: 'var(--text-primary)',
                                                             fontSize: scale.size,
                                                             lineHeight: scale.lineHeight,
                                                             fontWeight: scale.weight
@@ -799,16 +776,16 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                                                 </div>
                                                 <div className="space-y-2 text-sm">
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Size:</span>
-                                                        <span className="font-mono">{scale.size}</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Size:</span>
+                                                        <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{scale.size}</span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Line Height:</span>
-                                                        <span className="font-mono">{scale.lineHeight}</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Line Height:</span>
+                                                        <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{scale.lineHeight}</span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Weight:</span>
-                                                        <span className="font-mono">{scale.weight}</span>
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Weight:</span>
+                                                        <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{scale.weight}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -830,26 +807,26 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                             <div className="space-y-6">
                                 {/* Component Categories */}
                                 {Object.entries(selectedSystem.components).map(([category, components]) => (
-                                    <div key={category} className="bg-white border border-gray-200 rounded-lg p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 capitalize">{category}</h3>
+                                    <div key={category} className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                        <h3 className="text-lg font-semibold mb-4 capitalize" style={{ color: 'var(--text-primary)' }}>{category}</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {components.map((component: any) => (
-                                                <div key={component.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
+                                            {components.map((component: Component) => (
+                                                <div key={component.id} className="rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer border" style={{ borderColor: 'var(--bg-tertiary)' }}>
                                                     <div className="flex items-center justify-between mb-3">
-                                                        <h4 className="font-medium text-gray-900">{component.name}</h4>
+                                                        <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>{component.name}</h4>
                                                         <div className="flex items-center space-x-1">
-                                                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                                                            <span className="text-sm text-gray-600">{component.rating}</span>
+                                                            <Star className="h-4 w-4 fill-current" style={{ color: 'var(--accent-warning)' }} />
+                                                            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{component.rating}</span>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-2 text-sm">
                                                         <div className="flex justify-between">
-                                                            <span className="text-gray-500">Usage:</span>
-                                                            <span>{component.usage} times</span>
+                                                            <span style={{ color: 'var(--text-secondary)' }}>Usage:</span>
+                                                            <span style={{ color: 'var(--text-primary)' }}>{component.usage} times</span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span className="text-gray-500">Variants:</span>
-                                                            <span>{component.variants.length}</span>
+                                                            <span style={{ color: 'var(--text-secondary)' }}>Variants:</span>
+                                                            <span style={{ color: 'var(--text-primary)' }}>{component.variants.length}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -871,38 +848,42 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                         >
                             <div className="max-w-4xl mx-auto space-y-6">
                                 {/* Generation Type Selection */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">생성 유형 선택</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>생성 유형 선택</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {[
+                                        {([
                                             { id: 'component', label: '컴포넌트', icon: Grid, description: 'UI 컴포넌트 생성' },
                                             { id: 'color', label: '색상 팔레트', icon: PaletteIcon, description: '색상 조합 생성' },
                                             { id: 'typography', label: '타이포그래피', icon: Type, description: '폰트 시스템 생성' }
-                                        ].map((type) => (
-                                            <button
-                                                key={type.id}
-                                                onClick={() => setSelectedCategory(type.id as any)}
-                                                className={`p-4 border rounded-lg text-left transition-colors ${selectedCategory === type.id
-                                                    ? 'border-purple-500 bg-purple-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center space-x-3 mb-2">
-                                                    <type.icon className="h-6 w-6 text-purple-600" />
-                                                    <span className="font-medium text-gray-900">{type.label}</span>
-                                                </div>
-                                                <p className="text-sm text-gray-600">{type.description}</p>
-                                            </button>
-                                        ))}
+                                        ] as const).map((type) => {
+                                            const isSelected = selectedCategory === type.id;
+                                            return (
+                                                <button
+                                                    key={type.id}
+                                                    onClick={() => setSelectedCategory(type.id)}
+                                                    className="p-4 border rounded-lg text-left transition-colors"
+                                                    style={{
+                                                        borderColor: isSelected ? 'var(--accent-secondary)' : 'var(--bg-tertiary)',
+                                                        backgroundColor: isSelected ? 'var(--accent-secondary-muted)' : 'transparent',
+                                                    }}
+                                                >
+                                                    <div className="flex items-center space-x-3 mb-2">
+                                                        <type.icon className="h-6 w-6" style={{ color: 'var(--accent-secondary)' }} />
+                                                        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{type.label}</span>
+                                                    </div>
+                                                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{type.description}</p>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
                                 {/* Generation Prompt */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">디자인 요청</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>디자인 요청</h3>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                                                 원하는 디자인을 설명하세요
                                             </label>
                                             <textarea
@@ -913,14 +894,16 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                                                         selectedCategory === 'color' ? '예: 브랜드에 맞는 색상 팔레트를 만들어주세요. 파란색 계열로 전문적이고 신뢰감 있는 느낌이어야 합니다.' :
                                                             '예: 가독성이 좋은 타이포그래피 시스템을 만들어주세요. 헤딩과 본문 텍스트에 적합한 폰트 조합이어야 합니다.'
                                                 }
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                                className="w-full p-3 rounded-lg border focus:ring-2 focus:border-transparent resize-none"
+                                                style={{ borderColor: 'var(--bg-tertiary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                                                 rows={6}
                                             />
                                         </div>
                                         <button
-                                            onClick={handleGenerateDesign}
-                                            disabled={!generationPrompt.trim() || isGenerating}
-                                            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={() => void handleGenerateDesign()}
+                                            disabled={!coerceTrimmedString(generationPrompt, '') || isGenerating}
+                                            className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                                            style={{ backgroundColor: 'var(--accent-secondary)' }}
                                         >
                                             {isGenerating ? (
                                                 <>
@@ -939,16 +922,16 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
 
                                 {/* Generation Progress */}
                                 {isGenerating && (
-                                    <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">생성 진행률</h3>
+                                    <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                        <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>생성 진행률</h3>
                                         <div className="space-y-4">
-                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                                                 <div
-                                                    className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                                                    style={{ width: `${generationProgress}%` }}
+                                                    className="h-2 rounded-full transition-all duration-300"
+                                                    style={{ width: `${generationProgress}%`, backgroundColor: 'var(--accent-secondary)' }}
                                                 />
                                             </div>
-                                            <div className="flex items-center justify-between text-sm text-gray-600">
+                                            <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                 <span>AI가 디자인을 분석하고 생성하고 있습니다...</span>
                                                 <span>{generationProgress}%</span>
                                             </div>
@@ -970,48 +953,48 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                             <div className="space-y-6">
                                 {/* Usage Metrics */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">프로젝트</p>
-                                                <p className="text-2xl font-bold text-blue-600">
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>프로젝트</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-info)' }}>
                                                     {selectedSystem.usage.projects}
                                                 </p>
                                             </div>
-                                            <Layout className="h-8 w-8 text-blue-600" />
+                                            <Layout className="h-8 w-8" style={{ color: 'var(--accent-info)' }} />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">컴포넌트</p>
-                                                <p className="text-2xl font-bold text-green-600">
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>컴포넌트</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-success)' }}>
                                                     {selectedSystem.usage.components}
                                                 </p>
                                             </div>
-                                            <Grid className="h-8 w-8 text-green-600" />
+                                            <Grid className="h-8 w-8" style={{ color: 'var(--accent-success)' }} />
                                         </div>
                                     </div>
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-gray-500">다운로드</p>
-                                                <p className="text-2xl font-bold text-purple-600">
+                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>다운로드</p>
+                                                <p className="text-2xl font-bold" style={{ color: 'var(--accent-secondary)' }}>
                                                     {selectedSystem.usage.downloads}
                                                 </p>
                                             </div>
-                                            <Download className="h-8 w-8 text-purple-600" />
+                                            <Download className="h-8 w-8" style={{ color: 'var(--accent-secondary)' }} />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Color Analytics */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">색상 분석</h3>
+                                <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>색상 분석</h3>
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">총 색상 수</span>
-                                            <span className="text-sm text-gray-600">
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>총 색상 수</span>
+                                            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                                 {selectedSystem.colors.primary.length +
                                                     selectedSystem.colors.secondary.length +
                                                     selectedSystem.colors.neutral.length +
@@ -1019,12 +1002,12 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">WCAG AA 준수</span>
-                                            <span className="text-sm text-green-600">100%</span>
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>WCAG AA 준수</span>
+                                            <span className="text-sm" style={{ color: 'var(--accent-success)' }}>100%</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700">그라디언트</span>
-                                            <span className="text-sm text-gray-600">{selectedSystem.colors.gradients.length}개</span>
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>그라디언트</span>
+                                            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{selectedSystem.colors.gradients.length}개</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1040,25 +1023,25 @@ const AIDesignSystem: React.FC<AIDesignSystemProps> = ({
                             exit={{ opacity: 0, y: -20 }}
                             className="h-full overflow-y-auto p-4"
                         >
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">디자인 시스템 설정</h3>
+                            <div className="rounded-lg p-6 border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--bg-tertiary)' }}>
+                                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>디자인 시스템 설정</h3>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">자동 색상 생성</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+                                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>자동 색상 생성</span>
+                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full" style={{ backgroundColor: 'var(--accent-info)' }}>
+                                            <span className="inline-block h-4 w-4 transform rounded-full translate-x-6" style={{ backgroundColor: 'var(--bg-primary)' }} />
                                         </button>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">접근성 검사</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+                                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>접근성 검사</span>
+                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full" style={{ backgroundColor: 'var(--accent-info)' }}>
+                                            <span className="inline-block h-4 w-4 transform rounded-full translate-x-6" style={{ backgroundColor: 'var(--bg-primary)' }} />
                                         </button>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">자동 최적화</span>
-                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200">
-                                            <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-1" />
+                                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>자동 최적화</span>
+                                        <button className="relative inline-flex h-6 w-11 items-center rounded-full" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                                            <span className="inline-block h-4 w-4 transform rounded-full translate-x-1" style={{ backgroundColor: 'var(--bg-primary)' }} />
                                         </button>
                                     </div>
                                 </div>

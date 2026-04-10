@@ -1,7 +1,9 @@
 /**
- * CORBU AI 찬성/반대/중립 논조 글쓰기 엔진
+ * CORBU.AI 찬성/반대/중립 논조 글쓰기 엔진
  * 특정 주제에 대한 찬성, 반대, 중립적 입장을 명확하고 설득력 있게 표현하는 글쓰기 서비스
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export type StancePosition = 'strongly_support' | 'support' | 'neutral' | 'oppose' | 'strongly_oppose' | 'conditional_support' | 'conditional_oppose';
 export type ArgumentStyle = 'logical' | 'emotional' | 'ethical' | 'practical' | 'idealistic' | 'evidence_based' | 'experiential';
@@ -42,11 +44,11 @@ export interface StanceWritingResponse {
 }
 
 class StanceWritingEngine {
-    private stanceVocabulary: Map<StancePosition, any> = new Map();
+    private stanceVocabulary: Map<StancePosition, Record<string, unknown>> = new Map();
     private argumentPatterns: Map<ArgumentStyle, string[]> = new Map();
-    private persuasionTemplates: Map<PersuasionStrategy, any> = new Map();
-    private rhetoricalDevices: Map<RhetoricalTechnique, any> = new Map();
-    private strengthModifiers: Map<string, any> = new Map();
+    private persuasionTemplates: Map<PersuasionStrategy, Record<string, unknown>> = new Map();
+    private rhetoricalDevices: Map<RhetoricalTechnique, Record<string, unknown>> = new Map();
+    private strengthModifiers: Map<string, Record<string, unknown>> = new Map();
 
     constructor() {
         this.initializeStanceVocabulary();
@@ -330,7 +332,13 @@ class StanceWritingEngine {
             };
 
         } catch (error) {
-            console.error('입장별 글쓰기 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('입장별 글쓰기 생성 실패', err, {
+                component: 'stanceWritingEngine',
+                action: 'generateStanceWriting',
+                topic: request.topic,
+                position: request.profile.position,
+            });
             throw new Error('입장별 글쓰기 생성에 실패했습니다.');
         }
     }
@@ -343,26 +351,24 @@ class StanceWritingEngine {
         const vocab = this.stanceVocabulary.get(profile.position);
 
         if (vocab) {
-            // 동사 패턴 분석
-            if (vocab.positiveVerbs) {
-                indicators.push(`긍정적 동사 사용: ${vocab.positiveVerbs.slice(0, 2).join(', ')}`);
+            const pv = (vocab.positiveVerbs as string[] | undefined);
+            const nv = (vocab.negativeVerbs as string[] | undefined);
+            const cv = (vocab.conditionalVerbs as string[] | undefined);
+            if (Array.isArray(pv) && pv.length > 0) {
+                indicators.push(`긍정적 동사 사용: ${pv.slice(0, 2).join(', ')}`);
             }
-            if (vocab.negativeVerbs) {
-                indicators.push(`부정적 동사 사용: ${vocab.negativeVerbs.slice(0, 2).join(', ')}`);
+            if (Array.isArray(nv) && nv.length > 0) {
+                indicators.push(`부정적 동사 사용: ${nv.slice(0, 2).join(', ')}`);
             }
-            if (vocab.conditionalVerbs) {
-                indicators.push(`조건부 동사 사용: ${vocab.conditionalVerbs.slice(0, 2).join(', ')}`);
+            if (Array.isArray(cv) && cv.length > 0) {
+                indicators.push(`조건부 동사 사용: ${cv.slice(0, 2).join(', ')}`);
             }
-
-            // 형용사 패턴 분석
-            const adjectives = vocab.positiveAdjectives || vocab.negativeAdjectives || vocab.conditionalAdjectives;
-            if (adjectives) {
+            const adjectives = (vocab.positiveAdjectives || vocab.negativeAdjectives || vocab.conditionalAdjectives) as string[] | undefined;
+            if (Array.isArray(adjectives) && adjectives.length > 0) {
                 indicators.push(`특징적 형용사: ${adjectives.slice(0, 2).join(', ')}`);
             }
-
-            // 부사 패턴 분석
-            const adverbs = vocab.positiveAdverbs || vocab.negativeAdverbs || vocab.conditionalAdverbs;
-            if (adverbs) {
+            const adverbs = (vocab.positiveAdverbs || vocab.negativeAdverbs || vocab.conditionalAdverbs) as string[] | undefined;
+            if (Array.isArray(adverbs) && adverbs.length > 0) {
                 indicators.push(`강조 부사: ${adverbs.slice(0, 2).join(', ')}`);
             }
         }
@@ -437,7 +443,7 @@ class StanceWritingEngine {
     /**
      * 본문 생성
      */
-    private generateMainContent(request: StanceWritingRequest, structure: string[]): string {
+    private generateMainContent(request: StanceWritingRequest, _structure: string[]): string {
         const vocab = this.stanceVocabulary.get(request.profile.position);
         const patterns = this.argumentPatterns.get(request.profile.argumentStyle);
         const strengthMods = this.strengthModifiers.get(request.profile.strengthLevel);
@@ -449,15 +455,18 @@ class StanceWritingEngine {
         let content = '';
 
         // 1. 서론
+        const intensifiers = (strengthMods.intensifiers as string[] | undefined) || [];
+        const _qualifiers = (strengthMods.qualifiers as string[] | undefined) || [];
+        const patternsArr = Array.isArray(patterns) ? patterns : [];
         if (request.requiredSections.includes('introduction')) {
-            const pattern = patterns[0];
-            const intensifier = strengthMods.intensifiers[0];
+            const pattern = patternsArr[0];
+            const intensifier = intensifiers[0];
             content += `${pattern} ${request.topic}에 대해 ${intensifier} ${this.getPositionStatement(request.profile.position, vocab)}.\n\n`;
         }
 
         // 2. 본론
         if (request.requiredSections.includes('main_argument')) {
-            const mainPattern = patterns[1] || patterns[0];
+            const mainPattern = patternsArr[1] || patternsArr[0];
             content += `${mainPattern} 다음과 같은 이유들을 제시할 수 있습니다.\n\n`;
 
             // 주요 논점들
@@ -476,7 +485,8 @@ class StanceWritingEngine {
 
         // 5. 결론
         if (request.requiredSections.includes('conclusion')) {
-            const conclusion = vocab.conclusions ? vocab.conclusions[0] : this.getDefaultConclusion(request.profile.position);
+            const conclusions = vocab.conclusions as string[] | undefined;
+            const conclusion = conclusions?.[0] ?? this.getDefaultConclusion(request.profile.position);
             content += `\n\n결론적으로, ${request.topic}에 대해 ${conclusion}`;
 
             if (request.includeCallToAction) {
@@ -490,22 +500,26 @@ class StanceWritingEngine {
     /**
      * 입장 표명문 생성
      */
-    private getPositionStatement(position: StancePosition, vocab: any): string {
+    private getPositionStatement(position: StancePosition, vocab: Record<string, unknown>): string {
+        const pv = (vocab.positiveVerbs as string[] | undefined) || [];
+        const nv = (vocab.neutralVerbs as string[] | undefined) || [];
+        const negv = (vocab.negativeVerbs as string[] | undefined) || [];
+        const cv = (vocab.conditionalVerbs as string[] | undefined) || [];
         switch (position) {
             case 'strongly_support':
-                return vocab.positiveVerbs[0] || '강력히 지지합니다';
+                return pv[0] || '강력히 지지합니다';
             case 'support':
-                return vocab.positiveVerbs[0] || '지지합니다';
+                return pv[0] || '지지합니다';
             case 'neutral':
-                return vocab.neutralVerbs[0] || '신중하게 검토해야 한다고 봅니다';
+                return nv[0] || '신중하게 검토해야 한다고 봅니다';
             case 'oppose':
-                return vocab.negativeVerbs[0] || '반대합니다';
+                return negv[0] || '반대합니다';
             case 'strongly_oppose':
-                return vocab.negativeVerbs[0] || '강력히 반대합니다';
+                return negv[0] || '강력히 반대합니다';
             case 'conditional_support':
-                return vocab.conditionalVerbs[0] || '조건부로 지지합니다';
+                return cv[0] || '조건부로 지지합니다';
             case 'conditional_oppose':
-                return vocab.conditionalVerbs[0] || '조건부로 반대합니다';
+                return cv[0] || '조건부로 반대합니다';
             default:
                 return '입장을 표명합니다';
         }
@@ -514,25 +528,28 @@ class StanceWritingEngine {
     /**
      * 주요 논점 생성
      */
-    private generateMainPoints(request: StanceWritingRequest, vocab: any, strengthMods: any): string {
+    private generateMainPoints(request: StanceWritingRequest, vocab: Record<string, unknown>, strengthMods: Record<string, unknown>): string {
         let points = '';
 
-        // 3개의 주요 논점 생성
+        const intMods = (strengthMods.intensifiers as string[] | undefined) || [];
+        const qualMods = (strengthMods.qualifiers as string[] | undefined) || [];
+        const posAdj = (vocab.positiveAdjectives as string[] | undefined) || [];
+        const negAdj = (vocab.negativeAdjectives as string[] | undefined) || [];
+        const neuAdj = (vocab.neutralAdjectives as string[] | undefined) || [];
         for (let i = 1; i <= 3; i++) {
-            const intensifier = strengthMods.intensifiers[i % strengthMods.intensifiers.length];
-            const qualifier = strengthMods.qualifiers[0];
+            const intensifier = intMods[i % intMods.length] || '';
+            const qualifier = qualMods[0] || '';
 
             points += `${i}. ${intensifier} 중요한 점은 ${request.topic}이 `;
 
-            // 입장에 따른 논점 방향성 결정
-            if (request.profile.position.includes('support')) {
-                const adjective = vocab.positiveAdjectives?.[i - 1] || '긍정적인';
+            if (String(request.profile.position).includes('support')) {
+                const adjective = posAdj[i - 1] || '긍정적인';
                 points += `${adjective} 결과를 가져올 것이라는 점입니다. 이는 ${qualifier}고 봅니다.\n\n`;
-            } else if (request.profile.position.includes('oppose')) {
-                const adjective = vocab.negativeAdjectives?.[i - 1] || '부정적인';
+            } else if (String(request.profile.position).includes('oppose')) {
+                const adjective = negAdj[i - 1] || '부정적인';
                 points += `${adjective} 영향을 미칠 수 있다는 점입니다. 이는 ${qualifier}고 생각합니다.\n\n`;
             } else {
-                const adjective = vocab.neutralAdjectives?.[i - 1] || '복합적인';
+                const adjective = neuAdj[i - 1] || '복합적인';
                 points += `${adjective} 측면을 가지고 있다는 점입니다. 이는 ${qualifier}고 판단됩니다.\n\n`;
             }
         }
@@ -543,7 +560,7 @@ class StanceWritingEngine {
     /**
      * 증거 섹션 생성
      */
-    private generateEvidenceSection(request: StanceWritingRequest, vocab: any): string {
+    private generateEvidenceSection(request: StanceWritingRequest, _vocab: Record<string, unknown>): string {
         let evidence = '**구체적 근거 및 사례:**\n\n';
 
         // 설득 전략에 따른 증거 유형 결정
@@ -565,7 +582,7 @@ class StanceWritingEngine {
     /**
      * 반박 섹션 생성
      */
-    private generateCounterArgumentSection(request: StanceWritingRequest, vocab: any): string {
+    private generateCounterArgumentSection(request: StanceWritingRequest, _vocab: Record<string, unknown>): string {
         let counter = '**상대방 주장에 대한 반박:**\n\n';
 
         // 입장에 따른 반박 논리
@@ -691,7 +708,7 @@ class StanceWritingEngine {
     /**
      * 입장별 글쓰기 프로필 추천
      */
-    public recommendStanceProfile(topic: string, desiredPosition: StancePosition, context: string): StanceWritingProfile {
+    public recommendStanceProfile(topic: string, desiredPosition: StancePosition, _context: string): StanceWritingProfile {
         return {
             position: desiredPosition,
             argumentStyle: 'logical',

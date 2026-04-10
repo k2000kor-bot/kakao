@@ -39,8 +39,8 @@ export function parseConversationCommand(message: string): ConversationCommand {
     };
   }
 
-  // 채팅방 목록 관련 키워드
-  const listRoomsKeywords = ['채팅방', '채팅방 목록', '방 목록', '채널', '채널 목록'];
+  // 대화방·채팅방 목록 관련 키워드 (구 표현 호환)
+  const listRoomsKeywords = ['대화방', '대화방 목록', '채팅방', '채팅방 목록', '방 목록', '채널', '채널 목록'];
   if (listRoomsKeywords.some(keyword => lowerMessage.includes(keyword))) {
     return {
       intent: 'list_rooms',
@@ -69,7 +69,7 @@ export function parseConversationCommand(message: string): ConversationCommand {
     };
   }
 
-  // 일반 채팅 (기본값)
+  // 일반 대화 (기본값)
   return {
     intent: 'chat',
     confidence: 0.5,

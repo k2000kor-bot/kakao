@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -2515,6 +2516,7 @@ def analyze_global_disinformation_trends() -> Dict:
 def generate_defense_recommendations() -> List:
     return ["media_literacy", "fact_checking", "critical_thinking", "source_verification", "democratic_resilience"]
 if __name__ == "__main__":
+    _p = int(os.environ.get("ULTRA_ADVANCED_API_PORT", os.environ.get("PORT", "8003")))
     print("🚀 Ultra Advanced Construction Message Generation API 시작")
     print("🧠 신경망 기반 적응형 학습 시스템")
     print("📊 실시간 성능 모니터링 및 최적화")
@@ -2524,7 +2526,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "ultra_advanced_api:app",
         host="0.0.0.0",
-        port=8003,
+        port=_p,
         reload=True,
         log_level="info"
     )

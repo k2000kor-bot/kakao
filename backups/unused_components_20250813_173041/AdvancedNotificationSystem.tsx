@@ -91,7 +91,7 @@ const AdvancedNotificationSystem: React.FC<AdvancedNotificationSystemProps> = ({
             {
                 id: '1',
                 title: '시스템 업데이트 완료',
-                message: 'CORBU AI 시스템이 성공적으로 업데이트되었습니다. 새로운 기능들이 추가되었습니다.',
+                message: 'CORBU.AI 시스템이 성공적으로 업데이트되었습니다. 새로운 기능들이 추가되었습니다.',
                 type: 'success',
                 priority: 'medium',
                 category: 'system',

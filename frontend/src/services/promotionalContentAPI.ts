@@ -1,5 +1,24 @@
 // 홍보물 및 전달 시스템 API 서비스
-const PROMOTIONAL_CONTENT_API_BASE = 'http://localhost:8006';
+import {
+  API_BASE_URL,
+  API_FORM_FIELD_TEMPLATE_TYPE,
+  API_FORM_FIELD_VARIABLES,
+  API_PROJECT_PROMOTIONAL_CAMPAIGNS_SEGMENT,
+  API_PROJECT_PROMOTIONAL_MATERIALS_SEGMENT,
+  API_PROJECTS_LIST_PATH,
+  API_SMOKE_TEST_PATH,
+  API_STATUS_PATH,
+  CONTENT_TEMPLATES_PATH,
+  DELIVERY_PLANS_PATH,
+  FALLBACK_API_ORIGIN,
+  MARKETING_CAMPAIGNS_PATH,
+  MATERIALS_BASE_PATH,
+  PROMOTIONAL_GENERATE_CONTENT_PATH,
+  PROMOTIONAL_MATERIALS_PATH,
+  joinApiHealthCheckUrl,
+} from '../config/api';
+
+const PROMOTIONAL_CONTENT_API_BASE = API_BASE_URL || FALLBACK_API_ORIGIN;
 
 export interface PromotionalMaterialCreate {
   project_id: string;
@@ -96,7 +115,7 @@ export interface DeliveryPerformance {
 // API 호출 헬퍼 함수
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   try {
-    const response = await fetch(`${PROMOTIONAL_CONTENT_API_BASE}${endpoint}`, {
+    const response = await fetch(joinApiHealthCheckUrl(PROMOTIONAL_CONTENT_API_BASE, endpoint), {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -118,7 +137,7 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 // 폼 데이터 API 호출 헬퍼 함수
 const formApiCall = async (endpoint: string, formData: FormData) => {
   try {
-    const response = await fetch(`${PROMOTIONAL_CONTENT_API_BASE}${endpoint}`, {
+    const response = await fetch(joinApiHealthCheckUrl(PROMOTIONAL_CONTENT_API_BASE, endpoint), {
       method: 'POST',
       body: formData,
     });
@@ -138,12 +157,12 @@ const formApiCall = async (endpoint: string, formData: FormData) => {
 export class PromotionalContentAPI {
   // 시스템 상태 확인
   static async getStatus() {
-    return apiCall('/api/status');
+    return apiCall(API_STATUS_PATH);
   }
 
   // 홍보물 생성
   static async createPromotionalMaterial(material: PromotionalMaterialCreate): Promise<{ success: boolean; material_id: string; message: string }> {
-    return apiCall('/api/promotional-materials', {
+    return apiCall(PROMOTIONAL_MATERIALS_PATH, {
       method: 'POST',
       body: JSON.stringify(material),
     });
@@ -151,7 +170,7 @@ export class PromotionalContentAPI {
 
   // 전달 계획 생성
   static async createDeliveryPlan(plan: DeliveryPlanCreate): Promise<{ success: boolean; plan_id: string; message: string }> {
-    return apiCall('/api/delivery-plans', {
+    return apiCall(DELIVERY_PLANS_PATH, {
       method: 'POST',
       body: JSON.stringify(plan),
     });
@@ -159,7 +178,7 @@ export class PromotionalContentAPI {
 
   // 마케팅 캠페인 생성
   static async createMarketingCampaign(campaign: MarketingCampaignCreate): Promise<{ success: boolean; campaign_id: string; message: string }> {
-    return apiCall('/api/marketing-campaigns', {
+    return apiCall(MARKETING_CAMPAIGNS_PATH, {
       method: 'POST',
       body: JSON.stringify(campaign),
     });
@@ -167,7 +186,7 @@ export class PromotionalContentAPI {
 
   // 콘텐츠 템플릿 생성
   static async createContentTemplate(template: ContentTemplateCreate): Promise<{ success: boolean; template_id: string; message: string }> {
-    return apiCall('/api/content-templates', {
+    return apiCall(CONTENT_TEMPLATES_PATH, {
       method: 'POST',
       body: JSON.stringify(template),
     });
@@ -175,36 +194,42 @@ export class PromotionalContentAPI {
 
   // 프로젝트 홍보물 목록 조회
   static async getProjectMaterials(projectId: string): Promise<{ success: boolean; materials: PromotionalMaterial[] }> {
-    return apiCall(`/api/projects/${projectId}/materials`);
+    return apiCall(
+      `${API_PROJECTS_LIST_PATH}/${encodeURIComponent(projectId)}${API_PROJECT_PROMOTIONAL_MATERIALS_SEGMENT}`,
+    );
   }
 
   // 홍보물 전달 계획 조회
   static async getMaterialDeliveryPlans(materialId: string): Promise<{ success: boolean; plans: DeliveryPlan[] }> {
-    return apiCall(`/api/materials/${materialId}/delivery-plans`);
+    return apiCall(
+      `${MATERIALS_BASE_PATH}/${encodeURIComponent(materialId)}/delivery-plans`,
+    );
   }
 
   // 프로젝트 마케팅 캠페인 조회
   static async getProjectCampaigns(projectId: string): Promise<{ success: boolean; campaigns: MarketingCampaign[] }> {
-    return apiCall(`/api/projects/${projectId}/campaigns`);
+    return apiCall(
+      `${API_PROJECTS_LIST_PATH}/${encodeURIComponent(projectId)}${API_PROJECT_PROMOTIONAL_CAMPAIGNS_SEGMENT}`,
+    );
   }
 
   // 콘텐츠 템플릿 목록 조회
   static async getContentTemplates(): Promise<{ success: boolean; templates: ContentTemplate[] }> {
-    return apiCall('/api/content-templates');
+    return apiCall(CONTENT_TEMPLATES_PATH);
   }
 
   // 템플릿을 사용한 콘텐츠 생성
   static async generateContentFromTemplate(templateType: string, variables: Record<string, string>): Promise<{ success: boolean; content: string; template_type: string }> {
     const formData = new FormData();
-    formData.append('template_type', templateType);
-    formData.append('variables', JSON.stringify(variables));
+    formData.append(API_FORM_FIELD_TEMPLATE_TYPE, templateType);
+    formData.append(API_FORM_FIELD_VARIABLES, JSON.stringify(variables));
     
-    return formApiCall('/api/generate-content', formData);
+    return formApiCall(PROMOTIONAL_GENERATE_CONTENT_PATH, formData);
   }
 
   // 전달 성과 분석
   static async getDeliveryPerformance(planId: string): Promise<{ success: boolean; performance: DeliveryPerformance }> {
-    return apiCall(`/api/delivery-plans/${planId}/performance`);
+    return apiCall(`${DELIVERY_PLANS_PATH}/${encodeURIComponent(planId)}/performance`);
   }
 
   // 서버 연결 테스트
@@ -345,7 +370,7 @@ export const promotionalContentAPI = {
   // 테스트 엔드포인트
   testEndpoint: async () => {
     try {
-      const response = await apiCall('/api/test');
+      const response = await apiCall(API_SMOKE_TEST_PATH);
       return response;
     } catch (error) {
       console.error('테스트 엔드포인트 실패:', error);

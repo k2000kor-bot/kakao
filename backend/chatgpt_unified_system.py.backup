@@ -3785,7 +3785,7 @@ class ChatGPTUnifiedSystem:
 **다채널 커뮤니케이션**:
 ```
 💬 **커뮤니케이션 분석**
-• 실시간 채팅: 평균 응답 시간 0.5초
+• 실시간 대화: 평균 응답 시간 0.5초
 • 알림 시스템: 스마트 필터링 (정확도: 91.2%)
 • 이메일 통합: 자동 동기화 (99.8% 성공률)
 • 캘린더 공유: 실시간 일정 동기화
@@ -7729,7 +7729,7 @@ def advanced_ai_integration_system(input_data: str, user_context: dict = None, a
 
 
 def chat_context_management_system(session_id: str, new_question: str, chat_history: list = None) -> dict:
-    """채팅 컨텍스트 관리 시스템 - 채팅방별 질문 답변 요구사항 유지 및 새로운 답변 생성"""
+    """대화 컨텍스트 관리 시스템 - 대화방별 질문 답변 요구사항 유지 및 새로운 답변 생성"""
     # import re
     # import math
     # import statistics
@@ -7745,9 +7745,9 @@ def chat_context_management_system(session_id: str, new_question: str, chat_hist
             'context_confidence': 0.0
         }
     
-    # 1. 채팅 컨텍스트 분석
+    # 1. 대화 컨텍스트 분석
     def analyze_chat_context(session_id, chat_history, new_question):
-        """채팅 컨텍스트 분석"""
+        """대화 컨텍스트 분석"""
         context_analysis = {
             'session_context': {},
             'conversation_flow': {},
@@ -17212,7 +17212,7 @@ async def web_search_enhancement_api(request: dict):
 @app.post("/api/chat-context-management")
 @error_handler
 async def chat_context_management_api(request: dict):
-    """채팅 컨텍스트 관리 시스템 API - 채팅방별 질문 답변 요구사항 유지 및 새로운 답변 생성"""
+    """대화 컨텍스트 관리 시스템 API - 대화방별 질문 답변 요구사항 유지 및 새로운 답변 생성"""
     try:
         session_id = request.get('session_id', '')
         new_question = request.get('new_question', '')
@@ -17221,7 +17221,7 @@ async def chat_context_management_api(request: dict):
         if not session_id or not new_question:
             raise HTTPException(status_code=400, detail="세션 ID와 새로운 질문이 필요합니다.")
         
-        # 채팅 컨텍스트 관리 시스템 실행
+        # 대화 컨텍스트 관리 시스템 실행
         context_management = chat_context_management_system(session_id, new_question, chat_history)
         
         return {
@@ -17237,8 +17237,8 @@ async def chat_context_management_api(request: dict):
         }
     
     except Exception as e:
-        logger.error(f"채팅 컨텍스트 관리 시스템 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"채팅 컨텍스트 관리 시스템 중 오류가 발생했습니다: {str(e)}")
+        logger.error(f"대화 컨텍스트 관리 시스템 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"대화 컨텍스트 관리 시스템 중 오류가 발생했습니다: {str(e)}")
 
 
 @app.post("/api/advanced-ai-integration")

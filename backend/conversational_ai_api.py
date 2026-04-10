@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -13,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="대화형 AI API 서버",
-    description="개포우성7차 프로젝트 대화형 AI 시스템",
+    description="CORBU 대화형 AI API (프로젝트 중립)",
     version="1.0.0"
 )
 
@@ -165,10 +167,13 @@ async def get_conversation_history():
 
 if __name__ == "__main__":
     try:
+        _p = int(
+            os.environ.get("CONVERSATIONAL_AI_API_PORT", os.environ.get("PORT", "8003"))
+        )
         print("🚀 대화형 AI API 서버 시작 중...")
-        print("📍 서버 주소: http://localhost:8003")
-        print("📚 API 문서: http://localhost:8003/docs")
-        uvicorn.run(app, host="0.0.0.0", port=8003)
+        print(f"📍 서버 주소: http://localhost:{_p}")
+        print(f"📚 API 문서: http://localhost:{_p}/docs")
+        uvicorn.run(app, host="0.0.0.0", port=_p)
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")
         import traceback

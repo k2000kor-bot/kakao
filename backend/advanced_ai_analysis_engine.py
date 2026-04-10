@@ -69,7 +69,7 @@ class AdvancedAIAnalysisEngine:
     def _initialize_knowledge_base(self) -> Dict[str, Any]:
         """지식베이스 초기화"""
         return {
-            'gaeposung_specific': {
+            'redevelopment_domain': {
                 'redevelopment_policies': self._load_redevelopment_knowledge(),
                 'real_estate_market': self._load_market_knowledge(),
                 'community_relations': self._load_community_knowledge(),
@@ -132,15 +132,14 @@ class AdvancedAIAnalysisEngine:
         
         relevant_knowledge = {}
         
-        # 개포우성 특화 지식 검색
         if 'redevelopment' in semantic_analysis.related_concepts:
-            relevant_knowledge['redevelopment'] = self.knowledge_base['gaeposung_specific']['redevelopment_policies']
+            relevant_knowledge['redevelopment'] = self.knowledge_base['redevelopment_domain']['redevelopment_policies']
         
         if 'market' in semantic_analysis.related_concepts:
-            relevant_knowledge['market'] = self.knowledge_base['gaeposung_specific']['real_estate_market']
+            relevant_knowledge['market'] = self.knowledge_base['redevelopment_domain']['real_estate_market']
         
         if 'community' in semantic_analysis.related_concepts:
-            relevant_knowledge['community'] = self.knowledge_base['gaeposung_specific']['community_relations']
+            relevant_knowledge['community'] = self.knowledge_base['redevelopment_domain']['community_relations']
         
         # 분석 방법론 검색
         for method_type in ['researcher', 'policy_analyst', 'public_opinion', 'real_estate', 'sociological']:
@@ -178,7 +177,7 @@ class AdvancedAIAnalysisEngine:
         return {
             'market_trends': [
                 '서울시 아파트 시세 동향',
-                '개포동 지역 시세 분석',
+                '대상 지역 시세 분석',
                 '재개발 효과 시세 영향',
                 '투자 수익률 예측'
             ],
@@ -524,7 +523,7 @@ class SemanticProcessor:
         """키워드 추출"""
         # 간단한 키워드 추출 (실제로는 더 정교한 NLP 사용)
         keywords = []
-        important_words = ['재개발', '부동산', '주민', '투자', '분석', '정책', '시장', '개포우성']
+        important_words = ['재개발', '정비', '부동산', '주민', '투자', '분석', '정책', '시장']
         for word in important_words:
             if word in text:
                 keywords.append(word)
@@ -656,19 +655,19 @@ class IntelligentResponseGenerator:
     
     def _generate_analysis_answer(self, user_input: str, knowledge: Dict[str, Any]) -> str:
         """분석 답변 생성"""
-        return f"개포우성 재개발 프로젝트에 대한 종합적 분석을 제공해드리겠습니다. {user_input}에 대한 다층적 분석 결과는 다음과 같습니다..."
+        return f"재개발·정비 프로젝트에 대한 종합적 분석을 제공해드리겠습니다. {user_input}에 대한 다층적 분석 결과는 다음과 같습니다..."
     
     def _generate_advice_answer(self, user_input: str, knowledge: Dict[str, Any]) -> str:
         """조언 답변 생성"""
-        return f"개포우성 프로젝트와 관련하여 {user_input}에 대한 전문적 조언을 드리겠습니다..."
+        return f"프로젝트와 관련하여 {user_input}에 대한 전문적 조언을 드리겠습니다..."
     
     def _generate_information_answer(self, user_input: str, knowledge: Dict[str, Any]) -> str:
         """정보 답변 생성"""
-        return f"개포우성 재개발 프로젝트에 대한 {user_input} 관련 정보를 제공해드리겠습니다..."
+        return f"재개발·정비 프로젝트에 대한 {user_input} 관련 정보를 제공해드리겠습니다..."
     
     def _generate_general_answer(self, user_input: str, knowledge: Dict[str, Any]) -> str:
         """일반 답변 생성"""
-        return f"개포우성 재개발 프로젝트와 관련하여 {user_input}에 대해 답변드리겠습니다..."
+        return f"재개발·정비 프로젝트와 관련하여 {user_input}에 대해 답변드리겠습니다..."
     
     def _generate_contextual_explanation(self,
                                         semantic_analysis: SemanticAnalysis,
@@ -770,7 +769,7 @@ if __name__ == "__main__":
     # 테스트 컨텍스트 생성
     context = AnalysisContext(
         user_id="user_123",
-        project_id="gaeposung_project",
+        project_id="demo_project",
         conversation_history=[],
         uploaded_files=[],
         user_preferences={},
@@ -780,7 +779,7 @@ if __name__ == "__main__":
     
     # 테스트 분석 실행
     response = engine.deep_understanding_analysis(
-        "개포우성 재개발 프로젝트의 투자 가치를 분석해주세요",
+        "샘플 재개발 프로젝트의 투자 가치를 분석해주세요",
         context,
         "comprehensive"
     )

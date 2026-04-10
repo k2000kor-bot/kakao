@@ -7,9 +7,9 @@
 ### 1. 메인 앱 통합
 
 - ✅ `App.tsx`에 통합 API 탭 추가
-- ✅ 3개 탭 구성: "🤖 CORBU AI 채팅", "🚀 통합 API", "테스트"
+- ✅ 3개 탭 구성: "🤖 CORBU.AI 대화", "🚀 통합 API", "테스트"
 
-### 2. 채팅 인터페이스 개선
+### 2. 대화 인터페이스 개선
 
 - ✅ `SimpleChatInterface`에 통합 API 연동
 - ✅ API 전환 기능 (통합 API ↔ 기존 API)
@@ -44,17 +44,17 @@
 
 ```bash
 # 서버가 실행 중인지 확인
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 
 # 서버가 실행되지 않았다면 시작
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 start_simple_integrated_server.py
 ```
 
 ### 2. 프론트엔드 실행
 
 ```bash
-cd /Users/aD/kakao-frontend/frontend
+cd /path/to/kakao-frontend/kakao-frontend/frontend
 npm start
 ```
 
@@ -62,12 +62,12 @@ npm start
 
 ## 📱 사용 가능한 기능
 
-### 탭 1: 🤖 CORBU AI 채팅
+### 탭 1: 🤖 CORBU.AI 대화
 
 - 메시지 입력 및 AI 응답
 - 통합 API 사용 (기본값)
 - Chip 클릭으로 API 전환 가능
-- 실시간 채팅 인터페이스
+- 실시간 대화 인터페이스
 
 ### 탭 2: 🚀 통합 API
 
@@ -148,7 +148,7 @@ npm start
 1. 프론트엔드 실행: `npm start`
 2. 브라우저에서 `http://localhost:3000` 접속
 3. "🚀 통합 API" 탭에서 기능 테스트
-4. "🤖 CORBU AI 채팅" 탭에서 채팅 테스트
+4. "🤖 CORBU.AI 대화" 탭에서 대화 테스트
 
 ---
 

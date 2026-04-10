@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -67,7 +68,9 @@ class SimpleNotebookLLM:
     """간단한 노트북 LLM 통합"""
     
     def __init__(self):
-        self.ollama_base_url = "http://localhost:11434"
+        self.ollama_base_url = os.getenv(
+            "OLLAMA_BASE_URL", "http://localhost:11434"
+        ).rstrip("/")
         self.available_models = {}
         self.performance_metrics = {
             'total_requests': 0,

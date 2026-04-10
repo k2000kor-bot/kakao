@@ -73,7 +73,7 @@ GET  /api/v7/predict/summary            # 예측 분석 요약
 GET  /api/v7/keyword-analysis/{id}      # 키워드 분석
 GET  /api/v7/engagement-metrics/{id}    # 참여도 지표
 POST /api/v7/analyze-conversation-data  # 대화 데이터 분석
-GET  /api/v7/conversation-statistics/{id} # 채팅방 통계
+GET  /api/v7/conversation-statistics/{id} # 대화방 통계
 GET  /api/v7/emotion-trends/{id}        # 감정 트렌드
 ```
 

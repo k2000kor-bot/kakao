@@ -23,6 +23,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 
+from cors_config import get_cors_allow_origins
+
 # 프로젝트 루트 경로 설정
 PROJECT_ROOT = Path(__file__).parent.parent
 BACKEND_DIR = PROJECT_ROOT / "backend"
@@ -32,8 +34,13 @@ PROCESSED_DIR = BACKEND_DIR / "processed"
 # 데이터베이스 경로
 DB_PATH = BACKEND_DIR / "ultimate_system.db"
 
-# 서버 설정
-PORT = 8000
+# 서버 설정 (deploy/start_unified_system.sh 에서 ULTIMATE_HTTP_PORT 로 맞출 수 있음)
+PORT = int(
+    os.environ.get(
+        "ULTIMATE_INTEGRATED_SERVER_PORT",
+        os.environ.get("ULTIMATE_HTTP_PORT", os.environ.get("PORT", "8000")),
+    )
+)
 HOST = "0.0.0.0"
 
 class ChatRoom(BaseModel):
@@ -75,7 +82,7 @@ def init_database():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # 채팅방 테이블
+    # 대화방 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS chat_rooms (
             id TEXT PRIMARY KEY,
@@ -151,12 +158,12 @@ class KakaoChatParser:
         )
     
     def parse_chat_file(self, file_path: str) -> Dict[str, Any]:
-        """카카오톡 채팅 파일 파싱"""
+        """카카오톡 대화 파일 파싱"""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # 파일명에서 채팅방 이름 추출
+            # 파일명에서 대화방 이름 추출
             room_name = Path(file_path).stem
             
             messages = []
@@ -207,7 +214,7 @@ def check_duplicate_message(cursor, room_id: str, message_hash: str) -> bool:
 
 # 파일 업로드 처리
 async def process_chat_file(file_path: str, room_id: str) -> Dict[str, Any]:
-    """채팅 파일 처리"""
+    """대화 파일 처리"""
     parser = KakaoChatParser()
     chat_data = parser.parse_chat_file(file_path)
     
@@ -215,7 +222,7 @@ async def process_chat_file(file_path: str, room_id: str) -> Dict[str, Any]:
     cursor = conn.cursor()
     
     try:
-        # 채팅방 정보 저장/업데이트
+        # 대화방 정보 저장/업데이트
         cursor.execute('''
             INSERT OR REPLACE INTO chat_rooms (id, name, message_count, last_activity, is_active)
             VALUES (?, ?, ?, ?, ?)
@@ -295,7 +302,7 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -306,10 +313,10 @@ app.add_middleware(
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-# 채팅방 목록 조회
+# 대화방 목록 조회
 @app.get("/api/v7/chat-rooms")
 async def get_chat_rooms():
-    """채팅방 목록 조회"""
+    """대화방 목록 조회"""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -353,10 +360,10 @@ async def get_chat_rooms():
             content={"success": False, "error": str(e)}
         )
 
-# 채팅방 메시지 조회
+# 대화방 메시지 조회
 @app.get("/api/v7/chat-messages/{room_id}")
 async def get_chat_messages(room_id: str, limit: int = 1000, offset: int = 0):
-    """채팅방 메시지 조회"""
+    """대화방 메시지 조회"""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -403,7 +410,7 @@ async def upload_chat_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
-    """카카오톡 채팅 파일 업로드"""
+    """카카오톡 대화 파일 업로드"""
     try:
         # 파일 저장
         upload_dir = PROCESSED_DIR / "uploads"
@@ -413,7 +420,7 @@ async def upload_chat_file(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # 채팅방 ID 생성
+        # 대화방 ID 생성
         room_id = Path(file.filename).stem
         
         # 백그라운드에서 파일 처리
@@ -513,7 +520,7 @@ if __name__ == "__main__":
     print(f"📍 서버 주소: http://{HOST}:{PORT}")
     print(f"📖 API 문서: http://{HOST}:{PORT}/docs")
     print("🎯 주요 엔드포인트:")
-    print("   GET  /api/v7/chat-rooms - 채팅방 목록")
+    print("   GET  /api/v7/chat-rooms - 대화방 목록")
     print("   GET  /api/v7/chat-messages/{room_id} - 메시지 조회")
     print("   POST /api/upload-chat - 파일 업로드")
     print("   POST /api/generate-message - 메시지 생성")

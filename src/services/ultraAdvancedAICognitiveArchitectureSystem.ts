@@ -1,10 +1,5 @@
 import { EventEmitter } from 'events';
-import { ultraAdvancedAIService } from './ultraAdvancedAIService';
-import ultraAdvancedAIOrchestrationService from './ultraAdvancedAIOrchestrationService';
-import ultraAdvancedAIIntegrationManager from './ultraAdvancedAIIntegrationManager';
-import ultraAdvancedAIPredictiveAnalyticsSystem from './ultraAdvancedAIPredictiveAnalyticsSystem';
-import ultraAdvancedAIAutomationSystem from './ultraAdvancedAIAutomationSystem';
-import ultraAdvancedAIEthicsAndGovernanceSystem from './ultraAdvancedAIEthicsAndGovernanceSystem';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 고도화된 AI 인지 아키텍처 인터페이스
 export interface CognitiveModule {
@@ -47,7 +42,7 @@ export interface CognitiveStep {
     module_id: string;
     input_type: string;
     output_type: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     dependencies: string[];
     timeout: number;
     retry_count: number;
@@ -60,7 +55,7 @@ export interface CognitiveInsight {
     relevance: number;
     impact: 'low' | 'medium' | 'high' | 'critical';
     description: string;
-    data: any;
+    data: Record<string, unknown>;
     created_at: Date;
     expires_at?: Date;
 }
@@ -121,7 +116,10 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         super();
         this.initializeSystem();
         this._isInitialized = true;
-        console.log('🧠 고도화된 AI 인지 아키텍처 시스템이 초기화되었습니다.');
+        errorLogger.info('🧠 고도화된 AI 인지 아키텍처 시스템이 초기화되었습니다.', {
+            component: 'ultraAdvancedAICognitiveArchitectureSystem',
+            action: 'constructor',
+        });
     }
 
     private async initializeSystem(): Promise<void> {
@@ -295,7 +293,11 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
             this.emit('system_initialized', this.metrics);
 
         } catch (error) {
-            console.error('AI 인지 아키텍처 시스템 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('AI 인지 아키텍처 시스템 초기화 실패', err, {
+                component: 'ultraAdvancedAICognitiveArchitectureSystem',
+                action: 'initializeSystem',
+            });
             this.emit('initialization_error', error);
         }
     }
@@ -308,7 +310,12 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         }
 
         this.emit('module_created', moduleConfig);
-        console.log(`🧠 인지 모듈 생성: ${moduleConfig.name}`);
+        errorLogger.info(`🧠 인지 모듈 생성: ${moduleConfig.name}`, {
+            component: 'ultraAdvancedAICognitiveArchitectureSystem',
+            action: 'createModule',
+            moduleId: moduleConfig.id,
+            moduleName: moduleConfig.name,
+        });
     }
 
     public async createProcess(processConfig: CognitiveProcess): Promise<void> {
@@ -319,10 +326,15 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         }
 
         this.emit('process_created', processConfig);
-        console.log(`🔄 인지 프로세스 생성: ${processConfig.name}`);
+        errorLogger.info(`🔄 인지 프로세스 생성: ${processConfig.name}`, {
+            component: 'ultraAdvancedAICognitiveArchitectureSystem',
+            action: 'createProcess',
+            processId: processConfig.id,
+            processName: processConfig.name,
+        });
     }
 
-    public async executeProcess(processId: string, inputData: any): Promise<any> {
+    public async executeProcess(processId: string, inputData: Record<string, unknown>): Promise<Record<string, unknown>> {
         const process = this.processes.get(processId);
         if (!process) {
             throw new Error(`프로세스 ${processId}를 찾을 수 없습니다.`);
@@ -338,7 +350,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
 
         try {
             let currentData = inputData;
-            const results: Record<string, any> = {};
+            const results: Record<string, unknown> = {};
 
             // 워크플로우 단계별 실행
             for (const step of process.workflow) {
@@ -379,7 +391,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         }
     }
 
-    private async executeStep(step: CognitiveStep, inputData: any): Promise<any> {
+    private async executeStep(step: CognitiveStep, inputData: Record<string, unknown>): Promise<Record<string, unknown>> {
         const module = this.modules.get(step.module_id);
         if (!module) {
             throw new Error(`모듈 ${step.module_id}를 찾을 수 없습니다.`);
@@ -404,7 +416,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         }
     }
 
-    private simulatePerception(data: any, parameters: Record<string, any>): any {
+    private simulatePerception(data: Record<string, unknown>, parameters: Record<string, unknown>): Record<string, unknown> {
         // 지각 처리 시뮬레이션
         return {
             type: 'perceived_data',
@@ -415,7 +427,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         };
     }
 
-    private simulateMemory(data: any, parameters: Record<string, any>): any {
+    private simulateMemory(data: Record<string, unknown>, parameters: Record<string, unknown>): Record<string, unknown> {
         // 기억 처리 시뮬레이션
         return {
             type: 'contextual_data',
@@ -427,7 +439,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         };
     }
 
-    private simulateReasoning(data: any, parameters: Record<string, any>): any {
+    private simulateReasoning(data: Record<string, unknown>, parameters: Record<string, unknown>): Record<string, unknown> {
         // 추론 처리 시뮬레이션
         return {
             type: 'analysis_result',
@@ -439,7 +451,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         };
     }
 
-    private simulateLearning(data: any, parameters: Record<string, any>): any {
+    private simulateLearning(data: Record<string, unknown>, _parameters: Record<string, unknown>): Record<string, unknown> {
         // 학습 처리 시뮬레이션
         return {
             type: 'learning_result',
@@ -451,7 +463,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         };
     }
 
-    private simulateDecision(data: any, parameters: Record<string, any>): any {
+    private simulateDecision(data: Record<string, unknown>, _parameters: Record<string, unknown>): Record<string, unknown> {
         // 의사결정 처리 시뮬레이션
         return {
             type: 'decision_result',
@@ -463,7 +475,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         };
     }
 
-    private simulateAction(data: any, parameters: Record<string, any>): any {
+    private simulateAction(data: Record<string, unknown>, _parameters: Record<string, unknown>): Record<string, unknown> {
         // 행동 처리 시뮬레이션
         return {
             type: 'action_result',
@@ -475,7 +487,7 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         };
     }
 
-    public async generateInsight(data: any, insightType: CognitiveInsight['type']): Promise<CognitiveInsight> {
+    public async generateInsight(data: Record<string, unknown>, insightType: CognitiveInsight['type']): Promise<CognitiveInsight> {
         const insightId = `insight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         const insight: CognitiveInsight = {
@@ -548,7 +560,11 @@ class UltraAdvancedAICognitiveArchitectureSystem extends EventEmitter {
         });
 
         if (expiredInsights.length > 0) {
-            console.log(`🧠 ${expiredInsights.length}개의 만료된 인사이트가 정리되었습니다.`);
+            errorLogger.info(`🧠 ${expiredInsights.length}개의 만료된 인사이트가 정리되었습니다.`, {
+                component: 'ultraAdvancedAICognitiveArchitectureSystem',
+                action: 'cleanupExpiredInsights',
+                expiredCount: expiredInsights.length,
+            });
         }
     }
 

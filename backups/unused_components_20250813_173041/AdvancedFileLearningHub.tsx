@@ -545,7 +545,7 @@ const AdvancedFileLearningHub: React.FC = () => {
                         '엔터프라이즈급 안정성과 확장성 보장',
                         '미래 기술의 선두주자로서의 포지셔닝'
                     ],
-                    summary: 'CORBU AI 시스템은 양자 AI, 생체 인식 AI, 고급 딥러닝을 통합한 차세대 AI 플랫폼으로, 42개의 고급 모델과 96.8% 평균 정확도를 달성한 완전한 AI 생태계입니다.'
+                    summary: 'CORBU.AI 시스템은 양자 AI, 생체 인식 AI, 고급 딥러닝을 통합한 차세대 AI 플랫폼으로, 42개의 고급 모델과 96.8% 평균 정확도를 달성한 완전한 AI 생태계입니다.'
                 };
             } else if (fileName.includes('CORBU_AI_FILE_LEARNING_ENHANCEMENT_REPORT.md')) {
                 extractedKnowledge = {

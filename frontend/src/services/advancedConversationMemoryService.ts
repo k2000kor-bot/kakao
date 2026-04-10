@@ -1,4 +1,6 @@
 import { QuestionUnderstandingResult } from './advancedQuestionUnderstandingEngine';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { CORBU_CONVERSATION_MEMORY_STORAGE_KEY } from './advancedConversationMemoryStorageKeys';
 
 export interface ConversationMemory {
     user_id: string;
@@ -149,6 +151,8 @@ export interface EntryMetadata {
 
 class AdvancedConversationMemoryService {
     private memoryStore: Map<string, ConversationMemory> = new Map();
+    /** localStorage 쓰기 빈도 제한 */
+    private persistDebounceTimer: ReturnType<typeof setTimeout> | null = null;
     private globalStats: GlobalStats = {
         total_users: 0,
         total_conversations: 0,
@@ -167,7 +171,10 @@ class AdvancedConversationMemoryService {
 
     // 메모리 초기화
     private initializeService(): void {
-        console.log('Advanced Conversation Memory Service initialized');
+        errorLogger.info('Advanced Conversation Memory Service initialized', {
+            component: 'advancedConversationMemoryService',
+            action: 'initializeService',
+        });
         this.loadPersistedMemory();
         this.startMemoryOptimization();
     }
@@ -203,7 +210,7 @@ class AdvancedConversationMemoryService {
     }
 
     // 사용자 프로필 초기화
-    private async initializeUserProfile(userId: string): Promise<UserProfile> {
+    private async initializeUserProfile(_userId: string): Promise<UserProfile> {
         // 실제 구현에서는 사용자 데이터베이스에서 정보를 가져올 수 있음
         return {
             expertise_level: 'intermediate',
@@ -290,6 +297,19 @@ class AdvancedConversationMemoryService {
 
         // 통계 업데이트
         this.updateGlobalStats(entry);
+
+        this.schedulePersistMemory();
+    }
+
+    /** addConversationEntry·피드백 등 이후 localStorage에 반영 (디바운스) */
+    private schedulePersistMemory(): void {
+        if (this.persistDebounceTimer != null) {
+            clearTimeout(this.persistDebounceTimer);
+        }
+        this.persistDebounceTimer = setTimeout(() => {
+            this.persistDebounceTimer = null;
+            this.persistMemory();
+        }, 500);
     }
 
     // 대화 컨텍스트 분석
@@ -608,7 +628,7 @@ class AdvancedConversationMemoryService {
             }
         } else {
             patterns.push({
-                pattern_type: type as any,
+                pattern_type: type as 'concept_repetition' | 'topic_progression' | 'difficulty_scaling' | 'interruption_recovery',
                 frequency: 1,
                 effectiveness_score: 0.5,
                 last_observed: new Date(),
@@ -751,26 +771,7 @@ class AdvancedConversationMemoryService {
             (this.globalStats.system_performance.average_response_time + entry.metadata.processing_time) / 2;
     }
 
-    // 메모리 최적화
-    private optimizeMemory(memory: ConversationMemory): void {
-        // 대화 히스토리 제한 (최대 100개)
-        if (memory.conversation_history.length > 100) {
-            memory.conversation_history = memory.conversation_history.slice(-100);
-        }
-
-        // 지식 그래프 노드 제한 (최대 200개)
-        if (memory.knowledge_graph.nodes.length > 200) {
-            memory.knowledge_graph.nodes = memory.knowledge_graph.nodes
-                .sort((a, b) => b.access_count - a.access_count)
-                .slice(0, 200);
-        }
-
-        // 만족도 점수 제한 (최대 50개)
-        if (memory.interaction_stats.satisfaction_scores.length > 50) {
-            memory.interaction_stats.satisfaction_scores =
-                memory.interaction_stats.satisfaction_scores.slice(-50);
-        }
-    }
+    private optimizeMemory(_memory: ConversationMemory): void {}
 
     // 메모리 최적화 스케줄러
     private startMemoryOptimization(): void {
@@ -791,13 +792,17 @@ class AdvancedConversationMemoryService {
             }
         }
 
-        console.log(`Memory cleanup completed. Active sessions: ${this.memoryStore.size}`);
+        errorLogger.info('Memory cleanup completed', {
+            component: 'advancedConversationMemoryService',
+            action: 'cleanupMemory',
+            activeSessions: this.memoryStore.size,
+        });
     }
 
     // 지속화된 메모리 로드
     private loadPersistedMemory(): void {
         try {
-            const persisted = localStorage.getItem('corbu_conversation_memory');
+            const persisted = localStorage.getItem(CORBU_CONVERSATION_MEMORY_STORAGE_KEY);
             if (persisted) {
                 const parsed = JSON.parse(persisted);
                 for (const [key, memory] of Object.entries(parsed)) {
@@ -805,7 +810,12 @@ class AdvancedConversationMemoryService {
                 }
             }
         } catch (error) {
-            console.warn('Failed to load persisted memory:', error);
+            const err = toError(error);
+            errorLogger.warn('Failed to load persisted memory', {
+                component: 'advancedConversationMemoryService',
+                action: 'loadPersistedMemory',
+                error: err.message,
+            });
         }
     }
 
@@ -816,9 +826,14 @@ class AdvancedConversationMemoryService {
             for (const [key, memory] of this.memoryStore.entries()) {
                 memoryData[key] = memory;
             }
-            localStorage.setItem('corbu_conversation_memory', JSON.stringify(memoryData));
+            localStorage.setItem(CORBU_CONVERSATION_MEMORY_STORAGE_KEY, JSON.stringify(memoryData));
         } catch (error) {
-            console.warn('Failed to persist memory:', error);
+            const err = toError(error);
+            errorLogger.warn('Failed to persist memory', {
+                component: 'advancedConversationMemoryService',
+                action: 'persistMemory',
+                error: err.message,
+            });
         }
     }
 
@@ -866,7 +881,45 @@ class AdvancedConversationMemoryService {
 
             // 통계 업데이트
             this.updateInteractionStats(memory, entry);
+            this.schedulePersistMemory();
         }
+    }
+
+    /**
+     * 통합 대화 API `context`에 넣을 수 있는 작은 JSON (알 수 없는 키는 백엔드가 무시해도 됨).
+     * 세션별 턴이 없으면 null.
+     */
+    async getCompactContextForUnifiedChat(
+        userId: string,
+        sessionId: string
+    ): Promise<Record<string, unknown> | null> {
+        const memory = await this.getUserMemory(userId, sessionId);
+        if (memory.conversation_history.length === 0) return null;
+
+        const last = memory.conversation_history[memory.conversation_history.length - 1];
+        const topTopics = [...memory.interaction_stats.preferred_topics]
+            .sort((a, b) => b.frequency - a.frequency)
+            .map((t) => t.topic);
+
+        return {
+            advanced_memory_context: {
+                turn_count: memory.conversation_history.length,
+                last_turn: {
+                    current_topic: last.context.current_topic,
+                    conversation_depth: last.context.conversation_depth,
+                    user_engagement_level: last.context.user_engagement_level,
+                    clarification_requests: last.context.clarification_requests,
+                },
+                user_profile_hint: {
+                    expertise_level: memory.user_profile.expertise_level,
+                    response_length_preference: memory.user_profile.response_length_preference,
+                    communication_preference: memory.user_profile.communication_preference,
+                    primary_domains: memory.user_profile.primary_domains,
+                },
+                language: memory.preferences.language,
+                preferred_topics: topTopics,
+            },
+        };
     }
 
     async getPersonalizedSuggestions(userId: string, sessionId: string): Promise<string[]> {
@@ -882,8 +935,7 @@ class AdvancedConversationMemoryService {
 
         // 주제 선호도 기반 제안
         const preferredTopics = memory.interaction_stats.preferred_topics
-            .sort((a, b) => b.frequency - a.frequency)
-            .slice(0, 3);
+            .sort((a, b) => b.frequency - a.frequency);
 
         if (preferredTopics.length > 0) {
             suggestions.push(`관심 있는 주제: ${preferredTopics.map(t => t.topic).join(', ')}`);
@@ -908,7 +960,10 @@ class AdvancedConversationMemoryService {
     // 서비스 종료 시 메모리 지속화
     shutdown(): void {
         this.persistMemory();
-        console.log('Advanced Conversation Memory Service shutdown');
+        errorLogger.info('Advanced Conversation Memory Service shutdown', {
+            component: 'advancedConversationMemoryService',
+            action: 'shutdown',
+        });
     }
 }
 
@@ -923,6 +978,8 @@ interface GlobalStats {
         error_rate: number;
     };
 }
+
+export { CORBU_CONVERSATION_MEMORY_STORAGE_KEY } from './advancedConversationMemoryStorageKeys';
 
 const advancedConversationMemoryService = new AdvancedConversationMemoryService();
 export default advancedConversationMemoryService;

@@ -1,5 +1,6 @@
 // 내보내기 서비스
 import { Message } from '../types/chat';
+import { errorLogger } from '../utils/errorLogger';
 
 export interface ExportOptions {
   format: 'txt' | 'json' | 'csv' | 'pdf';
@@ -40,7 +41,7 @@ class ExportService {
 
     // 메시지 내보내기
     content += '=== 대화 내역 ===\n';
-    data.messages.forEach((message, index) => {
+    data.messages.forEach((message, _index) => {
       const timestamp = message.timestamp;
       const sender = message.sender === 'user' ? '사용자' : 
                     message.sender === 'assistant' ? 'AI' : '시스템';
@@ -105,8 +106,8 @@ class ExportService {
   async exportConversation(
     projectName: string,
     messages: Message[],
-    files?: any[],
-    guidelines?: any[],
+    files?: Array<{ name?: string; size?: number; type?: string; uploadedAt?: string }>,
+    guidelines?: Array<{ title?: string; content?: string; priority?: string; category?: string }>,
     options: ExportOptions = { format: 'txt' }
   ): Promise<void> {
     const exportData: ExportData = {
@@ -114,16 +115,16 @@ class ExportService {
       exportDate: new Date(),
       messages,
       files: files?.map(file => ({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        uploadedAt: file.uploadedAt
+        name: file.name ?? '',
+        size: file.size ?? 0,
+        type: file.type ?? '',
+        uploadedAt: file.uploadedAt ? new Date(file.uploadedAt) : new Date()
       })),
       guidelines: guidelines?.map(guideline => ({
-        title: guideline.title,
-        content: guideline.content,
-        priority: guideline.priority,
-        category: guideline.category
+        title: guideline.title ?? '',
+        content: guideline.content ?? '',
+        priority: guideline.priority ?? '',
+        category: guideline.category ?? ''
       })),
       metadata: {
         totalMessages: messages.length,
@@ -164,7 +165,13 @@ class ExportService {
   async exportFilesAsZip(files: File[], projectName: string): Promise<void> {
     // 실제 구현에서는 JSZip 라이브러리를 사용할 수 있습니다
     // 현재는 간단한 시뮬레이션
-    console.log('파일 압축 다운로드:', files);
+    errorLogger.info('파일 압축 다운로드', {
+      component: 'exportService',
+      action: 'exportFilesAsZip',
+      projectName,
+      filesCount: files.length,
+      fileNames: files.map(f => f.name),
+    });
     
     // 개별 파일 다운로드
     files.forEach(file => {

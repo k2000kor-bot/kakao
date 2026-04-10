@@ -52,7 +52,7 @@ def analyze_and_learn():
                 'error': '지원하지 않는 파일 형식입니다.'
             }), 400
         
-        # 프로젝트 ID와 채팅 ID 가져오기
+        # 프로젝트 ID와 대화 ID 가져오기
         project_id = request.form.get('projectId', '')
         chat_id = request.form.get('chatId', '')
         
@@ -350,5 +350,8 @@ def get_deep_learning_models():
 if __name__ == '__main__':
     # 업로드 디렉토리 생성
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    # 통합 main_server(5002)·개포 분석(5001)과 충돌 피하려면 기본 5012
+    _learn_port = int(
+        os.environ.get("AUTO_LEARNING_PORT", os.environ.get("PORT", "5012"))
+    )
+    app.run(debug=True, host="0.0.0.0", port=_learn_port)

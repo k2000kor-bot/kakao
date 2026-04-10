@@ -1287,6 +1287,7 @@ def create_cloud_native_app() -> FastAPI:
     return app
 
 if __name__ == "__main__":
+    import os
     import uvicorn
     
     # 로깅 설정
@@ -1296,10 +1297,10 @@ if __name__ == "__main__":
     )
     
     app = create_cloud_native_app()
-    
+    _p = int(os.environ.get("CLOUD_NATIVE_ORCHESTRATION_PORT", os.environ.get("PORT", "8005")))
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8005,
+        port=_p,
         log_level="info"
     ) 

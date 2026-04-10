@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
-import ultraAdvancedAIService from './ultraAdvancedAIService';
-import ultraAdvancedAIOrchestrationService from './ultraAdvancedAIOrchestrationService';
+import { ultraAdvancedAIService } from './ultraAdvancedAIService';
 import ultraAdvancedAIIntegrationManager from './ultraAdvancedAIIntegrationManager';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface IntegratedChatMessage {
     id: string;
@@ -29,15 +29,15 @@ export interface IntegratedChatMessage {
         };
         context: {
             previous_messages: string[];
-            user_preferences: any;
-            system_state: any;
+            user_preferences: Record<string, unknown>;
+            system_state: Record<string, unknown>;
             active_integrations: string[];
-            workflow_status: any;
+            workflow_status: Record<string, unknown>;
         };
         integration_data?: {
             integration_id: string;
             service_type: string;
-            result: any;
+            result: Record<string, unknown>;
             status: string;
         };
     };
@@ -144,19 +144,22 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
         }
     };
     private _isProcessing: boolean = false;
-    private userProfile: any = {};
-    private conversationContext: any = {};
+    private userProfile: Record<string, unknown> = {};
+    private conversationContext: Record<string, unknown> = {};
 
     constructor() {
         super();
         this.initializeSystem();
-        console.log('🤖 고도화된 AI 통합 채팅 시스템이 초기화되었습니다.');
+        errorLogger.info('🤖 고도화된 AI 통합 대화 시스템이 초기화되었습니다.', {
+            component: 'ultraAdvancedAIIntegratedChatSystem',
+            action: 'constructor',
+        });
     }
 
     private async initializeSystem(): Promise<void> {
         try {
             // 기본 세션 생성
-            await this.createSession('기본 통합 채팅 세션');
+            await this.createSession('기본 통합 대화 세션');
 
             // 시스템 모니터링 시작
             this.startSystemMonitoring();
@@ -164,7 +167,11 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
 
             this.emit('system_initialized', this.metrics);
         } catch (error) {
-            console.error('AI 통합 채팅 시스템 초기화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('AI 통합 대화 시스템 초기화 실패', err, {
+                component: 'ultraAdvancedAIIntegratedChatSystem',
+                action: 'initializeSystem',
+            });
             this.emit('initialization_error', error);
         }
     }
@@ -287,7 +294,13 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
             return aiResponse;
 
         } catch (error) {
-            console.error('메시지 처리 실패:', error);
+            const err = toError(error);
+            errorLogger.error('메시지 처리 실패', err, {
+                component: 'ultraAdvancedAIIntegratedChatSystem',
+                action: 'processMessage',
+                sessionId: session.id,
+                userInput,
+            });
             this.emit('processing_error', error);
             throw error;
         } finally {
@@ -299,38 +312,54 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
         const startTime = Date.now();
 
         // Ultra AI 서비스를 통해 응답 생성
-        const aiResult = await ultraAdvancedAIService.processMessage(userInput, {
-            session_context: session,
-            user_profile: this.userProfile,
-            conversation_context: this.conversationContext,
-            settings: this.settings
+        const aiResult = await ultraAdvancedAIService.performUltraAnalysis(userInput, {
+            sessionId: session.id,
+            userId: typeof this.userProfile?.id === 'string' ? this.userProfile.id : 'unknown',
+            messageHistory: Array.isArray(this.conversationContext?.messages) ? this.conversationContext.messages : [],
+            metadata: {
+                session_context: typeof session.id === 'string' ? session.id : String(session.id),
+                user_profile: this.userProfile ?? {},
+                conversation_context: Array.isArray(this.conversationContext?.messages) ? this.conversationContext.messages : [],
+                settings: this.settings
+            }
         });
 
         const processingTime = Date.now() - startTime;
 
+        // performUltraAnalysis 결과를 메시지 형식으로 변환
+        const responseContent = aiResult.recommendations.length > 0
+            ? aiResult.recommendations.join('\n\n')
+            : `분석 완료: ${aiResult.analysis.intent} (신뢰도: ${(aiResult.confidence * 100).toFixed(1)}%)`;
+
+        // sentiment를 올바른 타입으로 변환
+        const sentimentLabel = aiResult.analysis.sentiment.label;
+        const sentiment: 'positive' | 'neutral' | 'negative' =
+            sentimentLabel === 'positive' ? 'positive' :
+                sentimentLabel === 'negative' ? 'negative' : 'neutral';
+
         const aiMessage: IntegratedChatMessage = {
             id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: 'ai',
-            content: aiResult.content,
+            content: responseContent,
             timestamp: new Date(),
             sender: 'ai',
             metadata: {
-                model: aiResult.metadata.model,
-                confidence: aiResult.metadata.confidence,
+                model: 'ultra-advanced-ai',
+                confidence: aiResult.confidence,
                 processing_time: processingTime,
-                tokens_used: aiResult.metadata.tokens_used,
-                sentiment: aiResult.metadata.sentiment,
-                category: aiResult.metadata.category,
-                language: aiResult.metadata.language,
-                intent: aiResult.metadata.intent,
-                entities: aiResult.metadata.entities,
-                topics: aiResult.metadata.topics,
-                recommendations: aiResult.metadata.recommendations,
+                tokens_used: 0,
+                sentiment: sentiment,
+                category: aiResult.analysis.intent,
+                language: 'ko',
+                intent: aiResult.analysis.intent,
+                entities: aiResult.analysis.entities,
+                topics: [],
+                recommendations: aiResult.recommendations,
                 performance_metrics: {
                     response_time: processingTime,
-                    accuracy: aiResult.metadata.performance_metrics.accuracy,
-                    relevance: aiResult.metadata.performance_metrics.relevance,
-                    user_satisfaction: aiResult.metadata.performance_metrics.user_satisfaction
+                    accuracy: aiResult.confidence,
+                    relevance: aiResult.analysis.contextRelevance,
+                    user_satisfaction: 0.8
                 },
                 context: {
                     previous_messages: session.messages.map(m => m.content).slice(-5),
@@ -361,7 +390,7 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
                 const analysisMessage: IntegratedChatMessage = {
                     id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     type: 'analysis',
-                    content: `분석 완료: ${JSON.stringify(analysisResult).substring(0, 100)}...`,
+                    content: `분석 완료: ${JSON.stringify(analysisResult)}`,
                     timestamp: new Date(),
                     sender: 'system',
                     metadata: {
@@ -405,18 +434,24 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
                 this.emit('analysis_completed', analysisMessage, session);
             }
         } catch (error) {
-            console.error('통합 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('통합 분석 실패', err, {
+                component: 'ultraAdvancedAIIntegratedChatSystem',
+                action: 'performIntegrationAnalysis',
+                sessionId: session.id,
+            });
         }
     }
 
     private async triggerRelevantWorkflows(userInput: string, aiResponse: IntegratedChatMessage, session: IntegratedChatSession): Promise<void> {
+        const responseContent = aiResponse.content;
         try {
             // 워크플로우 통합 서비스 호출
             const workflowIntegration = ultraAdvancedAIIntegrationManager.getIntegration('ai-orchestration-service');
             if (workflowIntegration && workflowIntegration.status === 'active') {
                 const workflowResult = await ultraAdvancedAIIntegrationManager.triggerWorkflow('ai-orchestration-service', {
                     user_input: userInput,
-                    ai_response: aiResponse.content,
+                    ai_response: responseContent,
                     session_context: session,
                     trigger_type: 'conversation_workflow'
                 });
@@ -468,7 +503,12 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
                 this.emit('workflow_triggered', workflowMessage, session);
             }
         } catch (error) {
-            console.error('워크플로우 실행 실패:', error);
+            const err = toError(error);
+            errorLogger.error('워크플로우 실행 실패', err, {
+                component: 'ultraAdvancedAIIntegratedChatSystem',
+                action: 'triggerRelevantWorkflows',
+                sessionId: session.id,
+            });
         }
     }
 
@@ -523,7 +563,12 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
                 this.emit('optimization_completed', optimizationMessage, session);
             }
         } catch (error) {
-            console.error('성능 최적화 실패:', error);
+            const err = toError(error);
+            errorLogger.error('성능 최적화 실패', err, {
+                component: 'ultraAdvancedAIIntegratedChatSystem',
+                action: 'optimizePerformance',
+                sessionId: session.id,
+            });
         }
     }
 
@@ -626,21 +671,21 @@ class UltraAdvancedAIIntegratedChatSystem extends EventEmitter {
         }
     }
 
-    public updateUserProfile(profile: any): void {
+    public updateUserProfile(profile: Record<string, unknown>): void {
         this.userProfile = { ...this.userProfile, ...profile };
         this.emit('user_profile_updated', this.userProfile);
     }
 
-    public getUserProfile(): any {
+    public getUserProfile(): Record<string, unknown> {
         return { ...this.userProfile };
     }
 
-    public updateConversationContext(context: any): void {
+    public updateConversationContext(context: Record<string, unknown>): void {
         this.conversationContext = { ...this.conversationContext, ...context };
         this.emit('conversation_context_updated', this.conversationContext);
     }
 
-    public getConversationContext(): any {
+    public getConversationContext(): Record<string, unknown> {
         return { ...this.conversationContext };
     }
 

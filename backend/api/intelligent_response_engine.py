@@ -265,6 +265,15 @@ class IntelligentResponseEngine:
             # 5-3. 최종 품질 보증 (NEW)
             response = self._finalize_response(response, analysis, semantic_context)
 
+            # 5-4. 프로젝트 노트북 지식 반영 표시 (소스 그라운딩)
+            if context and context.get("projectKnowledge"):
+                pk = (context.get("projectKnowledge") or "").strip()
+                if pk:
+                    response = (
+                        "※ 현재 프로젝트의 학습 정보를 반영하여 답변했습니다.\n\n"
+                        + response
+                    )
+
             return response
 
         except Exception as e:
@@ -429,8 +438,12 @@ class IntelligentResponseEngine:
     def _inject_domain_knowledge(
         self, context: Optional[Dict], analysis: QueryAnalysis, semantic_context: Dict
     ) -> Dict:
-        """도메인 지식 주입"""
+        """도메인 지식 주입 (프로젝트 노트북 지식 포함)"""
         ctx = context.copy() if context else {}
+
+        # 프로젝트 노트북 LLM 학습 정보 유지 (소스 그라운딩용)
+        if context and context.get("projectKnowledge"):
+            ctx["projectKnowledge"] = context["projectKnowledge"]
 
         # 관련 기술 스택 정보 추가
         related_techs = []
@@ -1408,6 +1421,10 @@ spec:
         ctx["recent_entities"] = list(set(recent_entities))[:5]
         ctx["has_history"] = True
         ctx["history_length"] = len(history)
+        ctx["conversation_consistency_instruction"] = (
+            "이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요. "
+            "최근 대화 맥락을 반드시 참고하세요."
+        )
 
         # 최근 대화 요약 (마지막 2개)
         if len(history) >= 2:
@@ -2228,8 +2245,54 @@ Facebook이 만든 UI 라이브러리로, 컴포넌트 기반 개발을 지원�
         # 접근 방식 결정
         approach = self._determine_approach(analysis)
 
-        # 고려 사항
-        considerations = self._identify_considerations(analysis)
+        # 고려 사항 (요구·질문 맞춤 지시를 맨 앞에 두어 우선 반영)
+        considerations = []
+        if context and context.get("korean_layer_instruction"):
+            considerations.append(
+                "[한국어 이해·출력 계층]\n"
+                + str(context["korean_layer_instruction"])[:1200]
+            )
+        if context and context.get("multilayer_style_hint"):
+            import json as _json
+
+            _mh = context["multilayer_style_hint"]
+            try:
+                if isinstance(_mh, (dict, list)):
+                    considerations.append(
+                        "[다층 스타일 힌트(프론트)]\n"
+                        + _json.dumps(_mh, ensure_ascii=False)[:1000]
+                    )
+                else:
+                    considerations.append(
+                        "[다층 스타일 힌트(프론트)]\n" + str(_mh)[:1000]
+                    )
+            except (TypeError, ValueError):
+                pass
+        if context and context.get("_user_message_priority_hint"):
+            considerations.append(str(context["_user_message_priority_hint"])[:700])
+        if context and context.get("_adapt_answer_to_request_instruction"):
+            considerations.append(str(context["_adapt_answer_to_request_instruction"])[:800])
+        if context and context.get("_multi_request_instruction"):
+            considerations.append(
+                "[다중 질문·요구]\n" + str(context["_multi_request_instruction"])[:900]
+            )
+        if context and context.get("_advanced_memory_instruction"):
+            considerations.append(str(context["_advanced_memory_instruction"])[:500])
+        considerations.extend(self._identify_considerations(analysis))
+        if context and context.get("has_history"):
+            consistency_inst = context.get("conversation_consistency_instruction") or (
+                "이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요."
+            )
+            considerations = list(considerations) + [consistency_inst]
+        # 사전 파이프라인: 논리 구성·스타일 지시 반영
+        if context and context.get("_logical_structure_outline"):
+            considerations = list(considerations) + [
+                f"구조: {context['_logical_structure_outline'][:200]}"
+            ]
+        if context and context.get("_style_and_tone_instruction"):
+            considerations = list(considerations) + [
+                f"스타일: {context['_style_and_tone_instruction'][:150]}"
+            ]
 
         return ThoughtProcess(
             understanding=understanding,
@@ -7396,7 +7459,7 @@ def get_item(item_id: int):
 uvicorn main:app --reload
 ```
 
-API 문서: http://localhost:8000/docs
+API 문서: http://localhost:5002/api/docs
 """
         else:
             return """# REST API 만들기 (Node.js Express)
@@ -10019,13 +10082,14 @@ app.use(cors({
 }));
 ```
 
-**FastAPI (Python)**
+**FastAPI (Python)** — 이 레포의 레거시 서버는 `backend/cors_config.py`의 `get_cors_allow_origins()` 사용 (`CORS_ALLOW_ORIGINS` 환경 변수).
 ```python
 from fastapi.middleware.cors import CORSMiddleware
+from cors_config import get_cors_allow_origins
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -10200,7 +10264,7 @@ fetch('/api/protected', {
 ```bash
 # Nginx 설정 확인
 upstream backend {
-  server 127.0.0.1:8000;
+  server 127.0.0.1:5002;  # 통합 main_server 기본 포트 (환경에 맞게 조정)
   keepalive 64;
 }
 
@@ -12238,7 +12302,7 @@ const [messages, setMessages] = useState([]);
 const ws = useRef(null);
 
 useEffect(() => {
-  ws.current = new WebSocket('ws://localhost:8000/ws/user1');
+  ws.current = new WebSocket('ws://localhost:5002/ws/user1');
   
   ws.current.onmessage = (event) => {
     const data = JSON.parse(event.data);
@@ -13107,7 +13171,7 @@ pip install --upgrade package_name
         if any(g in query_lower for g in ["안녕", "hello", "hi", "반가워", "하이"]):
             return """안녕하세요! 
 
-저는 **CORBU AI**입니다. 프로그래밍과 개발 관련 질문에 답변해드릴 수 있어요.
+저는 **CORBU.AI**입니다. 프로그래밍과 개발 관련 질문에 답변해드릴 수 있어요.
 
 ## 도움드릴 수 있는 분야
 

@@ -1,4 +1,11 @@
 import { Message, ChatContext } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  API_BASE_URL,
+  API_V7_CONTEXTUAL_ANALYSIS_PATH,
+  FALLBACK_API_ORIGIN,
+  joinApiHealthCheckUrl,
+} from '../config/api';
 
 export interface ContextualAnalysis {
   intent: string;
@@ -17,7 +24,7 @@ export interface ContextualRequest {
   message: string;
   conversationHistory: Message[];
   context?: ChatContext;
-  userPreferences?: Record<string, any>;
+  userPreferences?: Record<string, unknown>;
 }
 
 export interface ContextualResponse {
@@ -29,12 +36,12 @@ export interface ContextualResponse {
 }
 
 export class ContextualAnalysisService {
-  private baseUrl = 'http://localhost:8003/api/v7';
+  private readonly apiOrigin = API_BASE_URL || FALLBACK_API_ORIGIN;
 
   async analyzeContext(request: ContextualRequest): Promise<ContextualResponse> {
     try {
       // 백엔드 API 호출
-      const response = await fetch(`${this.baseUrl}/contextual-analysis`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, API_V7_CONTEXTUAL_ANALYSIS_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +67,12 @@ export class ContextualAnalysisService {
         throw new Error('백엔드 API 호출 실패');
       }
     } catch (error) {
-      console.error('문맥 분석 오류:', error);
+      const err = toError(error);
+      errorLogger.error('문맥 분석 오류', err, {
+        component: 'contextualAnalysisService',
+        action: 'analyzeContext',
+        messagePreview: request.message,
+      });
 
       // 로컬 폴백 분석 수행
       const fullContext = this.buildFullContext(request);
@@ -177,7 +189,7 @@ export class ContextualAnalysisService {
     if (companies) entities.push(...companies);
 
     // 지역명
-    const locations = context.match(/(?:개포우성|잠실우성|강남|서울|부산|대구)/g);
+    const locations = context.match(/(?:강남|서울|부산|대구|인천)/g);
     if (locations) entities.push(...locations);
 
     // 인명
@@ -187,7 +199,7 @@ export class ContextualAnalysisService {
     return Array.from(new Set(entities));
   }
 
-  private analyzeIntent(message: string, context: string): string {
+  private analyzeIntent(message: string, _context: string): string {
     if (message.includes('분석') || message.includes('검토') || message.includes('평가')) {
       return 'analysis_request';
     }
@@ -258,7 +270,7 @@ export class ContextualAnalysisService {
     return 'neutral';
   }
 
-  private analyzeUrgency(message: string, context: string): 'low' | 'medium' | 'high' | 'critical' {
+  private analyzeUrgency(message: string, _context: string): 'low' | 'medium' | 'high' | 'critical' {
     const urgentKeywords = ['긴급', '즉시', '바로', '당장', '시급'];
     const highUrgencyKeywords = ['중요', '필수', '반드시', '꼭'];
     const mediumUrgencyKeywords = ['가능하면', '시간되면', '나중에'];
@@ -278,7 +290,7 @@ export class ContextualAnalysisService {
     return 'low';
   }
 
-  private extractActionItems(message: string, context: string): string[] {
+  private extractActionItems(message: string, _context: string): string[] {
     const actionItems: string[] = [];
 
     if (message.includes('분석해줘') || message.includes('검토해줘')) {
@@ -368,7 +380,7 @@ export class ContextualAnalysisService {
     return Math.min(confidence, 1.0);
   }
 
-  private generateContextualResponse(analysis: ContextualAnalysis, request: ContextualRequest): string {
+  private generateContextualResponse(analysis: ContextualAnalysis, _request: ContextualRequest): string {
     let response = `전체 문맥을 파악했습니다. `;
 
     if (analysis.intent === 'analysis_request') {
@@ -451,7 +463,7 @@ export class ContextualAnalysisService {
     return actions;
   }
 
-  private createFallbackResponse(request: ContextualRequest): ContextualResponse {
+  private createFallbackResponse(_request: ContextualRequest): ContextualResponse {
     return {
       analysis: {
         intent: 'general_inquiry',

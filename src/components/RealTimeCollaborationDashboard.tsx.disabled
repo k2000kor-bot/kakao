@@ -236,7 +236,7 @@ const RealTimeCollaborationDashboard: React.FC = () => {
         { label: '작업 관리', icon: <Timeline /> },
         { label: '회의실', icon: <VideoCall /> },
         { label: '문서 공유', icon: <Article /> },
-        { label: '실시간 채팅', icon: <Chat /> },
+        { label: '실시간 대화', icon: <Chat /> },
         { label: '설정', icon: <Settings /> }
     ];
 
@@ -1046,10 +1046,10 @@ const RealTimeCollaborationDashboard: React.FC = () => {
             <Grid item xs={12} md={8}>
                 <Card>
                     <CardContent>
-                        <Typography variant="h6" mb={2}>실시간 채팅</Typography>
+                        <Typography variant="h6" mb={2}>실시간 대화</Typography>
                         <Box sx={{ height: 400, border: '1px solid #e0e0e0', borderRadius: 1, p: 2, mb: 2 }}>
                             <Typography variant="body2" color="textSecondary" textAlign="center">
-                                채팅 인터페이스가 여기에 표시됩니다.
+                                대화 인터페이스가 여기에 표시됩니다.
                             </Typography>
                         </Box>
                         <Box display="flex" gap={1}>

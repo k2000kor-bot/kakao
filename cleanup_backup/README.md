@@ -46,7 +46,7 @@ python3 simple_frontend_backend_test.py
 
 ## 📚 API 사용법
 
-### 채팅 API
+### 대화 API
 
 ```bash
 curl -X POST http://localhost:8000/api/chat \

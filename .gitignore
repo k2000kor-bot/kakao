@@ -25,9 +25,16 @@ ENV/
 /build
 /dist
 build/
+deploy-package/
 dist/
 frontend/build/
 corbu-ai/**/build/
+
+# Local / unreadable artifacts under components (break sandbox rsync; see sync:frontend-src excludes)
+src/components/Oracle_JDK-24.jdk/
+src/components/OpenJDK-24.jdk/
+src/components/Security/
+src/components/backup/
 
 # misc
 .DS_Store
@@ -37,6 +44,7 @@ corbu-ai/**/build/
 .env.production.local
 .env
 .env.*
+!.env.example
 
 npm-debug.log*
 yarn-debug.log*
@@ -66,3 +74,7 @@ backend/project_data/
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Lighthouse
+lighthouse-report.html
+lighthouse-report.json

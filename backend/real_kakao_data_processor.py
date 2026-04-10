@@ -18,8 +18,8 @@ class RealKakaoDataProcessor:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        print("채팅방 테이블 생성 중...")
-        # 채팅방 테이블
+        print("대화방 테이블 생성 중...")
+        # 대화방 테이블
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS chat_rooms (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +74,7 @@ class RealKakaoDataProcessor:
         conn.close()
     
     def scan_chat_rooms(self) -> List[Dict[str, Any]]:
-        """채팅방 폴더 스캔"""
+        """대화방 폴더 스캔"""
         rooms = []
         
         if not os.path.exists(self.chat_rooms_path):
@@ -104,7 +104,7 @@ class RealKakaoDataProcessor:
         return rooms
     
     def parse_kakao_chat_file(self, file_path: str) -> Dict[str, Any]:
-        """카카오톡 채팅 파일 파싱"""
+        """카카오톡 대화 파일 파싱"""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -118,11 +118,11 @@ class RealKakaoDataProcessor:
         participants = set()
         messages = []
         
-        # 채팅방 이름과 저장 날짜 추출
+        # 대화방 이름과 저장 날짜 추출
         room_match = re.search(r'([^님]+)님과 카카오톡 대화', content)
         if room_match:
             room_name = room_match.group(1).strip()
-            print(f"채팅방 이름: {room_name}")
+            print(f"대화방 이름: {room_name}")
         
         save_date_match = re.search(r'저장한 날짜 : ([^\\n]+)', content)
         if save_date_match:
@@ -207,7 +207,7 @@ class RealKakaoDataProcessor:
             file_date = file_datetime.strftime('%Y-%m-%d')
             file_time = file_datetime.strftime('%H:%M:%S')
             
-            # 같은 채팅방 이름과 같은 날짜에 저장된 것 확인
+            # 같은 대화방 이름과 같은 날짜에 저장된 것 확인
             cursor.execute('''
                 SELECT id, save_date, file_path FROM chat_rooms 
                 WHERE room_name = ? AND save_date = ?
@@ -215,7 +215,7 @@ class RealKakaoDataProcessor:
             existing_rooms = cursor.fetchall()
             
             if existing_rooms:
-                # 같은 날짜에 저장된 채팅방이 있으면 시간 비교
+                # 같은 날짜에 저장된 대화방이 있으면 시간 비교
                 for existing_room_id, existing_save_date, existing_file_path in existing_rooms:
                     # 기존 파일의 수정 시간 확인
                     if os.path.exists(existing_file_path):
@@ -226,14 +226,14 @@ class RealKakaoDataProcessor:
                         # 같은 시간대(±5분)에 업로드된 경우 중복으로 처리
                         time_diff = abs((file_datetime - existing_datetime).total_seconds())
                         if time_diff <= 300:  # 5분 = 300초
-                            print(f"동일 시간대에 업로드된 채팅방입니다: {chat_data['room_name']}")
+                            print(f"동일 시간대에 업로드된 대화방입니다: {chat_data['room_name']}")
                             print(f"기존 파일: {existing_file_path} ({existing_time})")
                             print(f"새 파일: {file_path} ({file_time})")
                             conn.close()
                             return existing_room_id
                 
                 # 시간이 다르면 내용 비교 후 업데이트
-                existing_room_id = existing_rooms[0][0]  # 첫 번째 기존 채팅방 사용
+                existing_room_id = existing_rooms[0][0]  # 첫 번째 기존 대화방 사용
                 
                 # 기존 메시지 개수 조회
                 cursor.execute('SELECT COUNT(*) FROM messages WHERE room_id = ?', (existing_room_id,))
@@ -244,7 +244,7 @@ class RealKakaoDataProcessor:
                 
                 # 메시지 개수가 다르면 업데이트
                 if existing_message_count != new_message_count:
-                    print(f"채팅방 내용이 변경되었습니다: {chat_data['room_name']}")
+                    print(f"대화방 내용이 변경되었습니다: {chat_data['room_name']}")
                     print(f"기존 메시지: {existing_message_count}개, 새로운 메시지: {new_message_count}개")
                     
                     # 기존 메시지 삭제
@@ -275,7 +275,7 @@ class RealKakaoDataProcessor:
                     ''', (file_path, chat_data['participant_count'], existing_room_id))
                     
                     conn.commit()
-                    print(f"채팅방 내용 업데이트 완료: {chat_data['room_name']} (ID: {existing_room_id})")
+                    print(f"대화방 내용 업데이트 완료: {chat_data['room_name']} (ID: {existing_room_id})")
                     return existing_room_id
                 else:
                     # 메시지 개수가 같으면 내용 해시 비교
@@ -297,7 +297,7 @@ class RealKakaoDataProcessor:
                     new_hash = hashlib.md5(str(new_messages).encode()).hexdigest()
                     
                     if existing_hash != new_hash:
-                        print(f"채팅방 내용이 변경되었습니다: {chat_data['room_name']}")
+                        print(f"대화방 내용이 변경되었습니다: {chat_data['room_name']}")
                         print(f"기존 해시: {existing_hash[:8]}..., 새로운 해시: {new_hash[:8]}...")
                         
                         # 기존 메시지 삭제
@@ -328,14 +328,14 @@ class RealKakaoDataProcessor:
                         ''', (file_path, chat_data['participant_count'], existing_room_id))
                         
                         conn.commit()
-                        print(f"채팅방 내용 업데이트 완료: {chat_data['room_name']} (ID: {existing_room_id})")
+                        print(f"대화방 내용 업데이트 완료: {chat_data['room_name']} (ID: {existing_room_id})")
                         return existing_room_id
                     else:
-                        print(f"동일한 내용의 채팅방입니다: {chat_data['room_name']}")
+                        print(f"동일한 내용의 대화방입니다: {chat_data['room_name']}")
                         conn.close()
                         return existing_room_id
             
-            # 3. 완전히 새로운 채팅방 저장
+            # 3. 완전히 새로운 대화방 저장
             cursor.execute('''
                 INSERT INTO chat_rooms (room_name, participant_count, save_date, file_path)
                 VALUES (?, ?, ?, ?)
@@ -361,7 +361,7 @@ class RealKakaoDataProcessor:
                       message['is_deleted'], message['has_media']))
             
             conn.commit()
-            print(f"새로운 채팅방 저장 완료: {chat_data['room_name']} (ID: {room_id})")
+            print(f"새로운 대화방 저장 완료: {chat_data['room_name']} (ID: {room_id})")
             return room_id
             
         except Exception as e:
@@ -371,11 +371,11 @@ class RealKakaoDataProcessor:
             conn.close()
     
     def get_chat_room(self, room_id: int) -> Dict[str, Any]:
-        """채팅방 정보 조회"""
+        """대화방 정보 조회"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # 채팅방 정보
+        # 대화방 정보
         cursor.execute('''
             SELECT id, room_name, participant_count, save_date, file_path
             FROM chat_rooms WHERE id = ?
@@ -420,13 +420,13 @@ class RealKakaoDataProcessor:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # 먼저 해당 채팅방의 메시지 개수 확인
+        # 먼저 해당 대화방의 메시지 개수 확인
         cursor.execute('SELECT COUNT(*) FROM messages WHERE room_id = ?', (room_id,))
         total_messages = cursor.fetchone()[0]
-        print(f"채팅방 {room_id}의 총 메시지 개수: {total_messages}개")
+        print(f"대화방 {room_id}의 총 메시지 개수: {total_messages}개")
         
         if total_messages == 0:
-            print(f"채팅방 {room_id}에 메시지가 없습니다.")
+            print(f"대화방 {room_id}에 메시지가 없습니다.")
             conn.close()
             return []
         
@@ -460,7 +460,7 @@ class RealKakaoDataProcessor:
         return sqlite3.connect(self.db_path)
     
     def get_all_chat_rooms(self) -> List[Dict[str, Any]]:
-        """모든 채팅방 목록 조회"""
+        """모든 대화방 목록 조회"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -488,7 +488,7 @@ class RealKakaoDataProcessor:
         return rooms
     
     def process_all_chat_files(self):
-        """모든 채팅 파일 처리"""
+        """모든 대화 파일 처리"""
         rooms = self.scan_chat_rooms()
         
         for room in rooms:
@@ -506,7 +506,7 @@ class RealKakaoDataProcessor:
         try:
             chat_data = self.parse_kakao_chat_file(file_path)
             room_id = self.save_to_database(chat_data, file_path)
-            print(f"새로운 채팅방 처리 완료: {chat_data['room_name']} (ID: {room_id})")
+            print(f"새로운 대화방 처리 완료: {chat_data['room_name']} (ID: {room_id})")
             return room_id
         except Exception as e:
             print(f"파일 처리 오류: {file_path} - {str(e)}")

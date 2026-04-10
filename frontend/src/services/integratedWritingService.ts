@@ -2,11 +2,16 @@
  * 통합 글쓰기 서비스
  * 모든 글쓰기 엔진을 통합하여 사용자의 복합적 요구사항을 처리
  */
-
 import { professionalWritingEngine, WritingStyle, WritingRequest as ProfessionalWritingRequest } from './professionalWritingEngine';
-import { adaptiveWritingEngine, SourceMaterial, WritingRequirements, GeneratedContent } from './adaptiveWritingEngine';
-import { advancedTextAnalysisService, TextAnalysisRequest } from './advancedTextAnalysisService.js';
+import { adaptiveWritingEngine, SourceMaterial, WritingRequirements } from './adaptiveWritingEngine';
+import { advancedTextAnalysisService, TextAnalysisRequest } from './advancedTextAnalysisService';
 import { contextualResponseEnhancer } from './contextualResponseEnhancer';
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    hasPipelineExtras,
+    mergePipelineMessageExtras,
+    type PipelineMessageExtras,
+} from '../utils/chatInputUtils';
 
 export interface UnifiedWritingRequest {
     // 기본 입력
@@ -96,6 +101,9 @@ export interface UnifiedWritingRequest {
         include_source_attribution: boolean;
         format: 'markdown' | 'html' | 'plain_text' | 'structured_json';
     };
+
+    /** 채팅·통합 API에서 넘긴 파이프라인 메타(하이브리드 강화·응답 metadata 전달용) */
+    pipelineExtras?: PipelineMessageExtras;
 }
 
 export interface UnifiedWritingResponse {
@@ -136,6 +144,7 @@ export interface UnifiedWritingResponse {
         engines_used: string[];
         confidence_score: number;
         revision_recommendations: string[];
+        pipelineExtras?: PipelineMessageExtras;
     };
 }
 
@@ -193,30 +202,64 @@ class IntegratedWritingService {
                 : undefined;
 
             // 8. 메타데이터 구성
+            const gen = generatedContent as { title?: string; content?: string };
+            const contentStr = String(gen.content ?? '');
+            const genRecord = generatedContent as {
+                metadata?: { pipelineExtras?: PipelineMessageExtras };
+                pipelineExtras?: PipelineMessageExtras;
+            };
+            const nestedEx = genRecord.metadata?.pipelineExtras;
+            const topEx = genRecord.pipelineExtras;
+            let pipelineFromContent: PipelineMessageExtras | undefined;
+            if (
+                topEx != null &&
+                nestedEx != null &&
+                hasPipelineExtras(topEx) &&
+                hasPipelineExtras(nestedEx)
+            ) {
+                pipelineFromContent = mergePipelineMessageExtras(topEx, nestedEx);
+            } else if (topEx != null && hasPipelineExtras(topEx)) {
+                pipelineFromContent = topEx;
+            } else if (nestedEx != null && hasPipelineExtras(nestedEx)) {
+                pipelineFromContent = nestedEx;
+            }
+
             const metadata = {
                 processing_time: Date.now() - startTime,
-                engines_used: engineConfig.engines_used,
+                engines_used: (engineConfig.engines_used ?? []) as string[],
                 confidence_score: 0.85,
-                revision_recommendations: ['수정 제안 1', '수정 제안 2']
+                revision_recommendations: ['수정 제안 1', '수정 제안 2'],
+                ...(pipelineFromContent ? { pipelineExtras: pipelineFromContent } : {}),
             };
 
             return {
                 primary_content: {
-                    title: generatedContent.title || `${request.input.topic}에 대한 분석`,
-                    content: this.formatContent(generatedContent.content, request.output_options.format),
-                    word_count: this.countWords(generatedContent.content),
-                    character_count: generatedContent.content.length,
-                    estimated_reading_time: this.calculateReadingTime(generatedContent.content)
+                    title: gen.title || `${String(request.input.topic ?? '')}에 대한 분석`,
+                    content: this.formatContent(contentStr, request.output_options.format),
+                    word_count: this.countWords(contentStr),
+                    character_count: contentStr.length,
+                    estimated_reading_time: this.calculateReadingTime(contentStr)
                 },
-                quality_analysis: qualityAnalysis,
-                alternatives,
+                quality_analysis: qualityAnalysis as { style_compliance: number; readability_score: number; engagement_level: number; professional_quality: number; target_audience_fit: number },
+                alternatives: alternatives as { different_tone: string; different_length: string; different_structure: string; different_perspective: string } | undefined,
                 improvement_suggestions: improvements,
                 source_analysis: sourceAnalysis,
-                metadata
+                metadata: metadata as {
+                    processing_time: number;
+                    engines_used: string[];
+                    confidence_score: number;
+                    revision_recommendations: string[];
+                    pipelineExtras?: PipelineMessageExtras;
+                },
             };
 
         } catch (error) {
-            console.error('통합 글쓰기 처리 오류:', error);
+            const err = toError(error);
+            errorLogger.error('통합 글쓰기 처리 오류', err, {
+                component: 'integratedWritingService',
+                action: 'processWritingRequest',
+                writingStyle: request.writing_style.type,
+            });
             throw new Error('글쓰기 처리 중 오류가 발생했습니다.');
         }
     }
@@ -224,49 +267,53 @@ class IntegratedWritingService {
     /**
      * 소스 자료 전처리
      */
-    private async preprocessSources(input: any): Promise<SourceMaterial[]> {
+    private async preprocessSources(input: Record<string, unknown>): Promise<SourceMaterial[]> {
         const sources: SourceMaterial[] = [];
 
         // 원본 텍스트 처리
-        if (input.original_text) {
+        const originalText = input.original_text as string | undefined;
+        if (originalText) {
             sources.push({
                 type: 'original_text',
-                content: input.original_text,
+                content: originalText,
                 metadata: {
                     title: '사용자 제공 원본 텍스트',
-                    word_count: this.countWords(input.original_text),
-                    key_topics: this.extractKeyTopics(input.original_text)
+                    word_count: this.countWords(originalText),
+                    key_topics: this.extractKeyTopics(originalText)
                 }
             });
         }
 
         // 파일 처리
-        if (input.user_files && input.user_files.length > 0) {
-            for (const file of input.user_files) {
+        const userFiles = Array.isArray(input.user_files) ? input.user_files : [];
+        if (userFiles.length > 0) {
+            for (const file of userFiles) {
                 const processedFile = await this.fileProcessor.processFile(file);
+                const extracted = (processedFile as { extracted_content?: string; metadata?: Record<string, unknown> });
                 sources.push({
                     type: 'media_file',
-                    content: processedFile.extracted_content,
+                    content: String(extracted.extracted_content ?? ''),
                     metadata: {
-                        title: file.name,
-                        file_type: file.type,
+                        title: (file as { name?: string }).name ?? 'file',
+                        file_type: (file as { type?: string }).type ?? 'unknown',
                         source: 'user_upload',
-                        ...processedFile.metadata
+                        ...(extracted.metadata ?? {})
                     }
                 });
             }
         }
 
         // URL 참조 처리
-        if (input.reference_urls && input.reference_urls.length > 0) {
-            for (const url of input.reference_urls) {
+        const referenceUrls = Array.isArray(input.reference_urls) ? input.reference_urls : [];
+        if (referenceUrls.length > 0) {
+            for (const url of referenceUrls) {
                 const webContent = { content: '웹 콘텐츠', title: '제목' };
                 sources.push({
                     type: 'reference_document',
                     content: webContent.content,
                     metadata: {
                         title: webContent.title,
-                        source: url,
+                        source: String(url),
                         date: new Date().toISOString()
                     }
                 });
@@ -274,19 +321,20 @@ class IntegratedWritingService {
         }
 
         // 지식 컨텍스트 처리
-        if (input.knowledge_context && input.knowledge_context.length > 0) {
+        const knowledgeContext = Array.isArray(input.knowledge_context) ? input.knowledge_context : [];
+        if (knowledgeContext.length > 0) {
             const knowledgeContent = await this.knowledgeExtractor.extractRelevantKnowledge(
-                input.topic,
-                input.knowledge_context
-            );
+                String(input.topic ?? ''),
+                knowledgeContext
+            ) as { content?: string; topics?: string[] };
 
             sources.push({
                 type: 'knowledge_base',
-                content: knowledgeContent.content,
+                content: String(knowledgeContent.content ?? ''),
                 metadata: {
                     title: '관련 지식 베이스',
                     source: 'knowledge_extraction',
-                    key_topics: knowledgeContent.topics
+                    key_topics: (knowledgeContent.topics ?? []) as string[]
                 }
             });
         }
@@ -297,7 +345,7 @@ class IntegratedWritingService {
     /**
      * 글쓰기 엔진 선택
      */
-    private selectWritingEngine(request: UnifiedWritingRequest): any {
+    private selectWritingEngine(request: UnifiedWritingRequest): Record<string, unknown> {
         const style = request.writing_style;
 
         switch (style.type) {
@@ -336,31 +384,32 @@ class IntegratedWritingService {
      * 선택된 엔진으로 콘텐츠 생성
      */
     private async generateWithSelectedEngine(
-        engineConfig: any,
+        engineConfig: Record<string, unknown>,
         sources: SourceMaterial[],
         request: UnifiedWritingRequest
-    ): Promise<any> {
+    ): Promise<Record<string, unknown>> {
 
-        switch (engineConfig.engine) {
+        const cfg = engineConfig as { engine?: string; config?: Record<string, unknown> };
+        switch (cfg.engine) {
             case 'professional':
-                return await professionalWritingEngine.generateProfessionalWriting(engineConfig.config);
+                return await professionalWritingEngine.generateProfessionalWriting((cfg.config ?? {}) as unknown as ProfessionalWritingRequest) as unknown as Record<string, unknown>;
 
             case 'adaptive':
-                return await adaptiveWritingEngine.generateAdaptiveContent(sources, engineConfig.config);
+                return await adaptiveWritingEngine.generateAdaptiveContent(sources, (cfg.config ?? {}) as unknown as WritingRequirements) as unknown as Record<string, unknown>;
 
             case 'analytical':
-                return await this.generateAnalyticalContent(sources, engineConfig.config);
+                return await this.generateAnalyticalContent(sources, cfg.config ?? {});
 
             case 'hybrid':
             default:
-                return await this.generateHybridContent(sources, engineConfig.config, request);
+                return await this.generateHybridContent(sources, cfg.config ?? {}, request);
         }
     }
 
     /**
      * 분석적 콘텐츠 생성
      */
-    private async generateAnalyticalContent(sources: SourceMaterial[], config: any): Promise<any> {
+    private async generateAnalyticalContent(sources: SourceMaterial[], config: Record<string, unknown>): Promise<Record<string, unknown>> {
         const primarySource = sources.find(s => s.type === 'original_text') || sources[0];
 
         if (!primarySource) {
@@ -380,7 +429,7 @@ class IntegratedWritingService {
         );
 
         return {
-            title: `"${config.topic}"에 대한 심층 분석`,
+            title: `"${String(config.topic ?? '')}"에 대한 심층 분석`,
             content: analysisResult.generatedTexts.descriptiveAnalysis,
             metadata: analysisResult.expertAssessment,
             alternatives: analysisResult.generatedTexts.alternatives
@@ -392,12 +441,21 @@ class IntegratedWritingService {
      */
     private async generateHybridContent(
         sources: SourceMaterial[],
-        config: any,
+        config: Record<string, unknown>,
         request: UnifiedWritingRequest
-    ): Promise<any> {
+    ): Promise<Record<string, unknown>> {
 
         // 1. 적응형 엔진으로 기본 콘텐츠 생성
-        const adaptiveResult = await adaptiveWritingEngine.generateAdaptiveContent(sources, config);
+        const adaptiveResult = await adaptiveWritingEngine.generateAdaptiveContent(sources, config as unknown as WritingRequirements);
+
+        const reqEx = request.pipelineExtras;
+        const adEx = adaptiveResult.pipelineExtras;
+        const mergedPipeline: PipelineMessageExtras | undefined =
+            reqEx != null && adEx != null
+                ? mergePipelineMessageExtras(reqEx, adEx)
+                : reqEx ?? adEx;
+        const pipelineForEnhancement =
+            mergedPipeline != null && hasPipelineExtras(mergedPipeline) ? mergedPipeline : undefined;
 
         // 2. 맥락적 강화 적용
         const enhancementRequest = {
@@ -406,10 +464,13 @@ class IntegratedWritingService {
             context: {
                 domain: this.extractDomain(request.input.topic),
                 objectives: [request.detailed_requirements.content_focus.main_purpose]
-            }
+            },
+            ...(pipelineForEnhancement ? { pipelineExtras: pipelineForEnhancement } : {}),
         };
 
         const enhancedResult = await contextualResponseEnhancer.enhanceResponse(enhancementRequest);
+
+        const extrasForMetadata = enhancedResult.pipelineExtras ?? pipelineForEnhancement;
 
         // 3. 결과 통합
         return {
@@ -417,7 +478,10 @@ class IntegratedWritingService {
             content: this.combineContent(adaptiveResult.content, enhancedResult.primaryResponse.content),
             metadata: {
                 ...adaptiveResult.metadata,
-                enhancement: enhancedResult.contextualInsights
+                enhancement: enhancedResult.contextualInsights,
+                ...(extrasForMetadata && hasPipelineExtras(extrasForMetadata)
+                    ? { pipelineExtras: extrasForMetadata }
+                    : {}),
             },
             alternatives: {
                 ...adaptiveResult.alternatives,
@@ -429,7 +493,7 @@ class IntegratedWritingService {
     /**
      * 콘텐츠 품질 분석
      */
-    private analyzeContentQuality(content: any, request: UnifiedWritingRequest): any {
+    private analyzeContentQuality(_content: Record<string, unknown>, _request: UnifiedWritingRequest): Record<string, unknown> {
         return {
             style_compliance: 0.8,
             readability_score: 0.75,
@@ -442,7 +506,7 @@ class IntegratedWritingService {
     /**
      * 대안 버전 생성
      */
-    private async generateAlternatives(content: any, request: UnifiedWritingRequest): Promise<any> {
+    private async generateAlternatives(_content: Record<string, unknown>, _request: UnifiedWritingRequest): Promise<Record<string, unknown>> {
         return {
             different_tone: '대안 어조',
             different_length: '대안 길이',
@@ -502,7 +566,7 @@ class IntegratedWritingService {
         };
     }
 
-    private convertToAnalyticalConfig(request: UnifiedWritingRequest): any {
+    private convertToAnalyticalConfig(request: UnifiedWritingRequest): Record<string, unknown> {
         return {
             topic: request.input.topic,
             depth: request.detailed_requirements.target_audience.background_knowledge_level,
@@ -511,8 +575,8 @@ class IntegratedWritingService {
         };
     }
 
-    private convertToHybridConfig(request: UnifiedWritingRequest): any {
-        return this.convertToAdaptiveConfig(request);
+    private convertToHybridConfig(request: UnifiedWritingRequest): Record<string, unknown> {
+        return this.convertToAdaptiveConfig(request) as unknown as Record<string, unknown>;
     }
 
     // 헬퍼 메서드들
@@ -645,8 +709,8 @@ class IntegratedWritingService {
     ];
     
     helperMethods.forEach(methodName => {
-        if (!(this as any)[methodName]) {
-            (this as any)[methodName] = (...args: any[]) => {
+        if (!(this as Record<string, unknown>)[methodName]) {
+            (this as Record<string, unknown>)[methodName] = (...args: unknown[]) => {
                 switch (methodName) {
                     case 'generateTitle':
                         return `"${args[0]}"에 대한 분석`;
@@ -667,7 +731,7 @@ class IntegratedWritingService {
  * 파일 처리기
  */
 class FileProcessor {
-    async processFile(file: File): Promise<any> {
+    async processFile(file: File): Promise<Record<string, unknown>> {
         // 실제 구현에서는 파일 타입별 처리 로직
         return {
             extracted_content: `${file.name}에서 추출된 내용`,
@@ -684,7 +748,7 @@ class FileProcessor {
  * 지식 추출기
  */
 class KnowledgeExtractor {
-    async extractRelevantKnowledge(topic: string, context: string[]): Promise<any> {
+    async extractRelevantKnowledge(topic: string, context: string[]): Promise<Record<string, unknown>> {
         // 실제 구현에서는 지식 베이스 검색 로직
         return {
             content: `${topic}에 관련된 지식 베이스 내용`,
@@ -694,32 +758,32 @@ class KnowledgeExtractor {
     }
 
     // 매핑 메서드들 (간략화)
-    private mapEmotion(emotion: string): "neutral" | "friendly" | "authoritative" | "enthusiastic" | "serious" | "empathetic" {
+    private mapEmotion(_emotion: string): "neutral" | "friendly" | "authoritative" | "enthusiastic" | "serious" | "empathetic" {
         return 'neutral';
     }
 
     private mapComplexity(complexity: string): "mixed" | "simple" | "compound" | "complex" {
-        return complexity === 'varied' ? 'mixed' : complexity as any;
+        return (complexity === 'varied' ? 'mixed' : complexity) as 'mixed' | 'simple' | 'compound' | 'complex';
     }
 
     private mapRhythm(rhythm: string): "uniform" | "varied" | "dramatic" {
-        return rhythm === 'consistent' ? 'uniform' : rhythm as any;
+        return (rhythm === 'consistent' ? 'uniform' : rhythm) as 'uniform' | 'varied' | 'dramatic';
     }
 
     // 추가 누락 메서드들
-    private generateImprovementSuggestions(content: any, request: UnifiedWritingRequest): string[] {
+    private generateImprovementSuggestions(_content: Record<string, unknown>, _request: UnifiedWritingRequest): string[] {
         return ['개선 제안 1', '개선 제안 2'];
     }
 
-    private analyzeSourceUsage(content: any, sources: any): any {
+    private analyzeSourceUsage(_content: Record<string, unknown>, _sources: unknown): Record<string, unknown> {
         return { usage: 'good' };
     }
 
-    private calculateConfidenceScore(content: any, request: UnifiedWritingRequest): number {
+    private calculateConfidenceScore(_content: Record<string, unknown>, _request: UnifiedWritingRequest): number {
         return 0.85;
     }
 
-    private generateRevisionRecommendations(content: any, request: UnifiedWritingRequest): string[] {
+    private generateRevisionRecommendations(_content: Record<string, unknown>, _request: UnifiedWritingRequest): string[] {
         return ['수정 제안 1', '수정 제안 2'];
     }
 
@@ -727,43 +791,43 @@ class KnowledgeExtractor {
         return `${topic}에 대한 분석`;
     }
 
-    private extractWebContent(url: string): Promise<any> {
+    private extractWebContent(_url: string): Promise<Record<string, unknown>> {
         return Promise.resolve({ content: '웹 콘텐츠', title: '제목' });
     }
 
-    private evaluateStyleCompliance(content: any, request: UnifiedWritingRequest): number {
+    private evaluateStyleCompliance(_content: Record<string, unknown>, _request: UnifiedWritingRequest): number {
         return 0.8;
     }
 
-    private calculateReadabilityScore(content: string): number {
+    private calculateReadabilityScore(_content: string): number {
         return 0.75;
     }
 
-    private assessEngagementLevel(content: string): number {
+    private assessEngagementLevel(_content: string): number {
         return 0.7;
     }
 
-    private assessProfessionalQuality(content: string): number {
+    private assessProfessionalQuality(_content: string): number {
         return 0.85;
     }
 
-    private evaluateAudienceFit(content: string, audience: string): number {
+    private evaluateAudienceFit(_content: string, _audience: string): number {
         return 0.8;
     }
 
-    private generateToneAlternative(content: any, request: UnifiedWritingRequest): Promise<string> {
+    private generateToneAlternative(_content: Record<string, unknown>, _request: UnifiedWritingRequest): Promise<string> {
         return Promise.resolve('대안 어조');
     }
 
-    private generateLengthAlternative(content: any, request: UnifiedWritingRequest): Promise<string> {
+    private generateLengthAlternative(_content: Record<string, unknown>, _request: UnifiedWritingRequest): Promise<string> {
         return Promise.resolve('대안 길이');
     }
 
-    private generateStructureAlternative(content: any, request: UnifiedWritingRequest): Promise<string> {
+    private generateStructureAlternative(_content: Record<string, unknown>, _request: UnifiedWritingRequest): Promise<string> {
         return Promise.resolve('대안 구조');
     }
 
-    private generatePerspectiveAlternative(content: any, request: UnifiedWritingRequest): Promise<string> {
+    private generatePerspectiveAlternative(_content: Record<string, unknown>, _request: UnifiedWritingRequest): Promise<string> {
         return Promise.resolve('대안 관점');
     }
 
@@ -775,7 +839,7 @@ class KnowledgeExtractor {
         return content.replace(/\*\*(.*?)\*\*/g, '$1');
     }
 
-    private parseContentStructure(content: string): any {
+    private parseContentStructure(_content: string): Record<string, unknown> {
         return { structure: 'parsed' };
     }
 }

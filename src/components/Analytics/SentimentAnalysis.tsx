@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { Heart, Smile, Meh, Frown, TrendingUp, TrendingDown } from 'lucide-react';
+import { Heart, Smile, Meh, Frown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface SentimentAnalysisProps {
@@ -11,14 +11,14 @@ interface SentimentAnalysisProps {
 const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ sessionId }) => {
     const { sessions } = useSelector((state: RootState) => state.sessions);
     const currentSession = sessions.find(s => s.id === sessionId);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [_isAnalyzing, _setIsAnalyzing] = useState(false);
 
     const sentimentData = useMemo(() => {
         if (!currentSession) return null;
 
         const messages = currentSession.messages;
         const userMessages = messages.filter(m => m.role === 'user');
-        const aiMessages = messages.filter(m => m.role === 'assistant');
+        const _aiMessages = messages.filter(m => m.role === 'assistant');
 
         // 간단한 감정 분석 (키워드 기반)
         const positiveWords = ['좋다', '감사', '훌륭', '완벽', '최고', '좋은', '멋진', '대단', '성공', '행복'];
@@ -91,29 +91,25 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ sessionId }) => {
     const getSentimentIcon = (sentiment: string) => {
         switch (sentiment) {
             case 'positive':
-                return <Smile size={16} className="text-green-600" />;
+                return <Smile size={16} className="bw-text-success" />;
             case 'negative':
-                return <Frown size={16} className="text-red-600" />;
+                return <Frown size={16} className="bw-text-error" />;
             default:
-                return <Meh size={16} className="text-gray-600" />;
+                return <Meh size={16} className="bw-text-muted" />;
         }
     };
 
-    const getSentimentColor = (sentiment: string) => {
-        switch (sentiment) {
-            case 'positive':
-                return 'text-green-600 bg-green-50 border-green-200';
-            case 'negative':
-                return 'text-red-600 bg-red-50 border-red-200';
-            default:
-                return 'text-gray-600 bg-gray-50 border-gray-200';
-        }
+    const getSentimentStyle = (sentiment: string) => {
+        const bg = sentiment === 'positive' ? 'var(--accent-success)' : sentiment === 'negative' ? 'var(--accent-error)' : 'var(--bg-tertiary)';
+        const border = sentiment === 'positive' ? 'var(--accent-success)' : sentiment === 'negative' ? 'var(--accent-error)' : 'var(--border-color)';
+        const color = sentiment === 'neutral' ? 'var(--text-primary)' : 'var(--on-accent)';
+        return { backgroundColor: bg, border: `1px solid ${border}`, color };
     };
 
     if (!sentimentData) {
         return (
-            <div className="p-6 text-center text-gray-500">
-                <Heart size={48} className="mx-auto mb-4 text-gray-300" />
+            <div className="bw-empty">
+                <Heart size={48} className="mx-auto bw-empty-icon" />
                 <p>분석할 메시지가 없습니다</p>
             </div>
         );
@@ -122,8 +118,8 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ sessionId }) => {
     return (
         <div className="p-6">
             <div className="flex items-center space-x-2 mb-6">
-                <Heart size={24} className="text-gray-700" />
-                <h3 className="text-lg font-semibold text-gray-900">감정 분석</h3>
+                <Heart size={24} className="bw-text-primary" />
+                <h3 className="bw-heading-2 mb-0">감정 분석</h3>
             </div>
 
             {/* 감정 분포 */}
@@ -131,42 +127,42 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ sessionId }) => {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-green-50 p-4 rounded-lg border border-green-200 text-center"
+                    className="bw-card-secondary p-4 text-center border-[var(--accent-success)]"
                 >
-                    <Smile size={32} className="mx-auto mb-2 text-green-600" />
-                    <p className="text-sm text-green-600">긍정적</p>
-                    <p className="text-2xl font-bold text-green-900">{sentimentData.positiveCount}</p>
-                    <p className="text-xs text-green-600">{sentimentData.positivePercentage.toFixed(1)}%</p>
+                    <Smile size={32} className="mx-auto mb-2 bw-text-success" />
+                    <p className="text-sm bw-text-success">긍정적</p>
+                    <p className="text-2xl font-bold bw-text-primary">{sentimentData.positiveCount}</p>
+                    <p className="text-xs bw-text-success">{sentimentData.positivePercentage.toFixed(1)}%</p>
                 </motion.div>
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center"
+                    className="bw-card-secondary p-4 text-center"
                 >
-                    <Meh size={32} className="mx-auto mb-2 text-gray-600" />
-                    <p className="text-sm text-gray-600">중립적</p>
-                    <p className="text-2xl font-bold text-gray-900">{sentimentData.neutralCount}</p>
-                    <p className="text-xs text-gray-600">{sentimentData.neutralPercentage.toFixed(1)}%</p>
+                    <Meh size={32} className="mx-auto mb-2 bw-text-muted" />
+                    <p className="text-sm bw-text-muted">중립적</p>
+                    <p className="text-2xl font-bold bw-text-primary">{sentimentData.neutralCount}</p>
+                    <p className="text-xs bw-text-muted">{sentimentData.neutralPercentage.toFixed(1)}%</p>
                 </motion.div>
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-red-50 p-4 rounded-lg border border-red-200 text-center"
+                    className="bw-card-secondary p-4 text-center border-[var(--accent-error-border)]"
                 >
-                    <Frown size={32} className="mx-auto mb-2 text-red-600" />
-                    <p className="text-sm text-red-600">부정적</p>
-                    <p className="text-2xl font-bold text-red-900">{sentimentData.negativeCount}</p>
-                    <p className="text-xs text-red-600">{sentimentData.negativePercentage.toFixed(1)}%</p>
+                    <Frown size={32} className="mx-auto mb-2 bw-text-error" />
+                    <p className="text-sm bw-text-error">부정적</p>
+                    <p className="text-2xl font-bold bw-text-primary">{sentimentData.negativeCount}</p>
+                    <p className="text-xs bw-text-error">{sentimentData.negativePercentage.toFixed(1)}%</p>
                 </motion.div>
             </div>
 
             {/* 감정 변화 추이 */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-                <h4 className="text-sm font-medium text-gray-900 mb-4">감정 변화 추이</h4>
+            <div className="bw-card p-4 mb-6">
+                <h4 className="bw-card-title-sm">감정 변화 추이</h4>
                 <div className="flex items-center space-x-2">
                     {sentimentData.sentimentTrend.map((sentiment, index) => (
                         <motion.div
@@ -174,7 +170,8 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ sessionId }) => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className={`flex items-center space-x-1 px-3 py-2 rounded-lg border ${getSentimentColor(sentiment)}`}
+                            className="flex items-center space-x-1 px-3 py-2 rounded-lg"
+                            style={getSentimentStyle(sentiment)}
                         >
                             {getSentimentIcon(sentiment)}
                             <span className="text-sm font-medium">
@@ -186,22 +183,22 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ sessionId }) => {
             </div>
 
             {/* 감정 통계 */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="text-sm font-medium text-blue-900 mb-3">감정 분석 통계</h4>
+            <div className="bw-card-secondary p-4 border-[var(--accent-info-border)]">
+                <h4 className="bw-card-title-sm bw-text-info">감정 분석 통계</h4>
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm text-blue-700">총 분석 메시지</span>
-                        <span className="text-sm font-medium text-blue-900">{sentimentData.totalMessages}개</span>
+                        <span className="text-sm bw-text-secondary">총 분석 메시지</span>
+                        <span className="text-sm font-medium bw-text-primary">{sentimentData.totalMessages}개</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-sm text-blue-700">주요 감정</span>
-                        <span className="text-sm font-medium text-blue-900">
+                        <span className="text-sm bw-text-secondary">주요 감정</span>
+                        <span className="text-sm font-medium bw-text-primary">
                             {sentimentData.positivePercentage > sentimentData.negativePercentage ? '긍정적' : '부정적'}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-sm text-blue-700">감정 안정성</span>
-                        <span className="text-sm font-medium text-blue-900">
+                        <span className="text-sm bw-text-secondary">감정 안정성</span>
+                        <span className="text-sm font-medium bw-text-primary">
                             {Math.abs(sentimentData.positivePercentage - sentimentData.negativePercentage) < 20 ? '안정적' : '변동적'}
                         </span>
                     </div>

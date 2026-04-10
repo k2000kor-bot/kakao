@@ -4,6 +4,7 @@
 실시간 학습, 감정 분석, 대화 패턴 분석, 예측 모델을 포함한 고급 AI 시스템
 """
 
+import os
 import json
 import random
 import time
@@ -819,11 +820,12 @@ async def test_endpoint():
 
 
 if __name__ == "__main__":
+    _p = int(os.environ.get("ADVANCED_AI_ENHANCEMENT_PORT", os.environ.get("PORT", "8003")))
     print("🚀 고도화된 AI 메시지 시스템 시작 중...")
     uvicorn.run(
         "advanced_ai_enhancement:app",
         host="0.0.0.0",
-        port=8003,
+        port=_p,
         reload=False,
         log_level="info"
     ) 

@@ -3,10 +3,15 @@
 echo "🚀 카카오톡 AI 분석 시스템 - 고정 포트 버전"
 echo "=================================================="
 echo "📍 각 서버가 고정 포트에서 실행됩니다"
+echo "💡 일반 CORBU 개발: npm run restart:backend → http://localhost:5002 (main_server)"
+echo "   본 스크립트는 레거시 멀티 프로세스(8001–8009) 전용입니다."
 echo ""
 
-# 프로젝트 루트로 이동
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../lib-activate-backend-venv.sh
+source "$REPO_ROOT/scripts/lib-activate-backend-venv.sh"
+cd "$REPO_ROOT" || exit 1
 
 # 기존 프로세스 종료
 echo "🛑 기존 프로세스 종료 중..."
@@ -16,18 +21,18 @@ sleep 3
 
 # 백엔드 의존성 확인
 echo "📦 백엔드 의존성 확인 중..."
-if [ ! -d "backend/venv" ]; then
+if [ ! -d "$REPO_ROOT/backend/venv" ] && [ ! -d "$REPO_ROOT/backend/.venv" ]; then
     echo "⚠️  가상환경이 없습니다. requirements.txt만 설치합니다."
-    cd backend
-    pip3 install -r requirements.txt --user
-    cd ..
+    ( cd "$REPO_ROOT/backend" && pip3 install -r requirements.txt --user )
 else
     echo "✅ 가상환경 확인됨"
 fi
 
+backend_venv_activate "$REPO_ROOT" || echo "⚠️  venv 활성화 실패 — 시스템 Python 사용"
+
 # 프론트엔드 의존성 확인
 echo "📦 프론트엔드 의존성 확인 중..."
-if [ ! -d "node_modules" ]; then
+if [ ! -d "$REPO_ROOT/node_modules" ]; then
     echo "📦 npm 의존성 설치 중..."
     npm install
 else
@@ -36,37 +41,56 @@ fi
 
 # 포트 사용 가능 여부 확인
 echo "🔍 포트 사용 가능 여부 확인 중..."
-cd backend
-python3 fixed_ports_config.py
-cd ..
+( cd "$REPO_ROOT/backend" && python3 fixed_ports_config.py )
 
-# 서버 시작 함수
+# 통합 main_server 포트 (프론트·프록시와 동일 권장)
+MAIN_BACKEND_PORT="${BACKEND_PORT:-5002}"
+
+# 헬스: FastAPI 통합(/api/health) 또는 레거시(/health)
+server_health_check() {
+    local port=$1
+    curl -sf "http://localhost:$port/api/health" >/dev/null 2>&1 && return 0
+    curl -sf "http://localhost:$port/health" >/dev/null 2>&1 && return 0
+    return 1
+}
+
+# 통합 메인 서버 (main_server.py — BACKEND_PORT/PORT/API_PORT)
+start_main_server() {
+    local port="$MAIN_BACKEND_PORT"
+    echo "🚀 통합 메인 서버 (main_server.py) 시작 — 포트 $port..."
+    (
+        cd "$REPO_ROOT/backend" && BACKEND_PORT=$port PORT=$port API_PORT=$port python3 main_server.py
+    ) &
+    SERVER_PID=$!
+    sleep 4
+    if server_health_check "$port"; then
+        echo "✅ 통합 메인 서버 시작 완료 (포트 $port)"
+        return 0
+    fi
+    echo "❌ 통합 메인 서버 시작 실패 (헬스: /api/health 또는 /health)"
+    return 1
+}
+
+# 서버 시작 함수 (레거시 보조 프로세스)
 start_server() {
     local server_name=$1
     local server_file=$2
     local port=$3
     local description=$4
-    
+
     echo "🚀 $server_name 시작 중 (포트 $port)..."
-    cd backend
-    if [ -d "venv" ]; then
-        source venv/bin/activate
-    fi
-    python3 $server_file &
+    # 각 레거시 모듈이 os.environ["PORT"] 또는 전용 *_PORT 로 읽을 수 있게 전달
+    ( cd "$REPO_ROOT/backend" && PORT="$port" python3 "$server_file" ) &
     SERVER_PID=$!
-    cd ..
-    
-    # 서버 시작 대기
+
     sleep 3
-    
-    # 서버 상태 확인
-    if curl -s http://localhost:$port/health > /dev/null 2>&1; then
+
+    if server_health_check "$port"; then
         echo "✅ $server_name 시작 완료 (포트 $port)"
         return 0
-    else
-        echo "❌ $server_name 시작 실패"
-        return 1
     fi
+    echo "❌ $server_name 시작 실패"
+    return 1
 }
 
 # 각 서버 시작
@@ -74,8 +98,8 @@ echo ""
 echo "🎯 서버 시작 중..."
 echo "=================================================="
 
-# 1. 메인 서버 (포트 8001)
-start_server "메인 서버" "main_server.py" 8001 "기본 API 서버"
+# 1. 통합 메인 서버 (기본 5002 — 과거 스크립트는 8001에 두었으나 main_server와 불일치)
+start_main_server
 
 # 2. 고급 API 서버 (포트 8002)
 start_server "고급 API 서버" "advanced_api_server.py" 8002 "카카오톡 분석 서버"
@@ -312,7 +336,7 @@ echo "=================================================="
 
 # 각 서버 상태 확인
 servers=(
-    "8001:메인 서버"
+    "${MAIN_BACKEND_PORT}:통합 메인(main_server)"
     "8002:고급 API 서버"
     "8003:메시지 생성 서버"
     "8004:파일 업로드 서버"
@@ -327,7 +351,7 @@ servers=(
 for server in "${servers[@]}"; do
     port="${server%%:*}"
     name="${server##*:}"
-    if curl -s http://localhost:$port/health > /dev/null 2>&1; then
+    if server_health_check "$port"; then
         echo "✅ $name: http://localhost:$port"
     else
         echo "❌ $name: http://localhost:$port"
@@ -343,8 +367,8 @@ fi
 
 echo ""
 echo "🎯 주요 엔드포인트:"
-echo "   📖 API 문서: http://localhost:8001/docs (메인)"
-echo "   📖 API 문서: http://localhost:8002/docs (고급)"
+echo "   📖 통합 API 문서: http://localhost:5002/api/docs (main_server 권장)"
+echo "   📖 레거시 멀티 서버 스크립트는 scripts/deploy/README 등을 참고"
 echo "   🏠 메인 페이지: http://localhost:3000"
 echo "   💬 카카오톡 대화 대응: http://localhost:3000/#/real-kakao"
 echo "   📁 파일 업로드: http://localhost:3000/#/upload"

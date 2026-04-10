@@ -1,3 +1,5 @@
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface RealEstateAlert {
   id: string;
   region: string;
@@ -173,7 +175,7 @@ class RealEstateService {
 
   // 지역명 정규화
   private normalizeRegion(region: string): string {
-    const normalized = region.replace(/[시군구]/g, '').trim();
+    const normalized = coerceTrimmedString(region.replace(/[시군구]/g, ''), '');
     const regionMap: { [key: string]: string } = {
       '강남': '강남구',
       '서초': '서초구',
@@ -223,7 +225,7 @@ class RealEstateService {
   // 유사한 지역명 찾기
   private findSimilarRegions(region: string): string[] {
     const availableRegions = Object.keys(this.mockData);
-    const normalizedInput = region.replace(/[시군구]/g, '').trim();
+    const normalizedInput = coerceTrimmedString(region.replace(/[시군구]/g, ''), '');
 
     return availableRegions.filter(available =>
       available.includes(normalizedInput) ||
@@ -240,7 +242,7 @@ class RealEstateService {
     // 투자 조언 생성
     const investmentAdvice = this.generateInvestmentAdvice(data);
 
-    return `
+    return coerceTrimmedString(`
 🏠 **${data.region} 부동산 시세 정보**
 
 ${trendIcon} **시세 동향**: ${trendText} (${data.trendPercentage > 0 ? '+' : ''}${data.trendPercentage}%)
@@ -253,7 +255,7 @@ ${statusIcon} **시장 상태**: ${this.getMarketStatusText(data.marketStatus)}
 ${data.description}
 
 💡 **투자 조언**: ${investmentAdvice}
-    `.trim();
+    `, '');
   }
 
   // 시장 상태 텍스트 변환
@@ -351,7 +353,7 @@ ${data.description}
     const priceChange = predictedPrice - currentPrice;
     const priceChangePercent = (priceChange / currentPrice) * 100;
 
-    const prediction = `
+    const prediction = coerceTrimmedString(`
 🔮 **${region} ${months}개월 후 시세 예측**
 
 📊 **현재 상황**:
@@ -364,7 +366,7 @@ ${data.description}
    💵 예상 차이: ${(priceChange / 100000000).toFixed(1)}억원
 
 ⚠️ **주의사항**: 이는 단순 예측이며, 실제 시세는 다양한 요인에 따라 달라질 수 있습니다.
-    `.trim();
+    `, '');
 
     return prediction;
   }
@@ -417,7 +419,7 @@ ${data.description}
     const bestPerformer = sortedByTrend[0];
     const worstPerformer = sortedByTrend[sortedByTrend.length - 1];
 
-    const dashboard = `
+    const dashboard = coerceTrimmedString(`
 📊 **서울 부동산 시세 대시보드**
 
 🏢 **전체 현황**:
@@ -441,7 +443,7 @@ ${data.description}
 
 💡 **시장 분석**: 
    ${this.generateMarketAnalysis(validData)}
-    `.trim();
+    `, '');
 
     return dashboard;
   }

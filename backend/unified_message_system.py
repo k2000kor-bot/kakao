@@ -1063,12 +1063,13 @@ if __name__ == "__main__":
     import os
     os.makedirs("logs", exist_ok=True)
     
-    logger.info("통합 메시지 시스템 시작 중...")
+    _p = int(os.environ.get("UNIFIED_MESSAGE_SYSTEM_PORT", os.environ.get("PORT", "8000")))
+    logger.info(f"통합 메시지 시스템 시작 중... (port={_p})")
     
     uvicorn.run(
         "unified_message_system:app",
         host="0.0.0.0",
-        port=8000,
+        port=_p,
         reload=True,
         log_level="info"
     ) 

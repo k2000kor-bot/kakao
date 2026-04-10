@@ -1,6 +1,19 @@
+import {
+  WS_BASE_URL,
+  joinApiBaseAndPath,
+  joinApiSecurityWebSocketClientPath,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+
+const securityWsClientId =
+  typeof process.env.REACT_APP_SECURITY_WS_CLIENT_ID === 'string' &&
+  process.env.REACT_APP_SECURITY_WS_CLIENT_ID.trim().length > 0
+    ? process.env.REACT_APP_SECURITY_WS_CLIENT_ID.trim()
+    : 'client1';
+
 interface WebSocketMessage {
   type: string;
-  data: any;
+  data: unknown;
   timestamp: string;
 }
 
@@ -9,7 +22,7 @@ class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectInterval = 3000;
-  private listeners: Map<string, ((data: any) => void)[]> = new Map();
+  private listeners: Map<string, ((data: unknown) => void)[]> = new Map();
 
   constructor(private url: string) {}
 
@@ -19,7 +32,11 @@ class WebSocketService {
         this.ws = new WebSocket(this.url);
         
         this.ws.onopen = () => {
-          console.log('WebSocket 연결 성공');
+          errorLogger.info('WebSocket 연결 성공', {
+            component: 'websocket',
+            action: 'connect',
+            url: this.url,
+          });
           this.reconnectAttempts = 0;
           resolve();
         };
@@ -29,17 +46,31 @@ class WebSocketService {
             const message: WebSocketMessage = JSON.parse(event.data);
             this.handleMessage(message);
           } catch (error) {
-            console.error('WebSocket 메시지 파싱 오류:', error);
+            const err = toError(error);
+            errorLogger.error('WebSocket 메시지 파싱 오류', err, {
+              component: 'websocket',
+              action: 'connect',
+              url: this.url,
+            });
           }
         };
 
         this.ws.onclose = () => {
-          console.log('WebSocket 연결 종료');
+          errorLogger.info('WebSocket 연결 종료', {
+            component: 'websocket',
+            action: 'connect',
+            url: this.url,
+          });
           this.attemptReconnect();
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket 오류:', error);
+          const err = toError(error);
+          errorLogger.error('WebSocket 오류', err, {
+            component: 'websocket',
+            action: 'connect',
+            url: this.url,
+          });
           reject(error);
         };
 
@@ -52,15 +83,32 @@ class WebSocketService {
   private attemptReconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`WebSocket 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+      errorLogger.info('WebSocket 재연결 시도', {
+        component: 'websocket',
+        action: 'attemptReconnect',
+        reconnectAttempts: this.reconnectAttempts,
+        maxReconnectAttempts: this.maxReconnectAttempts,
+        url: this.url,
+      });
       
       setTimeout(() => {
         this.connect().catch(error => {
-          console.error('WebSocket 재연결 실패:', error);
+          const err = toError(error);
+          errorLogger.error('WebSocket 재연결 실패', err, {
+            component: 'websocket',
+            action: 'attemptReconnect',
+            reconnectAttempts: this.reconnectAttempts,
+            url: this.url,
+          });
         });
       }, this.reconnectInterval);
     } else {
-      console.error('WebSocket 최대 재연결 시도 횟수 초과');
+      errorLogger.error('WebSocket 최대 재연결 시도 횟수 초과', new Error('최대 재연결 시도 횟수 초과'), {
+        component: 'websocket',
+        action: 'attemptReconnect',
+        maxReconnectAttempts: this.maxReconnectAttempts,
+        url: this.url,
+      });
     }
   }
 
@@ -71,14 +119,14 @@ class WebSocketService {
     }
   }
 
-  subscribe(type: string, callback: (data: any) => void): void {
+  subscribe(type: string, callback: (data: unknown) => void): void {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, []);
     }
     this.listeners.get(type)!.push(callback);
   }
 
-  unsubscribe(type: string, callback: (data: any) => void): void {
+  unsubscribe(type: string, callback: (data: unknown) => void): void {
     const listeners = this.listeners.get(type);
     if (listeners) {
       const index = listeners.indexOf(callback);
@@ -88,7 +136,7 @@ class WebSocketService {
     }
   }
 
-  send(type: string, data: any): void {
+  send(type: string, data: unknown): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const message: WebSocketMessage = {
         type,
@@ -97,7 +145,13 @@ class WebSocketService {
       };
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket이 연결되지 않았습니다.');
+      errorLogger.warn('WebSocket이 연결되지 않았습니다', {
+        component: 'websocket',
+        action: 'send',
+        type,
+        readyState: this.ws?.readyState,
+        url: this.url,
+      });
     }
   }
 
@@ -114,5 +168,8 @@ class WebSocketService {
 }
 
 // WebSocket 서비스 인스턴스 생성
-export const websocketService = new WebSocketService('ws://localhost:8002/ws');
+const WS_API_BASE = WS_BASE_URL.replace(/^http:/, 'ws:');
+export const websocketService = new WebSocketService(
+  joinApiBaseAndPath(WS_API_BASE, joinApiSecurityWebSocketClientPath(securityWsClientId)),
+);
 export default websocketService; 

@@ -1,4 +1,9 @@
 // 클라이언트 기반 파일 처리 및 분석 서비스
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+import { associationBylawsService } from './associationBylawsService';
+import { projectKnowledgeService } from './projectKnowledgeService';
+
 export interface FileAnalysisResult {
   id: string; // 추가
   fileId: string;
@@ -69,14 +74,30 @@ class ClientFileProcessor {
   private writingMaterials = new Map<string, WritingMaterial[]>();
 
   async processFile(file: File, projectId: string): Promise<FileAnalysisResult> {
-    console.log('파일 처리 시작:', file.name, '크기:', file.size, '타입:', file.type);
+    errorLogger.info('파일 처리 시작', {
+      component: 'clientFileProcessor',
+      action: 'processFile',
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      projectId,
+    });
 
     const fileId = this.generateFileId(file);
-    console.log('생성된 파일 ID:', fileId);
+    errorLogger.info('생성된 파일 ID', {
+      component: 'clientFileProcessor',
+      action: 'processFile',
+      fileId,
+      fileName: file.name,
+    });
 
     // 캐시 확인
     if (this.analysisCache.has(fileId)) {
-      console.log('캐시에서 기존 분석 결과 사용');
+      errorLogger.info('캐시에서 기존 분석 결과 사용', {
+        component: 'clientFileProcessor',
+        action: 'processFile',
+        fileId,
+      });
       return this.analysisCache.get(fileId)!;
     }
 
@@ -110,9 +131,48 @@ class ClientFileProcessor {
       // 글쓰기 소재 생성
       this.generateWritingMaterials(projectId, result);
 
+      // 정관 문서 자동 인식 → 조합 정관 분석·저장 (현장별 기본 지식)
+      if (associationBylawsService.isBylawsDocument(file.name, extractedText)) {
+        try {
+          const analysis = associationBylawsService.analyzeAndSaveFromFile(projectId, extractedText, file.name);
+          if (analysis) {
+            projectKnowledgeService.removeBylawsEntries(projectId);
+            const base = associationBylawsService.getBylawsBaseKnowledge(projectId);
+            if (base) {
+              projectKnowledgeService.addBylawsToKnowledge(projectId, {
+                siteName: base.siteName,
+                combinationName: analysis.combinationName,
+                summary: base.summary,
+                keyPoints: base.keyPoints,
+              });
+            }
+          }
+          errorLogger.info('정관 문서 분석·저장 완료', {
+            component: 'clientFileProcessor',
+            action: 'processFile',
+            fileName: file.name,
+            projectId,
+          });
+        } catch (err) {
+          errorLogger.warn('정관 분석 저장 실패(무시)', {
+            error: err instanceof Error ? err.message : String(err),
+            component: 'clientFileProcessor',
+            fileName: file.name,
+            projectId,
+          });
+        }
+      }
+
       return result;
     } catch (error) {
-      console.error('파일 처리 오류:', error);
+      const err = toError(error);
+      errorLogger.error('파일 처리 오류', err, {
+        component: 'clientFileProcessor',
+        action: 'processFile',
+        fileName: file.name,
+        fileId,
+        projectId,
+      });
       throw new Error(`파일 처리 중 오류 발생: ${error}`);
     }
   }
@@ -127,6 +187,14 @@ class ClientFileProcessor {
 
     if (extension === 'pdf' || mimeType === 'application/pdf') return 'pdf';
     if (extension === 'docx' || mimeType.includes('wordprocessingml')) return 'document';
+    if (
+      extension === 'csv' ||
+      mimeType === 'text/csv' ||
+      mimeType === 'application/csv' ||
+      mimeType === 'text/comma-separated-values'
+    ) {
+      return 'csv';
+    }
     if (extension === 'xlsx' || mimeType.includes('spreadsheetml')) return 'spreadsheet';
     if (extension === 'pptx' || mimeType.includes('presentationml')) return 'presentation';
     if (extension === 'txt' || mimeType === 'text/plain') return 'text';
@@ -145,6 +213,7 @@ class ClientFileProcessor {
       switch (fileType) {
         case 'text':
         case 'markdown':
+        case 'csv':
           return await this.extractPlainText(file);
         case 'pdf':
           return await this.extractPdfText(file);
@@ -178,7 +247,12 @@ class ClientFileProcessor {
       const text = await this.extractTextFromPdfBuffer(arrayBuffer);
       return text || `PDF 파일 "${file.name}"의 내용을 분석 중입니다.`;
     } catch (error) {
-      console.error('PDF 텍스트 추출 실패:', error);
+      const err = toError(error);
+      errorLogger.error('PDF 텍스트 추출 실패', err, {
+        component: 'clientFileProcessor',
+        action: 'extractPdfText',
+        fileName: file.name,
+      });
       return `PDF 파일 "${file.name}" 처리 중 오류가 발생했습니다.`;
     }
   }
@@ -190,7 +264,12 @@ class ClientFileProcessor {
       const text = await this.extractTextFromDocxBuffer(arrayBuffer);
       return text || `Word 문서 "${file.name}"의 내용을 분석 중입니다.`;
     } catch (error) {
-      console.error('Word 문서 텍스트 추출 실패:', error);
+      const err = toError(error);
+      errorLogger.error('Word 문서 텍스트 추출 실패', err, {
+        component: 'clientFileProcessor',
+        action: 'extractDocumentText',
+        fileName: file.name,
+      });
       return `Word 문서 "${file.name}" 처리 중 오류가 발생했습니다.`;
     }
   }
@@ -201,7 +280,12 @@ class ClientFileProcessor {
       const text = await this.performOCR(file);
       return text || `이미지 파일 "${file.name}"의 텍스트를 추출 중입니다.`;
     } catch (error) {
-      console.error('이미지 OCR 실패:', error);
+      const err = toError(error);
+      errorLogger.error('이미지 OCR 실패', err, {
+        component: 'clientFileProcessor',
+        action: 'extractImageText',
+        fileName: file.name,
+      });
       return `이미지 파일 "${file.name}" 처리 중 오류가 발생했습니다.`;
     }
   }
@@ -235,7 +319,7 @@ class ClientFileProcessor {
   private simulatePdfTextExtraction(uint8Array: Uint8Array): string {
     // PDF 텍스트 추출 시뮬레이션
     const sampleTexts = [
-      '개포우성7차 재건축 조합 설립 추진 보고서',
+      '샘플 단지 재건축 조합 설립 추진 보고서',
       '재개발 사업 추진 현황 및 계획',
       '조합원 총회 안건 및 의결사항',
       '시공사 선정 및 계약 체결 현황',
@@ -255,7 +339,7 @@ class ClientFileProcessor {
   private simulateDocxTextExtraction(buffer: ArrayBuffer): string {
     // Word 문서 텍스트 추출 시뮬레이션
     const sampleTexts = [
-      '개포우성7차 재건축 조합 설립 추진 보고서',
+      '샘플 단지 재건축 조합 설립 추진 보고서',
       '재개발 사업 추진 현황 및 계획',
       '조합원 총회 안건 및 의결사항',
       '시공사 선정 및 계약 체결 현황',
@@ -274,7 +358,7 @@ class ClientFileProcessor {
   private simulateOCR(file: File): string {
     // OCR 시뮬레이션
     const sampleTexts = [
-      '개포우성7차 재건축 조합 설립 추진 보고서',
+      '샘플 단지 재건축 조합 설립 추진 보고서',
       '재개발 사업 추진 현황 및 계획',
       '조합원 총회 안건 및 의결사항',
       '시공사 선정 및 계약 체결 현황',
@@ -291,10 +375,10 @@ class ClientFileProcessor {
   }
 
   private generateDetailedContent(): string {
-    return `
+    return coerceTrimmedString(`
 1. 사업 개요
-- 사업명: 개포우성7차 재건축 사업
-- 위치: 서울특별시 강남구 개포동
+- 사업명: 샘플 단지 재건축 사업
+- 위치: ○○시 ○○구 (데모)
 - 사업 규모: 총 500세대
 - 추진 단계: 조합 설립 단계
 
@@ -321,7 +405,7 @@ class ClientFileProcessor {
 - 지역 활성화
 - 교통 인프라 개선
 - 환경 친화적 개발
-    `.trim();
+    `, '');
   }
 
   private analyzeText(text: string, fileName: string) {
@@ -405,7 +489,6 @@ class ClientFileProcessor {
     // 빈도가 높은 단어들을 주제로 추가
     const sortedWords = Object.entries(wordFreq)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
       .map(([word]) => word);
 
     // 의미있는 단어만 필터링
@@ -414,7 +497,7 @@ class ClientFileProcessor {
       !['그리고', '또는', '하지만', '그러나', '이것', '저것', '무엇', '어떤', '어떻게', '언제', '어디서', '왜', '어떻게'].includes(word)
     );
 
-    topics.push(...meaningfulWords.slice(0, 5));
+    topics.push(...meaningfulWords);
 
     return Array.from(new Set(topics));
   }
@@ -507,7 +590,7 @@ class ClientFileProcessor {
     };
 
     // 문장 분리
-    const sentences = text.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 10);
+    const sentences = text.split(/[.!?]/).map(s => coerceTrimmedString(s, '')).filter(s => s.length > 10);
 
     // 핵심 포인트 추출 (중요한 키워드가 포함된 문장)
     const importantKeywords = [
@@ -562,7 +645,7 @@ class ClientFileProcessor {
           const context = text.substring(Math.max(0, index - 100), Math.min(text.length, index + stat.length + 100));
           materials.statistics.push({
             value: stat,
-            context: context.trim()
+            context: coerceTrimmedString(context, '')
           });
         });
       }
@@ -583,10 +666,9 @@ class ClientFileProcessor {
     });
 
     // 중복 제거 및 정렬
-    materials.keyPoints = Array.from(new Set(materials.keyPoints)).slice(0, 10);
-    materials.quotes = Array.from(new Set(materials.quotes)).slice(0, 5);
-    materials.statistics = materials.statistics.slice(0, 8);
-    materials.arguments = Array.from(new Set(materials.arguments)).slice(0, 8);
+    materials.keyPoints = Array.from(new Set(materials.keyPoints));
+    materials.quotes = Array.from(new Set(materials.quotes));
+    materials.arguments = Array.from(new Set(materials.arguments));
 
     return materials;
   }
@@ -596,7 +678,7 @@ class ClientFileProcessor {
       return `${fileName} 파일이 업로드되었습니다.`;
     }
 
-    const sentences = text.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 10);
+    const sentences = text.split(/[.!?]/).map(s => coerceTrimmedString(s, '')).filter(s => s.length > 10);
 
     if (sentences.length <= 3) {
       return text;
@@ -652,7 +734,7 @@ class ClientFileProcessor {
 
   private generateMetadata(text: string) {
     const words = text.split(/\s+/).filter(word => word.length > 0);
-    const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+    const sentences = text.split(/[.!?]/).filter(s => coerceTrimmedString(s, '').length > 0);
 
     // 가독성 점수 (간단한 공식)
     const avgWordsPerSentence = words.length / Math.max(sentences.length, 1);
@@ -815,7 +897,7 @@ class ClientFileProcessor {
       suggestions.push('핵심 주장 요약 자료 작성');
     }
 
-    return suggestions.slice(0, 5); // 최대 5개 제안
+    return suggestions;
   }
 
   private generateWritingMaterials(projectId: string, analysis: FileAnalysisResult) {
@@ -870,7 +952,7 @@ class ClientFileProcessor {
   }
 
   // 파일 분류 메서드
-  async classifyFile(file: File, projectId: string): Promise<{
+  async classifyFile(file: File, _projectId: string): Promise<{
     category: string;
     confidence: number;
     subCategories: string[];
@@ -909,7 +991,7 @@ class ClientFileProcessor {
     }
 
     // 파일 타입 기반 추가 분류
-    if (fileType === 'spreadsheet') {
+    if (fileType === 'spreadsheet' || fileType === 'csv') {
       subCategories.push('data', 'calculation');
       tags.push('스프레드시트', '데이터');
     } else if (fileType === 'presentation') {
@@ -973,7 +1055,12 @@ class ClientFileProcessor {
   }
 
   removeFileFromKnowledgeBase(projectId: string, fileId: string) {
-    console.log('지식 베이스에서 파일 제거 시작:', fileId);
+    errorLogger.info('지식 베이스에서 파일 제거 시작', {
+      component: 'clientFileProcessor',
+      action: 'removeFileFromKnowledgeBase',
+      fileId,
+      projectId,
+    });
 
     // 캐시에서 파일 분석 결과 제거
     let removedFromCache = false;
@@ -981,7 +1068,12 @@ class ClientFileProcessor {
       if (value.fileId === fileId) {
         this.analysisCache.delete(key);
         removedFromCache = true;
-        console.log('캐시에서 파일 제거됨:', key);
+        errorLogger.info('캐시에서 파일 제거됨', {
+          component: 'clientFileProcessor',
+          action: 'removeFileFromKnowledgeBase',
+          cacheKey: key,
+          fileId,
+        });
       }
     });
 
@@ -990,7 +1082,12 @@ class ClientFileProcessor {
     if (kb) {
       kb.totalFiles = Math.max(0, kb.totalFiles - 1);
       this.knowledgeBase.set(projectId, kb);
-      console.log('지식 베이스 업데이트됨. 총 파일 수:', kb.totalFiles);
+      errorLogger.info('지식 베이스 업데이트됨', {
+        component: 'clientFileProcessor',
+        action: 'removeFileFromKnowledgeBase',
+        totalFiles: kb.totalFiles,
+        projectId,
+      });
     }
 
     // 글쓰기 소재에서도 관련 데이터 제거
@@ -1000,10 +1097,21 @@ class ClientFileProcessor {
         !material.sourceFiles.includes(fileId)
       );
       this.writingMaterials.set(projectId, filteredMaterials);
-      console.log('글쓰기 소재에서 파일 제거됨. 남은 소재 수:', filteredMaterials.length);
+      errorLogger.info('글쓰기 소재에서 파일 제거됨', {
+        component: 'clientFileProcessor',
+        action: 'removeFileFromKnowledgeBase',
+        remainingMaterialsCount: filteredMaterials.length,
+        projectId,
+      });
     }
 
-    console.log('파일이 지식 베이스에서 제거됨:', fileId, '캐시에서 제거됨:', removedFromCache);
+    errorLogger.info('파일이 지식 베이스에서 제거됨', {
+      component: 'clientFileProcessor',
+      action: 'removeFileFromKnowledgeBase',
+      fileId,
+      removedFromCache,
+      projectId,
+    });
   }
 
   // 고도화된 분석 메서드들
@@ -1033,7 +1141,7 @@ class ClientFileProcessor {
   }
 
   private analyzeComplexity(text: string) {
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = text.split(/[.!?]+/).filter(s => coerceTrimmedString(s, '').length > 0);
     const words = text.split(/\s+/);
     const avgWordsPerSentence = words.length / sentences.length;
     const longWords = words.filter(word => word.length > 6).length;
@@ -1068,7 +1176,7 @@ class ClientFileProcessor {
     const uniqueWords = new Set(words.map(w => w.toLowerCase())).size;
     const lexicalDiversity = uniqueWords / words.length;
 
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = text.split(/[.!?]+/).filter(s => coerceTrimmedString(s, '').length > 0);
     const avgSentenceLength = words.length / sentences.length;
 
     // 반복성 체크
@@ -1102,14 +1210,13 @@ class ClientFileProcessor {
     actionPatterns.forEach(pattern => {
       const matches = text.match(pattern);
       if (matches) {
-        actionItems.push(...matches.map(match => match.trim()));
+        actionItems.push(...matches.map((match) => coerceTrimmedString(match, '')));
       }
     });
 
     // 중복 제거 및 길이 제한
     return Array.from(new Set(actionItems))
-      .filter(item => item.length > 10 && item.length < 200)
-      .slice(0, 10);
+      .filter(item => item.length > 10 && item.length < 200);
   }
 
   private extractConcepts(text: string): string[] {
@@ -1124,13 +1231,12 @@ class ClientFileProcessor {
     conceptPatterns.forEach(pattern => {
       const matches = Array.from(text.matchAll(pattern));
       matches.forEach(match => {
-        if (match[1]) concepts.push(match[1].trim());
+        if (match[1]) concepts.push(coerceTrimmedString(match[1], ''));
       });
     });
 
     return Array.from(new Set(concepts))
-      .filter(concept => concept.length > 2 && concept.length < 50)
-      .slice(0, 15);
+      .filter(concept => concept.length > 2 && concept.length < 50);
   }
 
   private analyzeRelationships(text: string) {
@@ -1190,19 +1296,20 @@ class ClientFileProcessor {
       insights.push('💼 비즈니스 관련 내용이 포함된 문서입니다');
     }
 
-    return insights.slice(0, 5);
+    return insights;
   }
 
   // 분석 결과를 지식 베이스에 추가
-  addAnalysisResult(projectId: string, analysisData: any): void {
+  addAnalysisResult(projectId: string, analysisData: Record<string, unknown>): void {
     const knowledgeBase = this.getKnowledgeBase(projectId);
     if (!knowledgeBase) {
       return;
     }
 
     // 분석 결과에서 키워드 추출
-    if (analysisData.keyTopics) {
-      analysisData.keyTopics.forEach((topic: string) => {
+    const keyTopics = analysisData.keyTopics as string[] | undefined;
+    if (keyTopics) {
+      keyTopics.forEach((topic: string) => {
         if (!knowledgeBase.keyConcepts.includes(topic)) {
           knowledgeBase.keyConcepts.push(topic);
         }
@@ -1210,15 +1317,16 @@ class ClientFileProcessor {
     }
 
     // 카테고리별 분류
-    if (analysisData.categories) {
-      analysisData.categories.forEach((category: string) => {
+    const categories = analysisData.categories as string[] | undefined;
+    if (categories) {
+      categories.forEach((category: string) => {
         if (!knowledgeBase.categories[category]) {
           knowledgeBase.categories[category] = [];
         }
 
         // 관련 키워드 추가
-        if (analysisData.keyTopics) {
-          analysisData.keyTopics.forEach((topic: string) => {
+        if (keyTopics) {
+          keyTopics.forEach((topic: string) => {
             if (!knowledgeBase.categories[category].includes(topic)) {
               knowledgeBase.categories[category].push(topic);
             }
@@ -1228,8 +1336,9 @@ class ClientFileProcessor {
     }
 
     // 태그 추가
-    if (analysisData.tags) {
-      analysisData.tags.forEach((tag: string) => {
+    const tags = analysisData.tags as string[] | undefined;
+    if (tags) {
+      tags.forEach((tag: string) => {
         if (!knowledgeBase.keyConcepts.includes(tag)) {
           knowledgeBase.keyConcepts.push(tag);
         }
@@ -1242,16 +1351,15 @@ class ClientFileProcessor {
     this.knowledgeBase.set(projectId, knowledgeBase);
   }
 
-  // 대우건설 관련 전문 지식 초기화
+  // 건설·시공 일반 전문 지식 초기화 (데모용, 특정 현장명 없음)
   initializeDaewooConstructionKnowledge(projectId: string): void {
     const knowledgeBase = this.getKnowledgeBase(projectId);
     if (!knowledgeBase) {
       return;
     }
 
-    // 대우건설 관련 키워드 추가
     const daewooKeywords = [
-      '대우건설', '개포우성7차', '재건축', '시공사 선정', '프로젝트 관리',
+      '시공사', '샘플프로젝트', '재건축', '시공사 선정', '프로젝트 관리',
       '건설업', '부동산개발', '시공관리', '안전관리', '품질관리',
       '스마트건설', '친환경건설', 'BIM', '프리캐스트', '모듈러건설',
       '시공계획', '공정관리', '원가관리', '리스크관리', '계약관리',
@@ -1268,9 +1376,9 @@ class ClientFileProcessor {
 
     // 카테고리별 전문 지식 추가
     const categoryKnowledge = {
-      '대우건설': [
-        '대우건설은 한국의 대표적인 건설업체로, 주택, 상업시설, 인프라 등 다양한 분야에서 활동',
-        '개포우성7차 재건축 프로젝트의 시공사로 선정되어 체계적인 프로젝트 관리 시스템 구축',
+      시공사: [
+        '국내 주요 건설사는 주택·상업·인프라 등 다양한 시공 실적을 보유',
+        '재건축·정비 사업에서 시공사 선정 후 체계적인 공정·품질 관리가 중요',
         '스마트건설 기술을 활용한 효율적인 시공 계획 수립',
         '친환경 건설 방식 채택으로 지속가능한 건설 환경 조성'
       ],

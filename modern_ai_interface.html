@@ -151,7 +151,7 @@
         }
 
 
-        /* 채팅 영역 */
+        /* 대화 영역 */
         .chat-container {
             flex: 1;
             display: flex;
@@ -430,7 +430,7 @@
                         <path
                             d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
                     </svg>
-                    새 채팅
+                    새 대화
                 </button>
             </div>
 
@@ -438,7 +438,7 @@
                 <div class="section-title">AI 기능</div>
                 <div class="nav-item active" onclick="selectMode('chat')">
                     <div class="nav-item-icon">💬</div>
-                    <span>일반 채팅</span>
+                    <span>일반 대화</span>
                 </div>
                 <div class="nav-item" onclick="selectMode('writing')">
                     <div class="nav-item-icon">✍️</div>
@@ -457,7 +457,7 @@
             <div class="nav-section">
                 <div class="section-title">최근 대화</div>
                 <div class="chat-history" id="chatHistory">
-                    <!-- 채팅 히스토리가 여기에 동적으로 추가됩니다 -->
+                    <!-- 대화 히스토리가 여기에 동적으로 추가됩니다 -->
                 </div>
             </div>
         </div>
@@ -583,7 +583,7 @@
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            // 채팅 히스토리에 추가
+            // 대화 히스토리에 추가
             if (type === 'user') {
                 chatHistory.push({ type, content, timestamp: Date.now() });
                 updateChatHistory();
@@ -948,7 +948,7 @@
             sendMessage();
         }
 
-        // 새 채팅 시작
+        // 새 대화 시작
         function startNewChat() {
             document.getElementById('chatMessages').innerHTML = `
                 <div class="message ai">
@@ -983,7 +983,7 @@
             addMessage('ai', modeMessages[mode]);
         }
 
-        // 채팅 히스토리 업데이트
+        // 대화 히스토리 업데이트
         function updateChatHistory() {
             const historyContainer = document.getElementById('chatHistory');
             historyContainer.innerHTML = '';
@@ -997,7 +997,7 @@
             });
         }
 
-        // 채팅 히스토리 로드
+        // 대화 히스토리 로드
         function loadChatHistory(index) {
             // 구현 예정
         }

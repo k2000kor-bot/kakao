@@ -178,7 +178,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                     <div className="translation-section">
                         <h4 className="translation-title">
                             <ArrowsRightLeftIcon className="translation-icon" />
-                            CORBU AI 번역
+                            CORBU.AI 번역
                         </h4>
                         
                         <div className="translation-input-group">

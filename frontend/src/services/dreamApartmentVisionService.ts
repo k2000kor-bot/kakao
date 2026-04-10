@@ -3,6 +3,8 @@
  * 희망 시각화, 꿈 실현 로드맵, 미래 아파트 설계
  */
 
+import { CHART_COLORS_HEX } from '../styles/themeColors';
+
 export interface DreamApartment {
     id: string;
     userId: string;
@@ -228,7 +230,7 @@ export interface DreamAnalysis {
     };
 }
 
-class DreamApartmentVisionService {
+export class DreamApartmentVisionService {
     private dreamApartments: DreamApartment[] = [];
     private visionBoards: VisionBoard[] = [];
     private roadmaps: Roadmap[] = [];
@@ -532,7 +534,7 @@ class DreamApartmentVisionService {
                     }
                 ],
                 moodBoard: {
-                    colors: ['#FFFFFF', '#F5F5F5', '#2C3E50', '#3498DB'],
+                    colors: ['#FFFFFF', '#F5F5F5', CHART_COLORS_HEX[0], CHART_COLORS_HEX[4]],
                     textures: ['대리석', '원목', '유리', '메탈'],
                     styles: ['모던', '미니멀', '럭셔리', '스마트'],
                     keywords: ['한강뷰', '스마트홈', '모던', '편리함', '가족']
@@ -822,7 +824,7 @@ class DreamApartmentVisionService {
         return factors;
     }
 
-    private analyzeMarket(dreamApartment: DreamApartment): DreamAnalysis['marketAnalysis'] {
+    private analyzeMarket(_dreamApartment: DreamApartment): DreamAnalysis['marketAnalysis'] {
         return {
             locationScore: 90,
             priceTrend: 5.2,
@@ -886,7 +888,9 @@ class DreamApartmentVisionService {
         return recommendations;
     }
 
-    private createFutureDesign(preferences: any): FutureApartmentDesign {
+    private createFutureDesign(preferences: { size?: number; budget?: number }): FutureApartmentDesign {
+        const size = preferences.size ?? 84;
+        const budget = preferences.budget ?? 500000000;
         return {
             id: this.generateId(),
             name: 'AI 기반 맞춤형 미래 아파트',
@@ -899,9 +903,9 @@ class DreamApartmentVisionService {
                 technology: ['IoT 센서', 'AR/VR', '홀로그램']
             },
             specifications: {
-                size: preferences.size,
-                rooms: Math.ceil(preferences.size / 30),
-                bathrooms: Math.ceil(preferences.size / 40),
+                size,
+                rooms: Math.ceil(size / 30),
+                bathrooms: Math.ceil(size / 40),
                 smartDevices: 30,
                 renewableEnergy: ['태양광', '지열'],
                 materials: ['친환경 콘크리트', '스마트 글라스']
@@ -927,11 +931,11 @@ class DreamApartmentVisionService {
                 greenMaterials: ['재활용 소재', '친환경 콘크리트']
             },
             cost: {
-                constructionCost: preferences.budget * 0.8,
-                technologyCost: preferences.budget * 0.1,
-                sustainabilityCost: preferences.budget * 0.05,
-                maintenanceCost: preferences.budget * 0.05,
-                totalCost: preferences.budget
+                constructionCost: budget * 0.8,
+                technologyCost: budget * 0.1,
+                sustainabilityCost: budget * 0.05,
+                maintenanceCost: budget * 0.05,
+                totalCost: budget
             },
             benefits: {
                 environmental: ['탄소 배출 최소화', '에너지 자립'],

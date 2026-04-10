@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
-import realTimeAIAlertSystem from './realTimeAIAlertSystem';
-import aiHealthMonitor from './aiHealthMonitor';
 import aiCacheManager from './aiCacheManager';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 // 인터페이스 정의
 export interface AIAnalyticsData {
@@ -92,7 +91,10 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
 
     constructor() {
         super();
-        console.log('📊 고급 AI 분석 및 최적화 시스템이 초기화되었습니다.');
+        errorLogger.info('📊 고급 AI 분석 및 최적화 시스템이 초기화되었습니다', {
+            component: 'advancedAIAnalyticsOptimizationSystem',
+            action: 'constructor',
+        });
     }
 
     // 시스템 시작
@@ -102,7 +104,10 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
         this.isRunning = true;
         this.startAnalytics();
         this.startOptimization();
-        console.log('🚀 고급 AI 분석 및 최적화 시스템이 시작되었습니다.');
+        errorLogger.info('🚀 고급 AI 분석 및 최적화 시스템이 시작되었습니다', {
+            component: 'advancedAIAnalyticsOptimizationSystem',
+            action: 'start',
+        });
     }
 
     // 시스템 중지
@@ -116,7 +121,10 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
             this.optimizationInterval = null;
         }
         this.isRunning = false;
-        console.log('⏹️ 고급 AI 분석 및 최적화 시스템이 중지되었습니다.');
+        errorLogger.info('⏹️ 고급 AI 분석 및 최적화 시스템이 중지되었습니다', {
+            component: 'advancedAIAnalyticsOptimizationSystem',
+            action: 'stop',
+        });
     }
 
     // 분석 데이터 수집
@@ -314,7 +322,14 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
     // 최적화 구현
     private async implementOptimization(serviceName: string, optimization: OptimizationRecommendation): Promise<void> {
         try {
-            console.log(`🔧 최적화 구현 시작: ${optimization.title}`);
+            errorLogger.info('🔧 최적화 구현 시작', {
+                component: 'advancedAIAnalyticsOptimizationSystem',
+                action: 'implementOptimization',
+                serviceName,
+                optimizationId: optimization.id,
+                optimizationTitle: optimization.title,
+                optimizationType: optimization.type,
+            });
 
             switch (optimization.type) {
                 case 'performance':
@@ -338,10 +353,23 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
             optimization.implemented_at = new Date();
 
             this.emit('optimization_implemented', { service_name: serviceName, optimization });
-            console.log(`✅ 최적화 구현 완료: ${optimization.title}`);
+            errorLogger.info('✅ 최적화 구현 완료', {
+                component: 'advancedAIAnalyticsOptimizationSystem',
+                action: 'implementOptimization',
+                serviceName,
+                optimizationId: optimization.id,
+                optimizationTitle: optimization.title,
+            });
 
         } catch (error) {
-            console.error(`❌ 최적화 구현 실패: ${optimization.title}`, error);
+            const err = toError(error);
+            errorLogger.error('❌ 최적화 구현 실패', err, {
+                component: 'advancedAIAnalyticsOptimizationSystem',
+                action: 'implementOptimization',
+                serviceName,
+                optimizationId: optimization.id,
+                optimizationTitle: optimization.title,
+            });
             optimization.status = 'pending';
         }
     }
@@ -358,25 +386,25 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
     }
 
     // 정확도 최적화 구현
-    private async implementAccuracyOptimization(serviceName: string, optimization: OptimizationRecommendation): Promise<void> {
+    private async implementAccuracyOptimization(_serviceName: string, _optimization: OptimizationRecommendation): Promise<void> {
         // 모델 재훈련 시뮬레이션
         await this.simulateOptimization(5000);
     }
 
     // 리소스 최적화 구현
-    private async implementResourceOptimization(serviceName: string, optimization: OptimizationRecommendation): Promise<void> {
+    private async implementResourceOptimization(_serviceName: string, _optimization: OptimizationRecommendation): Promise<void> {
         // 리소스 최적화 시뮬레이션
         await this.simulateOptimization(3000);
     }
 
     // 사용자 경험 최적화 구현
-    private async implementUserExperienceOptimization(serviceName: string, optimization: OptimizationRecommendation): Promise<void> {
+    private async implementUserExperienceOptimization(_serviceName: string, _optimization: OptimizationRecommendation): Promise<void> {
         // UX 개선 시뮬레이션
         await this.simulateOptimization(2500);
     }
 
     // 보안 최적화 구현
-    private async implementSecurityOptimization(serviceName: string, optimization: OptimizationRecommendation): Promise<void> {
+    private async implementSecurityOptimization(_serviceName: string, _optimization: OptimizationRecommendation): Promise<void> {
         // 보안 강화 시뮬레이션
         await this.simulateOptimization(4000);
     }
@@ -421,14 +449,18 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
     }
 
     // 최적화 점수 계산
-    private calculateOptimizationScore(serviceName: string, performance: any, trends: PerformanceTrend[]): number {
+    private calculateOptimizationScore(
+        _serviceName: string,
+        performance: { response_time_avg?: number; accuracy_avg?: number; error_rate_avg?: number; user_satisfaction_avg?: number },
+        trends: PerformanceTrend[]
+    ): number {
         let score = 100;
 
         // 성능 기반 점수 조정
-        if (performance.response_time_avg > 1000) score -= 20;
-        if (performance.accuracy_avg < 0.8) score -= 25;
-        if (performance.error_rate_avg > 0.1) score -= 30;
-        if (performance.user_satisfaction_avg < 0.7) score -= 15;
+        if ((performance.response_time_avg ?? 0) > 1000) score -= 20;
+        if ((performance.accuracy_avg ?? 0) < 0.8) score -= 25;
+        if ((performance.error_rate_avg ?? 0) > 0.1) score -= 30;
+        if ((performance.user_satisfaction_avg ?? 0) < 0.7) score -= 15;
 
         // 트렌드 기반 점수 조정
         const decliningTrends = trends.filter(t => t.trend === 'declining').length;
@@ -450,7 +482,7 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
     }
 
     // 보안 권장사항 생성
-    private generateSecurityRecommendation(serviceName: string): OptimizationRecommendation | null {
+    private generateSecurityRecommendation(_serviceName: string): OptimizationRecommendation | null {
         // 보안 분석 로직 (실제로는 보안 시스템과 연동)
         const securityScore = Math.random() * 100;
 
@@ -559,7 +591,10 @@ class AdvancedAIAnalyticsOptimizationSystem extends EventEmitter {
         this.analyticsData.clear();
         this.optimizations.clear();
         this.performanceTrends.clear();
-        console.log('🔌 고급 AI 분석 및 최적화 시스템이 종료되었습니다.');
+        errorLogger.info('🔌 고급 AI 분석 및 최적화 시스템이 종료되었습니다', {
+            component: 'advancedAIAnalyticsOptimizationSystem',
+            action: 'shutdown',
+        });
     }
 }
 

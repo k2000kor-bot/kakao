@@ -5,22 +5,22 @@
 ### 방법 1: 직접 실행
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 main_server.py
 ```
 
 ### 방법 2: uvicorn으로 실행
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 uvicorn main_server:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ## 📍 서버 정보
 
-- **서버 주소**: `http://localhost:8000`
-- **API 문서**: `http://localhost:8000/api/docs`
-- **통합 API Base URL**: `http://localhost:8000/api/integrated`
+- **서버 주소**: `http://localhost:5002`
+- **API 문서**: `http://localhost:5002/api/docs`
+- **통합 API Base URL**: `http://localhost:5002/api/integrated`
 
 ## 🔗 프론트엔드 설정
 
@@ -29,7 +29,7 @@ uvicorn main_server:app --host 0.0.0.0 --port 8000 --reload
 프론트엔드 `.env` 파일에 추가:
 
 ```env
-REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated
+REACT_APP_INTEGRATED_API_URL=http://localhost:5002/api/integrated
 ```
 
 ### TypeScript 클라이언트 사용
@@ -106,13 +106,13 @@ const socialContent = await integratedAPI.generateSocialMediaContent({
 서버가 실행 중인지 확인:
 
 ```bash
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 ```
 
 메시지 분석 테스트:
 
 ```bash
-curl -X POST http://localhost:8000/api/integrated/analyze \
+curl -X POST http://localhost:5002/api/integrated/analyze \
   -H "Content-Type: application/json" \
   -d '{"message": "안녕하세요!"}'
 ```

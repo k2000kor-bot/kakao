@@ -255,6 +255,8 @@ class AdvancedFileProcessor:
             elif file_type == 'document':
                 return await self._extract_docx_text(file_path)
             elif file_type == 'spreadsheet':
+                if file_path.suffix.lower() == '.csv':
+                    return await self._extract_csv_text(file_path)
                 return await self._extract_excel_text(file_path)
             elif file_type == 'presentation':
                 return await self._extract_pptx_text(file_path)
@@ -320,6 +322,34 @@ class AdvancedFileProcessor:
             return "Excel 처리 라이브러리가 설치되지 않았습니다."
         except Exception as e:
             return f"Excel 처리 오류: {str(e)}"
+
+    async def _extract_csv_text(self, file_path: Path) -> str:
+        """CSV에서 텍스트 추출 (엑셀보내기·한글 환경 cp949 대응)"""
+        try:
+            import csv
+            from io import StringIO
+
+            raw = file_path.read_bytes()
+            text: Optional[str] = None
+            for enc in ("utf-8-sig", "utf-8", "cp949", "euc-kr"):
+                try:
+                    text = raw.decode(enc)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if text is None:
+                text = raw.decode("utf-8", errors="replace")
+
+            out_lines: list[str] = []
+            reader = csv.reader(StringIO(text))
+            for row in reader:
+                cells = ["" if c is None else str(c).strip() for c in row]
+                line = " | ".join(cells)
+                if line.strip():
+                    out_lines.append(line)
+            return "\n".join(out_lines).strip()
+        except Exception as e:
+            return f"CSV 처리 오류: {str(e)}"
 
     async def _extract_pptx_text(self, file_path: Path) -> str:
         """PowerPoint에서 텍스트 추출"""
@@ -534,7 +564,7 @@ class AdvancedFileProcessor:
         # 인용문 추출
         quote_patterns = [
             r'"([^"]+)"',
-            r''([^']+)'',
+            r"'([^']+)'",
             r'라고\s*(?:말했다|밝혔다|강조했다|설명했다)'
         ]
         
@@ -886,4 +916,9 @@ async def root():
     }
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8006)
+    _p = int(
+        os.environ.get(
+            "ADVANCED_FILE_PROCESSOR_PORT", os.environ.get("PORT", "8006")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p)

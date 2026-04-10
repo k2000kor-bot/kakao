@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# CORBU AI 전체 시스템 중지 스크립트
+# CORBU.AI 전체 시스템 중지 스크립트
 
-echo "🛑 CORBU AI 전체 시스템을 중지합니다..."
+echo "🛑 CORBU.AI 전체 시스템을 중지합니다..."
 
 # PID 파일에서 프로세스 종료
 pids=(
@@ -50,4 +50,4 @@ pkill -f "react-scripts" 2>/dev/null
 
 echo ""
 echo "✅ 모든 서비스가 중지되었습니다."
-echo "🎉 CORBU AI 시스템이 안전하게 종료되었습니다."
+echo "🎉 CORBU.AI 시스템이 안전하게 종료되었습니다."

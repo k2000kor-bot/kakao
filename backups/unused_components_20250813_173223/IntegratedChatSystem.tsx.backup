@@ -321,7 +321,7 @@ const IntegratedChatSystem: React.FC = () => {
               <div className="text-gray-600">📁</div>
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">개포우성_실명방</h1>
-                <p className="text-sm text-gray-500">CORBU AI 통합 채팅 시스템</p>
+                <p className="text-sm text-gray-500">CORBU.AI 통합 채팅 시스템</p>
               </div>
             </div>
           </div>

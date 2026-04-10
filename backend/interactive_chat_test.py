@@ -17,7 +17,7 @@ from simplified_ultra_message_system import (
 )
 
 class InteractiveChatTester:
-    """인터랙티브 채팅 테스터"""
+    """인터랙티브 대화 테스터"""
     
     def __init__(self):
         self.generator = SimplifiedMessageGenerator()

@@ -22,6 +22,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import threading
 import queue
+import os
 
 # 내장 AI 엔진 임포트
 try:
@@ -76,7 +77,9 @@ class OllamaHybridEngine:
     """Ollama 하이브리드 엔진"""
     
     def __init__(self):
-        self.ollama_base_url = "http://localhost:11434"
+        self.ollama_base_url = os.getenv(
+            "OLLAMA_BASE_URL", "http://localhost:11434"
+        ).rstrip("/")
         self.available_models = {}
         self.model_performance = {}
         self.response_cache = {}

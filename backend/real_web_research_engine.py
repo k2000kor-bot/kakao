@@ -359,9 +359,8 @@ class RealWebResearchEngine:
         # 공통 키워드 찾기
         all_text = ' '.join([f"{s.title} {s.content}" for s in sources]).lower()
         
-        # 개포우성 관련 합의점
-        if '개포우성' in all_text:
-            consensus.append("개포우성에 대한 정보가 여러 소스에서 확인됨")
+        if '재개발' in all_text or '정비' in all_text:
+            consensus.append("재개발·정비 관련 정보가 여러 소스에서 확인됨(시뮬레이션)")
         
         # 재개발 관련 합의점
         if '재개발' in all_text:

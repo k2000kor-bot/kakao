@@ -18,7 +18,7 @@ let messages = [];
 const defaultProject = {
   id: uuidv4(),
   name: '기본 프로젝트',
-  description: 'CORBU AI 기본 프로젝트입니다',
+  description: 'CORBU.AI 기본 프로젝트입니다',
   tags: ['AI', '분석'],
   status: 'active',
   messageCount: 0,
@@ -146,7 +146,7 @@ app.post('/api/sessions/:sessionId/messages', (req, res) => {
   // AI 응답 생성 (간단한 시뮬레이션)
   const aiResponse = {
     id: uuidv4(),
-    content: `안녕하세요! "${content}"에 대한 답변입니다. CORBU AI가 도움을 드리겠습니다. 현재 시간은 ${new Date().toLocaleString('ko-KR')}입니다.`,
+    content: `안녕하세요! "${content}"에 대한 답변입니다. CORBU.AI가 도움을 드리겠습니다. 현재 시간은 ${new Date().toLocaleString('ko-KR')}입니다.`,
     role: 'assistant',
     timestamp: new Date(),
     sessionId,
@@ -189,7 +189,7 @@ app.post('/api/initialize', (req, res) => {
   res.json({
     success: true,
     data: {
-      message: 'CORBU AI 시스템이 초기화되었습니다',
+      message: 'CORBU.AI 시스템이 초기화되었습니다',
       timestamp: new Date()
     }
   });
@@ -197,7 +197,7 @@ app.post('/api/initialize', (req, res) => {
 
 // 서버 시작
 app.listen(PORT, () => {
-  console.log(`🚀 CORBU AI 백엔드 서버가 포트 ${PORT}에서 실행 중입니다`);
+  console.log(`🚀 CORBU.AI 백엔드 서버가 포트 ${PORT}에서 실행 중입니다`);
   console.log(`📊 API 엔드포인트: http://localhost:${PORT}/api`);
   console.log(`🔍 헬스체크: http://localhost:${PORT}/api/health`);
 });

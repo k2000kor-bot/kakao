@@ -539,7 +539,7 @@ TS2554: Expected 1 arguments, but got 0.
   > 158 |             clearProgress();
         |             ^^^^^^^^^^^^^^^
     159 |         } catch (error) {
-    160 |             console.error('채팅 초기화 오류:', error);
+    160 |             console.error('대화 초기화 오류:', error);
     161 |         }
 ERROR in src/components/ConversationAnalysis.tsx:67:58
 TS2339: Property 'analysis' does not exist on type 'APIResponse<any>'.
@@ -635,7 +635,7 @@ TS2554: Expected 0 arguments, but got 1.
   > 46 |     });
        | ^^^^^^
     47 |
-    48 |     // 현재 채팅방 구독
+    48 |     // 현재 대화방 구독
     49 |     useEffect(() => {
 ERROR in src/components/RealTimeDashboard.tsx:30:13
 TS2339: Property 'messages' does not exist on type '{ isConnected: boolean; isConnecting: boolean; error: string | null; reconnect: () => void; }'.
@@ -803,7 +803,7 @@ async def root():
             "실시간 파일 처리",
             "개인별 학습 데이터 통합",
             "실시간 WebSocket 통신",
-            "프로젝트 기반 채팅 세션 관리"
+            "프로젝트 기반 대화 세션 관리"
         ],
         "api_endpoints": {
             "upload_chat": "/api/v8/upload-chat",
@@ -831,7 +831,7 @@ async def websocket_endpoint(websocket: WebSocket):
             
             # 메시지 타입에 따른 처리
             if message.get("type") == "chat_message":
-                # 채팅 메시지 처리
+                # 대화 메시지 처리
                 response = await process_chat_message(message)
                 await manager.send_personal_message(json.dumps(response), websocket)
             
@@ -849,7 +849,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 async def process_chat_message(message: Dict[str, Any]) -> Dict[str, Any]:
-    """채팅 메시지 처리"""
+    """대화 메시지 처리"""
     try:
         content = message.get("content", "")
         sender = message.get("sender", "user")
@@ -869,7 +869,7 @@ async def process_chat_message(message: Dict[str, Any]) -> Dict[str, Any]:
         }
     
     except Exception as e:
-        logger.error(f"채팅 메시지 처리 실패: {e}")
+        logger.error(f"대화 메시지 처리 실패: {e}")
         return {
             "type": "chat_response",
             "success": False,
@@ -993,10 +993,10 @@ async def get_project(project_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 채팅 세션 관리 API
+# 대화 세션 관리 API
 @app.post("/api/v8/chat-sessions")
 async def create_chat_session(request: ChatSessionRequest):
-    """새 채팅 세션 생성"""
+    """새 대화 세션 생성"""
     try:
         session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{hash(request.title) % 10000:04d}"
         
@@ -1029,17 +1029,17 @@ async def create_chat_session(request: ChatSessionRequest):
         return {
             "success": True,
             "session": session_data,
-            "message": "채팅 세션이 성공적으로 생성되었습니다."
+            "message": "대화 세션이 성공적으로 생성되었습니다."
         }
     
     except Exception as e:
-        logger.error(f"채팅 세션 생성 실패: {e}")
+        logger.error(f"대화 세션 생성 실패: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/v8/chat-sessions")
 async def get_chat_sessions(project_id: str = Query(...)):
-    """프로젝트의 모든 채팅 세션 조회"""
+    """프로젝트의 모든 대화 세션 조회"""
     try:
         sessions = []
         sessions_dir = Path(f"project_data/projects/{project_id}_sessions")
@@ -1058,18 +1058,18 @@ async def get_chat_sessions(project_id: str = Query(...)):
         }
     
     except Exception as e:
-        logger.error(f"채팅 세션 조회 실패: {e}")
+        logger.error(f"대화 세션 조회 실패: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/v8/chat-sessions/{session_id}/messages")
 async def add_message_to_session(session_id: str, message: Dict[str, Any]):
-    """채팅 세션에 메시지 추가"""
+    """대화 세션에 메시지 추가"""
     try:
         session_file = Path(f"project_data/projects/sessions/{session_id}.json")
         
         if not session_file.exists():
-            raise HTTPException(status_code=404, detail="채팅 세션을 찾을 수 없습니다")
+            raise HTTPException(status_code=404, detail="대화 세션을 찾을 수 없습니다")
         
         # 세션 데이터 읽기
         async with aiofiles.open(session_file, 'r', encoding='utf-8') as f:
@@ -1110,7 +1110,7 @@ async def upload_chat_file(
     file: UploadFile = File(...),
     chat_room_name: str = Form(...)
 ):
-    """카카오톡 채팅 파일 업로드 및 복합 분석"""
+    """카카오톡 대화 파일 업로드 및 복합 분석"""
     
     try:
         if not file.filename.endswith('.txt'):
@@ -1139,24 +1139,24 @@ async def upload_chat_file(
         
         return {
             "success": True,
-            "message": "채팅 파일 업로드 완료, 백그라운드에서 분석 중",
+            "message": "대화 파일 업로드 완료, 백그라운드에서 분석 중",
             "file_name": file.filename,
             "chat_room": chat_room_name,
             "timestamp": datetime.now().isoformat()
         }
         
     except Exception as e:
-        logger.error(f"채팅 파일 업로드 실패: {e}")
+        logger.error(f"대화 파일 업로드 실패: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 async def process_uploaded_chat_comprehensive(file_path: str, chat_room_name: str):
-    """채팅 파일 종합 처리"""
+    """대화 파일 종합 처리"""
     
     try:
-        logger.info(f"채팅 파일 종합 분석 시작: {file_path}")
+        logger.info(f"대화 파일 종합 분석 시작: {file_path}")
         
-        # 1. 채팅 파싱
+        # 1. 대화 파싱
         kakao_room = chat_parser.parse_chat_file(file_path)
         chat_room_id = f"room_{hash(chat_room_name) % 10000:04d}"
         
@@ -1174,7 +1174,7 @@ async def process_uploaded_chat_comprehensive(file_path: str, chat_room_name: st
                 # 메시지 저장
                 message_db.save_complex_message(complex_msg)
         
-        logger.info(f"채팅 파일 처리 완료: {len(kakao_room.messages)}개 메시지 처리됨")
+        logger.info(f"대화 파일 처리 완료: {len(kakao_room.messages)}개 메시지 처리됨")
         
         # WebSocket으로 진행상황 브로드캐스트
         await manager.broadcast(json.dumps({
@@ -1185,7 +1185,7 @@ async def process_uploaded_chat_comprehensive(file_path: str, chat_room_name: st
         }))
         
     except Exception as e:
-        logger.error(f"채팅 파일 처리 실패: {e}")
+        logger.error(f"대화 파일 처리 실패: {e}")
         await manager.broadcast(json.dumps({
             "type": "chat_processing_error",
             "error": str(e),
@@ -2163,4 +2163,7 @@ async def export_messages(
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+    _cmp = int(
+        os.environ.get("COMPREHENSIVE_MESSAGE_PORT", os.environ.get("PORT", "8001"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_cmp) 

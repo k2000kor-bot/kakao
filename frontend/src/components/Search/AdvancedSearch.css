@@ -1,0 +1,48 @@
+/**
+ * 고급 검색 — CORBU.AI Brainwave 테마
+ */
+.adv-search-root { width: 100%; }
+.adv-search-row { display: flex; align-items: center; gap: var(--spacing-sm); flex-wrap: wrap; }
+.adv-search-select {
+  appearance: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-right: 2rem;
+  background: var(--bg-primary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-base);
+}
+.adv-search-select:focus { border-color: var(--accent-info); }
+.adv-search-input-wrap { flex: 1; position: relative; min-width: 160px; }
+.adv-search-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-left: 2.5rem;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
+}
+.adv-search-input:focus { border-color: var(--accent-info); }
+.adv-search-input::placeholder { color: var(--text-secondary); }
+.adv-search-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--accent-info); color: var(--on-accent); border: none; border-radius: 0 var(--radius-lg) var(--radius-lg) 0; font-size: var(--font-size-sm); cursor: pointer; transition: background var(--transition-base); }
+.adv-search-btn:hover:not(:disabled) { background: var(--accent-info-hover); }
+.adv-search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.adv-search-filter-btn { padding: var(--spacing-sm); border-radius: var(--radius-md); background: transparent; border: none; cursor: pointer; color: var(--text-secondary); transition: background var(--transition-base), color var(--transition-base); }
+.adv-search-filter-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.adv-search-filter-btn.active { background: var(--accent-info-muted); color: var(--accent-info); }
+.adv-search-saved-btn { padding: var(--spacing-sm); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-secondary); border: none; cursor: pointer; }
+.adv-search-saved-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.adv-search-dropdown { background: var(--bg-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-dropdown); border: var(--border-width) solid var(--border-color); }
+.adv-search-filter-panel { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--spacing-md); }
+.adv-search-result-card { padding: var(--spacing-md); background: var(--bg-primary); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md); transition: background var(--transition-base); }
+.adv-search-result-card:hover { background: var(--bg-hover); }
+.adv-search-tag { padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-xs); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-full); }
+.adv-search-highlight { background: var(--accent-warning-subtle); padding: 0 2px; border-radius: 2px; }
+.adv-search-icon { color: var(--text-secondary); flex-shrink: 0; }
+.adv-search-spin { animation: adv-search-spin 1s linear infinite; }

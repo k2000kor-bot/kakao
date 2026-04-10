@@ -1,11 +1,9 @@
 import unifiedAPI from './unifiedAPI';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface QARequest {
     question: string;
-    context?: string | Record<string, any>;
+    context?: string | Record<string, unknown>;
 }
 
 export interface QAResponse {
@@ -34,7 +32,7 @@ export interface ConversationContext {
     };
 }
 
-class ConversationalQAService {
+export class ConversationalQAService {
     private context: ConversationContext = {
         history: [],
         currentTopic: '',
@@ -44,7 +42,7 @@ class ConversationalQAService {
         }
     };
 
-    async askQuestion(question: string, context?: string | Record<string, any>): Promise<QAResponse> {
+    async askQuestion(question: string, context?: string | Record<string, unknown>): Promise<QAResponse> {
         try {
             // 통합 API 사용
             const response = await unifiedAPI.conversationalQA(question, context as Record<string, unknown>);
@@ -78,7 +76,12 @@ class ConversationalQAService {
                 throw new Error('API 응답이 올바르지 않습니다.');
             }
         } catch (error) {
-            console.error('QA 서비스 오류:', error);
+            const err = toError(error);
+            errorLogger.error('QA 서비스 오류', err, {
+                component: 'conversationalQAService',
+                action: 'askQuestion',
+                questionPreview: question.substring(0, 100),
+            });
 
             // 폴백 응답
             return {
@@ -90,7 +93,7 @@ class ConversationalQAService {
         }
     }
 
-    async askWithContext(question: string, context: Record<string, any>): Promise<QAResponse> {
+    async askWithContext(question: string, context: Record<string, unknown>): Promise<QAResponse> {
         const request = {
             question,
             context: {
@@ -140,7 +143,7 @@ class ConversationalQAService {
     }
 
     // 고급 QA 기능들
-    async askAnalyticalQuestion(question: string, data: any[]): Promise<QAResponse> {
+    async askAnalyticalQuestion(question: string, data: unknown[]): Promise<QAResponse> {
         const context = {
             analysisType: 'analytical',
             data,
@@ -150,7 +153,7 @@ class ConversationalQAService {
         return this.askQuestion(question, context);
     }
 
-    async askComparativeQuestion(question: string, items: any[]): Promise<QAResponse> {
+    async askComparativeQuestion(question: string, items: unknown[]): Promise<QAResponse> {
         const context = {
             analysisType: 'comparative',
             items,
@@ -160,7 +163,7 @@ class ConversationalQAService {
         return this.askQuestion(question, context);
     }
 
-    async askPredictiveQuestion(question: string, historicalData: any[]): Promise<QAResponse> {
+    async askPredictiveQuestion(question: string, historicalData: unknown[]): Promise<QAResponse> {
         const context = {
             analysisType: 'predictive',
             historicalData,

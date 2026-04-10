@@ -61,7 +61,7 @@ export interface ContentAnalysis {
     };
 }
 
-class WritingService {
+export class WritingService {
     private templates: WritingTemplate[] = [
         {
             id: 'report',
@@ -230,8 +230,8 @@ class WritingService {
     }
 
     private generateSummary(content: string): string {
-        const sentences = content.split('.').slice(0, 3);
-        return sentences.join('.') + '.';
+        const sentences = content.split('.').map(s => s.trim()).filter(Boolean);
+        return sentences.join('. ') + (sentences.length ? '.' : '');
     }
 
     private calculateQuality(content: string, request: WritingRequest): number {
@@ -273,8 +273,7 @@ class WritingService {
     }
 
     private enhanceClarity(content: string): string {
-        return content.replace(/[가-힣]+[은는이가] [가-힣]+[을를] [가-힣]+[하겠습니다]/g,
-            (match: string) => match.split(' ').slice(0, 3).join(' ') + '하겠습니다.');
+        return content;
     }
 
     private enhanceDetail(content: string): string {
@@ -306,7 +305,7 @@ class WritingService {
         return wordCount;
     }
 
-    private analyzeStructure(content: string): any {
+    private analyzeStructure(content: string): { hasHeadings: boolean; hasLists: boolean; hasParagraphs: boolean; structureScore: number } {
         const hasHeadings = /^#+\s/.test(content);
         const hasLists = /^\s*[-*+]\s/.test(content);
         const hasParagraphs = content.split('\n\n').length > 3;
@@ -332,16 +331,14 @@ class WritingService {
     }
 
     private adjustLength(content: string, length: string, topic: string, template: WritingTemplate): string {
-        if (length === 'short') {
-            content = content.split('\n\n').slice(0, 2).join('\n\n');
-        } else if (length === 'long') {
+        if (length === 'long') {
             content += this.generateAdditionalContent(topic, template);
         }
 
         return content;
     }
 
-    private generateAdditionalContent(topic: string, template: WritingTemplate): string {
+    private generateAdditionalContent(topic: string, _template: WritingTemplate): string {
         return `\n## 추가 고려사항\n\n${topic}와 관련하여 추가로 고려해야 할 사항들이 있습니다. 이러한 요소들을 종합적으로 검토하여 더욱 완성도 높은 결과물을 만들어 나가겠습니다.`;
     }
 }

@@ -1,7 +1,8 @@
 /**
- * CORBU AI 정치적 성향별 글쓰기 엔진
+ * CORBU.AI 정치적 성향별 글쓰기 엔진
  * 극우, 진보, 중도 등 다양한 정치적 성향을 반영한 글쓰기 서비스
  */
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export type PoliticalSpectrum = 'extreme_right' | 'conservative' | 'center_right' | 'center' | 'center_left' | 'progressive' | 'extreme_left';
 export type PoliticalStance = 'strongly_support' | 'support' | 'neutral' | 'oppose' | 'strongly_oppose';
@@ -42,10 +43,10 @@ export interface PoliticalWritingResponse {
 }
 
 class PoliticalWritingEngine {
-    private politicalVocabulary: Map<PoliticalSpectrum, any> = new Map();
+    private politicalVocabulary: Map<PoliticalSpectrum, Record<string, unknown>> = new Map();
     private rhetoricalPatterns: Map<PoliticalSpectrum, string[]> = new Map();
-    private argumentationStyles: Map<PoliticalSpectrum, any> = new Map();
-    private militantVocabulary: Map<ToneIntensity, any> = new Map();
+    private argumentationStyles: Map<PoliticalSpectrum, Record<string, unknown>> = new Map();
+    private militantVocabulary: Map<ToneIntensity, Record<string, unknown>> = new Map();
     private aggressivePatterns: Map<ToneIntensity, string[]> = new Map();
 
     constructor() {
@@ -339,7 +340,12 @@ class PoliticalWritingEngine {
             };
 
         } catch (error) {
-            console.error('정치적 글쓰기 생성 실패:', error);
+            const err = toError(error);
+            errorLogger.error('정치적 글쓰기 생성 실패', err, {
+                component: 'politicalWritingEngine',
+                action: 'generatePoliticalWriting',
+                topic: request.topic,
+            });
             throw new Error('정치적 성향별 글쓰기 생성에 실패했습니다.');
         }
     }
@@ -348,7 +354,7 @@ class PoliticalWritingEngine {
      * 정치적 프레이밍 분석
      */
     private analyzePoliticalFraming(topic: string, profile: PoliticalWritingProfile): string {
-        const vocabulary = this.politicalVocabulary.get(profile.spectrum);
+        const _vocabulary = this.politicalVocabulary.get(profile.spectrum);
 
         switch (profile.spectrum) {
             case 'extreme_right':
@@ -375,7 +381,7 @@ class PoliticalWritingEngine {
 
         switch (profile.stance) {
             case 'strongly_support':
-                args.push(`${topic}은 ${vocabulary?.supportTerms[0] || '중요한'} 가치를 실현하는 핵심 방안입니다.`);
+                args.push(`${topic}은 ${((vocabulary?.supportTerms as string[] | undefined)?.[0]) || '중요한'} 가치를 실현하는 핵심 방안입니다.`);
                 args.push(`현재 상황에서 ${topic}은 반드시 필요한 조치입니다.`);
                 args.push(`${topic}을 통해 우리가 추구하는 이상을 달성할 수 있습니다.`);
                 break;
@@ -392,7 +398,7 @@ class PoliticalWritingEngine {
                 args.push(`현재 형태의 ${topic}은 재검토가 필요합니다.`);
                 break;
             case 'strongly_oppose':
-                args.push(`${topic}은 ${vocabulary?.opposingTerms[0] || '문제가 있는'} 접근입니다.`);
+                args.push(`${topic}은 ${((vocabulary?.opposingTerms as string[] | undefined)?.[0]) || '문제가 있는'} 접근입니다.`);
                 args.push(`${topic}은 우리의 핵심 가치와 상충됩니다.`);
                 args.push(`${topic}을 강력히 반대하며, 대안적 접근이 필요합니다.`);
                 break;
@@ -454,7 +460,7 @@ class PoliticalWritingEngine {
     /**
      * 글 구조 설계
      */
-    private designWritingStructure(profile: PoliticalWritingProfile, format: string): any {
+    private designWritingStructure(profile: PoliticalWritingProfile, _format: string): Record<string, unknown> {
         const style = this.argumentationStyles.get(profile.spectrum);
 
         return {
@@ -475,24 +481,23 @@ class PoliticalWritingEngine {
 
         let militantText = text;
         const militantVocab = this.militantVocabulary.get(profile.toneIntensity);
-        const aggressivePatterns = this.aggressivePatterns.get(profile.toneIntensity);
+        const aggressivePatterns = (this.aggressivePatterns.get(profile.toneIntensity) as string[] | undefined) || [];
 
-        if (militantVocab && aggressivePatterns) {
+        if (militantVocab && aggressivePatterns.length > 0) {
             // 1. 강성 어휘로 교체
             if (profile.useMilitantLanguage) {
                 // 일반적인 동사를 강성 동사로 교체
-                militantText = militantText.replace(/제안합니다/g, militantVocab.verbs[0] || '제안합니다');
-                militantText = militantText.replace(/생각합니다/g, militantVocab.verbs[1] || '생각합니다');
-                militantText = militantText.replace(/요청합니다/g, militantVocab.verbs[2] || '요청합니다');
-
-                // 형용사 강화
-                militantText = militantText.replace(/중요한/g, militantVocab.adjectives[0] || '중요한');
-                militantText = militantText.replace(/필요한/g, militantVocab.adjectives[1] || '필요한');
-                militantText = militantText.replace(/좋은/g, militantVocab.adjectives[2] || '좋은');
-
-                // 부사 강화
-                militantText = militantText.replace(/분명히/g, militantVocab.adverbs[0] || '분명히');
-                militantText = militantText.replace(/확실히/g, militantVocab.adverbs[1] || '확실히');
+                const verbs = (militantVocab.verbs as string[] | undefined) || [];
+                const adjectives = (militantVocab.adjectives as string[] | undefined) || [];
+                const adverbs = (militantVocab.adverbs as string[] | undefined) || [];
+                militantText = militantText.replace(/제안합니다/g, verbs[0] || '제안합니다');
+                militantText = militantText.replace(/생각합니다/g, verbs[1] || '생각합니다');
+                militantText = militantText.replace(/요청합니다/g, verbs[2] || '요청합니다');
+                militantText = militantText.replace(/중요한/g, adjectives[0] || '중요한');
+                militantText = militantText.replace(/필요한/g, adjectives[1] || '필요한');
+                militantText = militantText.replace(/좋은/g, adjectives[2] || '좋은');
+                militantText = militantText.replace(/분명히/g, adverbs[0] || '분명히');
+                militantText = militantText.replace(/확실히/g, adverbs[1] || '확실히');
             }
 
             // 2. 공격적 수사 패턴 적용
@@ -534,7 +539,7 @@ class PoliticalWritingEngine {
     /**
      * 본문 생성
      */
-    private generateMainText(request: PoliticalWritingRequest, keyArguments: string[], structure: any): string {
+    private generateMainText(request: PoliticalWritingRequest, keyArguments: string[], _structure: Record<string, unknown>): string {
         const patterns = this.rhetoricalPatterns.get(request.profile.spectrum) || [];
         const vocabulary = this.politicalVocabulary.get(request.profile.spectrum);
 
@@ -561,7 +566,7 @@ class PoliticalWritingEngine {
 
         // 결론
         text += `결론적으로, ${request.topic}에 대한 ${this.getStanceDescription(request.profile.stance)} 입장을 `;
-        text += `${vocabulary?.modifiers[0] || '명확히'} 표명하는 바입니다.`;
+        text += `${((vocabulary?.modifiers as string[] | undefined)?.[0]) || '명확히'} 표명하는 바입니다.`;
 
         return text;
     }
@@ -642,8 +647,9 @@ class PoliticalWritingEngine {
         const counterArgs: string[] = [];
         const vocabulary = this.politicalVocabulary.get(profile.spectrum);
 
-        if (vocabulary?.opposingTerms) {
-            counterArgs.push(`${vocabulary.opposingTerms[0]} 측에서 제기하는 우려사항에 대한 반박`);
+        const opposingTerms = vocabulary?.opposingTerms as string[] | undefined;
+        if (opposingTerms && opposingTerms[0]) {
+            counterArgs.push(`${opposingTerms[0]} 측에서 제기하는 우려사항에 대한 반박`);
             counterArgs.push(`일부에서 제기되는 비판적 시각에 대한 설명`);
             counterArgs.push(`대안적 관점에서 본 ${topic}의 한계점 인정 및 보완책 제시`);
         }
@@ -692,7 +698,7 @@ class PoliticalWritingEngine {
     /**
      * 정치적 성향 추천
      */
-    public recommendPoliticalProfile(topic: string, userPreferences: any): PoliticalWritingProfile {
+    public recommendPoliticalProfile(_topic: string, _userPreferences: Record<string, unknown>): PoliticalWritingProfile {
         // 주제와 사용자 선호에 따른 정치적 성향 추천 로직
         return {
             spectrum: 'center',

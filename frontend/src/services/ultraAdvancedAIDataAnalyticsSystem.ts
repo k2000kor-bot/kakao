@@ -1,11 +1,13 @@
 import { EventEmitter } from 'events';
+import { DEMO_CORBU_API_METRICS_URL, DEMO_SIM_KAFKA_EMOTION_ANALYSIS_URL } from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface DataSource {
   id: string;
   name: string;
   type: 'database' | 'api' | 'file' | 'stream' | 'sensor' | 'social';
   connection_string: string;
-  schema: any;
+  schema: Record<string, unknown>;
   last_sync: string;
   status: 'active' | 'inactive' | 'error';
   data_volume: number;
@@ -20,10 +22,10 @@ export interface DataAnalysis {
   type: 'descriptive' | 'diagnostic' | 'predictive' | 'prescriptive';
   data_sources: string[];
   algorithm: string;
-  parameters: any;
+  parameters: Record<string, unknown>;
   status: 'pending' | 'running' | 'completed' | 'failed';
   progress: number;
-  results: any;
+  results: Record<string, unknown> | null;
   insights: string[];
   confidence_score: number;
   execution_time: number;
@@ -38,8 +40,8 @@ export interface DataVisualization {
   type: 'chart' | 'dashboard' | 'report' | 'map' | 'network' | '3d';
   chart_type: 'line' | 'bar' | 'pie' | 'scatter' | 'heatmap' | 'histogram' | 'boxplot';
   data_source: string;
-  configuration: any;
-  filters: any[];
+  configuration: Record<string, unknown>;
+  filters: unknown[];
   refresh_rate: number;
   is_public: boolean;
   created_at: string;
@@ -54,7 +56,7 @@ export interface DataInsight {
   category: 'trend' | 'anomaly' | 'correlation' | 'pattern' | 'forecast' | 'recommendation';
   severity: 'low' | 'medium' | 'high' | 'critical';
   confidence: number;
-  data_points: any[];
+  data_points: unknown[];
   visualization_id?: string;
   action_items: string[];
   created_at: string;
@@ -138,7 +140,10 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
     super();
     this.initializeSystem();
     this.isInitialized = true;
-    console.log('📊 고도화된 AI 데이터 분석 시스템이 초기화되었습니다.');
+    errorLogger.info('📊 고도화된 AI 데이터 분석 시스템이 초기화되었습니다.', {
+      component: 'ultraAdvancedAIDataAnalyticsSystem',
+      action: 'constructor',
+    });
   }
 
   private async initializeSystem(): Promise<void> {
@@ -159,7 +164,11 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
       
       this.emit('system_initialized', this.systemMetrics);
     } catch (error) {
-      console.error('데이터 분석 시스템 초기화 오류:', error);
+      const err = toError(error);
+      errorLogger.error('데이터 분석 시스템 초기화 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'initializeSystem',
+      });
       this.emit('system_error', error);
     }
   }
@@ -189,7 +198,7 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
         id: 'source-002',
         name: 'AI 시스템 성능 메트릭',
         type: 'api',
-        connection_string: 'https://api.corbu.ai/metrics',
+        connection_string: DEMO_CORBU_API_METRICS_URL,
         schema: {
           system_id: 'string',
           metric_name: 'string',
@@ -208,7 +217,7 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
         id: 'source-003',
         name: '감정 분석 결과',
         type: 'stream',
-        connection_string: 'kafka://localhost:9092/emotion-analysis',
+        connection_string: DEMO_SIM_KAFKA_EMOTION_ANALYSIS_URL,
         schema: {
           user_id: 'string',
           emotion: 'string',
@@ -403,7 +412,12 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
       this.emit('data_source_created', source);
       return sourceId;
     } catch (error) {
-      console.error('데이터 소스 생성 오류:', error);
+      const err = toError(error);
+      errorLogger.error('데이터 소스 생성 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'createDataSource',
+        sourceName: sourceConfig.name,
+      });
       throw error;
     }
   }
@@ -429,7 +443,12 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
       this.emit('analysis_created', analysis);
       return analysisId;
     } catch (error) {
-      console.error('분석 작업 생성 오류:', error);
+      const err = toError(error);
+      errorLogger.error('분석 작업 생성 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'createAnalysis',
+        analysisName: analysisConfig.name,
+      });
       throw error;
     }
   }
@@ -473,12 +492,17 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
       this.emit('analysis_completed', analysis);
       return analysis;
     } catch (error) {
-      console.error('분석 실행 오류:', error);
+      const err = toError(error);
+      errorLogger.error('분석 실행 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'runAnalysis',
+        analysisId,
+      });
       throw error;
     }
   }
 
-  private generateAnalysisResults(analysis: DataAnalysis): any {
+  private generateAnalysisResults(analysis: DataAnalysis): Record<string, unknown> {
     switch (analysis.algorithm) {
       case 'clustering':
         return {
@@ -519,7 +543,7 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
     }
   }
 
-  private generateInsightsFromResults(results: any): string[] {
+  private generateInsightsFromResults(results: Record<string, unknown>): string[] {
     const insights: string[] = [];
     
     if (results.clusters) {
@@ -562,7 +586,11 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
         started: analysesToRun.length
       });
     } catch (error) {
-      console.error('자동 분석 실행 오류:', error);
+      const err = toError(error);
+      errorLogger.error('자동 분석 실행 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'runPendingAnalyses',
+      });
       this.emit('auto_analysis_error', error);
     }
   }
@@ -593,7 +621,11 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
       
       this.systemMetrics.insight_generation_rate = this.calculateInsightGenerationRate();
     } catch (error) {
-      console.error('인사이트 생성 오류:', error);
+      const err = toError(error);
+      errorLogger.error('인사이트 생성 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'generateInsights',
+      });
       this.emit('insight_generation_error', error);
     }
   }
@@ -651,7 +683,12 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
       this.emit('visualization_created', viz);
       return vizId;
     } catch (error) {
-      console.error('시각화 생성 오류:', error);
+      const err = toError(error);
+      errorLogger.error('시각화 생성 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'createVisualization',
+        visualizationName: vizConfig.name,
+      });
       throw error;
     }
   }
@@ -666,7 +703,11 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
 
       this.emit('metrics_updated', this.systemMetrics);
     } catch (error) {
-      console.error('메트릭 업데이트 오류:', error);
+      const err = toError(error);
+      errorLogger.error('메트릭 업데이트 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'updateMetrics',
+      });
       this.emit('metrics_update_error', error);
     }
   }
@@ -727,7 +768,12 @@ class UltraAdvancedAIDataAnalyticsSystem extends EventEmitter {
       
       this.emit('config_updated', this.config);
     } catch (error) {
-      console.error('설정 업데이트 오류:', error);
+      const err = toError(error);
+      errorLogger.error('설정 업데이트 오류', err, {
+        component: 'ultraAdvancedAIDataAnalyticsSystem',
+        action: 'updateConfig',
+        updatedKeys: Object.keys(newConfig),
+      });
       throw error;
     }
   }

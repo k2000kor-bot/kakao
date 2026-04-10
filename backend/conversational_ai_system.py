@@ -20,8 +20,8 @@ class ConversationalAISystem:
                 "function": "generate_message"
             },
             "프로젝트_분석": {
-                "commands": ["프로젝트 분석", "개포우성 분석", "분석해줘", "데이터 분석"],
-                "description": "개포우성7차 프로젝트 데이터 분석",
+                "commands": ["프로젝트 분석", "데이터 분석", "분석해줘"],
+                "description": "선택한 프로젝트 데이터 분석",
                 "function": "analyze_project"
             },
             "대화_요약": {
@@ -61,9 +61,9 @@ class ConversationalAISystem:
             "인사": {
                 "patterns": ["안녕", "hello", "hi", "반가워"],
                 "responses": [
-                    "안녕하세요! 개포우성7차 프로젝트 AI 어시스턴트입니다. 무엇을 도와드릴까요?",
+                    "안녕하세요! 프로젝트 AI 어시스턴트입니다. 무엇을 도와드릴까요?",
                     "반갑습니다! 프로젝트 관련해서 궁금한 점이 있으시면 언제든 말씀해주세요.",
-                    "안녕하세요! 개포우성7차 프로젝트를 더욱 효율적으로 진행할 수 있도록 도와드리겠습니다."
+                    "안녕하세요! 프로젝트를 더욱 효율적으로 진행할 수 있도록 도와드리겠습니다."
                 ]
             },
             "감사": {
@@ -139,8 +139,7 @@ class ConversationalAISystem:
         """텍스트에서 키워드 추출"""
         keywords = []
         
-        # 개포우성7차 관련 키워드
-        project_keywords = ["시공사", "공사비", "설계", "홍보", "투표", "계약", "일정", "품질", "개포우성"]
+        project_keywords = ["시공사", "공사비", "설계", "홍보", "투표", "계약", "일정", "품질", "재개발"]
         for keyword in project_keywords:
             if keyword in text:
                 keywords.append(keyword)
@@ -219,7 +218,7 @@ class ConversationalAISystem:
             self.initialize_message_generator()
         
         try:
-            messages = self.message_generator.generate_response(user_input, "개포우성7차", "professional")
+            messages = self.message_generator.generate_response(user_input, "demo_room", "professional")
             
             response = {
                 "success": True,
@@ -254,7 +253,7 @@ class ConversationalAISystem:
         
         response = {
             "success": True,
-            "message": "개포우성7차 프로젝트 분석 결과입니다.",
+            "message": "프로젝트 분석 결과입니다.",
             "suggestions": [
                 "상세 분석 보고서 생성",
                 "주요 이슈 요약",

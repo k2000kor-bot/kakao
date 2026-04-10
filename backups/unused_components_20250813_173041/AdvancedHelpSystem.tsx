@@ -72,11 +72,11 @@ const AdvancedHelpSystem: React.FC<AdvancedHelpSystemProps> = ({
         const mockArticles: HelpArticle[] = [
             {
                 id: '1',
-                title: 'CORBU AI 시작하기',
-                content: `CORBU AI 시스템을 처음 사용하시는 분들을 위한 가이드입니다.
+                title: 'CORBU.AI 시작하기',
+                content: `CORBU.AI 시스템을 처음 사용하시는 분들을 위한 가이드입니다.
 
 ## 1. 시스템 개요
-CORBU AI는 고급 인공지능 기반의 대화형 시스템으로, 다양한 기능을 제공합니다.
+CORBU.AI는 고급 인공지능 기반의 대화형 시스템으로, 다양한 기능을 제공합니다.
 
 ## 2. 주요 기능
 - **대화형 AI**: 자연스러운 대화를 통한 작업 수행
@@ -95,7 +95,7 @@ CORBU AI는 고급 인공지능 기반의 대화형 시스템으로, 다양한 �
 - 프로젝트를 생성하여 작업을 체계적으로 관리할 수 있습니다`,
                 category: 'getting-started',
                 tags: ['시작하기', '기본', '가이드'],
-                author: 'CORBU AI 팀',
+                author: 'CORBU.AI 팀',
                 createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
                 updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
                 views: 1250,
@@ -106,7 +106,7 @@ CORBU AI는 고급 인공지능 기반의 대화형 시스템으로, 다양한 �
             {
                 id: '2',
                 title: '파일 업로드 및 분석',
-                content: `CORBU AI에서 파일을 업로드하고 분석하는 방법을 설명합니다.
+                content: `CORBU.AI에서 파일을 업로드하고 분석하는 방법을 설명합니다.
 
 ## 지원 파일 형식
 - **문서**: PDF, DOC, DOCX, TXT
@@ -137,7 +137,7 @@ CORBU AI는 고급 인공지능 기반의 대화형 시스템으로, 다양한 �
             {
                 id: '3',
                 title: '프로젝트 관리 기능',
-                content: `CORBU AI의 프로젝트 관리 기능을 활용하는 방법입니다.
+                content: `CORBU.AI의 프로젝트 관리 기능을 활용하는 방법입니다.
 
 ## 프로젝트 생성
 1. 프로젝트 탭으로 이동합니다
@@ -168,7 +168,7 @@ CORBU AI는 고급 인공지능 기반의 대화형 시스템으로, 다양한 �
             {
                 id: '4',
                 title: '자주 묻는 질문 (FAQ)',
-                content: `CORBU AI 사용 중 자주 묻는 질문들과 답변입니다.
+                content: `CORBU.AI 사용 중 자주 묻는 질문들과 답변입니다.
 
 ## Q: 시스템이 응답하지 않을 때는?
 A: 페이지를 새로고침하거나 잠시 후 다시 시도해보세요.
@@ -197,7 +197,7 @@ A: 설정 탭에서 개인 정보 및 환경 설정을 변경할 수 있습니�
             {
                 id: '5',
                 title: '고급 분석 기능 사용법',
-                content: `CORBU AI의 고급 분석 기능을 활용하는 방법입니다.
+                content: `CORBU.AI의 고급 분석 기능을 활용하는 방법입니다.
 
 ## 데이터 분석
 - **통계 분석**: 수치 데이터의 통계적 분석

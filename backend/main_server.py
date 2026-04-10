@@ -1,5 +1,5 @@
 """
-CORBU AI Ultimate System - 메인 서버
+CORBU.AI Ultimate System - 메인 서버
 모든 고도화된 기능을 통합하는 메인 서버
 """
 
@@ -12,12 +12,17 @@ import threading
 import random
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+
+# Python 3.12+: silence DeprecationWarning for sqlite3 datetime adapter (register explicitly)
+if hasattr(sqlite3, 'register_adapter'):
+    sqlite3.register_adapter(datetime, lambda d: d.isoformat())
 from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from pydantic import BaseModel
 
 try:
@@ -27,6 +32,13 @@ except ImportError:
 import uvicorn
 import os
 import sys
+
+# .env 로드 (backend 디렉터리 기준). 딥시크 설치형(DEEPSEEK_USE_LOCAL) 등 환경 변수 적용
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+except ImportError:
+    pass
 
 # API 모듈들 import
 from api.performance_api import router as performance_router
@@ -43,6 +55,13 @@ from api.backup_recovery_api import router as backup_recovery_router
 from api.integrated_api import router as integrated_router
 from api.unified_chat_api import router as unified_chat_router
 from api.project_session_api import router as project_session_router
+from api.tts_api import router as tts_router
+from api.intent_api import router as intent_router
+from api.v7_api import router as v7_router
+from api.analysis_api import router as analysis_router
+from api.extended_views_api import router as extended_views_router
+from api.pipeline_tuning_api import router as pipeline_tuning_router
+from cors_config import get_main_server_cors_allow_origins
 
 # 로깅 설정
 logging.basicConfig(
@@ -58,12 +77,24 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """서버 시작/종료 이벤트 핸들러"""
     # 시작 이벤트
-    logger.info("🚀 CORBU AI Ultimate System이 시작되었습니다!")
+    logger.info("🚀 CORBU.AI Ultimate System이 시작되었습니다!")
+    try:
+        from llm_internal_security import log_policy_once
+
+        log_policy_once()
+    except ImportError:
+        pass
     logger.info(
         "📊 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 시스템이 활성화되었습니다"
     )
-    logger.info("🌐 API 문서: http://localhost:8000/api/docs")
-    logger.info("🔍 시스템 상태: http://localhost:8000/api/health")
+    port = int(
+        os.environ.get(
+            "BACKEND_PORT",
+            os.environ.get("API_PORT", os.environ.get("PORT", "5002")),
+        )
+    )
+    logger.info("🌐 API 문서: http://localhost:%s/api/docs", port)
+    logger.info("🔍 시스템 상태: http://localhost:%s/api/health", port)
 
     # WebSocket 백그라운드 태스크 시작
     try:
@@ -75,12 +106,12 @@ async def lifespan(app: FastAPI):
 
     yield
     # 종료 이벤트
-    logger.info("🛑 CORBU AI Ultimate System이 종료되었습니다")
+    logger.info("🛑 CORBU.AI Ultimate System이 종료되었습니다")
 
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI Ultimate System",
+    title="CORBU.AI Ultimate System",
     description="고도화된 AI 플랫폼 - 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 통합 시스템",
     version="2.0.0",
     docs_url="/api/docs",
@@ -88,10 +119,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS 미들웨어 설정
+# CORS 미들웨어 설정 (CORS_ALLOW_ORIGINS 미설정 시 ["*"] — 프로덕션은 env로 Origin 지정)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 프로덕션에서는 특정 도메인으로 제한
+    allow_origins=get_main_server_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -99,6 +130,68 @@ app.add_middleware(
 
 # Gzip 압축 미들웨어
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+# 요청 로깅 미들웨어 (메서드, 경로, 상태코드, 소요시간)
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration_ms = (time.time() - start) * 1000
+    logger.info(
+        "%s %s → %s %.0fms",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
+    return response
+
+
+# 전역 예외 처리: 응답 형식 표준화
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """HTTPException → 일관된 JSON 에러 응답"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "error": exc.detail if isinstance(exc.detail, str) else str(exc.detail),
+            "status_code": exc.status_code,
+            "timestamp": datetime.now().isoformat(),
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """요청 검증 실패 시 일관된 에러 응답"""
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "error": "요청 데이터가 올바르지 않습니다.",
+            "detail": exc.errors(),
+            "status_code": 422,
+            "timestamp": datetime.now().isoformat(),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """미처리 예외 → 500 + 로깅 및 표준 JSON"""
+    logger.exception("미처리 예외: %s", exc)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": "서버 내부 오류가 발생했습니다.",
+            "status_code": 500,
+            "timestamp": datetime.now().isoformat(),
+        },
+    )
+
 
 # 정적 파일 서빙 (필요시 활성화)
 # app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -118,6 +211,25 @@ app.include_router(performance_monitor_router)
 app.include_router(integrated_router)
 app.include_router(unified_chat_router, tags=["Chat"])
 app.include_router(project_session_router)
+app.include_router(tts_router)
+app.include_router(intent_router)
+app.include_router(v7_router)
+app.include_router(analysis_router)
+app.include_router(extended_views_router)
+app.include_router(pipeline_tuning_router)
+
+# 고도화 대화형 API (/api/v2/enhanced/*, ws://.../ws/v2/enhanced/...) — 별도 8003 프로세스 없이 통합 포트에서 제공
+try:
+    from enhanced_conversational_api import EnhancedConversationalAPI
+
+    _enhanced_subapp = EnhancedConversationalAPI().app
+    for _route in list(_enhanced_subapp.routes):
+        app.routes.append(_route)
+    logger.info("Enhanced conversational API routes mounted on main server (/api/v2/enhanced)")
+except Exception as _enhanced_mount_err:
+    logger.warning(
+        "Enhanced conversational API not mounted (optional): %s", _enhanced_mount_err
+    )
 
 
 # 시스템 상태 모델
@@ -436,7 +548,7 @@ async def root():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>CORBU AI Ultimate System</title>
+        <title>CORBU.AI Ultimate System</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
@@ -467,7 +579,7 @@ async def root():
     <body>
         <div class="container">
             <div class="header">
-                <h1>🚀 CORBU AI Ultimate System</h1>
+                <h1>🚀 CORBU.AI Ultimate System</h1>
                 <p>고도화된 AI 플랫폼 - 성능 최적화, AI 엔진, 보안 모니터링, 사용자 경험 통합 시스템</p>
             </div>
             
@@ -624,7 +736,7 @@ async def health_check():
         if any(status != "healthy" for status in module_status.values()):
             overall_status = "warning"
 
-        return {
+        result = {
             "success": True,
             "status": overall_status,
             "modules": module_status,
@@ -633,11 +745,61 @@ async def health_check():
             "uptime": time.time() - start_time,
             "timestamp": datetime.now().isoformat(),
         }
+        # 딥시크 등 LLM 연결 상태 (설정 화면·연결 확인용)
+        try:
+            from api.unified_chat_api import LLM_SERVICE_AVAILABLE, llm_service_instance
+            if LLM_SERVICE_AVAILABLE and llm_service_instance is not None:
+                result["llm_provider"] = getattr(llm_service_instance, "provider", "unknown")
+        except Exception:
+            pass
+        return result
     except Exception as e:
         logger.error(f"시스템 상태 확인 실패: {e}")
         return {
             "success": False,
             "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat(),
+        }
+
+
+@app.get("/api/chat/llm-status")
+async def chat_llm_status():
+    """대화에 사용 중인 LLM provider·model 요약 (설정·디버깅용)."""
+    try:
+        from api.unified_chat_api import LLM_SERVICE_AVAILABLE, llm_service_instance
+        if not LLM_SERVICE_AVAILABLE or llm_service_instance is None:
+            return {
+                "success": True,
+                "provider": "none",
+                "model": None,
+                "summary": "LLM 미연동",
+                "timestamp": datetime.now().isoformat(),
+            }
+        provider = getattr(llm_service_instance, "provider", "unknown")
+        model = getattr(llm_service_instance, "model", None)
+        if provider == "deepseek-local":
+            model = os.getenv("DEEPSEEK_LOCAL_MODEL", "deepseek-r1")
+            summary = "DeepSeek(로컬)"
+        elif provider == "deepseek":
+            model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+            summary = "DeepSeek(API)"
+        else:
+            summary = provider
+        return {
+            "success": True,
+            "provider": provider,
+            "model": model,
+            "summary": summary,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        logger.warning(f"LLM 상태 조회 실패: {e}")
+        return {
+            "success": False,
+            "provider": None,
+            "model": None,
+            "summary": "조회 실패",
             "error": str(e),
             "timestamp": datetime.now().isoformat(),
         }
@@ -756,7 +918,21 @@ monitoring_thread.start()
 
 
 if __name__ == "__main__":
-    # 서버 실행
+    # 포트: BACKEND_PORT → API_PORT → PORT → 기본 5002 (프론트·프록시와 맞출 것)
+    port = int(
+        os.environ.get(
+            "BACKEND_PORT",
+            os.environ.get("API_PORT", os.environ.get("PORT", "5002")),
+        )
+    )
+    # 서버 실행 (타임아웃: keep-alive 30초, graceful shutdown 10초)
+    logger.info("📍 API 서버: http://localhost:%s (프론트엔드 REACT_APP_API_URL와 맞추세요)", port)
     uvicorn.run(
-        "main_server:app", host="0.0.0.0", port=8000, reload=True, log_level="info"
+        "main_server:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True,
+        log_level="info",
+        timeout_keep_alive=30,
+        timeout_graceful_shutdown=10,
     )

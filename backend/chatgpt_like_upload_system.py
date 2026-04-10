@@ -851,4 +851,5 @@ if __name__ == "__main__":
     print("🤖 메시지 생성: POST /generate")
     print("🎭 데모 테스트: POST /demo/fairness-response")
     
-    uvicorn.run(app, host="0.0.0.0", port=8090) 
+    _p = int(os.environ.get("CHATGPT_LIKE_UPLOAD_PORT", os.environ.get("PORT", "8090")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 

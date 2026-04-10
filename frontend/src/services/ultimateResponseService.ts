@@ -3,6 +3,15 @@
  * 모든 개발된 AI 기능을 통합하여 고신뢰도 답변을 생성
  */
 
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+  API_BASE_URL,
+  API_ULTIMATE_PROCESS_PATH,
+  API_ULTIMATE_STATUS_PATH,
+  FALLBACK_API_ORIGIN,
+  joinApiHealthCheckUrl,
+} from '../config/api';
+
 export interface UltimateRequest {
   user_input: string;
   conversation_history?: Array<{
@@ -14,13 +23,13 @@ export interface UltimateRequest {
     project_id: string;
     name: string;
     description?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   user_preferences?: {
     quality?: 'basic' | 'standard' | 'advanced' | 'expert' | 'ultimate';
     detail_level?: 'low' | 'medium' | 'high';
     response_style?: 'conversational' | 'formal' | 'technical' | 'creative';
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -47,8 +56,8 @@ export interface UltimateResponse {
     system_name: string;
     version: string;
     status: string;
-    capabilities: Record<string, any>;
-    performance_metrics: Record<string, any>;
+    capabilities: Record<string, unknown>;
+    performance_metrics: Record<string, unknown>;
     processing_history_count: number;
   };
   error?: string;
@@ -71,7 +80,7 @@ export interface ProcessingProgress {
 }
 
 class UltimateResponseService {
-  private baseUrl = 'http://localhost:8003';
+  private baseUrl = API_BASE_URL || FALLBACK_API_ORIGIN;
   private processingCallbacks: Map<string, (progress: ProcessingProgress) => void> = new Map();
 
   /**
@@ -79,9 +88,14 @@ class UltimateResponseService {
    */
   async processUltimateRequest(request: UltimateRequest): Promise<UltimateResponse> {
     try {
-      console.log('🚀 궁극 응답 시스템 요청 시작:', request.user_input);
+      errorLogger.info('궁극 응답 시스템 요청 시작', {
+        component: 'ultimateResponseService',
+        action: 'processUltimateRequest',
+        userInput: request.user_input,
+        projectId: request.project_context?.project_id,
+      });
 
-      const response = await fetch(`${this.baseUrl}/api/ultimate/process`, {
+      const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_ULTIMATE_PROCESS_PATH), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,18 +110,29 @@ class UltimateResponseService {
       const result: UltimateResponse = await response.json();
 
       if (result.success) {
-        console.log('✅ 궁극 응답 시스템 처리 성공:', {
+        errorLogger.info('궁극 응답 시스템 처리 성공', {
+          component: 'ultimateResponseService',
+          action: 'processUltimateRequest',
           confidence: result.result?.confidence,
-          quality_score: result.result?.quality_score,
-          processing_time: result.result?.processing_time
+          qualityScore: result.result?.quality_score,
+          processingTime: result.result?.processing_time,
         });
       } else {
-        console.error('❌ 궁극 응답 시스템 처리 실패:', result.error);
+        errorLogger.error('궁극 응답 시스템 처리 실패', new Error(result.error || 'Unknown error'), {
+          component: 'ultimateResponseService',
+          action: 'processUltimateRequest',
+          error: result.error,
+        });
       }
 
       return result;
     } catch (error) {
-      console.error('궁극 응답 시스템 요청 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('궁극 응답 시스템 요청 중 오류', err, {
+        component: 'ultimateResponseService',
+        action: 'processUltimateRequest',
+        userInput: request.user_input,
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
@@ -120,11 +145,11 @@ class UltimateResponseService {
    */
   async getUltimateSystemStatus(): Promise<{
     success: boolean;
-    status?: any;
+    status?: unknown;
     error?: string;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/ultimate/status`);
+      const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_ULTIMATE_STATUS_PATH));
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -132,7 +157,11 @@ class UltimateResponseService {
 
       return await response.json();
     } catch (error) {
-      console.error('시스템 상태 확인 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('시스템 상태 확인 중 오류', err, {
+        component: 'ultimateResponseService',
+        action: 'getUltimateSystemStatus',
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : '상태 확인 중 오류가 발생했습니다.'
@@ -265,7 +294,7 @@ class UltimateResponseService {
       project_id: string;
       name: string;
       description?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     }
   ): Promise<UltimateResponse> {
     const request: UltimateRequest = {
@@ -365,7 +394,7 @@ class UltimateResponseService {
 
       // 실제 구현에서는 데이터베이스에서 통계를 가져와야 함
       const stats = {
-        total_requests: status.status?.processing_history_count || 0,
+        total_requests: (status.status as Record<string, unknown>)?.processing_history_count as number ?? 0,
         success_rate: 95.5, // 예시 값
         average_confidence: 87.3,
         average_quality: 89.1,
@@ -375,7 +404,11 @@ class UltimateResponseService {
 
       return stats;
     } catch (error) {
-      console.error('성능 통계 조회 중 오류:', error);
+      const err = toError(error);
+      errorLogger.error('성능 통계 조회 중 오류', err, {
+        component: 'ultimateResponseService',
+        action: 'getPerformanceStats',
+      });
       return {
         total_requests: 0,
         success_rate: 0,

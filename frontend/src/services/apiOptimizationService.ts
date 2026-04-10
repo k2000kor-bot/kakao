@@ -1,4 +1,11 @@
-import { AxiosResponse } from 'axios';
+import {
+  API_HEALTH_PATH,
+  API_PROJECTS_LIST_PATH,
+  API_SESSIONS_LIST_PATH,
+  CHAT_POST_PATH,
+  DATA_ANALYTICS_SOURCES_PATH,
+  EMOTION_RECOGNITION_ANALYZE_PATH,
+} from '../config/api';
 
 interface CacheConfig {
     ttl: number; // Time to live in seconds
@@ -25,8 +32,8 @@ interface OptimizationSuggestion {
     estimatedImprovement: string;
 }
 
-class ApiOptimizationService {
-    private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
+export class ApiOptimizationService {
+    private cache: Map<string, { data: unknown; timestamp: number; ttl: number }> = new Map();
     private metrics: Map<string, ApiMetrics> = new Map();
     private cacheConfig: CacheConfig = {
         ttl: 300, // 5 minutes
@@ -41,12 +48,12 @@ class ApiOptimizationService {
 
     private initializeMetrics(): void {
         const endpoints = [
-            '/api/chat',
-            '/api/emotion-recognition/analyze',
-            '/api/data-analytics/sources',
-            '/api/health',
-            '/api/projects',
-            '/api/sessions'
+            CHAT_POST_PATH,
+            EMOTION_RECOGNITION_ANALYZE_PATH,
+            DATA_ANALYTICS_SOURCES_PATH,
+            API_HEALTH_PATH,
+            API_PROJECTS_LIST_PATH,
+            API_SESSIONS_LIST_PATH,
         ];
 
         endpoints.forEach(endpoint => {
@@ -69,7 +76,7 @@ class ApiOptimizationService {
     }
 
     private updateMetrics(): void {
-        this.metrics.forEach((metric, endpoint) => {
+        this.metrics.forEach((metric, _endpoint) => {
             // 시뮬레이션된 메트릭 업데이트
             metric.responseTime = Math.random() * 100 + 50; // 50-150ms
             metric.successRate = Math.max(95, 100 - Math.random() * 5);
@@ -80,7 +87,7 @@ class ApiOptimizationService {
     }
 
     // 캐시 관리
-    public setCache(key: string, data: any, ttl?: number): void {
+    public setCache(key: string, data: unknown, ttl?: number): void {
         const cacheTTL = ttl || this.cacheConfig.ttl;
 
         // 캐시 크기 제한 확인
@@ -95,7 +102,7 @@ class ApiOptimizationService {
         });
     }
 
-    public getCache(key: string): any | null {
+    public getCache(key: string): unknown | null {
         const cached = this.cache.get(key);
 
         if (!cached) {
@@ -144,7 +151,7 @@ class ApiOptimizationService {
             const cachedData = this.getCache(cacheKey);
             if (cachedData) {
                 this.updateCacheHitRate(url);
-                return cachedData;
+                return cachedData as T;
             }
         }
 
@@ -338,7 +345,7 @@ class ApiOptimizationService {
 }
 
 // 싱글톤 인스턴스
-const apiOptimizationService = new ApiOptimizationService();
+export const apiOptimizationService = new ApiOptimizationService();
 
 export default apiOptimizationService;
-export type { ApiOptimizationService, CacheConfig, ApiMetrics, OptimizationSuggestion };
+export type { CacheConfig, ApiMetrics, OptimizationSuggestion };

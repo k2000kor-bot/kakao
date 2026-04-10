@@ -349,7 +349,7 @@ class AdvancedKakaoParser:
     def _generate_analysis_report(self) -> Dict[str, Any]:
         """분석 리포트 생성 - 사용자 결과물과 동일한 형태"""
         return {
-            'room_name': "행복한소유☆개포우성7차",
+            'room_name': "sample_chat_room",
             'analysis_period': {
                 'start_date': "2025-07-12",
                 'end_date': "2025-07-14",

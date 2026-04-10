@@ -493,10 +493,13 @@ async def get_simulation_history():
 
 # 서버 시작
 if __name__ == "__main__":
+    _sim = int(
+        os.environ.get("SIMULATION_SERVER_PORT", os.environ.get("PORT", "8009"))
+    )
     print("🚀 시뮬레이션 서버 시작")
     print("=" * 50)
-    print("📍 서버 주소: http://localhost:8005")
-    print("📖 API 문서: http://localhost:8005/docs")
+    print(f"📍 서버 주소: http://localhost:{_sim}")
+    print(f"📖 API 문서: http://localhost:{_sim}/docs")
     print("🎯 주요 엔드포인트:")
     print("   POST /api/simulate-response - 메시지 시뮬레이션")
     print("   POST /api/predict-impact - 영향력 예측")
@@ -510,7 +513,8 @@ if __name__ == "__main__":
         
         # 서버 시작
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8005, log_level="info")
+
+        uvicorn.run(app, host="0.0.0.0", port=_sim, log_level="info")
         
     except Exception as e:
         print(f"❌ 서버 시작 실패: {e}")

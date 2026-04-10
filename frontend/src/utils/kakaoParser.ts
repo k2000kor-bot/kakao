@@ -1,3 +1,5 @@
+import { coerceTrimmedString } from './chatInputUtils';
+
 export interface KakaoMessage {
     id: string;
     date: string;
@@ -33,16 +35,16 @@ export class KakaoParser {
         const participantSet = new Set<string>();
 
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
+            const line = coerceTrimmedString(lines[i], '');
 
             // 방 제목 파싱
             if (line.includes('님과 카카오톡 대화')) {
-                result.roomName = line.replace(' 님과 카카오톡 대화', '').trim();
+                result.roomName = coerceTrimmedString(line.replace(' 님과 카카오톡 대화', ''), '');
             }
 
             // 저장 날짜 파싱
             if (line.startsWith('저장한 날짜')) {
-                result.saveDate = line.replace('저장한 날짜 : ', '').trim();
+                result.saveDate = coerceTrimmedString(line.replace('저장한 날짜 : ', ''), '');
             }
 
             // 날짜 라인 파싱 (예: "2025년 6월 24일 오전 9:22")
@@ -72,7 +74,7 @@ export class KakaoParser {
     }
 
     // 메시지 라인 파싱
-    private static parseMessageLine(line: string, currentDate: string): KakaoMessage | null {
+    private static parseMessageLine(line: string, _currentDate: string): KakaoMessage | null {
         // 메시지 패턴: "2025년 6월 24일 오전 9:22, 0098 : 메시지 내용"
         const messagePattern = /^(\d{4}년 \d{1,2}월 \d{1,2}일 (오전|오후) \d{1,2}:\d{2}), ([^:]+) : (.+)$/;
         const match = line.match(messagePattern);
@@ -85,8 +87,8 @@ export class KakaoParser {
             id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             date: this.extractDate(dateTime),
             time: this.extractTime(dateTime),
-            sender: sender.trim(),
-            content: content.trim(),
+            sender: coerceTrimmedString(sender, ''),
+            content: coerceTrimmedString(content, ''),
             timestamp: this.parseDateTime(dateTime),
             isDeleted: content.includes('삭제된 메시지입니다'),
             hasMedia: this.hasMediaContent(content)

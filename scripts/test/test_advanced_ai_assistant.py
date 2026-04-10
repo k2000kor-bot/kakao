@@ -52,7 +52,7 @@ def test_advanced_conversation_assistant():
         # 1. 대화형 AI 어시스턴트 테스트
         print("\n1️⃣ 대화형 AI 어시스턴트 테스트:")
         response = requests.post(
-            "http://localhost:8000/api/v7/ai-assistant/conversation",
+            "http://localhost:5002/api/v7/ai-assistant/conversation",
             json=conversation_data,
             headers={"Content-Type": "application/json"}
         )
@@ -165,7 +165,7 @@ def test_realtime_monitoring():
         
         try:
             response = requests.post(
-                "http://localhost:8000/api/v7/ai-assistant/monitor",
+                "http://localhost:5002/api/v7/ai-assistant/monitor",
                 json=test_message,
                 headers={"Content-Type": "application/json"}
             )
@@ -233,7 +233,7 @@ def test_comprehensive_analysis():
     try:
         # 대화형 AI 어시스턴트 호출
         response = requests.post(
-            "http://localhost:8000/api/v7/ai-assistant/conversation",
+            "http://localhost:5002/api/v7/ai-assistant/conversation",
             json=comprehensive_data,
             headers={"Content-Type": "application/json"}
         )

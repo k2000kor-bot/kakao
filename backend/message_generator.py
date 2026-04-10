@@ -7,7 +7,8 @@ import os
 
 class MessageGenerator:
     def __init__(self):
-        self.gaeposung_messages = {
+        # 재개발·정비 프로젝트 일반 데모 응답 (특정 현장명 없음)
+        self.redevelopment_demo_messages = {
             "시공사": [
                 "시공사 평가 기준에 대해 논의해보시죠. 현재 검토 중인 업체들의 기술력과 실적을 종합적으로 분석해보겠습니다.",
                 "각 시공사의 기술력과 경험을 체계적으로 평가하여 최적의 파트너를 선정해보겠습니다.",
@@ -104,13 +105,18 @@ class MessageGenerator:
     def load_conversation_data(self, room_id: str = "") -> List[str]:
         """실제 대화 데이터를 로드하여 학습"""
         try:
-            if room_id and "개포우성" in room_id:
-                # 개포우성7차 대화 파일 경로
-                chat_file = "../chat_rooms/[인증]행복한소유☆개포우성7차/[인증]행복한소유☆개포우성7차.txt"
+            candidates = []
+            if room_id and room_id.strip():
+                rid = room_id.strip()
+                candidates.append(os.path.join("..", "chat_rooms", rid, f"{rid}.txt"))
+            candidates.extend([
+                os.path.join("..", "chat_rooms", "sample_room", "sample_export.txt"),
+                os.path.join("..", "frontend", "public", "sample_chat.txt"),
+            ])
+            for chat_file in candidates:
                 if os.path.exists(chat_file):
                     with open(chat_file, 'r', encoding='utf-8') as f:
                         content = f.read()
-                        # 메시지 추출 (간단한 파싱)
                         messages = re.findall(r'\[(.*?)\] (.*?): (.*)', content)
                         return [msg[2] for msg in messages if len(msg) > 2]
         except Exception as e:
@@ -123,7 +129,7 @@ class MessageGenerator:
         emotion = "neutral"
         intent = "general"
         
-        # 개포우성7차 관련 키워드 추출
+        # 재개발·프로젝트 일반 키워드
         if any(word in context for word in ["시공사", "업체", "건설사"]):
             keywords.append("시공사")
         if any(word in context for word in ["공사비", "비용", "금액", "분담금"]):
@@ -184,11 +190,10 @@ class MessageGenerator:
         # 실제 대화 데이터 로드
         conversation_data = self.load_conversation_data(room_id)
         
-        # 개포우성7차 프로젝트 특화 응답
-        if room_id and "개포우성" in room_id:
+        if room_id and room_id.strip():
             for keyword in analysis["keywords"]:
-                if keyword in self.gaeposung_messages:
-                    messages = self.gaeposung_messages[keyword]
+                if keyword in self.redevelopment_demo_messages:
+                    messages = self.redevelopment_demo_messages[keyword]
                     selected_message = random.choice(messages)
                     
                     # 스타일에 따른 조정
@@ -203,7 +208,7 @@ class MessageGenerator:
                         "text": selected_message,
                         "confidence": 0.9,
                         "category": keyword,
-                        "type": "gaeposung"
+                        "type": "project_demo"
                     })
         
         # 의도 기반 응답

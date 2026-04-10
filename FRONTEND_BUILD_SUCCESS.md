@@ -47,13 +47,13 @@ File sizes after gzip:
 
 ### 개발 모드
 ```bash
-cd /Users/aD/kakao-frontend/frontend
+cd /path/to/kakao-frontend/kakao-frontend/frontend
 npm start
 ```
 
 ### 프로덕션 빌드
 ```bash
-cd /Users/aD/kakao-frontend/frontend
+cd /path/to/kakao-frontend/kakao-frontend/frontend
 npm run build
 ```
 
@@ -61,8 +61,8 @@ npm run build
 
 브라우저에서 `http://localhost:3000` 접속 시:
 
-1. **🤖 CORBU AI 채팅 탭**
-   - 통합 API를 사용한 실시간 채팅
+1. **🤖 CORBU.AI 대화 탭**
+   - 통합 API를 사용한 실시간 대화
    - API 전환 기능 (Chip 클릭)
 
 2. **🚀 통합 API 탭**

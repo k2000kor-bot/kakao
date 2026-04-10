@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# testHelpers가 적용된 테스트 스위트만 실행 (빠른 검증용)
+set -e
+cd "$(dirname "$0")/.."
+PATTERN="WritingStyleSelector|LanguageSelector|WritingAISuggestions|ConfirmDialog|LoadingStateIndicator|TypingIndicator|QuickReplies|LoadingSkeleton|ProgressIndicator|MessageContent|StreamingMessage|AccessibleButton|SearchPanel|BreadcrumbNavigation|NotificationCenter|MessageReply|MessageEditor|MessageActions|KeyboardShortcutsHelp|ReadReceipts|SystemStatus|CollaboratorsList|SessionManager|MobileNavigation|PWAInstallPrompt|LazyComponents|ErrorBoundary|ProjectHub|ProjectTemplateSelector|QuickActions|MessageModifyRequestDialog|RealEstateDataPanel|ProjectShareDialog|WritingHistory|WritingEditor|WritingTemplatesFavorites|errorHandler|WritingQualityPanel|ProjectEditDialog|WritingAssistant|WritingStatisticsDashboard|WritingTemplatePreview|CreativeWriting|AnalyticsDashboard|PredictionChart|IntegratedDashboard|SystemHealthMonitor|PerformanceMonitoringDashboard|AdvancedSearchPanel"
+npm test -- --testPathPattern="$PATTERN" --watchAll=false

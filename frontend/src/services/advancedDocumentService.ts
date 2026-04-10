@@ -1,4 +1,12 @@
+import {
+    API_BASE_URL,
+    API_V9_ADVANCED_DOCUMENT_PATH,
+    API_V9_STATS_PATH,
+    FALLBACK_API_ORIGIN,
+    joinApiHealthCheckUrl,
+} from '../config/api';
 import { Message } from '../types/chat';
+import { errorLogger, toError } from '../utils/errorLogger';
 
 export interface AdvancedDocumentRequest {
     documentText: string;
@@ -49,10 +57,10 @@ export interface ContextMemory {
         importance: number;
         memoryWeight: number;
     }>;
-    longTermMemory: Record<string, any>;
-    keyEntities: Record<string, any>;
-    relationshipGraph: Record<string, any>;
-    styleProfile: Record<string, any>;
+    longTermMemory: Record<string, unknown>;
+    keyEntities: Record<string, unknown>;
+    relationshipGraph: Record<string, unknown>;
+    styleProfile: Record<string, unknown>;
     memoryStrength: number;
 }
 
@@ -84,8 +92,8 @@ export interface AdvancedDocumentResponse {
 }
 
 class AdvancedDocumentService {
-    private baseUrl = 'http://localhost:8005/api/v9';
-    private cache = new Map<string, { data: any; timestamp: number }>();
+    private readonly apiOrigin = API_BASE_URL || FALLBACK_API_ORIGIN;
+    private cache = new Map<string, { data: unknown; timestamp: number }>();
     private cacheTTL = 3600000; // 1시간
 
     async processAdvancedDocument(request: AdvancedDocumentRequest): Promise<AdvancedDocumentResponse> {
@@ -97,7 +105,7 @@ class AdvancedDocumentService {
                 return cachedResult;
             }
 
-            const response = await fetch(`${this.baseUrl}/advanced-document`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, API_V9_ADVANCED_DOCUMENT_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -124,7 +132,14 @@ class AdvancedDocumentService {
                 throw new Error('고급 문서 처리 API 호출 실패');
             }
         } catch (error) {
-            console.error('고급 문서 처리 오류:', error);
+            const err = toError(error);
+            errorLogger.error('고급 문서 처리 오류', err, {
+                component: 'advancedDocumentService',
+                action: 'processAdvancedDocument',
+                documentTextLength: request.documentText.length,
+                conversationHistoryLength: request.conversationHistory.length,
+                contextId: request.contextId,
+            });
             return this.createFallbackResponse(request);
         }
     }
@@ -155,7 +170,13 @@ class AdvancedDocumentService {
                 recommendations: this.generateContinuityRecommendations(response)
             };
         } catch (error) {
-            console.error('긴 대화 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('긴 대화 분석 오류', err, {
+                component: 'advancedDocumentService',
+                action: 'analyzeLongConversation',
+                messagesCount: messages.length,
+                contextId,
+            });
             return {
                 memoryStrength: 0.5,
                 continuityScore: 0.5,
@@ -195,7 +216,14 @@ class AdvancedDocumentService {
                 suggestions: this.generateComplexRequestSuggestions(response)
             };
         } catch (error) {
-            console.error('복잡한 요청 처리 오류:', error);
+            const err = toError(error);
+            errorLogger.error('복잡한 요청 처리 오류', err, {
+                component: 'advancedDocumentService',
+                action: 'processComplexRequest',
+                messageLength: message.length,
+                historyLength: history.length,
+                conditionsCount: conditions.length,
+            });
             return {
                 response: '요청을 처리했습니다. 더 구체적인 설명을 해주시면 정확한 답변을 드릴 수 있습니다.',
                 processingTime: 0,
@@ -236,7 +264,14 @@ class AdvancedDocumentService {
                 followUpSuggestions: this.generateFollowUpSuggestions(response)
             };
         } catch (error) {
-            console.error('맥락 유지 대화 생성 오류:', error);
+            const err = toError(error);
+            errorLogger.error('맥락 유지 대화 생성 오류', err, {
+                component: 'advancedDocumentService',
+                action: 'generateContextualResponse',
+                messageLength: message.length,
+                historyLength: history.length,
+                contextId,
+            });
             return {
                 response: '이전 대화를 고려하여 답변드리겠습니다.',
                 contextStrength: 0.5,
@@ -283,7 +318,12 @@ class AdvancedDocumentService {
                 recommendations: this.generateStyleRecommendations(response.styleAnalysis)
             };
         } catch (error) {
-            console.error('스타일 일관성 분석 오류:', error);
+            const err = toError(error);
+            errorLogger.error('스타일 일관성 분석 오류', err, {
+                component: 'advancedDocumentService',
+                action: 'analyzeStyleConsistency',
+                messagesCount: messages.length,
+            });
             return {
                 overallConsistency: 0.5,
                 toneStability: 0.5,
@@ -299,10 +339,10 @@ class AdvancedDocumentService {
         totalRequests: number;
         avgProcessingTime: number;
         cacheHits: number;
-        performanceMetrics: Record<string, any>;
+        performanceMetrics: Record<string, unknown>;
     }> {
         try {
-            const response = await fetch(`${this.baseUrl}/stats`);
+            const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, API_V9_STATS_PATH));
             if (response.ok) {
                 const data = await response.json();
                 return {
@@ -314,7 +354,11 @@ class AdvancedDocumentService {
             }
             throw new Error('통계 조회 실패');
         } catch (error) {
-            console.error('처리 통계 조회 오류:', error);
+            const err = toError(error);
+            errorLogger.error('처리 통계 조회 오류', err, {
+                component: 'advancedDocumentService',
+                action: 'getProcessingStats',
+            });
             return {
                 totalRequests: 0,
                 avgProcessingTime: 0,
@@ -347,7 +391,7 @@ class AdvancedDocumentService {
     private getFromCache(key: string): AdvancedDocumentResponse | null {
         const cached = this.cache.get(key);
         if (cached && (Date.now() - cached.timestamp) < this.cacheTTL) {
-            return cached.data;
+            return cached.data as AdvancedDocumentResponse;
         }
         if (cached) {
             this.cache.delete(key);
@@ -362,46 +406,50 @@ class AdvancedDocumentService {
         });
     }
 
-    private transformResponse(data: any): AdvancedDocumentResponse {
+    private transformResponse(data: Record<string, unknown>): AdvancedDocumentResponse {
+        const doc = (data.document_structure || {}) as Record<string, unknown>;
+        const multi = (data.multi_condition_analysis || {}) as Record<string, unknown>;
+        const ctx = (data.context_memory || {}) as Record<string, unknown>;
+        const style = (data.style_analysis || {}) as Record<string, unknown>;
         return {
             documentStructure: {
-                sections: data.document_structure.sections,
-                hierarchy: data.document_structure.hierarchy,
-                keyPoints: data.document_structure.key_points,
-                mainTopics: data.document_structure.main_topics,
-                supportingDetails: data.document_structure.supporting_details,
-                processingTime: data.document_structure.processing_time
+                sections: (doc.sections || []) as DocumentStructure['sections'],
+                hierarchy: (doc.hierarchy || {}) as Record<string, unknown>,
+                keyPoints: (doc.key_points || []) as string[],
+                mainTopics: (doc.main_topics || []) as string[],
+                supportingDetails: (doc.supporting_details || []) as string[],
+                processingTime: Number(doc.processing_time) || 0
             },
             multiConditionAnalysis: {
-                primaryCondition: data.multi_condition_analysis.primary_condition,
-                secondaryConditions: data.multi_condition_analysis.secondary_conditions,
-                conditionalStatements: data.multi_condition_analysis.conditional_statements,
-                dependencies: data.multi_condition_analysis.dependencies,
-                priorityOrder: data.multi_condition_analysis.priority_order,
-                complexityScore: data.multi_condition_analysis.complexity_score
+                primaryCondition: String(multi.primary_condition || ''),
+                secondaryConditions: (multi.secondary_conditions || []) as string[],
+                conditionalStatements: (multi.conditional_statements || []) as string[],
+                dependencies: (multi.dependencies || []) as MultiConditionAnalysis['dependencies'],
+                priorityOrder: (multi.priority_order || []) as string[],
+                complexityScore: Number(multi.complexity_score) || 0
             },
             contextMemory: {
-                conversationId: data.context_memory.conversation_id,
-                contextWindows: data.context_memory.context_windows,
-                longTermMemory: data.context_memory.long_term_memory,
-                keyEntities: data.context_memory.key_entities,
-                relationshipGraph: data.context_memory.relationship_graph,
-                styleProfile: data.context_memory.style_profile,
-                memoryStrength: data.context_memory.memory_strength
+                conversationId: String(ctx.conversation_id || ''),
+                contextWindows: (ctx.context_windows || []) as ContextMemory['contextWindows'],
+                longTermMemory: (ctx.long_term_memory || {}) as Record<string, unknown>,
+                keyEntities: (ctx.key_entities || {}) as Record<string, unknown>,
+                relationshipGraph: (ctx.relationship_graph || {}) as Record<string, unknown>,
+                styleProfile: (ctx.style_profile || {}) as Record<string, unknown>,
+                memoryStrength: Number(ctx.memory_strength) || 0
             },
             styleAnalysis: {
-                tone: data.style_analysis.tone,
-                formalityLevel: data.style_analysis.formality_level,
-                emotionIndicators: data.style_analysis.emotion_indicators,
-                vocabularyStyle: data.style_analysis.vocabulary_style,
-                sentencePatterns: data.style_analysis.sentence_patterns,
-                characteristicPhrases: data.style_analysis.characteristic_phrases,
-                consistencyScore: data.style_analysis.consistency_score
+                tone: String(style.tone || ''),
+                formalityLevel: Number(style.formality_level) || 0,
+                emotionIndicators: (style.emotion_indicators || []) as string[],
+                vocabularyStyle: String(style.vocabulary_style || ''),
+                sentencePatterns: (style.sentence_patterns || []) as string[],
+                characteristicPhrases: (style.characteristic_phrases || []) as string[],
+                consistencyScore: Number(style.consistency_score) || 0
             },
-            processedResponse: data.processed_response,
-            detailPreservationScore: data.detail_preservation_score,
-            contextContinuityScore: data.context_continuity_score,
-            processingMetadata: data.processing_metadata
+            processedResponse: String(data.processed_response || ''),
+            detailPreservationScore: Number(data.detail_preservation_score) || 0,
+            contextContinuityScore: Number(data.context_continuity_score) || 0,
+            processingMetadata: (data.processing_metadata || {}) as AdvancedDocumentResponse['processingMetadata']
         };
     }
 
@@ -452,7 +500,7 @@ class AdvancedDocumentService {
             suggestions.push('감정적인 측면을 더 고려한 답변이 필요하시면 말씀해주세요.');
         }
 
-        return suggestions.slice(0, 3); // 최대 3개만
+        return suggestions;
     }
 
     private calculateToneStability(styleAnalysis: StyleAnalysis): number {
@@ -490,7 +538,7 @@ class AdvancedDocumentService {
         return recommendations;
     }
 
-    private createFallbackResponse(request: AdvancedDocumentRequest): AdvancedDocumentResponse {
+    private createFallbackResponse(_request: AdvancedDocumentRequest): AdvancedDocumentResponse {
         return {
             documentStructure: {
                 sections: [],

@@ -1,7 +1,10 @@
 /**
- * CORBU AI 스타일 분석 엔진
+ * CORBU.AI 스타일 분석 엔진
  * 기존 글의 스타일, 어투, 문체를 정밀 분석하여 동일한 스타일로 새로운 글을 생성할 수 있는 프로필을 추출
  */
+
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface StyleProfile {
     // 기본 정보
@@ -52,7 +55,7 @@ export interface StyleProfile {
     // 특별한 패턴
     uniquePhrases: string[];
     characteristicExpressions: string[];
-    punctuationPatterns: any;
+    punctuationPatterns: Record<string, unknown>;
 
     // 문맥적 특성
     targetAudience: 'children' | 'teenagers' | 'adults' | 'elderly' | 'experts' | 'general';
@@ -207,7 +210,11 @@ class StyleAnalysisEngine {
             };
 
         } catch (error) {
-            console.error('스타일 분석 실패:', error);
+            const err = toError(error);
+            errorLogger.error('스타일 분석 실패', err, {
+                component: 'styleAnalysisEngine',
+                action: 'analyzeStyle',
+            });
             throw new Error('스타일 분석에 실패했습니다.');
         }
     }
@@ -216,8 +223,8 @@ class StyleAnalysisEngine {
      * 기본 구조 분석
      */
     private analyzeBasicStructure(text: string): Partial<StyleProfile> {
-        const sentences = text.split(/[.!?。！？]/).filter(s => s.trim().length > 0);
-        const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+        const sentences = text.split(/[.!?。！？]/).filter((s) => coerceTrimmedString(s, '').length > 0);
+        const paragraphs = text.split(/\n\s*\n/).filter((p) => coerceTrimmedString(p, '').length > 0);
         const words = text.replace(/[^\w\s가-힣]/g, ' ').split(/\s+/).filter(w => w.length > 0);
 
         return {
@@ -263,7 +270,7 @@ class StyleAnalysisEngine {
             count + (text.match(new RegExp(pattern, 'g')) || []).length, 0);
 
         const totalEndings = formalCount + casualCount;
-        if (totalEndings === 0) return 'neutral' as any;
+        if (totalEndings === 0) return 'semi_formal';
 
         const formalRatio = formalCount / totalEndings;
 
@@ -464,7 +471,7 @@ class StyleAnalysisEngine {
      * 문장 구조 분석
      */
     private analyzeSentenceFeatures(text: string): Partial<StyleProfile> {
-        const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
 
         const sentenceComplexity = this.analyzeSentenceComplexity(text);
         const averageClausesPerSentence = this.calculateAverageClausesPerSentence(sentences);
@@ -480,7 +487,7 @@ class StyleAnalysisEngine {
     }
 
     private analyzeSentenceComplexity(text: string): StyleProfile['sentenceComplexity'] {
-        const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
         let simpleCount = 0;
         let compoundCount = 0;
         let complexCount = 0;
@@ -584,12 +591,12 @@ class StyleAnalysisEngine {
 
     private identifyRepetitionPatterns(text: string): string[] {
         const patterns: string[] = [];
-        const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+        const sentences = text.split(/[.!?]/).filter((s) => coerceTrimmedString(s, '').length > 0);
 
         // 문장 시작 반복 패턴
         const startWords: { [key: string]: number } = {};
         sentences.forEach(sentence => {
-            const firstWord = sentence.trim().split(/\s+/)[0];
+            const firstWord = coerceTrimmedString(sentence, '').split(/\s+/)[0];
             if (firstWord && firstWord.length > 1) {
                 startWords[firstWord] = (startWords[firstWord] || 0) + 1;
             }
@@ -775,7 +782,7 @@ class StyleAnalysisEngine {
         return expressions.slice(0, 5);
     }
 
-    private analyzePunctuationPatterns(text: string): any {
+    private analyzePunctuationPatterns(text: string): Record<string, unknown> {
         return {
             exclamationFrequency: (text.match(/!/g) || []).length,
             questionFrequency: (text.match(/\?/g) || []).length,
@@ -948,7 +955,7 @@ class StyleAnalysisEngine {
     /**
      * 스타일 기반 새 글 생성 준비
      */
-    public prepareStyleCloning(profile: StyleProfile): any {
+    public prepareStyleCloning(profile: StyleProfile): Record<string, unknown> {
         return {
             structuralGuidelines: {
                 targetWordCount: profile.wordCount,

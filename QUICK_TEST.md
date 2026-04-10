@@ -4,18 +4,20 @@
 
 ### 1. 통합 실행 (권장)
 
+프로젝트 루트(`package.json` 있는 폴더):
+
 ```bash
-chmod +x start_all.sh
-./start_all.sh
+npm run restart:backend   # 터미널 1 — main_server, 기본 5002
+npm start                 # 터미널 2
 ```
 
-### 2. 개별 실행
+### 2. 개별 실행 (대안)
 
 **백엔드:**
 ```bash
 cd backend
-pip install -r requirements.txt
-python app.py
+pip install -r requirements.txt   # 또는 .venv에서 pip
+python3 -m uvicorn main_server:app --host 0.0.0.0 --port 5002
 ```
 
 **프론트엔드 (새 터미널):**
@@ -30,19 +32,19 @@ npm start
 
 1. **헬스 체크**
    ```bash
-   curl http://localhost:5001/api/health
+   curl http://localhost:5002/api/health
    ```
 
-2. **채팅 API 테스트**
+2. **대화 API 테스트**
    ```bash
-   curl -X POST http://localhost:5001/api/chat \
+   curl -X POST http://localhost:5002/api/chat \
      -H "Content-Type: application/json" \
      -d '{"message": "안녕하세요", "quality": "enhanced"}'
    ```
 
 3. **회원가입 테스트**
    ```bash
-   curl -X POST http://localhost:5001/api/auth/register \
+   curl -X POST http://localhost:5002/api/auth/register \
      -H "Content-Type: application/json" \
      -d '{
        "username": "testuser",
@@ -73,8 +75,8 @@ npm start
 
 ### 백엔드가 시작되지 않는 경우
 
-1. 포트 확인: `lsof -i :5001`
-2. Python 버전 확인: `python --version` (3.8+ 필요)
+1. 포트 확인: `lsof -i :5002`
+2. Python 버전 확인: `python3 --version` (3.8+ 필요)
 3. 의존성 설치 확인: `pip list | grep fastapi`
 
 ### 프론트엔드가 시작되지 않는 경우
@@ -85,15 +87,15 @@ npm start
 
 ### API 연결 오류
 
-1. CORS 설정 확인: `backend/app.py`의 CORS 설정
-2. API URL 확인: `.env` 또는 `ChatGPTInterface.tsx`의 `API_BASE_URL`
+1. CORS 설정 확인: `backend/main_server.py` 등 통합 API CORS
+2. API URL 확인: `src/config/api.ts`, `REACT_APP_API_URL`, `package.json` proxy(5002)
 3. 네트워크 확인: 브라우저 개발자 도구의 Network 탭
 
 ## 📊 성능 확인
 
 ### 백엔드 메트릭
 ```bash
-curl http://localhost:5001/api/metrics
+curl http://localhost:5002/api/metrics
 ```
 
 ### 프론트엔드 성능
@@ -105,7 +107,7 @@ curl http://localhost:5001/api/metrics
 ### 정상 작동 시
 
 1. **백엔드**
-   - 포트 5001에서 실행
+   - 포트 5002에서 실행 (main_server)
    - `/api/health` 응답: `{"status": "healthy", ...}`
    - `/docs` 접속 시 Swagger UI 표시
 

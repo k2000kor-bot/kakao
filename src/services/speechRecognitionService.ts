@@ -1,9 +1,10 @@
 /**
- * CORBU AI 고급 음성 인식 서비스
+ * CORBU.AI 고급 음성 인식 서비스
  * Web Speech API를 활용한 실시간 음성-텍스트 변환
  */
 
 import { errorLogger } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
 
 export interface SpeechRecognitionConfig {
     language: string;
@@ -40,10 +41,11 @@ export interface SpeechRecognitionEvents {
     onNoSpeech?: () => void;
 }
 
-// 웹 브라우저 타입 정의는 speechRecognition.ts에서 처리
+// 웹 API 결과 타입 (브라우저 SpeechRecognitionResult와 구분)
+type BrowserSpeechResult = { isFinal: boolean; length: number; item(i: number): { transcript: string; confidence: number }; [i: number]: { transcript: string; confidence: number } };
 
 export class SpeechRecognitionService {
-    private recognition: any = null;
+    private recognition: SpeechRecognition | null = null;
     private audioContext: AudioContext | null = null;
     private analyser: AnalyserNode | null = null;
     private microphone: MediaStreamAudioSourceNode | null = null;
@@ -73,8 +75,8 @@ export class SpeechRecognitionService {
      */
     private initializeSpeechRecognition(): void {
         // 브라우저 지원 확인
-        const SpeechRecognition = (window as any).SpeechRecognition ||
-            (window as any).webkitSpeechRecognition;
+        const Win = window as Window & { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition };
+        const SpeechRecognition = Win.SpeechRecognition ?? Win.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
             errorLogger.warn('Web Speech API가 지원되지 않는 브라우저입니다.', {
@@ -119,12 +121,12 @@ export class SpeechRecognitionService {
             this.startVoiceActivityDetection();
         };
 
-        this.recognition.onresult = (event: any) => {
+        this.recognition.onresult = (event: SpeechRecognitionEvent) => {
             this.handleRecognitionResult(event);
         };
 
-        this.recognition.onerror = (event: any) => {
-            errorLogger.error('음성 인식 오류', event.error instanceof Error ? event.error : new Error(String(event.error)), {
+        this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+            errorLogger.error('음성 인식 오류', new Error(String(event.error)), {
                 component: 'SpeechRecognitionService',
                 action: 'onerror',
                 errorCode: event.error,
@@ -169,22 +171,24 @@ export class SpeechRecognitionService {
     /**
      * 음성 인식 결과 처리
      */
-    private handleRecognitionResult(event: any): void {
+    private handleRecognitionResult(event: SpeechRecognitionEvent): void {
         const results = Array.from(event.results);
         const lastResult = results[results.length - 1];
 
         if (!lastResult) return;
 
-        const resultData = lastResult as any;
-        const transcript = resultData[0]?.transcript || '';
-        const confidence = resultData[0]?.confidence || 0;
-        const isFinal = resultData.isFinal || false;
+        const resultData = lastResult as BrowserSpeechResult;
+        const firstAlt = resultData[0] ?? resultData.item(0);
+        const transcript = firstAlt?.transcript ?? '';
+        const confidence = firstAlt?.confidence ?? 0;
+        const isFinal = resultData.isFinal ?? false;
 
         // 대안 결과 생성
-        const alternatives = resultData.length ? Array.from(resultData).map((alternative: any, index) => ({
-            transcript: alternative.transcript || '',
-            confidence: alternative.confidence || 0
-        })) : [{ transcript, confidence }];
+        const resultLength = resultData.length ?? 0;
+        const alternatives = resultLength > 0 ? Array.from({ length: resultLength }, (_, i) => {
+            const alt = resultData[i] ?? resultData.item(i);
+            return { transcript: alt?.transcript ?? '', confidence: alt?.confidence ?? 0 };
+        }) : [{ transcript, confidence }];
 
         const result: SpeechRecognitionResult = {
             transcript,
@@ -213,7 +217,7 @@ export class SpeechRecognitionService {
      * 한국어 음성 명령어 처리
      */
     private processKoreanCommands(transcript: string): void {
-        const command = transcript.toLowerCase().trim();
+        const command = coerceTrimmedString(transcript.toLowerCase(), '');
 
         // 음성 인식 중지 명령어
         const stopCommands = ['멈춰', '정지', '그만', '중지', '끝'];

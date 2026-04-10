@@ -150,10 +150,10 @@ def test_emotion_recognition_system():
         print(f"❌ 감정 메트릭 조회 실패: {result}")
 
 def test_chat_system():
-    """채팅 시스템 테스트"""
-    print("\n🔍 채팅 시스템 테스트 중...")
+    """대화 시스템 테스트"""
+    print("\n🔍 대화 시스템 테스트 중...")
     
-    # 채팅 메시지 전송
+    # 대화 메시지 전송
     chat_data = {
         "message": "안녕하세요! AI 시스템이 잘 작동하고 있나요?",
         "user_id": "test-user-1",
@@ -161,9 +161,9 @@ def test_chat_system():
     }
     success, result = test_api_endpoint("/api/chat", "POST", chat_data)
     if success:
-        print(f"✅ 채팅 메시지 전송 성공: {result.get('response', '')[:50]}...")
+        print(f"✅ 대화 메시지 전송 성공: {result.get('response', '')[:50]}...")
     else:
-        print(f"❌ 채팅 메시지 전송 실패: {result}")
+        print(f"❌ 대화 메시지 전송 실패: {result}")
 
 def test_performance_optimization_system():
     """성능 최적화 시스템 테스트"""

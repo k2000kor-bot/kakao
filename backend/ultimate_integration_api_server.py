@@ -11,6 +11,7 @@
 
 import asyncio
 import json
+import os
 import logging
 import time
 import uvicorn
@@ -773,4 +774,5 @@ def start_ultimate_integration_server(host: str = "0.0.0.0", port: int = 8080):
     )
 
 if __name__ == "__main__":
-    start_ultimate_integration_server() 
+    _p = int(os.environ.get("ULTIMATE_INTEGRATION_API_PORT", os.environ.get("PORT", "8080")))
+    start_ultimate_integration_server(port=_p) 

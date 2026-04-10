@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="CORBU AI 고도화된 자동 통합 API",
+    title="CORBU.AI 고도화된 자동 통합 API",
     description="파일 업로드 시 모든 시스템이 자동으로 연동되어 진행되는 고도화된 API 서버",
     version="3.0.0"
 )
@@ -159,7 +159,7 @@ async def process_integration_message(message_data: Dict[str, Any], room_id: str
 async def root():
     """루트 엔드포인트"""
     return {
-        "message": "CORBU AI 고도화된 자동 통합 API 서버",
+        "message": "CORBU.AI 고도화된 자동 통합 API 서버",
         "version": "3.0.0",
         "status": "running",
         "features": [
@@ -216,7 +216,7 @@ async def upload_and_integrate(
                         '지식 추출 시스템', 
                         'AI 모델 훈련 시스템',
                         '프로젝트 분석 시스템',
-                        '채팅 통합 시스템',
+                        '대화 통합 시스템',
                         '알림 시스템'
                     ]
                 }
@@ -442,10 +442,10 @@ async def health_check():
 if __name__ == "__main__":
     # 업로드 디렉토리 생성
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    
+    _p = int(os.environ.get("ENHANCED_INTEGRATION_API_PORT", os.environ.get("PORT", "5003")))
     uvicorn.run(
         "enhanced_integration_api:app",
         host="0.0.0.0",
-        port=5003,
+        port=_p,
         reload=True
     )

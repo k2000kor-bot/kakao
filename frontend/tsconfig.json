@@ -25,6 +25,9 @@
   ],
   "exclude": [
     "src/components/backup",
-    "node_modules"
+    "node_modules",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "src/*/**/*.test.tsx"
   ]
 }

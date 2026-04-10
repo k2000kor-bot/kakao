@@ -5,11 +5,11 @@
 ### 빠른 시작
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 main_server.py
 ```
 
-서버는 `http://localhost:8000`에서 실행됩니다.
+서버는 `http://localhost:5002`에서 실행됩니다.
 
 ### 필요한 패키지
 
@@ -31,10 +31,10 @@ pip3 install --break-system-packages -r requirements.txt
 
 ```bash
 # 헬스 체크
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 
 # API 문서 확인
-open http://localhost:8000/api/docs
+open http://localhost:5002/api/docs
 ```
 
 ### 프론트엔드 연동
@@ -44,7 +44,7 @@ open http://localhost:8000/api/docs
 1. 환경 변수 설정 (`.env` 파일):
 
    ```env
-   REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated
+   REACT_APP_INTEGRATED_API_URL=http://localhost:5002/api/integrated
    ```
 
 2. TypeScript 클라이언트 사용:

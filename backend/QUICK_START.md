@@ -7,7 +7,7 @@
 통합 API만 사용하는 경량 서버:
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 start_simple_integrated_server.py
 ```
 
@@ -16,24 +16,26 @@ python3 start_simple_integrated_server.py
 모든 기능을 포함한 전체 서버:
 
 ```bash
-cd /Users/aD/kakao-frontend/backend
+cd /path/to/kakao-frontend/kakao-frontend/backend
 python3 main_server.py
 ```
 
 ## 📍 서버 정보
 
-- **서버 주소**: `http://localhost:8000`
-- **API 문서**: `http://localhost:8000/api/docs`
-- **통합 API**: `http://localhost:8000/api/integrated`
+- 기본 포트는 `BACKEND_PORT` / `API_PORT` / `PORT`(미설정 시 5002). 상세: 상위 `docs/PORTS.md`.
+
+- **서버 주소**: `http://localhost:5002`
+- **API 문서**: `http://localhost:5002/api/docs`
+- **통합 API**: `http://localhost:5002/api/integrated`
 
 ## ✅ 서버 확인
 
 ```bash
 # 헬스 체크
-curl http://localhost:8000/api/integrated/health
+curl http://localhost:5002/api/integrated/health
 
 # 시스템 상태
-curl http://localhost:8000/api/integrated/status
+curl http://localhost:5002/api/integrated/status
 ```
 
 ## 🔗 프론트엔드 설정
@@ -41,7 +43,7 @@ curl http://localhost:8000/api/integrated/status
 프론트엔드 `.env` 파일:
 
 ```env
-REACT_APP_INTEGRATED_API_URL=http://localhost:8000/api/integrated
+REACT_APP_INTEGRATED_API_URL=http://localhost:5002/api/integrated
 ```
 
 TypeScript 클라이언트:

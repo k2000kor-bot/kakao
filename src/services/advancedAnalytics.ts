@@ -8,6 +8,10 @@
  * - Real-time optimization
  * - Advanced intelligence insights
  */
+import { errorLogger, toError } from '../utils/errorLogger';
+
+/** Message-like object with optional timestamp and content for analysis */
+export type AnalyticsMessage = Record<string, unknown>;
 
 export interface AdvancedAnalysisResult {
     temporal_intelligence: {
@@ -143,7 +147,7 @@ class AdvancedAnalyticsService {
      * 고도화된 다차원 컨텍스트 분석
      */
     async analyzeAdvancedContext(
-        messages: any[],
+        messages: AnalyticsMessage[],
         participants: string[],
         analysisDepth: string = 'expert'
     ): Promise<AdvancedAnalysisResult> {
@@ -181,7 +185,12 @@ class AdvancedAnalyticsService {
             };
 
         } catch (error) {
-            console.error('Advanced context analysis failed:', error);
+            const err = toError(error);
+            errorLogger.error('Advanced context analysis failed', err, {
+                component: 'advancedAnalytics',
+                action: 'analyzeAdvancedContext',
+                analysisDepth,
+            });
             return this.createFallbackAnalysis(analysisDepth);
         }
     }
@@ -189,7 +198,7 @@ class AdvancedAnalyticsService {
     /**
      * 시간적 지능 분석
      */
-    private analyzeTemporalIntelligence(messages: any[]) {
+    private analyzeTemporalIntelligence(messages: AnalyticsMessage[]) {
         if (!messages || messages.length === 0) {
             return {
                 confidence: 0.0,
@@ -201,7 +210,7 @@ class AdvancedAnalyticsService {
 
         // 시간 간격 분석
         const timestamps = messages
-            .map(msg => new Date(msg.timestamp))
+            .map(msg => new Date((msg as Record<string, unknown>).timestamp as string | number | Date))
             .filter(date => !isNaN(date.getTime()));
 
         if (timestamps.length < 2) {
@@ -284,7 +293,7 @@ class AdvancedAnalyticsService {
     /**
      * 감정적 지능 분석
      */
-    private analyzeEmotionalIntelligence(messages: any[]) {
+    private analyzeEmotionalIntelligence(messages: AnalyticsMessage[]) {
         if (!messages || messages.length === 0) {
             return {
                 confidence: 0.0,
@@ -303,7 +312,8 @@ class AdvancedAnalyticsService {
         const emotionTrajectory = [];
 
         for (const msg of messages) {
-            const content = msg.content?.toLowerCase() || '';
+            const m = msg as Record<string, unknown>;
+            const content = String(m.content ?? '').toLowerCase();
             const msgEmotions = { positive: 0, negative: 0, neutral: 0 };
 
             // 기본 감정 분석
@@ -331,7 +341,7 @@ class AdvancedAnalyticsService {
             }
 
             emotionTrajectory.push({
-                timestamp: msg.timestamp,
+                timestamp: m.timestamp,
                 emotions: { ...msgEmotions }
             });
         }
@@ -387,7 +397,7 @@ class AdvancedAnalyticsService {
     /**
      * 사회적 지능 분석
      */
-    private analyzeSocialIntelligence(messages: any[], participants: string[]) {
+    private analyzeSocialIntelligence(messages: AnalyticsMessage[], participants: string[]) {
         if (!messages || messages.length === 0 || !participants || participants.length === 0) {
             return {
                 confidence: 0.0,
@@ -401,7 +411,8 @@ class AdvancedAnalyticsService {
         }
 
         // 참여자별 통계
-        const participantStats: { [key: string]: any } = {};
+        interface ParticipantStat { message_count: number; total_length: number; formality_score: number; avg_length?: number }
+        const participantStats: Record<string, ParticipantStat> = {};
         participants.forEach(participant => {
             participantStats[participant] = {
                 message_count: 0,
@@ -410,10 +421,11 @@ class AdvancedAnalyticsService {
             };
         });
 
-        let prevSender = null;
+        let _prevSender: string | null = null;
         for (const msg of messages) {
-            const sender = msg.sender;
-            const content = msg.content || '';
+            const m = msg as Record<string, unknown>;
+            const sender = m.sender as string | undefined;
+            const content = String(m.content ?? '');
 
             if (sender && participantStats[sender]) {
                 participantStats[sender].message_count += 1;
@@ -429,7 +441,7 @@ class AdvancedAnalyticsService {
                 });
                 participantStats[sender].formality_score += formality;
             }
-            prevSender = sender;
+            _prevSender = sender ?? null;
         }
 
         // 통계 계산
@@ -442,15 +454,15 @@ class AdvancedAnalyticsService {
         });
 
         // 참여 균형도
-        const messageCounts = Object.values(participantStats).map((stats: any) => stats.message_count);
+        const messageCounts = Object.values(participantStats).map((stats: ParticipantStat) => stats.message_count);
         const participationBalance = this.calculateParticipationBalance(messageCounts);
 
         // 계층 구조 감지
         const hierarchyDetected = Object.values(participantStats)
-            .some((stats: any) => stats.formality_score > 0.5);
+            .some((stats: ParticipantStat) => stats.formality_score > 0.5);
 
         // 상호작용 패턴
-        const speakerSequence = messages.map(msg => msg.sender);
+        const speakerSequence = messages.map(msg => (msg as Record<string, unknown>).sender);
         const uniqueSpeakers = new Set(speakerSequence).size;
         const turnTakingBalance = uniqueSpeakers / messages.length;
 
@@ -484,7 +496,7 @@ class AdvancedAnalyticsService {
     /**
      * 문화적 지능 분석
      */
-    private analyzeCulturalIntelligence(messages: any[]) {
+    private analyzeCulturalIntelligence(messages: AnalyticsMessage[]) {
         const culturalMarkers = {
             collectivism: 0,
             hierarchy: 0,
@@ -495,7 +507,7 @@ class AdvancedAnalyticsService {
         let totalScore = 0;
 
         for (const msg of messages) {
-            const content = msg.content || '';
+            const content = String((msg as Record<string, unknown>).content ?? '');
 
             // 각 문화적 차원 점수 계산
             Object.entries(this.koreanPatterns.cultural_markers).forEach(([dimension, keywords]) => {
@@ -537,7 +549,7 @@ class AdvancedAnalyticsService {
     /**
      * 전략적 지능 분석
      */
-    private analyzeStrategicIntelligence(messages: any[], analysisDepth: string) {
+    private analyzeStrategicIntelligence(messages: AnalyticsMessage[], analysisDepth: string) {
         const strategicPatterns = {
             persuasion: 0,
             information_seeking: 0,
@@ -546,7 +558,7 @@ class AdvancedAnalyticsService {
         };
 
         for (const msg of messages) {
-            const content = msg.content || '';
+            const content = String((msg as Record<string, unknown>).content ?? '');
 
             Object.entries(this.koreanPatterns.strategic_patterns).forEach(([pattern, keywords]) => {
                 if (pattern in strategicPatterns) {
@@ -603,7 +615,7 @@ class AdvancedAnalyticsService {
      * 예측적 대화 모델링
      */
     async generateConversationPredictions(
-        conversationHistory: any[],
+        conversationHistory: AnalyticsMessage[],
         predictionHorizon: number = 5
     ): Promise<PredictiveInsight[]> {
         if (!conversationHistory || conversationHistory.length === 0) {
@@ -642,23 +654,26 @@ class AdvancedAnalyticsService {
      * 실시간 대화 최적화
      */
     async optimizeConversationRealTime(
-        currentMessage: any,
-        conversationContext: any,
+        currentMessage: AnalyticsMessage | null | undefined,
+        conversationContext: Record<string, unknown>,
         optimizationGoals: string[] = ['harmony', 'efficiency', 'resolution']
     ): Promise<{
         strategies: OptimizationStrategy[];
         recommendations: RealTimeRecommendations;
-        metrics: any;
+        metrics: Record<string, unknown>;
     }> {
-        const messages = [...(conversationContext.messages || [])];
+        const ctxMessages = conversationContext.messages;
+        const messages: AnalyticsMessage[] = Array.isArray(ctxMessages) ? [...ctxMessages as AnalyticsMessage[]] : [];
         if (currentMessage) {
             messages.push(currentMessage);
         }
 
         // 컨텍스트 분석
+        const participants = conversationContext.participants;
+        const participantList = Array.isArray(participants) ? (participants as string[]) : [];
         const contextAnalysis = await this.analyzeAdvancedContext(
             messages,
-            conversationContext.participants || []
+            participantList
         );
 
         // 최적화 전략 생성
@@ -667,7 +682,7 @@ class AdvancedAnalyticsService {
         );
 
         // 실시간 권장사항
-        const recommendations = this.generateRealTimeRecommendations(contextAnalysis, currentMessage);
+        const recommendations = this.generateRealTimeRecommendations(contextAnalysis, currentMessage ?? undefined);
 
         // 성능 메트릭
         const metrics = {
@@ -697,10 +712,10 @@ class AdvancedAnalyticsService {
         return Math.max(0.0, Math.min(1.0, 1.0 - gini));
     }
 
-    private predictTopicEvolution(messages: any[]): PredictiveInsight {
-        const currentTopics = [];
+    private predictTopicEvolution(messages: AnalyticsMessage[]): PredictiveInsight {
+        const currentTopics: string[] = [];
         for (const msg of messages) {
-            const content = msg.content || '';
+            const content = String((msg as { content?: string }).content ?? '');
             if (content.includes('시공사')) currentTopics.push('시공사_선정');
             if (content.includes('분담금') || content.includes('비용')) currentTopics.push('비용_관리');
             if (content.includes('총회') || content.includes('회의')) currentTopics.push('총회_운영');
@@ -733,10 +748,10 @@ class AdvancedAnalyticsService {
         };
     }
 
-    private predictEmotionalTrajectory(messages: any[]): PredictiveInsight {
+    private predictEmotionalTrajectory(messages: AnalyticsMessage[]): PredictiveInsight {
         // 간단한 감정 트렌드 분석
         const emotionScores = messages.map(msg => {
-            const content = msg.content?.toLowerCase() || '';
+            const content = String((msg as { content?: string }).content ?? '').toLowerCase();
             let score = 0;
             if (['좋아', '만족', '성공'].some(word => content.includes(word))) score += 0.5;
             if (['걱정', '문제', '어려'].some(word => content.includes(word))) score -= 0.5;
@@ -772,7 +787,7 @@ class AdvancedAnalyticsService {
         };
     }
 
-    private predictEngagementLevel(messages: any[]): PredictiveInsight {
+    private predictEngagementLevel(messages: AnalyticsMessage[]): PredictiveInsight {
         const messageFrequency = messages.length / 24; // 가정: 24시간 기준
 
         let level = 'medium';
@@ -805,12 +820,12 @@ class AdvancedAnalyticsService {
         };
     }
 
-    private predictPotentialConflicts(messages: any[]): PredictiveInsight {
+    private predictPotentialConflicts(messages: AnalyticsMessage[]): PredictiveInsight {
         let conflictIndicators = 0;
-        const evidence = [];
+        const evidence: string[] = [];
 
         for (const msg of messages) {
-            const content = msg.content || '';
+            const content = String((msg as { content?: string }).content ?? '');
             if (['반대', '문제', '불만'].some(word => content.includes(word))) {
                 conflictIndicators += 1;
                 evidence.push('반대 의견 표명');
@@ -850,12 +865,12 @@ class AdvancedAnalyticsService {
         };
     }
 
-    private predictResolutionOpportunities(messages: any[]): PredictiveInsight {
+    private predictResolutionOpportunities(messages: AnalyticsMessage[]): PredictiveInsight {
         let resolutionIndicators = 0;
-        const evidence = [];
+        const evidence: string[] = [];
 
         for (const msg of messages) {
-            const content = msg.content || '';
+            const content = String((msg as { content?: string }).content ?? '');
             if (['해결', '방법', '방안'].some(word => content.includes(word))) {
                 resolutionIndicators += 1;
                 evidence.push('해결 방안 모색');
@@ -926,7 +941,7 @@ class AdvancedAnalyticsService {
 
     private generateRealTimeRecommendations(
         contextAnalysis: AdvancedAnalysisResult,
-        currentMessage: any
+        _currentMessage: AnalyticsMessage | undefined
     ): RealTimeRecommendations {
         const recommendations: RealTimeRecommendations = {
             immediate_actions: [],

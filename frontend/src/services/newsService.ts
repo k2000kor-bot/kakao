@@ -1,4 +1,20 @@
 // 뉴스 검색 및 댓글 분석 서비스
+import {
+    API_QUERY_PARAM_NEWS_API_KEY,
+    API_QUERY_PARAM_NEWS_CATEGORY,
+    API_QUERY_PARAM_NEWS_COUNTRY,
+    API_QUERY_PARAM_NEWS_LANGUAGE,
+    API_QUERY_PARAM_NEWS_SORT_BY,
+    API_QUERY_PARAM_SEARCH_Q,
+    NEWSAPI_DEFAULT_COUNTRY_KR,
+    NEWSAPI_PATH_EVERYTHING,
+    NEWSAPI_PATH_TOP_HEADLINES,
+    NEWSAPI_V2_BASE_URL,
+    joinApiBaseAndPath,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+import { NEWS_API_KEY_STORAGE_KEY } from './newsStorageKeys';
 export interface NewsArticle {
     id: string;
     title: string;
@@ -48,7 +64,7 @@ export interface CommentAnalysis {
 
 class NewsService {
     private apiKey: string = '';
-    private baseURL: string = 'https://newsapi.org/v2';
+    private baseURL: string = NEWSAPI_V2_BASE_URL;
 
     constructor() {
         // 환경 변수에서 API 키 가져오기
@@ -58,7 +74,7 @@ class NewsService {
     // API 키 설정
     setAPIKey(apiKey: string): void {
         this.apiKey = apiKey;
-        localStorage.setItem('news_api_key', apiKey);
+        localStorage.setItem(NEWS_API_KEY_STORAGE_KEY, apiKey);
     }
 
     // 뉴스 검색
@@ -68,8 +84,13 @@ class NewsService {
         }
 
         try {
+            const qs = new URLSearchParams();
+            qs.set(API_QUERY_PARAM_SEARCH_Q, query);
+            qs.set(API_QUERY_PARAM_NEWS_LANGUAGE, language);
+            qs.set(API_QUERY_PARAM_NEWS_SORT_BY, sortBy);
+            qs.set(API_QUERY_PARAM_NEWS_API_KEY, this.apiKey);
             const response = await fetch(
-                `${this.baseURL}/everything?q=${encodeURIComponent(query)}&language=${language}&sortBy=${sortBy}&apiKey=${this.apiKey}`
+                joinApiBaseAndPath(this.baseURL, `${NEWSAPI_PATH_EVERYTHING}?${qs.toString()}`),
             );
 
             if (!response.ok) {
@@ -83,7 +104,7 @@ class NewsService {
                 title: article.title as string,
                 content: (article.content || article.description) as string,
                 url: article.url as string,
-                source: (article.source as any)?.name || 'Unknown',
+                source: (article.source as { name?: string })?.name || 'Unknown',
                 publishedAt: article.publishedAt as string,
                 author: article.author as string,
                 summary: this.generateSummary((article.content || article.description) as string),
@@ -97,13 +118,18 @@ class NewsService {
                 searchTime: new Date().toISOString()
             };
         } catch (error) {
-            console.error('뉴스 검색 오류:', error);
-            throw error;
+            const err = toError(error);
+            errorLogger.error('뉴스 검색 오류', err, {
+                component: 'newsService',
+                action: 'searchNews',
+                query,
+            });
+            throw err;
         }
     }
 
     // 댓글 분석 (시뮬레이션)
-    async analyzeComments(articleId: string): Promise<CommentAnalysis> {
+    async analyzeComments(_articleId: string): Promise<CommentAnalysis> {
         // 실제로는 댓글 API를 호출하지만, 여기서는 시뮬레이션
         const mockComments: Comment[] = [
             {
@@ -168,10 +194,10 @@ class NewsService {
         if (!content) return '';
 
         // 간단한 요약 로직 (실제로는 AI 모델 사용)
-        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+        const sentences = content.split(/[.!?]+/).filter((s) => coerceTrimmedString(s, '').length > 10);
         if (sentences.length <= 2) return content;
 
-        return sentences.slice(0, 2).join('. ') + '.';
+        return sentences.map((s) => coerceTrimmedString(s, '')).join('. ') + '.';
     }
 
     // 감정 분석 (간단한 키워드 기반)
@@ -205,8 +231,7 @@ class NewsService {
 
         return Object.entries(keywords)
             .map(([keyword, frequency]) => ({ keyword, frequency }))
-            .sort((a, b) => b.frequency - a.frequency)
-            .slice(0, 10);
+            .sort((a, b) => b.frequency - a.frequency);
     }
 
     // 평균 감정 점수 계산
@@ -224,8 +249,12 @@ class NewsService {
         }
 
         try {
+            const qs = new URLSearchParams();
+            qs.set(API_QUERY_PARAM_NEWS_COUNTRY, NEWSAPI_DEFAULT_COUNTRY_KR);
+            qs.set(API_QUERY_PARAM_NEWS_CATEGORY, category);
+            qs.set(API_QUERY_PARAM_NEWS_API_KEY, this.apiKey);
             const response = await fetch(
-                `${this.baseURL}/top-headlines?country=kr&category=${category}&apiKey=${this.apiKey}`
+                joinApiBaseAndPath(this.baseURL, `${NEWSAPI_PATH_TOP_HEADLINES}?${qs.toString()}`),
             );
 
             if (!response.ok) {
@@ -239,17 +268,23 @@ class NewsService {
                 title: article.title as string,
                 content: (article.content || article.description) as string,
                 url: article.url as string,
-                source: (article.source as any)?.name || 'Unknown',
+                source: (article.source as { name?: string })?.name || 'Unknown',
                 publishedAt: article.publishedAt as string,
                 author: article.author as string,
                 summary: this.generateSummary((article.content || article.description) as string),
                 sentiment: this.analyzeSentiment((article.title as string) + ' ' + ((article.content || article.description) as string))
             }));
         } catch (error) {
-            console.error('트렌딩 뉴스 가져오기 오류:', error);
-            throw error;
+            const err = toError(error);
+            errorLogger.error('트렌딩 뉴스 가져오기 오류', err, {
+                component: 'newsService',
+                action: 'getTrendingNews',
+            });
+            throw err;
         }
     }
 }
 
 export const newsService = new NewsService();
+
+export { NEWS_API_KEY_STORAGE_KEY } from './newsStorageKeys';

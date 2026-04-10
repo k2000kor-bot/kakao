@@ -3,11 +3,28 @@
  * 비교집 자료 기반 의사결정 지원
  */
 
+import { errorLogger, toError } from '../utils/errorLogger';
+import {
+    API_BASE_URL,
+    API_CONSTRUCTION_ANALYZE_COMPANIES_PATH,
+    API_CONSTRUCTION_DECISION_HISTORY_PATH,
+    API_CONSTRUCTION_EVALUATION_CRITERIA_PATH,
+    API_CONSTRUCTION_GENERATE_MESSAGE_PATH,
+    API_CONSTRUCTION_KNOWLEDGE_BASE_PATH,
+    API_CONSTRUCTION_RESET_DATA_PATH,
+    API_CONSTRUCTION_SAVE_DECISION_PATH,
+    API_CONSTRUCTION_UPLOAD_COMPARISON_DATA_PATH,
+    API_FORM_FIELD_FILE,
+    API_FORM_FIELD_PROJECT_TYPE,
+    FALLBACK_API_ORIGIN,
+    joinApiHealthCheckUrl,
+} from '../config/api';
+
 export interface CompanyData {
     company_id: string;
     company_name: string;
-    technical_specs: Record<string, any>;
-    financial_data: Record<string, any>;
+    technical_specs: Record<string, unknown>;
+    financial_data: Record<string, unknown>;
     project_history: ProjectHistory[];
     certifications: string[];
     evaluation_scores: Record<string, number>;
@@ -88,8 +105,8 @@ export interface KnowledgeBase {
     }>;
 }
 
-class ConstructionAnalyticsService {
-    private baseUrl = process.env.NODE_ENV === 'development' ? '' : 'http://localhost:8002';
+export class ConstructionAnalyticsService {
+    private baseUrl = API_BASE_URL || FALLBACK_API_ORIGIN;
     private companiesData: Record<string, CompanyData> = {};
     private evaluationResult: EvaluationResult | null = null;
     private knowledgeBase: KnowledgeBase | null = null;
@@ -104,37 +121,64 @@ class ConstructionAnalyticsService {
         processed_data: Record<string, CompanyData>;
     }> {
         try {
-            console.log('Uploading to:', `${this.baseUrl}/api/upload_comparison_data`);
+            errorLogger.info('Uploading comparison data', {
+                component: 'constructionAnalyticsService',
+                action: 'uploadComparisonData',
+                url: joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_UPLOAD_COMPARISON_DATA_PATH),
+                projectType,
+                fileName: file.name,
+            });
 
             const formData = new FormData();
-            formData.append('file', file);
-            formData.append('project_type', projectType);
+            formData.append(API_FORM_FIELD_FILE, file);
+            formData.append(API_FORM_FIELD_PROJECT_TYPE, projectType);
 
-            const response = await fetch(`${this.baseUrl}/api/upload_comparison_data`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_UPLOAD_COMPARISON_DATA_PATH), {
                 method: 'POST',
                 body: formData,
                 mode: 'cors',
                 credentials: 'omit',
             });
 
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
+            errorLogger.info('Upload response received', {
+                component: 'constructionAnalyticsService',
+                action: 'uploadComparisonData',
+                status: response.status,
+                statusText: response.statusText,
+            });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Error response:', errorText);
+                const err = toError(new Error(`HTTP error! status: ${response.status} - ${errorText}`));
+                errorLogger.error('Error response', err, {
+                    component: 'constructionAnalyticsService',
+                    action: 'uploadComparisonData',
+                    status: response.status,
+                    errorText: errorText.substring(0, 200),
+                });
                 throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
 
             const result = await response.json();
-            console.log('Upload result:', result);
+            errorLogger.info('Upload result', {
+                component: 'constructionAnalyticsService',
+                action: 'uploadComparisonData',
+                status: result.status,
+                companiesCount: result.companies?.length || 0,
+            });
 
             // 처리된 데이터 저장
             this.companiesData = result.processed_data;
 
             return result;
         } catch (error) {
-            console.error('Error uploading comparison data:', error);
+            const err = toError(error);
+            errorLogger.error('Error uploading comparison data', err, {
+                component: 'constructionAnalyticsService',
+                action: 'uploadComparisonData',
+                projectType,
+                fileName: file.name,
+            });
             if (error instanceof TypeError && error.message.includes('fetch')) {
                 throw new Error('네트워크 연결 오류: 백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
             }
@@ -152,7 +196,7 @@ class ConstructionAnalyticsService {
         companies_analyzed: number;
     }> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/analyze_companies`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_ANALYZE_COMPANIES_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -171,7 +215,12 @@ class ConstructionAnalyticsService {
 
             return result;
         } catch (error) {
-            console.error('Error analyzing companies:', error);
+            const err = toError(error);
+            errorLogger.error('Error analyzing companies', err, {
+                component: 'constructionAnalyticsService',
+                action: 'analyzeCompanies',
+                projectType: criteria.project_type,
+            });
             throw error;
         }
     }
@@ -200,7 +249,7 @@ class ConstructionAnalyticsService {
                 target_audience: targetAudience,
             };
 
-            const response = await fetch(`${this.baseUrl}/api/generate_message`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_GENERATE_MESSAGE_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -215,7 +264,13 @@ class ConstructionAnalyticsService {
             const result = await response.json();
             return result;
         } catch (error) {
-            console.error('Error generating message:', error);
+            const err = toError(error);
+            errorLogger.error('Error generating message', err, {
+                component: 'constructionAnalyticsService',
+                action: 'generateMessage',
+                messageType,
+                targetAudience,
+            });
             throw error;
         }
     }
@@ -234,7 +289,7 @@ class ConstructionAnalyticsService {
         weight_total: number;
     }> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/evaluation_criteria`);
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_EVALUATION_CRITERIA_PATH));
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -242,7 +297,11 @@ class ConstructionAnalyticsService {
 
             return await response.json();
         } catch (error) {
-            console.error('Error fetching evaluation criteria:', error);
+            const err = toError(error);
+            errorLogger.error('Error fetching evaluation criteria', err, {
+                component: 'constructionAnalyticsService',
+                action: 'getEvaluationCriteria',
+            });
             throw error;
         }
     }
@@ -256,7 +315,7 @@ class ConstructionAnalyticsService {
         version: string;
     }> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/knowledge_base`);
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_KNOWLEDGE_BASE_PATH));
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -267,7 +326,11 @@ class ConstructionAnalyticsService {
 
             return result;
         } catch (error) {
-            console.error('Error fetching knowledge base:', error);
+            const err = toError(error);
+            errorLogger.error('Error fetching knowledge base', err, {
+                component: 'constructionAnalyticsService',
+                action: 'getKnowledgeBase',
+            });
             throw error;
         }
     }
@@ -275,14 +338,14 @@ class ConstructionAnalyticsService {
     /**
      * 의사결정 결과 저장
      */
-    async saveDecision(decisionData: any): Promise<{
+    async saveDecision(decisionData: Record<string, unknown>): Promise<{
         status: string;
         message: string;
         decision_id: number;
         timestamp: string;
     }> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/save_decision`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_SAVE_DECISION_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -296,7 +359,11 @@ class ConstructionAnalyticsService {
 
             return await response.json();
         } catch (error) {
-            console.error('Error saving decision:', error);
+            const err = toError(error);
+            errorLogger.error('Error saving decision', err, {
+                component: 'constructionAnalyticsService',
+                action: 'saveDecision',
+            });
             throw error;
         }
     }
@@ -305,11 +372,11 @@ class ConstructionAnalyticsService {
      * 의사결정 이력 조회
      */
     async getDecisionHistory(): Promise<{
-        history: any[];
+        history: unknown[];
         total_decisions: number;
     }> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/decision_history`);
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_DECISION_HISTORY_PATH));
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -317,7 +384,11 @@ class ConstructionAnalyticsService {
 
             return await response.json();
         } catch (error) {
-            console.error('Error fetching decision history:', error);
+            const err = toError(error);
+            errorLogger.error('Error fetching decision history', err, {
+                component: 'constructionAnalyticsService',
+                action: 'getDecisionHistory',
+            });
             throw error;
         }
     }
@@ -389,7 +460,7 @@ class ConstructionAnalyticsService {
      */
     private generateCompanyRecommendation(
         company: CompanyData,
-        metrics: Record<string, number>
+        _metrics: Record<string, number>
     ): string {
         const avgScore = Object.values(company.evaluation_scores).reduce(
             (sum, score) => sum + score, 0
@@ -452,7 +523,7 @@ class ConstructionAnalyticsService {
      */
     async resetData(): Promise<{ status: string; message: string }> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/reset_data`, {
+            const response = await fetch(joinApiHealthCheckUrl(this.baseUrl, API_CONSTRUCTION_RESET_DATA_PATH), {
                 method: 'DELETE',
             });
 
@@ -467,7 +538,11 @@ class ConstructionAnalyticsService {
 
             return await response.json();
         } catch (error) {
-            console.error('Error resetting data:', error);
+            const err = toError(error);
+            errorLogger.error('Error resetting data', err, {
+                component: 'constructionAnalyticsService',
+                action: 'resetData',
+            });
             throw error;
         }
     }

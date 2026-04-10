@@ -1,8 +1,11 @@
 # 🔓 카카오톡 루팅폰 추출 시스템 완전 사용 가이드
 
+> **CORBU 메인 웹·대화 API**는 통합 백엔드 **포트 5002** (`main_server`, `/api/docs`) 입니다.  
+> 아래 **8005** 주소는 **`rooted_kakao_extractor.py` 단독 서버** 전용입니다 (통합 서버와 별개).
+
 ## 📱 시스템 개요
 
-루팅된 Android 폰에서 카카오톡 데이터베이스에 직접 접근하여 실시간으로 대화 내용을 추출하고 CORBU AI 시스템으로 전송하는 완전한 솔루션입니다.
+루팅된 Android 폰에서 카카오톡 데이터베이스에 직접 접근하여 실시간으로 대화 내용을 추출하고 CORBU.AI 시스템으로 전송하는 완전한 솔루션입니다.
 
 ### ✅ 주요 기능
 
@@ -11,7 +14,7 @@
 - **완전한 데이터**: 삭제된 메시지도 복구 가능
 - **미디어 지원**: 이미지, 동영상, 음성 파일 원본 접근
 - **선택적 모니터링**: 특정 대화방만 선택 가능
-- **웹 시스템 연동**: CORBU AI와 완전 통합
+- **웹 시스템 연동**: CORBU.AI와 완전 통합
 
 ## 🚀 빠른 시작
 
@@ -37,7 +40,7 @@ python rooted_kakao_extractor.py
 #### APK 파일 위치
 
 ```
-/Users/aD/kakao-frontend/android_app/KakaoRootExtractor/app/build/outputs/apk/debug/KakaoRootExtractor_v1.0.0_debug_20250726_1930.apk
+/path/to/kakao-frontend/kakao-frontend/android_app/KakaoRootExtractor/app/build/outputs/apk/debug/KakaoRootExtractor_v1.0.0_debug_20250726_1930.apk
 ```
 
 #### 설치 방법
@@ -114,7 +117,7 @@ GET /api/rooted/chatroom-stats
 GET /api/rooted/message-stats
 ```
 
-### 채팅방 정보
+### 대화방 정보
 
 ```
 GET /api/rooted/chatrooms
@@ -129,7 +132,7 @@ POST /api/rooted/chatrooms
 -- 메시지 데이터
 chat_logs:
 - _id: 메시지 ID
-- chat_id: 채팅방 ID  
+- chat_id: 대화방 ID  
 - user_id: 보낸 사람 ID
 - nickname: 보낸 사람 이름
 - message: 메시지 내용
@@ -137,11 +140,11 @@ chat_logs:
 - created_at: 생성 시간
 - attachment: 첨부파일 경로
 
--- 채팅방 정보
+-- 대화방 정보
 open_chat_link:
-- id: 채팅방 ID
-- nickname: 채팅방 이름
-- type: 채팅방 타입 (1=개인, 2=그룹, 3=오픈채팅)
+- id: 대화방 ID
+- nickname: 대화방 이름
+- type: 대화방 타입 (1=개인, 2=그룹, 3=오픈대화)
 - member_count: 참여자 수
 - members: 참여자 목록
 ```
@@ -153,7 +156,7 @@ open_chat_link:
 extracted_messages:
 - id: 자동 증가 ID
 - message_id: 카카오톡 메시지 ID
-- chat_room_id: 채팅방 ID
+- chat_room_id: 대화방 ID
 - sender_id: 보낸 사람 ID
 - sender_name: 보낸 사람 이름
 - content: 메시지 내용
@@ -164,12 +167,12 @@ extracted_messages:
 - extracted_at: 추출 시간
 - processed: 처리 완료 여부
 
--- 채팅방 정보
+-- 대화방 정보
 chat_rooms:
 - id: 자동 증가 ID
-- room_id: 채팅방 ID
-- room_name: 채팅방 이름
-- room_type: 채팅방 타입
+- room_id: 대화방 ID
+- room_name: 대화방 이름
+- room_type: 대화방 타입
 - participant_count: 참여자 수
 - participants: 참여자 목록 (JSON)
 - last_message_time: 마지막 메시지 시간
@@ -204,7 +207,7 @@ fileObserver = object : FileObserver(dbFolder, MODIFY) {
 
 1. **데이터 수신**: 루팅폰 서버에서 메시지 수신
 2. **파싱 처리**: `advanced_kakao_parser.py`로 분석
-3. **AI 분석**: CORBU AI 시스템에서 대화 분석
+3. **AI 분석**: CORBU.AI 시스템에서 대화 분석
 4. **웹 표시**: 프론트엔드에서 결과 표시
 
 ## 🛠️ 문제 해결
@@ -287,19 +290,19 @@ fileObserver = object : FileObserver(dbFolder, MODIFY) {
 1. **대화방 선택**: 특정 개인과의 대화방 선택
 2. **모니터링 시작**: 실시간 모니터링 활성화
 3. **데이터 수집**: 대화 내용 자동 수집
-4. **AI 분석**: CORBU AI에서 대화 패턴 분석
+4. **AI 분석**: CORBU.AI에서 대화 패턴 분석
 5. **결과 확인**: 웹 시스템에서 분석 결과 확인
 
-### 시나리오 2: 그룹 채팅 분석
+### 시나리오 2: 그룹 대화 분석
 
-1. **그룹 선택**: 분석할 그룹 채팅방 선택
+1. **그룹 선택**: 분석할 그룹 대화방 선택
 2. **참여자 모니터링**: 모든 참여자 대화 내용 수집
 3. **활동 분석**: 참여도, 주제별 분석
 4. **트렌드 파악**: 시간대별, 주제별 트렌드 분석
 
 ### 시나리오 3: 비즈니스 대화 분석
 
-1. **업무 채팅방 선택**: 업무 관련 채팅방 선택
+1. **업무 대화방 선택**: 업무 관련 대화방 선택
 2. **키워드 모니터링**: 중요 키워드 자동 감지
 3. **업무 효율성 분석**: 대화 패턴 분석
 4. **보고서 생성**: 자동 보고서 생성
@@ -336,7 +339,7 @@ fileObserver = object : FileObserver(dbFolder, MODIFY) {
 
 ### 통합 분석
 
-- **멀티 채팅방**: 여러 채팅방 동시 분석
+- **멀티 대화방**: 여러 대화방 동시 분석
 - **크로스 분석**: 다른 소스와의 데이터 통합 분석
 - **예측 분석**: 대화 패턴 기반 미래 예측
 
@@ -358,5 +361,5 @@ fileObserver = object : FileObserver(dbFolder, MODIFY) {
 
 **🎉 카카오톡 루팅폰 추출 시스템이 완전히 준비되었습니다!**
 
-이제 루팅된 Android 폰에서 카카오톡 대화 내용을 실시간으로 추출하여 CORBU AI 시스템에서 분석할 수 있습니다.
+이제 루팅된 Android 폰에서 카카오톡 대화 내용을 실시간으로 추출하여 CORBU.AI 시스템에서 분석할 수 있습니다.
 

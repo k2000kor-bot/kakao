@@ -3,12 +3,22 @@
  * 입력된 텍스트의 전체 문맥을 파악하고 의미를 이해한 후 적절한 답변을 생성
  */
 
+import {
+    API_BASE_URL,
+    API_V1_CONTEXTUAL_ANALYSIS_PATH,
+    API_V1_CONTEXTUAL_RESPONSE_PATH,
+    FALLBACK_API_ORIGIN,
+    joinApiHealthCheckUrl,
+} from '../config/api';
+import { errorLogger, toError } from '../utils/errorLogger';
+import { coerceTrimmedString } from '../utils/chatInputUtils';
+
 export interface ContextualMessage {
     id: string;
     content: string;
     timestamp: Date;
     type: 'user' | 'assistant' | 'system';
-    context?: any;
+    context?: unknown;
     formatting?: {
         fontSize?: number;
         lineBreaks?: boolean;
@@ -44,6 +54,7 @@ export interface ContextualResponse {
 export class ContextualUnderstandingService {
     private conversationHistory: ContextualMessage[] = [];
     private maxHistoryLength = 50;
+    private readonly apiOrigin = API_BASE_URL || FALLBACK_API_ORIGIN;
 
     /**
      * 새로운 메시지 추가 및 문맥 업데이트
@@ -91,7 +102,7 @@ export class ContextualUnderstandingService {
     private async performContextualAnalysis(fullContext: string): Promise<ContextualAnalysis> {
         try {
             // 백엔드 API 호출
-            const response = await fetch('http://localhost:8006/api/v1/contextual-analysis', {
+            const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, API_V1_CONTEXTUAL_ANALYSIS_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -110,7 +121,12 @@ export class ContextualUnderstandingService {
                 return this.performLocalContextualAnalysis(fullContext);
             }
         } catch (error) {
-            console.error('문맥 분석 API 호출 실패:', error);
+            const err = toError(error);
+            errorLogger.error('문맥 분석 API 호출 실패', err, {
+                component: 'contextualUnderstandingService',
+                action: 'analyzeContext',
+                contextPreview: fullContext.substring(0, 100),
+            });
             return this.performLocalContextualAnalysis(fullContext);
         }
     }
@@ -188,7 +204,7 @@ export class ContextualUnderstandingService {
         // 회사명, 인명, 장소명 등 추출
         const entityPatterns = [
             /(?:삼성물산|GS건설|대우건설|현대건설)/g,
-            /(?:개포우성|잠실우성|강남|서울)/g,
+            /(?:강남|서울|부산|대구)/g,
             /(?:이재헌|박재우|박은진|정지혜)/g
         ];
 
@@ -282,7 +298,7 @@ export class ContextualUnderstandingService {
  */
     private generateSummary(context: string): string {
         const lines = context.split('\n');
-        const recentLines = lines.slice(-10); // 최근 10줄만 사용
+        const _recentLines = lines.slice(-10); // 최근 10줄만 사용
 
         return `현재 대화는 ${this.extractMainTopics(context).join(', ')}에 대한 논의로, 
                 ${this.analyzeIntent(context)} 의도를 가지고 있으며, 
@@ -305,7 +321,7 @@ export class ContextualUnderstandingService {
         const lineBreaks = text.includes('\n');
 
         // 텍스트 구조 분석 (줄별로 분리)
-        const textStructure = text.split('\n').filter(line => line.trim() !== '');
+        const textStructure = text.split('\n').filter((line) => coerceTrimmedString(line, '') !== '');
 
         // 글자 크기 추정 (텍스트 길이에 따른 동적 크기)
         let fontSize: number | undefined;
@@ -352,7 +368,7 @@ export class ContextualUnderstandingService {
      */
     private async generateResponseBasedOnContext(understanding: ContextualAnalysis, newMessage: string): Promise<string> {
         try {
-            const response = await fetch('http://localhost:8006/api/v1/contextual-response', {
+            const response = await fetch(joinApiHealthCheckUrl(this.apiOrigin, API_V1_CONTEXTUAL_RESPONSE_PATH), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -371,7 +387,12 @@ export class ContextualUnderstandingService {
                 return this.generateLocalResponse(understanding, newMessage);
             }
         } catch (error) {
-            console.error('문맥 기반 응답 생성 API 호출 실패:', error);
+            const err = toError(error);
+            errorLogger.error('문맥 기반 응답 생성 API 호출 실패', err, {
+                component: 'contextualUnderstandingService',
+                action: 'generateContextualResponse',
+                messagePreview: newMessage.substring(0, 100),
+            });
             return this.generateLocalResponse(understanding, newMessage);
         }
     }
@@ -379,7 +400,7 @@ export class ContextualUnderstandingService {
     /**
      * 로컬 응답 생성
      */
-    private generateLocalResponse(understanding: ContextualAnalysis, newMessage: string): string {
+    private generateLocalResponse(understanding: ContextualAnalysis, _newMessage: string): string {
         const { intent, requirements, mainTopics } = understanding;
 
         let response = `전체 문맥을 파악했습니다. `;

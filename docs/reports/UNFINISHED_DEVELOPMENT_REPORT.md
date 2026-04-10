@@ -27,7 +27,7 @@
 
 ```bash
 # 현재 오류
-File "/Users/aD/kakao-frontend/backend/advanced_api_server.py", line 10841
+File "/path/to/kakao-frontend/kakao-frontend/backend/advanced_api_server.py", line 10841
     """예측 분석 요약"""
                ^
 SyntaxError: unterminated triple-quoted string literal (detected at line 10872)

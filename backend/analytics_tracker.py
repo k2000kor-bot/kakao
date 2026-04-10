@@ -1,7 +1,9 @@
 """
-CORBU AI 사용자 행동 분석 및 통계 시스템
+CORBU.AI 사용자 행동 분석 및 통계 시스템
 사용자의 질문 패턴과 서비스 사용 통계를 수집합니다.
 """
+
+import os
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -15,7 +17,7 @@ import sqlite3
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="CORBU AI Analytics Tracker", version="1.0.0")
+app = FastAPI(title="CORBU.AI Analytics Tracker", version="1.0.0")
 
 
 class AnalyticsEvent(BaseModel):
@@ -367,7 +369,7 @@ async def health_check():
 async def root():
     """루트 엔드포인트"""
     return {
-        "message": "CORBU AI Analytics Tracker",
+        "message": "CORBU.AI Analytics Tracker",
         "version": "1.0.0",
         "description": "사용자 행동 분석 및 통계를 수집합니다.",
         "endpoints": {
@@ -384,4 +386,8 @@ init_database()
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8004)
+
+    _p = int(
+        os.environ.get("ANALYTICS_TRACKER_SERVICE_PORT", os.environ.get("PORT", "8004"))
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_p)

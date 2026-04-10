@@ -11,6 +11,8 @@ import threading
 app = Flask(__name__)
 CORS(app)
 
+_BACKUP_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 # 전역 변수들
 conversation_memory = {}  # session_id -> 대화 기록
 user_preferences = {}      # session_id -> 사용자 선호도
@@ -51,7 +53,7 @@ conversation_exports = {}
 @app.route('/')
 def serve_html():
     """modern_chat_interface.html 파일을 서빙"""
-    html_path = '/Users/aD/kakao-frontend/modern_chat_interface.html'
+    html_path = os.path.join(_BACKUP_ROOT, 'modern_chat_interface.html')
     if os.path.exists(html_path):
         return send_file(html_path)
     else:
@@ -59,7 +61,7 @@ def serve_html():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """메인 채팅 API"""
+    """메인 대화 API"""
     global total_requests, successful_requests
     
     try:

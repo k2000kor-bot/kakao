@@ -1,8 +1,8 @@
-# 🚀 **CORBU AI 고급 응답 시스템 배포 가이드**
+# 🚀 **CORBU.AI 고급 응답 시스템 배포 가이드**
 
 ## 📋 **시스템 개요**
 
-**CORBU AI 고급 응답 시스템**은 프론트엔드 대화 답변 품질을 백엔드 수준으로 향상시키고, 사용자 경험을 최대한 개선한 종합적인 AI 채팅 시스템입니다.
+**CORBU.AI 고급 응답 시스템**은 프론트엔드 대화 답변 품질을 백엔드 수준으로 향상시키고, 사용자 경험을 최대한 개선한 종합적인 AI 대화 시스템입니다.
 
 ---
 
@@ -49,16 +49,16 @@ cp .env.example .env
 ### **2. 백엔드 서버 실행**
 
 ```bash
-# Python 가상환경 생성 및 활성화
-python -m venv .venv
+# Python 가상환경 (저장소 기준 backend/.venv 권장)
+cd backend
+python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# 백엔드 의존성 설치
-cd backend
 pip install -r requirements.txt
+# 또는 루트에서: npm run restart:backend  (scripts/restart-backend.sh, venv 자동 탐지)
 
-# 백엔드 서버 실행
-python -m uvicorn app:app --host 0.0.0.0 --port 8004 --reload
+# 백엔드 서버 실행 (통합 API 포트 5002)
+python3 -m uvicorn main_server:app --host 0.0.0.0 --port 5002 --reload
 ```
 
 ### **3. 프론트엔드 개발 서버 실행**
@@ -68,7 +68,7 @@ python -m uvicorn app:app --host 0.0.0.0 --port 8004 --reload
 npm start
 ```
 
-### **4. 프로덕션 빌드**
+### **4. 프로덕션 빌드 및 실제 적용**
 
 ```bash
 # 프로덕션 빌드 생성
@@ -79,11 +79,13 @@ npm install -g serve
 serve -s build
 ```
 
+**실제 서버/도메인에 배포할 때**는 [실제 프론트엔드 적용 가이드](../FRONTEND_DEPLOYMENT.md)를 참고하세요. (환경 변수 `REACT_APP_API_URL`, nginx/Vercel/Netlify 설정, 검증 절차)
+
 ---
 
 ## 🎯 **주요 기능 및 사용법**
 
-### **1. 메인 채팅 인터페이스**
+### **1. 메인 대화 인터페이스**
 
 **접속 방법:**
 
@@ -206,7 +208,7 @@ serve -s build
 **메뉴 구성:**
 
 - 📁 **프로젝트**: 실제 프로젝트 목록
-- 💬 **채팅 세션**: 대화 히스토리
+- 💬 **대화 세션**: 대화 히스토리
 - 📄 **최근 파일**: 업로드된 파일 목록
 - 📋 **템플릿**: 사용 가능한 템플릿
 - 🔄 **워크플로우**: 자동화된 작업 흐름
@@ -281,14 +283,14 @@ serve -s build
 
 ```bash
 # 백엔드 서버 상태 확인
-curl http://localhost:8004/health
+curl http://localhost:5002/api/health
 
 # 포트 충돌 확인
-lsof -i :8004
+lsof -i :5002
 
 # 백엔드 서버 재시작
 cd backend
-python -m uvicorn app:app --host 0.0.0.0 --port 8004 --reload
+python3 -m uvicorn app:app --host 0.0.0.0 --port 5002 --reload
 ```
 
 **프론트엔드 빌드 오류:**
@@ -371,11 +373,11 @@ npm start
 
 - **이슈 트래커**: GitHub Issues 활용
 - **문서**: 프로젝트 내 README 및 가이드 문서
-- **커뮤니티**: 개발자 포럼 및 채팅방
+- **커뮤니티**: 개발자 포럼 및 대화방
 
 ### **연락처**
 
-- **프로젝트 담당자**: CORBU AI 개발팀
+- **프로젝트 담당자**: CORBU.AI 개발팀
 - **기술 문의**: 개발팀 내부 지원 시스템
 - **기능 요청**: GitHub Issues를 통한 기능 요청
 
@@ -383,7 +385,7 @@ npm start
 
 ## 🎉 **결론**
 
-**CORBU AI 고급 응답 시스템**은 최신 기술을 활용하여 AI 채팅의 품질을 혁신적으로 향상시킨 종합적인 솔루션입니다.
+**CORBU.AI 고급 응답 시스템**은 최신 기술을 활용하여 AI 대화의 품질을 혁신적으로 향상시킨 종합적인 솔루션입니다.
 
 ### **핵심 성과**
 
@@ -403,4 +405,4 @@ npm start
 
 ---
 
-**🎯 CORBU AI 고급 응답 시스템이 성공적으로 배포되었습니다!**
+**🎯 CORBU.AI 고급 응답 시스템이 성공적으로 배포되었습니다!**

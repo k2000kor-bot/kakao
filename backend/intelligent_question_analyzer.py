@@ -190,7 +190,7 @@ class IntelligentQuestionAnalyzer:
         return {
             'gaepo_woosung': {
                 'project_info': {
-                    'location': '서울특별시 강남구 개포동',
+                    'location': '서울특별시 강남구 ○○동',
                     'scale': '대규모 재개발 프로젝트',
                     'status': '추진 중',
                     'key_stakeholders': ['주민', '개발사', '정부', '지자체']
@@ -412,10 +412,10 @@ class IntelligentQuestionAnalyzer:
         entities = []
         
         # 지명
-        if '개포우성' in question:
-            entities.append('개포우성 재개발지구')
-        if '개포동' in question:
-            entities.append('개포동')
+        if '샘플 프로젝트' in question:
+            entities.append('샘플 재개발지구')
+        if '○○동' in question:
+            entities.append('○○동')
         if '강남구' in question:
             entities.append('강남구')
         
@@ -474,7 +474,7 @@ class IntelligentQuestionAnalyzer:
     
     def _analyze_spatial_context(self, question: str) -> str:
         """공간적 컨텍스트 분석"""
-        if '개포동' in question or '개포우성' in question:
+        if '○○동' in question or '샘플 프로젝트' in question:
             return 'local'
         elif '강남구' in question:
             return 'district'
@@ -570,7 +570,7 @@ class IntelligentQuestionAnalyzer:
     
     def _analyze_policy_perspective(self, question: str, context: QuestionContext) -> str:
         """정책적 관점 분석"""
-        analysis = "개포우성 재개발 프로젝트의 정책적 관점에서 분석하면, "
+        analysis = "샘플 재개발 프로젝트의 정책적 관점에서 분석하면, "
         
         if '정책' in question or '법규' in question:
             analysis += "현재 추진 중인 정책들이 일관성을 가지고 있는지 검토가 필요합니다. "
@@ -583,7 +583,7 @@ class IntelligentQuestionAnalyzer:
     
     def _analyze_economic_perspective(self, question: str, context: QuestionContext) -> str:
         """경제적 관점 분석"""
-        analysis = "경제적 관점에서 개포우성 재개발 프로젝트를 분석하면, "
+        analysis = "경제적 관점에서 샘플 재개발 프로젝트를 분석하면, "
         
         if '투자' in question or '수익률' in question:
             analysis += "투자 수익률과 경제성을 종합적으로 평가해야 합니다. "
@@ -596,7 +596,7 @@ class IntelligentQuestionAnalyzer:
     
     def _analyze_social_perspective(self, question: str, context: QuestionContext) -> str:
         """사회적 관점 분석"""
-        analysis = "사회적 관점에서 개포우성 재개발 프로젝트를 분석하면, "
+        analysis = "사회적 관점에서 샘플 재개발 프로젝트를 분석하면, "
         
         if '주민' in question or '갈등' in question:
             analysis += "주민들의 의견을 충분히 반영하고 갈등을 최소화하는 것이 중요합니다. "
@@ -609,7 +609,7 @@ class IntelligentQuestionAnalyzer:
     
     def _analyze_technical_perspective(self, question: str, context: QuestionContext) -> str:
         """기술적 관점 분석"""
-        analysis = "기술적 관점에서 개포우성 재개발 프로젝트를 분석하면, "
+        analysis = "기술적 관점에서 샘플 재개발 프로젝트를 분석하면, "
         
         if '기술' in question or '설계' in question:
             analysis += "최신 건축 기술과 친환경 설계를 적용하여 품질을 향상시켜야 합니다. "
@@ -622,7 +622,7 @@ class IntelligentQuestionAnalyzer:
     
     def _analyze_environmental_perspective(self, question: str, context: QuestionContext) -> str:
         """환경적 관점 분석"""
-        analysis = "환경적 관점에서 개포우성 재개발 프로젝트를 분석하면, "
+        analysis = "환경적 관점에서 샘플 재개발 프로젝트를 분석하면, "
         
         if '환경' in question or '녹지' in question:
             analysis += "환경 영향을 최소화하고 녹지 공간을 확보하는 것이 중요합니다. "
@@ -654,7 +654,7 @@ class IntelligentQuestionAnalyzer:
         primary_requirement = requirements[0]
         
         if primary_requirement.requirement_type == 'analysis':
-            return "개포우성 재개발 프로젝트를 종합적으로 분석한 결과, 정책적 안정성, 경제적 수익성, 사회적 수용성을 모두 고려한 균형잡힌 접근이 필요합니다."
+            return "샘플 재개발 프로젝트를 종합적으로 분석한 결과, 정책적 안정성, 경제적 수익성, 사회적 수용성을 모두 고려한 균형잡힌 접근이 필요합니다."
         elif primary_requirement.requirement_type == 'comparison':
             return "비교 분석 결과, 각 방안의 장단점이 명확히 구분되며, 상황과 목적에 따라 최적의 선택이 달라질 수 있습니다."
         elif primary_requirement.requirement_type == 'prediction':
@@ -670,7 +670,7 @@ class IntelligentQuestionAnalyzer:
         
         # 현재 상황 분석
         analysis += "### 1. 현재 상황 분석\n"
-        analysis += "개포우성 재개발 프로젝트는 서울 강남구 개포동 지역의 대규모 재개발 사업으로, "
+        analysis += "샘플 재개발 프로젝트는 서울 강남구 ○○동 지역의 대규모 재개발 사업으로, "
         analysis += "주민, 개발사, 정부 등 다양한 이해관계자가 참여하는 복합적인 프로젝트입니다.\n\n"
         
         # 핵심 이슈 파악
@@ -891,7 +891,7 @@ class IntelligentQuestionAnalyzer:
 if __name__ == "__main__":
     analyzer = IntelligentQuestionAnalyzer()
     
-    test_question = "개포우성 재개발 프로젝트의 투자 가치를 분석해주세요. 주민들의 반응도 함께 고려해서 종합적으로 평가해주시면 감사하겠습니다."
+    test_question = "샘플 재개발 프로젝트의 투자 가치를 분석해주세요. 주민들의 반응도 함께 고려해서 종합적으로 평가해주시면 감사하겠습니다."
     
     result = analyzer.analyze_question_intelligently(test_question)
     

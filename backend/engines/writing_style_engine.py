@@ -1,5 +1,5 @@
 """
-CORBU AI Writing Style Engine - 어투, 말투, 글쓰기 종류별 특성 엔진
+CORBU.AI Writing Style Engine - 어투, 말투, 글쓰기 종류별 특성 엔진
 """
 import re
 import json
@@ -600,7 +600,7 @@ class WritingStyleEngine:
             
             guide_parts.append("")
             guide_parts.append("---")
-            guide_parts.append("*CORBU AI Writing Style Engine이 제공하는 스타일 분석입니다*")
+            guide_parts.append("*CORBU.AI Writing Style Engine이 제공하는 스타일 분석입니다*")
             
             return "\n".join(guide_parts)
             

@@ -46,6 +46,19 @@ export interface QualityMetrics {
     overall: number;
 }
 
+/**
+ * 대화 분석용 AI 응답 타입
+ * 
+ * 주의: 다른 파일에도 AIResponse 타입이 정의되어 있습니다:
+ * - src/types/ai.ts: AI 엔진 분석 결과 포함 (sentiment, intent, context)
+ * - src/types/chat.ts: 대화 UI용 (type, suggestions, actions)
+ * - src/services/integratedAIService.ts: 통합 AI 서비스용 (자체 정의)
+ * - src/services/externalAIService.ts: 외부 AI 서비스용 (provider, cost)
+ * - src/services/aiService.ts: AI 서비스용 (quality 객체)
+ * 
+ * 이 타입은 대화 분석에서 전략(strategy), 품질(quality), 피드백(feedback)을
+ * 포함하는 응답에 사용됩니다.
+ */
 export interface AIResponse {
     id?: string;
     content?: string;

@@ -69,63 +69,27 @@ const MessageAnalytics: React.FC<MessageAnalyticsProps> = ({ sessionId }) => {
 
   if (!analytics) {
     return (
-      <div className="p-6 text-center text-gray-500">
-        <LucideBarChart size={48} className="mx-auto mb-4 text-gray-300" />
+      <div className="bw-empty">
+        <LucideBarChart size={48} className="mx-auto bw-empty-icon" />
         <p>분석할 메시지가 없습니다</p>
       </div>
     );
   }
 
   const stats = [
-    {
-      title: '총 메시지',
-      value: analytics.totalMessages,
-      icon: MessageSquare,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
-    },
-    {
-      title: '사용자 메시지',
-      value: analytics.userMessages,
-      icon: MessageSquare,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      title: 'AI 응답',
-      value: analytics.aiMessages,
-      icon: MessageSquare,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
-    },
-    {
-      title: '북마크',
-      value: analytics.bookmarkedMessages,
-      icon: Bookmark,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50'
-    },
-    {
-      title: '평균 응답시간',
-      value: `${analytics.avgResponseTime}초`,
-      icon: Clock,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50'
-    },
-    {
-      title: '세션 시간',
-      value: `${analytics.sessionDuration}분`,
-      icon: TrendingUp,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50'
-    }
+    { title: '총 메시지', value: analytics.totalMessages, icon: MessageSquare, borderVar: '--accent-info' as const, colorClass: 'bw-text-info' },
+    { title: '사용자 메시지', value: analytics.userMessages, icon: MessageSquare, borderVar: '--accent-success' as const, colorClass: 'bw-text-success' },
+    { title: 'AI 응답', value: analytics.aiMessages, icon: MessageSquare, borderVar: '--accent-secondary' as const, colorClass: 'bw-text-info' },
+    { title: '북마크', value: analytics.bookmarkedMessages, icon: Bookmark, borderVar: '--accent-warning-muted' as const, colorClass: 'bw-text-warning' },
+    { title: '평균 응답시간', value: `${analytics.avgResponseTime}초`, icon: Clock, borderVar: '--accent-error-border' as const, colorClass: 'bw-text-error' },
+    { title: '세션 시간', value: `${analytics.sessionDuration}분`, icon: TrendingUp, borderVar: '--accent-info-muted' as const, colorClass: 'bw-text-info' }
   ];
 
   return (
     <div className="p-6">
       <div className="flex items-center space-x-2 mb-6">
-        <LucideBarChart size={24} className="text-gray-700" />
-        <h3 className="text-lg font-semibold text-gray-900">대화 분석</h3>
+        <LucideBarChart size={24} className="bw-text-primary" />
+        <h3 className="bw-heading-2 mb-0">대화 분석</h3>
       </div>
 
       {/* 통계 카드들 */}
@@ -136,15 +100,16 @@ const MessageAnalytics: React.FC<MessageAnalyticsProps> = ({ sessionId }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className={`p-4 rounded-lg ${stat.bgColor} border border-gray-200`}
+            className="bw-card-secondary p-4"
+            style={{ borderLeftWidth: 4, borderLeftStyle: 'solid', borderLeftColor: `var(${stat.borderVar})` }}
           >
-            <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon size={20} className={stat.color} />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg shrink-0" style={{ background: `var(${stat.borderVar})`, opacity: 0.25 }}>
+                <stat.icon size={20} className={stat.colorClass} />
               </div>
-              <div>
-                <p className="text-sm text-gray-600">{stat.title}</p>
-                <p className="text-lg font-semibold text-gray-900">{stat.value}</p>
+              <div className="min-w-0">
+                <p className="text-sm bw-text-secondary">{stat.title}</p>
+                <p className="text-lg font-semibold bw-text-primary">{stat.value}</p>
               </div>
             </div>
           </motion.div>
@@ -152,21 +117,20 @@ const MessageAnalytics: React.FC<MessageAnalyticsProps> = ({ sessionId }) => {
       </div>
 
       {/* 시간대별 분포 차트 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h4 className="text-sm font-medium text-gray-900 mb-4">시간대별 메시지 분포</h4>
+      <div className="bw-card p-4">
+        <h4 className="bw-card-title-sm">시간대별 메시지 분포</h4>
         <div className="flex items-end space-x-1 h-32">
           {analytics.hourDistribution.map((count, hour) => {
             const maxCount = Math.max(...analytics.hourDistribution);
             const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
-            
             return (
               <div key={hour} className="flex-1 flex flex-col items-center">
-                <div 
-                  className="w-full bg-blue-500 rounded-t transition-all duration-300 hover:bg-blue-600"
-                  style={{ height: `${height}%` }}
+                <div
+                  className="w-full rounded-t transition-all duration-300"
+                  style={{ height: `${height}%`, backgroundColor: 'var(--accent-info)' }}
                   title={`${hour}시: ${count}개 메시지`}
                 />
-                <span className="text-xs text-gray-500 mt-1">{hour}</span>
+                <span className="text-xs bw-text-muted mt-1">{hour}</span>
               </div>
             );
           })}

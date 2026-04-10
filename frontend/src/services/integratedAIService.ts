@@ -1,12 +1,12 @@
-import advancedNLPEngine, { NLPAnalysisResult, ConversationMemory } from './advancedNLPEngine';
-import webSearchIntegrationService, { IntegratedResponse, SearchQuery } from './webSearchIntegrationService';
+import advancedNLPEngine, { NLPAnalysisResult } from './advancedNLPEngine';
+import webSearchIntegrationService, { IntegratedResponse } from './webSearchIntegrationService';
+import { errorLogger, toError } from '../utils/errorLogger';
 import multimodalAIService, { MultimodalInput, MultimodalResponse } from './multimodalAIService';
 import advancedReasoningEngine, { ReasoningResult, ReasoningContext, Solution } from './advancedReasoningEngine';
-import advancedResponseGenerationService, { ResponseGenerationRequest, ResponseGenerationResult } from './advancedResponseGenerationService';
-import advancedLearningRecommendationEngine, { LearningRecommendationRequest, LearningRecommendationResult } from './advancedLearningRecommendationEngine';
-import realTimeAIPerformanceMonitor, { PerformanceMetric } from './realTimeAIPerformanceMonitor';
-import advancedUserExperienceAnalytics, { UserBehaviorPattern, UserEngagementMetrics, UserSatisfactionAnalysis, LearningEffectivenessMetrics } from './advancedUserExperienceAnalytics';
-import advancedAIPsychologyEngine, { EmotionalState, CognitiveLoad, LearningMotivation, StressLevel, PersonalityInsights } from './advancedAIPsychologyEngine';
+import advancedResponseGenerationService, { ResponseGenerationRequest } from './advancedResponseGenerationService';
+import realTimeAIPerformanceMonitor from './realTimeAIPerformanceMonitor';
+import advancedUserExperienceAnalytics from './advancedUserExperienceAnalytics';
+import advancedAIPsychologyEngine from './advancedAIPsychologyEngine';
 import aiCacheManager from './aiCacheManager';
 import realTimeAIAlertSystem from './realTimeAIAlertSystem';
 import aiHealthMonitor from './aiHealthMonitor';
@@ -61,7 +61,7 @@ export interface InputMetadata {
 }
 
 export interface AIContext {
-    conversation_history?: any[];
+    conversation_history?: unknown[];
     current_project?: string;
     user_role?: string;
     domain_context?: string;
@@ -94,15 +94,15 @@ export interface AIResponse {
     success?: boolean;
     model_used?: string;
     personalized?: boolean;
-    learning_insights?: any;
-    alternatives?: any[];
+    learning_insights?: unknown;
+    alternatives?: unknown[];
     follow_up_questions?: string[];
     flags?: string[];
 }
 
 export interface AIResponseContent {
     primary_response: string;
-    structured_data?: any;
+    structured_data?: unknown;
     multimedia_elements?: MultimediaElement[];
     interactive_elements?: InteractiveElement[];
     follow_up_suggestions?: string[];
@@ -116,7 +116,7 @@ export interface MultimediaElement {
     type: 'image' | 'chart' | 'diagram' | 'code' | 'table';
     content: string;
     caption?: string;
-    metadata?: any;
+    metadata?: unknown;
 }
 
 export interface InteractiveElement {
@@ -124,7 +124,7 @@ export interface InteractiveElement {
     id: string;
     label: string;
     action: string;
-    parameters?: any;
+    parameters?: unknown;
 }
 
 export interface ResourceLink {
@@ -242,7 +242,11 @@ class IntegratedAIService {
             const cachedResponse = aiCacheManager.get<AIResponse>(cacheKey);
 
             if (cachedResponse) {
-                console.log(`💾 캐시에서 응답 반환: ${cacheKey}`);
+                errorLogger.info(`💾 캐시에서 응답 반환: ${cacheKey}`, {
+                    component: 'integratedAIService',
+                    action: 'processRequest',
+                    cacheKey,
+                });
                 cachedResponse.processing_time = Date.now() - startTime;
                 cachedResponse.cached = true;
                 return cachedResponse;
@@ -278,8 +282,13 @@ class IntegratedAIService {
             return response;
 
         } catch (error) {
-            console.error('AI processing error:', error);
-            return this.generateErrorResponse(request, error as Error, Date.now() - startTime);
+            const err = toError(error);
+            errorLogger.error('AI processing error', err, {
+                component: 'integratedAIService',
+                action: 'processRequest',
+                requestId: request.id,
+            });
+            return this.generateErrorResponse(request, err, Date.now() - startTime);
         }
     }
 
@@ -365,7 +374,7 @@ class IntegratedAIService {
             results.nlp_analysis = await advancedNLPEngine.analyzeText(
                 request.input.text,
                 request.user_id,
-                request.context
+                request.context as Record<string, unknown> | undefined
             );
         }
 
@@ -374,7 +383,7 @@ class IntegratedAIService {
             const multimodalInputs = this.prepareMultimodalInputs(request.input);
             results.multimodal_analysis = await multimodalAIService.processMultimodalInput(
                 multimodalInputs,
-                request.context
+                request.context as Record<string, unknown> | undefined
             );
         }
 
@@ -498,7 +507,7 @@ class IntegratedAIService {
                 result.search_result = await webSearchIntegrationService.searchAndSynthesize(
                     request.input.text || '',
                     analysis.nlp_analysis,
-                    request.context
+                    request.context as Record<string, unknown> | undefined
                 );
                 processingSteps.push({
                     step: 'web_search',
@@ -709,7 +718,7 @@ class IntegratedAIService {
     }
 
     // 기본 NLP 응답 생성
-    private generateBasicNLPResponse(nlpResult: NLPAnalysisResult, preferences: UserPreferences): string {
+    private generateBasicNLPResponse(nlpResult: NLPAnalysisResult, _preferences: UserPreferences): string {
         const strategy = nlpResult.response_strategy;
 
         let response = '요청을 분석한 결과를 말씀드리겠습니다.\n\n';
@@ -737,8 +746,8 @@ class IntegratedAIService {
     }
 
     // 구조화된 데이터 생성
-    private generateStructuredData(result: ProcessingResult): any {
-        const data: any = {};
+    private generateStructuredData(result: ProcessingResult): Record<string, unknown> | undefined {
+        const data: Record<string, unknown> = {};
 
         if (result.reasoning_result) {
             data.solutions = result.reasoning_result.solutions.map(sol => ({
@@ -846,7 +855,7 @@ class IntegratedAIService {
     // 후속 제안 생성
     private generateFollowUpSuggestions(
         result: ProcessingResult,
-        preferences: UserPreferences
+        _preferences: UserPreferences
     ): string[] {
         const suggestions: string[] = [];
 
@@ -856,11 +865,11 @@ class IntegratedAIService {
         }
 
         if (result.search_result) {
-            suggestions.push(...result.search_result.follow_up_questions.slice(0, 2));
+            suggestions.push(...result.search_result.follow_up_questions);
         }
 
         if (result.multimodal_result) {
-            suggestions.push(...result.multimodal_result.next_steps.slice(0, 2));
+            suggestions.push(...result.multimodal_result.next_steps);
         }
 
         return suggestions.slice(0, 5); // 최대 5개
@@ -875,13 +884,13 @@ class IntegratedAIService {
                 resources.push({
                     title: evidence.title,
                     url: evidence.url,
-                    type: evidence.source_type as any,
+                    type: evidence.source_type as ResourceLink['type'],
                     relevance_score: evidence.relevance_score
                 });
             });
         }
 
-        return resources.slice(0, 10); // 최대 10개
+        return resources;
     }
 
     // 사용된 소스 추출
@@ -942,7 +951,7 @@ class IntegratedAIService {
 
         nextSteps.push('결과에 대한 피드백을 제공하여 개선에 도움을 주세요');
 
-        return nextSteps.slice(0, 5);
+        return nextSteps;
     }
 
     // 후처리 및 학습
@@ -1033,7 +1042,10 @@ class IntegratedAIService {
 
     // 서비스 초기화
     private initializeService(): void {
-        console.log('🚀 통합 AI 서비스 초기화 중...');
+        errorLogger.info('🚀 통합 AI 서비스 초기화 중...', {
+            component: 'integratedAIService',
+            action: 'initializeService',
+        });
 
         try {
             // 캐시 매니저 시작
@@ -1117,10 +1129,17 @@ class IntegratedAIService {
             // AI 리소스 할당 최적화 시스템 시작
             aiResourceAllocationOptimizationSystem.start();
 
-            console.log('🔧 모든 하위 시스템이 시작되었습니다.');
+            errorLogger.info('🔧 모든 하위 시스템이 시작되었습니다.', {
+                component: 'integratedAIService',
+                action: 'initializeService',
+            });
 
         } catch (error) {
-            console.error('❌ 서비스 초기화 오류:', error);
+            const err = toError(error);
+            errorLogger.error('❌ 서비스 초기화 오류', err, {
+                component: 'integratedAIService',
+                action: 'initializeService',
+            });
         }
 
         // 정기적인 캐시 정리 (1시간마다)
@@ -1133,7 +1152,10 @@ class IntegratedAIService {
             this.cleanupInactiveSessions();
         }, 60 * 60 * 1000);
 
-        console.log('✅ 통합 AI 서비스 초기화 완료');
+        errorLogger.info('✅ 통합 AI 서비스 초기화 완료', {
+            component: 'integratedAIService',
+            action: 'initializeService',
+        });
     }
 
     // 캐시 정리
@@ -1244,7 +1266,7 @@ class IntegratedAIService {
     }
 
     // 고급 응답 생성 메서드
-    async generateResponse(userInput: string, context: any): Promise<any> {
+    async generateResponse(userInput: string, context: Record<string, unknown>): Promise<Record<string, unknown>> {
         try {
             const startTime = Date.now();
 
@@ -1254,12 +1276,12 @@ class IntegratedAIService {
             // 2. 응답 생성 요청 구성
             const responseRequest: ResponseGenerationRequest = {
                 user_input: userInput,
-                user_id: context.user_id,
-                session_id: context.session_id,
-                conversation_memory: context.conversation_memory,
-                learning_experience: context.learning_experience,
-                understanding_result: understandingResult,
-                context: context
+                user_id: (context.user_id as string) ?? '',
+                session_id: (context.session_id as string) ?? '',
+                conversation_memory: context.conversation_memory as ResponseGenerationRequest['conversation_memory'],
+                learning_experience: context.learning_experience as ResponseGenerationRequest['learning_experience'],
+                understanding_result: understandingResult as unknown as ResponseGenerationRequest['understanding_result'],
+                context
             };
 
             // 3. 고급 응답 생성
@@ -1282,7 +1304,11 @@ class IntegratedAIService {
             };
 
         } catch (error) {
-            console.error('Advanced response generation error:', error);
+            const err = toError(error);
+            errorLogger.error('Advanced response generation error', err, {
+                component: 'integratedAIService',
+                action: 'advancedResponseGeneration',
+            });
 
             // 폴백 응답
             return {
@@ -1301,7 +1327,7 @@ class IntegratedAIService {
     }
 
     // 고급 질문 이해 메서드
-    private async advancedQuestionUnderstanding(userInput: string): Promise<any> {
+    private async advancedQuestionUnderstanding(userInput: string): Promise<Record<string, unknown>> {
         try {
             // 기본 NLP 분석
             const nlpResult = await advancedNLPEngine.analyzeText(userInput);
@@ -1309,9 +1335,9 @@ class IntegratedAIService {
             // 질문 이해 엔진 사용 (간단한 버전)
             const understanding = {
                 semantic_analysis: {
-                    core_concepts: nlpResult.entities.map((entity: any) => ({
+                    core_concepts: nlpResult.entities.map((entity) => ({
                         concept: entity.text,
-                        type: entity.type,
+                        type: entity.label,
                         confidence: entity.confidence
                     })),
                     domain_classification: {
@@ -1333,7 +1359,11 @@ class IntegratedAIService {
             return understanding;
 
         } catch (error) {
-            console.error('Question understanding error:', error);
+            const err = toError(error);
+            errorLogger.error('Question understanding error', err, {
+                component: 'integratedAIService',
+                action: 'advancedQuestionUnderstanding',
+            });
             return {
                 semantic_analysis: {
                     core_concepts: [],
@@ -1728,7 +1758,12 @@ class IntegratedAIService {
                 priority
             });
 
-            console.log(`💾 응답 캐시 저장: ${cacheKey} (TTL: ${ttl}s)`);
+            errorLogger.info(`💾 응답 캐시 저장: ${cacheKey} (TTL: ${ttl}s)`, {
+                component: 'integratedAIService',
+                action: 'cacheResponse',
+                cacheKey,
+                ttl,
+            });
         }
     }
 
@@ -1810,7 +1845,7 @@ class IntegratedAIService {
     }
 
     // 캐시 통계 가져오기
-    public getCacheStats(): any {
+    public getCacheStats(): unknown {
         return aiCacheManager.getStats();
     }
 
@@ -1833,7 +1868,7 @@ interface SessionData {
     created_at: Date;
     last_activity: Date;
     conversation_count: number;
-    context: any;
+    context: unknown;
     preferences: UserPreferences;
 }
 

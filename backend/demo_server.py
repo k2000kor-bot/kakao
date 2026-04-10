@@ -7,6 +7,7 @@
 - 통합 테스트 API
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -351,11 +352,12 @@ async def demo_available_features():
 
 
 if __name__ == "__main__":
+    _p = int(os.environ.get("DEMO_SERVER_PORT", os.environ.get("PORT", "8002")))
     print("🚀 카카오 AI 메시지 생성 시스템 데모 서버 시작")
     print("=" * 60)
-    print("📍 서버 주소: http://localhost:8002")
-    print("📖 API 문서: http://localhost:8002/docs")
-    print("🎯 데모 페이지: http://localhost:8002/")
+    print(f"📍 서버 주소: http://localhost:{_p}")
+    print(f"📖 API 문서: http://localhost:{_p}/docs")
+    print(f"🎯 데모 페이지: http://localhost:{_p}/")
     print("")
     print("🎭 주요 데모 엔드포인트:")
     print("   POST /demo/all-styles - 모든 정치인 스타일 데모")
@@ -368,6 +370,6 @@ if __name__ == "__main__":
     uvicorn.run(
         app, 
         host="0.0.0.0", 
-        port=8002,
+        port=_p,
         log_level="info"
     ) 

@@ -684,4 +684,10 @@ async def get_all_companies():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8006)
+
+    _cc = int(
+        os.environ.get(
+            "CONSTRUCTION_COMPANY_INFO_PORT", os.environ.get("PORT", "8006")
+        )
+    )
+    uvicorn.run(app, host="0.0.0.0", port=_cc)

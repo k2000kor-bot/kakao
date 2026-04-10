@@ -658,14 +658,15 @@ async def get_analytics_dashboard():
 
 # 서버 실행
 if __name__ == "__main__":
+    _p = int(os.environ.get("SIMPLIFIED_ULTRA_API_PORT", os.environ.get("PORT", "8010")))
     print("🚀 OpenAI 기반 고품질 메시지 생성 서버 시작...")
-    print("📊 API 문서: http://localhost:8010/docs")
+    print(f"📊 API 문서: http://localhost:{_p}/docs")
     print("🔑 OpenAI API 키 설정 상태:", "✅ 설정됨" if os.getenv('OPENAI_API_KEY') else "❌ 미설정")
     
     uvicorn.run(
         "simplified_ultra_api:app",
         host="0.0.0.0",
-        port=8010,
+        port=_p,
         reload=True,
         log_level="info"
     ) 

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI 앱 초기화
 app = FastAPI(
-    title="CORBU AI 통합 채팅 시스템",
+    title="CORBU.AI 통합 대화 시스템",
     description="ChatGPT 스타일의 통합 대화형 AI 시스템",
     version="1.0.0"
 )

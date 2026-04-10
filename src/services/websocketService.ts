@@ -4,6 +4,13 @@
  */
 
 import { errorLogger } from '../utils/errorLogger';
+import {
+  WS_ALERTS_PATH,
+  WS_BASE_URL,
+  WS_CLIENT_GENERIC_PATH,
+  WS_METRICS_PATH,
+  joinApiBaseAndPath,
+} from '../config/api';
 
 export interface SystemMetrics {
   cpu: number;
@@ -48,7 +55,7 @@ export interface PerformanceOptimization {
 export interface WebSocketMessage {
   type: string;
   timestamp: string;
-  data: any;
+  data: unknown;
 }
 
 export class WebSocketService {
@@ -57,16 +64,24 @@ export class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectInterval = 3000;
   private listeners: Map<string, Function[]> = new Map();
-  private isConnected = false;
+  private socketConnected = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.connect();
+    this.establishConnection();
   }
 
-  private connect(): void {
+  /** 이미 OPEN/CONNECTING이면 중복 소켓을 만들지 않음 */
+  private establishConnection(): void {
     try {
-      const wsUrl = 'ws://localhost:8000/ws';
+      if (this.ws !== null) {
+        const rs = this.ws.readyState;
+        if (rs === WebSocket.OPEN || rs === WebSocket.CONNECTING) {
+          return;
+        }
+      }
+
+      const wsUrl = joinApiBaseAndPath(WS_BASE_URL, WS_CLIENT_GENERIC_PATH);
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
@@ -74,7 +89,7 @@ export class WebSocketService {
           component: 'WebSocketService',
           action: 'connect',
         });
-        this.isConnected = true;
+        this.socketConnected = true;
         this.reconnectAttempts = 0;
         this.startHeartbeat();
         this.emit('connected', {});
@@ -97,7 +112,7 @@ export class WebSocketService {
           component: 'WebSocketService',
           action: 'close',
         });
-        this.isConnected = false;
+        this.socketConnected = false;
         this.stopHeartbeat();
         this.emit('disconnected', {});
         this.attemptReconnect();
@@ -175,7 +190,7 @@ export class WebSocketService {
       });
       
       setTimeout(() => {
-        this.connect();
+        this.establishConnection();
       }, this.reconnectInterval);
     } else {
       errorLogger.error('WebSocket 재연결 실패: 최대 시도 횟수 초과', new Error('Max reconnect attempts exceeded'), {
@@ -187,7 +202,7 @@ export class WebSocketService {
     }
   }
 
-  public send(message: any): void {
+  public send(message: unknown): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
@@ -196,6 +211,25 @@ export class WebSocketService {
         action: 'send',
       });
     }
+  }
+
+  /** 훅·UI용: `type`·`data`에 타임스탬프를 붙여 전송 */
+  public sendMessage(message: { type: string; data?: unknown }): void {
+    this.send({
+      type: message.type,
+      timestamp: new Date().toISOString(),
+      data: message.data !== undefined ? message.data : {},
+    });
+  }
+
+  /** 외부에서 재연결·초기 연결 시도(이미 연결 중이면 무시) */
+  public connect(): void {
+    this.establishConnection();
+  }
+
+  /** 연결 여부(내부 플래그; OPEN과 동기화) */
+  public isConnected(): boolean {
+    return this.socketConnected;
   }
 
   public on(event: string, callback: Function): void {
@@ -215,7 +249,7 @@ export class WebSocketService {
     }
   }
 
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => callback(data));
@@ -256,11 +290,11 @@ export class WebSocketService {
       this.ws.close();
       this.ws = null;
     }
-    this.isConnected = false;
+    this.socketConnected = false;
   }
 
   public getConnectionStatus(): boolean {
-    return this.isConnected;
+    return this.socketConnected;
   }
 }
 
@@ -278,7 +312,7 @@ export class MetricsWebSocket {
 
   private connect(): void {
     try {
-      this.ws = new WebSocket('ws://localhost:8000/ws/metrics');
+      this.ws = new WebSocket(joinApiBaseAndPath(WS_BASE_URL, WS_METRICS_PATH));
 
       this.ws.onopen = () => {
         errorLogger.info('메트릭 WebSocket 연결 성공', {
@@ -331,7 +365,7 @@ export class MetricsWebSocket {
     this.listeners.get(event)!.push(callback);
   }
 
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => callback(data));
@@ -356,7 +390,7 @@ export class AlertsWebSocket {
 
   private connect(): void {
     try {
-      this.ws = new WebSocket('ws://localhost:8000/ws/alerts');
+      this.ws = new WebSocket(joinApiBaseAndPath(WS_BASE_URL, WS_ALERTS_PATH));
 
       this.ws.onopen = () => {
         errorLogger.info('알림 WebSocket 연결 성공', {
@@ -409,7 +443,7 @@ export class AlertsWebSocket {
     this.listeners.get(event)!.push(callback);
   }
 
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => callback(data));

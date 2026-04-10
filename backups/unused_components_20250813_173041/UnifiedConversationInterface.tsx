@@ -812,7 +812,7 @@ const UnifiedConversationInterface: React.FC<UnifiedConversationInterfaceProps> 
   // 도움말 명령어 처리
   const handleHelpCommand = async (args: string[]): Promise<string> => {
     if (args.length === 0) {
-      return `🤖 CORBU AI 사용 가능한 명령어:\n\n${systemStatus.availableCommands.map(cmd => `**/${cmd.name}** - ${cmd.description}\n   사용법: ${cmd.usage}`).join('\n\n')}\n\n💡 특정 명령어의 자세한 설명을 보려면: /help [명령어명]`;
+      return `🤖 CORBU.AI 사용 가능한 명령어:\n\n${systemStatus.availableCommands.map(cmd => `**/${cmd.name}** - ${cmd.description}\n   사용법: ${cmd.usage}`).join('\n\n')}\n\n💡 특정 명령어의 자세한 설명을 보려면: /help [명령어명]`;
     }
 
     const commandName = args[0];
@@ -954,16 +954,16 @@ const UnifiedConversationInterface: React.FC<UnifiedConversationInterfaceProps> 
 
     // 감사 표현
     if (lowerQuery.includes('감사') || lowerQuery.includes('고마워') || lowerQuery.includes('thank')) {
-      return '😊 천만에요! CORBU AI가 도움이 되어서 기쁩니다. 더 필요한 것이 있으시면 언제든 말씀해주세요!';
+      return '😊 천만에요! CORBU.AI가 도움이 되어서 기쁩니다. 더 필요한 것이 있으시면 언제든 말씀해주세요!';
     }
 
     // 인사
     if (lowerQuery.includes('안녕') || lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
-      return '👋 안녕하세요! CORBU AI입니다. 무엇을 도와드릴까요?\n\n💡 사용 가능한 기능:\n📁 파일 업로드 및 분석\n📋 프로젝트 관리\n🤖 AI 기능 활용\n🖥️ 시스템 모니터링';
+      return '👋 안녕하세요! CORBU.AI입니다. 무엇을 도와드릴까요?\n\n💡 사용 가능한 기능:\n📁 파일 업로드 및 분석\n📋 프로젝트 관리\n🤖 AI 기능 활용\n🖥️ 시스템 모니터링';
     }
 
     // 기본 응답
-    return `🤔 흥미로운 질문이네요! CORBU AI가 도와드릴 수 있는 기능들이 있습니다:\n\n📁 **파일 관리**: 파일 업로드, 분석, 학습\n📋 **프로젝트 관리**: 프로젝트 생성, 수정, 관리\n🤖 **AI 기능**: 텍스트 분석, 글쓰기, 요약\n🖥️ **시스템 관리**: 상태 확인, 최적화\n\n💡 특정 기능에 대해 알고 싶으시면 "/help"를 입력하세요.`;
+    return `🤔 흥미로운 질문이네요! CORBU.AI가 도와드릴 수 있는 기능들이 있습니다:\n\n📁 **파일 관리**: 파일 업로드, 분석, 학습\n📋 **프로젝트 관리**: 프로젝트 생성, 수정, 관리\n🤖 **AI 기능**: 텍스트 분석, 글쓰기, 요약\n🖥️ **시스템 관리**: 상태 확인, 최적화\n\n💡 특정 기능에 대해 알고 싶으시면 "/help"를 입력하세요.`;
   };
 
   // 고급 인사이트 생성

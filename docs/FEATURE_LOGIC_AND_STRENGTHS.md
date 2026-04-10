@@ -1,4 +1,4 @@
-# CORBU AI 기능 로직 및 강점 파악
+# CORBU.AI 기능 로직 및 강점 파악
 
 **목적**: 기존 기능과 강점이 제대로 발휘되도록, 시스템의 **실제 동작 흐름**과 **의존 관계**를 정확히 파악한 문서입니다.
 
@@ -8,7 +8,7 @@
 
 ### 1.1 백엔드 서버 (두 가지 진입점)
 
-| 서버 | 진입 스크립트 | 포트 | 채팅 API | 스트리밍 | 비고 |
+| 서버 | 진입 스크립트 | 포트 | 대화 API | 스트리밍 | 비고 |
 |------|----------------|------|----------|----------|------|
 | **통합 풀스택** | `main_server.py` | **8000** | ✅ `/api/chat`, `/api/chat/stream` | ✅ | **고급 기능 전부 사용** (권장) |
 | **간이 API** | `app.py` ← `start.sh` | 5001 | ✅ `/api/chat`, `/chat` | ❌ | LLM 또는 간단 폴백만 |
@@ -17,19 +17,19 @@
 - **`RUN_GUIDE.md`** 등 문서는 **`main_server.py`** (8000) 기준으로 설명.
 - **프론트 config** (`src/config/api.ts`): 기본 `localhost:8000`, 5001 등은 “잘못된 포트”로 취급해 8000으로 우회.
 
-**정리**: **고급 채팅·스트리밍·지식·웹검색·고급 AI 엔진**을 쓰려면 **반드시 `main_server`(8000)** 를 띄워야 합니다.
+**정리**: **고급 대화·스트리밍·지식·웹검색·고급 AI 엔진**을 쓰려면 **반드시 `main_server`(8000)** 를 띄워야 합니다.
 
 ### 1.2 프론트엔드
 
 - **메인 UI**: `App.tsx` → `ChatGPTInterface` (일부 `ChatGPTInterfaceSimple`).
-- **채팅 전송**:
+- **대화 전송**:
   - **스트리밍**: `streamChatMessage()` → `POST /api/chat/stream` → 404 시 `POST /api/unified/chat/stream`.
   - **비스트리밍** (재생성·편집 후 전송 등): `POST /api/chat`.
 - **API base**: `config/api.ts` → `API_BASE_URL` (기본 `http://localhost:8000`).
 
 ---
 
-## 2. 채팅 응답 생성 파이프라인 (핵심 로직)
+## 2. 대화 응답 생성 파이프라인 (핵심 로직)
 
 ### 2.1 실제 사용 경로
 
@@ -84,7 +84,7 @@
   **IntelligentResponseEngine** 사용 가능 시 우선 호출 →  
   실패 시 `_generate_response` (의도·감정별 템플릿) 폴백.
 - **캐시**: 동일 메시지+quality에 대해 결과 캐시 (최대 100개).
-- **현재**: `main_server` 통합 스택에서는 **`unified_chat_api`** 가 채팅을 담당하므로, **실제 프로덕션 채팅**은 2.2 파이프라인이 우선됩니다.
+- **현재**: `main_server` 통합 스택에서는 **`unified_chat_api`** 가 대화을 담당하므로, **실제 프로덕션 대화**은 2.2 파이프라인이 우선됩니다.
 
 ---
 
@@ -113,7 +113,7 @@
 
 - **프론트**: `projectService`, `chatService`, `messageService` (localStorage 폴백), Redux(`projectsSlice`, `sessionsSlice`).
 - **백엔드**: `project_session_api` 등.
-- **채팅과의 연결**: `conversation_id`, `context.projectId` 등으로 **대화별·프로젝트별** 컨텍스트 전달.
+- **대화과의 연결**: `conversation_id`, `context.projectId` 등으로 **대화별·프로젝트별** 컨텍스트 전달.
 
 ---
 
@@ -121,7 +121,7 @@
 
 | 영역 | 강점 | 발휘 조건 |
 |------|------|-----------|
-| **채팅 품질** | MD QA → 혁신 답변 엔진 → 고급 AI → 지식 → LLM → 폴백 다단계 파이프라인 | `main_server`(8000) 기동 |
+| **대화 품질** | MD QA → 혁신 답변 엔진 → 고급 AI → 지식 → LLM → 폴백 다단계 파이프라인 | `main_server`(8000) 기동 |
 | **실시간 UX** | SSE 스트리밍 (`/api/chat/stream`) | 8000 + 프론트 `streamChatMessage` 사용 |
 | **의도·감정 반영** | 감정/의도 분석 + 고급 AI 엔진의 전략적 응답 | 동일 |
 | **문서·도메인** | MD 기반 QA, 도메인 지식 주입 | 8000, 문서/지식 설정 유효 |
@@ -134,7 +134,7 @@
 
 ### 5.1 백엔드 서버 선택
 
-- **고급 채팅·스트리밍·지식·웹검색**을 쓰려면:
+- **고급 대화·스트리밍·지식·웹검색**을 쓰려면:
   - **`main_server`(8000)** 를 띄우고,
   - `start_all.sh`가 `app.py`(5001)만 띄우지 않도록, **실행 스크립트를 `main_server` 기준으로 통일**하는 것이 좋습니다.
 
@@ -143,7 +143,7 @@
 - `API_BASE_URL`이 **8000**을 가리키는지 확인 (`config/api.ts`, `REACT_APP_API_URL`).
 - 스트리밍 사용 시 `streamChatMessage` → `/api/chat/stream` 호출이 유지되는지 확인.
 
-### 5.3 채팅 플로우 점검
+### 5.3 대화 플로우 점검
 
 1. **스트리밍**  
    - `useStreaming` 등으로 스트리밍 모드 켜짐 → `streamChatMessage` → `POST /api/chat/stream` (8000).
@@ -164,12 +164,12 @@
 | 역할 | 경로 |
 |------|------|
 | 통합 서버 (권장) | `backend/main_server.py` |
-| 통합 채팅 API | `backend/api/unified_chat_api.py` |
+| 통합 대화 API | `backend/api/unified_chat_api.py` |
 | 고급 AI 엔진 | `backend/api/intelligent_response_engine.py` |
-| 간이 채팅 (5001) | `backend/app.py` |
+| 간이 대화 (5001) | `backend/app.py` |
 | Flask 단순 통합 | `backend/api/main.py` |
 | 스트리밍 클라이언트 | `src/utils/streamingClient.ts` |
-| 채팅 UI | `src/components/ChatGPTInterface.tsx` |
+| 대화 UI | `src/components/ChatGPTInterface.tsx` |
 | API 설정 | `src/config/api.ts` |
 
 ---

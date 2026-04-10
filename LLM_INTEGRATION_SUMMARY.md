@@ -38,7 +38,7 @@
 ### 5단계: 백엔드 통합 ✅
 
 - ✅ `app.py`에 LLM 서비스 통합
-- ✅ 채팅 API 개선
+- ✅ 대화 API 개선
 - ✅ 에러 처리
 - ✅ 폴백 모드 지원
 
@@ -132,7 +132,7 @@ python app.py
 ### 4. 테스트
 
 ```bash
-curl -X POST http://localhost:5001/api/chat \
+curl -X POST http://localhost:5002/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "안녕하세요",

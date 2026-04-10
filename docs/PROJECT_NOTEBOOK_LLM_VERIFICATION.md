@@ -12,10 +12,10 @@
 3. **생성** 클릭
 4. **백엔드 확인** (선택):
    - 프로젝트 ID 확인 (예: 개발자 도구 Network 탭 또는 프로젝트 목록에서)
-   - `GET http://localhost:8000/api/projects/{project_id}/notebook-context` 호출
+   - `GET http://localhost:5002/api/projects/{project_id}/notebook-context` 호출
    - 응답에서 `data.has_context === true`, `data.context`에 설명·가이드라인 문구 포함 여부 확인
 
-### 1-2. 채팅 시 프로젝트 컨텍스트 반영
+### 1-2. 대화 시 프로젝트 컨텍스트 반영
 1. 방금 만든 **검증용 프로젝트** 선택
 2. **새 대화**에서 질문 입력: `이 프로젝트의 목적이 뭔가요?` 또는 `재건축 관련해서 간단히 조언해 줘요.`
 3. **확인할 점**:
@@ -24,7 +24,7 @@
 
 ### 1-3. 프로젝트 수정 시 컨텍스트 갱신
 1. 해당 프로젝트 **설정/수정**에서 설명 또는 가이드라인 변경
-2. 동일 프로젝트로 채팅 시 변경된 내용이 반영되는지 확인
+2. 동일 프로젝트로 대화 시 변경된 내용이 반영되는지 확인
 
 ---
 
@@ -32,7 +32,7 @@
 
 ```bash
 # 1) 프로젝트 생성 (가이드라인 포함)
-RES=$(curl -s -X POST http://localhost:8000/api/projects \
+RES=$(curl -s -X POST http://localhost:5002/api/projects \
   -H "Content-Type: application/json" \
   -d '{
     "name": "curl 검증 프로젝트",
@@ -47,19 +47,19 @@ echo "$RES" | python3 -m json.tool
 # 또는 응답에서 id를 복사 후:
 
 # 3) 노트북 컨텍스트 조회 (PROJECT_ID를 위에서 확인한 값으로 교체)
-curl -s "http://localhost:8000/api/projects/PROJECT_ID/notebook-context" | python3 -m json.tool
+curl -s "http://localhost:5002/api/projects/PROJECT_ID/notebook-context" | python3 -m json.tool
 # 기대: success: true, data.has_context: true, data.context에 설명·가이드라인 포함
 
 # 4) 노트북 LLM 상태 (프로젝트에 학습 소스가 있으면 available: true)
-curl -s "http://localhost:8000/api/projects/PROJECT_ID/notebook-llm/status" | python3 -m json.tool
+curl -s "http://localhost:5002/api/projects/PROJECT_ID/notebook-llm/status" | python3 -m json.tool
 
 # 5) 노트북 LLM 생성 (프롬프트에 대한 답변)
-curl -s -X POST "http://localhost:8000/api/projects/PROJECT_ID/notebook-llm/generate" \
+curl -s -X POST "http://localhost:5002/api/projects/PROJECT_ID/notebook-llm/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt": "요약해줘", "context": null}' | python3 -m json.tool
 
 # 6) 노트북 LLM 스트리밍 (NDJSON)
-curl -s -X POST "http://localhost:8000/api/projects/PROJECT_ID/notebook-llm/stream" \
+curl -s -X POST "http://localhost:5002/api/projects/PROJECT_ID/notebook-llm/stream" \
   -H "Content-Type: application/json" \
   -d '{"prompt": "요약해줘", "context": null}'
 # 기대: 각 줄이 JSON ({"content": "청크", "done": false} 또는 {"content": "", "done": true})
@@ -69,7 +69,7 @@ curl -s -X POST "http://localhost:8000/api/projects/PROJECT_ID/notebook-llm/stre
 
 ## 3. 자동 테스트 (백엔드)
 
-프로젝트 생성 시 노트북 컨텍스트 저장·조회·**채팅 시 컨텍스트 반영**은 `backend/tests/test_project_session_api.py`의 **TestProjectNotebookContext**에서 자동 검증합니다.
+프로젝트 생성 시 노트북 컨텍스트 저장·조회·**대화 시 컨텍스트 반영**은 `backend/tests/test_project_session_api.py`의 **TestProjectNotebookContext**에서 자동 검증합니다.
 
 ```bash
 cd backend
@@ -99,7 +99,7 @@ pytest tests/test_project_session_api.py::TestProjectNotebookContext -v
 | 현상 | 확인 항목 |
 |------|-----------|
 | `GET /notebook-context`가 항상 `has_context: false` | 프로젝트 생성 시 백엔드에서 `save_project_notebook_context` 호출 여부, `project_data/project_knowledge/{id}.json` 파일 생성 여부 |
-| 채팅 시 프로젝트 정보가 반영되지 않음 | 스트리밍/비스트리밍 요청의 `context`에 `projectId` 포함 여부, 백엔드 `generate_chat_response`에서 `projectKnowledge` 로드·주입 여부 |
+| 대화 시 프로젝트 정보가 반영되지 않음 | 스트리밍/비스트리밍 요청의 `context`에 `projectId` 포함 여부, 백엔드 `generate_chat_response`에서 `projectKnowledge` 로드·주입 여부 |
 | 프론트에서 가이드라인을 못 넣음 | `ProjectCreationModal` 사용 여부, `createProject` 호출 시 `initialGuidelines` 전달 여부 |
 
 관련 구현: `docs/PROJECT_NOTEBOOK_LLM_DEV_PLAN.md`, `docs/PROJECT_NOTEBOOK_LLM_USER_GUIDE.md`

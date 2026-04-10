@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-카카오톡 채팅 대응 API 서버
+카카오톡 대화 대응 API 서버
 """
 
 from fastapi import FastAPI, HTTPException
@@ -15,13 +15,14 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from simplified_ultra_message_system import SimplifiedMessageGenerator, SimplifiedEmotionAnalysis, EmotionType
+from cors_config import get_cors_allow_origins
 
-app = FastAPI(title="카카오톡 채팅 API", version="1.0.0")
+app = FastAPI(title="카카오톡 대화 API", version="1.0.0")
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=get_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,8 +84,10 @@ async def generate_message(request: ChatRequest):
 @app.get("/api/v8/health")
 async def health_check():
     """헬스 체크"""
-    return {"status": "healthy", "message": "카카오톡 채팅 API가 정상적으로 작동 중입니다."}
+    return {"status": "healthy", "message": "카카오톡 대화 API가 정상적으로 작동 중입니다."}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8003) 
+
+    _p = int(os.environ.get("KAKAO_CHAT_API_PORT", os.environ.get("PORT", "8003")))
+    uvicorn.run(app, host="0.0.0.0", port=_p) 
