@@ -4,6 +4,22 @@
 
 이 가이드는 백엔드와 프론트엔드 간의 통신을 검증하는 통합 테스트 방법을 설명합니다.
 
+프론트 **메뉴·경로**를 바꿀 때는 [src/config/README.md](src/config/README.md)의 `name`·`getPageTitle`(**`/projects/:id` → 프로젝트 대화** 등)·[TESTING_GUIDE.md](TESTING_GUIDE.md) `routes.test`·[e2e/README.md](e2e/README.md)·[AGENTS.md](AGENTS.md)와 동기하는 것이 좋습니다.
+
+**프론트 유닛(백엔드 없이, 통합 전 점검)**: `npm run test:routes`(**27**)·`npm run test:app-unified`(**115**, 수 초대) — [TESTING_GUIDE.md](TESTING_GUIDE.md) 주요 검증 표.
+
+**보조 CRA `frontend/src/`**: 루트 `src/`와 바이트 맞춤은 **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**; `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`)). `chatInputUtils.ts`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](QUICK_REFERENCE.md)·[AGENTS.md](AGENTS.md)·[scripts/README.md](scripts/README.md).
+
+**NotebookLM·문서 허브·통합·로컬**: [docs/README.md](docs/README.md) §NotebookLM·§개발 **통합·로컬**·[INTEGRATION_TEST_GUIDE.md](INTEGRATION_TEST_GUIDE.md)·[docs/LOCAL_ACCESS_GUIDE.md](docs/LOCAL_ACCESS_GUIDE.md)·[QUICK_REFERENCE.md](QUICK_REFERENCE.md)·[AGENTS.md](AGENTS.md)·[scripts/README.md](scripts/README.md) — [docs/FEATURE_LOGIC_AND_STRENGTHS.md](docs/FEATURE_LOGIC_AND_STRENGTHS.md) §6 **통합 테스트·INTEGRATION_TEST_GUIDE(루트)·로컬 접속·LOCAL_ACCESS_GUIDE(docs)** 행 · §6 **개발 연속성·DEVELOPMENT_CONTINUITY(docs)·경로·뷰** 행 · §6 **개발 요약·개발자 체크리스트(docs)** 행 · §6 **컴포넌트 아키텍처·COMPONENT_ARCHITECTURE(docs)·라우트→뷰** 행 · §6 **config README·routes.ts(src/config)·프로젝트 대화** 행 · §6 **테스트 가이드·TESTING_GUIDE(루트)·API(docs)** 행 · §6 **스크립트 허브·scripts/README(루트)·dev/deploy(docs)** 행 · [docs/NOTEBOOKLM_FEATURE_ROADMAP.md](docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4 **통합 테스트·로컬 접속** · §4 **에이전트 가이드** · §4 **config README(`routes.ts`)** · §4 **라우트·컴포넌트 매핑** · §6 **Agent / AI 개발 가이드** 행 · §6 **일상 개발·DEVELOPMENT(루트)** 행 · §6 **검증·빠른 참조·QUICK_REFERENCE(루트)** 행 · 동 허브 **개발·개발 연속성** 표 `INTEGRATION_TEST_GUIDE` 행 · [TESTING_GUIDE.md](TESTING_GUIDE.md) `routes.test` · [e2e/README.md](e2e/README.md)·[docs/COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md)·[docs/FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)·표 행과 교차
+
+**로컬 UI 스모크 체크리스트**: [docs/LOCAL_UI_SMOKE_CHECKLIST.md](docs/LOCAL_UI_SMOKE_CHECKLIST.md)
+
+**실행 가이드·접속 문제(루트)**: (본 문서 **통합 테스트**·curl·`test_integration`·`verify:final` 연계) · [RUN_GUIDE.md](RUN_GUIDE.md)·[CONNECT.md](CONNECT.md) — [QUICK_REFERENCE.md](QUICK_REFERENCE.md)·[AGENTS.md](AGENTS.md)·[scripts/README.md](scripts/README.md)·[docs/FEATURE_LOGIC_AND_STRENGTHS.md](docs/FEATURE_LOGIC_AND_STRENGTHS.md) §6 · [docs/NOTEBOOKLM_FEATURE_ROADMAP.md](docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4 **에이전트 가이드** · §4 **config README(`routes.ts`)** · §4 **라우트·컴포넌트 매핑** · §4 **통합 테스트·로컬 접속** · [docs/COMPONENT_ARCHITECTURE.md](docs/COMPONENT_ARCHITECTURE.md) §1.1 · [USAGE_GUIDE.md](USAGE_GUIDE.md) §11 · [docs/LOCAL_ACCESS_GUIDE.md](docs/LOCAL_ACCESS_GUIDE.md)·[SYSTEM_READY.md](SYSTEM_READY.md) §빠른 참조 · [DEVELOPMENT.md](DEVELOPMENT.md) §2 · [README.md](README.md)·[docs/README.md](docs/README.md) §NotebookLM·§개발 **통합·로컬** · 표 행과 교차
+
+## 배포 직전 풀 스택 (선택)
+
+통합 테스트에 더해 **import 검사·빌드·접속·API·통합·대화 Jest·UI 스모크**까지 한 번에 보려면 프로젝트 루트에서 **`npm run verify:final`** (`scripts/final-verify.sh`). UI 스모크만 순차 Jest: **`npm run verify:final:sequential-smoke`**. 절차·CI 요약: [docs/FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md).
+
 ## 📋 사전 준비
 
 ### 1. 백엔드 실행

@@ -3,6 +3,13 @@
 **실행 위치**: 아래 모든 명령은 **`package.json`이 있는 폴더**에서 실행하세요.  
 (이 파일과 같은 폴더 = `kakao-frontend/kakao-frontend`)
 
+**배포 직전 풀 검증(선택)**: 같은 폴더에서 `npm run verify:final` — [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)
+
+**로컬 UI 스모크 체크리스트**: [docs/LOCAL_UI_SMOKE_CHECKLIST.md](docs/LOCAL_UI_SMOKE_CHECKLIST.md)
+
+
+**보조 CRA `frontend/src/`** (루트 `src/` 미러): 루트 **`src/`**를 고친 뒤 저장소 루트에서 **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**; `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`)). `chatInputUtils.ts`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](QUICK_REFERENCE.md)·[AGENTS.md](AGENTS.md)·[scripts/README.md](scripts/README.md).
+
 ---
 
 ## 1. 한 번에 실행 (권장)

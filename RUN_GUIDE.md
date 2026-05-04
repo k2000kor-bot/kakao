@@ -21,6 +21,12 @@ npm start
 - 기본 포트는 `main_server`의 **`API_PORT` / `PORT` 환경변수**, 미설정 시 **5002**입니다.
 - 상세: **[docs/setup/PYTHON_VENV.md](./docs/setup/PYTHON_VENV.md)**, **[CONNECT.md](./CONNECT.md)**  
 - **기능 로직·파이프라인**은 **[기능 로직 및 강점](./docs/FEATURE_LOGIC_AND_STRENGTHS.md)** 참고.
+- **배포 직전 풀 검증(선택)**: 루트에서 **`npm run verify:final`** · 순차 UI 스모크 **`npm run verify:final:sequential-smoke`** — [docs/FINAL_CHECKLIST.md](./docs/FINAL_CHECKLIST.md).
+- **마무리·완성도 검증**: **`npm run verify:completion`** — [docs/COMPLETION_CHECKLIST.md](./docs/COMPLETION_CHECKLIST.md) (서두 **NotebookLM·문서 허브·통합·로컬**·**실행 가이드·접속 문제(루트)** · `FEATURE_LOGIC` §6 **완성 체크리스트·COMPLETION_CHECKLIST(docs)**) · 표 행과 교차.
+
+**NotebookLM·문서 허브·통합·로컬**: [docs/README.md](./docs/README.md) §NotebookLM·§개발 **통합·로컬**·[INTEGRATION_TEST_GUIDE.md](./INTEGRATION_TEST_GUIDE.md)·[docs/LOCAL_ACCESS_GUIDE.md](./docs/LOCAL_ACCESS_GUIDE.md)·[RUN_GUIDE.md](./RUN_GUIDE.md)·[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md) — [기능 로직 및 강점](./docs/FEATURE_LOGIC_AND_STRENGTHS.md) §6 **통합 테스트·INTEGRATION_TEST_GUIDE(루트)·로컬 접속·LOCAL_ACCESS_GUIDE(docs)** 행 · §6 **개발 연속성·DEVELOPMENT_CONTINUITY(docs)·경로·뷰** 행 · §6 **개발 요약·개발자 체크리스트(docs)** 행 · §6 **컴포넌트 아키텍처·COMPONENT_ARCHITECTURE(docs)·라우트→뷰** 행 · §6 **config README·routes.ts(src/config)·프로젝트 대화** 행 · §6 **Agent / AI 개발 가이드** 행 · §6 **앱 실행·RUN_GUIDE(루트)** 행 · §6 **검증·빠른 참조·QUICK_REFERENCE(루트)** 행 · §6 **테스트 가이드·TESTING_GUIDE(루트)·API(docs)** 행 · [TESTING_GUIDE.md](./TESTING_GUIDE.md) 서두 **NotebookLM·문서 허브·통합·로컬** 교차 · §6 **E2E 가이드·e2e/README(루트)·경로 허브(docs)** 행 · [e2e/README.md](./e2e/README.md) 서두 **NotebookLM·문서 허브·통합·로컬** 교차 · §6 **스크립트 허브·scripts/README(루트)·dev/deploy(docs)** 행 · [scripts/README.md](./scripts/README.md) 서두 **NotebookLM·문서 허브·통합·로컬** 교차 · [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) 서두 **검증·실행·접속(루트)** · [NotebookLM 기능 로드맵](./docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4 **에이전트 가이드** · §4 **config README(`routes.ts`)** · §4 **라우트·컴포넌트 매핑** · 동 허브 **NotebookLM·문서 허브·통합·로컬** 표 `RUN_GUIDE` 행 · **`/projects/:id`·`name`/`getPageTitle`**: [src/config/README.md](./src/config/README.md)·[AGENTS.md](./AGENTS.md)·[TESTING_GUIDE.md](./TESTING_GUIDE.md) `routes.test` · [e2e/README.md](./e2e/README.md)·백엔드 venv·macOS: [docs/setup/PYTHON_VENV.md](./docs/setup/PYTHON_VENV.md)·[docs/setup/MACOS_DEV_QUICKSTART.md](./docs/setup/MACOS_DEV_QUICKSTART.md)·§6 **완성 체크리스트·COMPLETION_CHECKLIST(docs)** 행 · [docs/COMPLETION_CHECKLIST.md](./docs/COMPLETION_CHECKLIST.md) 서두 **NotebookLM·문서 허브·통합·로컬** 교차 · §6 **배포·풀 스택 체크리스트(docs)** 행 · [docs/FINAL_CHECKLIST.md](./docs/FINAL_CHECKLIST.md) 서두 **실행 가이드·접속 문제(루트)** · 표 행과 교차
+
+**실행 가이드·접속 문제(루트)**: [RUN_GUIDE.md](./RUN_GUIDE.md) (위 **빠른 시작** 절·백엔드·프론트 **기동**) · [CONNECT.md](./CONNECT.md) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md)·[기능 로직 및 강점](./docs/FEATURE_LOGIC_AND_STRENGTHS.md) §6 · [NotebookLM 기능 로드맵](./docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4 **에이전트 가이드** · §4 **config README(`routes.ts`)** · §4 **라우트·컴포넌트 매핑** · §4 **앱 기동·RUN_GUIDE(루트)** · §4 **접속·CONNECT(루트)** · §4 **통합 테스트·로컬 접속** · [USAGE_GUIDE.md](./USAGE_GUIDE.md) §11 · [컴포넌트 아키텍처](./docs/COMPONENT_ARCHITECTURE.md) §1.1 · [QUICK_START.md](./QUICK_START.md)·[README_FIRST.md](./README_FIRST.md)·[START_HERE.md](./START_HERE.md)·[DEVELOPMENT_CONTINUITY.md](./docs/DEVELOPMENT_CONTINUITY.md) §1·§2 · [SYSTEM_READY.md](./SYSTEM_READY.md) §빠른 참조 · [DEVELOPMENT.md](./DEVELOPMENT.md) §2 · [README.md](./README.md)·[TESTING_GUIDE.md](./TESTING_GUIDE.md)·[e2e/README.md](./e2e/README.md)·[docs/COMPLETION_CHECKLIST.md](./docs/COMPLETION_CHECKLIST.md)(`verify:completion`) · [docs/FINAL_CHECKLIST.md](./docs/FINAL_CHECKLIST.md)(`verify:final`) · 표 행과 교차
 
 **대안** (uvicorn 직접):
 
@@ -50,6 +56,10 @@ chmod +x start_all.sh
 | **API 문서 (ReDoc)** | http://localhost:5002/api/redoc | 대안 API 문서 |
 | **헬스 체크** | http://localhost:5002/api/health | 서버 상태 확인 |
 
+### 앱 메뉴·경로 (요약)
+
+프론트(**3000**)는 `AppUnified` 기준으로 **`/agents`** · **`/`** · **`/chat`** 등(독립 대화) · **`/projects`** · **`/projects/:id`**(NotebookLM — 탭 제목 `getPageTitle`·`routes.ts` **name** → **프로젝트 대화**, [src/config/README.md](./src/config/README.md)) · **`/voice-generation`**(목소리 생성) 등이 쓰이며, **`/simple`·`/features`·`/notebook`** 등 구 URL은 **`/chat`·`/projects`·`/voice-generation`** 등으로 리다이렉트될 수 있습니다 — [USAGE_GUIDE.md](./USAGE_GUIDE.md) §1.2 · [DEVELOPMENT.md](./DEVELOPMENT.md)·라우트 [AGENTS.md](./AGENTS.md)·점검 [TESTING_GUIDE.md](./TESTING_GUIDE.md) `routes.test` · E2E [e2e/README.md](./e2e/README.md)·문서 표 [docs/README.md](./docs/README.md)(§NotebookLM·§개발 **통합·로컬**) · [INTEGRATION_TEST_GUIDE.md](./INTEGRATION_TEST_GUIDE.md)·[docs/LOCAL_ACCESS_GUIDE.md](./docs/LOCAL_ACCESS_GUIDE.md).
+
 ### 네트워크 접속 (같은 LAN 내 다른 기기)
 
 `.env.local`에 `HOST=0.0.0.0`, `DANGEROUSLY_DISABLE_HOST_CHECK=true`가 있으면,  
@@ -59,6 +69,8 @@ chmod +x start_all.sh
 - 예: `http://192.168.0.117:3000` (이 PC의 로컬 IP는 터미널에서 `ipconfig getifaddr en0` 등으로 확인).
 
 ## ✅ 실행 확인
+
+로컬 UI 동작을 단계별로 점검하려면 [docs/LOCAL_UI_SMOKE_CHECKLIST.md](./docs/LOCAL_UI_SMOKE_CHECKLIST.md)를 함께 확인하세요.
 
 ### 1. 백엔드 확인
 
@@ -97,10 +109,11 @@ curl -X POST http://localhost:5002/api/chat \
   -d '{"message": "안녕하세요", "quality": "enhanced"}'
 ```
 
-### 5. 프로젝트별 노트북 LLM (선택)
+### 5. 프로젝트별 NotebookLM (선택)
 
 - 프로젝트 생성 시 **이름·설명·태그·가이드라인**을 입력하면 해당 프로젝트로 대화할 때 AI가 이 정보를 반영해 답변합니다.
-- 사용법: [프로젝트별 노트북 LLM 사용 가이드](./docs/PROJECT_NOTEBOOK_LLM_USER_GUIDE.md)  
+- 사용법: [프로젝트별 구글 노트북 LM 스타일 사용 가이드](./docs/PROJECT_NOTEBOOK_LLM_USER_GUIDE.md)  
+- 화면·Phase·엔진: [NotebookLM 기능 로드맵](./docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4·§4.1 · NotebookLM API·pytest: [기능 로직 및 강점](./docs/FEATURE_LOGIC_AND_STRENGTHS.md) §5.5·§6 · 표 행과 교차  
 - 검증: `cd backend && python3 -m pytest tests/test_project_session_api.py::TestProjectNotebookContext -v`
 
 ## 🔧 문제 해결
@@ -174,6 +187,10 @@ python3 -m pytest tests/ -v
 npm test
 ```
 
+**빠른 일부 스위트** (백엔드 없이): `npm run test:routes`(**27**) · `npm run test:app-unified`(**115**, 수 초대) · `npm run test:chatgpt-interface:quick` / `npm run test:chatgpt-interface:genspark` — [TESTING_GUIDE.md](./TESTING_GUIDE.md) 주요 검증 표.
+
+**보조 CRA `frontend/src/`** (루트 `src/`와 바이트 동기): **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**) — 루트 `npm test`의 `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`) 전제. `chatInputUtils.ts`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md).
+
 ### E2E 테스트 (Playwright)
 
 **방법 1 – webServer 자동 기동** (CRA 컴파일이 오래 걸리면 300s 타임아웃에 걸릴 수 있음)
@@ -198,6 +215,8 @@ npm run test:e2e:no-server
 ```
 
 `E2E_SERVER_READY=1`이면 webServer를 띄우지 않고 `baseURL`(localhost:3000)만 사용합니다.
+
+**경로 동기**: [e2e/paths.ts](./e2e/paths.ts)는 [src/config/routes.ts](./src/config/routes.ts)와 맞춥니다. **`name`·`getPageTitle` → 프로젝트 대화**는 [src/config/README.md](./src/config/README.md) 표·[USAGE_GUIDE.md](./USAGE_GUIDE.md) §1.2와 동일 문자열로 유지하고, Jest는 [TESTING_GUIDE.md](./TESTING_GUIDE.md) `routes.test`·`npm run test:routes`·`npm run test:app-unified`·가이드는 [e2e/README.md](./e2e/README.md)를 참고하세요.
 
 ## 📚 상세 가이드
 

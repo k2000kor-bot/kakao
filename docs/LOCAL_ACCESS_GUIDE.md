@@ -2,10 +2,18 @@
 
 **⚠️ 중요**: `npm run restart`, `npm start`, `npm run restart:backend` 는 **반드시 `package.json`이 있는 폴더**에서 실행하세요.
 
+**로컬 UI 스모크 체크리스트**: [LOCAL_UI_SMOKE_CHECKLIST.md](./LOCAL_UI_SMOKE_CHECKLIST.md)
+
 - **올바른 경로**: `kakao-frontend/kakao-frontend` (안쪽 폴더).  
   상위 폴더(`kakao-frontend`만)에서 실행하면 `ENOENT (package.json)` 이 납니다.
 - 예: 워크스페이스가 `/Users/본인/kakao-frontend` 이면 →  
   `cd kakao-frontend/kakao-frontend` 후 `npm start` / `npm run restart:backend` 실행.
+
+- **보조 CRA `frontend/src/`** (개발자): 루트 **`src/`**가 캐논입니다. `npm test`·`pretest` 전에 **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**; `pretest`·`check:src-frontend-parity`(동일: **`make check-frontend-parity`**))로 `frontend/src/`와 맞추고, `chatInputUtils.ts`만 바꿨다면 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**); 통합 대화(UI) 등 부분은 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](../QUICK_REFERENCE.md)·[AGENTS.md](../AGENTS.md)·[scripts/README.md](../scripts/README.md).
+
+**NotebookLM·문서 허브·통합·로컬**: [README.md](./README.md) §NotebookLM·§개발 **통합·로컬**·[INTEGRATION_TEST_GUIDE.md](../INTEGRATION_TEST_GUIDE.md)·[LOCAL_ACCESS_GUIDE.md](./LOCAL_ACCESS_GUIDE.md)·[QUICK_REFERENCE.md](../QUICK_REFERENCE.md)·[AGENTS.md](../AGENTS.md)·[scripts/README.md](../scripts/README.md) — [FEATURE_LOGIC_AND_STRENGTHS.md](./FEATURE_LOGIC_AND_STRENGTHS.md) §6 **통합 테스트·INTEGRATION_TEST_GUIDE(루트)·로컬 접속·LOCAL_ACCESS_GUIDE(docs)** 행 · §6 **개발 연속성·DEVELOPMENT_CONTINUITY(docs)·경로·뷰** 행 · §6 **개발 요약·개발자 체크리스트(docs)** 행 · §6 **컴포넌트 아키텍처·COMPONENT_ARCHITECTURE(docs)·라우트→뷰** 행 · §6 **config README·routes.ts(src/config)·프로젝트 대화** 행 · §6 **접속·CONNECT(루트)** 행 · §6 **앱 실행·RUN_GUIDE(루트)** 행 · [NOTEBOOKLM_FEATURE_ROADMAP.md](./NOTEBOOKLM_FEATURE_ROADMAP.md) §4 **통합 테스트·로컬 접속** · §4 **에이전트 가이드** · §4 **config README(`routes.ts`)** · §4 **라우트·컴포넌트 매핑** · §6 **Agent / AI 개발 가이드** 행 · §6 **일상 개발·DEVELOPMENT(루트)** 행 · §6 **검증·빠른 참조·QUICK_REFERENCE(루트)** 행 · 동 허브 **개발·개발 연속성** 표 `LOCAL_ACCESS_GUIDE` 행 · [TESTING_GUIDE.md](../TESTING_GUIDE.md) `routes.test` · [e2e/README.md](../e2e/README.md)·[docs/COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md)·[docs/FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)·표 행과 교차
+
+**실행 가이드·접속 문제(루트)**: (본 문서 **로컬 3000/5002**·`check:access`·상단 경로 주의) · [RUN_GUIDE.md](../RUN_GUIDE.md)·[CONNECT.md](../CONNECT.md) — [QUICK_REFERENCE.md](../QUICK_REFERENCE.md)·[AGENTS.md](../AGENTS.md)·[scripts/README.md](../scripts/README.md)·[FEATURE_LOGIC_AND_STRENGTHS.md](./FEATURE_LOGIC_AND_STRENGTHS.md) §6 · [NOTEBOOKLM_FEATURE_ROADMAP.md](./NOTEBOOKLM_FEATURE_ROADMAP.md) §4 **에이전트 가이드** · §4 **config README(`routes.ts`)** · §4 **라우트·컴포넌트 매핑** · §4 **통합 테스트·로컬 접속** · [INTEGRATION_TEST_GUIDE.md](../INTEGRATION_TEST_GUIDE.md)·[docs/COMPONENT_ARCHITECTURE.md](./COMPONENT_ARCHITECTURE.md) §1.1 · [USAGE_GUIDE.md](../USAGE_GUIDE.md) §11 · [SYSTEM_READY.md](../SYSTEM_READY.md) §빠른 참조 · [DEVELOPMENT.md](../DEVELOPMENT.md) §2 · [README.md](../README.md)·[docs/README.md](./README.md) §NotebookLM·§개발 **통합·로컬** · 표 행과 교차
 
 ---
 
@@ -13,11 +21,11 @@
 
 | 단계 | 할 일 |
 |------|--------|
-| 1 | 터미널에서 **`cd kakao-frontend/kakao-frontend`** (또는 절대경로로 해당 폴더로 이동) |
-| 2 | **백엔드 먼저**: `npm run restart:backend` → `Uvicorn running on http://0.0.0.0:5002` 확인 |
-| 3 | **프론트** (새 터미널에서 같은 폴더): `npm start` → `Compiled successfully` / `Local: http://localhost:3000` 확인 |
-| 4 | 브라우저에서 **http://localhost:3000** 접속 |
-| 확인 | `npm run check:access` → 프론트(3000)·백(5002) 응답 코드 출력 |
+| 1 | 터미널에서 **`cd kakao-frontend/kakao-frontend`** (또는 절대경로로 해당 폴더로 이동) · 표 행과 교차 |
+| 2 | **백엔드 먼저**: `npm run restart:backend` → `Uvicorn running on http://0.0.0.0:5002` 확인 · 표 행과 교차 |
+| 3 | **프론트** (새 터미널에서 같은 폴더): `npm start` → `Compiled successfully` / `Local: http://localhost:3000` 확인 · 표 행과 교차 |
+| 4 | 브라우저에서 **http://localhost:3000** 접속 · 표 행과 교차 |
+| 확인 | `npm run check:access` → 프론트(3000)·백(5002) 응답 코드 출력 · 표 행과 교차 |
 
 **접속이 안 될 때 — 서버 실행 (아래 중 하나만 하면 됨)**
 
@@ -32,6 +40,8 @@
    → `Compiled successfully!` / `Local: http://localhost:3000` 이 보일 때까지 기다린 뒤, 브라우저에서 **http://localhost:3000** 접속.
 
 **프론트 포트: 3000** · **백엔드 포트: 5002** (proxy·config/api·restart:backend 모두 5002)
+
+앱 **메뉴 URL·브라우저 제목**은 [src/config/README.md](../src/config/README.md)·[TESTING_GUIDE.md](../TESTING_GUIDE.md) (`npm run test:routes`·`routes.test`)·[e2e/README.md](../e2e/README.md)·[AGENTS.md](../AGENTS.md)와 맞춥니다(**`name`·`getPageTitle` → `/projects/:id` 프로젝트 대화** 등). 앱 셸(선택): **`npm run test:app-unified`** — 동일 [TESTING_GUIDE.md](../TESTING_GUIDE.md).
 
 ## 프론트엔드 (http://localhost:3000)
 
@@ -106,9 +116,9 @@ python3 -m uvicorn main_server:app --host 0.0.0.0 --port 5002 --reload
 
 | 목적 | 명령 |
 |------|------|
-| 프론트만 | `npm run restart` → 브라우저에서 http://localhost:3000 |
-| 백엔드만 | `npm run restart:backend` → API http://localhost:5002 |
-| 둘 다 | **터미널 1**: `npm run restart:backend` / **터미널 2**: `npm run restart` → http://localhost:3000 |
+| 프론트만 | `npm run restart` → 브라우저에서 http://localhost:3000 · 표 행과 교차 |
+| 백엔드만 | `npm run restart:backend` → API http://localhost:5002 · 표 행과 교차 |
+| 둘 다 | **터미널 1**: `npm run restart:backend` / **터미널 2**: `npm run restart` → http://localhost:3000 · 표 행과 교차 |
 
 - 프론트가 켜진 상태에서 백엔드를 띄우면, 같은 주소에서 대화·프로젝트 생성 등을 테스트할 수 있습니다.
 
@@ -116,10 +126,17 @@ python3 -m uvicorn main_server:app --host 0.0.0.0 --port 5002 --reload
 
 | 확인 항목 | 방법 |
 |-----------|------|
-| 한번에 확인 | `bash scripts/check-access.sh` 또는 `npm run check:access` → 프론트(3000)·백(5002) 응답 코드 출력 |
-| API 검증 | `npm run verify:api` → /api/health, /api/status, /api/docs |
-| 통합 테스트 | `npm run test:integration` → 대화 API·에러 시나리오(400/422)·스트리밍 검증 (백엔드 실행 중 필요) |
-| 빌드 성공 | `npm run build` → "Compiled successfully" |
-| 프론트 접속 | 브라우저에서 http://localhost:3000 또는 http://localhost:3000/test.html |
-| 백엔드 상태 | `curl http://localhost:5002/api/health` → JSON 응답 확인 |
-| 프론트+백 동시 | 위 둘 다 실행 후 3000에서 대화/프로젝트 동작 확인 |
+| 한번에 확인 | `bash scripts/check-access.sh` 또는 `npm run check:access` → 프론트(3000)·백(5002) 응답 코드 출력 · 표 행과 교차 |
+| API 검증 | `npm run verify:api` → /api/health, /api/status, /api/docs · 표 행과 교차 |
+| 통합 테스트 | `npm run test:integration` → 대화 API·에러 시나리오(400/422)·스트리밍 검증 (백엔드 실행 중 필요) · 표 행과 교차 |
+| 프론트 Jest(선택) | `npm run test:routes`·`npm run test:app-unified` → 라우트·제목 계약·AppUnified 셸 (백엔드 불필요). [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
+| 빌드 성공 | `npm run build` → "Compiled successfully" · 표 행과 교차 |
+| 프론트 접속 | 브라우저에서 http://localhost:3000 또는 http://localhost:3000/test.html · 표 행과 교차 |
+| 백엔드 상태 | `curl http://localhost:5002/api/health` → JSON 응답 확인 · 표 행과 교차 |
+| 프론트+백 동시 | 위 둘 다 실행 후 3000에서 대화/프로젝트 동작 확인 · 표 행과 교차 |
+
+---
+
+## 배포 직전 풀 검증 (선택)
+
+접속·빌드가 된 뒤 **import 검사·빌드·접속·API·통합·대화 Jest·UI 스모크**까지 한 번에 보려면 프로젝트 루트에서 **`npm run verify:final`** (`scripts/final-verify.sh`). UI 스모크만 순차 Jest: **`npm run verify:final:sequential-smoke`**. 상세는 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md) 참고.

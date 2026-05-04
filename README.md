@@ -12,6 +12,10 @@
 
 **🚀 [빠른 참조](./QUICK_REFERENCE.md)** | **📖 [처음 시작하기](./README_FIRST.md)** | **📋 [사용 가이드(메뉴얼)](./USAGE_GUIDE.md)** | [메뉴얼 빠른 참조](./docs/guides/MANUAL_QUICK_REFERENCE.md) | [상세 가이드](./START_HERE.md)
 
+**실행 가이드·접속 문제(루트)**: [RUN_GUIDE.md](./RUN_GUIDE.md)·[CONNECT.md](./CONNECT.md) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md)·[기능 로직 및 NotebookLM·문서 허브·통합·로컬](docs/FEATURE_LOGIC_AND_STRENGTHS.md) §6 · [기능 로드맵](docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4 · [SYSTEM_READY.md](./SYSTEM_READY.md) §빠른 참조 · [DEVELOPMENT.md](./DEVELOPMENT.md) §2 · [docs/README.md](docs/README.md) §NotebookLM·§개발 **통합·로컬** · 표 행과 교차
+
+**로컬 UI 스모크 체크리스트**: [docs/LOCAL_UI_SMOKE_CHECKLIST.md](./docs/LOCAL_UI_SMOKE_CHECKLIST.md)
+
 ## ✨ 주요 기능
 
 ### 🖥️ 통합 레이아웃 (AppUnified)
@@ -24,20 +28,21 @@
 
 ### 🆕 CORBU.AI 인터페이스
 
-- **📌 메뉴·라우트**: CORBU.AI(/)·간단 대화(/simple)·고급 기능·전체 기능·노트북 LLM — `src/config/routes.ts`, 프로젝트·대화 분리(BACKLOG 102~111차).
+- **📌 메뉴·라우트**: 에이전트(`/agents`)·대화(`/`)·프로젝트(`/projects`)·**프로젝트 대화**(프로젝트 클릭 시 **`/projects/:id`**)·목소리 생성(`/voice-generation`) — `src/config/routes.ts`. **NotebookLM·문서 허브·통합·로컬**은 **`/projects/:id`** 통합 화면에서 사용. `/simple`·`/features`·`/notebook` 등 구 경로는 **`/chat`·`/`**·**`/projects`** 등으로 리다이렉트될 수 있습니다([USAGE_GUIDE.md](./USAGE_GUIDE.md) §1.2). 제목·탭 문자열(**`name`·`getPageTitle` → 프로젝트 대화**): [src/config/README.md](./src/config/README.md)·라우트 [AGENTS.md](./AGENTS.md)·점검 [TESTING_GUIDE.md](./TESTING_GUIDE.md) `routes.test` · E2E [e2e/README.md](./e2e/README.md)·문서 표 [docs/README.md](./docs/README.md)(§NotebookLM·§개발 연속성 **통합·로컬**) · 표 행과 교차.
 - **💬 CORBU.AI 대화**: 직관적이고 아름다운 대화 인터페이스 (ChatGPT 스타일 참고). **프롬프트로 프로젝트 생성**("OO 분석 프로젝트 만들어줘" 등) — [개발 마무리 현황](docs/DEVELOPMENT_COMPLETION_STATUS.md).
 - **📋 대화 관리**: 여러 대화를 생성하고 관리
 - **💾 자동 저장**: 로컬 스토리지에 대화 자동 저장
 - **📝 마크다운 지원**: 코드 블록, 링크, 표 등 마크다운 렌더링
 - **📋 메시지 복사**: 클릭 한 번으로 메시지 복사
 - **✍️ 긴 글 자동 생성**: 질문/요구 시 상세한 글 자동 생성
-- **🔄 대화 맥락·다양성**: 기존 대화 이력 반영, 프로젝트 선택 시 노트북 LLM 지식 반영, 같은 질문 n번 요청 시 다른 답변 생성
+- **🔄 대화 맥락·다양성**: 기존 대화 이력 반영, 프로젝트 선택 시 NotebookLM 지식 반영, 같은 질문 n번 요청 시 다른 답변 생성
 
 ### 🤖 LLM 연동 시스템 (신규)
 
 - **🔗 다중 LLM 지원**: OpenAI, Anthropic, Ollama 지원
-- **💻 노트북 LLM**: 로컬 Ollama 기반 LLM 통합 (하이브리드 모드)
-- **📚 분야별 지식·글쓰기 스타일·딥러닝**: 노트북 LLM에서 도메인별 핵심 지식(keyPoints), 44종 글쓰기 스타일(getStyleInstruction), 딥러닝 분석(의도·감정·복잡도) 반영. [NOTEBOOKLM 체크리스트](docs/NOTEBOOKLM_FEATURE_AND_KNOWLEDGE_CHECKLIST.md) §2.4·§2.5.
+- **💻 NotebookLM**(구글 노트북 LM 스타일): 로컬 Ollama 기반 LLM 통합 (하이브리드 모드)
+- **📚 분야별 지식·글쓰기 스타일·딥러닝**: NotebookLM 화면에서 도메인별 핵심 지식(keyPoints), 44종 글쓰기 스타일(getStyleInstruction), 딥러닝 분석(의도·감정·복잡도) 반영. [NOTEBOOKLM 체크리스트](docs/NOTEBOOKLM_FEATURE_AND_KNOWLEDGE_CHECKLIST.md) §2.4·§2.5.
+- **📎 NotebookLM·문서 허브·통합·로컬**: [기능 로직 및 강점·pytest](docs/FEATURE_LOGIC_AND_STRENGTHS.md)(서두 **NotebookLM·문서 허브·통합·로컬**·§6) · [기능 로드맵](docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4 · [docs/README — NotebookLM·문서 허브·통합·로컬](docs/README.md)·[사용자 가이드](docs/PROJECT_NOTEBOOK_LLM_USER_GUIDE.md)·[DeepSeek·엔진 설정](docs/DEEPSEEK_SETUP.md)·**실행·접속**: [RUN_GUIDE.md](./RUN_GUIDE.md)·[CONNECT.md](./CONNECT.md) (§7) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md)·표 행과 교차
 - **🧠 지식 베이스**: 기본 지식 저장 및 활용
 - **💬 대화 컨텍스트**: 대화 히스토리 관리 및 연속성 유지
 - **🔄 폴백 모드**: LLM 없이도 기본 응답 생성
@@ -83,7 +88,7 @@
 ### 1. 환경 요구사항
 
 - **Python**: 3.8 이상
-- **Node.js**: 18 이상 (권장: 20)
+- **Node.js**: **20** (루트 `.nvmrc`·GitHub Actions와 동일; `engines`는 `>=20`)
 - **시스템**: macOS, Linux, Windows
 - **메모리**: 최소 4GB RAM 권장
 
@@ -105,7 +110,7 @@
 - **통합 API (기본 5002)**: <http://localhost:5002/api/docs>
 - **통합 API (5002)**: <http://localhost:5002/api/docs>
 
-접속이 안 될 때는 [로컬 접속 가이드](./docs/LOCAL_ACCESS_GUIDE.md)를 참고하세요. (`npm run check:access`, `npm run test:integration`)
+접속이 안 될 때는 [로컬 접속 가이드](./docs/LOCAL_ACCESS_GUIDE.md)를 참고하세요. (`npm run check:access`, `npm run test:integration`) **메뉴·URL·브라우저 제목**을 바꿀 때는 아래 **라우트·E2E·제목 문자열** bullet과 [src/config/README.md](./src/config/README.md)를 함께 맞춥니다.
 
 ### 📚 상세 가이드
 
@@ -116,16 +121,17 @@
 - [개발 가이드](./docs/DEV_GUIDE.md) — 개발 환경·검증·테스트 요약
 - [컴포넌트 아키텍처](./docs/COMPONENT_ARCHITECTURE.md) — 라우트·뷰·프로젝트 관리·메시지 UI 매핑
 - [개발 연속성 가이드](./docs/DEVELOPMENT_CONTINUITY.md) — 경로·컴포넌트 매핑·기능 추가 체크리스트
-- [응답·입력 문자열 정리](./docs/guides/RESPONSE_CLEANING.md) — `coerceTrimmedString`·`coerceTrimmedEnd`, `npm run sync:frontend-chat-input-utils`
-- [완성도·마무리 검증](./docs/COMPLETION_CHECKLIST.md) — `npm run verify:completion` · 배포 전 `npm run deploy:check` (검증+빌드)
+- **라우트·E2E·제목 문자열**: [src/config/README.md](./src/config/README.md)(**`name`·`getPageTitle` → 프로젝트 대화**) · [AGENTS.md](./AGENTS.md)·[TESTING_GUIDE.md](./TESTING_GUIDE.md) `routes.test` · [e2e/README.md](./e2e/README.md)·[CONNECT.md](./CONNECT.md) §7
+- [응답·입력 문자열 정리](./docs/guides/RESPONSE_CLEANING.md) — `coerceTrimmedString`·`coerceTrimmedEnd`, 보조 트리: `npm run sync:frontend-src`(전체·`make sync-frontend`와 동일)·`npm run sync:frontend-chat-input-utils`(한 파일·`make sync-frontend-chat-input`과 동일)·통합 대화(UI) 등 부분 `npm run sync:frontend-unified-chat`(`make sync-frontend-unified-chat`과 동일)·`pretest`의 `check:src-frontend-parity`(`make check-frontend-parity`와 동일) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md)
+- [완성도·마무리 검증](./docs/COMPLETION_CHECKLIST.md) — (선택·빠름) `npm run test:routes`·`npm run test:app-unified` — [TESTING_GUIDE.md](./TESTING_GUIDE.md)·`npm run verify:completion` · 배포 전 `npm run deploy:check` (검증+빌드) · 풀 스택 `npm run verify:final` ([최종 체크리스트](./docs/FINAL_CHECKLIST.md); 저장소 루트 `FINAL_CHECKLIST.md`는 동일 문서로 안내하는 스텁), 순차 UI 스모크 `npm run verify:final:sequential-smoke`
 - [**실제 프론트엔드 적용**](./docs/FRONTEND_DEPLOYMENT.md) — 프로덕션 빌드·환경 변수·배포 절차
 - [개발 로드맵](./DEVELOPMENT_ROADMAP.md)
 - [완전한 설정 가이드](./COMPLETE_SETUP.md)
 - [상세 설정 가이드](./SETUP_GUIDE.md)
-- [통합 테스트 가이드](./INTEGRATION_TEST_GUIDE.md)
+- [통합 테스트 가이드](./INTEGRATION_TEST_GUIDE.md) — API·헬스 등 (`./test_integration.sh`); 프론트 **메뉴·경로**는 아래 **라우트·E2E·제목 문자열** bullet·[src/config/README.md](./src/config/README.md)와 동기
 - [빠른 테스트 가이드](./QUICK_TEST.md)
 - [LLM 연동 가이드](./README_LLM.md) 🆕
-- [프로젝트 및 노트북 LLM 완료 보고서](./PROJECT_AND_NOTEBOOK_LLM_COMPLETE.md) 🆕
+- [프로젝트 및 NotebookLM 완료 보고서](./PROJECT_AND_NOTEBOOK_LLM_COMPLETE.md) 🆕
 - [사용 가이드](./USAGE_GUIDE.md) 🆕
 - [긴 글 생성 기능](./LONG_FORM_WRITING_FEATURE.md) 🆕
 - [시스템 준비 완료](./SYSTEM_READY.md) 🆕
