@@ -15,6 +15,8 @@ interface DeepResearchModalProps {
   onClose: () => void;
   projectId: string;
   onSourceAdded?: () => void;
+  /** 노트북 화면과 동일: true면 URL 추출 본문을 통합 LLM으로 정리한 뒤 소스 저장 */
+  notebookUrlIngest?: { synthesizeWithLlm?: boolean; config?: Record<string, unknown> };
 }
 
 const DeepResearchModal: React.FC<DeepResearchModalProps> = ({
@@ -22,8 +24,11 @@ const DeepResearchModal: React.FC<DeepResearchModalProps> = ({
   onClose,
   projectId,
   onSourceAdded,
+  notebookUrlIngest,
 }) => {
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  const restoreFocusRef = React.useRef<HTMLElement | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
@@ -76,9 +81,18 @@ const DeepResearchModal: React.FC<DeepResearchModalProps> = ({
     setAddingUrl(u);
     setAddSourceError(null);
     try {
-      const added = await projectService.addNotebookSourceFromUrl(projectId, u);
-      if (added) onSourceAdded?.();
-      else setAddSourceError('소스 추가에 실패했습니다.');
+      const ingestOpts =
+        notebookUrlIngest?.synthesizeWithLlm === true
+          ? {
+              synthesizeWithLlm: true as const,
+              ...(notebookUrlIngest.config && Object.keys(notebookUrlIngest.config).length > 0
+                ? { config: notebookUrlIngest.config }
+                : {}),
+            }
+          : undefined;
+      const added = await projectService.addNotebookSourceFromWebIngestUrl(projectId, u, ingestOpts);
+      if (added.ok) onSourceAdded?.();
+      else setAddSourceError(added.errorMessage || '소스 추가에 실패했습니다.');
     } catch (err) {
       setAddSourceError(err instanceof Error ? err.message : '소스 추가에 실패했습니다.');
       errorLogger.warn('소스 추가 실패', { component: 'DeepResearchModal', url: u, error: String(err) });
@@ -97,11 +111,75 @@ const DeepResearchModal: React.FC<DeepResearchModalProps> = ({
   }, [open, onClose]);
 
   useEffect(() => {
+    if (!open) {
+      restoreFocusRef.current?.focus();
+      restoreFocusRef.current = null;
+      return;
+    }
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+  }, [open]);
+
+  useEffect(() => {
     if (open) {
       const t = setTimeout(() => inputRef.current?.focus(), 50);
       return () => clearTimeout(t);
     }
     setAddSourceError(null);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const modalElement = modalRef.current;
+    if (!modalElement) return;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const focusableElements = Array.from(
+        modalElement.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusableElements.length === 0) {
+        e.preventDefault();
+        modalElement.focus();
+        return;
+      }
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement as HTMLElement | null;
+
+      if (!activeElement || !modalElement.contains(activeElement)) {
+        e.preventDefault();
+        firstElement.focus();
+        return;
+      }
+
+      if (e.shiftKey && activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
   }, [open]);
 
   if (!open) return null;
@@ -111,20 +189,31 @@ const DeepResearchModal: React.FC<DeepResearchModalProps> = ({
   return (
     <div className="deep-research-modal-overlay" onClick={onClose} role="presentation">
       <div
+        ref={modalRef}
         className="deep-research-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-labelledby="deep-research-title"
+        aria-describedby="deep-research-description"
         aria-modal="true"
+        tabIndex={-1}
       >
         <div className="deep-research-modal-header">
           <h2 id="deep-research-title">Deep Research</h2>
-          <button type="button" className="deep-research-close" onClick={onClose} aria-label="닫기">x</button>
+          <button type="button" className="deep-research-close" onClick={onClose} aria-label="닫기" title="닫기">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
         <div className="deep-research-modal-body">
-          <p className="deep-research-desc">
+          <p id="deep-research-description" className="deep-research-desc">
             주제를 입력하면 웹 검색 기반 심층 보고서를 생성합니다. 발견된 소스를 노트북에 추가할 수 있습니다.
+            {notebookUrlIngest?.synthesizeWithLlm ? (
+              <span className="deep-research-ingest-hint"> (통합 LLM으로 압축·정리 후 추가)</span>
+            ) : null}
           </p>
+          <div className="sr-only" aria-live="polite" aria-atomic="true" role="status">
+            {loading ? '심층 보고서를 생성 중입니다.' : ''}
+          </div>
           <div className="deep-research-input-row">
             <input
               ref={inputRef}
@@ -158,7 +247,7 @@ const DeepResearchModal: React.FC<DeepResearchModalProps> = ({
               <div className="deep-research-error" role="alert">
                 <div className="deep-research-error-message">{errInfo.userMessage}</div>
                 {errInfo.suggestions.length > 0 && (
-                  <ul className="deep-research-error-suggestions" aria-label="해결 제안">
+                  <ul className="deep-research-error-suggestions" aria-label="해결 제안 목록">
                     {errInfo.suggestions.map((s, i) => <li key={i}>{s}</li>)}
                   </ul>
                 )}
@@ -186,7 +275,7 @@ const DeepResearchModal: React.FC<DeepResearchModalProps> = ({
               {result.research_results.sources && result.research_results.sources.length > 0 ? (
                 <div className="deep-research-sources">
                   <h4>참고 소스 (노트북에 추가 가능)</h4>
-                  <ul>
+                  <ul aria-label="참고 소스 목록">
                     {result.research_results.sources.map((s, i) => (
                       <li key={i} className="deep-research-source-item">
                         <a href={s.url} target="_blank" rel="noopener noreferrer" className="deep-research-source-link">{s.title || s.url}</a>
@@ -221,7 +310,7 @@ const DeepResearchModal: React.FC<DeepResearchModalProps> = ({
                   <div className="deep-research-add-source-error" role="alert">
                     <span>{errInfo.userMessage}</span>
                     {errInfo.suggestions.length > 0 && (
-                      <ul className="deep-research-add-error-suggestions" aria-label="해결 제안">
+                      <ul className="deep-research-add-error-suggestions" aria-label="해결 제안 목록">
                         {errInfo.suggestions.slice(0, 2).map((s, i) => <li key={i}>{s}</li>)}
                       </ul>
                     )}
