@@ -4,6 +4,8 @@ export interface LearnCourseRow {
   title: string;
   progressPercent: number;
   minutes: number;
+  category?: string;
+  level?: string;
 }
 
 export interface LearnTutorialRow {
@@ -23,7 +25,7 @@ const LEARN_FALLBACK: LearnSummary = {
   completedCourses: 0,
   courses: [
     { id: 'c1', title: '대화·프로젝트 시작하기', progressPercent: 40, minutes: 15 },
-    { id: 'c2', title: '노트북 LLM·소스 관리', progressPercent: 10, minutes: 25 },
+    { id: 'c2', title: '구글 노트북 LM·소스 관리', progressPercent: 10, minutes: 25 },
     { id: 'c3', title: '도시정비 문서 워크플로', progressPercent: 0, minutes: 30 },
   ],
   tutorials: [
