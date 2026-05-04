@@ -766,8 +766,8 @@ function DevStatusView() {
                   {group.category}
                 </h3>
                 <ul className="bw-detail-list bw-list-unstyled">
-                  {group.items.map((item) => (
-                    <li key={item.file} className="bw-list-item-spaced" style={{ marginBottom: '0.5rem' }}>
+                  {group.items.map((item, idx) => (
+                    <li key={`${group.category}-${item.file}-${idx}`} className="bw-list-item-spaced" style={{ marginBottom: '0.5rem' }}>
                       <code style={{ fontSize: '0.85em', background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4 }}>
                         {item.file}
                       </code>
