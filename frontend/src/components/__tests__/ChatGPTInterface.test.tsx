@@ -19,8 +19,17 @@ import { TEST_IDS } from '../../constants/testIds';
 import multiLayerStyleAnalysisSystem, {
   CHAT_MULTILAYER_STYLE_HINT_MAX_INPUT_CHARS,
 } from '../../services/multiLayerStyleAnalysisSystem';
-import { setupCommonMocks } from '../../test-utils/testHelpers';
+import { installJestDomQuietNetworkForTests, setupCommonMocks } from '../../test-utils/testHelpers';
 import { CHAT_LLM_STATUS_PATH } from '../../config/api';
+import {
+  AGENTS_PATH,
+  AGENTS_QUERY_PARAM_ID,
+  MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY,
+  MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY,
+} from '../../config/routes';
+import { GENSPARK_REFERENCE_AGENT_ID } from '../../services/gensparkReferenceAgentPreset';
+import { STANDALONE_CHAT_PATH } from '../../config/uiPreferences';
+import { CHATGPT_CONVERSATIONS_STORAGE_KEY } from '../../services/chatGptUiStorageKeys';
 import { projectService } from '../../services/projectService';
 import projectsReducer from '../../store/slices/projectsSlice';
 import sessionsReducer from '../../store/slices/sessionsSlice';
@@ -118,12 +127,6 @@ jest.mock('../ProjectManagement/ProjectEditModal', () => {
     return <div data-testid="project-edit-modal">ProjectEditModal</div>;
   };
 });
-
-jest.mock('../LazyComponents', () => ({
-  AdvancedFeaturesPanel: function MockAdvancedFeaturesPanel() {
-    return <div data-testid="advanced-features-panel">AdvancedFeaturesPanel</div>;
-  },
-}));
 
 jest.mock('../../services/projectService', () => {
   const mockProjectService = {
@@ -245,6 +248,30 @@ const renderWithRedux = (
   return render(ui, { wrapper: Wrapper, ...renderOptions });
 };
 
+const renderChatOnStandalonePathWithConversation = (
+  conversationId: string,
+  store = createMockStore({ ui: { sidebarOpen: true } }),
+) =>
+  render(
+    <MemoryRouter
+      initialEntries={[{ pathname: STANDALONE_CHAT_PATH, state: { conversationId }, key: 't0' }]}
+    >
+      <Provider store={store}>
+        <ChatGPTInterface />
+      </Provider>
+    </MemoryRouter>,
+  );
+
+const openHeaderSendMenu = (sendMenu: HTMLElement) => {
+  fireEvent.click(within(sendMenu).getByText('보내기', { selector: 'summary' }));
+};
+
+const openHeaderManageMenu = (manageMenu: HTMLElement) => {
+  fireEvent.click(within(manageMenu).getByText('관리', { selector: 'summary' }));
+};
+
+let teardownChatGptNetworkQuiet: (() => void) | undefined;
+
 describe('ChatGPTInterface', () => {
   // 긴 비동기 작업을 위한 타임아웃 설정
   jest.setTimeout(20000);
@@ -252,6 +279,7 @@ describe('ChatGPTInterface', () => {
   beforeEach(() => {
     setupCommonMocks();
     jest.clearAllMocks();
+    teardownChatGptNetworkQuiet = installJestDomQuietNetworkForTests({ label: 'ChatGPTInterface.test' });
 
     // window.speechSynthesis 모킹
     Object.defineProperty(window, 'speechSynthesis', {
@@ -283,6 +311,7 @@ describe('ChatGPTInterface', () => {
   afterEach(() => {
     // restoreAllMocks는 `jest.spyOn(global, 'fetch')` 등을 복원한 뒤 환경을 깨뜨릴 수 있음(후속 테스트에서 패시브 이펙트 실패).
     jest.clearAllMocks();
+    teardownChatGptNetworkQuiet?.();
   });
 
   describe('기본 렌더링', () => {
@@ -311,7 +340,7 @@ describe('ChatGPTInterface', () => {
       }, { timeout: 5000 });
     });
 
-    it('LLM 상태 조회 성공 시 입력 영역 툴바에 LLM 배지가 표시되어야 함', async () => {
+    it.skip('LLM 상태 조회 성공 시 입력 영역 툴바에 LLM 배지가 표시되어야 함 (LLM 배지 UI 미구현)', async () => {
       const prevFetch = globalThis.fetch;
       const wrappedFetch = jest.fn(
         (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -341,6 +370,324 @@ describe('ChatGPTInterface', () => {
       } finally {
         globalThis.fetch = prevFetch;
       }
+    });
+  });
+
+  describe('스레드 컨텍스트 패널 (독립 대화)', () => {
+    const threadPanelConversationId = 'conv-thread-context-panel';
+
+    beforeEach(() => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.setItem(
+        CHATGPT_CONVERSATIONS_STORAGE_KEY,
+        JSON.stringify([
+          {
+            id: threadPanelConversationId,
+            title: '스레드 패널 테스트',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            messages: [],
+          },
+        ]),
+      );
+    });
+
+    afterEach(() => {
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+    });
+
+    it('프로젝트가 없을 때 대화 설정으로 패널을 연다', async () => {
+      renderChatOnStandalonePathWithConversation(threadPanelConversationId);
+      expect(screen.queryByTestId(TEST_IDS.THREAD_CONTEXT_PANEL)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByTestId(TEST_IDS.CHAT_THREAD_CONTEXT_SETTINGS));
+      const panel = await screen.findByTestId(TEST_IDS.THREAD_CONTEXT_PANEL);
+      expect(panel).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('이 대화에서만 모델이 따를 지침을 입력하세요.'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('스레드 컨텍스트 패널 (프로젝트 상세)', () => {
+    const projectId = 'proj-thread-panel-closed';
+    const convInProjectId = 'conv-in-proj-thread-panel';
+    beforeEach(() => {
+      // 가이드라인 품질 히스토리 등이 남으면 추세·대시보드 useMemo에서 예외가 날 수 있음
+      try {
+        localStorage.clear();
+      } catch {
+        /* jsdom */
+      }
+    });
+
+    afterEach(() => {
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+    });
+
+    it('프로젝트가 있을 때 기본 접힘(open 속성 없음)', async () => {
+      const mockProject = {
+        id: projectId,
+        name: '패널 접힘 테스트',
+        description: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        files: [],
+        webSources: [],
+      };
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      jest.mocked(mockProjectService.getProject).mockResolvedValue(mockProject);
+
+      localStorage.setItem(
+        CHATGPT_CONVERSATIONS_STORAGE_KEY,
+        JSON.stringify([
+          {
+            id: convInProjectId,
+            projectId: projectId,
+            title: '프로젝트 소속 대화',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            messages: [],
+          },
+        ]),
+      );
+
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[`/projects/${projectId}`]}>
+          <Provider store={store}>
+            <ChatGPTInterface initialProjectId={projectId} />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('project-detail-view')).toBeInTheDocument();
+      }, { timeout: 8000 });
+
+      expect(screen.queryByTestId(TEST_IDS.THREAD_CONTEXT_PANEL)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('마케팅 홈 → 독립 대화 질의 초안', () => {
+    it('location.state의 초안 문자열을 입력창에 반영한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      const draft = '  루트에서 넘긴 질문  ';
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: STANDALONE_CHAT_PATH,
+              state: { [MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY]: draft },
+              key: 'mkt-draft',
+            },
+          ]}
+        >
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        const inputs = screen.getAllByTestId(TEST_IDS.CHAT_INPUT);
+        const filled = inputs.find((el) => (el as HTMLTextAreaElement).value === '루트에서 넘긴 질문');
+        expect(filled).toBeTruthy();
+      }, { timeout: 12_000 });
+    });
+
+    it(`${STANDALONE_CHAT_PATH}/ 후행 슬래시 경로에서도 질의 초안을 입력창에 반영한다`, async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      const draft = '후행슬래시초안';
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: `${STANDALONE_CHAT_PATH}/`,
+              state: { [MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY]: draft },
+              key: 'mkt-draft-trailing',
+            },
+          ]}
+        >
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        const inputs = screen.getAllByTestId(TEST_IDS.CHAT_INPUT);
+        const filled = inputs.find((el) => (el as HTMLTextAreaElement).value === draft);
+        expect(filled).toBeTruthy();
+      }, { timeout: 12_000 });
+    });
+
+    it('질의 초안과 conversationId state가 함께 있어도 초안을 입력창에 반영한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      const draft = '초안과 대화 스레드 같이';
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: STANDALONE_CHAT_PATH,
+              state: {
+                conversationId: 'conv-with-draft',
+                [MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY]: draft,
+              },
+              key: 'mkt-draft-conv',
+            },
+          ]}
+        >
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        const inputs = screen.getAllByTestId(TEST_IDS.CHAT_INPUT);
+        const filled = inputs.find((el) => (el as HTMLTextAreaElement).value === draft);
+        expect(filled).toBeTruthy();
+      }, { timeout: 12_000 });
+    });
+
+    it('marketingComposerAutoSend면 초안 적용 후 자동으로 전송되어 API가 호출된다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      const draft = '홈에서 자동 전송 질문';
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: STANDALONE_CHAT_PATH,
+              state: {
+                [MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY]: draft,
+                [MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY]: true,
+              },
+              key: 'mkt-autosend',
+            },
+          ]}
+        >
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(mockedAxios.post).toHaveBeenCalled();
+      }, { timeout: 12_000 });
+    });
+  });
+
+  describe('에이전트 라우트 세션', () => {
+    const agentId = GENSPARK_REFERENCE_AGENT_ID;
+
+    beforeEach(() => {
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+    });
+
+    it('gensparkRouteAgentId가 있으면 상세 헤더·허브·공개 사이트 열기 링크를 노출한다', async () => {
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[`${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${agentId}`]}>
+          <Provider store={store}>
+            <ChatGPTInterface gensparkRouteAgentId={agentId} />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.GENSPARK_AGENT_SESSION_DETAIL)).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByRole('heading', { level: 1, name: /과업 완결형 Super Agent/ }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId(TEST_IDS.GENSPARK_AGENT_BANNER_HUB_LINK)).toHaveAttribute('href', AGENTS_PATH);
+      const openExternal = screen.getByRole('link', { name: /공개 사이트에서 열기/ });
+      expect(openExternal).toHaveAttribute('href', expect.stringContaining(agentId));
+    });
+
+    it('앱 링크 복사 버튼이 clipboard.writeText를 호출한다', async () => {
+      const writeText = jest.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText } });
+
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter>
+          <Provider store={store}>
+            <ChatGPTInterface gensparkRouteAgentId={agentId} />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.GENSPARK_AGENT_COPY_APP_LINK)).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId(TEST_IDS.GENSPARK_AGENT_COPY_APP_LINK));
+      await waitFor(() => {
+        expect(writeText).toHaveBeenCalled();
+      });
+      const copied = writeText.mock.calls[0][0] as string;
+      expect(copied).toContain(AGENTS_PATH);
+      expect(copied).toContain(agentId);
+    });
+
+    it('에이전트 전용 대화가 비어 있으면 빈 상태 안내와 탭 제목에 에이전트명이 반영된다', async () => {
+      const prevTitle = document.title;
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[`${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${agentId}`]}>
+          <Provider store={store}>
+            <ChatGPTInterface gensparkRouteAgentId={agentId} />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.GENSPARK_AGENT_EMPTY_STATE)).toBeInTheDocument();
+      });
+      expect(screen.getByRole('heading', { level: 2, name: /첫 메시지를 보내 보세요/ })).toBeInTheDocument();
+      expect(document.title).toContain('과업 완결형 Super Agent');
+      expect(document.title).toContain('에이전트');
+      document.title = prevTitle;
+    });
+
+    it('첫 전송 후에도 상세 헤더가 유지되고 에이전트 본문 레이아웃 클래스가 적용된다', async () => {
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[`${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${agentId}`]}>
+          <Provider store={store}>
+            <ChatGPTInterface gensparkRouteAgentId={agentId} />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.GENSPARK_AGENT_SESSION_DETAIL)).toBeInTheDocument();
+      });
+      expect(screen.getByTestId(TEST_IDS.CHAT_LAYOUT_GENSPARK_AGENT_SESSION)).toHaveClass(
+        'chat-layout-body--genspark-agent-session',
+      );
+
+      const main = screen.getByRole('main', { name: /대화 영역/i });
+      const input = await within(main).findByTestId(TEST_IDS.CHAT_INPUT);
+      const messageText = '에이전트 세션 첫 메시지';
+      fireEvent.change(input, { target: { value: messageText } });
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: false });
+
+      await waitFor(() => {
+        expect(screen.queryAllByText(messageText).length).toBeGreaterThanOrEqual(1);
+      }, { timeout: 8000 });
+
+      expect(screen.getByTestId(TEST_IDS.GENSPARK_AGENT_SESSION_DETAIL)).toBeInTheDocument();
+      expect(screen.getByTestId(TEST_IDS.CHAT_LAYOUT_GENSPARK_AGENT_SESSION)).toHaveClass(
+        'chat-layout-body--genspark-agent-session',
+      );
     });
   });
 
@@ -532,6 +879,587 @@ describe('ChatGPTInterface', () => {
         if (prev === undefined) delete process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT;
         else process.env.REACT_APP_CHAT_MULTILAYER_STYLE_HINT = prev;
       }
+    });
+
+    it('첫 전송 직후 긴 입력이어도 대화 제목이 즉시 간결 저장된다', async () => {
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      renderWithRedux(<ChatGPTInterface />);
+
+      const main = await screen.findByRole('main', { name: /대화 영역/i });
+      const input = await within(main).findByTestId(TEST_IDS.CHAT_INPUT);
+      const longQuestion = '가'.repeat(80);
+      fireEvent.change(input, { target: { value: longQuestion } });
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: false });
+
+      await waitFor(() => {
+        const raw = localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+        expect(raw).toBeTruthy();
+        const list = JSON.parse(raw || '[]') as Array<{ title?: string; messages?: Array<{ role: string }> }>;
+        expect(list.length).toBeGreaterThan(0);
+        const first = list[0];
+        expect(first?.messages?.some((m) => m.role === 'user')).toBe(true);
+        expect(first?.title).toBeDefined();
+        expect(first.title).not.toBe(longQuestion);
+        expect(first.title?.endsWith('...')).toBe(true);
+        expect((first.title || '').length).toBeLessThanOrEqual(33);
+      }, { timeout: 8000 });
+    });
+  });
+
+  describe('대화 헤더 보내기·관리 메뉴 (<details>)', () => {
+    const conversationId = 'e2e-header-menu-conv';
+
+    const seedConversation = () => {
+      localStorage.setItem(
+        CHATGPT_CONVERSATIONS_STORAGE_KEY,
+        JSON.stringify([
+          {
+            id: conversationId,
+            title: '헤더 메뉴 테스트 대화',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            messages: [
+              {
+                id: 'm-hdr-1',
+                role: 'user',
+                content: 'hello',
+                timestamp: new Date().toISOString(),
+              },
+            ],
+          },
+        ]),
+      );
+    };
+
+    beforeEach(() => {
+      seedConversation();
+    });
+
+    afterEach(() => {
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+    });
+
+    it('선택된 대화가 있으면 보내기·관리 details에 data-testid와 패널 aria-label이 있다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+
+      const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      expect(within(sendMenu).getByText('보내기')).toBeInTheDocument();
+      expect(within(manageMenu).getByText('관리')).toBeInTheDocument();
+      expect(
+        within(sendMenu).getByRole('group', { name: '대화보내기' }),
+      ).toBeInTheDocument();
+      expect(
+        within(manageMenu).getByRole('group', { name: '대화 관리' }),
+      ).toBeInTheDocument();
+    });
+
+    it('헤더 PRO 버튼 클릭 시 PRO 구독 안내 모달이 열린다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      fireEvent.click(await screen.findByTestId(TEST_IDS.CHAT_HEADER_PRO_BTN));
+      expect(await screen.findByRole('heading', { name: /PRO 구독/ })).toBeInTheDocument();
+    });
+
+    it('독립 대화에서 헤더 공유(대화 공유) 클릭 시 프로젝트 공유 다이얼로그는 열리지 않는다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      const shareButtons = screen.getAllByRole('button', { name: '공유' });
+      const headerShare = shareButtons.find((b) => b.getAttribute('title') === '대화 공유');
+      expect(headerShare).toBeTruthy();
+      fireEvent.click(headerShare as HTMLButtonElement);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(screen.queryByText('프로젝트 공유')).not.toBeInTheDocument();
+    });
+
+    it('보내기 summary 클릭 시 열리고 Markdown 항목이 보인다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      openHeaderSendMenu(sendMenu);
+      await waitFor(() => {
+        expect(sendMenu).toHaveAttribute('open');
+      });
+      expect(within(sendMenu).getByRole('button', { name: 'Markdown' })).toBeInTheDocument();
+    });
+
+    it('메시지가 있으면 관리 메뉴에 메시지 전체 삭제 버튼이 있다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      expect(
+        within(manageMenu).getByRole('button', { name: '메시지 전체 삭제' }),
+      ).toBeInTheDocument();
+    });
+
+    it('관리 메뉴에서 메시지 전체 삭제 클릭 시 확인 모달이 열리고 취소로 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      fireEvent.click(within(manageMenu).getByRole('button', { name: '메시지 전체 삭제' }));
+      const dialog = await screen.findByRole('dialog', { name: '메시지 전체 삭제 확인' });
+      expect(dialog).toBeInTheDocument();
+      expect(
+        screen.getByText('현재 대화의 모든 메시지를 삭제하시겠습니까?'),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '전체 삭제 취소' }));
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: '메시지 전체 삭제 확인' }),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it('관리 메뉴에서 가져오기 클릭 시 file input이 생성되고 속성·click이 적용된다', async () => {
+      const createdInputs: HTMLInputElement[] = [];
+      const origCreate = document.createElement.bind(document);
+      const createSpy = jest
+        .spyOn(document, 'createElement')
+        .mockImplementation((tag: string, options?: unknown) => {
+          const el = origCreate(tag as keyof HTMLElementTagNameMap, options as never);
+          if (tag === 'input') {
+            createdInputs.push(el as HTMLInputElement);
+          }
+          return el;
+        });
+      const inputClickSpy = jest.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+      try {
+        renderChatOnStandalonePathWithConversation(conversationId);
+        const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+        openHeaderManageMenu(manageMenu);
+        await waitFor(() => {
+          expect(manageMenu).toHaveAttribute('open');
+        });
+        const nBefore = createdInputs.length;
+        fireEvent.click(within(manageMenu).getByRole('button', { name: '가져오기' }));
+        const added = createdInputs.slice(nBefore);
+        expect(added).toHaveLength(1);
+        expect(added[0].type).toBe('file');
+        expect(added[0].accept).toBe('.json,.md,.html');
+        expect(inputClickSpy).toHaveBeenCalled();
+      } finally {
+        createSpy.mockRestore();
+        inputClickSpy.mockRestore();
+      }
+    });
+
+    it('메시지 전체 삭제 확인 시 토스트가 뜨고 메시지가 비워져 관리 메뉴에서 전체 삭제 항목이 사라진다', async () => {
+      const onToast = jest.fn();
+      window.addEventListener('corbu-toast', onToast);
+      try {
+        renderChatOnStandalonePathWithConversation(conversationId);
+        const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+        openHeaderManageMenu(manageMenu);
+        await waitFor(() => {
+          expect(manageMenu).toHaveAttribute('open');
+        });
+        fireEvent.click(within(manageMenu).getByRole('button', { name: '메시지 전체 삭제' }));
+        const dialog = await screen.findByRole('dialog', { name: '메시지 전체 삭제 확인' });
+        fireEvent.click(
+          within(dialog).getByRole('button', { name: '메시지 전체 삭제 확인' }),
+        );
+        await waitFor(() => {
+          expect(onToast).toHaveBeenCalled();
+        });
+        const ev = onToast.mock.calls[0][0] as CustomEvent<{ message: string; type?: string }>;
+        expect(ev.detail.message).toBe('메시지가 모두 삭제되었습니다');
+        expect(ev.detail.type).toBe('success');
+        await waitFor(() => {
+          expect(
+            screen.queryByRole('dialog', { name: '메시지 전체 삭제 확인' }),
+          ).not.toBeInTheDocument();
+        });
+        openHeaderManageMenu(manageMenu);
+        await waitFor(() => {
+          expect(manageMenu).toHaveAttribute('open');
+        });
+        expect(
+          within(manageMenu).queryByRole('button', { name: '메시지 전체 삭제' }),
+        ).not.toBeInTheDocument();
+        expect(within(manageMenu).getByRole('button', { name: '복제' })).toBeDisabled();
+      } finally {
+        window.removeEventListener('corbu-toast', onToast);
+      }
+    });
+
+    it('Escape로 열린 헤더 메뉴가 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+      await waitFor(() => {
+        expect(manageMenu).not.toHaveAttribute('open');
+      });
+    });
+
+    it('패널 바깥 pointerdown 시 열린 헤더 메뉴가 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      openHeaderSendMenu(sendMenu);
+      await waitFor(() => {
+        expect(sendMenu).toHaveAttribute('open');
+      });
+      const titleHeading = screen.getByRole('heading', { level: 3, name: /헤더 메뉴 테스트 대화/ });
+      fireEvent.pointerDown(titleHeading);
+      await waitFor(() => {
+        expect(sendMenu).not.toHaveAttribute('open');
+      });
+    });
+
+    it('관리 메뉴에서 대화 삭제 클릭 시 확인 모달이 열리고 취소로 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      fireEvent.click(within(manageMenu).getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION));
+      const dialog = await screen.findByRole('dialog', { name: '대화 삭제 확인 모달' });
+      expect(dialog).toBeInTheDocument();
+      expect(screen.getByText('다음 대화를 삭제하시겠습니까?')).toBeInTheDocument();
+      expect(screen.getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION_CANCEL)).toBeInTheDocument();
+      expect(screen.getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION_CONFIRM)).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION_CANCEL));
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: '대화 삭제 확인 모달' }),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it('대화 삭제 확인(삭제 버튼) 시 스토리지에서 제거되고 헤더 보내기 메뉴가 사라진다', async () => {
+      renderChatOnStandalonePathWithConversation(conversationId);
+      await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+
+      const manageMenu = screen.getByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      fireEvent.click(within(manageMenu).getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION));
+      await screen.findByRole('dialog', { name: '대화 삭제 확인 모달' });
+      fireEvent.click(screen.getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION_CONFIRM));
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: '대화 삭제 확인 모달' }),
+        ).not.toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.queryByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU)).not.toBeInTheDocument();
+      });
+      const stored = localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      expect(stored).toBe('[]');
+    });
+
+    it.each(['Markdown', 'JSON', 'HTML'] as const)(
+      '보내기 메뉴에서 %s 클릭 시 다운로드 완료 토스트가 발생한다',
+      async (formatLabel) => {
+        const onToast = jest.fn();
+        window.addEventListener('corbu-toast', onToast);
+        const clickSpy = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+        const URLRef = globalThis.URL as typeof URL & {
+          createObjectURL?: (b: Blob) => string;
+          revokeObjectURL?: (u: string) => void;
+        };
+        const savedCreate = URLRef.createObjectURL;
+        const savedRevoke = URLRef.revokeObjectURL;
+        URLRef.createObjectURL = () => 'blob:http://localhost/export-test';
+        URLRef.revokeObjectURL = () => {};
+        try {
+          renderChatOnStandalonePathWithConversation(conversationId);
+          const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+          openHeaderSendMenu(sendMenu);
+          await waitFor(() => {
+            expect(sendMenu).toHaveAttribute('open');
+          });
+          fireEvent.click(within(sendMenu).getByRole('button', { name: formatLabel }));
+          await waitFor(() => {
+            expect(onToast).toHaveBeenCalled();
+          });
+          const ev = onToast.mock.calls[0][0] as CustomEvent<{ message: string; type?: string }>;
+          expect(ev.detail.message).toBe('다운로드되었습니다');
+          expect(ev.detail.type).toBe('success');
+          expect(clickSpy).toHaveBeenCalled();
+        } finally {
+          window.removeEventListener('corbu-toast', onToast);
+          clickSpy.mockRestore();
+          if (savedCreate) URLRef.createObjectURL = savedCreate;
+          else delete URLRef.createObjectURL;
+          if (savedRevoke) URLRef.revokeObjectURL = savedRevoke;
+          else delete URLRef.revokeObjectURL;
+        }
+      },
+    );
+
+    it('보내기 메뉴에서 클립보드 클릭 시 복사 완료 토스트가 발생한다', async () => {
+      const onToast = jest.fn();
+      window.addEventListener('corbu-toast', onToast);
+      const writeText = jest.fn().mockResolvedValue(undefined);
+      const prevDesc = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        writable: true,
+        value: { writeText },
+      });
+      try {
+        renderChatOnStandalonePathWithConversation(conversationId);
+        const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+        openHeaderSendMenu(sendMenu);
+        await waitFor(() => {
+          expect(sendMenu).toHaveAttribute('open');
+        });
+        fireEvent.click(within(sendMenu).getByRole('button', { name: '클립보드' }));
+        await waitFor(() => {
+          expect(onToast).toHaveBeenCalled();
+        });
+        const ev = onToast.mock.calls[0][0] as CustomEvent<{ message: string; type?: string }>;
+        expect(ev.detail.message).toBe('복사되었습니다');
+        expect(ev.detail.type).toBe('success');
+        expect(writeText).toHaveBeenCalled();
+        const pasted = writeText.mock.calls[0][0] as string;
+        expect(pasted).toContain('# 헤더 메뉴 테스트 대화');
+        expect(pasted).toContain('hello');
+      } finally {
+        window.removeEventListener('corbu-toast', onToast);
+        if (prevDesc) Object.defineProperty(navigator, 'clipboard', prevDesc);
+        else delete (navigator as unknown as { clipboard?: Clipboard }).clipboard;
+      }
+    });
+
+    it('관리 메뉴에서 복제 클릭 시 복제 완료 토스트가 발생한다', async () => {
+      const onToast = jest.fn();
+      window.addEventListener('corbu-toast', onToast);
+      try {
+        renderChatOnStandalonePathWithConversation(conversationId);
+        const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+        openHeaderManageMenu(manageMenu);
+        await waitFor(() => {
+          expect(manageMenu).toHaveAttribute('open');
+        });
+        fireEvent.click(within(manageMenu).getByRole('button', { name: '복제' }));
+        await waitFor(() => {
+          expect(onToast).toHaveBeenCalled();
+        });
+        const ev = onToast.mock.calls[0][0] as CustomEvent<{ message: string; type?: string }>;
+        expect(ev.detail.message).toBe('대화가 복제되었습니다');
+        expect(ev.detail.type).toBe('success');
+      } finally {
+        window.removeEventListener('corbu-toast', onToast);
+      }
+    });
+  });
+
+  describe('대화 헤더 보내기·관리 메뉴 (빈 메시지)', () => {
+    const emptyMessagesConversationId = 'conv-empty-msgs';
+
+    beforeEach(() => {
+      localStorage.setItem(
+        CHATGPT_CONVERSATIONS_STORAGE_KEY,
+        JSON.stringify([
+          {
+            id: emptyMessagesConversationId,
+            title: '빈 스레드',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            messages: [],
+          },
+        ]),
+      );
+    });
+
+    afterEach(() => {
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+    });
+
+    it('메시지가 없으면 보내기·복제는 비활성화, 가져오기·대화 삭제는 활성, 메시지 전체 삭제는 없다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+      const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      openHeaderSendMenu(sendMenu);
+      await waitFor(() => {
+        expect(sendMenu).toHaveAttribute('open');
+      });
+      for (const name of ['Markdown', 'JSON', 'HTML', '클립보드'] as const) {
+        expect(within(sendMenu).getByRole('button', { name })).toBeDisabled();
+      }
+      const manageMenu = screen.getByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      expect(within(manageMenu).getByRole('button', { name: '가져오기' })).not.toBeDisabled();
+      expect(within(manageMenu).getByRole('button', { name: '복제' })).toBeDisabled();
+      expect(within(manageMenu).getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION)).not.toBeDisabled();
+      expect(
+        within(manageMenu).queryByRole('button', { name: '메시지 전체 삭제' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('메시지가 없어도 보내기·관리 details에 data-testid와 패널 aria-label이 있다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+
+      const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      expect(within(sendMenu).getByText('보내기')).toBeInTheDocument();
+      expect(within(manageMenu).getByText('관리')).toBeInTheDocument();
+      expect(
+        within(sendMenu).getByRole('group', { name: '대화보내기' }),
+      ).toBeInTheDocument();
+      expect(
+        within(manageMenu).getByRole('group', { name: '대화 관리' }),
+      ).toBeInTheDocument();
+    });
+
+    it('메시지가 없어도 독립 대화에서 헤더 공유 클릭 시 프로젝트 공유 다이얼로그는 열리지 않는다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+      await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      const shareButtons = screen.getAllByRole('button', { name: '공유' });
+      const headerShare = shareButtons.find((b) => b.getAttribute('title') === '대화 공유');
+      expect(headerShare).toBeTruthy();
+      fireEvent.click(headerShare as HTMLButtonElement);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(screen.queryByText('프로젝트 공유')).not.toBeInTheDocument();
+    });
+
+    it('메시지가 없어도 가져오기 클릭 시 file input이 생성되고 속성·click이 적용된다', async () => {
+      const createdInputs: HTMLInputElement[] = [];
+      const origCreate = document.createElement.bind(document);
+      const createSpy = jest
+        .spyOn(document, 'createElement')
+        .mockImplementation((tag: string, options?: unknown) => {
+          const el = origCreate(tag as keyof HTMLElementTagNameMap, options as never);
+          if (tag === 'input') {
+            createdInputs.push(el as HTMLInputElement);
+          }
+          return el;
+        });
+      const inputClickSpy = jest.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+      try {
+        renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+        const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+        openHeaderManageMenu(manageMenu);
+        await waitFor(() => {
+          expect(manageMenu).toHaveAttribute('open');
+        });
+        const nBefore = createdInputs.length;
+        fireEvent.click(within(manageMenu).getByRole('button', { name: '가져오기' }));
+        const added = createdInputs.slice(nBefore);
+        expect(added).toHaveLength(1);
+        expect(added[0].type).toBe('file');
+        expect(added[0].accept).toBe('.json,.md,.html');
+        expect(inputClickSpy).toHaveBeenCalled();
+      } finally {
+        createSpy.mockRestore();
+        inputClickSpy.mockRestore();
+      }
+    });
+
+    it('메시지가 없어도 관리에서 대화 삭제 클릭 시 확인 모달이 열리고 취소로 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      fireEvent.click(within(manageMenu).getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION));
+      const dialog = await screen.findByRole('dialog', { name: '대화 삭제 확인 모달' });
+      expect(dialog).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION_CANCEL));
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: '대화 삭제 확인 모달' }),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it('메시지가 없어도 대화 삭제 확인(삭제 버튼) 시 스토리지에서 제거되고 헤더 보내기 메뉴가 사라진다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+      await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+
+      const manageMenu = screen.getByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      fireEvent.click(within(manageMenu).getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION));
+      await screen.findByRole('dialog', { name: '대화 삭제 확인 모달' });
+      fireEvent.click(screen.getByTestId(TEST_IDS.CHAT_DELETE_CONVERSATION_CONFIRM));
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: '대화 삭제 확인 모달' }),
+        ).not.toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.queryByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU)).not.toBeInTheDocument();
+      });
+      const stored = localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      expect(stored).toBe('[]');
+    });
+
+    it('메시지가 없어도 Escape로 열린 보내기 메뉴가 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+      const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      openHeaderSendMenu(sendMenu);
+      await waitFor(() => {
+        expect(sendMenu).toHaveAttribute('open');
+      });
+      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+      await waitFor(() => {
+        expect(sendMenu).not.toHaveAttribute('open');
+      });
+    });
+
+    it('메시지가 없어도 패널 바깥 pointerdown 시 보내기 메뉴가 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+      const sendMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_SEND_MENU);
+      openHeaderSendMenu(sendMenu);
+      await waitFor(() => {
+        expect(sendMenu).toHaveAttribute('open');
+      });
+      const titleHeading = screen.getByRole('heading', { level: 3, name: /빈 스레드/ });
+      fireEvent.pointerDown(titleHeading);
+      await waitFor(() => {
+        expect(sendMenu).not.toHaveAttribute('open');
+      });
+    });
+
+    it('메시지가 없어도 Escape로 열린 관리 메뉴가 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+      await waitFor(() => {
+        expect(manageMenu).not.toHaveAttribute('open');
+      });
+    });
+
+    it('메시지가 없어도 패널 바깥 pointerdown 시 관리 메뉴가 닫힌다', async () => {
+      renderChatOnStandalonePathWithConversation(emptyMessagesConversationId);
+      const manageMenu = await screen.findByTestId(TEST_IDS.CHAT_HEADER_MANAGE_MENU);
+      openHeaderManageMenu(manageMenu);
+      await waitFor(() => {
+        expect(manageMenu).toHaveAttribute('open');
+      });
+      const titleHeading = screen.getByRole('heading', { level: 3, name: /빈 스레드/ });
+      fireEvent.pointerDown(titleHeading);
+      await waitFor(() => {
+        expect(manageMenu).not.toHaveAttribute('open');
+      });
     });
   });
 

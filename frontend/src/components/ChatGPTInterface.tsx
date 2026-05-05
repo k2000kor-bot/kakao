@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { flushSync } from 'react-dom';
-import { useNavigate, useLocation, NavLink } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { projectService } from '../services/projectService';
 import projectShareService from '../services/projectShareService';
 import LoadingSkeleton from './LoadingSkeleton';
+import { WelcomeWorkspacePanel } from './WelcomeWorkspacePanel';
+import { WorkspaceQueryComposer } from './WorkspaceQueryComposer';
 import { errorLogger } from '../utils/errorLogger';
 import {
     newConversationDeepseekDefaults,
+    normalizeConversationDeepseekFlagsFromStorage,
     resolveDeepseekFlagsForConversation,
 } from '../config/deepseekUiDefaults';
 import {
@@ -15,8 +18,20 @@ import {
     API_ENDPOINTS,
     FIGMA_BRAINWAVE_AI_UI_KIT_CHAT_URL,
 } from '../config/api';
-import { AGENTS_PATH, AGENTS_QUERY_PARAM_ID, navigationConfig } from '../config/routes';
-import { getStandaloneChatPath, isStandaloneChatPath } from '../config/uiPreferences';
+import {
+    AGENTS_PATH,
+    AGENTS_QUERY_PARAM_ID,
+    AUTOMATION_PATH,
+    BILLING_PATH,
+    DOCS_PATH,
+    INTEGRATIONS_PATH,
+    MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY,
+    MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY,
+    navigationConfig,
+    SETTINGS_PATH,
+    VOICE_GENERATION_PATH,
+} from '../config/routes';
+import { getStandaloneChatPath, isGensparkPrimaryExperience, isMarketingDraftEligiblePath, isStandaloneChatPath } from '../config/uiPreferences';
 import { isStreamingSupported, streamChatMessage } from '../utils/streamingClient';
 import { analyzeGuidelines, getGuidelineQualityTrend, parseGuideline } from '../utils/guidelineQuality';
 import {
@@ -27,27 +42,27 @@ import {
     parsePipelineFollowUpHints,
     parsePipelineMessageExtras,
     hasPipelineExtras,
-    parseInputIntent,
-    omitHollowStructuredParsedInput,
-    getProjectlessLongInputPipelineFlags,
     parseQuestionRequirementSections,
     shouldTreatAsStructuredQuestionRequirements,
     truncateStructuredInputPreviewLine,
     shouldUseDualKeywordQuestionRequirementsPreset,
     shouldOmitComposerDiversityDirectiveBlock,
     userInputAlreadyContainsFullComposerInstructionBlock,
+    shouldClearOutboundStepUiCarryoverOnThreadIdChange,
     detectColumnStyleIntent,
     cleanResponseText,
     coerceTrimmedString,
     coerceTrimmedEnd,
+    CONCISE_CONVERSATION_TITLE_MAX_LEN,
     getConciseConversationTitleFromUserInput,
     conversationListTitleFromUserMessage,
+    isGenericConversationListTitle,
     resolveListTitleAfterAssistantReply,
-    QUESTION_REQUIREMENT_COMPOSER_TEMPLATE,
     isAssistantGenerationPlaceholder,
     isAssistantGenerationStepUi,
-    mapStreamMetadataToAssistantPlaceholder,
+    getAssistantGenerationPhase,
     mapStreamMetadataToAssistantGenerationPhase,
+    patchAssistantBodyFromStreamMetadata,
     mergePipelineMessageExtras,
     STORED_ASSISTANT_INCOMPLETE_NOTICE,
     ASSISTANT_PLACEHOLDER_ANALYZING,
@@ -59,8 +74,11 @@ import {
     scheduleAssistantPreRevealStreamPhases,
     scheduleClientStreamingPipelinePhases,
     computeAssistantPipelineDurationMultiplier,
-    scheduleAssistantNonStreamLoadingPhaseTimers,
+    pipelineBenchmarkPacingFromChatContext,
+    startAssistantNonStreamLoadingTimeline,
     runAssistantNonStreamPostResponsePhases,
+    assistantGensparkStepUiFromUserMessage,
+    userMessageHasAttachmentChatHint,
     type AssistantGenerationPhase,
 } from '../utils/chatInputUtils';
 import {
@@ -94,18 +112,24 @@ import {
 import { IconPlus, IconSend, IconStop, IconUpload, IconShare, IconEdit, IconFile } from './Icons/BrainwaveIcons';
 import advancedAPIService from '../services/advancedAPIService';
 import { AVAILABLE_CAPABILITIES_HINT, ADAPT_ANSWER_TO_REQUEST_INSTRUCTION } from '../services/generationPromptBuilder';
-import { buildGensparkAgenticContextHints } from '../services/gensparkAgenticPrompts';
-import { resolveGensparkAgentForRoute } from '../services/gensparkAgentRegistry';
+import {
+    mergeGensparkRouteContextIntoRecordIfMissing,
+    resolveGensparkAgentForRoute,
+} from '../services/gensparkAgentRegistry';
 import {
     scenarioInheritMergeOptionsFromPipelineLikeMessages,
     toChatTurnWithPipelineExtras,
     type MergeApiChatContextPayloadOptions,
 } from '../services/modernChatContextBuilder';
-import { buildDeepSeekReviewContextHints } from '../services/deepseekReviewPrompts';
+import { buildUnifiedQaGensparkPipelineContextMerge } from '../utils/buildUnifiedQaGensparkPipelineContextMerge';
 import notebookLLMDeepLearningIntegration, { buildMessageToSendForChat } from '../services/notebookLLMDeepLearningIntegration';
 import advancedConversationMemoryService from '../services/advancedConversationMemoryService';
 import { maybeCompactMultilayerStyleHintForChatContext } from '../services/multiLayerStyleAnalysisSystem';
 import { TEST_IDS } from '../constants/testIds';
+import {
+  WORKSPACE_CHAT_EMPTY_THREAD_PLACEHOLDER,
+  WORKSPACE_TAGLINE_QUERY_SNIPPET,
+} from '../constants/workspaceHomeCopy';
 import { SAMPLE_COLUMN_USER_PROMPT, SAMPLE_COLUMN_ASSISTANT_CONTENT, COLUMN_QUALITY_INSTRUCTION } from '../constants/sampleColumnResult';
 import { showToast } from '../utils/toast';
 import {
@@ -123,148 +147,33 @@ import {
 } from '../services/chatGptUiStorageKeys';
 import './ChatGPTInterface.css';
 
+type ComposerResponseModeUi = 'auto' | 'concise' | 'detailed';
+
+function readInitialComposerResponseMode(): ComposerResponseModeUi {
+    try {
+        const v = localStorage.getItem(CHATGPT_COMPOSER_RESPONSE_MODE_STORAGE_KEY);
+        if (v === 'concise' || v === 'detailed' || v === 'auto') return v;
+    } catch {
+        /* ignore */
+    }
+    return 'detailed';
+}
+
+
 const NotebookLLM = React.lazy(() => import('./NotebookLLM'));
 const ProjectEditModal = React.lazy(() => import('./ProjectManagement/ProjectEditModal'));
 const AddSourceModal = React.lazy(() => import('./ProjectManagement/AddSourceModal'));
+const GoogleDriveNotebookImportDialog = React.lazy(
+    () => import('./ProjectManagement/GoogleDriveNotebookImportDialog'),
+);
 const ProjectShareDialog = React.lazy(() => import('./ProjectShareDialog'));
 
 /** 개발/프로덕션에서는 `CHAT_POST_PATH`/llm-status(`API_ENDPOINTS.LLM_STATUS`) 미요청(404 방지). 테스트에서만 요청. */
 const RUN_LLM_STATUS_FETCH = process.env.NODE_ENV === 'test';
 
-/** 프로젝트 파이프라인 Writer 단계 LLM 다듬기 생략 — 백엔드 `PIPELINE_WRITER_SKIP_LLM_POLISH`와 동효과 */
-const REACT_APP_PIPELINE_SKIP_WRITER_POLISH = process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true';
-/** 프로젝트 대화 시 검수 실패면 Writer 1회 재작성 — 백엔드 `pipeline_verifier_rewrite` 또는 `PIPELINE_VERIFIER_REWRITE`와 동일 목적 */
-const REACT_APP_PIPELINE_VERIFIER_REWRITE = process.env.REACT_APP_PIPELINE_VERIFIER_REWRITE === 'true';
-/** Q→A 응답 메타에 생성 시나리오 포함(기본). `REACT_APP_INCLUDE_QA_GENERATION_SCENARIO=0`이면 끔 — 백엔드 `include_generation_scenario_in_response` */
-const OMIT_GENERATION_SCENARIO_IN_RESPONSE =
-    typeof process !== 'undefined' && process.env.REACT_APP_INCLUDE_QA_GENERATION_SCENARIO === '0';
-
 /** 고급 대화 메모리: 턴 기록 + 다음 요청에 `advanced_memory_context` 주입 — `REACT_APP_ADVANCED_MEMORY_CONTEXT=true` */
 const REACT_APP_ADVANCED_MEMORY_CONTEXT = process.env.REACT_APP_ADVANCED_MEMORY_CONTEXT === 'true';
 const ADVANCED_MEMORY_USER_ID = 'corbu-local';
-
-/**
- * Q→A + Genspark 계약(context 플래그) — 일반 전송·재생성·편집이 동일한 다단계 생성 경로를 쓰도록 공유.
- */
-function buildUnifiedQaGensparkPipelineContextMerge(options: {
-    trimmedInput: string;
-    featureCtx: Record<string, unknown>;
-    currentProjectId?: string;
-    gensparkRouteAgentId?: string;
-    composerResponseMode: string;
-    responseStyle: string;
-    conversationFileContent?: string;
-    /** 대화별 딥시크 — 미저장 필드는 전역 기본 */
-    conversationDeepseek?: Pick<
-        Conversation,
-        'deepseekReviewHints' | 'pipelineDeepSeekRefine' | 'pipelineDeepSeekReasoner'
-    > | null;
-}): {
-    parsedInput?: {
-        question?: string;
-        requirements?: string;
-        intent_type: string;
-        intent_confidence: number;
-    };
-    pipelineMerge: Record<string, unknown>;
-} {
-    const {
-        trimmedInput,
-        featureCtx,
-        currentProjectId,
-        gensparkRouteAgentId,
-        composerResponseMode,
-        responseStyle,
-        conversationFileContent,
-        conversationDeepseek,
-    } = options;
-    const ds = resolveDeepseekFlagsForConversation(conversationDeepseek ?? undefined);
-    const parsedSections = parseQuestionRequirementSections(trimmedInput);
-    const inputIntent = parseInputIntent(trimmedInput);
-    const parsedInput = omitHollowStructuredParsedInput(
-        parsedSections.hasBoth || inputIntent.type !== 'general'
-            ? {
-                  question: parsedSections.question || inputIntent.question || undefined,
-                  requirements: parsedSections.requirements || inputIntent.requirements || undefined,
-                  intent_type: inputIntent.type,
-                  intent_confidence: inputIntent.confidence,
-              }
-            : undefined
-    );
-
-    const wantsStructuredQaWithoutProject =
-        !currentProjectId &&
-        (!!parsedInput ||
-            !!featureCtx.prefer_informed_answer ||
-            !!featureCtx.enable_web_research ||
-            conversationFileContent !== undefined);
-
-    const { longProjectlessFast, longProjectlessLite } = getProjectlessLongInputPipelineFlags({
-        trimmedInput,
-        currentProjectId,
-        gensparkRouteAgentId,
-    });
-
-    const qaPipelineGensparkBlock: Record<string, unknown> = {
-        use_pipeline_v2: true,
-        agentic_pipeline: true,
-        agentic_genspark_style: true,
-        ...buildGensparkAgenticContextHints(gensparkRouteAgentId),
-        ...(composerResponseMode === 'concise' ? { qa_pipeline_fast_path: true } : {}),
-        ...(longProjectlessFast && !longProjectlessLite ? { qa_pipeline_fast_path: true } : {}),
-        ...(longProjectlessLite
-            ? {
-                  use_pipeline_v2: false,
-                  agentic_pipeline: false,
-                  agentic_genspark_style: false,
-                  qa_pipeline_fast_path: true,
-              }
-            : {}),
-        ...(responseStyle === 'detailed' || responseStyle === 'comprehensive'
-            ? { answer_mode: 'expert' as const }
-            : responseStyle === 'concise'
-              ? { answer_mode: 'fast' as const }
-              : responseStyle === 'balanced'
-                ? { answer_mode: 'guided' as const }
-                : {}),
-        ...(ds.review && {
-            deepseek_review_layer_hints: true,
-            ...buildDeepSeekReviewContextHints(),
-            ...(ds.refine ? { pipeline_deepseek_refine: true } : {}),
-            ...(ds.reasoner ? { pipeline_deepseek_reasoner: true } : {}),
-        }),
-        ...(REACT_APP_PIPELINE_SKIP_WRITER_POLISH ? { pipeline_skip_writer_llm_polish: true } : {}),
-        ...(REACT_APP_PIPELINE_VERIFIER_REWRITE ? { pipeline_verifier_rewrite: true } : {}),
-        ...(OMIT_GENERATION_SCENARIO_IN_RESPONSE
-            ? {}
-            : { include_generation_scenario_in_response: true }),
-    };
-
-    const agentGensparkSession = Boolean(gensparkRouteAgentId);
-    const projectlessChatGensparkStyle =
-        typeof process !== 'undefined' &&
-        process.env.REACT_APP_CHAT_GENSPARK_STYLE !== '0' &&
-        !currentProjectId &&
-        !agentGensparkSession;
-    const attachQaGenspark =
-        Boolean(currentProjectId) ||
-        wantsStructuredQaWithoutProject ||
-        agentGensparkSession ||
-        projectlessChatGensparkStyle;
-    const qaAllowEmptyProject =
-        !currentProjectId &&
-        (wantsStructuredQaWithoutProject || agentGensparkSession || projectlessChatGensparkStyle);
-
-    const pipelineMerge =
-        attachQaGenspark
-            ? {
-                  ...qaPipelineGensparkBlock,
-                  ...(qaAllowEmptyProject ? { qa_pipeline_allow_empty_project: true } : {}),
-              }
-            : {};
-
-    return { parsedInput, pipelineMerge };
-}
 
 function recordAdvancedMemoryTurn(sessionId: string, userInput: string, aiResponse: string): void {
     if (!REACT_APP_ADVANCED_MEMORY_CONTEXT) return;
@@ -282,11 +191,6 @@ function recordAdvancedMemoryTurn(sessionId: string, userInput: string, aiRespon
 }
 
 /** 대화에서 사용 가능한 슬래시 명령어 (질문 입력 시 해당 기능으로 답변 생성) */
-const SLASH_COMMANDS = [
-  { cmd: '/웹검색', label: '웹 검색·리서치', desc: '최신 정보 검색' },
-  { cmd: '/검색', label: '검색', desc: '웹 검색' },
-  { cmd: '/웹', label: '웹', desc: '웹 검색 약칭' },
-] as const;
 
 function getSelectedSourceIds(projectId: string): string[] | null {
   try {
@@ -348,7 +252,10 @@ function buildChatContext(
   extra?: Record<string, unknown>
 ): Record<string, unknown> | undefined {
   if (!project) return extra ?? undefined;
-  const ctx: Record<string, unknown> = { projectId: project.id, projectName: project.name, ...extra };
+  const safeProjectName = typeof project.name === 'string' && project.name.length > 100
+      ? project.name.slice(0, 100)
+      : project.name;
+  const ctx: Record<string, unknown> = { projectId: project.id, projectName: safeProjectName, ...extra };
   const ids = getSelectedSourceIds(project.id);
   if (ids !== null) ctx.source_ids = ids;
   if (project.files?.length) {
@@ -387,13 +294,18 @@ function buildChatContext(
 
 type MessageReaction = 'like' | 'dislike' | null;
 
+const MSG_EMOJI_REACTIONS = ['❤️', '😂', '😮', '🔥', '💯', '👏', '🎉', '😢'] as const;
+type MsgEmojiReaction = typeof MSG_EMOJI_REACTIONS[number];
+
 interface Message {
     id: string;
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
     bookmarked?: boolean;
+    pinned?: boolean;
     reaction?: MessageReaction;
+    emojiReactions?: Partial<Record<MsgEmojiReaction, boolean>>;
     /** 캡처 기준: 응답 생성에 걸린 시간(ms). "Ns 동안 생각함 >" 표시용 */
     thinkingDurationMs?: number;
     /** 백엔드 파이프라인 next_actions — 칩 클릭 시 입력창으로 이어가기 */
@@ -427,9 +339,100 @@ interface Conversation {
     deepseekReviewHints?: boolean;
     pipelineDeepSeekRefine?: boolean;
     pipelineDeepSeekReasoner?: boolean;
+    /** 이 대화에만 적용되는 지침 — 프로젝트 지침과 병행 시 API 컨텍스트에서 합쳐 전달 */
+    threadInstructions?: string;
+    /** 대화에 붙인 참고 파일(텍스트 추출 가능 형만 본문 포함) */
+    threadFiles?: Array<{
+        id: string;
+        name: string;
+        type: string;
+        size?: number;
+        textContent?: string;
+    }>;
     createdAt: Date;
     updatedAt: Date;
     pinned?: boolean;
+    tags?: string[];
+}
+
+const MAX_THREAD_CONTEXT_FILES = 6;
+const MAX_THREAD_FILE_READ_BYTES = 400_000;
+const MAX_THREAD_FILE_TEXT_CHARS = 120_000;
+
+function buildConversationThreadContextPatch(
+    conv: Pick<Conversation, 'threadInstructions' | 'threadFiles'> | null | undefined
+): Record<string, unknown> | undefined {
+    if (!conv) return undefined;
+    const instr = coerceTrimmedString(conv.threadInstructions ?? '', '');
+    const files = conv.threadFiles;
+    const hasFiles = Array.isArray(files) && files.length > 0;
+    if (!instr && !hasFiles) return undefined;
+    const out: Record<string, unknown> = {};
+    if (instr) {
+        out.project_instructions = instr;
+    }
+    if (hasFiles) {
+        out.project_files = files!.map((f) => ({
+            name: f.name,
+            type: f.type || 'application/octet-stream',
+            size: f.size,
+        }));
+        const chunks = files!
+            .map((f) => {
+                const t = coerceTrimmedString(f.textContent ?? '', '');
+                if (!t) return '';
+                return `### 첨부: ${f.name}\n${t.slice(0, MAX_THREAD_FILE_TEXT_CHARS)}`;
+            })
+            .filter(Boolean);
+        if (chunks.length) {
+            out.thread_attached_file_contents = chunks.join('\n\n---\n\n');
+        }
+    }
+    return out;
+}
+
+/** 이 대화에만 설정한 지침·스레드 첨부 파일이 있는지 — 프로젝트 없이도 파이프라인·parsed_input 트리거에 사용 */
+function conversationHasThreadInstructionsOrFiles(
+    conv: Pick<Conversation, 'threadInstructions' | 'threadFiles'> | null | undefined
+): boolean {
+    if (!conv) return false;
+    if (coerceTrimmedString(conv.threadInstructions ?? '', '').length > 0) return true;
+    return Array.isArray(conv.threadFiles) && conv.threadFiles.length > 0;
+}
+
+function mergeProjectAndThreadChatContext(
+    projectCtx: Record<string, unknown> | undefined,
+    conv: Conversation | null | undefined
+): Record<string, unknown> | undefined {
+    const threadPatch = buildConversationThreadContextPatch(conv ?? undefined);
+    if (!projectCtx && !threadPatch) return undefined;
+    const merged: Record<string, unknown> = { ...(projectCtx ?? {}), ...(threadPatch ?? {}) };
+    const pInst =
+        typeof projectCtx?.project_instructions === 'string' ? projectCtx.project_instructions : '';
+    const tInst =
+        typeof threadPatch?.project_instructions === 'string' ? threadPatch.project_instructions : '';
+    if (pInst && tInst) {
+        merged.project_instructions = `${pInst}\n\n---\n\n[이 대화 지침]\n${tInst}`;
+    }
+    const pFiles =
+        projectCtx && Array.isArray(projectCtx.project_files) ? (projectCtx.project_files as unknown[]) : [];
+    const tFiles =
+        threadPatch && Array.isArray(threadPatch.project_files) ? (threadPatch.project_files as unknown[]) : [];
+    if (pFiles.length + tFiles.length > 0) {
+        merged.project_files = [...pFiles, ...tFiles];
+    }
+    const pTxt =
+        typeof projectCtx?.thread_attached_file_contents === 'string'
+            ? projectCtx.thread_attached_file_contents
+            : '';
+    const tTxt =
+        typeof threadPatch?.thread_attached_file_contents === 'string'
+            ? threadPatch.thread_attached_file_contents
+            : '';
+    if (pTxt && tTxt) {
+        merged.thread_attached_file_contents = `${pTxt}\n\n---\n\n${tTxt}`;
+    }
+    return merged;
 }
 
 function mergeScenarioAndConversationDeepseek(
@@ -455,25 +458,13 @@ function patchAssistantMessageWithStreamMetadata(
     existingMsg: Message,
     meta: Record<string, unknown>,
 ): Message | null {
-    const ph = mapStreamMetadataToAssistantPlaceholder(meta);
-    const phaseMeta = mapStreamMetadataToAssistantGenerationPhase(meta);
-    if (!ph && !phaseMeta) return null;
-
-    let content = existingMsg.content;
-    if (ph && isAssistantGenerationPlaceholder(existingMsg.content)) {
-        content = ph;
-    }
-    const pipelineExtras = phaseMeta
-        ? mergePipelineMessageExtras(
-              { pipelineGenerationPhase: phaseMeta },
-              existingMsg.pipelineExtras ?? {},
-          )
-        : existingMsg.pipelineExtras;
-
-    if (content === existingMsg.content && pipelineExtras === existingMsg.pipelineExtras) {
-        return null;
-    }
-    return { ...existingMsg, content, pipelineExtras };
+    const patch = patchAssistantBodyFromStreamMetadata(
+        existingMsg.content,
+        existingMsg.pipelineExtras,
+        meta,
+    );
+    if (!patch) return null;
+    return { ...existingMsg, content: patch.body, pipelineExtras: patch.pipelineExtras };
 }
 
 const ASSISTANT_GEN_PHASE_SLUGS: readonly AssistantGenerationPhase[] = [
@@ -522,10 +513,24 @@ function isOutputPreset(value: unknown): value is OutputPreset {
         || value === 'risk-matrix';
 }
 
+/** jsdom 등에서 `focus({ preventScroll: true })` 옵션을 지원하지 않으면 예외가 나므로 안전 호출 */
+function focusElementPreventScroll(el: HTMLElement | null | undefined): void {
+    if (!el) return;
+    try {
+        el.focus({ preventScroll: true });
+    } catch {
+        try {
+            el.focus();
+        } catch {
+            /* noop */
+        }
+    }
+}
+
 interface ChatGPTInterfaceProps {
     /** URL /projects/:id 진입 시 해당 프로젝트 자동 선택 */
     initialProjectId?: string;
-    /** URL /agents?id=<uuid> — Genspark 에이전트와 동일한 쿼리로 세션·API 프로필 정렬 */
+    /** URL /agents?id=<uuid> — 공개 규격과 동일한 쿼리로 세션·API 프로필 정렬 */
     gensparkRouteAgentId?: string;
 }
 
@@ -533,13 +538,41 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const navigate = useNavigate();
     const location = useLocation();
     const pathname = location.pathname || '/';
-    /** 독립 일반 대화 경로(기본 `/`, 젠스파이크 우선 시 `/chat`)에서 웰컴·전역 동작 */
+    /** 독립 일반 대화 경로(기본 `/`, 워크스페이스 우선 시 `/chat`)에서 웰컴·전역 동작 */
     const isDefaultPage = isStandaloneChatPath(pathname);
+    /** 루트 워크스페이스 홈과 문구 중복 방지: 독립 대화 경로에서는 웰컴 히어로 생략·도구만 표시 */
+    const compactWorkspaceWelcome = isGensparkPrimaryExperience() && isStandaloneChatPath(pathname);
     /** location.state.conversationId — 의존성 배열에 `location.state` 객체를 넣지 않고 이 원시값만 사용 (React 19 훅 검증 안정화) */
     const conversationIdFromState = (location.state as { conversationId?: string } | null | undefined)?.conversationId;
     const gensparkAgentSessionMeta = useMemo(
         () => (gensparkRouteAgentId ? resolveGensparkAgentForRoute(gensparkRouteAgentId) : null),
         [gensparkRouteAgentId]
+    );
+    /** 에이전트 라우트 `/agents?id=` 세션 — 답변 생성 패널을 카드형(비 embedded)으로 */
+    const gensparkAgentBodyEmbedded = !gensparkRouteAgentId;
+    const copyGensparkAgentSessionLink = useCallback(
+        async (kind: 'app' | 'public') => {
+            if (!gensparkRouteAgentId) return;
+            const publicUrl = gensparkAgentSessionMeta?.url ?? '';
+            const appUrl =
+                typeof window !== 'undefined'
+                    ? `${window.location.origin}${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${encodeURIComponent(gensparkRouteAgentId)}`
+                    : '';
+            const text = kind === 'public' ? publicUrl : appUrl;
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast(
+                    kind === 'public'
+                        ? '공개 에이전트 URL을 복사했습니다'
+                        : '이 앱의 에이전트 링크를 복사했습니다',
+                    'success',
+                );
+            } catch {
+                showToast('클립보드 복사에 실패했습니다', 'error');
+            }
+        },
+        [gensparkRouteAgentId, gensparkAgentSessionMeta?.url],
     );
     /** 비동기 콜백에서 현재 경로 확인용 — 스탠드얼론 대화 경로일 때 프로젝트 자동 선택 방지 */
     const pathnameRef = useRef(pathname);
@@ -548,12 +581,23 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const prevPathnameForWelcomeRef = useRef<string | null>(null);
     /** conversationIdFromState가 "있었다가 없어졌을 때"만 currentConversation 초기화 (전송 직후 conversations 갱신 시 null로 덮어쓰기 방지) */
     const prevConversationIdFromStateRef = useRef<string | undefined>(undefined);
+    /** 대화 복제 직후 한 틱: location.state가 옛 id일 때 effect가 선택을 덮어쓰지 않도록 함(1369가 새 id로 동기화) */
+    const skipNextConversationIdFromStateSelectionRef = useRef(false);
     /** 대화 전환 시 메시지 영역 포커스용 — ref는 모든 useEffect보다 앞에 두어 훅 순서를 고정 */
     const prevConversationIdRef = useRef<string | null>(null);
+    /** 루트 워크스페이스에서 넘긴 질의 초안을 입력창에 한 번만 반영 */
+    const appliedMarketingComposerDraftRef = useRef(false);
+    /** 마케팅 홈 자동 전송 — `sendMessage`는 아래에 선언되므로 effect에서는 ref로 호출 */
+    const sendMessageRef = useRef<(overrideText?: string) => Promise<void>>(async () => {});
+    const threadContextFilesInputRef = useRef<HTMLInputElement>(null);
     const [projects, setProjects] = useState<Project[]>([]);
     const [currentProject, setCurrentProject] = useState<Project | null>(null);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
+    // 대화 태그 관리
+    const [convTagsOpen, setConvTagsOpen] = useState(false);
+    const [convTagInput, setConvTagInput] = useState('');
+    const [convTagFilter, setConvTagFilter] = useState<string | null>(null);
     /** useEffect 의존성에 객체 대신 넣기 위한 원시값 (React 19 경고·replace 루프 방지) */
     const currentConversationId = currentConversation?.id;
     const currentConversationProjectId = currentConversation?.projectId;
@@ -563,6 +607,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [showProjectEditModal, setShowProjectEditModal] = useState(false);
     const [showAddSourceModal, setShowAddSourceModal] = useState(false);
+    const [showGoogleDriveImportModal, setShowGoogleDriveImportModal] = useState(false);
+    /** NotebookLLM 출처 패널 외부 갱신(Drive 수동 가져오기 등) */
+    const [notebookSourcesRefreshToken, setNotebookSourcesRefreshToken] = useState(0);
     const [projectContentTab, setProjectContentTab] = useState<'chat' | 'sources'>('chat');
     const [sourceSortOrder, setSourceSortOrder] = useState<'recent' | 'oldest'>('recent');
     const [sourceFilter] = useState<'all'>('all');
@@ -578,9 +625,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const [showStructuredPreview, setShowStructuredPreview] = useState(false);
     const [structuredPreviewPlacement, setStructuredPreviewPlacement] = useState<'above' | 'below'>('above');
     const [structuredInputAssistEnabled, setStructuredInputAssistEnabled] = useState(true);
-    const [useStreaming, setUseStreaming] = useState<boolean>(true);
+    const [useStreaming] = useState<boolean>(true);
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
-    const [currentRequestHasWebSearch, setCurrentRequestHasWebSearch] = useState(false);
+    /** 전송 직후 입력창이 비워져도 로딩·컴포저 단계 UI가 직전 질의 기준을 유지하도록 저장 */
+    const [lastOutboundUserTextForStepUi, setLastOutboundUserTextForStepUi] = useState('');
+    /** 스레드 전환 시 lastOutbound 초기화용 — 첫 id 부여(null→id)는 제외 */
+    const lastComposerStepUiConversationIdRef = useRef<string | undefined>(undefined);
+    /** 전송 직후 한 커밋에서 대화 id가 바뀌면(예: 포크) 단계 UI 초기화 effect가 lastOutbound를 지우지 않도록 */
+    const skipClearOutboundStepUiForConversationChangeRef = useRef(false);
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const [editingContent, setEditingContent] = useState<string>('');
     const [deleteConfirmConversation, setDeleteConfirmConversation] = useState<Conversation | null>(null);
@@ -593,7 +645,30 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const [showScrollToBottom, setShowScrollToBottom] = useState(false);
     const [showScrollToTop, setShowScrollToTop] = useState(false);
     const [showProModal, setShowProModal] = useState(false);
-    const [inputExpanded, setInputExpanded] = useState(false);
+    const [threadInstructionsDraft, setThreadInstructionsDraft] = useState('');
+    /** 스레드 지침·파일 패널 — 기본 접힘, 헤더「대화 설정」으로만 펼침 */
+    const [threadContextPanelOpen, setThreadContextPanelOpen] = useState(false);
+
+    useEffect(() => {
+        setThreadInstructionsDraft(currentConversation?.threadInstructions ?? '');
+    }, [currentConversationId, currentConversation?.threadInstructions]);
+
+    useEffect(() => {
+        const id = currentConversation?.id ?? undefined;
+        const prevId = lastComposerStepUiConversationIdRef.current;
+        if (
+            shouldClearOutboundStepUiCarryoverOnThreadIdChange(
+                prevId,
+                id,
+                skipClearOutboundStepUiForConversationChangeRef.current,
+            )
+        ) {
+            setLastOutboundUserTextForStepUi('');
+        }
+        if (id !== prevId) {
+            lastComposerStepUiConversationIdRef.current = id;
+        }
+    }, [currentConversation?.id]);
 
     useEffect(() => {
         if (!showProModal) return;
@@ -636,6 +711,43 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         };
     }, [projectMenuOpenId]);
 
+    // 대화 헤더 보내기·관리 `<details>`: 바깥 클릭·Escape 시 닫기 (열린 네이티브 dialog가 있으면 Escape는 모달 우선)
+    useEffect(() => {
+        const onPointerDown = (e: PointerEvent) => {
+            const t = e.target as Node | null;
+            if (!t || !document.body.contains(t)) return;
+            const openList = Array.from(
+                document.querySelectorAll<HTMLDetailsElement>('details.bw-chat-header-menu[open]')
+            );
+            const toClose = openList.filter((d) => !d.contains(t));
+            if (toClose.length === 0) return;
+            const active = document.activeElement;
+            const focusedDetails =
+                active instanceof Node ? toClose.find((d) => d.contains(active)) : undefined;
+            toClose.forEach((d) => d.removeAttribute('open'));
+            focusedDetails?.querySelector<HTMLElement>('summary')?.focus();
+        };
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            const openList = Array.from(
+                document.querySelectorAll<HTMLDetailsElement>('details.bw-chat-header-menu[open]')
+            );
+            if (openList.length === 0) return;
+            if (document.querySelector('dialog[open]')) return;
+            const active = document.activeElement;
+            const focusedDetails =
+                active instanceof Node ? openList.find((d) => d.contains(active)) : undefined;
+            openList.forEach((d) => d.removeAttribute('open'));
+            focusedDetails?.querySelector<HTMLElement>('summary')?.focus();
+        };
+        document.addEventListener('pointerdown', onPointerDown, true);
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown, true);
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, []);
+
     // LLM 상태 요약: 백엔드에 CHAT_POST_PATH/llm-status(API_ENDPOINTS.LLM_STATUS)가 있을 때만 사용.
     // 기본 페이지(/)에서는 절대 요청하지 않음 → 404 없음, setLlmStatusSummary 리렌더 없음 → 프로젝트로 이동 방지. 테스트는 예외.
     useEffect(() => {
@@ -644,9 +756,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         if (onHome && process.env.NODE_ENV !== 'test') return; // 홈에서는 fetch 미실행 (캐시/이전 빌드와 무관)
         if (!RUN_LLM_STATUS_FETCH) return;
         let cancelled = false;
-        fetch(API_ENDPOINTS.LLM_STATUS, { cache: 'no-store' })
+        // fetch가 undefined를 반환하거나(모킹 누락) 비표준 응답일 때 `.then` 체인이 터지지 않도록 Promise로 감쌈
+        Promise.resolve(fetch(API_ENDPOINTS.LLM_STATUS, { cache: 'no-store' }))
             .then((res) => {
-                if (res.ok) return res.json();
+                if (cancelled) return null;
+                if (res == null || typeof (res as Response).json !== 'function') return null;
+                if (res.ok) return Promise.resolve(res.json());
                 if (res.status === 404) return null;
                 return Promise.reject(new Error(res.statusText));
             })
@@ -657,7 +772,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             })
             .catch(() => { if (!cancelled) setLlmStatusSummary(null); });
         return () => { cancelled = true; };
-    }, [pathname]);
+    }, [pathname, isDefaultPage]);
 
     useEffect(() => {
         if (!showStructuredPreview) return;
@@ -756,6 +871,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const [importingConversation, setImportingConversation] = useState(false);
     // 키보드 단축키 도움말
     const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
+    // 인라인 메시지 검색
+    const [msgSearchOpen, setMsgSearchOpen] = useState(false);
+    const [msgSearchQuery, setMsgSearchQuery] = useState('');
+    const [msgSearchIdx, setMsgSearchIdx] = useState(0);
+    const msgSearchInputRef = useRef<HTMLInputElement>(null);
     // 대화 정렬
     type SortOption = 'recent' | 'name' | 'messages';
     const [sortOption, _setSortOption] = useState<SortOption>('recent');
@@ -778,7 +898,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // 스토리지 사용량
     const [_storageUsage, setStorageUsage] = useState<{ used: number; total: number } | null>(null);
     const speechSynthRef = useRef<SpeechSynthesisUtterance | null>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const streamingRafRef = useRef<number | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -796,25 +915,16 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const structuredPreviewRef = useRef<HTMLSpanElement>(null);
     const imageFileInputRef = useRef<HTMLInputElement>(null);
     const conversationFileInputRef = useRef<HTMLInputElement>(null);
-    const addMenuAnchorRef = useRef<HTMLButtonElement>(null);
     const chatDeleteConversationCancelRef = useRef<HTMLButtonElement>(null);
     const projectDeleteCancelRef = useRef<HTMLButtonElement>(null);
     const messageDeleteCancelRef = useRef<HTMLButtonElement>(null);
     const clearMessagesCancelRef = useRef<HTMLButtonElement>(null);
     // 첨부 메뉴(/웹검색 등)·이미지 첨부·대화 파일 첨부
-    const [showAddMenu, setShowAddMenu] = useState(false);
     /** 공동입력창 Auto 드롭다운: auto=enhanced, concise=basic, detailed=ultimate. localStorage 복원 */
-    const [composerResponseMode, setComposerResponseMode] = useState<'auto' | 'concise' | 'detailed'>(() => {
-        try {
-            const v = localStorage.getItem(CHATGPT_COMPOSER_RESPONSE_MODE_STORAGE_KEY);
-            if (v === 'concise' || v === 'detailed' || v === 'auto') return v;
-        } catch (_) { /* ignore */ }
-        return 'detailed'; // 기본 상세(ultimate)로 생성 답변 능력 최대 활용
-    });
+    const [composerResponseMode, setComposerResponseMode] = useState<ComposerResponseModeUi>(readInitialComposerResponseMode);
     const [attachedImageAnalysis, setAttachedImageAnalysis] = useState<string | null>(null);
     const [imageAnalysisLoading, setImageAnalysisLoading] = useState(false);
     const [attachedConversationFile, setAttachedConversationFile] = useState<File | null>(null);
-    const showCommandHint = coerceTrimmedString(input, '').startsWith('/');
     /** Auto 드롭다운 → API quality: auto→enhanced, concise→basic, detailed→ultimate */
     const composerQuality = composerResponseMode === 'concise' ? 'basic' : composerResponseMode === 'detailed' ? 'ultimate' : 'enhanced';
 
@@ -844,6 +954,73 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         return null;
     }, [currentConversation?.messages, isStreaming, isLoading, streamingElapsedSec]);
 
+    /**
+     * 입력창 하단 5단계 진행 표시: `/agents?id=` 세션뿐 아니라
+     * `pipelineBenchmarkPacingFromChatContext`와 동일 조건(웹검색·자료 활용·프로젝트 대화 등)에서도 표시해
+     * 긴 생성 중에도 입력창 근처에서 단계가 보이게 함.
+     */
+    const composerAgentPipelinePhase = useMemo((): AssistantGenerationPhase | null => {
+        if (!isLoading && !isStreaming) return null;
+        const msgs = currentConversation?.messages ?? [];
+        const lastUser = [...msgs].reverse().find((m) => m.role === 'user');
+        const userTrim =
+            lastUser && typeof lastUser.content === 'string'
+                ? coerceTrimmedString(lastUser.content, '')
+                : '';
+        const activeFeat = buildFeatureContextFromMessage(userTrim);
+        const composerBenchPacing = pipelineBenchmarkPacingFromChatContext({
+            gensparkRouteAgentId,
+            useInformedOrSearch: !!(activeFeat.enable_web_research || activeFeat.prefer_informed_answer),
+            projectId: currentProject?.id,
+        });
+        const agentRoute = Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', ''));
+        if (!agentRoute && !composerBenchPacing) return null;
+
+        const last = msgs[msgs.length - 1];
+        if (!last || last.role !== 'assistant') {
+            return 'analyze';
+        }
+        if (isAssistantGenerationStepUi(last.content)) {
+            const ph = getAssistantGenerationPhase(String(last.content));
+            if (ph && ph !== 'retry') return ph;
+            return 'analyze';
+        }
+        if (isStreaming) {
+            const mapped = assistantPhaseFromPipelineExtrasSlug(last.pipelineExtras?.pipelineGenerationPhase);
+            return mapped ?? 'draft';
+        }
+        return 'analyze';
+    }, [
+        gensparkRouteAgentId,
+        isLoading,
+        isStreaming,
+        currentConversation?.messages,
+        currentProject?.id,
+    ]);
+
+    /** `AssistantGensparkBody`와 동일 — 프로젝트에 파일·웹 소스가 있으면 단계 UI 헤드라인을 문서 맥락 톤으로 */
+    const pipelineStepDocumentContext = useMemo(
+        () =>
+            !!(
+                currentProject &&
+                ((currentProject.files?.length ?? 0) > 0 ||
+                    (currentProject.webSources?.length ?? 0) > 0)
+            ),
+        [currentProject],
+    );
+
+    const composerGensparkStepUi = useMemo(() => {
+        const composerGensparkUserSource =
+            isLoading && !coerceTrimmedString(inputTrimmed, '')
+                ? lastOutboundUserTextForStepUi
+                : inputTrimmed;
+        return assistantGensparkStepUiFromUserMessage(composerGensparkUserSource, {
+            projectHasFiles:
+                pipelineStepDocumentContext ||
+                userMessageHasAttachmentChatHint(composerGensparkUserSource),
+        });
+    }, [isLoading, inputTrimmed, lastOutboundUserTextForStepUi, pipelineStepDocumentContext]);
+
     // 선택한 응답 스타일 저장 (새로고침 후 복원)
     useEffect(() => {
         try {
@@ -851,13 +1028,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         } catch (_) { /* ignore */ }
     }, [composerResponseMode]);
 
-    // 첨부 메뉴 외부 클릭 시 닫기
-    useEffect(() => {
-        if (!showAddMenu) return;
-        const close = () => setShowAddMenu(false);
-        window.addEventListener('click', close);
-        return () => window.removeEventListener('click', close);
-    }, [showAddMenu]);
+
 
     const handleImageFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -911,19 +1082,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         setAttachedConversationFile(file);
     }, []);
 
-    const insertSlashCommand = useCallback((cmd: string) => {
-        setInput((prev) => {
-            const trimmed = coerceTrimmedString(prev, '');
-            if (trimmed.startsWith('/')) {
-                const spaceIdx = trimmed.indexOf(' ');
-                const query = spaceIdx >= 0 ? coerceTrimmedString(trimmed.slice(spaceIdx), '') : '';
-                return query ? `${cmd} ${query}` : `${cmd} `;
-            }
-            return prev ? `${prev} ${cmd} ` : `${cmd} `;
-        });
-        setShowAddMenu(false);
-        inputRef.current?.focus();
-    }, []);
 
     const refreshProjects = useCallback(async () => {
         try {
@@ -980,6 +1138,28 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         [currentProject?.instructions, currentProject?.initialGuidelines]
     );
 
+    const hasThreadGuidance = useMemo(
+        () =>
+            !!currentConversation &&
+            (coerceTrimmedString(currentConversation.threadInstructions ?? '', '').length > 0 ||
+                (currentConversation.threadFiles?.length ?? 0) > 0),
+        [currentConversation]
+    );
+
+    const hasAnyGuidance = hasProjectGuidance || hasThreadGuidance;
+
+    /** 프로젝트 없이 대화만 쓸 때는 스레드 지침·첨부 중심 문구 */
+    const projectGuidelineInstructionText = useMemo(() => {
+        if (!hasAnyGuidance) return '';
+        if (hasProjectGuidance && hasThreadGuidance) {
+            return '이 대화·프로젝트에 설정된 지침(project_instructions)과 규칙(project_guidelines)을 반드시 준수하세요. 미리 설정한 논리·형식·제약·우선순위에 맞게 답변을 생성하세요. 지침과 충돌하는 내용은 지침을 우선합니다. 첨부 파일 본문(thread_attached_file_contents)이 있으면 답변 시 참고하세요.';
+        }
+        if (hasProjectGuidance) {
+            return '프로젝트에 설정된 지침(project_instructions)과 규칙(project_guidelines)을 반드시 준수하세요. 미리 설정한 논리·형식·제약·우선순위에 맞게 답변을 생성하세요. 지침과 충돌하는 내용은 지침을 우선합니다. 첨부 파일 본문(thread_attached_file_contents)이 있으면 답변 시 참고하세요.';
+        }
+        return '이 대화에서만 설정한 지침(project_instructions)과 첨부 파일 본문(thread_attached_file_contents)을 반드시 준수·참고하세요. 논리·형식·제약·우선순위에 맞게 답변을 생성하고, 지침과 충돌하는 내용은 지침을 우선합니다.';
+    }, [hasAnyGuidance, hasProjectGuidance, hasThreadGuidance]);
+
     // 스탠드얼론 대화 경로에서 웰컴 유지: 프로젝트·에이전트 등 다른 경로에서 "처음" 들어올 때만 프로젝트/대화 초기화
     // 사이드바에서 대화 클릭 시 state.conversationId로 진입 → conversationIdFromState effect에서 설정
     useEffect(() => {
@@ -1009,6 +1189,40 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isDefaultPage, initialProjectId, pathname]);
 
+    // 루트 워크스페이스 질의 초안 → 독립 대화 또는 에이전트 입력창에 1회 반영 후 history state 정리
+    useEffect(() => {
+        if (!isMarketingDraftEligiblePath(pathname)) {
+            appliedMarketingComposerDraftRef.current = false;
+            return;
+        }
+        const s = location.state as Record<string, unknown> | null | undefined;
+        const raw = s?.[MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY];
+        const draft = typeof raw === 'string' ? coerceTrimmedString(raw, '') : '';
+        if (!draft) return;
+        if (appliedMarketingComposerDraftRef.current) return;
+        appliedMarketingComposerDraftRef.current = true;
+        const shouldAutoSend = s?.[MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY] === true;
+        setInput(draft);
+        const next: Record<string, unknown> =
+            s && typeof s === 'object' && !Array.isArray(s) ? { ...s } : {};
+        delete next[MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY];
+        delete next[MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY];
+        const restKeys = Object.keys(next).filter((k) => next[k] !== undefined && next[k] !== null);
+        navigate(`${pathname}${location.search || ''}`, {
+            replace: true,
+            state: restKeys.length ? next : undefined,
+        });
+        if (shouldAutoSend) {
+            queueMicrotask(() => {
+                void sendMessageRef.current(draft);
+            });
+        } else {
+            queueMicrotask(() => {
+                inputRef.current?.focus();
+            });
+        }
+    }, [pathname, location.state, location.search, navigate]);
+
     // URL 공유 링크(?share=토큰) 접근: 기본 페이지(/)에서만 검증 후 해당 프로젝트 선택 (Task B4-4)
     useEffect(() => {
         if (!isDefaultPage || projects.length === 0) return;
@@ -1037,10 +1251,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             try {
                 const loadedProjects = await projectService.getProjects();
                 const projectsWithDates: Project[] = loadedProjects
-                    .filter((p) => p?.id && p?.name)
+                    .filter((p) => p?.id && p?.name && String(p.name).trim().length >= 1)
                     .map((p) => ({
                         id: p.id,
-                        name: p.name,
+                        name: String(p.name).length > 100 ? String(p.name).slice(0, 100) : p.name,
                         description: p.description || '',
                         instructions: typeof p.instructions === 'string' ? p.instructions : '',
                         initialGuidelines: Array.isArray(p.initialGuidelines) ? p.initialGuidelines : [],
@@ -1079,9 +1293,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             updatedAt: string;
                         }>;
                         const projectsWithDates: Project[] = parsed
-                            .filter((p) => p?.id && p?.name)
+                            .filter((p) => p?.id && p?.name && String(p.name).trim().length >= 1)
                             .map((p) => ({
                                 ...p,
+                                name: String(p.name).length > 100 ? String(p.name).slice(0, 100) : p.name,
                                 createdAt: safeDate(p.createdAt),
                                 updatedAt: safeDate(p.updatedAt),
                             }));
@@ -1123,29 +1338,37 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 }>;
                 const conversationsWithDates: Conversation[] = parsed
                     .filter((conv) => conv?.id && conv?.messages)
-                    .map((conv) => ({
-                        ...conv,
-                        gensparkAgentId: (() => {
-                            if (typeof conv.gensparkAgentId !== 'string') return undefined;
-                            const g = coerceTrimmedString(conv.gensparkAgentId, '');
-                            return g || undefined;
-                        })(),
-                        createdAt: safeDate(conv.createdAt),
-                        updatedAt: safeDate(conv.updatedAt),
-                        messages: conv.messages.map((msg) => {
-                            const restored = {
-                                ...msg,
-                                timestamp: safeDate(msg.timestamp),
-                            };
-                            if (
-                                restored.role === 'assistant' &&
-                                isAssistantGenerationPlaceholder(restored.content)
-                            ) {
-                                restored.content = STORED_ASSISTANT_INCOMPLETE_NOTICE;
-                            }
-                            return restored;
-                        }),
-                    }));
+                    .map((conv) => {
+                        const rawTitle = coerceTrimmedString(conv.title, '') || '새 대화';
+                        const sanitizedTitle = rawTitle.length > CONCISE_CONVERSATION_TITLE_MAX_LEN * 2
+                            ? `${rawTitle.substring(0, CONCISE_CONVERSATION_TITLE_MAX_LEN)}...`
+                            : rawTitle;
+                        const withDates: Conversation = {
+                            ...conv,
+                            title: sanitizedTitle,
+                            gensparkAgentId: (() => {
+                                if (typeof conv.gensparkAgentId !== 'string') return undefined;
+                                const g = coerceTrimmedString(conv.gensparkAgentId, '');
+                                return g || undefined;
+                            })(),
+                            createdAt: safeDate(conv.createdAt),
+                            updatedAt: safeDate(conv.updatedAt),
+                            messages: conv.messages.map((msg) => {
+                                const restored = {
+                                    ...msg,
+                                    timestamp: safeDate(msg.timestamp),
+                                };
+                                if (
+                                    restored.role === 'assistant' &&
+                                    isAssistantGenerationPlaceholder(restored.content)
+                                ) {
+                                    restored.content = STORED_ASSISTANT_INCOMPLETE_NOTICE;
+                                }
+                                return restored;
+                            }),
+                        };
+                        return normalizeConversationDeepseekFlagsFromStorage(withDates);
+                    });
                 setConversations(conversationsWithDates);
             } catch (error) {
                 errorLogger.error('대화 불러오기 실패', error instanceof Error ? error : new Error(String(error)), {
@@ -1195,6 +1418,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 if (isDefaultPage && conv.gensparkAgentId) {
                     return;
                 }
+                if (skipNextConversationIdFromStateSelectionRef.current) {
+                    skipNextConversationIdFromStateSelectionRef.current = false;
+                    return;
+                }
                 setCurrentConversation(conv);
             }
         } else {
@@ -1213,19 +1440,23 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         if (!currentConversation) return;
         if (conversationIdFromState === currentConversation.id) return;
 
-        if (isDefaultPage) {
-            navigate(getStandaloneChatPath(), { state: { conversationId: currentConversation.id }, replace: true });
-        } else if (initialProjectId && currentConversation.projectId === initialProjectId) {
-            // 프로젝트 페이지에서 프로젝트 내 대화가 선택된 경우
-            navigate(`/projects/${initialProjectId}`, { state: { conversationId: currentConversation.id }, replace: true });
-        } else if (
-            gensparkRouteAgentId &&
-            currentConversation.gensparkAgentId === gensparkRouteAgentId
-        ) {
-            navigate(`${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${encodeURIComponent(gensparkRouteAgentId)}`, {
-                state: { conversationId: currentConversation.id },
-                replace: true,
-            });
+        try {
+            if (isDefaultPage) {
+                navigate(getStandaloneChatPath(), { state: { conversationId: currentConversation.id }, replace: true });
+            } else if (initialProjectId && currentConversation.projectId === initialProjectId) {
+                // 프로젝트 페이지에서 프로젝트 내 대화가 선택된 경우
+                navigate(`/projects/${initialProjectId}`, { state: { conversationId: currentConversation.id }, replace: true });
+            } else if (
+                gensparkRouteAgentId &&
+                currentConversation.gensparkAgentId === gensparkRouteAgentId
+            ) {
+                navigate(`${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${encodeURIComponent(gensparkRouteAgentId)}`, {
+                    state: { conversationId: currentConversation.id },
+                    replace: true,
+                });
+            }
+        } catch {
+            /* 테스트(MemoryRouter)·비정상 라우트 상태에서 navigate 예외 방지 */
         }
         // id·projectId·conversationIdFromState·location.key 만 구독 (currentConversation 객체는 메시지마다 바뀌므로 제외 → replace 루프 방지)
         // eslint-disable-next-line react-hooks/exhaustive-deps -- currentConversation 전체를 deps에 넣으면 메시지 갱신마다 navigate replace 루프
@@ -1248,11 +1479,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         if (target) setCurrentProject(target);
     }, [isDefaultPage, initialProjectId, projects]);
 
-    // 프로젝트 · 대화 진입 시 상세(파일·지침 등) 로드 — 기본 페이지(/)에서는 실행하지 않음
+    // 프로젝트 대화 진입 시 상세(파일·지침 등) 로드 — 기본 페이지(/)에서는 실행하지 않음
     useEffect(() => {
         if (isDefaultPage || !initialProjectId) return;
         let cancelled = false;
-        projectService.getProject(initialProjectId).then((full) => {
+        // 테스트·모킹 누락 시 getProject가 Thenable이 아닐 수 있음 → 패시브 이펙트에서 `.then` 예외 방지
+        Promise.resolve(projectService.getProject(initialProjectId)).then((full) => {
             if (cancelled || !full) return;
             const withDates: Project = {
                 ...full,
@@ -1327,17 +1559,35 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
     // 메시지 스크롤 (사용자가 아래쪽을 보고 있을 때만 자동 스크롤)
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-        messagesEndRef.current?.scrollIntoView({ behavior });
+        const root = messagesContainerRef.current;
+        if (!root) return;
+        try {
+            /* scrollIntoView(끝 앵커)는 가끔 상위 스크롤포트(메인·body)까지 스크롤해 입력 도크가 밀려 보일 수 있음 → 메시지 열만 스크롤 */
+            root.scrollTo({ top: root.scrollHeight, behavior });
+        } catch {
+            root.scrollTop = root.scrollHeight;
+        }
     }, []);
 
     const scrollToTop = useCallback((behavior: ScrollBehavior = 'smooth') => {
-        messagesContainerRef.current?.scrollTo({ top: 0, behavior });
+        try {
+            messagesContainerRef.current?.scrollTo({ top: 0, behavior });
+        } catch {
+            /* 테스트·헤드리스 환경에서 scrollTo 예외 방지 */
+        }
     }, []);
 
     /** 모달 닫은 뒤 입력창으로 포커스 복귀 (접근성) */
     const focusChatInput = useCallback(() => {
-        window.setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 0);
+        window.setTimeout(() => focusElementPreventScroll(inputRef.current ?? undefined), 0);
     }, []);
+
+    const handleGoogleDriveNotebookImportSuccess = useCallback(() => {
+        setNotebookSourcesRefreshToken((n) => n + 1);
+        void refreshProjects();
+        showToast('Google Drive에서 소스를 추가했습니다.', 'success');
+        focusChatInput();
+    }, [refreshProjects, focusChatInput]);
 
     const handleMessagesScroll = useCallback(() => {
         const el = messagesContainerRef.current;
@@ -1393,7 +1643,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             prevConversationIdRef.current = id;
             const timer = requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    messagesContainerRef.current?.focus({ preventScroll: true });
+                    try {
+                        focusElementPreventScroll(messagesContainerRef.current ?? undefined);
+                    } catch {
+                        /* rAF 타이밍에 DOM이 사라진 경우 등 */
+                    }
                 });
             });
             return () => cancelAnimationFrame(timer);
@@ -1404,7 +1658,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // API 오류 배너 표시 시 포커스 이동 및 assertive 알림
     useEffect(() => {
         if (isApiReachable === false) {
-            const t = setTimeout(() => apiUnreachableBannerRef.current?.focus({ preventScroll: true }), 100);
+            const t = setTimeout(() => focusElementPreventScroll(apiUnreachableBannerRef.current ?? undefined), 100);
             return () => clearTimeout(t);
         }
     }, [isApiReachable]);
@@ -1423,7 +1677,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // 새 프로젝트 생성 (백엔드 API 사용)
     // 프로젝트 생성 (useCallback으로 메모이제이션)
     const createNewProject = useCallback(async () => {
-        const name = coerceTrimmedString(newProjectName, '');
+        const name = coerceTrimmedString(newProjectName, '').slice(0, 100);
         if (!name || name.length < 2) return;
 
         try {
@@ -1548,6 +1802,51 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         }
     }, [currentProject, isDefaultPage, navigate, gensparkRouteAgentId]);
 
+    // `/agents?id=…` 진입: URL state에 대화 id가 없으면 해당 에이전트 전용 대화를 자동 선택하거나 새로 만든다 (빈 화면·웰컴 혼선 방지)
+    useEffect(() => {
+        if (!gensparkRouteAgentId) return;
+        if (conversationIdFromState) return;
+        if (currentConversation?.gensparkAgentId === gensparkRouteAgentId) return;
+
+        const raw =
+            typeof localStorage !== 'undefined'
+                ? localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY)
+                : null;
+        if (conversations.length === 0) {
+            if (raw === null) {
+                startNewConversation();
+                return;
+            }
+            try {
+                const parsed = JSON.parse(raw) as unknown;
+                if (Array.isArray(parsed) && parsed.length === 0) {
+                    startNewConversation();
+                    return;
+                }
+            } catch {
+                startNewConversation();
+                return;
+            }
+            return;
+        }
+
+        const agentConvs = conversations
+            .filter((c) => !c.projectId && c.gensparkAgentId === gensparkRouteAgentId)
+            .sort((a, b) => (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0));
+        const pick = agentConvs[0] ?? null;
+        if (pick) {
+            setCurrentConversation(pick);
+        } else {
+            startNewConversation();
+        }
+    }, [
+        gensparkRouteAgentId,
+        conversations,
+        conversationIdFromState,
+        currentConversation?.gensparkAgentId,
+        startNewConversation,
+    ]);
+
     // 일반 대화 생성 (프로젝트에 속하지 않은 새 대화만 생성)
     const _startNewGeneralConversation = useCallback(() => {
         const newConversation: Conversation = {
@@ -1555,6 +1854,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             title: '새 대화',
             messages: [],
             projectId: undefined,
+            ...newConversationDeepseekDefaults(),
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -1691,7 +1991,13 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             );
 
             if (response.data?.data?.title) {
-                return response.data.data.title;
+                const rawApiTitle = coerceTrimmedString(response.data.data.title, '');
+                if (rawApiTitle) {
+                    // 백엔드가 max_length를 무시하더라도 30자 상한 보장
+                    return rawApiTitle.length <= CONCISE_CONVERSATION_TITLE_MAX_LEN
+                        ? rawApiTitle
+                        : `${rawApiTitle.substring(0, CONCISE_CONVERSATION_TITLE_MAX_LEN)}...`;
+                }
             }
         } catch (error) {
             errorLogger.warn('대화 제목 자동 생성 실패, 기본 제목 사용', {
@@ -1707,15 +2013,23 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // 대화 저장 헬퍼 함수
     const saveConversationsToStorage = useCallback((conversationsToSave: Conversation[]) => {
         try {
-            const toSave = conversationsToSave.map((conv) => ({
-                ...conv,
-                createdAt: formatDateSafe(conv.createdAt, (d) => d.toISOString(), new Date().toISOString()),
-                updatedAt: formatDateSafe(conv.updatedAt, (d) => d.toISOString(), new Date().toISOString()),
-                messages: conv.messages.map((msg) => ({
-                    ...msg,
-                    timestamp: formatDateSafe(msg.timestamp, (d) => d.toISOString(), new Date().toISOString()),
-                })),
-            }));
+            const toSave = conversationsToSave.map((conv) => {
+                const safeTitle = (() => {
+                    const t = coerceTrimmedString(conv.title, '') || '새 대화';
+                    if (t.length <= CONCISE_CONVERSATION_TITLE_MAX_LEN) return t;
+                    return `${t.substring(0, CONCISE_CONVERSATION_TITLE_MAX_LEN)}...`;
+                })();
+                return {
+                    ...conv,
+                    title: safeTitle,
+                    createdAt: formatDateSafe(conv.createdAt, (d) => d.toISOString(), new Date().toISOString()),
+                    updatedAt: formatDateSafe(conv.updatedAt, (d) => d.toISOString(), new Date().toISOString()),
+                    messages: conv.messages.map((msg) => ({
+                        ...msg,
+                        timestamp: formatDateSafe(msg.timestamp, (d) => d.toISOString(), new Date().toISOString()),
+                    })),
+                };
+            });
             localStorage.setItem(CHATGPT_CONVERSATIONS_STORAGE_KEY, JSON.stringify(toSave));
         } catch (error) {
             errorLogger.error('대화 저장 실패', error instanceof Error ? error : new Error(String(error)), {
@@ -1724,6 +2038,38 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             });
         }
     }, []);
+
+    /** 현재 대화에 태그 추가 */
+    const addTagToCurrentConv = useCallback((tag: string) => {
+        const t = tag.trim().replace(/^#/, '');
+        if (!t || !currentConversation) return;
+        setConversations(prev => {
+            const updated = prev.map(c => {
+                if (c.id !== currentConversation.id) return c;
+                const tags = c.tags ?? [];
+                if (tags.includes(t) || tags.length >= 8) return c;
+                return { ...c, tags: [...tags, t] };
+            });
+            saveConversationsToStorage(updated);
+            return updated;
+        });
+        setCurrentConversation(prev => prev ? { ...prev, tags: [...(prev.tags ?? []).filter(x => x !== t), t] } : prev);
+        setConvTagInput('');
+    }, [currentConversation, saveConversationsToStorage]);
+
+    /** 현재 대화에서 태그 삭제 */
+    const removeTagFromCurrentConv = useCallback((tag: string) => {
+        if (!currentConversation) return;
+        setConversations(prev => {
+            const updated = prev.map(c => {
+                if (c.id !== currentConversation.id) return c;
+                return { ...c, tags: (c.tags ?? []).filter(t => t !== tag) };
+            });
+            saveConversationsToStorage(updated);
+            return updated;
+        });
+        setCurrentConversation(prev => prev ? { ...prev, tags: (prev.tags ?? []).filter(t => t !== tag) } : prev);
+    }, [currentConversation, saveConversationsToStorage]);
 
     const updateConversationDeepseek = useCallback(
         (
@@ -1751,14 +2097,78 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         [currentConversation?.id, saveConversationsToStorage]
     );
 
+    const updateConversationThread = useCallback(
+        (patch: Partial<Pick<Conversation, 'threadInstructions' | 'threadFiles'>>) => {
+            const id = currentConversation?.id;
+            if (!id) return;
+            setCurrentConversation((prev) => {
+                if (!prev || prev.id !== id) return prev;
+                return { ...prev, ...patch, updatedAt: new Date() };
+            });
+            setConversations((prev) => {
+                const mapped = prev.map((c) =>
+                    c.id === id ? { ...c, ...patch, updatedAt: new Date() } : c
+                );
+                saveConversationsToStorage(mapped);
+                return mapped;
+            });
+        },
+        [currentConversation?.id, saveConversationsToStorage]
+    );
+
+    const onThreadContextFilesChange = useCallback(
+        async (e: React.ChangeEvent<HTMLInputElement>) => {
+            const list = e.target.files;
+            if (!list?.length || !currentConversation) {
+                e.target.value = '';
+                return;
+            }
+            const existing = currentConversation.threadFiles ?? [];
+            const next = [...existing];
+            for (let i = 0; i < list.length; i++) {
+                if (next.length >= MAX_THREAD_CONTEXT_FILES) break;
+                const file = list.item(i);
+                if (!file) continue;
+                const id = `tf-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`;
+                let textContent = '';
+                const looksText =
+                    file.type.startsWith('text/') ||
+                    /\.(txt|md|mdx|csv|json|ts|tsx|js|jsx|mjs|cjs|css|html|htm|xml|yaml|yml|svg|sql)$/i.test(
+                        file.name
+                    );
+                if (looksText && file.size <= MAX_THREAD_FILE_READ_BYTES) {
+                    try {
+                        textContent = (await file.text()).slice(0, MAX_THREAD_FILE_TEXT_CHARS);
+                    } catch {
+                        textContent = '';
+                    }
+                }
+                next.push({
+                    id,
+                    name: file.name,
+                    type: file.type || 'application/octet-stream',
+                    size: file.size,
+                    textContent: textContent || undefined,
+                });
+            }
+            updateConversationThread({ threadFiles: next });
+            e.target.value = '';
+        },
+        [currentConversation, updateConversationThread]
+    );
+
+    const removeThreadContextFile = useCallback(
+        (fileId: string) => {
+            if (!currentConversation) return;
+            const next = (currentConversation.threadFiles ?? []).filter((f) => f.id !== fileId);
+            updateConversationThread({ threadFiles: next.length ? next : undefined });
+        },
+        [currentConversation, updateConversationThread]
+    );
+
     const deepseekEffective = useMemo(
         () => resolveDeepseekFlagsForConversation(currentConversation ?? undefined),
-        [
-            currentConversation?.id,
-            currentConversation?.deepseekReviewHints,
-            currentConversation?.pipelineDeepSeekRefine,
-            currentConversation?.pipelineDeepSeekReasoner,
-        ]
+        [currentConversation]
     );
 
     // 메시지 전송 — 입력창 엔터/전송 버튼 시 질문·요구를 받아 해당 답변 생성 로직으로 실행하는 단일 진입점
@@ -1857,6 +2267,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             conversation = { ...conversation, gensparkAgentId: gensparkRouteAgentId };
         }
 
+        /** 빈 스레드 첫 전송 시: 기존 제목 상태와 무관하게 입력 기반 간결 제목으로 즉시 정규화 */
+        const hadNoPriorUserMessage = !conversation.messages.some((m) => m.role === 'user');
+        if (hadNoPriorUserMessage) {
+            const candidate = conversationListTitleFromUserMessage(trimmedInput);
+            if (candidate !== '새 대화' && candidate !== conversation.title) {
+                conversation = { ...conversation, title: candidate };
+            }
+        }
+
         // 사용자 메시지 추가 후 즉시 화면에 반영 (엔터 시 사용자 말이 바로 보이도록)
         // 현재 대화 없을 때도 flushSync 안에서만 갱신해, 환영 화면 → 메시지 뷰 전환이 한 번에 보이게 함
         // 중복 방지: 같은 ID나 내용의 메시지가 최근 1초 내에 추가되었는지 확인
@@ -1880,6 +2299,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             updatedAt: new Date(),
         };
         
+        let nextConversationsForSidebarRefresh: Conversation[] | null = null;
+
         // 상태 업데이트를 한 번만 수행 (중복 방지)
         flushSync(() => {
             setCurrentConversation((prev) => {
@@ -1908,9 +2329,13 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         return prev; // 이미 같은 메시지가 있으면 업데이트하지 않음
                     }
                     // 같은 conversation이면 업데이트, 아니면 유지
-                    return prev.map((c) => (c.id === conversation.id ? updatedConversation : c));
+                    const next = prev.map((c) => (c.id === conversation.id ? updatedConversation : c));
+                    nextConversationsForSidebarRefresh = next;
+                    return next;
                 }
-                return [updatedConversation, ...prev];
+                const next = [updatedConversation, ...prev];
+                nextConversationsForSidebarRefresh = next;
+                return next;
             });
             setInput('');
             inputValueRef.current = '';
@@ -1918,6 +2343,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             setResponseStartTime(Date.now());
             setLastResponseTime(null);
         });
+
+        if (nextConversationsForSidebarRefresh) {
+            saveConversationsToStorage(nextConversationsForSidebarRefresh);
+            window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+        }
         
         // conversation 변수를 업데이트된 것으로 교체
         conversation = updatedConversation;
@@ -1925,7 +2355,23 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         // 기존 대화 이력을 백엔드에 전달 (최근 20턴)
         // 메시지 의도에 따른 기능 플래그(웹검색·조사모드 등) 병합
         const featureCtx = buildFeatureContextFromMessage(trimmedInput);
-        setCurrentRequestHasWebSearch(!!featureCtx.enable_web_research);
+        skipClearOutboundStepUiForConversationChangeRef.current = true;
+        setLastOutboundUserTextForStepUi(trimmedInput);
+        window.setTimeout(() => {
+            skipClearOutboundStepUiForConversationChangeRef.current = false;
+        }, 0);
+        {
+            const pipelineScrollBench = pipelineBenchmarkPacingFromChatContext({
+                gensparkRouteAgentId,
+                useInformedOrSearch: !!(featureCtx.enable_web_research || featureCtx.prefer_informed_answer),
+                projectId: currentProject?.id,
+            });
+            if (Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')) || pipelineScrollBench) {
+                requestAnimationFrame(() => {
+                    scrollToBottom('auto');
+                });
+            }
+        }
         const parsedForPipelineTiming = parseQuestionRequirementSections(trimmedInput);
         const phaseDurationMultiplier = computeAssistantPipelineDurationMultiplier(
             trimmedInput,
@@ -1936,6 +2382,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             },
             structuredInputAssistEnabled &&
                 shouldTreatAsStructuredQuestionRequirements(parsedForPipelineTiming),
+            Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')),
         );
 
         // 대화방 재진입 시에도 저장된 대화 스토리 반영 — conversations(로컬 스토리지 동기화) 우선 사용
@@ -1949,7 +2396,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             })
         );
         const hasConversationHistory = historyMessages.length > 0;
-        const projectCtx = buildChatContext(currentProject ?? null);
+        const projectCtx = mergeProjectAndThreadChatContext(
+            buildChatContext(currentProject ?? null),
+            conversationForHistory ?? conversation
+        );
 
         let conversationFileContent: string | undefined;
         let conversationFileName: string | undefined;
@@ -1966,6 +2416,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             setAttachedConversationFile(null);
         }
 
+        const convForThread = conversationForHistory ?? conversation;
         const { parsedInput, pipelineMerge } = buildUnifiedQaGensparkPipelineContextMerge({
             trimmedInput,
             featureCtx: featureCtx as Record<string, unknown>,
@@ -1974,7 +2425,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             composerResponseMode,
             responseStyle,
             conversationFileContent,
-            conversationDeepseek: conversation,
+            conversationDeepseek: convForThread,
+            hasConversationThreadContext: conversationHasThreadInstructionsOrFiles(convForThread),
         });
 
         const isColumnStyleRequest = detectColumnStyleIntent(trimmedInput);
@@ -2024,10 +2476,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 : baseQualityInstruction,
             adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
             ...(isColumnStyleRequest && { column_style_requested: true }),
-            ...(hasProjectGuidance && {
-                project_guideline_instruction:
-                    '이 프로젝트에 설정된 지침(project_instructions)과 규칙(project_guidelines)을 반드시 준수하세요. 미리 설정한 논리·형식·제약·우선순위에 맞게 답변을 생성하세요. 지침과 충돌하는 내용은 지침을 우선합니다.',
-            }),
+            ...(hasAnyGuidance && projectGuidelineInstructionText
+                ? { project_guideline_instruction: projectGuidelineInstructionText }
+                : {}),
             ...(hasConversationHistory && {
                 consistency_instruction:
                     '이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요. 최근 대화 맥락을 반드시 참고하세요.',
@@ -2049,7 +2500,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             precise_intent_matching: true,
             // 다양한 형식 자동 감지 및 적용 (강제)
             auto_format_detection: true,
-            // 한국어 이해·장르·화행 프로필 (Genspark형 파이프라인 입력 계층, v3 문서)
+            // 한국어 이해·장르·화행 프로필 (다단계 파이프라인 입력 계층, v3 문서)
             ...(containsHangul(trimmedInput) && (() => {
                 const prior = extractPriorTurnsForKoContext(
                     updatedMessages.map((m) =>
@@ -2096,8 +2547,20 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             ...(multilayerStyleHint ? { multilayer_style_hint: multilayerStyleHint } : {}),
         };
 
+        /** `/agents?id=` 세션: 라우트 에이전트 메타가 요청 context에 항상 포함되도록 보강 */
+        const chatContextForRequest = mergeGensparkRouteContextIntoRecordIfMissing(
+            chatContextWithHistory as Record<string, unknown>,
+            gensparkRouteAgentId ?? null,
+        );
+
         // 생성 답변 능력 최대 활용: 검색·자료 활용 시 품질 상향 (basic→enhanced, enhanced→ultimate)
         const useInformedOrSearch = !!(featureCtx.enable_web_research || featureCtx.prefer_informed_answer);
+        const pipelineBenchmarkPacing = pipelineBenchmarkPacingFromChatContext({
+            gensparkRouteAgentId,
+            useInformedOrSearch,
+            projectId: currentProject?.id,
+        });
+        const isGensparkAgentRouteSession = Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', ''));
         const effectiveQuality: 'basic' | 'enhanced' | 'ultimate' =
             useInformedOrSearch
                 ? composerQuality === 'basic'
@@ -2148,7 +2611,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     timestamp: new Date(),
                 };
 
-                // 젠스파이크형 단계 UI: 항상 동일 assistant 슬롯을 두고 onChunk가 id로 갱신 (누락 시 스트림이 화면에 안 붙는 문제 방지)
+                // 다단계 UI형 단계 UI: 항상 동일 assistant 슬롯을 두고 onChunk가 id로 갱신 (누락 시 스트림이 화면에 안 붙는 문제 방지)
                 const step1Message: Message = {
                     ...assistantMessage,
                     content: ASSISTANT_PLACEHOLDER_ANALYZING,
@@ -2249,6 +2712,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 clearAssistantStreamPhases = scheduleAssistantPreRevealStreamPhases({
                     reducedMotion: streamReducedMotion,
                     durationMultiplier: phaseDurationMultiplier,
+                    benchmarkGenspark: pipelineBenchmarkPacing,
+                    gensparkAgentRouteSession: isGensparkAgentRouteSession,
                     setPlaceholder: (text) => {
                         if (!streamPreRevealActiveRef.current) return;
                         flushSync(() => {
@@ -2283,14 +2748,16 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     },
                     onReveal: () => {
                         streamPreRevealActiveRef.current = false;
-                        flushAssistantStreamSlotContent(accumulatedText);
                         if (!serverDrovePipelinePhaseRef.current) {
                             clearClientStreamingPhases?.();
                             clearClientStreamingPhases = scheduleClientStreamingPipelinePhases({
                                 multiplier: phaseDurationMultiplier,
+                                benchmarkGenspark: pipelineBenchmarkPacing,
+                                gensparkAgentRouteSession: isGensparkAgentRouteSession,
                                 onPhase: (ph) => patchAssistantPipelinePhaseSlug(ph),
                             });
                         }
+                        flushAssistantStreamSlotContent(accumulatedText);
                     },
                 });
 
@@ -2298,7 +2765,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     const payload = buildChatGptNonStreamPostPayload(
                         messageToSend,
                         effectiveQuality,
-                        chatContextWithHistory,
+                        chatContextForRequest,
                         buildComposerNonStreamChatExtras({
                             conversationId: conversation.id,
                             requestId: requestId,
@@ -2341,7 +2808,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     requestBody: buildComposerStreamChatRequestBody({
                         quality: effectiveQuality,
                         conversationId: conversation.id,
-                        context: chatContextWithHistory,
+                        context: chatContextForRequest,
                         requestId: requestId,
                         responseStyle,
                         perspective,
@@ -2668,7 +3135,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 m.id === assistantId ? { ...m, content: phaseText } : m
                             ),
                         });
-                        await runAssistantNonStreamPostResponsePhases((text) => {
+                        await runAssistantNonStreamPostResponsePhases(
+                            (text) => {
                             const nextConv = patchFallbackAssistantPhase(text);
                             flushSync(() => {
                                 setCurrentConversation((prev) =>
@@ -2684,7 +3152,13 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     return [nextConv, ...prev];
                                 });
                             });
-                        });
+                        },
+                            {
+                                durationMultiplier: phaseDurationMultiplier,
+                                benchmarkGenspark: pipelineBenchmarkPacing,
+                                gensparkAgentRouteSession: isGensparkAgentRouteSession,
+                            },
+                        );
                         const finalMessages = initialMessages.map((m) =>
                             m.id === assistantId ? { ...m, content: displayContent } : m
                         );
@@ -2792,16 +3266,20 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     });
                 };
 
-                // 비스트리밍: 분석 → 관점·개요 → 답변 생성(순차 타이머). 응답 도착 후 다각도 점검·최종 검토 후 본문 공개
-                clearNonStreamPhases = scheduleAssistantNonStreamLoadingPhaseTimers((text) =>
-                    updateGenerationStep(text),
-                );
+                // 비스트리밍: API와 병행해 분석→관점·개요→답변 작성 타임라인을 최소 시간만큼 밟은 뒤,
+                // 응답 도착 후 다각도 점검·최종 검토(에이전트 라우트 `/agents` 세션은 간격·체류 약간 확대).
+                const nonStreamPhaseTimeline = startAssistantNonStreamLoadingTimeline(updateGenerationStep, {
+                    durationMultiplier: phaseDurationMultiplier,
+                    benchmarkGenspark: pipelineBenchmarkPacing,
+                    gensparkAgentRouteSession: isGensparkAgentRouteSession,
+                });
+                clearNonStreamPhases = nonStreamPhaseTimeline.cancel;
 
                 // 백엔드 API 호출 (엔드포인트 폴백: CHAT_POST_PATH → CHAT_POST_PATH_UNIFIED)
                 const payload = buildChatGptNonStreamPostPayload(
                     messageToSend,
                     effectiveQuality,
-                    chatContextWithHistory,
+                    chatContextForRequest,
                     buildComposerNonStreamChatExtras({
                         conversationId: conversation.id,
                         requestId: requestId,
@@ -2816,25 +3294,37 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         conversation
                     )
                 );
-                const response = await postChatAxiosWithFallback(
-                    API_BASE_URL,
-                    payload,
-                    DEFAULT_CHAT_POST_AXIOS_OPTIONS,
-                    DEFAULT_CHAT_POST_FALLBACK_OPTIONS
-                );
+                let response: Awaited<ReturnType<typeof postChatAxiosWithFallback>>;
+                try {
+                    response = await postChatAxiosWithFallback(
+                        API_BASE_URL,
+                        payload,
+                        DEFAULT_CHAT_POST_AXIOS_OPTIONS,
+                        DEFAULT_CHAT_POST_FALLBACK_OPTIONS
+                    );
+                } catch (e) {
+                    nonStreamPhaseTimeline.cancel();
+                    throw e;
+                }
 
                 const responseContent = extractResponseContent(response);
                 if (!responseContent || !coerceTrimmedString(responseContent, '') ||
                     responseContent === '응답을 생성할 수 없습니다. 다시 시도해 주세요.') {
+                    nonStreamPhaseTimeline.cancel();
                     const responseData = (response as { data?: unknown })?.data;
                     const dataType = responseData ? typeof responseData : 'unknown';
                     throw new Error(`백엔드에서 유효한 응답을 받지 못했습니다. 응답 데이터 타입: ${dataType}`);
                 }
 
+                await nonStreamPhaseTimeline.promise;
                 clearNonStreamPhases?.();
                 clearNonStreamPhases = undefined;
 
-                await runAssistantNonStreamPostResponsePhases((text) => updateGenerationStep(text));
+                await runAssistantNonStreamPostResponsePhases((text) => updateGenerationStep(text), {
+                    durationMultiplier: phaseDurationMultiplier,
+                    benchmarkGenspark: pipelineBenchmarkPacing,
+                    gensparkAgentRouteSession: isGensparkAgentRouteSession,
+                });
                 
                 const displayContent = coerceTrimmedString(responseContent, '');
                 const thinkingDurationMs = responseStartTime ? Date.now() - responseStartTime : undefined;
@@ -3024,7 +3514,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             clearNonStreamPhases = undefined;
             setIsStreaming(false);
             setIsLoading(false);
-            setCurrentRequestHasWebSearch(false);
             // 전송 완료 표시
             isSendingRef.current = false;
             // 응답 시간 계산
@@ -3046,6 +3535,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         conversations,
         currentConversation,
         currentProject,
+        projectGuidelineInstructionText,
         validateInput,
         extractResponseContent,
         getErrorMessage,
@@ -3059,6 +3549,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         gensparkRouteAgentId,
         isDefaultPage,
     ]);
+    sendMessageRef.current = sendMessage;
 
     // 스트리밍 취소 (useCallback으로 메모이제이션)
     const cancelStreaming = useCallback(() => {
@@ -3146,6 +3637,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         },
         [sendMessage, getCurrentInputValue, attachedConversationFile, isLoading]
     );
+
+    // WorkspaceQueryComposer용 커밋 핸들러
+    const handleWqCommit = useCallback(() => {
+        if (isLoading || isSendingRef.current) return;
+        const v = coerceTrimmedString(input, '') || getCurrentInputValue();
+        if (v) void sendMessage(v);
+        else if (attachedConversationFile) void sendMessage();
+    }, [sendMessage, getCurrentInputValue, attachedConversationFile, isLoading, input]);
 
     // 대화 삭제 확정
     const confirmDeleteConversation = useCallback(() => {
@@ -3258,6 +3757,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             pinned: false,
         };
 
+        skipNextConversationIdFromStateSelectionRef.current = true;
         setConversations((prev) => [newConversation, ...prev]);
         setCurrentConversation(newConversation);
         showToast('대화가 복제되었습니다', 'success');
@@ -3439,6 +3939,35 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         });
     }, []);
 
+    // 이모지 반응 토글
+    const toggleEmojiReaction = useCallback((messageId: string, emoji: MsgEmojiReaction) => {
+        setCurrentConversation((prev) => {
+            if (!prev) return prev;
+            const updated = {
+                ...prev,
+                messages: prev.messages.map((m) => {
+                    if (m.id !== messageId) return m;
+                    const prev_reactions = m.emojiReactions ?? {};
+                    const next_reactions = { ...prev_reactions, [emoji]: !prev_reactions[emoji] };
+                    return { ...m, emojiReactions: next_reactions };
+                }),
+            };
+            setConversations((prevConvs) =>
+                prevConvs.map((c) => (c.id === prev.id ? updated : c))
+            );
+            return updated;
+        });
+    }, []);
+
+    // 이모지 피커 열림 상태
+    const [emojiPickerMsgId, setEmojiPickerMsgId] = React.useState<string | null>(null);
+    React.useEffect(() => {
+        if (!emojiPickerMsgId) return;
+        const close = () => setEmojiPickerMsgId(null);
+        document.addEventListener('click', close, { once: true });
+        return () => document.removeEventListener('click', close);
+    }, [emojiPickerMsgId]);
+
     // 개별 메시지 삭제 요청 (확인 모달 열기)
     const requestDeleteMessage = useCallback((messageId: string) => {
         setDeleteConfirmMessageId(messageId);
@@ -3619,6 +4148,34 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         return currentConversation.messages.filter((m) => m.bookmarked);
     }, [currentConversation]);
 
+    // 핀된 메시지 목록
+    const pinnedMessages = useMemo(() => {
+        if (!currentConversation) return [];
+        return currentConversation.messages.filter((m) => m.pinned);
+    }, [currentConversation]);
+
+    const [showPinnedPanel, setShowPinnedPanel] = React.useState(false);
+    const [conversationCopyMenuOpen, setConversationCopyMenuOpen] = useState(false);
+    const [conversationCopyDone, setConversationCopyDone] = useState<'md' | 'txt' | null>(null);
+    const conversationCopyDoneTimerRef = useRef<number | null>(null);
+
+    const togglePinMessage = useCallback((msgId: string) => {
+        if (!currentConversation) return;
+        const updated = currentConversation.messages.map((m) =>
+            m.id === msgId ? { ...m, pinned: !m.pinned } : m
+        );
+        const willBePinned = !currentConversation.messages.find((m) => m.id === msgId)?.pinned;
+        setConversations((prev) =>
+            prev.map((c) =>
+                c.id === currentConversation.id ? { ...c, messages: updated } : c
+            )
+        );
+        setCurrentConversation((prev) =>
+            prev ? { ...prev, messages: updated } : prev
+        );
+        showToast(willBePinned ? '메시지를 핀 고정했습니다.' : '핀을 해제했습니다.', 'success');
+    }, [currentConversation, setConversations]);
+
     const messageSearchTrimmed = useMemo(
         () => coerceTrimmedString(messageSearchQuery, ''),
         [messageSearchQuery]
@@ -3630,7 +4187,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         const query = messageSearchTrimmed.toLowerCase();
         return currentConversation.messages
             .map((m, index) => ({ message: m, index }))
-            .filter(({ message }) => message.content.toLowerCase().includes(query));
+            .filter(({ message }) =>
+                coerceTrimmedString(message.content ?? '', '').toLowerCase().includes(query)
+            );
     }, [currentConversation, messageSearchTrimmed]);
 
     // 대화 통계
@@ -3639,7 +4198,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         const messages = currentConversation.messages;
         const userMessages = messages.filter(m => m.role === 'user');
         const assistantMessages = messages.filter(m => m.role === 'assistant');
-        const totalChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+        const totalChars = messages.reduce(
+            (sum, m) => sum + coerceTrimmedString(m.content ?? '', '').length,
+            0
+        );
         const estimatedTokens = Math.ceil(totalChars / 4);
         return {
             total: messages.length,
@@ -3751,8 +4313,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     }, [currentProject]);
 
     const isUrbanDomainProject = useMemo(() => {
-        const tags = currentProject?.tags ?? [];
-        return tags.some((tag) => ['도시정비', '재건축', '재개발'].includes(tag));
+        const raw = currentProject?.tags;
+        const tags = Array.isArray(raw) ? raw : [];
+        return tags.some((tag) => typeof tag === 'string' && ['도시정비', '재건축', '재개발'].includes(tag));
     }, [currentProject?.tags]);
 
     const outputPresetLabel = useMemo(() => {
@@ -4074,16 +4637,19 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
     const projectDashboard = useMemo(() => {
         if (!currentProject) return null;
-        const recentFiles = (currentProject.files ?? []).map((f) => `[파일] ${f.name}`);
-        const recentWebSources = (currentProject.webSources ?? []).map(
-            (s) => `[${s.type === 'video' ? '영상' : '문서'}] ${s.title || s.url}`
-        );
+        const recentFiles = (currentProject.files ?? [])
+            .filter((f) => f != null)
+            .map((f) => `[파일] ${f.name ?? ''}`);
+        const recentWebSources = (currentProject.webSources ?? [])
+            .filter((s) => s != null)
+            .map((s) => `[${s.type === 'video' ? '영상' : '문서'}] ${s.title || s.url}`);
         const recentSources = [...recentFiles, ...recentWebSources];
-        const tags = currentProject.tags ?? [];
+        const tags = Array.isArray(currentProject.tags) ? currentProject.tags : [];
         const nextActions: Array<{ label: string; prompt: string }> = [];
         const deliverableTemplates: Array<{ label: string; prompt: string }> = [];
         const qualityChecks: Array<{ label: string; prompt: string }> = [];
-        const guidelineQuality = analyzeGuidelines(currentProject.initialGuidelines ?? []);
+        const guidelineLines = Array.isArray(currentProject.initialGuidelines) ? currentProject.initialGuidelines : [];
+        const guidelineQuality = analyzeGuidelines(guidelineLines);
         const qualityHistoryLine = currentProjectContext?.qualityHistoryEntries
             ?.map((entry) => `${new Date(entry.savedAt).toLocaleDateString('ko-KR')} ${entry.score}점(${entry.status})`)
             .join(' → ');
@@ -4094,7 +4660,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 prompt: '이 프로젝트의 공통 지침 초안을 작성해줘. 답변 형식, 톤, 길이 기준을 포함해줘.',
             });
         }
-        if ((currentProject.initialGuidelines ?? []).filter((g) => coerceTrimmedString(g, '')).length === 0) {
+        if (guidelineLines.filter((g) => coerceTrimmedString(g, '')).length === 0) {
             nextActions.push({
                 label: '가이드라인 정리',
                 prompt: '이 프로젝트에 적용할 핵심 가이드라인 5개를 체크리스트로 만들어줘.',
@@ -4106,7 +4672,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 prompt: `현재 프로젝트 가이드라인 품질점수는 ${guidelineQuality.qualityScore}점입니다. 필수 규칙/중복/미분류를 개선하는 정비안을 만들어줘.`,
             });
         }
-        if (currentProjectContext?.qualityTrendLabel.includes('하락')) {
+        if (currentProjectContext?.qualityTrendLabel?.includes('하락')) {
             nextActions.push({
                 label: '품질 하락 원인 점검',
                 prompt: '최근 가이드라인 품질 점수가 하락한 원인을 분석하고, 즉시 적용 가능한 복구 액션 3개를 제시해줘.',
@@ -4253,7 +4819,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         const alertMessage = currentProjectContext.qualityStatus === 'risk'
             ? `프로젝트 "${currentProjectContext.name}" 가이드라인 품질이 위험 상태입니다. 즉시 정비를 권장합니다.`
             : `프로젝트 "${currentProjectContext.name}" 가이드라인 품질이 하락 추세입니다. 점검을 권장합니다.`;
-        showToast(alertMessage, 'info');
+        try {
+            showToast(alertMessage, 'info');
+        } catch {
+            /* 테스트·비브라우저 환경에서 CustomEvent 실패 등 */
+        }
     }, [
         currentProject?.id,
         currentProjectContext,
@@ -4292,13 +4862,22 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     useEffect(() => {
         if (messageSearchResults.length > 0 && messageSearchTrimmed) {
             const targetMessage = messageSearchResults[messageSearchIndex];
+            if (!targetMessage?.message?.id) return;
             const element = document.getElementById(`message-${targetMessage.message.id}`);
             if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                element.style.animation = 'highlight-pulse 1s ease-out';
-                setTimeout(() => {
-                    element.style.animation = '';
-                }, 1000);
+                try {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.style.animation = 'highlight-pulse 1s ease-out';
+                    setTimeout(() => {
+                        try {
+                            element.style.animation = '';
+                        } catch {
+                            /* noop */
+                        }
+                    }, 1000);
+                } catch {
+                    /* jsdom: scrollIntoView 미구현 등 */
+                }
             }
         }
     }, [messageSearchIndex, messageSearchResults, messageSearchTrimmed]);
@@ -5015,8 +5594,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             return;
         }
         let cancelled = false;
-        projectService
-            .getNotebookSuggestedQuestions(currentProject.id)
+        Promise.resolve(projectService.getNotebookSuggestedQuestions(currentProject.id))
             .then((questions) => {
                 if (!cancelled && questions && questions.length > 0) {
                     setSuggestedQuestionsFromSource(questions);
@@ -5033,7 +5611,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     }, [currentProject?.id, currentConversation?.id, currentConversation?.projectId, currentConversation?.messages?.length]);
 
     // 대화 내보내기 (Markdown, JSON, 또는 클립보드 복사)
-    const exportConversation = useCallback((format: 'markdown' | 'json' | 'html' | 'clipboard' = 'markdown') => {
+    const exportConversation = useCallback((format: 'markdown' | 'json' | 'html' | 'clipboard' | 'txt' = 'markdown') => {
         if (!currentConversation || currentConversation.messages.length === 0) {
             showToast('내보낼 대화가 없습니다.', 'info');
             return;
@@ -5043,7 +5621,24 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         let filename: string;
         let mimeType: string;
 
-        if (format === 'markdown' || format === 'clipboard') {
+        if (format === 'txt') {
+            const lines: string[] = [
+                `[${currentConversation.title}]`,
+                `생성일: ${formatDateSafe(currentConversation.createdAt, (d) => d.toLocaleString('ko-KR'), '—')}`,
+                '='.repeat(40),
+                '',
+            ];
+            currentConversation.messages.forEach((msg) => {
+                const role = msg.role === 'user' ? '사용자' : 'AI';
+                const time = formatDateSafe(msg.timestamp, (d) => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }), '');
+                lines.push(`[${role} ${time}]`);
+                lines.push(msg.content);
+                lines.push('');
+            });
+            content = lines.join('\n');
+            filename = `${currentConversation.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.txt`;
+            mimeType = 'text/plain;charset=utf-8';
+        } else if (format === 'markdown' || format === 'clipboard') {
             const lines: string[] = [
                 `# ${currentConversation.title}`,
                 '',
@@ -5132,6 +5727,208 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
         showToast('다운로드되었습니다', 'success');
     }, [currentConversation]);
+
+    useEffect(() => {
+        return () => {
+            if (conversationCopyDoneTimerRef.current !== null) {
+                window.clearTimeout(conversationCopyDoneTimerRef.current);
+            }
+        };
+    }, []);
+
+    const handleConversationQuickCopy = useCallback((format: 'markdown' | 'txt') => {
+        setConversationCopyMenuOpen(false);
+        void exportConversation(format === 'markdown' ? 'clipboard' : 'txt');
+        setConversationCopyDone(format === 'markdown' ? 'md' : 'txt');
+        if (conversationCopyDoneTimerRef.current !== null) {
+            window.clearTimeout(conversationCopyDoneTimerRef.current);
+        }
+        conversationCopyDoneTimerRef.current = window.setTimeout(() => {
+            setConversationCopyDone(null);
+        }, 2000);
+    }, [exportConversation]);
+
+    // 즐겨찾기 메시지 TXT 내보내기
+    const exportBookmarkedMessages = useCallback(() => {
+        if (!currentConversation || bookmarkedMessages.length === 0) {
+            showToast('즐겨찾기한 메시지가 없습니다.', 'info');
+            return;
+        }
+        const lines: string[] = [
+            `[즐겨찾기 메시지] — ${currentConversation.title}`,
+            `내보내기 일시: ${new Date().toLocaleString('ko-KR')}`,
+            `메시지 수: ${bookmarkedMessages.length}개`,
+            '='.repeat(50),
+            '',
+        ];
+        bookmarkedMessages.forEach((msg, i) => {
+            const role = msg.role === 'user' ? '👤 사용자' : '🤖 AI';
+            const time = msg.timestamp
+                ? new Date(msg.timestamp).toLocaleString('ko-KR')
+                : '';
+            lines.push(`[${i + 1}] ${role}${time ? ` (${time})` : ''}`);
+            lines.push(msg.content);
+            lines.push('');
+        });
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `즐겨찾기_${currentConversation.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        showToast(`즐겨찾기 ${bookmarkedMessages.length}개 메시지를 내보냈습니다.`, 'success');
+    }, [currentConversation, bookmarkedMessages]);
+
+    // 대화 요약
+    const [summaryText, setSummaryText] = useState<string | null>(null);
+    const [summaryLoading, setSummaryLoading] = useState(false);
+    const [showSummaryModal, setShowSummaryModal] = useState(false);
+
+    // 내보내기 옵션 모달
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportFormat, setExportFormat] = useState<'markdown' | 'json' | 'html' | 'txt'>('markdown');
+    const [exportIncludeMeta, setExportIncludeMeta] = useState(true);
+    const [exportBookmarkedOnly, setExportBookmarkedOnly] = useState(false);
+    const [exportDateFrom, setExportDateFrom] = useState('');
+    const [exportDateTo, setExportDateTo] = useState('');
+
+    const runExportWithOptions = useCallback(() => {
+        if (!currentConversation) return;
+        let msgs = [...currentConversation.messages];
+        if (exportBookmarkedOnly) {
+            const bmIds = new Set(bookmarkedMessages.map(m => m.id));
+            msgs = msgs.filter(m => bmIds.has(m.id));
+        }
+        if (exportDateFrom) {
+            msgs = msgs.filter(m => m.timestamp ? new Date(m.timestamp) >= new Date(exportDateFrom) : true);
+        }
+        if (exportDateTo) {
+            msgs = msgs.filter(m => m.timestamp ? new Date(m.timestamp) <= new Date(exportDateTo + 'T23:59:59') : true);
+        }
+        if (msgs.length === 0) {
+            showToast('조건에 맞는 메시지가 없습니다.', 'info');
+            return;
+        }
+        const tempConv = { ...currentConversation, messages: msgs };
+        const q = (v: unknown) => String(v ?? '');
+        const metaLines = exportIncludeMeta ? [
+            `생성일: ${currentConversation.createdAt ? new Date(currentConversation.createdAt).toLocaleString('ko-KR') : '—'}`,
+            `메시지 수: ${msgs.length}개 (전체 ${currentConversation.messages.length}개 중)`,
+            exportBookmarkedOnly ? `[북마크 메시지만]` : '',
+            exportDateFrom || exportDateTo ? `[기간 필터: ${exportDateFrom || '처음'} ~ ${exportDateTo || '현재'}]` : '',
+        ].filter(Boolean).join('\n') : '';
+
+        let content = '';
+        const safeName = q(tempConv.title).replace(/[^a-zA-Z0-9가-힣]/g, '_');
+        const dateStr = new Date().toISOString().slice(0, 10);
+
+        if (exportFormat === 'markdown') {
+            const lines: string[] = [`# ${tempConv.title}`, ''];
+            if (exportIncludeMeta) lines.push(`> ${metaLines.replace(/\n/g, '\n> ')}`, '', '---', '');
+            msgs.forEach(m => {
+                const role = m.role === 'user' ? '👤 **사용자**' : '🤖 **AI**';
+                const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+                lines.push(`### ${role} (${time})`, '', m.content, '', '---', '');
+            });
+            content = lines.join('\n');
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${safeName}_${dateStr}.md`; a.click(); URL.revokeObjectURL(a.href);
+        } else if (exportFormat === 'txt') {
+            const lines: string[] = [`[${tempConv.title}]`];
+            if (exportIncludeMeta) lines.push(metaLines);
+            lines.push('='.repeat(40), '');
+            msgs.forEach(m => {
+                const role = m.role === 'user' ? '사용자' : 'AI';
+                const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+                lines.push(`[${role} ${time}]`, m.content, '');
+            });
+            content = lines.join('\n');
+            const blob = new Blob(['\uFEFF' + content], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${safeName}_${dateStr}.txt`; a.click(); URL.revokeObjectURL(a.href);
+        } else if (exportFormat === 'html') {
+            const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const msgsHtml = msgs.map(m => {
+                const role = m.role === 'user' ? '사용자' : 'AI';
+                const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+                const css = m.role === 'user' ? 'background:#F3F5F7;margin-left:20%;border-radius:12px 12px 4px 12px' : 'background:rgba(0,132,255,0.12);margin-right:20%;border-radius:12px 12px 12px 4px';
+                return `<div style="margin:12px 0"><div style="font-size:11px;color:#6C7275;margin-bottom:4px">${esc(role)} · ${esc(time)}</div><div style="padding:12px 16px;${css};color:#141718">${esc(m.content).replace(/\n/g, '<br/>')}</div></div>`;
+            }).join('');
+            const metaHtml = exportIncludeMeta ? `<div class="meta">${esc(metaLines).replace(/\n/g, '<br/>')}</div>` : '';
+            content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(q(tempConv.title))}</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;line-height:1.6}h1{font-size:1.25rem}.meta{font-size:12px;color:#6C7275;margin-bottom:16px;padding:8px 12px;background:#f8fafc;border-radius:8px}</style></head><body><h1>${esc(q(tempConv.title))}</h1>${metaHtml}<hr/>${msgsHtml}</body></html>`;
+            const blob = new Blob([content], { type: 'text/html' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${safeName}_${dateStr}.html`; a.click(); URL.revokeObjectURL(a.href);
+        } else {
+            const exportData = {
+                ...(exportIncludeMeta ? {
+                    id: tempConv.id,
+                    title: tempConv.title,
+                    createdAt: tempConv.createdAt,
+                    updatedAt: tempConv.updatedAt,
+                    exportedAt: new Date().toISOString(),
+                    filters: { bookmarkedOnly: exportBookmarkedOnly, dateFrom: exportDateFrom || null, dateTo: exportDateTo || null },
+                } : { title: tempConv.title }),
+                messages: msgs.map(m => ({ role: m.role, content: m.content, ...(exportIncludeMeta ? { timestamp: m.timestamp, id: m.id } : {}) })),
+            };
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${safeName}_${dateStr}.json`; a.click(); URL.revokeObjectURL(a.href);
+        }
+        showToast('내보내기 완료!', 'success');
+        setShowExportModal(false);
+    }, [currentConversation, exportFormat, exportIncludeMeta, exportBookmarkedOnly, exportDateFrom, exportDateTo, bookmarkedMessages]);
+
+    const summarizeConversation = useCallback(async () => {
+        if (!currentConversation) return;
+        const msgs = currentConversation.messages ?? [];
+        if (msgs.length === 0) {
+            showToast('요약할 메시지가 없습니다.', 'info');
+            return;
+        }
+        setSummaryLoading(true);
+        setShowSummaryModal(true);
+        setSummaryText(null);
+        try {
+            // 최근 40개 메시지를 기반으로 로컬 요약 (API 없이)
+            const recent = msgs.slice(-40);
+            const userMsgs = recent.filter(m => m.role === 'user');
+            const assistantMsgs = recent.filter(m => m.role === 'assistant');
+            const topics: string[] = [];
+            userMsgs.slice(0, 6).forEach(m => {
+                const first = m.content.trim().split('\n')[0].slice(0, 80);
+                if (first) topics.push(`• ${first}${first.length >= 80 ? '…' : ''}`);
+            });
+            const lastAi = assistantMsgs[assistantMsgs.length - 1];
+            const lastAiSnippet = lastAi ? lastAi.content.trim().slice(0, 200) : '';
+            const summary = [
+                `📋 **대화 요약** — ${currentConversation.title}`,
+                ``,
+                `🗓 생성일: ${new Date().toLocaleString('ko-KR')}`,
+                `💬 총 메시지: ${msgs.length}개 (사용자 ${userMsgs.length}, AI ${assistantMsgs.length})`,
+                ``,
+                `**주요 질문 주제:**`,
+                topics.length > 0 ? topics.join('\n') : '(주제 없음)',
+                ``,
+                `**마지막 AI 응답 요약:**`,
+                lastAiSnippet ? `${lastAiSnippet}${lastAiSnippet.length >= 200 ? '…' : ''}` : '(없음)',
+            ].join('\n');
+            setSummaryText(summary);
+        } catch {
+            setSummaryText('요약 생성 중 오류가 발생했습니다.');
+        } finally {
+            setSummaryLoading(false);
+        }
+    }, [currentConversation]);
+
+    const copySummary = useCallback(async () => {
+        if (!summaryText) return;
+        try {
+            await navigator.clipboard.writeText(summaryText);
+            showToast('요약을 클립보드에 복사했습니다.', 'success');
+        } catch {
+            showToast('복사에 실패했습니다.', 'error');
+        }
+    }, [summaryText]);
 
     // 대화 가져오기 (JSON, Markdown 또는 HTML 파일)
     const importConversation = useCallback(() => {
@@ -5402,6 +6199,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 },
                 structuredInputAssistEnabled &&
                     shouldTreatAsStructuredQuestionRequirements(regenParsedForPipeline),
+                Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')),
             );
             const regenDeepseekConv = convFromListForRegen ?? conversation;
             const { pipelineMerge: regenPipelineMerge } = buildUnifiedQaGensparkPipelineContextMerge({
@@ -5412,9 +6210,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 composerResponseMode,
                 responseStyle,
                 conversationDeepseek: regenDeepseekConv,
+                hasConversationThreadContext:
+                    conversationHasThreadInstructionsOrFiles(regenDeepseekConv),
             });
             const regenContextWithHistory = {
-                ...(buildChatContext(currentProject ?? null) ?? {}),
+                ...(mergeProjectAndThreadChatContext(buildChatContext(currentProject ?? null), regenDeepseekConv) ??
+                    {}),
                 ...regenFeatureCtx,
                 ...regenPipelineMerge,
                 conversation_history: regenHistoryForCtx,
@@ -5424,7 +6225,17 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 available_capabilities: AVAILABLE_CAPABILITIES_HINT,
                 adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
             };
+            const regenContextForRequest = mergeGensparkRouteContextIntoRecordIfMissing(
+                regenContextWithHistory as Record<string, unknown>,
+                gensparkRouteAgentId ?? null,
+            );
             const regenUseInformed = !!((regenContextWithHistory as Record<string, unknown>).enable_web_research || (regenContextWithHistory as Record<string, unknown>).prefer_informed_answer);
+            const regenPipelineBenchmarkPacing = pipelineBenchmarkPacingFromChatContext({
+                gensparkRouteAgentId,
+                useInformedOrSearch: regenUseInformed,
+                projectId: currentProject?.id,
+            });
+            const regenAgentRouteSession = Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', ''));
             const regenEffectiveQuality: 'basic' | 'enhanced' | 'ultimate' =
                 regenUseInformed
                     ? (composerQuality === 'basic' ? 'enhanced' : composerQuality === 'enhanced' ? 'ultimate' : composerQuality)
@@ -5536,6 +6347,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 clearRegenStreamPhases = scheduleAssistantPreRevealStreamPhases({
                     reducedMotion: regenStreamReducedMotion,
                     durationMultiplier: regenPhaseDurationMultiplier,
+                    benchmarkGenspark: regenPipelineBenchmarkPacing,
+                    gensparkAgentRouteSession: regenAgentRouteSession,
                     setPlaceholder: (text) => {
                         if (!regenStreamPreRevealActiveRef.current) return;
                         flushSync(() => {
@@ -5568,14 +6381,16 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     },
                     onReveal: () => {
                         regenStreamPreRevealActiveRef.current = false;
-                        flushRegenStreamSlotContent(accumulatedText);
                         if (!regenServerDrovePipelinePhaseRef.current) {
                             clearRegenClientStreamingPhases?.();
                             clearRegenClientStreamingPhases = scheduleClientStreamingPipelinePhases({
                                 multiplier: regenPhaseDurationMultiplier,
+                                benchmarkGenspark: regenPipelineBenchmarkPacing,
+                                gensparkAgentRouteSession: regenAgentRouteSession,
                                 onPhase: (ph) => patchRegenAssistantPipelinePhaseSlug(ph),
                             });
                         }
+                        flushRegenStreamSlotContent(accumulatedText);
                     },
                 });
 
@@ -5592,7 +6407,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     requestBody: buildComposerStreamChatRequestBody({
                         quality: regenEffectiveQuality,
                         conversationId: conversation.id,
-                        context: regenContextWithHistory,
+                        context: regenContextForRequest,
                         requestId: regenRequestId,
                         responseStyle,
                         perspective,
@@ -5783,16 +6598,22 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         );
                     });
                 };
-                let clearRegenNonStreamPhases = scheduleAssistantNonStreamLoadingPhaseTimers((text) =>
-                    updateRegenGenerationStep(text),
+                const regenNonStreamTimeline = startAssistantNonStreamLoadingTimeline(
+                    updateRegenGenerationStep,
+                    {
+                        durationMultiplier: regenPhaseDurationMultiplier,
+                        benchmarkGenspark: regenPipelineBenchmarkPacing,
+                        gensparkAgentRouteSession: regenAgentRouteSession,
+                    },
                 );
+                let clearRegenNonStreamPhases = regenNonStreamTimeline.cancel;
 
                 void postChatAxiosWithFallback(
                     API_BASE_URL,
                     buildChatGptNonStreamPostPayload(
                         regenMessageToSend,
                         regenEffectiveQuality,
-                        regenContextWithHistory,
+                        regenContextForRequest,
                         buildComposerNonStreamChatExtras({
                             conversationId: conversation.id,
                             requestId: regenRequestId,
@@ -5810,11 +6631,26 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     DEFAULT_CHAT_POST_AXIOS_OPTIONS,
                     DEFAULT_CHAT_POST_FALLBACK_OPTIONS
                 ).then(async (response) => {
+                    const responseContent = extractResponseContent(response);
+                    if (
+                        !responseContent ||
+                        !coerceTrimmedString(responseContent, '') ||
+                        responseContent === '응답을 생성할 수 없습니다. 다시 시도해 주세요.'
+                    ) {
+                        regenNonStreamTimeline.cancel();
+                        clearRegenNonStreamPhases = () => {};
+                        throw new Error('백엔드에서 유효한 응답을 받지 못했습니다.');
+                    }
+                    await regenNonStreamTimeline.promise;
                     clearRegenNonStreamPhases();
                     clearRegenNonStreamPhases = () => {};
-                    const responseContent = extractResponseContent(response);
-                    await runAssistantNonStreamPostResponsePhases((text) =>
-                        updateRegenGenerationStep(text),
+                    await runAssistantNonStreamPostResponsePhases(
+                        (text) => updateRegenGenerationStep(text),
+                        {
+                            durationMultiplier: regenPhaseDurationMultiplier,
+                            benchmarkGenspark: regenPipelineBenchmarkPacing,
+                            gensparkAgentRouteSession: regenAgentRouteSession,
+                        },
                     );
                     notebookLLMDeepLearningIntegration.analyzeResponseWithDL(trimmedInput, responseContent).catch(() => {});
                     const finalMessages = regenPlaceholderMessages.map((m) =>
@@ -5958,7 +6794,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             },
             structuredInputAssistEnabled &&
                 shouldTreatAsStructuredQuestionRequirements(editParsedForPipeline),
+            Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')),
         );
+        const editPipelineBenchmarkPacing = pipelineBenchmarkPacingFromChatContext({
+            gensparkRouteAgentId,
+            useInformedOrSearch: !!(editFeatureCtx.enable_web_research || editFeatureCtx.prefer_informed_answer),
+            projectId: currentProject?.id,
+        });
+        const editAgentRouteSession = Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', ''));
 
         const shouldStream = useStreaming && isStreamingSupported();
 
@@ -6068,6 +6911,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             clearEditStreamPhases = scheduleAssistantPreRevealStreamPhases({
                 reducedMotion: editStreamReducedMotion,
                 durationMultiplier: editPhaseDurationMultiplier,
+                benchmarkGenspark: editPipelineBenchmarkPacing,
+                gensparkAgentRouteSession: editAgentRouteSession,
                 setPlaceholder: (text) => {
                     if (!editStreamPreRevealActiveRef.current) return;
                     flushSync(() => {
@@ -6100,14 +6945,16 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 },
                 onReveal: () => {
                     editStreamPreRevealActiveRef.current = false;
-                    flushEditStreamSlotContent(accumulatedText);
                     if (!editServerDrovePipelinePhaseRef.current) {
                         clearEditClientStreamingPhases?.();
                         clearEditClientStreamingPhases = scheduleClientStreamingPipelinePhases({
                             multiplier: editPhaseDurationMultiplier,
+                            benchmarkGenspark: editPipelineBenchmarkPacing,
+                            gensparkAgentRouteSession: editAgentRouteSession,
                             onPhase: (ph) => patchEditAssistantPipelinePhaseSlug(ph),
                         });
                     }
+                    flushEditStreamSlotContent(accumulatedText);
                 },
             });
 
@@ -6133,17 +6980,25 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 composerResponseMode,
                 responseStyle,
                 conversationDeepseek: editThreadForDeepseek,
+                hasConversationThreadContext:
+                    conversationHasThreadInstructionsOrFiles(updatedConversation),
             });
-
-            const editStreamContext = {
-                ...buildChatContext(currentProject ?? null, { conversation_history: conversationHistory }),
-                ...editFeatureCtx,
-                ...editStreamPipelineMerge,
-                ...(conversationHistory.length > 0 && {
-                    consistency_instruction: '이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요. 최근 대화 맥락을 반드시 참고하세요.',
-                }),
-                adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
-            };
+            const editStreamContext = mergeGensparkRouteContextIntoRecordIfMissing(
+                {
+                    ...mergeProjectAndThreadChatContext(
+                        buildChatContext(currentProject ?? null, { conversation_history: conversationHistory }),
+                        updatedConversation
+                    ),
+                    ...editFeatureCtx,
+                    ...editStreamPipelineMerge,
+                    ...(conversationHistory.length > 0 && {
+                        consistency_instruction:
+                            '이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요. 최근 대화 맥락을 반드시 참고하세요.',
+                    }),
+                    adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
+                },
+                gensparkRouteAgentId ?? null,
+            );
             try {
             await streamChatMessage(editMessageToSend, conversation.id, {
                 signal: abortController.signal,
@@ -6334,9 +7189,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 composerResponseMode,
                 responseStyle,
                 conversationDeepseek: editThreadForDeepseek,
+                hasConversationThreadContext:
+                    conversationHasThreadInstructionsOrFiles(updatedConversation),
             });
             const editContextWithHistory = {
-                ...(buildChatContext(currentProject ?? null) ?? {}),
+                ...(mergeProjectAndThreadChatContext(
+                    buildChatContext(currentProject ?? null),
+                    updatedConversation
+                ) ?? {}),
                 ...editNsFeatureCtx,
                 ...editNsPipelineMerge,
                 conversation_history: editHistoryForCtx,
@@ -6346,6 +7206,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 available_capabilities: AVAILABLE_CAPABILITIES_HINT,
                 adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
             };
+            const editContextForRequest = mergeGensparkRouteContextIntoRecordIfMissing(
+                editContextWithHistory as Record<string, unknown>,
+                gensparkRouteAgentId ?? null,
+            );
             const editUseInformed = !!((editContextWithHistory as Record<string, unknown>).enable_web_research || (editContextWithHistory as Record<string, unknown>).prefer_informed_answer);
             const editEffectiveQuality: 'basic' | 'enhanced' | 'ultimate' =
                 editUseInformed
@@ -6396,16 +7260,19 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     setConversations((prev) => prev.map((c) => (c.id === conversation.id ? conv : c)));
                 });
             };
-            let clearEditNonStreamPhases = scheduleAssistantNonStreamLoadingPhaseTimers((text) =>
-                updateEditNonStreamStep(text),
-            );
+            const editNonStreamTimeline = startAssistantNonStreamLoadingTimeline(updateEditNonStreamStep, {
+                durationMultiplier: editPhaseDurationMultiplier,
+                benchmarkGenspark: editPipelineBenchmarkPacing,
+                gensparkAgentRouteSession: editAgentRouteSession,
+            });
+            let clearEditNonStreamPhases = editNonStreamTimeline.cancel;
 
             void postChatAxiosWithFallback(
                 API_BASE_URL,
                 buildChatGptNonStreamPostPayload(
                     editMessageToSend,
                     editEffectiveQuality,
-                    editContextWithHistory,
+                    editContextForRequest,
                     buildComposerNonStreamChatExtras({
                         conversationId: conversation.id,
                         requestId: editRequestId,
@@ -6425,10 +7292,24 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 DEFAULT_CHAT_POST_AXIOS_OPTIONS,
                 DEFAULT_CHAT_POST_FALLBACK_OPTIONS
             ).then(async (response) => {
+                const responseContent = extractResponseContent(response);
+                if (
+                    !responseContent ||
+                    !coerceTrimmedString(responseContent, '') ||
+                    responseContent === '응답을 생성할 수 없습니다. 다시 시도해 주세요.'
+                ) {
+                    editNonStreamTimeline.cancel();
+                    clearEditNonStreamPhases = () => {};
+                    throw new Error('백엔드에서 유효한 응답을 받지 못했습니다.');
+                }
+                await editNonStreamTimeline.promise;
                 clearEditNonStreamPhases();
                 clearEditNonStreamPhases = () => {};
-                const responseContent = extractResponseContent(response);
-                await runAssistantNonStreamPostResponsePhases((text) => updateEditNonStreamStep(text));
+                await runAssistantNonStreamPostResponsePhases((text) => updateEditNonStreamStep(text), {
+                    durationMultiplier: editPhaseDurationMultiplier,
+                    benchmarkGenspark: editPipelineBenchmarkPacing,
+                    gensparkAgentRouteSession: editAgentRouteSession,
+                });
                 notebookLLMDeepLearningIntegration.analyzeResponseWithDL(trimmedContent, responseContent).catch(() => {});
                 recordAdvancedMemoryTurn(conversation.id, trimmedContent, responseContent);
                 const finalMessages = editNsPlaceholderMessages.map((m) =>
@@ -6482,6 +7363,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         buildWritingStyleLearningInstruction,
         composerQuality,
         composerResponseMode,
+        conversations,
         currentConversation,
         editingContent,
         isLoading,
@@ -6521,9 +7403,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
         const query = coerceTrimmedString(sidebarUnifiedSearch || searchQuery, '').toLowerCase();
         if (query) {
-            filtered = filtered.filter(conv =>
-                conv.title.toLowerCase().includes(query) ||
-                conv.messages.some(msg => msg.content.toLowerCase().includes(query))
+            filtered = filtered.filter(
+                (conv) =>
+                    coerceTrimmedString(conv.title ?? '', '').toLowerCase().includes(query) ||
+                    conv.messages.some((msg) =>
+                        coerceTrimmedString(msg.content ?? '', '').toLowerCase().includes(query)
+                    )
             );
         }
 
@@ -6534,7 +7419,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
             switch (sortOption) {
                 case 'name':
-                    return a.title.localeCompare(b.title, 'ko');
+                    return coerceTrimmedString(a.title ?? '', '').localeCompare(
+                        coerceTrimmedString(b.title ?? '', ''),
+                        'ko'
+                    );
                 case 'messages':
                     return b.messages.length - a.messages.length;
                 case 'recent':
@@ -6574,7 +7462,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     useEffect(() => {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             // 모달이 열려 있거나 편집 중이면 무시 (Escape는 별도 처리)
-            const modalOpen = showProjectModal || showProjectEditModal || showAddSourceModal || showProModal || editingMessageId || deleteConfirmConversation ||
+            const modalOpen = showProjectModal || showProjectEditModal || showAddSourceModal || showGoogleDriveImportModal || showProModal || editingMessageId || deleteConfirmConversation ||
                 deleteConfirmProject || deleteConfirmMessageId || showClearMessagesConfirm || showShareModal || showShortcutsHelp || showStructuredPreview ||
                 importingConversation;
             if (modalOpen && e.key !== 'Escape') return;
@@ -6640,6 +7528,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     showProjectModal ||
                     showProjectEditModal ||
                     showAddSourceModal ||
+                    showGoogleDriveImportModal ||
                     showProModal ||
                     editingMessageId ||
                     deleteConfirmConversation ||
@@ -6676,16 +7565,26 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-    }, [showProjectModal, showProjectEditModal, showAddSourceModal, showProModal, editingMessageId, isStreaming, currentConversation, startNewConversation, exportConversation, duplicateConversation, importConversation, cancelStreaming, showMessageSearch, showShortcutsHelp, importingConversation, deleteConfirmConversation, deleteConfirmProject, deleteConfirmMessageId, showClearMessagesConfirm, showShareModal, showStructuredPreview]);
+    }, [showProjectModal, showProjectEditModal, showAddSourceModal, showGoogleDriveImportModal, showProModal, editingMessageId, isStreaming, currentConversation, startNewConversation, exportConversation, duplicateConversation, importConversation, cancelStreaming, showMessageSearch, showShortcutsHelp, importingConversation, deleteConfirmConversation, deleteConfirmProject, deleteConfirmMessageId, showClearMessagesConfirm, showShareModal, showStructuredPreview]);
 
     // 단축키 도움말 모달 포커스 관리
     useEffect(() => {
         if (showShortcutsHelp) {
             prevFocusRef.current = document.activeElement as HTMLElement | null;
-            const t = setTimeout(() => shortcutsCloseRef.current?.focus(), 50);
+            const t = setTimeout(() => {
+                try {
+                    shortcutsCloseRef.current?.focus();
+                } catch {
+                    /* jsdom·언마운트 타이밍 */
+                }
+            }, 50);
             return () => clearTimeout(t);
         } else if (prevFocusRef.current) {
-            prevFocusRef.current.focus();
+            try {
+                prevFocusRef.current.focus();
+            } catch {
+                /* 이전 포커스 노드가 이미 제거된 경우 */
+            }
             prevFocusRef.current = null;
         }
     }, [showShortcutsHelp]);
@@ -6700,6 +7599,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             document.title = `${currentProject.name} - ${brand}`;
         } else if (inProjectDetailContext && currentProject) {
             document.title = `${currentProject.name} - ${brand}`;
+        } else if (gensparkRouteAgentId && gensparkAgentSessionMeta) {
+            document.title = `${gensparkAgentSessionMeta.form.displayName} · 에이전트 - ${brand}`;
         } else if (viewMode === 'chat' && currentConversation?.title) {
             document.title = `${currentConversation.title} - ${brand}`;
         } else {
@@ -6708,7 +7609,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         return () => {
             document.title = brand;
         };
-    }, [viewMode, currentProject, currentConversation, inProjectDetailContext]);
+    }, [
+        viewMode,
+        currentProject,
+        currentConversation,
+        inProjectDetailContext,
+        gensparkRouteAgentId,
+        gensparkAgentSessionMeta,
+    ]);
 
     // 입력창 자동 높이 조절
     useEffect(() => {
@@ -6800,6 +7708,13 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         </section>
     );
 
+    const composerFieldPlaceholder =
+        gensparkRouteAgentId && gensparkAgentSessionMeta
+            ? `${gensparkAgentSessionMeta.form.displayName}에게 메시지 보내기…`
+            : currentConversation && currentConversation.messages.length > 0
+              ? '메시지를 입력하세요…'
+              : WORKSPACE_CHAT_EMPTY_THREAD_PLACEHOLDER;
+
     const projectSourcesTabInputHint =
         currentProject &&
         projectContentTab === 'sources' && (
@@ -6829,7 +7744,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
     return (
         <div
-            className={`chatgpt-interface ${theme}`}
+            className={`chatgpt-interface ${theme}${gensparkRouteAgentId ? ' chatgpt-interface--genspark-agent-session' : ''}`}
             data-brainwave-figma={FIGMA_BRAINWAVE_AI_UI_KIT_CHAT_URL}
         >
             {/* 스킵 링크: 키보드 사용자·스크린 리더용 (App.css .skip-to-main) */}
@@ -6857,12 +7772,27 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     onChange={handleConversationFileSelect}
                 />
                 {/* 상단 바: 좌(문서/편집) · 우(업로드·공유) — 타이틀 텍스트 제거 */}
-                <header className="chat-main-header" aria-label="대화 상단">
+                <header
+                    className={`chat-main-header${gensparkRouteAgentId ? ' chat-main-header--genspark-agent-hidden' : ''}`}
+                    aria-label="대화 상단"
+                >
                     <div className="chat-main-header-left">
-                        <button type="button" className="chat-main-header-btn" onClick={() => showToast('문서 기능은 준비 중입니다.', 'info')} aria-label="문서" title="문서">
+                        <button
+                            type="button"
+                            className="chat-main-header-btn"
+                            onClick={() => navigate(DOCS_PATH)}
+                            aria-label="도움말·문서로 이동"
+                            title="도움말·문서"
+                        >
                             <IconFile size={20} />
                         </button>
-                        <button type="button" className="chat-main-header-btn" onClick={() => showToast('편집 기능은 준비 중입니다.', 'info')} aria-label="편집" title="편집">
+                        <button
+                            type="button"
+                            className="chat-main-header-btn"
+                            onClick={() => navigate(SETTINGS_PATH)}
+                            aria-label="설정으로 이동"
+                            title="설정·편집"
+                        >
                             <IconEdit size={20} />
                         </button>
                     </div>
@@ -6879,10 +7809,29 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         </button>
                         <button
                             type="button"
+                            className="chat-main-header-btn chat-main-header-btn--pro"
+                            onClick={() => setShowProModal(true)}
+                            aria-label="PRO 구독 안내"
+                            title="PRO·구독 안내"
+                            data-testid={TEST_IDS.CHAT_HEADER_PRO_BTN}
+                        >
+                            PRO
+                        </button>
+                        <button
+                            type="button"
                             className="chat-main-header-btn"
-                            onClick={() => showToast('공유 기능은 준비 중입니다.', 'info')}
+                            onClick={() => {
+                                if (currentProject) {
+                                    setShowShareModal(true);
+                                } else {
+                                    showToast(
+                                        '프로젝트를 연 대화에서만 프로젝트 공유를 쓸 수 있습니다. 일반 대화는 본문의 Share·보내기를 이용하세요.',
+                                        'info',
+                                    );
+                                }
+                            }}
                             aria-label="공유"
-                            title="공유"
+                            title={currentProject ? '프로젝트 공유' : '공유 안내'}
                         >
                             <IconShare size={20} />
                         </button>
@@ -6894,26 +7843,94 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         <span>오프라인 상태입니다. 연결이 복구되면 메시지 전송이 가능합니다.</span>
                     </div>
                 )}
-                {gensparkAgentSessionMeta && (
-                    <div className="genspark-agent-route-banner" role="status" aria-label="Genspark 에이전트 세션">
-                        <span className="genspark-agent-route-banner__title">{gensparkAgentSessionMeta.form.displayName}</span>
-                        <span className="genspark-agent-route-banner__meta">
-                            {gensparkAgentSessionMeta.registered ? '등록된 에이전트' : '미등록 ID · 기본 지시 사용'}
-                        </span>
-                        <a
-                            className="genspark-agent-route-banner__link"
-                            href={gensparkAgentSessionMeta.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Genspark에서 편집
-                        </a>
-                    </div>
+                {gensparkAgentSessionMeta && gensparkRouteAgentId && (
+                    <section
+                        className="genspark-agent-detail"
+                        aria-label="CORBU.AI 에이전트 세션 상세"
+                        data-testid={TEST_IDS.GENSPARK_AGENT_SESSION_DETAIL}
+                    >
+                        <div className="genspark-agent-detail__inner">
+                            <nav className="genspark-agent-detail__breadcrumb" aria-label="경로">
+                                <Link to={AGENTS_PATH}>CORBU.AI 에이전트</Link>
+                                <span className="genspark-agent-detail__bc-sep" aria-hidden>
+                                    /
+                                </span>
+                                <span className="genspark-agent-detail__bc-current">
+                                    {gensparkAgentSessionMeta.form.displayName}
+                                </span>
+                            </nav>
+                            <div className="genspark-agent-detail__title-row">
+                                <h1 className="genspark-agent-detail__title">{gensparkAgentSessionMeta.form.displayName}</h1>
+                                <span className="genspark-agent-detail__badge">
+                                    {gensparkAgentSessionMeta.registered ? '등록됨' : '커스텀 ID'}
+                                </span>
+                            </div>
+                            {coerceTrimmedString(gensparkAgentSessionMeta.form.oneLineDescription, '') ? (
+                                <p className="genspark-agent-detail__tagline">
+                                    {gensparkAgentSessionMeta.form.oneLineDescription}
+                                </p>
+                            ) : null}
+                            <p className="genspark-agent-detail__hint">
+                                <code className="genspark-agent-detail__mono">{WORKSPACE_TAGLINE_QUERY_SNIPPET}</code>{' '}
+                                공개 링크와 동일한 세션 · 단계형
+                                생성 후 마크다운 답변
+                            </p>
+                            <div className="genspark-agent-detail__url-grid" role="group" aria-label="세션 URL">
+                                <div className="genspark-agent-detail__url-cell">
+                                    <div className="genspark-agent-detail__url-label">공개 URL</div>
+                                    <code className="genspark-agent-detail__url-text" title={gensparkAgentSessionMeta.url}>
+                                        {gensparkAgentSessionMeta.url}
+                                    </code>
+                                </div>
+                                <div className="genspark-agent-detail__url-cell">
+                                    <div className="genspark-agent-detail__url-label">이 앱</div>
+                                    <code className="genspark-agent-detail__url-text">
+                                        {typeof window !== 'undefined'
+                                            ? `${window.location.origin}${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${gensparkRouteAgentId}`
+                                            : `${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${gensparkRouteAgentId}`}
+                                    </code>
+                                </div>
+                            </div>
+                            <div className="genspark-agent-detail__actions">
+                                <Link
+                                    to={AGENTS_PATH}
+                                    className="genspark-agent-detail__btn genspark-agent-detail__btn--secondary"
+                                    data-testid={TEST_IDS.GENSPARK_AGENT_BANNER_HUB_LINK}
+                                >
+                                    에이전트 허브
+                                </Link>
+                                <button
+                                    type="button"
+                                    className="genspark-agent-detail__btn genspark-agent-detail__btn--secondary"
+                                    data-testid={TEST_IDS.GENSPARK_AGENT_COPY_PUBLIC_LINK}
+                                    onClick={() => void copyGensparkAgentSessionLink('public')}
+                                >
+                                    공개 링크 복사
+                                </button>
+                                <button
+                                    type="button"
+                                    className="genspark-agent-detail__btn genspark-agent-detail__btn--secondary"
+                                    data-testid={TEST_IDS.GENSPARK_AGENT_COPY_APP_LINK}
+                                    onClick={() => void copyGensparkAgentSessionLink('app')}
+                                >
+                                    앱 링크 복사
+                                </button>
+                                <a
+                                    className="genspark-agent-detail__btn genspark-agent-detail__btn--primary"
+                                    href={gensparkAgentSessionMeta.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    공개 사이트에서 열기
+                                </a>
+                            </div>
+                        </div>
+                    </section>
                 )}
                 {viewMode === 'notebook' && currentProject ? (
                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ padding: '16px', borderBottom: `1px solid ${themeStyles.borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                            <h2 style={{ margin: 0, color: themeStyles.textPrimary }}>📓 노트북 (딥시크) - {currentProject.name}</h2>
+                            <h2 style={{ margin: 0, color: themeStyles.textPrimary }}>📓 노트북 (구글 노트북 LM) - {currentProject.name}</h2>
                             <span style={{ fontSize: '12px', color: themeStyles.textSecondary }}>
                                 소스는 ⚙️ 설정에서 가이드라인으로 추가할 수 있습니다
                             </span>
@@ -6938,18 +7955,19 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             <React.Suspense fallback={<LoadingSkeleton type="card" lines={5} />}>
                             <NotebookLLM
                                 projectId={currentProject.id}
+                                sourcesRefreshToken={notebookSourcesRefreshToken}
                                 onSourcesChanged={refreshProjects}
                                 onResponseComplete={(response) => {
-                                    errorLogger.info('딥시크(노트북) 응답 완료', {
+                                    errorLogger.info('구글 노트북 LM 응답 완료', {
                                         component: 'ChatGPTInterface',
                                         action: 'notebookLLMResponse',
                                         responseLength: response?.content?.length || 0,
                                         modelUsed: response?.modelUsed,
                                     });
-                                    showToast('응답 생성이 완료되었습니다', 'success');
+                                    showToast('구글 노트북 LM 응답이 완료되었습니다', 'success');
                                 }}
                                 onError={(error) => {
-                                    errorLogger.error('딥시크(노트북) 오류', error instanceof Error ? error : new Error(String(error)), {
+                                    errorLogger.error('구글 노트북 LM 오류', error instanceof Error ? error : new Error(String(error)), {
                                         component: 'ChatGPTInterface',
                                         action: 'notebookLLMError',
                                     });
@@ -6960,8 +7978,21 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     </div>
                 ) : (
                     <div
-                        className={currentProject ? 'bw-detail-root bw-tool-view project-detail-view chat-layout-body' : 'chat-layout-body'}
-                        data-testid={currentProject ? 'project-detail-view' : undefined}
+                        className={[
+                            currentProject
+                                ? 'bw-detail-root bw-tool-view project-detail-view chat-layout-body'
+                                : 'chat-layout-body',
+                            gensparkRouteAgentId && !currentProject ? 'chat-layout-body--genspark-agent-session' : '',
+                        ]
+                            .filter(Boolean)
+                            .join(' ')}
+                        data-testid={
+                          currentProject
+                            ? 'project-detail-view'
+                            : gensparkRouteAgentId
+                              ? TEST_IDS.CHAT_LAYOUT_GENSPARK_AGENT_SESSION
+                              : undefined
+                        }
                         data-project-tab={currentProject ? projectContentTab : undefined}
                         role={currentProject ? 'region' : undefined}
                         aria-label={currentProject ? `프로젝트 상세: ${currentProject.name}` : undefined}
@@ -7056,31 +8087,232 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                             >
                     <>
-                        {/* AppUnified 상단 크롬(홈·에이전트·프로젝트 상세)과 겹치지 않도록 조건부 표시 */}
-                        {!gensparkRouteAgentId &&
-                            !initialProjectId &&
-                            !isDefaultPage &&
-                            pathname !== AGENTS_PATH && (
-                            <div className="brainwave-chat-context-ribbon" role="status" aria-live="polite">
-                                <span className="brainwave-chat-context-ribbon__badge">일반 대화</span>
-                                <span className="brainwave-chat-context-ribbon__desc">
-                                    프로젝트와 분리된 독립 대화입니다. 맥락이 필요하면 사이드바에서 프로젝트를 연 뒤 대화하세요.
-                                </span>
+                        {(!currentProject || projectContentTab === 'chat') && threadContextPanelOpen && (
+                            <div
+                                id="bw-thread-context-panel-region"
+                                className="bw-thread-context-panel"
+                                data-testid={TEST_IDS.THREAD_CONTEXT_PANEL}
+                                role="region"
+                                aria-label="이 대화 지침·파일·딥시크 설정"
+                            >
+                                <div className="bw-thread-context-panel__toolbar">
+                                    <span className="bw-thread-context-panel__title">
+                                        이 대화 · 지침·파일·딥시크 (프로젝트 없이 대화만 쓸 때 여기서 설정)
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="bw-btn-secondary"
+                                        onClick={() => setThreadContextPanelOpen(false)}
+                                        aria-label="대화 설정 패널 닫기"
+                                    >
+                                        닫기
+                                    </button>
+                                </div>
+                                <div className="bw-thread-context-panel__body">
+                                    <p className="bw-thread-context-panel__hint">
+                                        프로젝트 없이 쓸 때 <strong>이 대화</strong>에 지침·참고 파일을 두면, 요청마다{' '}
+                                        <strong>parsed_input</strong>·Q→A 파이프라인·딥시크 플래그가 함께 실리고, 첨부 본문은 서버에서
+                                        답변 맥락(<code>projectKnowledge</code>)에 합쳐집니다. 입력창 아래{' '}
+                                        <strong>딥시크 검수·리파인·Reasoner</strong> 토글로 대화별로 덮어쓸 수 있습니다.
+                                    </p>
+                                    <label className="bw-thread-context-panel__label" htmlFor="bw-thread-instructions">
+                                        지침
+                                    </label>
+                                    <textarea
+                                        id="bw-thread-instructions"
+                                        className="bw-thread-context-panel__textarea"
+                                        rows={3}
+                                        placeholder="이 대화에서만 모델이 따를 지침을 입력하세요."
+                                        value={threadInstructionsDraft}
+                                        onChange={(e) => setThreadInstructionsDraft(e.target.value)}
+                                        onBlur={() => {
+                                            const next = coerceTrimmedString(threadInstructionsDraft, '');
+                                            const prev = coerceTrimmedString(
+                                                currentConversation.threadInstructions ?? '',
+                                                ''
+                                            );
+                                            if (next !== prev) {
+                                                updateConversationThread({
+                                                    threadInstructions: next || undefined,
+                                                });
+                                            }
+                                        }}
+                                    />
+                                    <div className="bw-thread-context-panel__files">
+                                        <input
+                                            ref={threadContextFilesInputRef}
+                                            type="file"
+                                            className="sr-only"
+                                            multiple
+                                            accept=".txt,.md,.mdx,.csv,.json,.ts,.tsx,.js,.jsx,.css,.html,.htm,.xml,.yaml,.yml,.sql,text/*"
+                                            aria-hidden
+                                            tabIndex={-1}
+                                            onChange={onThreadContextFilesChange}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="bw-btn-secondary"
+                                            data-testid={TEST_IDS.THREAD_CONTEXT_FILE_ADD}
+                                            onClick={() => threadContextFilesInputRef.current?.click()}
+                                        >
+                                            파일 추가
+                                        </button>
+                                        <span className="bw-thread-context-panel__files-meta">
+                                            텍스트 위주 파일 최대 {MAX_THREAD_CONTEXT_FILES}개 · 내용은 답변 맥락에 포함
+                                        </span>
+                                    </div>
+                                    {(currentConversation.threadFiles?.length ?? 0) > 0 && (
+                                        <ul className="bw-thread-context-panel__file-list">
+                                            {currentConversation.threadFiles!.map((f) => (
+                                                <li key={f.id}>
+                                                    <span className="bw-thread-context-panel__file-name">{f.name}</span>
+                                                    {!f.textContent && (
+                                                        <span className="bw-thread-context-panel__file-note">
+                                                            {' '}
+                                                            (내용 미포함 · 텍스트 형식 권장)
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        className="bw-thread-context-panel__file-remove"
+                                                        onClick={() => removeThreadContextFile(f.id)}
+                                                        aria-label={`${f.name} 제거`}
+                                                    >
+                                                        제거
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
                         )}
-                        {/* 대화 헤더 (Figma: 제목 + 별·북마크·Share) */}
-                        <div className="brainwave-chat-header">
-                            <h3 className="brainwave-chat-header-title">
-                                {inProjectDetailContext ? (
+                        {/* 대화 헤더 — 다단계 UI형: 공유 + 보내기·관리 메뉴 */}
+                        <div className="brainwave-chat-header brainwave-chat-header--genspark">
+                            <h3
+                                className="brainwave-chat-header-title"
+                                title={inProjectDetailContext && currentProject ? currentProject.name : currentConversation.title}
+                            >
+                                {inProjectDetailContext && currentProject ? (
                                     <>
-                                        <span className="brainwave-chat-header-title-kicker">대화 제목</span>
-                                        <span>{currentConversation.title}</span>
+                                        <span className="brainwave-chat-header-title-kicker">프로젝트</span>
+                                        <span>{currentProject.name}</span>
                                     </>
                                 ) : (
-                                    currentConversation.title
+                                    <>
+                                        <span className="brainwave-chat-header-title-kicker">대화</span>
+                                        <span>{currentConversation.title}</span>
+                                    </>
                                 )}
                             </h3>
+                            {/* 대화 태그 행 */}
+                            <div className="conv-tags-row">
+                                {(currentConversation.tags ?? []).map(tag => (
+                                    <span key={tag} className="conv-tag-chip">
+                                        #{tag}
+                                        <button
+                                            type="button"
+                                            className="conv-tag-chip-del"
+                                            onClick={() => removeTagFromCurrentConv(tag)}
+                                            aria-label={`태그 #${tag} 삭제`}
+                                            title="삭제"
+                                        >✕</button>
+                                    </span>
+                                ))}
+                                {convTagsOpen ? (
+                                    <span className="conv-tag-add-wrap">
+                                        <input
+                                            type="text"
+                                            className="conv-tag-input"
+                                            placeholder="태그 입력…"
+                                            value={convTagInput}
+                                            onChange={e => setConvTagInput(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') { addTagToCurrentConv(convTagInput); }
+                                                if (e.key === 'Escape') { setConvTagsOpen(false); setConvTagInput(''); }
+                                            }}
+                                            maxLength={20}
+                                            autoFocus
+                                            aria-label="태그 입력"
+                                        />
+                                        <button type="button" className="conv-tag-add-confirm" onClick={() => addTagToCurrentConv(convTagInput)} aria-label="태그 추가 확인">✓</button>
+                                        <button type="button" className="conv-tag-add-cancel" onClick={() => { setConvTagsOpen(false); setConvTagInput(''); }} aria-label="취소">✕</button>
+                                    </span>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="conv-tag-add-btn"
+                                        onClick={() => setConvTagsOpen(true)}
+                                        aria-label="태그 추가"
+                                        title="태그 추가 (최대 8개)"
+                                    >
+                                        🏷 +태그
+                                    </button>
+                                )}
+                            </div>
+                            {/* 핀된 메시지 배너 */}
+                            {pinnedMessages.length > 0 && (
+                                <div className="msg-pinned-banner">
+                                    <button
+                                        type="button"
+                                        className="msg-pinned-banner-toggle"
+                                        onClick={() => setShowPinnedPanel(p => !p)}
+                                        aria-expanded={showPinnedPanel}
+                                    >
+                                        📌 핀 고정 메시지 {pinnedMessages.length}개 {showPinnedPanel ? '▾' : '▸'}
+                                    </button>
+                                    {showPinnedPanel && (
+                                        <ul className="msg-pinned-list">
+                                            {pinnedMessages.map(pm => (
+                                                <li key={pm.id} className="msg-pinned-item">
+                                                    <span className="msg-pinned-role">{pm.role === 'user' ? '나' : 'AI'}</span>
+                                                    <span className="msg-pinned-preview">{pm.content.slice(0, 80)}{pm.content.length > 80 ? '…' : ''}</span>
+                                                    <button
+                                                        type="button"
+                                                        className="msg-pinned-unpin"
+                                                        onClick={() => togglePinMessage(pm.id)}
+                                                        aria-label="핀 해제"
+                                                        title="핀 해제"
+                                                    >✕</button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
                             <div className="brainwave-chat-header-actions">
+                                {/* 대화 전체 복사 드롭다운 */}
+                                {currentConversation && currentConversation.messages.length > 0 && (
+                                    <div className="chat-copy-wrap" style={{ position: 'relative' }}>
+                                        <button
+                                            type="button"
+                                            className="bw-btn-secondary chat-copy-btn"
+                                            onClick={() => setConversationCopyMenuOpen((prev) => !prev)}
+                                            aria-label="대화 복사"
+                                            title="대화 전체를 클립보드에 복사"
+                                        >
+                                            {conversationCopyDone ? '✓ 복사됨' : '📋 복사'}
+                                        </button>
+                                        {conversationCopyMenuOpen && (
+                                            <div className="chat-copy-menu">
+                                                <button
+                                                    type="button"
+                                                    className="chat-copy-menu-item"
+                                                    onClick={() => handleConversationQuickCopy('markdown')}
+                                                >
+                                                    Markdown으로 복사
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="chat-copy-menu-item"
+                                                    onClick={() => handleConversationQuickCopy('txt')}
+                                                >
+                                                    텍스트로 복사
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 <button
                                     type="button"
                                     className="bw-btn-primary"
@@ -7088,107 +8320,148 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     aria-label="공유"
                                     title="대화 공유"
                                 >
-                                    Share
+                                    공유
                                 </button>
-                                <button
-                                    type="button"
-                                    className="bw-btn-secondary"
-                                    onClick={() => exportConversation('markdown')}
-                                    disabled={currentConversation.messages.length === 0}
-                                    aria-label="Markdown으로 내보내기"
-                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 내보내기 가능' : 'Markdown으로 내보내기 (Ctrl+E)'}
-                                >
-                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
-                                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
-                                    </svg>
-                                    내보내기
-                                </button>
-                                <button
-                                    type="button"
-                                    className="bw-btn-secondary"
-                                    onClick={() => exportConversation('clipboard')}
-                                    disabled={currentConversation.messages.length === 0}
-                                    aria-label="클립보드에 복사"
-                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 복사 가능' : '마크다운을 클립보드에 복사'}
-                                >
-                                    복사
-                                </button>
-                                <button
-                                    type="button"
-                                    className="bw-btn-secondary"
-                                    onClick={() => exportConversation('json')}
-                                    disabled={currentConversation.messages.length === 0}
-                                    aria-label="JSON으로 내보내기"
-                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 내보내기 가능' : 'JSON으로 내보내기'}
-                                >
-                                    JSON
-                                </button>
-                                <button
-                                    type="button"
-                                    className="bw-btn-secondary"
-                                    onClick={() => exportConversation('html')}
-                                    disabled={currentConversation.messages.length === 0}
-                                    aria-label="HTML로 내보내기"
-                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 내보내기 가능' : 'HTML로 내보내기'}
-                                >
-                                    HTML
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={importConversation}
-                                    disabled={importingConversation}
-                                    aria-label="대화 가져오기 (Ctrl+Shift+I)"
-                                    style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
-                                        background: 'transparent',
-                                        border: '1px solid var(--sidebar-dark-border-strong)',
-                                        borderRadius: '4px',
-                                        color: 'var(--text-primary)',
-                                        cursor: importingConversation ? 'wait' : 'pointer',
-                                        opacity: importingConversation ? 0.7 : 1,
-                                    }}
-                                    title="JSON, Markdown 또는 HTML 파일에서 대화 가져오기 (Ctrl+Shift+I)"
-                                >
-                                    {importingConversation ? '가져오는 중…' : '가져오기'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => currentConversation && duplicateConversation(currentConversation)}
-                                    disabled={currentConversation.messages.length === 0}
-                                    aria-label="대화 복제"
-                                    title={currentConversation.messages.length === 0 ? '대화 내용이 있을 때 복제 가능' : '현재 대화 복제 (Ctrl+Shift+D)'}
-                                    style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
-                                        background: 'transparent',
-                                        border: '1px solid var(--sidebar-dark-border-strong)',
-                                        borderRadius: '4px',
-                                        color: currentConversation.messages.length > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                        cursor: currentConversation.messages.length > 0 ? 'pointer' : 'not-allowed',
-                                    }}
-                                >
-                                    복제
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => currentConversation && setDeleteConfirmConversation(currentConversation)}
-                                    aria-label="대화 삭제"
-                                    title="이 대화 스레드를 목록에서 삭제합니다 (복구 불가)"
-                                    data-testid={TEST_IDS.CHAT_DELETE_CONVERSATION}
-                                    style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
-                                        background: 'transparent',
-                                        border: '1px solid var(--accent-error, #dc2626)',
-                                        borderRadius: '4px',
-                                        color: 'var(--accent-error, #dc2626)',
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    대화 삭제
-                                </button>
+                                {(!currentProject || projectContentTab === 'chat') && (
+                                    <button
+                                        type="button"
+                                        className="bw-btn-secondary"
+                                        data-testid={TEST_IDS.CHAT_THREAD_CONTEXT_SETTINGS}
+                                        onClick={() => setThreadContextPanelOpen(true)}
+                                        aria-expanded={threadContextPanelOpen}
+                                        aria-controls={
+                                            threadContextPanelOpen ? 'bw-thread-context-panel-region' : undefined
+                                        }
+                                        title="이 대화 지침·첨부 파일·딥시크 관련 설정"
+                                    >
+                                        대화 설정
+                                    </button>
+                                )}
+                                <details className="bw-chat-header-menu" data-testid={TEST_IDS.CHAT_HEADER_SEND_MENU}>
+                                    <summary className="bw-chat-header-menu__trigger bw-btn-secondary">보내기</summary>
+                                    <div className="bw-chat-header-menu__panel" role="group" aria-label="대화보내기">
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item"
+                                            style={{ fontWeight: 600, borderBottom: '1px solid var(--border-color, #e2e8f0)', paddingBottom: 6, marginBottom: 2 }}
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                setShowExportModal(true);
+                                            }}
+                                            disabled={currentConversation.messages.length === 0}
+                                        >
+                                            ⚙️ 내보내기 옵션…
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item"
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                void exportConversation('markdown');
+                                            }}
+                                            disabled={currentConversation.messages.length === 0}
+                                            title="Ctrl+E"
+                                        >
+                                            Markdown
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item"
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                void exportConversation('clipboard');
+                                            }}
+                                            disabled={currentConversation.messages.length === 0}
+                                        >
+                                            클립보드
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item"
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                void exportConversation('json');
+                                            }}
+                                            disabled={currentConversation.messages.length === 0}
+                                        >
+                                            JSON
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item"
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                void exportConversation('html');
+                                            }}
+                                            disabled={currentConversation.messages.length === 0}
+                                        >
+                                            HTML
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item"
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                void exportConversation('txt');
+                                            }}
+                                            disabled={currentConversation.messages.length === 0}
+                                        >
+                                            텍스트 (.txt)
+                                        </button>
+                                    </div>
+                                </details>
+                                <details className="bw-chat-header-menu" data-testid={TEST_IDS.CHAT_HEADER_MANAGE_MENU}>
+                                    <summary className="bw-chat-header-menu__trigger bw-btn-secondary">관리</summary>
+                                    <div className="bw-chat-header-menu__panel" role="group" aria-label="대화 관리">
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item"
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                void importConversation();
+                                            }}
+                                            disabled={importingConversation}
+                                            title="Ctrl+Shift+I"
+                                        >
+                                            {importingConversation ? '가져오는 중…' : '가져오기'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item"
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                if (currentConversation) duplicateConversation(currentConversation);
+                                            }}
+                                            disabled={currentConversation.messages.length === 0}
+                                            title="Ctrl+Shift+D"
+                                        >
+                                            복제
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bw-chat-header-menu__item bw-chat-header-menu__item--danger"
+                                            onClick={(e) => {
+                                                (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                if (currentConversation) setDeleteConfirmConversation(currentConversation);
+                                            }}
+                                            data-testid={TEST_IDS.CHAT_DELETE_CONVERSATION}
+                                        >
+                                            대화 삭제
+                                        </button>
+                                        {currentConversation.messages.length > 0 ? (
+                                            <button
+                                                type="button"
+                                                className="bw-chat-header-menu__item bw-chat-header-menu__item--danger"
+                                                onClick={(e) => {
+                                                    (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open');
+                                                    requestClearMessages();
+                                                }}
+                                            >
+                                                메시지 전체 삭제
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                </details>
                                 <button
                                     type="button"
                                     onClick={() => setShowMessageSearch(prev => !prev)}
@@ -7256,42 +8529,58 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                         <path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" />
                                     </svg>
                                 </button>
-                                {/* 대화 내용 전체 삭제 */}
-                                {currentConversation && currentConversation.messages.length > 0 && (
+                                {bookmarkedMessages.length > 0 && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            background: 'var(--accent-warning-muted)',
+                                            borderRadius: '4px',
+                                            color: 'var(--accent-warning)',
+                                        }}>
+                                            ⭐ 북마크 {bookmarkedMessages.length}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            title="즐겨찾기 메시지 TXT 내보내기"
+                                            aria-label="즐겨찾기 메시지 내보내기"
+                                            onClick={exportBookmarkedMessages}
+                                            style={{
+                                                background: 'var(--accent-warning-muted)',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                padding: '4px 7px',
+                                                fontSize: '11px',
+                                                cursor: 'pointer',
+                                                color: 'var(--accent-warning)',
+                                            }}
+                                        >
+                                            📥 내보내기
+                                        </button>
+                                    </span>
+                                )}
+                                {/* 대화 요약 버튼 */}
+                                {currentConversation && (currentConversation.messages ?? []).length > 0 && (
                                     <button
                                         type="button"
-                                        onClick={requestClearMessages}
-                                        aria-label="대화 내용 전체 삭제"
+                                        title="대화 내용 요약 보기"
+                                        aria-label="대화 요약"
+                                        onClick={summarizeConversation}
                                         style={{
-                                            padding: '6px',
-                                            background: 'transparent',
-                                            border: '1px solid var(--accent-error-border)',
+                                            background: 'var(--accent-info-muted, rgba(59,130,246,0.1))',
+                                            border: 'none',
                                             borderRadius: '4px',
-                                            color: 'var(--accent-error)',
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
                                             cursor: 'pointer',
+                                            color: 'var(--accent-info, #3b82f6)',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '4px',
-                                            opacity: 0.8,
+                                            gap: '3px',
                                         }}
-                                        title="대화 내용 전체 삭제"
                                     >
-                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-                                            <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
-                                        </svg>
+                                        📝 요약
                                     </button>
-                                )}
-                                {bookmarkedMessages.length > 0 && (
-                                    <span style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        background: 'var(--accent-warning-muted)',
-                                        borderRadius: '4px',
-                                        color: 'var(--accent-warning)',
-                                    }}>
-                                        북마크 {bookmarkedMessages.length}
-                                    </span>
                                 )}
                                 {/* 대화 통계 */}
                                 {conversationStats && conversationStats.total > 0 && (
@@ -7516,6 +8805,50 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                         )}
                                             </output>
                                         </>
+                                    ) : gensparkRouteAgentId && gensparkAgentSessionMeta ? (
+                                        <output
+                                            className="genspark-agent-empty"
+                                            data-testid={TEST_IDS.GENSPARK_AGENT_EMPTY_STATE}
+                                        >
+                                            <h2 className="genspark-agent-empty__title">첫 메시지를 보내 보세요</h2>
+                                            <p className="genspark-agent-empty__agent-name">
+                                                {gensparkAgentSessionMeta.form.displayName}
+                                            </p>
+                                            <p className="genspark-agent-empty__desc">
+                                                {coerceTrimmedString(
+                                                    gensparkAgentSessionMeta.form.oneLineDescription,
+                                                    '',
+                                                ) ||
+                                                    'CORBU.AI 에이전트 세션입니다. 아래 입력창에서 메시지를 내면 단계형 생성 패널과 마크다운 답변이 이어집니다.'}
+                                            </p>
+                                            <p className="genspark-agent-empty__hint">
+                                                상단에서 공개 URL·앱 링크를 복사하거나 원본 페이지를 열 수 있습니다.
+                                            </p>
+                                            {suggestedQuestionsFromSource.length > 0 && (
+                                                <div
+                                                    className="empty-state-suggested-questions"
+                                                    role="region"
+                                                    aria-label="추천 질문"
+                                                    data-testid="suggested-questions-from-source"
+                                                >
+                                                    <p className="suggested-questions-label">💡 추천 질문</p>
+                                                    <div className="suggested-questions-grid">
+                                                        {suggestedQuestionsFromSource.map((q, idx) => (
+                                                            <button
+                                                                key={idx}
+                                                                type="button"
+                                                                className="suggested-question-chip"
+                                                                onClick={() => sendMessage(q)}
+                                                                data-testid={`suggested-question-${idx}`}
+                                                                aria-label={`추천 질문 전송: ${q}`}
+                                                            >
+                                                                {q}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </output>
                                     ) : (
                                         <output>
                                             <h2>새 대화를 시작하세요</h2>
@@ -7562,13 +8895,30 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                         !isAssistantGenerationStepUi(message.content)
                                             ? assistantPhaseFromPipelineExtrasSlug(
                                                   message.pipelineExtras?.pipelineGenerationPhase,
-                                              )
+                                              ) ?? 'draft'
                                             : null;
+                                    const turnUserForAssistantStepUi =
+                                        message.role === 'assistant' &&
+                                        index > 0 &&
+                                        currentConversation.messages[index - 1].role === 'user'
+                                            ? coerceTrimmedString(
+                                                  currentConversation.messages[index - 1].content,
+                                                  '',
+                                              )
+                                            : '';
+                                    const messageTurnGensparkStepUi = assistantGensparkStepUiFromUserMessage(
+                                        turnUserForAssistantStepUi,
+                                        {
+                                            projectHasFiles:
+                                                pipelineStepDocumentContext ||
+                                                userMessageHasAttachmentChatHint(turnUserForAssistantStepUi),
+                                        },
+                                    );
                                     return (
                                     <article
                                         key={message.id}
                                         id={`message-${message.id}`}
-                                        className={`message genspark-qa-article ${message.role === 'user' ? 'user-message' : 'assistant-message'}${message.bookmarked ? ' bookmarked' : ''}`}
+                                        className={`message genspark-qa-article ${message.role === 'user' ? 'user-message' : 'assistant-message'}${message.bookmarked ? ' bookmarked' : ''}${gensparkRouteAgentId ? ' genspark-agent-session-msg' : ''}`}
                                         aria-label={`${message.role === 'user' ? '사용자' : 'AI'} 메시지${message.bookmarked ? ' (북마크됨)' : ''}${
                                             isStreaming && isLastAssistantBubble
                                                 ? ', 스트리밍 중'
@@ -7682,8 +9032,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                                 <GensparkGenerationStatus
                                                                     variant="step"
                                                                     phase={pipelineStreamPhase}
-                                                                    embedded
-                                                                    webSearch={currentRequestHasWebSearch}
+                                                                    embedded={gensparkAgentBodyEmbedded}
+                                                                    webSearch={messageTurnGensparkStepUi.webSearch}
+                                                                    documentContext={messageTurnGensparkStepUi.documentContext}
                                                                 />
                                                             </div>
                                                         )}
@@ -7696,15 +9047,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                                 text={message.content}
                                                                 searchTerm={messageSearchTrimmed || undefined}
                                                                 enhancedCodeBlocks
-                                                                embedded
-                                                                webSearch={currentRequestHasWebSearch}
-                                                                documentContext={
-                                                                    !!(
-                                                                        currentProject &&
-                                                                        (currentProject.files?.length ||
-                                                                            currentProject.webSources?.length)
-                                                                    )
-                                                                }
+                                                                embedded={gensparkAgentBodyEmbedded}
+                                                                webSearch={messageTurnGensparkStepUi.webSearch}
+                                                                documentContext={messageTurnGensparkStepUi.documentContext}
                                                             />
                                                             {collapsedMessages.has(message.id) && (
                                                                 <div style={{
@@ -7777,6 +9122,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                                         borderColor: themeStyles.borderColor,
                                                                         textSecondary: themeStyles.textSecondary,
                                                                     }}
+                                                                    assistantStepWebSearch={messageTurnGensparkStepUi.webSearch}
+                                                                    assistantStepDocumentContext={
+                                                                        messageTurnGensparkStepUi.documentContext
+                                                                    }
                                                                 />
                                                             )}
                                                     </>
@@ -7899,6 +9248,52 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                             </button>
                                                         </>
                                                     )}
+                                                    {/* 이모지 반응 */}
+                                                    <div style={{ position: 'relative', display: 'inline-flex' }}>
+                                                        {/* 현재 선택된 이모지들 */}
+                                                        {(Object.entries(message.emojiReactions ?? {}) as [MsgEmojiReaction, boolean][])
+                                                            .filter(([, active]) => active)
+                                                            .map(([emoji]) => (
+                                                                <button
+                                                                    key={emoji}
+                                                                    type="button"
+                                                                    className="msg-emoji-reaction-chip"
+                                                                    onClick={() => toggleEmojiReaction(message.id, emoji)}
+                                                                    aria-label={`${emoji} 반응 취소`}
+                                                                    title="클릭하여 취소"
+                                                                >
+                                                                    {emoji}
+                                                                </button>
+                                                            ))
+                                                        }
+                                                        <button
+                                                            type="button"
+                                                            className="msg-emoji-add-btn"
+                                                            onClick={(e) => { e.stopPropagation(); setEmojiPickerMsgId(p => p === message.id ? null : message.id); }}
+                                                            aria-label="이모지 반응 추가"
+                                                            aria-expanded={emojiPickerMsgId === message.id}
+                                                            title="이모지 반응"
+                                                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', opacity: 0.6, fontSize: 14 }}
+                                                        >
+                                                            🙂+
+                                                        </button>
+                                                        {emojiPickerMsgId === message.id && (
+                                                            <div className="msg-emoji-picker" role="dialog" aria-label="이모지 선택">
+                                                                {MSG_EMOJI_REACTIONS.map(emoji => (
+                                                                    <button
+                                                                        key={emoji}
+                                                                        type="button"
+                                                                        className={`msg-emoji-picker-btn${message.emojiReactions?.[emoji] ? ' msg-emoji-picker-btn--active' : ''}`}
+                                                                        onClick={(e) => { e.stopPropagation(); toggleEmojiReaction(message.id, emoji); setEmojiPickerMsgId(null); }}
+                                                                        aria-label={emoji}
+                                                                        aria-pressed={!!message.emojiReactions?.[emoji]}
+                                                                    >
+                                                                        {emoji}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <button
                                                         type="button"
                                                         className="bookmark-btn"
@@ -7920,6 +9315,28 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                         <svg width="16" height="16" viewBox="0 0 16 16" fill={message.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                                                             <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2z" />
                                                         </svg>
+                                                    </button>
+                                                    {/* 핀 버튼 */}
+                                                    <button
+                                                        type="button"
+                                                        className="msg-pin-btn"
+                                                        onClick={() => togglePinMessage(message.id)}
+                                                        aria-label={message.pinned ? '핀 해제' : '메시지 핀 고정'}
+                                                        title={message.pinned ? '핀 해제' : '상단에 핀 고정'}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            padding: '4px',
+                                                            fontSize: 14,
+                                                            color: message.pinned ? '#f59e0b' : 'inherit',
+                                                            opacity: message.pinned ? 1 : 0.6,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        📌
                                                     </button>
                                                     {/* TTS 버튼 */}
                                                     <button
@@ -8110,15 +9527,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             <div className="message-text">
                                                 <AssistantGensparkBody
                                                     text=""
-                                                    embedded
-                                                    webSearch={currentRequestHasWebSearch}
-                                                    documentContext={
-                                                        !!(
-                                                            currentProject &&
-                                                            (currentProject.files?.length ||
-                                                                currentProject.webSources?.length)
-                                                        )
-                                                    }
+                                                    embedded={gensparkAgentBodyEmbedded}
+                                                    webSearch={composerGensparkStepUi.webSearch}
+                                                    documentContext={composerGensparkStepUi.documentContext}
                                                 />
                                                 {responseStartTime ? (
                                                     <div
@@ -8142,8 +9553,160 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             )}
                             </>
                             )}
-                            <div ref={messagesEndRef} />
                         </div>
+
+                        {/* 대화 요약 모달 */}
+                        {showSummaryModal && (
+                            <div
+                                className="bw-std-popup-overlay"
+                                onClick={() => setShowSummaryModal(false)}
+                                role="presentation"
+                            >
+                                <div
+                                    className="bw-std-popup-panel bw-std-popup-panel--md"
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-labelledby="summary-modal-title"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="bw-std-popup-panel-header">
+                                        <h2 id="summary-modal-title">📝 대화 요약</h2>
+                                        <button
+                                            type="button"
+                                            className="bw-std-popup-close"
+                                            onClick={() => setShowSummaryModal(false)}
+                                            aria-label="요약 모달 닫기"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                    <div className="bw-std-popup-panel-body">
+                                        {summaryLoading ? (
+                                            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+                                                ⏳ 요약 생성 중...
+                                            </div>
+                                        ) : (
+                                            <pre style={{
+                                                whiteSpace: 'pre-wrap',
+                                                wordBreak: 'break-word',
+                                                fontSize: '13px',
+                                                lineHeight: 1.7,
+                                                color: 'var(--text-primary)',
+                                                background: 'var(--card-bg, #f8fafc)',
+                                                borderRadius: '8px',
+                                                padding: '14px',
+                                                margin: 0,
+                                            }}>
+                                                {summaryText}
+                                            </pre>
+                                        )}
+                                    </div>
+                                    {!summaryLoading && summaryText && (
+                                        <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid var(--border-color)' }}>
+                                            <button
+                                                type="button"
+                                                className="bw-btn-secondary"
+                                                onClick={copySummary}
+                                                style={{ fontSize: '12px' }}
+                                            >
+                                                📋 복사
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="bw-btn-secondary"
+                                                onClick={() => setShowSummaryModal(false)}
+                                                style={{ fontSize: '12px' }}
+                                            >
+                                                닫기
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 내보내기 옵션 모달 */}
+                        {showExportModal && currentConversation && (
+                            <div
+                                className="bw-std-popup-overlay"
+                                onClick={() => setShowExportModal(false)}
+                                role="presentation"
+                            >
+                                <div
+                                    className="bw-std-popup-panel bw-std-popup-panel--md"
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-labelledby="export-opts-title"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="bw-std-popup-panel-header">
+                                        <h2 id="export-opts-title">⚙️ 내보내기 옵션</h2>
+                                        <button type="button" className="bw-std-popup-close" onClick={() => setShowExportModal(false)} aria-label="닫기">×</button>
+                                    </div>
+                                    <div className="bw-std-popup-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '14px 16px' }}>
+                                        {/* 형식 */}
+                                        <div>
+                                            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>내보내기 형식</p>
+                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                                {(['markdown', 'txt', 'html', 'json'] as const).map(f => (
+                                                    <button
+                                                        key={f}
+                                                        type="button"
+                                                        onClick={() => setExportFormat(f)}
+                                                        style={{
+                                                            padding: '5px 14px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                                                            border: exportFormat === f ? '1.5px solid var(--accent-primary, #6366f1)' : '1px solid var(--border-color, #e2e8f0)',
+                                                            background: exportFormat === f ? 'rgba(99,102,241,0.1)' : 'transparent',
+                                                            color: exportFormat === f ? 'var(--accent-primary, #6366f1)' : 'var(--text-secondary)',
+                                                            fontWeight: exportFormat === f ? 700 : 400,
+                                                        }}
+                                                    >
+                                                        {f === 'markdown' ? 'Markdown' : f === 'txt' ? 'TXT' : f === 'html' ? 'HTML' : 'JSON'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {/* 메타데이터 포함 */}
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                                            <input type="checkbox" checked={exportIncludeMeta} onChange={e => setExportIncludeMeta(e.target.checked)} style={{ accentColor: 'var(--accent-primary, #6366f1)' }} />
+                                            <span>메타데이터 포함 (생성일, 메시지 수, 필터 정보)</span>
+                                        </label>
+                                        {/* 북마크만 */}
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                                            <input type="checkbox" checked={exportBookmarkedOnly} onChange={e => setExportBookmarkedOnly(e.target.checked)} disabled={bookmarkedMessages.length === 0} style={{ accentColor: 'var(--accent-primary, #6366f1)' }} />
+                                            <span>북마크 메시지만 내보내기 {bookmarkedMessages.length > 0 ? `(${bookmarkedMessages.length}개)` : '(북마크 없음)'}</span>
+                                        </label>
+                                        {/* 기간 필터 */}
+                                        <div>
+                                            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>날짜 범위 (선택)</p>
+                                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                <input type="date" value={exportDateFrom} onChange={e => setExportDateFrom(e.target.value)}
+                                                    style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-color, #e2e8f0)', background: 'var(--card-bg, #fff)', color: 'var(--text-primary)' }} />
+                                                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>~</span>
+                                                <input type="date" value={exportDateTo} onChange={e => setExportDateTo(e.target.value)}
+                                                    style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-color, #e2e8f0)', background: 'var(--card-bg, #fff)', color: 'var(--text-primary)' }} />
+                                                {(exportDateFrom || exportDateTo) && (
+                                                    <button type="button" onClick={() => { setExportDateFrom(''); setExportDateTo(''); }}
+                                                        style={{ fontSize: 11, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕ 초기화</button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {/* 미리보기 */}
+                                        <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', background: 'var(--card-bg, #f8fafc)', borderRadius: 8, padding: '8px 12px', margin: 0 }}>
+                                            {(() => {
+                                                let count = currentConversation.messages.length;
+                                                if (exportBookmarkedOnly) count = Math.min(count, bookmarkedMessages.length);
+                                                return `총 ${count}개 메시지 → ${exportFormat === 'markdown' ? '.md' : exportFormat === 'txt' ? '.txt' : exportFormat === 'html' ? '.html' : '.json'} 파일`;
+                                            })()}
+                                        </p>
+                                    </div>
+                                    <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid var(--border-color)' }}>
+                                        <button type="button" className="bw-btn-secondary" onClick={() => setShowExportModal(false)} style={{ fontSize: 12 }}>취소</button>
+                                        <button type="button" className="bw-btn-primary" onClick={runExportWithOptions} style={{ fontSize: 12 }}>⬇️ 내보내기</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* 키보드 단축키 도움말 모달 */}
                         {showShortcutsHelp && (
@@ -8493,408 +10056,48 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 </div>
                             </details>
 
-                            <form
-                                className={`input-wrapper bw-composer bw-shared-input bw-composer-genspark${inputExpanded ? ' bw-composer--expanded' : ''}`}
-                                action="#"
-                                onSubmit={handleComposerSubmit}
-                                onClick={(e) => e.stopPropagation()}
-                                aria-label="메시지 전송"
-                            >
-                                <div className="bw-composer-genspark-stack">
-                                <div className="bw-composer-genspark-main">
-                                <div className="bw-composer-add-wrap bw-shared-input-add-wrap" style={{ position: 'relative' }}>
-                                    <button
-                                        ref={addMenuAnchorRef}
-                                        type="button"
-                                        className="input-icon-btn bw-composer-add"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowAddMenu((prev) => !prev);
-                                        }}
-                                        aria-label="첨부 또는 명령어"
-                                        aria-expanded={showAddMenu}
-                                        aria-haspopup="menu"
-                                        title="이미지 첨부 · /웹검색"
-                                    >
-                                        <IconPlus size={20} />
-                                        {attachedImageAnalysis && (
-                                            <span className="bw-attached-badge" aria-hidden title="이미지 분석 첨부됨">🖼️</span>
-                                        )}
-                                    </button>
-                                    {showAddMenu && (
-                                        <div
-                                            className="bw-composer-add-menu"
-                                            role="menu"
-                                            aria-label="첨부·명령어"
-                                            data-testid="add-menu"
-                                            style={{
-                                                position: 'absolute',
-                                                bottom: '100%',
-                                                left: 0,
-                                                marginBottom: '4px',
-                                                background: 'var(--bg-primary, #fff)',
-                                                border: '1px solid var(--border-color, #e5e7eb)',
-                                                borderRadius: 'var(--radius-lg, 8px)',
-                                                boxShadow: 'var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,.1))',
-                                                padding: '4px 0',
-                                                minWidth: '180px',
-                                                zIndex: 'var(--z-dropdown)',
-                                            }}
-                                        >
-                                            <button
-                                                type="button"
-                                                role="menuitem"
-                                                className="bw-add-menu-item"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setShowAddMenu(false);
-                                                    imageFileInputRef.current?.click();
-                                                }}
-                                                disabled={imageAnalysisLoading}
-                                            >
-                                                {imageAnalysisLoading ? '이미지 분석 중...' : '🖼️ 이미지 첨부·분석'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                role="menuitem"
-                                                className="bw-add-menu-item"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setShowAddMenu(false);
-                                                    conversationFileInputRef.current?.click();
-                                                }}
-                                            >
-                                                📎 대화 파일 첨부 (TXT/CSV)
-                                            </button>
-                                            <button
-                                                type="button"
-                                                role="menuitem"
-                                                className="bw-add-menu-item"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setShowAddMenu(false);
-                                                    setInput((prev) =>
-                                                        coerceTrimmedString(prev, '')
-                                                            ? prev
-                                                            : QUESTION_REQUIREMENT_COMPOSER_TEMPLATE,
-                                                    );
-                                                    inputHistoryIndexRef.current = -1;
-                                                    window.setTimeout(() => inputRef.current?.focus(), 0);
-                                                }}
-                                            >
-                                                📝 질문+요구 템플릿
-                                            </button>
-                                            {SLASH_COMMANDS.map(({ cmd, label }) => (
-                                                <button
-                                                    key={cmd}
-                                                    type="button"
-                                                    role="menuitem"
-                                                    className="bw-add-menu-item"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        insertSlashCommand(cmd);
-                                                    }}
-                                                >
-                                                    {cmd} — {label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="bw-shared-input-inner">
-                                    <span className="bw-shared-input-icon-left">
+                            <WorkspaceQueryComposer
+                                value={input}
+                                onChange={setInput}
+                                onCommit={handleWqCommit}
+                                formAriaLabel="메시지 전송"
+                                textareaRef={inputRef as React.RefObject<HTMLTextAreaElement>}
+                                textareaTestId={TEST_IDS.CHAT_INPUT}
+                                onVoiceClick={() => navigate(VOICE_GENERATION_PATH)}
+                                primaryAction={
+                                    isStreaming ? (
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                insertSlashCommand('/웹검색');
-                                                showToast('웹 검색 모드가 입력되었습니다.', 'info');
-                                            }}
-                                            aria-label="웹 검색 모드 삽입"
-                                            title="웹 검색: /웹검색 입력"
+                                            className="wq-composer__chat-cta"
+                                            style={{ background: '#ef4444', borderColor: '#dc2626' }}
+                                            onClick={cancelStreaming}
+                                            aria-label="스트리밍 중지"
+                                            title="생성 중지 (Esc)"
                                         >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                            중지
                                         </button>
-                                    </span>
-                                    <textarea
-                                        ref={inputRef}
-                                        value={input}
-                                        onChange={(e) => {
-                                            const v = e.target.value;
-                                            inputHistoryIndexRef.current = -1;
-                                            inputValueRef.current = v;
-                                            setInput(v);
-                                            const textarea = e.target;
-                                            textarea.style.height = 'auto';
-                                            textarea.style.height = `${Math.min(textarea.scrollHeight, 560)}px`;
-                                            setInputExpanded(coerceTrimmedString(v, '').length > 0 && textarea.scrollHeight >= 72);
-                                        }}
-                                        onKeyDown={handleKeyDown}
-                                        placeholder="메시지를 입력하세요…"
-                                        rows={1}
-                                        disabled={isLoading}
-                                        className="message-input bw-input bw-composer-field bw-shared-input-field"
-                                        data-testid={TEST_IDS.CHAT_INPUT}
-                                        aria-label="메시지 입력창"
-                                        aria-invalid={false}
-                                        aria-required="true"
-                                        style={{
-                                            minHeight: '40px',
-                                            maxHeight: 'min(52vh, 560px)',
-                                            resize: 'none',
-                                            overflow: 'auto',
-                                        }}
-                                    />
-                                    <span className="bw-shared-input-icon-right">
+                                    ) : (
                                         <button
-                                            type="button"
-                                            onClick={() => showToast('응답 스타일·포맷은 상단 생성 모드에서 설정할 수 있습니다.', 'info')}
-                                            aria-label="응답 스타일 안내"
-                                            title="응답 스타일·포맷은 상단 생성 모드에서 설정"
+                                            type="submit"
+                                            className="wq-composer__chat-cta"
+                                            disabled={!canSend}
+                                            aria-label={input.trim() ? '메시지 전송' : '전송'}
+                                            aria-disabled={!canSend}
+                                            title={!isOnline ? '오프라인 상태입니다' : '메시지 전송 (Enter)'}
+                                            data-testid={TEST_IDS.SEND_BUTTON}
                                         >
-                                            <span style={{ fontSize: '14px', fontWeight: 600, color: 'inherit' }}>A</span>
-                                        </button>
-                                    </span>
-                                </div>
-                                </div>
-                                <div className="bw-composer-structured-inline" aria-live="polite">
-                                    {structuredInputGuardMessage && (
-                                        <button
-                                            type="button"
-                                            className="brainwave-structured-guard"
-                                            onClick={applyStructuredInputQuickFix}
-                                            aria-label="질문과 요구사항 누락 자동 보정"
-                                            data-testid={TEST_IDS.STRUCTURED_INPUT_GUARD}
-                                        >
-                                            {structuredInputGuardMessage}
-                                        </button>
-                                    )}
-                                    {isStructuredGenerationActive && (
-                                        <span className="brainwave-structured-wrap" ref={structuredBadgeWrapRef}>
-                                            <button
-                                                type="button"
-                                                className="brainwave-structured-badge"
-                                                aria-expanded={showStructuredPreview}
-                                                aria-label="질문과 요구사항 인식 미리보기 열기"
-                                                onClick={() => setShowStructuredPreview((prev) => !prev)}
-                                                data-testid={TEST_IDS.STRUCTURED_INPUT_BADGE}
-                                            >
-                                                구조화 생성 활성 (질문+요구 인식)
-                                            </button>
-                                            {showStructuredPreview && (
-                                                <span
-                                                    ref={structuredPreviewRef}
-                                                    className={`brainwave-structured-preview ${structuredPreviewPlacement === 'below' ? 'brainwave-structured-preview--below' : ''}`}
-                                                    role="dialog"
-                                                    aria-label="질문과 요구사항 미리보기"
-                                                    data-testid={TEST_IDS.STRUCTURED_INPUT_PREVIEW}
-                                                >
-                                                    <span className="brainwave-structured-preview-title">입력 해석 미리보기</span>
-                                                    <span className="brainwave-structured-preview-line">
-                                                        질문: {structuredQuestionPreview || '없음'}
-                                                    </span>
-                                                    <span className="brainwave-structured-preview-line">
-                                                        요구: {structuredRequirementPreview || '없음'}
-                                                    </span>
-                                                    <span className="brainwave-structured-preview-actions">
-                                                        <button
-                                                            type="button"
-                                                            className="brainwave-structured-preview-copy-btn"
-                                                            onClick={copyStructuredInputPreview}
-                                                            aria-label="질문과 요구사항 형식 복사"
-                                                            data-testid={TEST_IDS.STRUCTURED_INPUT_COPY}
-                                                        >
-                                                            <span className="brainwave-structured-copy-label-long">복사</span>
-                                                            <span className="brainwave-structured-copy-label-short">⎘</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="brainwave-structured-preview-send-btn"
-                                                            onClick={() => {
-                                                                if (!inputTrimmed || isLoading) return;
-                                                                setShowStructuredPreview(false);
-                                                                sendMessage();
-                                                            }}
-                                                            disabled={!inputTrimmed || isLoading}
-                                                            aria-label="질문과 요구사항 형식으로 바로 전송"
-                                                            data-testid={TEST_IDS.STRUCTURED_INPUT_SEND}
-                                                        >
-                                                            <IconSend size={14} />
-                                                            <span className="brainwave-structured-send-label-long">이 형식으로 전송</span>
-                                                            <span className="brainwave-structured-send-label-short">전송</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="brainwave-structured-preview-close-btn"
-                                                            onClick={() => setShowStructuredPreview(false)}
-                                                            aria-label="질문과 요구사항 미리보기 닫기"
-                                                            data-testid={TEST_IDS.STRUCTURED_INPUT_CLOSE}
-                                                        >
-                                                            <span className="brainwave-structured-close-label-long">닫기</span>
-                                                            <span className="brainwave-structured-close-label-short">✕</span>
-                                                        </button>
-                                                    </span>
-                                                </span>
+                                            {isLoading ? (
+                                                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566"><animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" /></circle></svg>
+                                            ) : (
+                                                <>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><rect x="2" y="8" width="3" height="8" rx="1"/><rect x="8" y="4" width="3" height="16" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/><rect x="20" y="9" width="3" height="6" rx="1"/></svg>
+                                                    대화
+                                                </>
                                             )}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="bw-composer-genspark-toolbar" role="toolbar" aria-label="입력 옵션">
-                                    <div className="bw-composer-genspark-toolbar-hint" aria-hidden="true" />
-                                    <div className="bw-composer-genspark-toolbar-actions">
-                                        <select
-                                            className="bw-shared-input-auto"
-                                            aria-label="응답 스타일"
-                                            title="응답 스타일: Auto(기본) / 간결 / 상세"
-                                            value={composerResponseMode}
-                                            onChange={(e) => setComposerResponseMode((e.target.value || 'auto') as 'auto' | 'concise' | 'detailed')}
-                                            data-testid={TEST_IDS.COMPOSER_RESPONSE_MODE}
-                                        >
-                                            <option value="auto">Auto</option>
-                                            <option value="concise">간결</option>
-                                            <option value="detailed">상세</option>
-                                        </select>
-                                        {currentConversation && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className={`brainwave-meta-toggle-btn brainwave-assist-quick-btn ${deepseekEffective.review ? 'active' : ''}`}
-                                                    onClick={() => {
-                                                        const on = !deepseekEffective.review;
-                                                        updateConversationDeepseek(
-                                                            on
-                                                                ? { deepseekReviewHints: true }
-                                                                : {
-                                                                      deepseekReviewHints: false,
-                                                                      pipelineDeepSeekRefine: false,
-                                                                      pipelineDeepSeekReasoner: false,
-                                                                  }
-                                                        );
-                                                    }}
-                                                    aria-pressed={deepseekEffective.review}
-                                                    aria-label={`이 대화 딥시크 검수 ${deepseekEffective.review ? '끄기' : '켜기'}`}
-                                                    title="이 대화만: 딥시크 검수·계층 힌트"
-                                                    data-testid="chat-deepseek-review-toggle"
-                                                >
-                                                    <span aria-hidden>◆</span>
-                                                    <span className="brainwave-assist-quick-sr">딥시크 검수</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={`brainwave-meta-toggle-btn brainwave-assist-quick-btn ${deepseekEffective.refine ? 'active' : ''}`}
-                                                    onClick={() =>
-                                                        updateConversationDeepseek({
-                                                            pipelineDeepSeekRefine: !deepseekEffective.refine,
-                                                        })
-                                                    }
-                                                    disabled={!deepseekEffective.review}
-                                                    aria-pressed={deepseekEffective.refine}
-                                                    aria-label={`이 대화 딥시크 리파인 ${deepseekEffective.refine ? '끄기' : '켜기'}`}
-                                                    title="검수 켜진 대화만: 파이프라인 리파인"
-                                                    data-testid="chat-deepseek-refine-toggle"
-                                                >
-                                                    <span aria-hidden>R</span>
-                                                    <span className="brainwave-assist-quick-sr">리파인</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={`brainwave-meta-toggle-btn brainwave-assist-quick-btn ${deepseekEffective.reasoner ? 'active' : ''}`}
-                                                    onClick={() =>
-                                                        updateConversationDeepseek({
-                                                            pipelineDeepSeekReasoner: !deepseekEffective.reasoner,
-                                                        })
-                                                    }
-                                                    disabled={!deepseekEffective.review}
-                                                    aria-pressed={deepseekEffective.reasoner}
-                                                    aria-label={`이 대화 딥시크 Reasoner ${deepseekEffective.reasoner ? '끄기' : '켜기'}`}
-                                                    title="검수 켜진 대화만: Reasoner 비평(비용·지연↑)"
-                                                    data-testid="chat-deepseek-reasoner-toggle"
-                                                >
-                                                    <span aria-hidden>∑</span>
-                                                    <span className="brainwave-assist-quick-sr">Reasoner</span>
-                                                </button>
-                                            </>
-                                        )}
-                                        <button
-                                            type="button"
-                                            className={`brainwave-meta-toggle-btn brainwave-assist-quick-btn ${structuredInputAssistEnabled ? 'active' : ''}`}
-                                            onClick={() => setStructuredInputAssistEnabled((prev) => !prev)}
-                                            aria-pressed={structuredInputAssistEnabled}
-                                            aria-label={`질문과 요구사항 도우미 ${structuredInputAssistEnabled ? '끄기' : '켜기'}`}
-                                            title={`질문+요구 도우미 ${structuredInputAssistEnabled ? '켜짐' : '꺼짐'}`}
-                                            data-testid={TEST_IDS.STRUCTURED_INPUT_ASSIST_TOGGLE}
-                                        >
-                                            <span aria-hidden>⚙</span>
-                                            <span
-                                                className={`brainwave-assist-quick-dot ${structuredInputAssistEnabled ? 'on' : 'off'}`}
-                                                aria-hidden
-                                            />
-                                            <span className="brainwave-assist-quick-tooltip" aria-hidden>
-                                                {structuredInputAssistEnabled ? 'ON' : 'OFF'}
-                                            </span>
-                                            <span className="brainwave-assist-quick-sr">
-                                                질문+요구 도우미 {structuredInputAssistEnabled ? '켜짐' : '꺼짐'}
-                                            </span>
                                         </button>
-                                        {llmStatusSummary && (
-                                            <span
-                                                className="brainwave-llm-badge"
-                                                title="현재 대화에 사용 중인 LLM (설정에서 확인)"
-                                                data-testid="chat-llm-badge"
-                                            >
-                                                {llmStatusSummary}
-                                            </span>
-                                        )}
-                                        <button
-                                            type="button"
-                                            className="bw-shared-input-mic"
-                                            aria-label="음성 입력 (준비 중)"
-                                            title="음성 입력 (준비 중)"
-                                            disabled
-                                        >
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
-                                        </button>
-                                        {isStreaming ? (
-                                            <button
-                                                type="button"
-                                                className="send-button cancel-button bw-composer-action bw-shared-input-send bw-composer-action--danger"
-                                                onClick={cancelStreaming}
-                                                aria-label="스트리밍 중지"
-                                                title={inputFooterGenerationHint ?? `스트리밍 중지 (Esc) · ${streamingElapsedSec}초`}
-                                                data-testid={TEST_IDS.SEND_BUTTON}
-                                            >
-                                                <IconStop size={20} />
-                                            </button>
-                                        ) : (
-                                            <button
-                                                type="submit"
-                                                className={`send-button bw-composer-action bw-shared-input-send ${(inputTrimmed || attachedConversationFile) && isOnline && !isLoading ? 'bw-composer-action--send' : ''}`}
-                                                disabled={!canSend}
-                                                aria-label={inputTrimmed || attachedConversationFile ? '메시지 전송' : '전송'}
-                                                aria-disabled={!canSend}
-                                                title={
-                                                    !isOnline
-                                                        ? '오프라인 상태입니다'
-                                                        : isLoading
-                                                          ? inputFooterGenerationHint ?? ASSISTANT_PLACEHOLDER_THINKING
-                                                          : '메시지 전송 (Enter)'
-                                                }
-                                                data-testid={TEST_IDS.SEND_BUTTON}
-                                            >
-                                                {isLoading ? (
-                                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner" aria-hidden="true">
-                                                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566">
-                                                            <animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" />
-                                                        </circle>
-                                                    </svg>
-                                                ) : (
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                                                )}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                </div>
-                            </form>
+                                    )
+                                }
+                            />
                             <p className="bw-input-dock-disclaimer" role="contentinfo">
                                 CORBU.AI는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요. 쿠키 기본 설정을 참고하세요.
                             </p>
@@ -8927,31 +10130,25 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 {projectContentTab === 'sources' ? (
                                     projectSourcesPanelSection
                                 ) : (
-                                    <div className="welcome-content brainwave-welcome-content">
-                                        <div className="brainwave-welcome-inner">
-                                            <h1 className="brainwave-welcome-headline">CORBU.AI</h1>
-                                            <p className="brainwave-welcome-sub">질문이나 하고 싶은 말을 입력하세요.</p>
-                                            <div className="brainwave-welcome-quick-btns">
-                                                <button type="button" onClick={() => sendMessage('안녕하세요')} className="brainwave-welcome-question-btn" aria-label="예시: 안녕하세요">안녕하세요</button>
-                                                <button type="button" onClick={() => sendMessage('Python 기초 알려줘')} className="brainwave-welcome-question-btn" aria-label="예시: Python 기초 알려줘">Python 기초 알려줘</button>
-                                                <button type="button" onClick={showSampleColumnResult} className="brainwave-welcome-question-btn" aria-label="칼럼 샘플 결과 보기" data-testid={TEST_IDS.SAMPLE_COLUMN_RESULT_BTN}>칼럼 샘플 결과 보기</button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <WelcomeWorkspacePanel
+                                        navigate={navigate}
+                                        showHero={!compactWorkspaceWelcome}
+                                        onWelcomeQuickPrompt={(text) => {
+                                            void sendMessage(text);
+                                        }}
+                                        onWelcomeSampleColumn={showSampleColumnResult}
+                                    />
                                 )}
                             </div>
                         ) : (
-                            <div className="welcome-content brainwave-welcome-content">
-                                <div className="brainwave-welcome-inner">
-                                    <h1 className="brainwave-welcome-headline">CORBU.AI</h1>
-                                    <p className="brainwave-welcome-sub">질문이나 하고 싶은 말을 입력하세요.</p>
-                                    <div className="brainwave-welcome-quick-btns">
-                                        <button type="button" onClick={() => sendMessage('안녕하세요')} className="brainwave-welcome-question-btn" aria-label="예시: 안녕하세요">안녕하세요</button>
-                                        <button type="button" onClick={() => sendMessage('Python 기초 알려줘')} className="brainwave-welcome-question-btn" aria-label="예시: Python 기초 알려줘">Python 기초 알려줘</button>
-                                        <button type="button" onClick={showSampleColumnResult} className="brainwave-welcome-question-btn" aria-label="칼럼 샘플 결과 보기" data-testid={TEST_IDS.SAMPLE_COLUMN_RESULT_BTN}>칼럼 샘플 결과 보기</button>
-                                    </div>
-                                </div>
-                            </div>
+                            <WelcomeWorkspacePanel
+                                navigate={navigate}
+                                showHero={!compactWorkspaceWelcome}
+                                onWelcomeQuickPrompt={(text) => {
+                                    void sendMessage(text);
+                                }}
+                                onWelcomeSampleColumn={showSampleColumnResult}
+                            />
                         )}
                         {currentProject && hasProjectGuidance && (
                             <p className="bw-project-guidance-hint" role="status">
@@ -8960,365 +10157,48 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         )}
                         {projectSourcesTabInputHint}
                         <section className="input-container bw-page-input-dock genspark-chat-input-wrap" aria-label="메시지 입력 영역" data-testid="input-container">
-                            <form
-                                className={`input-wrapper brainwave-input bw-composer bw-shared-input bw-composer-genspark${inputExpanded ? ' bw-composer--expanded' : ''}`}
-                                action="#"
-                                onSubmit={handleComposerSubmit}
-                                onClick={(e) => e.stopPropagation()}
-                                aria-label="메시지 전송"
-                            >
-                                <div className="bw-composer-genspark-stack">
-                                <div className="bw-composer-genspark-main">
-                                <div className="bw-composer-add-wrap bw-shared-input-add-wrap" style={{ position: 'relative' }}>
-                                    <button
-                                        type="button"
-                                        className="input-icon-btn bw-composer-add"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowAddMenu((prev) => !prev);
-                                        }}
-                                        aria-label="첨부 또는 명령어"
-                                        aria-expanded={showAddMenu}
-                                        aria-haspopup="menu"
-                                        title="이미지 첨부 · /웹검색"
-                                    >
-                                        <IconPlus size={20} />
-                                    </button>
-                                    {showAddMenu && (
-                                        <div
-                                            className="bw-composer-add-menu"
-                                            role="menu"
-                                            style={{
-                                                position: 'absolute',
-                                                bottom: '100%',
-                                                left: 0,
-                                                marginBottom: '4px',
-                                                background: 'var(--bg-primary)',
-                                                border: '1px solid var(--border-color)',
-                                                borderRadius: 'var(--radius-lg, 8px)',
-                                                boxShadow: 'var(--shadow-lg)',
-                                                padding: '4px 0',
-                                                minWidth: '180px',
-                                                zIndex: 'var(--z-dropdown)',
-                                            }}
-                                        >
-                                            <button type="button" role="menuitem" className="bw-add-menu-item" onClick={(e) => { e.stopPropagation(); setShowAddMenu(false); imageFileInputRef.current?.click(); }} disabled={imageAnalysisLoading}>
-                                                {imageAnalysisLoading ? '이미지 분석 중...' : '🖼️ 이미지 첨부·분석'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                role="menuitem"
-                                                className="bw-add-menu-item"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setShowAddMenu(false);
-                                                    setInput((prev) =>
-                                                        coerceTrimmedString(prev, '')
-                                                            ? prev
-                                                            : QUESTION_REQUIREMENT_COMPOSER_TEMPLATE,
-                                                    );
-                                                    inputHistoryIndexRef.current = -1;
-                                                    window.setTimeout(() => inputRef.current?.focus(), 0);
-                                                }}
-                                            >
-                                                📝 질문+요구 템플릿
-                                            </button>
-                                            {SLASH_COMMANDS.map(({ cmd, label }) => (
-                                                <button key={cmd} type="button" role="menuitem" className="bw-add-menu-item" onClick={(e) => { e.stopPropagation(); insertSlashCommand(cmd); }}>
-                                                    {cmd} — {label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="bw-shared-input-inner">
-                                    <span className="bw-shared-input-icon-left">
+                            <WorkspaceQueryComposer
+                                value={input}
+                                onChange={setInput}
+                                onCommit={handleWqCommit}
+                                formAriaLabel="메시지 전송"
+                                textareaRef={inputRef as React.RefObject<HTMLTextAreaElement>}
+                                textareaTestId={TEST_IDS.CHAT_INPUT}
+                                onVoiceClick={() => navigate(VOICE_GENERATION_PATH)}
+                                primaryAction={
+                                    isStreaming ? (
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                insertSlashCommand('/웹검색');
-                                                showToast('웹 검색 모드가 입력되었습니다.', 'info');
-                                            }}
-                                            aria-label="웹 검색 모드 삽입"
-                                            title="웹 검색: /웹검색 입력"
+                                            className="wq-composer__chat-cta"
+                                            style={{ background: '#ef4444', borderColor: '#dc2626' }}
+                                            onClick={cancelStreaming}
+                                            aria-label="스트리밍 중지"
+                                            title="생성 중지 (Esc)"
                                         >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                            중지
                                         </button>
-                                    </span>
-                                    <textarea
-                                        ref={inputRef}
-                                        value={input}
-                                        onChange={(e) => {
-                                            const v = e.target.value;
-                                            inputHistoryIndexRef.current = -1;
-                                            inputValueRef.current = v;
-                                            setInput(v);
-                                            const textarea = e.target;
-                                            textarea.style.height = 'auto';
-                                            textarea.style.height = `${Math.min(textarea.scrollHeight, 560)}px`;
-                                            setInputExpanded(coerceTrimmedString(v, '').length > 0 && textarea.scrollHeight >= 72);
-                                        }}
-                                        onKeyDown={handleKeyDown}
-                                        placeholder="메시지를 입력하세요…"
-                                        rows={1}
-                                        disabled={isLoading}
-                                        className="message-input bw-input bw-composer-field bw-shared-input-field"
-                                        data-testid={TEST_IDS.CHAT_INPUT}
-                                        aria-label="메시지 입력창"
-                                        style={{
-                                            minHeight: '40px',
-                                            maxHeight: 'min(52vh, 560px)',
-                                            resize: 'none',
-                                            overflow: 'auto',
-                                        }}
-                                    />
-                                    <span className="bw-shared-input-icon-right">
+                                    ) : (
                                         <button
-                                            type="button"
-                                            onClick={() => showToast('응답 스타일·포맷은 상단 생성 모드에서 설정할 수 있습니다.', 'info')}
-                                            aria-label="응답 스타일 안내"
-                                            title="응답 스타일·포맷은 상단 생성 모드에서 설정"
+                                            type="submit"
+                                            className="wq-composer__chat-cta"
+                                            disabled={!canSend}
+                                            aria-label={input.trim() ? '메시지 전송' : '전송'}
+                                            aria-disabled={!canSend}
+                                            title={!isOnline ? '오프라인 상태입니다' : '메시지 전송 (Enter)'}
+                                            data-testid={TEST_IDS.SEND_BUTTON}
                                         >
-                                            <span style={{ fontSize: '14px', fontWeight: 600, color: 'inherit' }}>A</span>
-                                        </button>
-                                    </span>
-                                </div>
-                                </div>
-                                <div className="bw-composer-structured-inline" aria-live="polite">
-                                    {structuredInputGuardMessage && (
-                                        <button
-                                            type="button"
-                                            className="brainwave-structured-guard"
-                                            onClick={applyStructuredInputQuickFix}
-                                            aria-label="질문과 요구사항 누락 자동 보정"
-                                            data-testid={TEST_IDS.STRUCTURED_INPUT_GUARD}
-                                        >
-                                            {structuredInputGuardMessage}
-                                        </button>
-                                    )}
-                                    {isStructuredGenerationActive && (
-                                        <span className="brainwave-structured-wrap" ref={structuredBadgeWrapRef}>
-                                            <button
-                                                type="button"
-                                                className="brainwave-structured-badge"
-                                                aria-expanded={showStructuredPreview}
-                                                aria-label="질문과 요구사항 인식 미리보기 열기"
-                                                onClick={() => setShowStructuredPreview((prev) => !prev)}
-                                                data-testid={TEST_IDS.STRUCTURED_INPUT_BADGE}
-                                            >
-                                                구조화 생성 활성 (질문+요구 인식)
-                                            </button>
-                                            {showStructuredPreview && (
-                                                <span
-                                                    ref={structuredPreviewRef}
-                                                    className={`brainwave-structured-preview ${structuredPreviewPlacement === 'below' ? 'brainwave-structured-preview--below' : ''}`}
-                                                    role="dialog"
-                                                    aria-label="질문과 요구사항 미리보기"
-                                                    data-testid={TEST_IDS.STRUCTURED_INPUT_PREVIEW}
-                                                >
-                                                    <span className="brainwave-structured-preview-title">입력 해석 미리보기</span>
-                                                    <span className="brainwave-structured-preview-line">
-                                                        질문: {structuredQuestionPreview || '없음'}
-                                                    </span>
-                                                    <span className="brainwave-structured-preview-line">
-                                                        요구: {structuredRequirementPreview || '없음'}
-                                                    </span>
-                                                    <span className="brainwave-structured-preview-actions">
-                                                        <button
-                                                            type="button"
-                                                            className="brainwave-structured-preview-copy-btn"
-                                                            onClick={copyStructuredInputPreview}
-                                                            aria-label="질문과 요구사항 형식 복사"
-                                                            data-testid={TEST_IDS.STRUCTURED_INPUT_COPY}
-                                                        >
-                                                            <span className="brainwave-structured-copy-label-long">복사</span>
-                                                            <span className="brainwave-structured-copy-label-short">⎘</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="brainwave-structured-preview-send-btn"
-                                                            onClick={() => {
-                                                                if (!inputTrimmed || isLoading) return;
-                                                                setShowStructuredPreview(false);
-                                                                sendMessage();
-                                                            }}
-                                                            disabled={!inputTrimmed || isLoading}
-                                                            aria-label="질문과 요구사항 형식으로 바로 전송"
-                                                            data-testid={TEST_IDS.STRUCTURED_INPUT_SEND}
-                                                        >
-                                                            <IconSend size={14} />
-                                                            <span className="brainwave-structured-send-label-long">이 형식으로 전송</span>
-                                                            <span className="brainwave-structured-send-label-short">전송</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="brainwave-structured-preview-close-btn"
-                                                            onClick={() => setShowStructuredPreview(false)}
-                                                            aria-label="질문과 요구사항 미리보기 닫기"
-                                                            data-testid={TEST_IDS.STRUCTURED_INPUT_CLOSE}
-                                                        >
-                                                            <span className="brainwave-structured-close-label-long">닫기</span>
-                                                            <span className="brainwave-structured-close-label-short">✕</span>
-                                                        </button>
-                                                    </span>
-                                                </span>
+                                            {isLoading ? (
+                                                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566"><animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" /></circle></svg>
+                                            ) : (
+                                                <>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><rect x="2" y="8" width="3" height="8" rx="1"/><rect x="8" y="4" width="3" height="16" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/><rect x="20" y="9" width="3" height="6" rx="1"/></svg>
+                                                    대화
+                                                </>
                                             )}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="bw-composer-genspark-toolbar" role="toolbar" aria-label="입력 옵션">
-                                    <div className="bw-composer-genspark-toolbar-hint" aria-hidden="true" />
-                                    <div className="bw-composer-genspark-toolbar-actions">
-                                        <select
-                                            className="bw-shared-input-auto"
-                                            aria-label="응답 스타일"
-                                            title="응답 스타일: Auto(기본) / 간결 / 상세"
-                                            value={composerResponseMode}
-                                            onChange={(e) => setComposerResponseMode((e.target.value || 'auto') as 'auto' | 'concise' | 'detailed')}
-                                            data-testid={TEST_IDS.COMPOSER_RESPONSE_MODE}
-                                        >
-                                            <option value="auto">Auto</option>
-                                            <option value="concise">간결</option>
-                                            <option value="detailed">상세</option>
-                                        </select>
-                                        {currentConversation && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className={`brainwave-meta-toggle-btn brainwave-assist-quick-btn ${deepseekEffective.review ? 'active' : ''}`}
-                                                    onClick={() => {
-                                                        const on = !deepseekEffective.review;
-                                                        updateConversationDeepseek(
-                                                            on
-                                                                ? { deepseekReviewHints: true }
-                                                                : {
-                                                                      deepseekReviewHints: false,
-                                                                      pipelineDeepSeekRefine: false,
-                                                                      pipelineDeepSeekReasoner: false,
-                                                                  }
-                                                        );
-                                                    }}
-                                                    aria-pressed={deepseekEffective.review}
-                                                    aria-label={`이 대화 딥시크 검수 ${deepseekEffective.review ? '끄기' : '켜기'}`}
-                                                    title="이 대화만: 딥시크 검수·계층 힌트"
-                                                    data-testid="chat-deepseek-review-toggle"
-                                                >
-                                                    <span aria-hidden>◆</span>
-                                                    <span className="brainwave-assist-quick-sr">딥시크 검수</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={`brainwave-meta-toggle-btn brainwave-assist-quick-btn ${deepseekEffective.refine ? 'active' : ''}`}
-                                                    onClick={() =>
-                                                        updateConversationDeepseek({
-                                                            pipelineDeepSeekRefine: !deepseekEffective.refine,
-                                                        })
-                                                    }
-                                                    disabled={!deepseekEffective.review}
-                                                    aria-pressed={deepseekEffective.refine}
-                                                    aria-label={`이 대화 딥시크 리파인 ${deepseekEffective.refine ? '끄기' : '켜기'}`}
-                                                    title="검수 켜진 대화만: 파이프라인 리파인"
-                                                    data-testid="chat-deepseek-refine-toggle"
-                                                >
-                                                    <span aria-hidden>R</span>
-                                                    <span className="brainwave-assist-quick-sr">리파인</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={`brainwave-meta-toggle-btn brainwave-assist-quick-btn ${deepseekEffective.reasoner ? 'active' : ''}`}
-                                                    onClick={() =>
-                                                        updateConversationDeepseek({
-                                                            pipelineDeepSeekReasoner: !deepseekEffective.reasoner,
-                                                        })
-                                                    }
-                                                    disabled={!deepseekEffective.review}
-                                                    aria-pressed={deepseekEffective.reasoner}
-                                                    aria-label={`이 대화 딥시크 Reasoner ${deepseekEffective.reasoner ? '끄기' : '켜기'}`}
-                                                    title="검수 켜진 대화만: Reasoner 비평(비용·지연↑)"
-                                                    data-testid="chat-deepseek-reasoner-toggle"
-                                                >
-                                                    <span aria-hidden>∑</span>
-                                                    <span className="brainwave-assist-quick-sr">Reasoner</span>
-                                                </button>
-                                            </>
-                                        )}
-                                        <button
-                                            type="button"
-                                            className={`brainwave-meta-toggle-btn brainwave-assist-quick-btn ${structuredInputAssistEnabled ? 'active' : ''}`}
-                                            onClick={() => setStructuredInputAssistEnabled((prev) => !prev)}
-                                            aria-pressed={structuredInputAssistEnabled}
-                                            aria-label={`질문과 요구사항 도우미 ${structuredInputAssistEnabled ? '끄기' : '켜기'}`}
-                                            title={`질문+요구 도우미 ${structuredInputAssistEnabled ? '켜짐' : '꺼짐'}`}
-                                            data-testid={TEST_IDS.STRUCTURED_INPUT_ASSIST_TOGGLE}
-                                        >
-                                            <span aria-hidden>⚙</span>
-                                            <span
-                                                className={`brainwave-assist-quick-dot ${structuredInputAssistEnabled ? 'on' : 'off'}`}
-                                                aria-hidden
-                                            />
-                                            <span className="brainwave-assist-quick-tooltip" aria-hidden>
-                                                {structuredInputAssistEnabled ? 'ON' : 'OFF'}
-                                            </span>
-                                            <span className="brainwave-assist-quick-sr">
-                                                질문+요구 도우미 {structuredInputAssistEnabled ? '켜짐' : '꺼짐'}
-                                            </span>
                                         </button>
-                                        {llmStatusSummary && (
-                                            <span
-                                                className="brainwave-llm-badge"
-                                                title="현재 대화에 사용 중인 LLM (설정에서 확인)"
-                                                data-testid="chat-llm-badge"
-                                            >
-                                                {llmStatusSummary}
-                                            </span>
-                                        )}
-                                        <button type="button" className="bw-shared-input-mic" aria-label="음성 입력 (준비 중)" title="음성 입력 (준비 중)" disabled>
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
-                                        </button>
-                                        {isStreaming ? (
-                                            <button
-                                                type="button"
-                                                className="send-button cancel-button bw-composer-action bw-shared-input-send bw-composer-action--danger"
-                                                onClick={cancelStreaming}
-                                                aria-label="스트리밍 중지"
-                                                title={inputFooterGenerationHint ?? `스트리밍 중지 (Esc) · ${streamingElapsedSec}초`}
-                                                data-testid={TEST_IDS.SEND_BUTTON}
-                                            >
-                                                <IconStop size={20} />
-                                            </button>
-                                        ) : (
-                                            <button
-                                                type="submit"
-                                                className={`send-button bw-composer-action bw-shared-input-send ${(inputTrimmed || attachedConversationFile) && isOnline && !isLoading ? 'bw-composer-action--send' : ''}`}
-                                                disabled={!canSend}
-                                                data-testid={TEST_IDS.SEND_BUTTON}
-                                                title={
-                                                    isApiReachable === false
-                                                        ? '백엔드 연결 불가 — 터미널에서 백엔드 실행 확인'
-                                                        : !isOnline
-                                                          ? '오프라인 상태입니다'
-                                                          : isLoading
-                                                            ? inputFooterGenerationHint ?? ASSISTANT_PLACEHOLDER_THINKING
-                                                            : '메시지 전송 (Enter)'
-                                                }
-                                                aria-label={isApiReachable === false ? '백엔드 연결 불가' : inputTrimmed || attachedConversationFile ? '메시지 전송' : '전송'}
-                                                aria-disabled={!canSend}
-                                            >
-                                                {isLoading ? (
-                                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner" aria-hidden="true">
-                                                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566">
-                                                            <animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" />
-                                                        </circle>
-                                                    </svg>
-                                                ) : (
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                                                )}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                </div>
-                            </form>
+                                    )
+                                }
+                            />
                             <p className="bw-input-dock-disclaimer" role="contentinfo">
                                 CORBU.AI는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요. 쿠키 기본 설정을 참고하세요.
                             </p>
@@ -9433,9 +10313,29 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             setShowAddSourceModal(false);
                             setShowProjectEditModal(true);
                         }}
-                        onGoogleDriveClick={() => showToast('Google 드라이브 연동은 준비 중입니다.', 'info')}
-                        onSlackClick={() => showToast('Slack 연동은 준비 중입니다.', 'info')}
+                        onGoogleDriveClick={() => {
+                            if (!currentProject?.id) {
+                                showToast('프로젝트를 선택한 뒤 Google Drive에서 소스를 추가할 수 있습니다.', 'info');
+                                setShowAddSourceModal(false);
+                                navigate(INTEGRATIONS_PATH);
+                                return;
+                            }
+                            setShowAddSourceModal(false);
+                            setShowGoogleDriveImportModal(true);
+                        }}
+                        onSlackClick={() => navigate(INTEGRATIONS_PATH)}
                         onFilesSelected={currentProject?.id ? handleAddSourceFiles : undefined}
+                    />
+                </React.Suspense>
+            )}
+
+            {currentProject && showGoogleDriveImportModal && (
+                <React.Suspense fallback={null}>
+                    <GoogleDriveNotebookImportDialog
+                        open={showGoogleDriveImportModal}
+                        projectId={currentProject.id}
+                        onClose={() => { setShowGoogleDriveImportModal(false); focusChatInput(); }}
+                        onSuccess={handleGoogleDriveNotebookImportSuccess}
                     />
                 </React.Suspense>
             )}
@@ -9478,15 +10378,29 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 <li>무제한 노트북·소스</li>
                                 <li>우선 지원</li>
                             </ul>
-                            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>준비 중입니다.</p>
-                            <div className="bw-std-popup-actions bw-std-popup-actions--single">
+                            <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-tertiary)' }}>
+                                플랜·결제는 구독 화면에서 확인할 수 있습니다.
+                            </p>
+                            <div className="bw-std-popup-actions">
                                 <button
                                     type="button"
-                                    className="bw-std-popup-btn-primary"
+                                    className="bw-std-popup-btn-secondary"
                                     onClick={() => { setShowProModal(false); focusChatInput(); }}
                                     aria-label="PRO 모달 닫기"
                                 >
-                                    확인
+                                    닫기
+                                </button>
+                                <button
+                                    type="button"
+                                    className="bw-std-popup-btn-primary"
+                                    onClick={() => {
+                                        setShowProModal(false);
+                                        navigate(BILLING_PATH);
+                                        focusChatInput();
+                                    }}
+                                    aria-label="구독 및 결제 화면으로 이동"
+                                >
+                                    구독·결제
                                 </button>
                             </div>
                         </div>
@@ -9519,9 +10433,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         <input
                             type="text"
                             value={newProjectName}
-                            onChange={(e) => setNewProjectName(e.target.value)}
-                            placeholder="프로젝트 이름 (2자 이상)"
+                            onChange={(e) => setNewProjectName(e.target.value.slice(0, 100))}
+                            placeholder="프로젝트 이름 (2~100자)"
                             aria-label="프로젝트 이름"
+                            maxLength={100}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && coerceTrimmedString(newProjectName, '').length >= 2) {
                                     void createNewProject();
@@ -9533,6 +10448,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             }}
                             autoFocus
                         />
+                        {newProjectName.length > 0 && coerceTrimmedString(newProjectName, '').length < 2 && (
+                            <p style={{ color: 'var(--color-error, #ef4444)', fontSize: '0.75rem', marginTop: '4px', marginBottom: 0 }}>
+                                프로젝트 이름은 최소 2자 이상 입력해주세요.
+                            </p>
+                        )}
                         <div className="modal-content-actions">
                             <button
                                 type="button"
@@ -9787,6 +10707,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     open
                     aria-modal="true"
                     aria-label="대화 삭제 확인 모달"
+                    onCancel={(e) => {
+                        e.preventDefault();
+                        cancelDeleteConversation();
+                    }}
                     onClick={(e) => {
                         if (e.target === e.currentTarget) {
                             cancelDeleteConversation();
