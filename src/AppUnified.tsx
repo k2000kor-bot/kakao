@@ -1003,67 +1003,6 @@ function NotificationCenter() {
   );
 }
 
-/* ── What's New 배너 ── */
-const WHATS_NEW_KEY = 'corbu.whatsNew.dismissed';
-const WHATS_NEW_VERSION = 'v2026.04.25';
-
-const WHATS_NEW_FEATURES = [
-  '📎 입력창 파일 첨부 드래그&드롭',
-  '🔍 통합 검색 (대화+템플릿+커뮤니티)',
-  '📋 실시간 이벤트 로그 (대시보드)',
-  '⚡ 워크플로우 조건/액션 편집기',
-  '✅ 학습 진도 체크리스트',
-  '🔒 데이터 프라이버시 관리',
-  '🍞 전역 브레드크럼 네비게이션',
-];
-
-function WhatsNewBanner() {
-  const [visible, setVisible] = useState(() => {
-    try { return localStorage.getItem(WHATS_NEW_KEY) !== WHATS_NEW_VERSION; } catch { return true; }
-  });
-  const [expanded, setExpanded] = useState(false);
-
-  const dismiss = useCallback(() => {
-    try { localStorage.setItem(WHATS_NEW_KEY, WHATS_NEW_VERSION); } catch { /* ignore */ }
-    setVisible(false);
-  }, []);
-
-  if (!visible) return null;
-
-  return (
-    <div className="whats-new-banner" role="region" aria-label="새로운 기능 안내">
-      <div className="whats-new-banner__header">
-        <span className="whats-new-banner__title">
-          🎉 새로운 기능이 추가되었습니다 <span className="whats-new-badge">{WHATS_NEW_VERSION}</span>
-        </span>
-        <div className="whats-new-banner__actions">
-          <button
-            type="button"
-            className="whats-new-toggle"
-            onClick={() => setExpanded((p) => !p)}
-            aria-expanded={expanded}
-          >
-            {expanded ? '접기 ▲' : '자세히 ▼'}
-          </button>
-          <button
-            type="button"
-            className="whats-new-close"
-            onClick={dismiss}
-            aria-label="배너 닫기"
-          >✕</button>
-        </div>
-      </div>
-      {expanded && (
-        <ul className="whats-new-list" aria-label="새 기능 목록">
-          {WHATS_NEW_FEATURES.map((f) => (
-            <li key={f} className="whats-new-item">{f}</li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 function Layout() {
   const navigate = useNavigate();
   const { pathname, search, state: locationState } = useLocation();
@@ -2203,7 +2142,6 @@ function Layout() {
         </div>
       </aside>
       <main id="main-content" className={`brainwave-main${focusMode ? ' brainwave-main--focus' : ''}`} tabIndex={-1} role="main">
-        <WhatsNewBanner />
         {focusMode && (
           <div className="focus-mode-bar" role="status" aria-live="polite">
             <span>🎯 포커스 모드 활성 — 사이드바 숨김</span>
