@@ -497,43 +497,9 @@ function buildBreadcrumbs(pathname: string): { label: string; icon: string; path
 function Breadcrumb({ pathname }: { pathname: string }) {
   const navigate = useNavigate();
   const crumbs = buildBreadcrumbs(pathname);
-  const [histLen, setHistLen] = React.useState(window.history.length);
-  React.useEffect(() => { setHistLen(window.history.length); }, [pathname]);
-
-  /* 헤더 인라인 다크모드 토글 */
-  const [dark, setDark] = React.useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
-  const quickToggleDark = React.useCallback(() => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
-    try { localStorage.setItem('corbu.theme', next ? 'dark' : 'light'); } catch { /* noop */ }
-    /* AppUnified의 isDarkMode 상태와 동기화 (storage 이벤트) */
-    window.dispatchEvent(new StorageEvent('storage', { key: 'corbu.theme', newValue: next ? 'dark' : 'light' }));
-  }, [dark]);
-
-  const themeBtn = (
-    <button
-      type="button"
-      className="breadcrumb-theme-btn"
-      onClick={quickToggleDark}
-      aria-label={dark ? '라이트 모드로 전환' : '다크 모드로 전환'}
-      title={`${dark ? '라이트' : '다크'} 모드 (Ctrl+Shift+L)`}
-    >
-      {dark ? '☀️' : '🌙'}
-    </button>
-  );
-
-  if (crumbs.length <= 1) return (
-    <div className="app-breadcrumb app-breadcrumb--nav-only" aria-label="페이지 이동">
-      <button type="button" className="app-nav-hist-btn" onClick={() => navigate(-1)} aria-label="이전 페이지" title="뒤로 (Alt+←)" disabled={histLen <= 1}>‹</button>
-      <button type="button" className="app-nav-hist-btn" onClick={() => navigate(1)} aria-label="다음 페이지" title="앞으로 (Alt+→)">›</button>
-      {themeBtn}
-    </div>
-  );
+  if (crumbs.length <= 1) return null;
   return (
     <nav className="app-breadcrumb" aria-label="현재 위치">
-      <button type="button" className="app-nav-hist-btn" onClick={() => navigate(-1)} aria-label="이전 페이지" title="뒤로" disabled={histLen <= 1}>‹</button>
-      <button type="button" className="app-nav-hist-btn" onClick={() => navigate(1)} aria-label="다음 페이지" title="앞으로">›</button>
       <ol className="app-breadcrumb-list">
         {crumbs.map((c, i) => (
           <li key={c.path} className="app-breadcrumb-item">
@@ -557,26 +523,8 @@ function Breadcrumb({ pathname }: { pathname: string }) {
           </li>
         ))}
       </ol>
-      {themeBtn}
     </nav>
   );
-}
-
-/* ── 최근 방문 페이지 히스토리 ── */
-const RECENT_PAGES_KEY = 'corbu.recentPages';
-const MAX_RECENT_PAGES = 8;
-
-interface RecentPage { path: string; label: string; icon: string; visitedAt: string; }
-
-function pushRecentPage(pathname: string) {
-  const info = BREADCRUMB_MAP[pathname];
-  if (!info || pathname === '/') return;
-  try {
-    const prev: RecentPage[] = JSON.parse(localStorage.getItem(RECENT_PAGES_KEY) ?? '[]');
-    const entry: RecentPage = { path: pathname, label: info.label, icon: info.icon, visitedAt: new Date().toISOString() };
-    const filtered = prev.filter((p) => p.path !== pathname);
-    localStorage.setItem(RECENT_PAGES_KEY, JSON.stringify([entry, ...filtered].slice(0, MAX_RECENT_PAGES)));
-  } catch { /* ignore */ }
 }
 
 /* ── 온보딩 투어 ── */
@@ -726,90 +674,6 @@ function NavFavoritesBar({ pathname }: { pathname: string }) {
         <button type="button" className="nav-fav-more" onClick={() => setShowAll((v) => !v)}>
           {showAll ? '접기' : `+${favs.length - 6}`}
         </button>
-      )}
-    </div>
-  );
-}
-
-function RecentPagesDropdown() {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [pages, setPages] = useState<RecentPage[]>(() => {
-    try { return JSON.parse(localStorage.getItem(RECENT_PAGES_KEY) ?? '[]'); } catch { return []; }
-  });
-  const btnRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === RECENT_PAGES_KEY) {
-        try { setPages(JSON.parse(e.newValue ?? '[]')); } catch { /* ignore */ }
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
-
-  if (pages.length === 0) return null;
-
-  return (
-    <div className="recent-pages-wrap" role="region" aria-label="최근 방문 페이지">
-      <button
-        ref={btnRef}
-        type="button"
-        className={`recent-pages-btn${open ? ' recent-pages-btn--open' : ''}`}
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        aria-label="최근 방문 페이지"
-        title="최근 방문 페이지"
-      >
-        🕓 <span className="recent-pages-btn-label">최근</span>
-        <span className="recent-pages-caret" aria-hidden>{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <ul
-          className="recent-pages-list"
-          role="listbox"
-          aria-label="최근 방문 페이지 목록"
-          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}
-        >
-          {pages.map((p) => {
-            const d = new Date(p.visitedAt);
-            const isToday = d.toDateString() === new Date().toDateString();
-            const timeStr = isToday
-              ? d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-              : d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-            return (
-              <li key={p.path} role="option" aria-selected={false}>
-                <button
-                  type="button"
-                  className="recent-pages-item"
-                  onClick={() => { navigate(p.path); setOpen(false); }}
-                >
-                  <span className="recent-pages-icon" aria-hidden>{p.icon}</span>
-                  <span className="recent-pages-label">{p.label}</span>
-                  <time className="recent-pages-time" dateTime={d.toISOString()}>{timeStr}</time>
-                </button>
-              </li>
-            );
-          })}
-          <li role="option" aria-selected={false}>
-            <button
-              type="button"
-              className="recent-pages-clear"
-              onClick={() => { localStorage.removeItem(RECENT_PAGES_KEY); setPages([]); setOpen(false); }}
-            >
-              🗑 기록 지우기
-            </button>
-          </li>
-        </ul>
       )}
     </div>
   );
@@ -1052,30 +916,6 @@ function Layout() {
     try { return !localStorage.getItem(ONBOARDING_KEY); } catch { return false; }
   });
 
-  /* 사이드바 네비 배지 카운트 */
-  const [navBadges, setNavBadges] = useState<Record<string, number>>({});
-  useEffect(() => {
-    const calc = () => {
-      try {
-        const posts: { createdAt?: string }[] = JSON.parse(localStorage.getItem('corbu.community.posts') ?? '[]');
-        const lastVisit = Number(localStorage.getItem('corbu.community.lastVisit') ?? '0');
-        const newPosts = posts.filter((p) => new Date(p.createdAt ?? '').getTime() > lastVisit).length;
-
-        const workflows: { status?: string }[] = JSON.parse(localStorage.getItem('corbu.automation.workflows') ?? '[]');
-        const runs: { status?: string }[] = JSON.parse(localStorage.getItem('corbu.automation.runs') ?? '[]');
-        const failedRuns = runs.filter((r) => r.status === 'failed').length;
-
-        setNavBadges({
-          '/community': newPosts,
-          '/automation': failedRuns,
-        });
-      } catch { /* ignore */ }
-    };
-    calc();
-    window.addEventListener('storage', calc);
-    return () => window.removeEventListener('storage', calc);
-  }, []);
-
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     check();
@@ -1182,7 +1022,6 @@ function Layout() {
     if (main) main.focus({ preventScroll: true });
     setSidebarMobileOpen(false);
     setBrandMoreOpen(false);
-    pushRecentPage(pathname);
   }, [pathname]);
 
   useEffect(() => {
@@ -2046,34 +1885,6 @@ function Layout() {
               </label>
             </div>
             <div className="sidebar-footer-right">
-              {/* 커뮤니티 배지 */}
-              {(navBadges['/community'] ?? 0) > 0 && (
-                <NavLink
-                  to={COMMUNITY_PATH}
-                  className="sidebar-badge-btn"
-                  title={`커뮤니티 새 글 ${navBadges['/community']}개`}
-                  aria-label={`커뮤니티 새 게시글 ${navBadges['/community']}개`}
-                  onClick={() => {
-                    try { localStorage.setItem('corbu.community.lastVisit', String(Date.now())); } catch { /* ignore */ }
-                    setNavBadges((prev) => ({ ...prev, '/community': 0 }));
-                  }}
-                >
-                  <span aria-hidden>💬</span>
-                  <span className="sidebar-badge-dot" aria-hidden>{navBadges['/community']}</span>
-                </NavLink>
-              )}
-              {/* 자동화 실패 배지 */}
-              {(navBadges['/automation'] ?? 0) > 0 && (
-                <NavLink
-                  to="/automation"
-                  className="sidebar-badge-btn sidebar-badge-btn--warn"
-                  title={`자동화 실패 ${navBadges['/automation']}건`}
-                  aria-label={`자동화 실패 ${navBadges['/automation']}건`}
-                >
-                  <span aria-hidden>⚡</span>
-                  <span className="sidebar-badge-dot sidebar-badge-dot--warn" aria-hidden>{navBadges['/automation']}</span>
-                </NavLink>
-              )}
               {/* 사용자 아바타 + 이름 */}
               {!sidebarCollapsed && (() => {
                 try {
@@ -2094,39 +1905,8 @@ function Layout() {
                   );
                 } catch { return null; }
               })()}
-              {/* 테마 빠른 토글 */}
-              <button
-                type="button"
-                className="sidebar-shortcuts-btn sidebar-theme-quick-btn"
-                aria-label={isDarkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
-                title={isDarkMode ? '라이트 모드 (Ctrl+Shift+L)' : '다크 모드 (Ctrl+Shift+L)'}
-                onClick={() => setMode(isDarkMode ? 'light' : 'dark')}
-              >
-                <span aria-hidden>{isDarkMode ? '☀️' : '🌙'}</span>
-              </button>
               {/* 알림 센터 */}
               <NotificationCenter />
-              {/* ⌘K 커맨드 팔레트 힌트 버튼 */}
-              <button
-                type="button"
-                className="sidebar-shortcuts-btn sidebar-cmd-palette-btn"
-                aria-label="커맨드 팔레트 열기"
-                title="커맨드 팔레트 (Ctrl+K)"
-                onClick={() => setCmdPaletteOpen(true)}
-              >
-                <span aria-hidden>⌘</span>
-                {!sidebarCollapsed && <span className="sidebar-shortcuts-label">⌘K</span>}
-              </button>
-              <button
-                type="button"
-                className="sidebar-shortcuts-btn"
-                aria-label="키보드 단축키 도움말"
-                title="키보드 단축키 (Ctrl+/)"
-                onClick={() => setShortcutsOpen(true)}
-              >
-                <span aria-hidden>⌨️</span>
-                {!sidebarCollapsed && <span className="sidebar-shortcuts-label">단축키</span>}
-              </button>
               <NavLink
                 to={BILLING_PATH}
                 className={({ isActive }) => `sidebar-pro-link${isActive ? ' sidebar-pro-link--active' : ''}`}
@@ -2157,7 +1937,6 @@ function Layout() {
         )}
         <div className="breadcrumb-history-row">
           <Breadcrumb pathname={pathname} />
-          <RecentPagesDropdown />
         </div>
         <NavFavoritesBar pathname={pathname} />
         {isMobile && (
