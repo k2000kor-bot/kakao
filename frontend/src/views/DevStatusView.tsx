@@ -6,6 +6,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ChatInterface, ChatView, type ChatInterfaceProps } from '../components/LazyComponents';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { createMinimalChatViewProps } from '../components/Chat/chatViewDemoProps';
+import { UPDATE_NOTICE } from '../constants/updateNotice';
 
 const SUMMARY = {
   title: '이걸 뭐 하려는 거야?',
@@ -753,6 +754,20 @@ function DevStatusView() {
             </ul>
             <p className="bw-detail-desc bw-desc-tight" style={{ marginTop: '1rem' }}>
               <strong>화면 구성:</strong> {SUMMARY.layout}
+            </p>
+          </div>
+        </section>
+
+        <section className="bw-detail-section" aria-labelledby="dev-update-notice-heading" data-testid="dev-status-update-notice-section">
+          <h2 id="dev-update-notice-heading" className="bw-detail-section-title">{UPDATE_NOTICE.title} ({UPDATE_NOTICE.version})</h2>
+          <div className="bw-features-card bw-detail-scroll">
+            <ul className="bw-detail-list bw-list-unstyled">
+              {UPDATE_NOTICE.items.map((item) => (
+                <li key={item} className="bw-list-item-spaced">{item}</li>
+              ))}
+            </ul>
+            <p className="bw-detail-desc bw-desc-tight" style={{ marginTop: '0.75rem' }}>
+              액션 버튼 권장 문구: <strong>{UPDATE_NOTICE.actions.primary}</strong> · <strong>{UPDATE_NOTICE.actions.secondary}</strong>
             </p>
           </div>
         </section>

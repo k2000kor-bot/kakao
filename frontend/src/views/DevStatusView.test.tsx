@@ -41,6 +41,18 @@ describe('DevStatusView', () => {
     expect(screen.getByRole('heading', { level: 2, name: '프론트엔드 변경 사항' })).toBeInTheDocument();
   });
 
+  it('업데이트 안내 상수 섹션이 표시된다', () => {
+    render(
+      <MemoryRouter>
+        <DevStatusView />
+      </MemoryRouter>
+    );
+    const notice = within(screen.getByTestId('dev-status-update-notice-section'));
+    expect(screen.getByRole('heading', { level: 2, name: /업데이트 안내 \(v2026\.05\.06\)/ })).toBeInTheDocument();
+    expect(notice.getByText('채팅 첫 전송 시 대화 제목이 즉시 간결하게 저장되도록 안정화했습니다.')).toBeInTheDocument();
+    expect(notice.getByText(/액션 버튼 권장 문구/)).toBeInTheDocument();
+  });
+
   it('문서·배포 변경 목록에 DevStatusView·verify:final 안내가 있다', () => {
     render(
       <MemoryRouter>
