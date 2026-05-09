@@ -4,9 +4,12 @@
 
 ### 현재 로컬 상태
 
-- 브랜치: `dev-continue-2026-01-20`
-- 최신 커밋: `b096f399bf020707f3001f1037e7309fbb4164d1`
-- 커밋 메시지: `test: harden sidebar context filter sync contracts`
+고정 문자열 대신 아래로 최신 브랜치·커밋·아티팩트를 갱신합니다.
+
+```bash
+bash scripts/generate-push-block-manifest.sh
+cat docs/PUSH_BLOCK_MANIFEST.md
+```
 
 ### 생성된 이관 아티팩트
 
@@ -62,6 +65,19 @@ bash scripts/generate-push-block-manifest.sh
 생성 파일:
 
 - `docs/PUSH_BLOCK_MANIFEST.md`
+
+전체 점검 오케스트레이션:
+
+```bash
+bash scripts/run-push-block-maintenance.sh
+```
+
+동작 순서:
+
+1. 아티팩트 무결성 검증
+2. 로컬 회귀 테스트
+3. 원격 push 진단
+4. 상태/매니페스트 리포트 생성
 
 ### 반영 방법 A: bundle 사용 (권장)
 
