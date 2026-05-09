@@ -43,6 +43,16 @@ push 진단/재시도 자동화:
 bash scripts/retry-push-with-diagnostics.sh
 ```
 
+상태 리포트 자동 생성:
+
+```bash
+bash scripts/generate-push-block-status-report.sh
+```
+
+생성 파일:
+
+- `docs/PUSH_BLOCK_STATUS.md`
+
 ### 반영 방법 A: bundle 사용 (권장)
 
 ```bash
