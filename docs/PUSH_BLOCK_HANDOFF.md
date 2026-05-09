@@ -25,6 +25,18 @@ shasum -a 256 /Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-01-20.bu
 shasum -a 256 /Users/a0/kakao-frontend/0001-test-harden-sidebar-context-filter-sync-contracts.patch
 ```
 
+자동 검증 스크립트:
+
+```bash
+bash scripts/verify-push-block-artifacts.sh
+```
+
+통합 로컬 워크플로(검증 + 회귀테스트):
+
+```bash
+bash scripts/run-push-block-local-workflow.sh
+```
+
 ### 반영 방법 A: bundle 사용 (권장)
 
 ```bash
