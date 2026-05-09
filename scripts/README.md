@@ -1,5 +1,11 @@
 # Scripts
 
+**NotebookLM·문서 허브·통합·로컬**: [README.md](../docs/README.md) §NotebookLM·§개발 **통합·로컬**·[INTEGRATION_TEST_GUIDE.md](../INTEGRATION_TEST_GUIDE.md)·[LOCAL_ACCESS_GUIDE.md](../docs/LOCAL_ACCESS_GUIDE.md)·[QUICK_REFERENCE.md](../QUICK_REFERENCE.md)·[AGENTS.md](../AGENTS.md)·[scripts/README.md](./README.md) — [FEATURE_LOGIC_AND_STRENGTHS.md](../docs/FEATURE_LOGIC_AND_STRENGTHS.md) §6 **통합 테스트·INTEGRATION_TEST_GUIDE(루트)·로컬 접속·LOCAL_ACCESS_GUIDE(docs)** 행 · §6 **개발 연속성·DEVELOPMENT_CONTINUITY(docs)·경로·뷰** 행 · §6 **개발 요약·개발자 체크리스트(docs)** 행 · §6 **컴포넌트 아키텍처·COMPONENT_ARCHITECTURE(docs)·라우트→뷰** 행 · §6 **config README·routes.ts(src/config)·프로젝트 대화** 행 · §6 **스크립트 허브·scripts/README(루트)·dev/deploy(docs)** 행 · §6 **테스트 가이드·TESTING_GUIDE(루트)·API(docs)** 행 · §6 **E2E 가이드·e2e/README(루트)·경로 허브(docs)** 행 · §6 **완성 체크리스트·COMPLETION_CHECKLIST(docs)** 행 · §6 **배포·풀 스택 체크리스트(docs)** 행 · §6 **검증·빠른 참조·QUICK_REFERENCE(루트)** 행 · [NOTEBOOKLM_FEATURE_ROADMAP.md](../docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4 **통합 테스트·로컬 접속** · §4 **스크립트 허브(루트 scripts/README)** · §4 **테스트 가이드·검증 허브(루트 TESTING_GUIDE)** · §4 **E2E 경로·가이드(루트)** · §4 **에이전트 가이드** · §4 **config README(`routes.ts`)** · §4 **라우트·컴포넌트 매핑** · §6 **Agent / AI 개발 가이드** 행 · §6 **일상 개발·DEVELOPMENT(루트)** 행 · §6 **검증·빠른 참조·QUICK_REFERENCE(루트)** 행 · §6 **컴포넌트 아키텍처·COMPONENT_ARCHITECTURE(docs)·라우트→뷰** 행 · 동 허브 **완성·검증** 표 `scripts/README` 행 · [TESTING_GUIDE.md](../TESTING_GUIDE.md) `routes.test` · [e2e/README.md](../e2e/README.md)·[docs/COMPLETION_CHECKLIST.md](../docs/COMPLETION_CHECKLIST.md)·[docs/FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md)·[src/config/README.md](../src/config/README.md)·표 행과 교차
+
+**실행 가이드·접속 문제(루트)**: (본 문서 **개발·검증** 표·`dev-check`·`final-verify.sh`·`run-e2e-with-server`·`restart-backend`·deploy `start_*.sh`) · [INTEGRATION_TEST_GUIDE.md](../INTEGRATION_TEST_GUIDE.md)·[LOCAL_ACCESS_GUIDE.md](../docs/LOCAL_ACCESS_GUIDE.md)·[RUN_GUIDE.md](../RUN_GUIDE.md)·[CONNECT.md](../CONNECT.md) — [QUICK_REFERENCE.md](../QUICK_REFERENCE.md)·[AGENTS.md](../AGENTS.md)·[scripts/README.md](../scripts/README.md)·[FEATURE_LOGIC_AND_STRENGTHS.md](../docs/FEATURE_LOGIC_AND_STRENGTHS.md) §6 · [NOTEBOOKLM_FEATURE_ROADMAP.md](../docs/NOTEBOOKLM_FEATURE_ROADMAP.md) §4 **통합 테스트·로컬 접속** · §4 **스크립트 허브(루트 scripts/README)** · §4 **테스트 가이드·검증 허브(루트 TESTING_GUIDE)** · §4 **E2E 경로·가이드(루트)** · §4 **에이전트 가이드** · §4 **config README(`routes.ts`)** · §4 **라우트·컴포넌트 매핑** · §6 **Agent / AI 개발 가이드** 행 · §6 **일상 개발·DEVELOPMENT(루트)** 행 · §6 **검증·빠른 참조·QUICK_REFERENCE(루트)** 행 · [COMPONENT_ARCHITECTURE.md](../docs/COMPONENT_ARCHITECTURE.md) §1.1 · [USAGE_GUIDE.md](../USAGE_GUIDE.md) §11 · [QUICK_START.md](../QUICK_START.md)·[README_FIRST.md](../README_FIRST.md)·[START_HERE.md](../START_HERE.md)·[docs/DEVELOPMENT_CONTINUITY.md](../docs/DEVELOPMENT_CONTINUITY.md) §1·§2 · [DEVELOPMENT.md](../DEVELOPMENT.md) §2 · [SYSTEM_READY.md](../SYSTEM_READY.md) §빠른 참조 · [README.md](../README.md)·[TESTING_GUIDE.md](../TESTING_GUIDE.md)(`routes.test`·`verify:completion`) · [e2e/README.md](../e2e/README.md)(`paths.ts`·`run-e2e-with-server`) · [docs/COMPLETION_CHECKLIST.md](../docs/COMPLETION_CHECKLIST.md)(`verify:completion`) · [docs/FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md)(`verify:final`·`final-verify.sh`) · 표 행과 교차
+
+---
+
 ## Python 통합·레거시 API 테스트
 
 - **[scripts/test/README.md](test/README.md)** — `CORBU_*` 환경 변수, 기본 포트(5002 vs 레거시 8001 등) 정리
@@ -10,7 +16,7 @@
 |----------|------|
 | **dev-check.sh** | 백엔드 핵심 pytest + 타입 + lint. `lib-backend-python.sh`로 `venv`/`.venv` 중 `import pytest` 성공 Python (`DEV_CHECK_SKIP_BACKEND=1` 시 백엔드 스킵) |
 | **run-backend-pytest.sh** | `npm run test:backend` — 인자 없으면 `tests/` 전체 `-v --tb=short`. 인자 있으면 그대로 전달: `npm run test:backend -- tests/foo.py -q` |
-| **verify-completion.sh** | 마무리 검증 (타입·린트·P4 148) |
+| **verify-completion.sh** | 마무리 검증 (타입·린트·P4 170) |
 | **lib-backend-python.sh** | `backend_python_resolve` — `venv`/`.venv`/시스템 `python3` 중 지정 `import` 스니펫이 되는 인터프리터 선택. 사용처: `dev-check.sh`, `run-backend-pipeline-*.sh`, **`start-api-5002.sh`**, **`restart-backend.sh`**, 루트 **`start_all.sh`** |
 | **lib-activate-backend-venv.sh** | `backend_venv_activate <REPO_ROOT>` — `source` 순서: `backend/venv` → `backend/.venv` → 루트 `venv` → 루트 `.venv`. 사용처: **`deploy/start_*.sh`**, **`setup/install_dependencies.sh`**, **`setup/install_advanced_nlp.sh`**, **`performance_optimizer.sh`** — 요약 문서: [docs/setup/PYTHON_VENV.md](../docs/setup/PYTHON_VENV.md) |
 | **restart-backend.sh** | `npm run restart:backend` — 포트 정리 후 uvicorn; 위와 동일한 Python 우선순위(`import uvicorn`), 없으면 `backend/.venv` 재생성(`requirements-core.txt`) |
@@ -26,7 +32,21 @@
 | **../start_ultimate_system.sh** / **../stop_ultimate_system.sh** | 루트에서 `lib-activate` + `python3` + `frontend/` 또는 루트 CRA; 중지 시 **5002** 포트 정리 포함 |
 | **../start_simple_server.sh** | 프론트만 백그라운드 (`logs/dev-server.log`); 하드코딩 경로 제거 |
 | **check-access.sh** | 접속 확인 |
-| **final-verify.sh** | 빌드 + 접속 + API + 통합 테스트 + **`npm run test:frontend:chat-pipeline`** (대화 Jest 실패 시 exit 1). [docs/FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md) |
+| **final-verify.sh** | **`check:test-imports`** + 빌드 + 접속 + API + 통합 테스트 + **`npm run test:frontend:chat-pipeline`** + UI 스모크(기본 `test:chat-ui-interfaces:smoke`; **`VERIFY_FINAL_CHAT_UI_SMOKE=sequential`** 또는 루트 **`npm run verify:final:sequential-smoke`** 이면 `…:smoke:sequential`, 실패 시 exit 1). [docs/FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md) |
+
+## 원격 push 막힘 · 이관 보조
+
+| 스크립트 | 용도 |
+|----------|------|
+| **verify-push-block-artifacts.sh** | 로컬 `bundle`/`patch` 경로·SHA256 검증 |
+| **test-sidebar-context.sh** | 미러 동기화 후 사이드바 컨텍스트 관련 Jest만 실행(루트 `cd`) |
+| **run-push-block-local-workflow.sh** | 아티팩트 검증 + `test-sidebar-context` |
+| **retry-push-with-diagnostics.sh** | SSH·`git ls-remote`·진단 메시지·가능 시 `git push` |
+| **generate-push-block-status-report.sh** | `docs/PUSH_BLOCK_STATUS.md` 갱신 |
+| **generate-push-block-manifest.sh** | `docs/PUSH_BLOCK_MANIFEST.md` 갱신 |
+| **run-push-block-maintenance.sh** | 위 항목을 한 번에(`npm run maintain:push-block` / `make maintain-push-block`) |
+
+상세·번들 경로·재시도 조건: [docs/PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md)
 
 ## setup (macOS)
 
@@ -36,6 +56,8 @@
 
 ## 보조 `frontend/` 트리 (미러 CRA)
 
+TypeScript **`frontend/tsconfig.json`은 `frontend/src`만** 포함합니다. 소스 캐논은 루트 **`src/`** — 전체 미러는 **`npm run sync:frontend-src`**(`scripts/sync-frontend-src.sh`; **`make sync-frontend`**와 동일). 통합 대화(UI) 등 **부분** 미러는 **`npm run sync:frontend-unified-chat`**(`scripts/sync-frontend-unified-chat.sh`; **`make sync-frontend-unified-chat`**와 동일; `frontend/src/config/apiOrigin.ts` 없으면 **copy_pair만**·apiOrigin 치환 생략; `pretest` 패리티는 전체 미러·아래 `check:src-frontend-parity` 참고). **`frontend/` 루트에 `src` 바깥 `components`·`services` 등을 두지 않음**(빌드 미포함).
+
 | 파일 | 용도 |
 |------|------|
 | **`frontend/src/config/apiOrigin.ts`** | 기본 API **`http://localhost:5002`**, `REACT_APP_API_URL` / `REACT_APP_API_BASE_URL` 반영. `API_ROOT` = 오리진 + `/api` |
@@ -43,10 +65,23 @@
 
 ## npm 보조 (`package.json`)
 
+루트 **`package.json`**의 **`scripts`**는 JSON이라 줄 주석을 넣을 수 없다. **`npm run …` ↔ `make …`** 대응은 아래 표와 루트 **`Makefile`**(**`make help`** — `sync-frontend`·`sync-frontend-chat-input`·`sync-frontend-unified-chat`·`check-frontend-parity`·`test-sidebar-context`·`maintain-push-block` 등)로 확인한다.
+
 | 명령 | 용도 |
 |------|------|
-| **`npm run sync:frontend-chat-input-utils`** | 루트 `src/utils/chatInputUtils.ts` → `frontend/src/utils/chatInputUtils.ts` 복사(보조 트리 미러). 유틸 편집 후 실행 권장 |
-| **`npm run test:frontend:chat-pipeline`** | `chatInputUtils`·`streamingClient`·`generationPromptBuilder`·GensparkPipelineExtrasPanel Jest |
+| **`npm run sync:frontend-src`** | 루트 `src/` → `frontend/src/` 전체 rsync + `pretest`의 import·패리티 검사. 대량 프론트 수정 후 실행. **동일:** 루트 `make sync-frontend`(Makefile) |
+| **`npm run sync:frontend-chat-input-utils`** | 루트 `src/utils/chatInputUtils.ts` → `frontend/src/utils/chatInputUtils.ts` 복사만(빠른 1파일 미러). **동일:** 루트 `make sync-frontend-chat-input`(Makefile) |
+| **`npm run sync:frontend-unified-chat`** | `scripts/sync-frontend-unified-chat.sh` — 통합 대화(UI)·서비스·스토어 등 **부분** 미러(`apiOrigin.ts` 있을 때만 import 치환; 없으면 copy만). **동일:** 루트 **`make sync-frontend-unified-chat`**. 전체 트리·`pretest` 패리티는 위 **`sync:frontend-src`** / **`make sync-frontend`** · **`check:src-frontend-parity`** / **`make check-frontend-parity`** |
+| **`npm run check:src-frontend-parity`** | `src/` ↔ `frontend/src/` 핵심 경로 바이트 일치(`scripts/check-src-frontend-parity.mjs`). `pretest`에 포함. **동일:** 루트 `make check-frontend-parity`(Makefile) |
+| **`npm run test:frontend:chat-pipeline`** | `chatInputUtils`·`streamingClient`·`generationPromptBuilder`·GensparkPipelineExtrasPanel Jest · `npm test`/`pretest`: `check:src-frontend-parity`(동일 `make check-frontend-parity`); 미러는 위 표 |
+| **`npm run test:chatgpt-interface`** | `ChatGPTInterface.test.tsx`만 Jest (`$` 고정). `testPathPattern=ChatGPTInterface.test`만 주면 `UltimateChatGPTInterface`까지 잡힐 수 있음 — [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
+| **`npm run test:chatgpt-interface:quick`** | 동일 파일·`testNamePattern`(기본 렌더링·스레드 컨텍스트·프로젝트 유무 접힘)만 |
+| **`npm run test:chatgpt-interface:genspark`** | 동일 파일·describe **에이전트 라우트 세션**만 (빠른 점검) |
+| **`npm run test:routes`** | `src/config/__tests__/routes.test.ts`만 Jest (**27** tests, `pretest` 포함) — [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
+| **`npm run test:app-unified`** | `AppUnified.test.tsx`만 Jest (**115** tests, `pretest` 포함) — [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
+| **`npm run test:sidebar-context`** | 사이드바 컨텍스트 필터·설정·대화 이력 관련 Jest 묶음(`scripts/test-sidebar-context.sh`; 루트 `cd` 후 `sync:frontend-src` + 패턴 테스트). **동일:** 루트 `make test-sidebar-context` — [docs/PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md) |
+| **`npm run maintain:push-block`** | 원격 `git push`가 막힐 때 아티팩트 검증·위 회귀·SSH/원격 진단·`docs/PUSH_BLOCK_STATUS.md`·`docs/PUSH_BLOCK_MANIFEST.md` 갱신(`scripts/run-push-block-maintenance.sh`). **동일:** 루트 `make maintain-push-block` — 동 문서 |
+| **`LazyComponents.test` ↔ `/dev-status` CHANGES** | `LazyComponents.test.tsx`의 `it`를 추가·제거하면 `DevStatusView.tsx` CHANGES 끝 `·N tests`·`DevStatusView.test.tsx`의 `realTimeSync mock·N tests` 단언을 함께 갱신 — [AGENTS.md](../AGENTS.md) 규칙 **6** · [TESTING_GUIDE.md](../TESTING_GUIDE.md) · [docs/DEVELOPMENT_CONTINUITY.md](../docs/DEVELOPMENT_CONTINUITY.md) §3 |
 
 ## 배포
 
