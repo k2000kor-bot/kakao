@@ -53,6 +53,16 @@ bash scripts/generate-push-block-status-report.sh
 
 - `docs/PUSH_BLOCK_STATUS.md`
 
+매니페스트 자동 생성(아티팩트/커밋 스냅샷):
+
+```bash
+bash scripts/generate-push-block-manifest.sh
+```
+
+생성 파일:
+
+- `docs/PUSH_BLOCK_MANIFEST.md`
+
 ### 반영 방법 A: bundle 사용 (권장)
 
 ```bash
