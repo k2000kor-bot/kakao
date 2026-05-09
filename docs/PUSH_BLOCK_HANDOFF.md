@@ -37,6 +37,12 @@ bash scripts/verify-push-block-artifacts.sh
 bash scripts/run-push-block-local-workflow.sh
 ```
 
+push 진단/재시도 자동화:
+
+```bash
+bash scripts/retry-push-with-diagnostics.sh
+```
+
 ### 반영 방법 A: bundle 사용 (권장)
 
 ```bash
