@@ -108,6 +108,8 @@ npm run dev:check
 | **TTS 관련 (목소리 생성)** | `npm run test:tts:all` (프론트 252 + 백엔드 11, 백엔드는 backend venv에서 pytest 필요) |
 | **P4 서비스 (8 suites, 148 tests)** | `npm run test:p4:services` |
 | **확장 뷰·라우트 (뷰 유닛 + routes.test)** | `npm run test:views` |
+| **사이드바 컨텍스트·설정·대화 이력 회귀** | `npm run test:sidebar-context` (동일 `make test-sidebar-context`; `AppUnified`·`SettingsView`·`ChatGPTInterface`·`sidebarContextFilterEvent`) — [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md) |
+| **원격 `git push` 막힘 시 로컬 점검** | `npm run maintain:push-block` (동일 `make maintain-push-block`) — 동 문서 |
 | **도구 뷰 서비스 (10 suites, 45 tests)** | `npm test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services` |
 | **P2 1·2·3단계 (verify + test:views + test:views:services)** | `npm run p2:check` (4~6: PERFORMANCE.md §2.6) |
 | ultimate_media (선택, 8 tests) | `cd backend && python3 -m pytest tests/test_api.py -v` |

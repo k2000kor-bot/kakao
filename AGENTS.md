@@ -12,7 +12,8 @@
 - **[docs/COMPONENT_ARCHITECTURE.md](./docs/COMPONENT_ARCHITECTURE.md)** — 컴포넌트·뷰·서비스 매핑, 메시지 UI 스택, 프로젝트 관리(활성/비활성)
 - **[docs/BACKLOG.md](./docs/BACKLOG.md)** — 진행 중·단기·중기 작업 목록 (새 작업 추가·완료 체크는 여기서)
 - **[docs/COMPLETION_CHECKLIST.md](./docs/COMPLETION_CHECKLIST.md)** — 완성도·마무리 검증 순서 (§6), `npm run verify:completion`
-- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** — 테스트 구조·검증 명령·백엔드 pytest 목록
+- **[docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md)** — 원격 `git push` 막힘 시 로컬 이관·점검(`npm run maintain:push-block` / `make maintain-push-block`)·사이드바 컨텍스트 회귀(`npm run test:sidebar-context` / `make test-sidebar-context`)
+- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** — 테스트 구조·검증 명령·`test:sidebar-context`·백엔드 pytest 목록
 - **[docs/guides/TTS_AND_SCRIPT_STYLE_GUIDE.md](./docs/guides/TTS_AND_SCRIPT_STYLE_GUIDE.md)** — 목소리 생성(TTS) 속도·샘플 스타일·감정 프롬프트·API·검증 (`npm run test:tts:all`)
 
 ## 병렬·2배 속도로 밀어붙일 때 (작업 분할)

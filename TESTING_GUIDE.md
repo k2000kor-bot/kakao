@@ -54,6 +54,8 @@ E2E_SERVER_READY=1 npm run test:e2e:no-server   # 터미널 2
 | 확장 뷰·라우트 (뷰 유닛 + routes.test) | `npm run test:views` (22 suites, 142 tests) |
 | **라우트 설정만 (`routes.test`)** | `npm run test:routes` — `src/config/__tests__/routes.test.ts` **27** tests (`pretest` 포함) |
 | **통합 앱 셸만 (`AppUnified.test`)** | `npm run test:app-unified` — `src/AppUnified.test.tsx` **115** tests (`pretest` 포함, 수 초~10초대) |
+| **사이드바 컨텍스트·설정·대화 이력 회귀** | `npm run test:sidebar-context` — 위 네 스위트 묶음(`pretest`·`sync:frontend-src` 포함; 동일 `make test-sidebar-context`) — [docs/PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md) |
+| **원격 push 막힘 시 로컬 점검·리포트** | `npm run maintain:push-block` (동일 `make maintain-push-block`) — 동 문서 |
 | 도구 뷰 서비스 (10 suites, 45 tests) | `npm test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services` |
 | TTS (프론트+백엔드) | `npm run test:tts:all` |
 | 백엔드 pytest | `npm run test:backend` |
@@ -86,7 +88,7 @@ E2E_SERVER_READY=1 npm run test:e2e:no-server   # 터미널 2
 **대화 API**: `/api/chat`, `/api/chat/stream`. 전달 필드: `context.conversation_history`(최근 20턴), `project_id`, `request_id`, `diversity`, `temperature`. 프로젝트 맥락: `context.project_files`(참고 파일 목록), `context.project_instructions`(프로젝트 지침) — 백엔드에서 projectKnowledge에 반영.
 **수동·E2E 검증(프로젝트·대화)**: 대화→프로젝트 드래그 앤 드롭, 프로젝트 편집에서 파일 추가(project-edit-file-add)·지침 저장, ⌘? 단축키 도움말(프로젝트·대화 팁 3항목). data-testid: `project-list`, `new-project-button`, `edit-project`, `delete-project`, `project-edit-file-add`.
 **수동·E2E 검증(질문+요구 도우미)**: `chat-input`에 `질문:`/`요구사항:` 입력 → 누락 가드 표시·원클릭 자동 보정, 구조화 배지 클릭 시 미리보기(복사/이 형식으로 전송/닫기), ESC·외부 클릭 닫기, 퀵 스위치(⚙) ON/OFF 상태 점·툴팁 확인. data-testid: `chat-input`, `send-button`.
-**빠른 검증**: 라우트·통합 셸만 먼저 — `npm run test:routes`(**27**), `npm run test:app-unified`(**115**, 수 초대). 대화 UI 일부 — `npm run test:chatgpt-interface:quick` / `test:chatgpt-interface:genspark`. ① `npm run test:p4:services` → 8 suites, 170 tests. ② `npm test -- --testPathPattern="config/__tests__|store/__tests__/projectsSlice|store/__tests__/uiSlice|formatters.test|ProjectHub.test" --watchAll=false` → 6 suites, 110 tests.
+**빠른 검증**: 라우트·통합 셸만 먼저 — `npm run test:routes`(**27**), `npm run test:app-unified`(**115**, 수 초대). 사이드바 필터·설정 동기화는 `npm run test:sidebar-context`. 대화 UI 일부 — `npm run test:chatgpt-interface:quick` / `test:chatgpt-interface:genspark`. ① `npm run test:p4:services` → 8 suites, 170 tests. ② `npm test -- --testPathPattern="config/__tests__|store/__tests__/projectsSlice|store/__tests__/uiSlice|formatters.test|ProjectHub.test" --watchAll=false` → 6 suites, 110 tests.
 
 **다음 단계(선택)**: E2E — `npm start` 후 `E2E_SERVER_READY=1 npm run test:e2e:no-server`. 커버리지 — `npm run test:coverage`. TTS 전체 — `npm run test:tts:all` (백엔드 11은 backend venv에서 `python3 -m pytest tests/test_tts_api.py -v`). ultimate_media — venv에서 `python3 -m pytest tests/test_api.py -v` (txt/csv/spreadsheet·지식베이스·persuasion·export, 8 tests).
 
