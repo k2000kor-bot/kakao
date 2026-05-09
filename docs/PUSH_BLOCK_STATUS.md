@@ -1,8 +1,8 @@
 ## Push Block Status
 
-- 생성 시각: 2026-05-09 17:59:16 KST
+- 생성 시각: 2026-05-10 08:30:25 KST
 - 브랜치: `dev-continue-2026-01-20`
-- 최신 커밋: `b45413b1a chore: add push diagnostics helper for blocked remotes`
+- 최신 커밋: `f76ec98b4 chore: harden push-block maintenance runner`
 - origin: `git@github.com:k2000kor/kakao-frontend.git`
 
 ### SSH 확인

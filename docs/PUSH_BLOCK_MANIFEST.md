@@ -1,8 +1,8 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-09 18:01:11 KST
+- generated_at: 2026-05-10 08:30:25 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `dbb76f16f chore: add push-block status report generator`
+- latest_commit: `f76ec98b4 chore: harden push-block maintenance runner`
 
 ### Artifacts
 
@@ -19,9 +19,9 @@
 ### Recent Commits
 
 ```
+f76ec98b4 chore: harden push-block maintenance runner
+32115494e chore: add push-block manifest snapshot generator
 dbb76f16f chore: add push-block status report generator
 b45413b1a chore: add push diagnostics helper for blocked remotes
 14bf03550 chore: automate local push-block verification workflow
-c883ffab9 chore: add local push-block handoff workflow
-b096f399b test: harden sidebar context filter sync contracts
 ```
