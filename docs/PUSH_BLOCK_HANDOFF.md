@@ -69,6 +69,8 @@ bash scripts/generate-push-block-manifest.sh
 전체 점검 오케스트레이션:
 
 ```bash
+npm run maintain:push-block
+# 또는
 bash scripts/run-push-block-maintenance.sh
 ```
 
@@ -94,9 +96,11 @@ git am /Users/a0/kakao-frontend/0001-test-harden-sidebar-context-filter-sync-con
 
 ### 로컬 회귀 검증
 
-사이드바 컨텍스트 관련 변경 검증은 아래 스크립트로 반복 실행:
+사이드바 컨텍스트 관련 변경 검증은 아래 중 하나로 반복 실행:
 
 ```bash
+npm run test:sidebar-context
+# 또는
 bash scripts/test-sidebar-context.sh
 ```
 

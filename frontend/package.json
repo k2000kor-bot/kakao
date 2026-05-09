@@ -66,6 +66,8 @@
     "apply:install-jest-fetch-mock": "node scripts/apply-installJestFetchMock.mjs src ../src",
     "apply:install-jest-fetch-mock:dry": "node scripts/apply-installJestFetchMock.mjs --dry-run src ../src",
     "sync:from-root": "npm run sync:frontend-src --prefix ..",
+    "test:sidebar-context": "bash ../scripts/test-sidebar-context.sh",
+    "maintain:push-block": "bash ../scripts/run-push-block-maintenance.sh",
     "eject": "react-scripts eject"
   },
   "jest": {

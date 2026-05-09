@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${PROJECT_ROOT}"
+
 ORIGIN_URL="$(git config --get remote.origin.url || true)"
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 

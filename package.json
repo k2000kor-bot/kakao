@@ -86,6 +86,8 @@
     "test:chat-api:all": "npm run test:chat-api && npm run test:chat-api:frontend",
     "test:unified-api:all": "npm run test:unified-api && npm run test:unified-api --prefix frontend",
     "test:frontend:chat-pipeline": "npm run pretest && CI=true react-scripts test --testPathPattern='chatInputUtils|streamingClient|generationPromptBuilder|GensparkPipelineExtrasPanel|GensparkAgentsHubView|modernChatContextBuilder|modernChatGensparkSearchParams|gensparkAgentRegistry|fileAnalysisChatContextMerge|integratedMasterChatContextMerge|ultimateChatContextMerge|chatGptComposerPayload\\.test|AppUnified\\.test|config/__tests__/routes\\.test|chatService|integratedSystemAPI|enhancedBackendAPI|multiStepResponseGenerator|unifiedAPI\\.test' --watchAll=false",
+    "test:sidebar-context": "bash scripts/test-sidebar-context.sh",
+    "maintain:push-block": "bash scripts/run-push-block-maintenance.sh",
     "sync:frontend-chat-input-utils": "node -e \"require('fs').copyFileSync('src/utils/chatInputUtils.ts','frontend/src/utils/chatInputUtils.ts'); console.log('synced src/utils/chatInputUtils.ts -> frontend/src/utils/chatInputUtils.ts');\" && npm run pretest",
     "sync:frontend-unified-chat": "bash scripts/sync-frontend-unified-chat.sh",
     "sync:frontend-src": "bash scripts/sync-frontend-src.sh",

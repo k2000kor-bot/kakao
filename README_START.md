@@ -7,6 +7,7 @@
 
 **로컬 UI 스모크 체크리스트**: [docs/LOCAL_UI_SMOKE_CHECKLIST.md](docs/LOCAL_UI_SMOKE_CHECKLIST.md)
 
+**원격 `git push`가 막혔을 때(로컬 점검·이관)**: `npm run maintain:push-block` — [docs/PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)
 
 **보조 CRA `frontend/src/`** (루트 `src/` 미러): 루트 **`src/`**를 고친 뒤 저장소 루트에서 **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**; `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`)). `chatInputUtils.ts`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](QUICK_REFERENCE.md)·[AGENTS.md](AGENTS.md)·[scripts/README.md](scripts/README.md).
 
