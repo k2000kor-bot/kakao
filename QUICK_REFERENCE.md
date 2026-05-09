@@ -42,6 +42,8 @@
 | ChatGPTInterface Jest | `npm run test:chatgpt-interface` (전 파일) · `test:chatgpt-interface:quick` (레이아웃·패널 접힘 등 일부) · `test:chatgpt-interface:genspark` (describe **에이전트 라우트 세션**만) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) **ChatGPTInterface Jest 경로** |
 | `routes.test`만 | `npm run test:routes` (**27** tests, `pretest` 포함) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
 | `AppUnified.test`만 | `npm run test:app-unified` (**115** tests, `pretest` 포함) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
+| 사이드바 컨텍스트 회귀 | `npm run test:sidebar-context` (동일: `make test-sidebar-context`; `AppUnified`·`SettingsView`·`ChatGPTInterface`·`sidebarContextFilterEvent`) — [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md) |
+| 원격 `git push` 막힘 시 로컬 점검·이관 | `npm run maintain:push-block` (동일: `make maintain-push-block`; 아티팩트 검증·회귀·진단·상태 리포트) — [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md) |
 | 루트 `src/` ↔ 보조 `frontend/src/` 미러·패리티 | `npm run sync:frontend-src`(동일: `make sync-frontend`) — `pretest`의 `check:test-imports`·`check:src-frontend-parity`(동일: `make check-frontend-parity`) 통과에 필요. `chatInputUtils`만 빠르게: `npm run sync:frontend-chat-input-utils`(동일: `make sync-frontend-chat-input`). 통합 대화(UI) 등 **부분** 미러: `npm run sync:frontend-unified-chat`(동일: `make sync-frontend-unified-chat`; scripts/README 표) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md) |
 | **LazyComponents.test `it` 변경** | `DevStatusView.tsx` CHANGES 끝 `·N tests` · `DevStatusView.test.tsx`의 `realTimeSync mock·N tests` 단언 동시 갱신 — [AGENTS.md](./AGENTS.md) 규칙 **6** · [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
 | dev:check | `npm run dev:check` (백엔드 144 + 타입 + lint) |

@@ -71,6 +71,8 @@ bash scripts/generate-push-block-manifest.sh
 ```bash
 npm run maintain:push-block
 # 또는
+make maintain-push-block
+# 또는
 bash scripts/run-push-block-maintenance.sh
 ```
 
@@ -100,6 +102,8 @@ git am /Users/a0/kakao-frontend/0001-test-harden-sidebar-context-filter-sync-con
 
 ```bash
 npm run test:sidebar-context
+# 또는
+make test-sidebar-context
 # 또는
 bash scripts/test-sidebar-context.sh
 ```
