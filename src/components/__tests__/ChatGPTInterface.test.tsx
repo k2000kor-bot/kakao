@@ -904,6 +904,96 @@ describe('ChatGPTInterface', () => {
         expect((first.title || '').length).toBeLessThanOrEqual(33);
       }, { timeout: 8000 });
     });
+
+    it('새 대화를 시작해도 기존 이력은 유지되고 목록에 누적 저장된다', async () => {
+      const existingId = 'existing-history-conv';
+      localStorage.setItem(
+        CHATGPT_CONVERSATIONS_STORAGE_KEY,
+        JSON.stringify([
+          {
+            id: existingId,
+            title: '기존 이력 대화',
+            createdAt: new Date(Date.now() - 86_400_000).toISOString(),
+            updatedAt: new Date(Date.now() - 86_400_000).toISOString(),
+            messages: [
+              {
+                id: 'msg-old-1',
+                role: 'user',
+                content: '기존 질문',
+                timestamp: new Date(Date.now() - 86_400_000).toISOString(),
+              },
+            ],
+          },
+        ]),
+      );
+      const onSidebarChatsUpdated = jest.fn();
+      window.addEventListener('sidebar-chats-updated', onSidebarChatsUpdated as EventListener);
+      try {
+        renderWithRedux(<ChatGPTInterface />);
+
+        const main = await screen.findByRole('main', { name: /대화 영역/i });
+        const input = await within(main).findByTestId(TEST_IDS.CHAT_INPUT);
+        const question = '새 대화 누적 저장 검증 질문';
+        fireEvent.change(input, { target: { value: question } });
+        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: false });
+
+        await waitFor(() => {
+          expect(onSidebarChatsUpdated).toHaveBeenCalled();
+          const raw = localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+          expect(raw).toBeTruthy();
+          const list = JSON.parse(raw || '[]') as Array<{
+            id: string;
+            messages?: Array<{ role: string; content?: string }>;
+          }>;
+          expect(list.length).toBeGreaterThanOrEqual(2);
+          expect(list.some((conv) => conv.id === existingId)).toBe(true);
+          expect(
+            list.some(
+              (conv) =>
+                conv.id !== existingId &&
+                (conv.messages || []).some((m) => m.role === 'user' && m.content === question),
+            ),
+          ).toBe(true);
+        }, { timeout: 8000 });
+      } finally {
+        window.removeEventListener('sidebar-chats-updated', onSidebarChatsUpdated as EventListener);
+        localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      }
+    });
+
+    it('깨진 저장값이어도 첫 전송 후 대화 목록 저장이 정상 복구된다', async () => {
+      localStorage.setItem(CHATGPT_CONVERSATIONS_STORAGE_KEY, '{broken-json');
+      const onSidebarChatsUpdated = jest.fn();
+      window.addEventListener('sidebar-chats-updated', onSidebarChatsUpdated as EventListener);
+      try {
+        renderWithRedux(<ChatGPTInterface />);
+        const main = await screen.findByRole('main', { name: /대화 영역/i });
+        const input = await within(main).findByTestId(TEST_IDS.CHAT_INPUT);
+        const question = '깨진 저장값 복구 검증 질문';
+        fireEvent.change(input, { target: { value: question } });
+        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: false });
+
+        await waitFor(() => {
+          expect(onSidebarChatsUpdated).toHaveBeenCalled();
+          const raw = localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+          expect(raw).toBeTruthy();
+          const list = JSON.parse(raw || '[]') as Array<{
+            id: string;
+            messages?: Array<{ role: string; content?: string }>;
+          }>;
+          expect(Array.isArray(list)).toBe(true);
+          expect(list.length).toBeGreaterThanOrEqual(1);
+          expect(
+            list.some((conv) =>
+              (conv.messages || []).some((m) => m.role === 'user' && m.content === question),
+            ),
+          ).toBe(true);
+        }, { timeout: 8000 });
+      } finally {
+        window.removeEventListener('sidebar-chats-updated', onSidebarChatsUpdated as EventListener);
+        localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      }
+    });
   });
 
   describe('대화 헤더 보내기·관리 메뉴 (<details>)', () => {
