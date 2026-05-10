@@ -2,6 +2,7 @@
 # 개발 서버에 build/ 배포 (rsync 또는 scp)
 # 반드시 프로젝트 루트에서 실행하거나, 이 스크립트를 프로젝트 루트에서 호출하세요.
 # 환경 변수: DEPLOY_DEV_HOST, DEPLOY_DEV_PATH (.env 또는 export)
+# 권장(별도): npm run test:sidebar-context — TESTING_GUIDE.md · 원격 push: docs/PUSH_BLOCK_HANDOFF.md
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

@@ -2,6 +2,7 @@
 # 프론트엔드 정적 배포 (Vercel/Netlify용)
 # deploy:check 실행 후, Vercel CLI가 있으면 vercel --prod 실행 가능 안내
 # 반드시 프로젝트 루트에서 실행하거나, 이 스크립트를 프로젝트 루트에서 호출하세요.
+# 권장(별도): npm run test:sidebar-context — TESTING_GUIDE.md · 원격 push: docs/PUSH_BLOCK_HANDOFF.md
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
