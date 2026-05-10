@@ -136,6 +136,8 @@
 | **확장 뷰·라우트 (22 suites, 142 tests)** | `npm run test:views` · 표 행과 교차 |
 | **라우트 설정만 (`routes.test`, 27 tests)** | `npm run test:routes` (`pretest` 포함) · 표 행과 교차 |
 | **통합 앱 셸만 (`AppUnified.test`, 115 tests)** | `npm run test:app-unified` (`pretest` 포함) · 표 행과 교차 |
+| **사이드바 컨텍스트 회귀** | `npm run test:sidebar-context` (`pretest`·`sync:frontend-src` 포함; 동일 `make test-sidebar-context`) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
+| **원격 `git push` 막힘 (로컬)** | `npm run maintain:push-block` (동일 `make maintain-push-block`) — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
 | **도구 뷰 서비스 (10 suites, 45 tests)** | `npm test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services` · 표 행과 교차 |
 | TTS만 | `npm run test:tts:all` · 표 행과 교차 |
 | pipeline_tuning·내부 보안 + 노트북 context·튜닝 (선택, 5 tests) | `npm run test:backend:pipeline-tuning` (또는 `cd backend && pytest tests/test_pipeline_tuning_api.py tests/test_notebook_llm_context_params.py -q`) · 표 행과 교차 |
