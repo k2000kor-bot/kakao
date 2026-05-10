@@ -1,5 +1,7 @@
 # 응답 정리 시스템 가이드
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes`·`test:app-unified`·**`test:sidebar-context`**. 원격 `git push` 막힘 — [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ## 개요
 
 백엔드에서 반환되는 AI 응답에 프롬프트 지시사항이나 생성 로직이 포함되어 화면에 표시되는 문제를 해결하기 위해 구현된 응답 정리 시스템입니다.

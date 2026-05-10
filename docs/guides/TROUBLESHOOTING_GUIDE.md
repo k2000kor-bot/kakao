@@ -1,5 +1,7 @@
 # 🔧 네트워크 연결 문제 해결 가이드
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**. 원격 `git push` 막힘 — [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ## 📍 현재 프로젝트 기본 포트 (CORBU.AI 메인)
 
 | 서비스 | 포트 | URL |

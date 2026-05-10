@@ -13,7 +13,7 @@
 
 - **coerceTrimmedString(primary, fallback)**: 전송 직전 입력 정규화(trim). `onClick={handler}`로 이벤트가 첫 인자로 들어와도 안전. 대화 컴포저·`NotebookLLM`·`AdvancedFeaturesPanel`·`WebResearchModal`/`DeepResearchModal`·`NewsSearch`·`ConversationGraphView`·`AICodeGenerator`/`AIDesignSystem`·`ProjectCreateModal`/`ProjectEditDialog`·`ProjectCreationModal`·`MarketingContent`/`PersuasionContent`/`CreativeWriting`·`AdvancedAIFeatures`·`MessageModifyRequestDialog`·`WritingQualityPanel`·`MessageEditor`·`AdvancedSearch`/`AdvancedSearchPanel`·`views/SimpleChatView` 등에 동일 적용.
 - **coerceTrimmedEnd(primary, fallback)**: 앞쪽 공백은 유지하고 끝만 정리할 때(`trimEnd` + 비문자 방어). 구조화 입력 퀵 수정 등.
-- **보조 트리 `frontend/src`**: 이 파일을 바꾼 뒤 루트에서 `npm run sync:frontend-chat-input-utils`로 미러 복사(AGENTS.md·TESTING_GUIDE 참고).
+- **보조 트리 `frontend/src`**: 이 파일을 바꾼 뒤 루트에서 `npm run sync:frontend-chat-input-utils`로 미러 복사(AGENTS.md·TESTING_GUIDE — `test:routes`·`test:app-unified`·**`test:sidebar-context`** · 원격 push [docs/PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md) 참고).
 - **extractResponseContent**: API 응답에서 답변 텍스트 추출 (프롬프트 지시사항 자동 제거)
 - **cleanResponseText**: 응답 텍스트에서 프롬프트 지시사항 및 생성 로직 제거
 - **buildFeatureContextFromMessage**: 사용자 메시지에서 기능 플래그 추출 (웹검색, 조사모드 등)
