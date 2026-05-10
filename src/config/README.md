@@ -20,3 +20,8 @@
 - [docs/DEVELOPMENT_CONTINUITY.md](../../docs/DEVELOPMENT_CONTINUITY.md)
 - 대화 입력 문자열 정규화는 라우트가 아니라 UI·서비스에서 처리: `src/utils/chatInputUtils.ts`, [guides/RESPONSE_CLEANING.md](../../docs/guides/RESPONSE_CLEANING.md)
 - **루트 풀 검증(선택)**: 라우트·경로 변경 후 `npm run verify:final` — [docs/FINAL_CHECKLIST.md](../../docs/FINAL_CHECKLIST.md)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

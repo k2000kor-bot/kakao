@@ -24,3 +24,8 @@ ChatGPTInterface는 자체 메시지 렌더링 사용. 상세: [docs/COMPONENT_A
 ## 입력 정규화
 
 전송·검색 등 사용자 문자열은 상위 화면에서 **`chatInputUtils.coerceTrimmedString`** / **`coerceTrimmedEnd`** 로 통일합니다. 이 폴더의 편집 저장 등도 동일 패턴 권장 — [utils/README.md](../../utils/README.md), [guides/RESPONSE_CLEANING.md](../../../docs/guides/RESPONSE_CLEANING.md).
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../../../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../../../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../../../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

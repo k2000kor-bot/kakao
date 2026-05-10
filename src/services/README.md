@@ -19,3 +19,8 @@
 **문자열 정규화**: 대화·스트리밍 등에서 사용자/응답 조각을 다룰 때는 **`../utils/chatInputUtils`** 의 **`coerceTrimmedString`** / **`coerceTrimmedEnd`** 를 사용합니다(원시 `.trim()`은 유틸 구현부만). 가이드: [docs/guides/RESPONSE_CLEANING.md](../../docs/guides/RESPONSE_CLEANING.md).
 
 상세: [docs/COMPONENT_ARCHITECTURE.md](../../docs/COMPONENT_ARCHITECTURE.md) §5. API 경로: `src/config/api.ts`.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

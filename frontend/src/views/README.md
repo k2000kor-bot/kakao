@@ -59,3 +59,8 @@ AppUnified 라우트에 매핑되는 페이지 컴포넌트.
 - **NotFoundPage** — 404 (AppUnified에서 정의)
 
 경로 상수: `src/config/routes.ts`, `e2e/paths.ts`. 상세: [docs/COMPONENT_ARCHITECTURE.md](../../docs/COMPONENT_ARCHITECTURE.md), [docs/DEVELOPMENT_SCOPE_MASTER.md](../../docs/DEVELOPMENT_SCOPE_MASTER.md).
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../../../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../../../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../../../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
