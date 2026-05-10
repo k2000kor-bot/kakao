@@ -16,6 +16,8 @@
 
 **로컬 UI 스모크 체크리스트**: [docs/LOCAL_UI_SMOKE_CHECKLIST.md](./docs/LOCAL_UI_SMOKE_CHECKLIST.md)
 
+**검증·push(요약)**: [TESTING_GUIDE.md](./TESTING_GUIDE.md) — `npm run test:sidebar-context` · 원격 `git push` 막힘 [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`) · 아래 **상세 가이드**의 **완성도·마무리 검증** bullet
+
 ## ✨ 주요 기능
 
 ### 🖥️ 통합 레이아웃 (AppUnified)
