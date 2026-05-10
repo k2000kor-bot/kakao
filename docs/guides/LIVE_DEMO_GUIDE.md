@@ -361,3 +361,8 @@
 **🎬 CORBU.AI 고급 응답 시스템 라이브 데모를 통해 시스템의 우수성을 효과적으로 전달하세요!**
 
 **데모 시작**: 브라우저에서 `http://localhost:3000`에 접속하여 위의 시나리오를 따라 진행하세요.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

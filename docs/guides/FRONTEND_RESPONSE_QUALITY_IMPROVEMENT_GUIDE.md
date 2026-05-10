@@ -343,3 +343,8 @@ CORBU.AI의 프론트엔드 대화 답변 품질 향상 시스템은 **혁신적
 - ✅ **확장성**: 모듈화된 설계
 
 이제 사용자는 자신의 요구사항에 맞는 수준의 AI 응답을 선택하여 **개인화된 AI 경험**을 즐길 수 있습니다! 🚀
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

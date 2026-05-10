@@ -123,3 +123,8 @@
 ---
 
 *최종 반영: 입력 힌트·placeholder, 질문/요구·품질 패턴 확대, 구조화 입력(질문:/요구사항:) prefer_informed_answer, effectiveQuality 연동, 상세/종합 모드 연동, §8 검증·배포 명령*
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

@@ -285,3 +285,8 @@
 **🎯 CORBU.AI 고급 응답 시스템과 함께 더 나은 AI 경험을 시작하세요!**
 
 **시작하기**: 브라우저에서 `http://localhost:3000`에 접속하여 위의 시나리오들을 따라해보세요.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

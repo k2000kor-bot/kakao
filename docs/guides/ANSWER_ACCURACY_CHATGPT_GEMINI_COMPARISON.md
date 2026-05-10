@@ -55,3 +55,8 @@
 - [ANSWER_QUALITY_AND_SEARCH.md](./ANSWER_QUALITY_AND_SEARCH.md) — 품질·검색·adapt_answer_to_request
 - [CHAT_ANSWER_FLOW_VERIFICATION.md](./CHAT_ANSWER_FLOW_VERIFICATION.md) — 입력→전송→답변 표시 흐름
 - [CHATGPT_GEMINI_LIKE_ANSWER_GUIDE.md](./CHATGPT_GEMINI_LIKE_ANSWER_GUIDE.md) — ChatGPT/Gemini 스타일 답변 가이드
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

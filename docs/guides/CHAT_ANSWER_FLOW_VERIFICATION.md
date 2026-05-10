@@ -134,3 +134,8 @@
 - [ANSWER_QUALITY_AND_SEARCH](./ANSWER_QUALITY_AND_SEARCH.md) — 답변 품질·검색·자료 활용·품질 상향(§2.4)·adapt_answer_to_request(§2.5)·API quality 확인(§5)
 - [CHAT_CONTEXT_CONTRACT](./CHAT_CONTEXT_CONTRACT.md) — 대화 API context 계약(키·진입점·확장 규칙)
 - [CHAT_UI_TEST_SCENARIOS](./CHAT_UI_TEST_SCENARIOS.md) — 대화 UI·접근성·품질 수동 확인 시나리오(§14 품질·생성 능력)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

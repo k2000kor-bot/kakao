@@ -64,3 +64,8 @@
 ---
 
 *이 문서는 Typecast 공식 문서(2025–2026)를 기준으로 작성되었으며, 구현 시 TTS_AND_SCRIPT_STYLE_GUIDE.md 및 backend TTS API와 함께 참고합니다.*
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

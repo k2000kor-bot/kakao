@@ -218,3 +218,8 @@ VS Code **Run and Debug** (Ctrl+Shift+D / Cmd+Shift+D)에서 아래 구성을 �
 3. 특정 테스트만 실행하려면 터미널에서 `npm test -- --testPathPattern="AdvancedFeaturesPanel" --testNamePattern="스타일로 대본 생성 성공" --watchAll=false` 후 해당 실행에 디버거 attach.
 
 **launch.json 위치**: `.vscode/launch.json` (프로젝트 루트).
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

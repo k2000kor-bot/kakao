@@ -176,3 +176,8 @@ AI 개발 프로젝트를 시작하려고 하는데, 프론트엔드는 React로
 ---
 
 **💡 팁:** 각 테스트 질문 후 고도화된 질문 분석 패널(💡)을 열어 상세한 분석 결과를 확인하세요!
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

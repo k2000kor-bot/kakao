@@ -259,3 +259,8 @@ A: 서버 상태를 확인하고, 필요시 재시작하세요.
 이 시스템을 통해 비즈니스 문서 분석, 교육 자료 제작, 마케팅 콘텐츠 생성, 연구 개발 등 다양한 분야에서 효율적이고 창의적인 작업을 수행할 수 있습니다.
 
 **지금 바로 시작하여 미디어 파일의 숨겨진 가치를 발견해보세요!** 🚀✨
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

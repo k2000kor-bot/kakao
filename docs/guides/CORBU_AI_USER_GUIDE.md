@@ -372,3 +372,8 @@ CORBU.AI와 함께 더욱 효과적이고 지능적인 메시지 생성 경험�
 **작성자:** CORBU.AI 개발팀  
 **최종 업데이트:** 2026년 3월 (웰컴·대화·프로젝트 전환 §3, 관련 문서·개발 현황 링크 반영)  
 **문서 버전:** 1.0.0
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

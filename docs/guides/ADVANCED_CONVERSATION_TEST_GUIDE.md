@@ -245,3 +245,8 @@
 **🎯 이 가이드를 통해 새로운 고도화된 복합 대화 처리 시스템을 충분히 테스트하고 검증해주세요!**
 
 *테스트 완료 후 결과를 개발팀에 보고해주시면 추가 개선에 반영하겠습니다.*
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

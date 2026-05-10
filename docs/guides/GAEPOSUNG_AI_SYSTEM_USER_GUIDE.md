@@ -264,3 +264,8 @@ AI: 정책 분석, 일관성 평가, 개선 방안, 리스크 요소 등 분석
 **시스템 접속**: <http://localhost:3001>  
 **시스템 상태**: 완전 가동 중 ✅  
 **지원**: 24/7 AI 분석 서비스 제공
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
