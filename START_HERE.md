@@ -129,7 +129,7 @@ export LLM_MODEL="llama2"
 - [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md) - 개발 로드맵
 - [COMPLETE_SYSTEM_SUMMARY.md](./COMPLETE_SYSTEM_SUMMARY.md) - 시스템 요약
 
-**빠른 Jest(선택·프론트)**: `npm run test:routes`·`npm run test:app-unified` — [TESTING_GUIDE.md](./TESTING_GUIDE.md).  
+**빠른 Jest(선택·프론트)**: `npm run test:routes`·`npm run test:app-unified`·`npm run test:sidebar-context` — [TESTING_GUIDE.md](./TESTING_GUIDE.md). 원격 `git push` 막힘: [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).  
 **보조 CRA 미러(선택)**: 루트 `src/` → `frontend/src/`는 **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**; `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`)). `chatInputUtils`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md).  
 **마무리 검증**: `npm run verify:completion` (타입·린트·P4 테스트). 상세: [docs/COMPLETION_CHECKLIST.md](./docs/COMPLETION_CHECKLIST.md)  
 **배포 직전 한 번에**: `npm run verify:final` → `./scripts/final-verify.sh` — `check:test-imports`·빌드·접속·API·통합·**`test:frontend:chat-pipeline`**·**`test:chat-ui-interfaces:smoke`**. 상세 [docs/FINAL_CHECKLIST.md](./docs/FINAL_CHECKLIST.md). UI 스모크만 순차 Jest: **`npm run verify:final:sequential-smoke`**.

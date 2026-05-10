@@ -40,6 +40,8 @@
 | `npm run test:frontend:chat-pipeline` | 프론트 Jest: `chatInputUtils`·`streamingClient`·`generationPromptBuilder`·Genspark 패널 (백엔드 불필요). 보조 트리: `npm run sync:frontend-src`(전체·동일 `make sync-frontend`)·`chatInputUtils`만 `npm run sync:frontend-chat-input-utils`(동일 `make sync-frontend-chat-input`)·통합 대화(UI) 등 부분 `npm run sync:frontend-unified-chat`(동일 `make sync-frontend-unified-chat`) · `npm test`/`pretest`: `check:src-frontend-parity`(동일 `make check-frontend-parity`) · 표 행과 교차 |
 | `npm run test:routes` | 프론트 Jest: `config/__tests__/routes.test`만 — 라우트·제목·네비·Genspark 쿼리 등 계약 (백엔드 불필요). 상세·수치: [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
 | `npm run test:app-unified` | 프론트 Jest: `AppUnified.test`만 — 앱 셸·라우팅 통합 유닛 (백엔드 불필요). 상세: [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
+| `npm run test:sidebar-context` | 사이드바 컨텍스트·설정·대화 이력 관련 Jest 묶음 (`scripts/test-sidebar-context.sh`; 동일 `make test-sidebar-context`). 상세: [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) · 표 행과 교차 |
+| `npm run maintain:push-block` | 원격 `git push` 막힘 시 아티팩트 검증·회귀·진단·상태 문서 갱신 (`scripts/run-push-block-maintenance.sh`; 동일 `make maintain-push-block`). 상세: [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) · 표 행과 교차 |
 | `npm run build` | 프론트 프로덕션 빌드 · 표 행과 교차 |
 | `cd backend && python3 -m pytest tests/test_main_server.py tests/test_unified_chat_api.py -v` | 백엔드 API 단위·통합 테스트 · 표 행과 교차 |
 | `cd backend && python3 -m pytest tests/test_project_session_api.py::TestProjectNotebookContext -v` | 프로젝트별 NotebookLM·컨텍스트·소스·PATCH·스튜디오·`/api/chat` 등(통합 LLM 모킹·`httpx<0.27` 권장) · 표 행과 교차 |
@@ -63,7 +65,7 @@
 ### 라우팅 (앱·E2E)
 
 - **앱**: `AppUnified` + `src/config/routes.ts` — `/agents`, `/`, `/chat` 등(독립 대화), `/projects`, **`/projects/:id`**(NotebookLM), `/voice-generation`. 구 URL(`/simple`·`/features`·`/notebook` 등)은 리다이렉트 — [USAGE_GUIDE.md](../USAGE_GUIDE.md) §1.2 · [DEVELOPMENT.md](../DEVELOPMENT.md) 앱 진입점 · 제목 규약(**`name`·`getPageTitle` → 프로젝트 대화**): [src/config/README.md](../src/config/README.md)·라우트: [AGENTS.md](../AGENTS.md)
-- **E2E**: [e2e/paths.ts](../e2e/paths.ts) (`PATHS`, `LEGACY_REDIRECT_PATHS`), [e2e/README.md](../e2e/README.md) 경로 상수·스펙 요약 — 앱 `routes.ts`와 동기 · 점검: `npm run test:routes`·`npm run test:app-unified` — [TESTING_GUIDE.md](../TESTING_GUIDE.md) `routes.test` 등
+- **E2E**: [e2e/paths.ts](../e2e/paths.ts) (`PATHS`, `LEGACY_REDIRECT_PATHS`), [e2e/README.md](../e2e/README.md) 경로 상수·스펙 요약 — 앱 `routes.ts`와 동기 · 점검: `npm run test:routes`·`npm run test:app-unified`·`npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md) `routes.test` 등
 
 ---
 
@@ -71,7 +73,7 @@
 
 - **한 번에 실행**: `npm run verify:final` (= `./scripts/final-verify.sh`) — **`npm run check:test-imports`** + 빌드 + 접속 + API + 통합 테스트 + **`npm run test:frontend:chat-pipeline`** + **`npm run test:chat-ui-interfaces:smoke`**. UI 스모크 순차: **`npm run verify:final:sequential-smoke`** 또는 `VERIFY_FINAL_CHAT_UI_SMOKE=sequential`.
 - **체크리스트**: [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)
-- **마무리 검증(타입·린트·P4 등, 배포 전 단계)**: `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md). 선행(선택·빠름): 위 **`test:routes`**·**`test:app-unified`**
+- **마무리 검증(타입·린트·P4 등, 배포 전 단계)**: `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md). 선행(선택·빠름): 위 **`test:routes`**·**`test:app-unified`**·**`test:sidebar-context`**. 원격 push 막힘: [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(**`maintain:push-block`**)
 
 ---
 

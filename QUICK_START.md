@@ -163,7 +163,7 @@ export LLM_MODEL="claude-3-5-sonnet-20241022"
 - **한 페이지 요약**: [메뉴얼 빠른 참조](./docs/guides/MANUAL_QUICK_REFERENCE.md) – 화면 구조·핵심 3단계·버튼 위치·실행 전 체크리스트
 - **시스템 준비·문서 모음**: [SYSTEM_READY.md](./SYSTEM_READY.md) §빠른 참조 — `RUN_GUIDE`·메뉴얼·개발·NotebookLM 진입
 - **실행·배포**: [실행 가이드](./RUN_GUIDE.md) — 접속 URL·**앱 메뉴·경로**(`/agents`·`/chat` 등·`USAGE_GUIDE` §1.2)
-- **프론트 빠른 Jest(선택, 개발자)**: `npm run test:routes`·`npm run test:app-unified` — [TESTING_GUIDE.md](./TESTING_GUIDE.md)
+- **프론트 빠른 Jest(선택, 개발자)**: `npm run test:routes`·`npm run test:app-unified`·`npm run test:sidebar-context` — [TESTING_GUIDE.md](./TESTING_GUIDE.md). 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`)
 - **보조 CRA `frontend/src/` (선택, 개발자)**: 루트 `src/`와 맞출 때 **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**; `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`)). `chatInputUtils.ts`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md)
 - **배포 직전 풀 검증 (개발자, 선택)**: `npm run verify:final` — [FINAL_CHECKLIST.md](./docs/FINAL_CHECKLIST.md). UI 스모크만 순차 Jest: `npm run verify:final:sequential-smoke`
 - **LLM 상세**: [LLM 설정 가이드](./backend/LLM_SETUP_GUIDE.md)

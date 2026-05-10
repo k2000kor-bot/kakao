@@ -34,6 +34,8 @@
 | 배포 직전(UI 스모크 순차) | `npm run verify:final:sequential-smoke` | combined 스모크 tail이 불안정할 때(동일 스크립트, 마지막만 파일별 Jest) · 표 행과 교차 |
 | 라우트 설정만 | `npm run test:routes` | **27** tests (`pretest` 포함) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
 | 통합 앱 셸만 | `npm run test:app-unified` | **115** tests (`pretest` 포함, 수 초대) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
+| 사이드바 컨텍스트 회귀 | `npm run test:sidebar-context` | `AppUnified`·설정·대화 이력 등 묶음 (`pretest`·`sync:frontend-src` 포함; 동일 `make test-sidebar-context`) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
+| 원격 push 막힘 (로컬) | `npm run maintain:push-block` | 아티팩트·회귀·진단·`PUSH_BLOCK_*` 문서 갱신 (동일 `make maintain-push-block`) — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
 | 뷰·라우트 (22 suites) | `npm run test:views` | 142 tests (선택, 배포 전 권장) · 표 행과 교차 |
 | 백엔드 API (main.py) | `cd backend && python3 -m pytest tests/test_main_api.py -v` | 약 66개 통과 · 표 행과 교차 |
 | P4 서비스 (8 suites) | `npm run test:p4:services` | 170 tests · 표 행과 교차 |
@@ -42,7 +44,7 @@
 
 **LazyComponents.test ↔ `/dev-status` CHANGES**: `LazyComponents.test.tsx`에서 `it`를 추가·제거하면 `DevStatusView.tsx` CHANGES(`LazyComponents.test.tsx` 항목 끝 `·N tests`)·`DevStatusView.test.tsx`의 `realTimeSync mock·N tests` 단언을 함께 갱신 — [AGENTS.md](../AGENTS.md) 규칙 **6** · [TESTING_GUIDE.md](../TESTING_GUIDE.md) · [DEVELOPMENT_CONTINUITY.md](./DEVELOPMENT_CONTINUITY.md) §3.
 
-E2E에는 **`/agents`**·**`/chat`**·홈 **`/`**·**`/projects`**·**`/projects/:id`**·**`/voice-generation`** 및 **`LEGACY_REDIRECT_PATHS`**(구 경로 리다이렉트) 검증이 포함됩니다 — [e2e/README.md](../e2e/README.md)·[USAGE_GUIDE.md](../USAGE_GUIDE.md) §1.2 · [TESTING_GUIDE.md](../TESTING_GUIDE.md) `routes.test` · 유닛 선행: `npm run test:routes`·`npm run test:app-unified` · [AGENTS.md](../AGENTS.md). Playwright 브라우저 미설치 시 `npx playwright install` 실행 후 테스트.
+E2E에는 **`/agents`**·**`/chat`**·홈 **`/`**·**`/projects`**·**`/projects/:id`**·**`/voice-generation`** 및 **`LEGACY_REDIRECT_PATHS`**(구 경로 리다이렉트) 검증이 포함됩니다 — [e2e/README.md](../e2e/README.md)·[USAGE_GUIDE.md](../USAGE_GUIDE.md) §1.2 · [TESTING_GUIDE.md](../TESTING_GUIDE.md) `routes.test` · 유닛 선행: `npm run test:routes`·`npm run test:app-unified`·`npm run test:sidebar-context` · [AGENTS.md](../AGENTS.md). Playwright 브라우저 미설치 시 `npx playwright install` 실행 후 테스트.
 
 **노트북·프로젝트 API·pytest**: `tests/test_project_session_api.py` — [FEATURE_LOGIC_AND_STRENGTHS.md](./FEATURE_LOGIC_AND_STRENGTHS.md) §5.5·§6, [NOTEBOOKLM_FEATURE_ROADMAP.md](./NOTEBOOKLM_FEATURE_ROADMAP.md) §4.1, [e2e/README.md](../e2e/README.md) NotebookLM UI 문구 · 표 행과 교차
 
