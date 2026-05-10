@@ -2,6 +2,8 @@
 
 **마무리 한 줄**: `npm run verify:completion` (타입·린트·P4 170 tests. 통과 시 완성도 검증 완료.)
 
+**사이드바·push(권장)**: `npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
 **마무리 완료 조건**: ① `npm run verify:completion` 통과 ② (선택) `npm run test:tts:all` ③ (선택) E2E·커버리지. **배포 직전**(`check:test-imports`·빌드·접속·API·통합·대화 Jest·UI 스모크): `npm run verify:final` ([FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)). UI 스모크만 순차 Jest: `npm run verify:final:sequential-smoke`.
 
 **목적**: 미진한 부분을 메워 "완성"에 도달하기 위한 항목 정리. 완료 시 체크하고, 남은 항목은 우선순위대로 진행합니다.
@@ -116,7 +118,7 @@
 ## 4. 완성에 가까워지기 위한 다음 액션
 
 1. **마무리 검증**: §6 **마무리 검증 순서**대로 1→2 실행. 통과 시 완성도 검증 완료.
-2. **계속 진행 (배포 전 권장)**: `npm run deploy:check` → `npm run test:views` (22 suites, 142 tests) → (선택) `E2E_SERVER_READY=1 npx playwright test --project=chromium` (69/6). 필요 시 `npm run test:coverage -- --watchAll=false`. **import·빌드·접속·API·통합·대화 Jest·UI 스모크까지 한 번에** 보려면 `npm run verify:final`(순차 UI 스모크: `npm run verify:final:sequential-smoke`) — [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md).
+2. **계속 진행 (배포 전 권장)**: `npm run deploy:check` → `npm run test:views` (22 suites, 142 tests) → (권장) `npm run test:sidebar-context` ([TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)) → (선택) `E2E_SERVER_READY=1 npx playwright test --project=chromium` (69/6). 필요 시 `npm run test:coverage -- --watchAll=false`. **import·빌드·접속·API·통합·대화 Jest·UI 스모크까지 한 번에** 보려면 `npm run verify:final`(순차 UI 스모크: `npm run verify:final:sequential-smoke`) — [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md).
 3. **단기 (선택)**: `npm run test:coverage`로 미커버 구간 확인 후 테스트 추가. E2E 서버 띄운 뒤 `E2E_SERVER_READY=1 npm run test:e2e:no-server`로 스킵 감소.
 4. **확장 (2~3주)**: 성능·UX·a11y 1차 점검 (Lighthouse, 키보드만으로 목소리 생성 탭 조작). PWA·실시간 웹 검색 검증·문서화. [PERFORMANCE.md](PERFORMANCE.md).
 5. **중기 (확장)**: NotebookLM Drive 연동·CI/CD·분석 대시보드 보강 — DEVELOPMENT_SCOPE_MASTER 확장 비전 참고.
@@ -165,6 +167,7 @@
 **배포 직전 풀 스택(선택)**: `npm run verify:final` — `scripts/final-verify.sh`가 `check:test-imports` 후 빌드·접속·API·통합에 이어 `test:frontend:chat-pipeline`·`test:chat-ui-interfaces:smoke`까지 실행(실패 시 exit 1). 순차 UI 스모크: `npm run verify:final:sequential-smoke`. 상세 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md).
 
 | 3 | (선택) 확장 뷰·라우트 | `npm run test:views` | 22 suites, 142 tests — 뷰 유닛 + routes.test (도구 메뉴 12개 검증) · 표 행과 교차 |
+| — | (권장) 사이드바·대화 맥락 | `npm run test:sidebar-context` | [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) · 표 행과 교차 |
 | — | (선택) P2 1·2·3단계 한 번에 | `npm run p2:check` | verify:completion + test:views + test:views:services. 4~6단계: PERFORMANCE.md §2.6 · 표 행과 교차 |
 | — | (선택) 프로덕션 빌드 | `npm run deploy:check` 또는 `npm run build` | deploy:check = verify:completion + build. 통과 시 build/ 배포 가능. 실제 적용은 [FRONTEND_DEPLOYMENT.md](./FRONTEND_DEPLOYMENT.md) 참고. · 표 행과 교차 |
 | 4 | (선택) 핵심 스위트 | §5 표 "핵심 스위트" 행 참고 | 6 suites, 110 tests · 표 행과 교차 |
