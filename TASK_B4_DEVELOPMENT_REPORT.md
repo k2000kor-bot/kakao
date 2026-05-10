@@ -3,6 +3,8 @@
 **작성일**: 2025년 1월 27일  
 **상태**: ✅ **완료** (검색/필터링, 통계/분석, 템플릿, 공유 기능 완료)
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [TESTING_GUIDE.md](TESTING_GUIDE.md) · 원격 push는 [docs/PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 📋 완료된 작업

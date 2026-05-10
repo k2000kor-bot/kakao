@@ -1,5 +1,7 @@
 # 🚀 개발 지속 진행 보고서 #2
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [TESTING_GUIDE.md](TESTING_GUIDE.md) · 원격 push는 [docs/PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md).
+
 **작성일**: 2025년 1월 27일  
 **상태**: ✅ 추가 개선 사항 완료
 

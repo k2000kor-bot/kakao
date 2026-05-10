@@ -2,6 +2,8 @@
 
 프론트엔드 성능 점검과 번들 분석 방법을 정리합니다. 확장 범위는 [DEVELOPMENT_SCOPE_MASTER.md](./DEVELOPMENT_SCOPE_MASTER.md) 및 [BACKLOG.md](./BACKLOG.md)를 참고하세요.
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 검증 명령 (일상)
@@ -12,6 +14,7 @@
 | 전체 점검 | `npm run dev:check` (백엔드 144 + 타입 + lint:strict) |
 | 프론트만 | `npm run dev:check:frontend` |
 | 확장 뷰·라우트 유닛 | `npm run test:views` (20 suites, 105 tests — 뷰 + routes.test) |
+| 사이드바·대화 맥락 회귀 | `npm run test:sidebar-context` |
 | 빌드 검증 | `npm run build` |
 
 ---
@@ -96,18 +99,19 @@
 |------|------|------|------|
 | 1 | 품질·P4 | `npm run verify:completion` | 타입·린트·P4 148 tests |
 | 2 | 확장 뷰·라우트 | `npm run test:views` | 20 suites, 105 tests (뷰 유닛 + routes.test) |
-| 3 | 도구 뷰 서비스 | `npm test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services` | 10 suites, 45 tests |
-| 4 | 빌드 | `npm run build` | build/ 생성 |
-| 5 | Lighthouse | `npx serve -s build -l 3000` 백그라운드 후 `npm run lighthouse` | lighthouse-report.html 생성. §2.2 기준선 참고 |
-| 6 | PWA E2E | `E2E_SERVER_READY=1 npx playwright test e2e/pwa.spec.ts --project=chromium` | 프론트 서버 기동 후 실행. PWA_VERIFICATION.md 참고 |
+| 3 | 사이드바·대화 맥락 | `npm run test:sidebar-context` | [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
+| 4 | 도구 뷰 서비스 | `npm test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services` | 10 suites, 45 tests |
+| 5 | 빌드 | `npm run build` | build/ 생성 |
+| 6 | Lighthouse | `npx serve -s build -l 3000` 백그라운드 후 `npm run lighthouse` | lighthouse-report.html 생성. §2.2 기준선 참고 |
+| 7 | PWA E2E | `E2E_SERVER_READY=1 npx playwright test e2e/pwa.spec.ts --project=chromium` | 프론트 서버 기동 후 실행. PWA_VERIFICATION.md 참고 |
 
-**한 번에 (1·2·3 자동)**: `npm run p2:check` 또는 `./scripts/run-p2-check.sh` — verify:completion + test:views + test:views:services 실행 후 4~6 단계 안내 출력.
+**한 번에 (1·2·4 자동)**: `npm run p2:check` 또는 `./scripts/run-p2-check.sh` — verify:completion + test:views + test:views:services 실행 후 5~7 단계 안내 출력. **3** `test:sidebar-context`는 별도 실행.
 
 ---
 
 ## 3. 품질 확장 (BACKLOG·확장 범위)
 
-- **확장 뷰 검증 후**: `npm run test:views` 통과 확인한 뒤, Lighthouse(§2.2)·PWA(COMPLETION_CHECKLIST §3.3) 검증 권장.
+- **확장 뷰 검증 후**: `npm run test:views`·`npm run test:sidebar-context` 통과 확인한 뒤, Lighthouse(§2.2)·PWA(COMPLETION_CHECKLIST §3.3) 검증 권장.
 - **성능 최적화**: 번들 분석·LCP·메모리 프로파일·코드 스플리팅 (3단계).
 - **부하 테스트·보안 스캔·벤치마크**: 품질 확장 (3~4단계).
 
@@ -122,5 +126,6 @@
 | [DEVELOPMENT.md](../DEVELOPMENT.md) | 일상 개발·스크립트 |
 | [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) | 완성 체크리스트·다음 액션 |
 | [TESTING_GUIDE.md](../TESTING_GUIDE.md) | 테스트 구조·검증 명령 |
+| [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) | 원격 `git push` 절차·차단 시 인수인계 |
 | [PWA_VERIFICATION.md](./PWA_VERIFICATION.md) | PWA manifest·SW·검증 방법 |
 | [WEB_SEARCH_AND_RESEARCH.md](./WEB_SEARCH_AND_RESEARCH.md) | 웹 검색·Deep Research 연동 상태 |

@@ -1,5 +1,7 @@
 # 🚀 개발 진행 상황 종합 보고서
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [TESTING_GUIDE.md](TESTING_GUIDE.md) · 원격 push는 [docs/PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md).
+
 **작성일**: 2025년 1월 27일  
 **프로젝트**: CORBU.AI - 차세대 AI 강화 어시스턴트  
 **상태**: ✅ **지속적인 개발 진행 중**
