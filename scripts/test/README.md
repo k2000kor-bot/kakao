@@ -22,3 +22,8 @@
 - **`backend/test_api.py`**: `CORBU_TEST_API_BASE` (기본 `http://localhost:5002`)
 - **`backend/test_integrated_api.py`**: `CORBU_INTEGRATED_TEST_BASE` — 호스트만 또는 `.../api/integrated` 전체 (이중 경로 자동 정규화)
 - **`test_conversational_qa.py`**, **`test_web_research.py`**: `CORBU_TEST_API_BASE` (기본 `http://localhost:5002`)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

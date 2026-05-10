@@ -89,3 +89,8 @@
 
 ## z-index 레이어
 - `--z-base` 10 / `--z-dropdown` 100 / `--z-panel` 1000 / `--z-modal-backdrop` 2000 / `--z-modal` 2001 / `--z-settings` 2500 / `--z-toast` 10000 / `--z-popover` 10001
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
