@@ -11,7 +11,7 @@ alwaysApply: true
 - **개발**: `npm run dev`, `vite`, `next dev` 등 로컬 서버
 - **테스트·타입체크**: `jest`, `npx jest`, `vitest`, `npm test`, `npm run test:*`, `tsc`, `eslint`
 - **의존성**: `npm install`, `npm ci`
-- **검증·배포**: `npm run verify:completion`, `npm run verify:final`, `npm run verify:final:sequential-smoke`, `npm run test:views`, `npm run test:sidebar-context`, `npm run deploy:check`, `npm run deploy:static`, `npm run deploy:dev`
+- **검증·배포**: `npm run verify:completion`, `npm run verify:final`, `npm run verify:final:sequential-smoke`, `npm run test:views`, `npm run test:sidebar-context`, `npm run check:doc-verification-hub`, `npm run deploy:check`, `npm run deploy:static`, `npm run deploy:dev`
 
 실행 위치는 **package.json이 있는 디렉터리**(예: `kakao-frontend/kakao-frontend` 또는 `kakao-frontend/kakao-frontend/frontend`)입니다. **테스트 구조·push 차단**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) · [docs/PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md).
 

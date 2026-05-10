@@ -41,6 +41,7 @@
 | 대화 파이프라인 메타 (Jest) | `npm run test:frontend:chat-pipeline` (`chatInputUtils`·스트리밍·프롬프트·Genspark 패널) · `npm test`/`pretest`: `check:src-frontend-parity`(동일 `make check-frontend-parity`) |
 | ChatGPTInterface Jest | `npm run test:chatgpt-interface` (전 파일) · `test:chatgpt-interface:quick` (레이아웃·패널 접힘 등 일부) · `test:chatgpt-interface:genspark` (describe **에이전트 라우트 세션**만) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) **ChatGPTInterface Jest 경로** |
 | `routes.test`만 | `npm run test:routes` (**27** tests, `pretest` 포함) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
+| 활성 경로 md 허브 단락 | `npm run check:doc-verification-hub` (동일: `make check-doc-verification-hub`; `git ls-files`·노드만, Jest 미실행) — `DOC_HUB_STRICT=1`이면 누락 시 exit 1 — [TESTING_GUIDE.md](./TESTING_GUIDE.md)·[scripts/README.md](./scripts/README.md) |
 | `AppUnified.test`만 | `npm run test:app-unified` (**115** tests, `pretest` 포함) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
 | 사이드바 컨텍스트 회귀 | `npm run test:sidebar-context` (동일: `make test-sidebar-context`; `AppUnified`·`SettingsView`·`ChatGPTInterface`·`sidebarContextFilterEvent`) — [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md) |
 | 원격 `git push` 막힘 시 로컬 점검·이관 | `npm run maintain:push-block` (동일: `make maintain-push-block`; 아티팩트 검증·회귀·진단·상태 리포트) — [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md) |

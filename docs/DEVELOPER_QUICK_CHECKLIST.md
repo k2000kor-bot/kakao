@@ -33,6 +33,7 @@
 | 배포 직전 풀 스택 | `npm run verify:final` | `final-verify.sh`: import 검사·빌드·접속·API·통합·`test:frontend:chat-pipeline`·`test:chat-ui-interfaces:smoke` ([FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)) · 표 행과 교차 |
 | 배포 직전(UI 스모크 순차) | `npm run verify:final:sequential-smoke` | combined 스모크 tail이 불안정할 때(동일 스크립트, 마지막만 파일별 Jest) · 표 행과 교차 |
 | 라우트 설정만 | `npm run test:routes` | **27** tests (`pretest` 포함) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
+| 활성 경로 md 허브 단락 | `npm run check:doc-verification-hub` (동일 `make check-doc-verification-hub`; Jest 없음; `DOC_HUB_STRICT=1`이면 누락 시 exit 1) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[scripts/README.md](../scripts/README.md)·표 행과 교차 |
 | 통합 앱 셸만 | `npm run test:app-unified` | **115** tests (`pretest` 포함, 수 초대) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
 | 사이드바 컨텍스트 회귀 | `npm run test:sidebar-context` | `AppUnified`·설정·대화 이력 등 묶음 (`pretest`·`sync:frontend-src` 포함; 동일 `make test-sidebar-context`) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
 | 원격 push 막힘 (로컬) | `npm run maintain:push-block` | 아티팩트·회귀·진단·`PUSH_BLOCK_*` 문서 갱신 (동일 `make maintain-push-block`) — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |

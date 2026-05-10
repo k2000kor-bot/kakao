@@ -10,7 +10,7 @@ alwaysApply: true
 1. **작업 분할**: 큰 작업은 "1단계만 진행", "다음 단계 진행해줘"처럼 단계별로 요청
 2. **요청 단순화**: 한 번에 1~2개 파일 수정·1개 명령 실행 위주로 요청
 3. **긴 출력 회피**: `npm run test:coverage`, `verify:completion`, `verify:final`, `test:backend`, `test:views`, `test:sidebar-context` 등 2분 이상 걸리거나 출력이 큰 명령은 **외부 터미널**에서 수동 실행. Cursor 내장 터미널에서는 Aborted·팅김 발생 가능
-4. **가벼운 검증**: `npm run quick-check` (타입만, ~1분)로 빠른 확인
+4. **가벼운 검증**: `npm run quick-check` (타입만, ~1분)로 빠른 확인 · 문서 허브 단락만 점검: `npm run check:doc-verification-hub`(노드·`git ls-files`, Jest 없음; CI는 `DOC_HUB_STRICT=1`) — [TESTING_GUIDE.md](../../TESTING_GUIDE.md)
 5. **진행 상태 문서화**: docs/BACKLOG.md에 완료·진행 중 표시. 세션 종료 후에도 "계속 진행해줘" 시 이어갈 수 있음
 6. **크래시(코드 5)·바로 종료 시**: docs/CRASH_EMERGENCY_FIX.md(Cursor 없이 터미널만 사용) → docs/CRASH_PREVENTION.md. CONNECT.md §8.
 

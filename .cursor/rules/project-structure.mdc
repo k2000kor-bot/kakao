@@ -18,6 +18,7 @@ alwaysApply: true
 - **마무리·배포 전**: `npm run verify:completion` (docs/COMPLETION_CHECKLIST.md §6).
 - **배포 직전 풀 스택(선택)**: `npm run verify:final` · UI 스모크 순차 `npm run verify:final:sequential-smoke` (docs/FINAL_CHECKLIST.md).
 - **프론트 사이드바·대화 맥락 회귀**: `npm run test:sidebar-context` — [TESTING_GUIDE.md](../../TESTING_GUIDE.md) · 원격 `git push`는 [docs/PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md).
+- **문서 허브 단락(가벼움)**: `npm run check:doc-verification-hub`(`make check-doc-verification-hub`와 동일; `git ls-files`·노드만) — [TESTING_GUIDE.md](../../TESTING_GUIDE.md) · CI·엄격 실패는 `DOC_HUB_STRICT=1`.
 - 백엔드 API 추가/수정 시 `backend/tests/`에 해당 테스트 추가 (예: `test_project_session_api.py`).
 - 공통 개발 가이드: 루트의 **DEVELOPMENT.md** 참고.
 

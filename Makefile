@@ -5,8 +5,9 @@
 # 패리티만: npm run check:src-frontend-parity 또는 make check-frontend-parity
 # 사이드바·앱 셸·맥락 회귀: npm run test:sidebar-context 또는 make test-sidebar-context (TESTING_GUIDE.md)
 # 원격 push 막힘 시 로컬 점검: npm run maintain:push-block 또는 make maintain-push-block (docs/PUSH_BLOCK_HANDOFF.md)
+# 활성 경로 md 허브 단락: npm run check:doc-verification-hub 또는 make check-doc-verification-hub (DOC_HUB_STRICT=1 → 실패 시 exit 1, TESTING_GUIDE.md)
 
-.PHONY: setup start stop check plugins status help sync-frontend sync-frontend-chat-input sync-frontend-unified-chat check-frontend-parity test-sidebar-context maintain-push-block
+.PHONY: setup start stop check plugins status help sync-frontend sync-frontend-chat-input sync-frontend-unified-chat check-frontend-parity test-sidebar-context maintain-push-block check-doc-verification-hub
 
 setup:
 	./setup.sh
@@ -44,6 +45,9 @@ test-sidebar-context:
 maintain-push-block:
 	npm run maintain:push-block
 
+check-doc-verification-hub:
+	npm run check:doc-verification-hub
+
 help:
 	@echo "CORBU.AI 명령어"
 	@echo "  make setup   - 의존성 설치"
@@ -58,3 +62,4 @@ help:
 	@echo "  make check-frontend-parity - src ↔ frontend/src 핵심 파일 바이트 검사(npm run check:src-frontend-parity)"
 	@echo "  make test-sidebar-context - 사이드바·앱 셸·맥락 Jest 회귀(npm run test:sidebar-context, TESTING_GUIDE.md)"
 	@echo "  make maintain-push-block - 원격 push 막힘 시 아티팩트·회귀·진단·리포트 한 번에(npm run maintain:push-block, docs/PUSH_BLOCK_HANDOFF.md)"
+	@echo "  make check-doc-verification-hub - 활성 경로 추적 md에 허브 문단 포함 여부(npm run check:doc-verification-hub, TESTING_GUIDE.md; 엄격: DOC_HUB_STRICT=1 npm run check:doc-verification-hub)"
