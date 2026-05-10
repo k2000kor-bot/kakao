@@ -33,6 +33,7 @@
 | **../start_simple_server.sh** | 프론트만 백그라운드 (`logs/dev-server.log`); 하드코딩 경로 제거 |
 | **check-access.sh** | 접속 확인 |
 | **final-verify.sh** | **`check:test-imports`** + 빌드 + 접속 + API + 통합 테스트 + **`npm run test:frontend:chat-pipeline`** + UI 스모크(기본 `test:chat-ui-interfaces:smoke`; **`VERIFY_FINAL_CHAT_UI_SMOKE=sequential`** 또는 루트 **`npm run verify:final:sequential-smoke`** 이면 `…:smoke:sequential`, 실패 시 exit 1). [docs/FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md) |
+| **check-doc-verification-hub.mjs** | **`npm run check:doc-verification-hub`** — `git ls-files` 기준 `docs/`·`src/`·`frontend/src/`·`scripts/`·`e2e/`·`android_app/`·`backend/api/`·`corbu-ai/README.md` 추적 `*.md`에 **`저장소 루트 검증 허브`** 문단 존재 여부(백업·JDK 법적 문서 등 제외). 누락 시 목록만 stderr; **`DOC_HUB_STRICT=1`** 이면 exit 1. [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
 
 ## 원격 push 막힘 · 이관 보조
 

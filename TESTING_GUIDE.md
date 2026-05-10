@@ -6,6 +6,8 @@
 
 **로컬 UI 스모크 체크리스트**: [docs/LOCAL_UI_SMOKE_CHECKLIST.md](./docs/LOCAL_UI_SMOKE_CHECKLIST.md)
 
+**문서 허브 단락 점검(선택)**: `npm run check:doc-verification-hub` — 활성 경로 추적 `*.md`에 공통 **저장소 루트 검증 허브** 문단 포함 여부(백업·JDK 법적 문서 등 제외). 누락만 stderr에 나열; 실패 처리는 `DOC_HUB_STRICT=1`.
+
 ---
 
 ## 테스트 실행

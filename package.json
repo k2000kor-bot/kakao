@@ -110,6 +110,7 @@
     "typecheck:adaptive-learning-tests:all": "npm run typecheck:adaptive-learning-tests && npm run typecheck:adaptive-learning-tests --prefix frontend",
     "check:test-imports": "node frontend/scripts/check-broken-test-imports.mjs src frontend/src",
     "check:src-frontend-parity": "node scripts/check-src-frontend-parity.mjs",
+    "check:doc-verification-hub": "node scripts/check-doc-verification-hub.mjs",
     "apply:install-jest-fetch-mock": "node frontend/scripts/apply-installJestFetchMock.mjs src frontend/src",
     "apply:install-jest-fetch-mock:dry": "node frontend/scripts/apply-installJestFetchMock.mjs --dry-run src frontend/src",
     "test:adaptive-learning": "npm run pretest && CI=true react-scripts test --testPathPattern=adaptiveLearningEngine --watchAll=false",
