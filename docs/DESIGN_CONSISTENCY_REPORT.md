@@ -2,6 +2,8 @@
 
 **목적**: 입력 폼·세부 페이지 Brainwave/Figma 디자인 적용 상태 점검.
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 입력 폼 통합 현황 (2026-02-20)
@@ -170,6 +172,8 @@
 ---
 
 ## 7. 검증
+
+**사이드바·대화 맥락 회귀(권장)**: `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md).
 
 ```bash
 npm run verify:completion

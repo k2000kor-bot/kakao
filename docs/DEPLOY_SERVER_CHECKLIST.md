@@ -2,6 +2,8 @@
 
 개발 서버에 **지금까지 개발한** 프론트엔드 `build/`를 반영할 때 순서대로 확인하세요.
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ## 1. 완료된 단계 (로컬)
 
 - [x] **검증·빌드**: `npm run deploy:check` (verify:completion + build) → `build/` 생성됨

@@ -51,6 +51,8 @@
 | 4 | 대화 전송 → 응답 확인 | 로그에 "🤖 DeepSeek 우선 시도", "✅ DeepSeek 응답 사용" |
 | 5 | (선택) 배포 전 검증 | [COMPLETION_CHECKLIST.md §6](./COMPLETION_CHECKLIST.md#6-마무리-검증-순서-완성도-확인용) — `npm run verify:completion` |
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 6. (선택) 백엔드 단위 테스트

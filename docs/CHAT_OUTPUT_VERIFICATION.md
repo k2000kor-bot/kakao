@@ -2,6 +2,8 @@
 
 입력창에 텍스트를 넣었을 때 **질문 내용(오른쪽)** 과 **답변 생성 내용(왼쪽)** 이 실제로 출력되는지 확인하는 방법입니다.
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ## 자동 검증 (테스트)
 
 다음 명령으로 관련 로직이 정상 동작하는지 확인할 수 있습니다.
