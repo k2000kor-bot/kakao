@@ -161,6 +161,8 @@
 
 ## 6. 참고 파일
 
+**프론트 라우트·앱 셸·사이드바·원격 push**: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes`·`test:app-unified`·**`test:sidebar-context`**. 원격 `git push` 막힘 — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 | 역할 | 경로 |
 |------|------|
 | 통합 서버 (권장) | `backend/main_server.py` |

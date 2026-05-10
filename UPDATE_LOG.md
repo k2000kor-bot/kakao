@@ -2,6 +2,8 @@
 
 **최신 업데이트**: 2026년 2월 12일
 
+**문서·Jest·push handoff (2026-05-10)**: [TESTING_GUIDE.md](TESTING_GUIDE.md) — **`npm run test:routes`**·**`test:app-unified`**·**`test:sidebar-context`**. 원격 `git push` 막힘 — [docs/PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`maintain:push-block` 등).
+
 ---
 
 ## 🆕 최신 업데이트

@@ -2,6 +2,8 @@
 
 Cursor, 개발 서버, 터미널 명령이 **자꾸 종료되거나 팅길 때** 시도할 조치입니다.
 
+**검증·push**: 장시간 Jest·`verify:*`는 [TESTING_GUIDE.md](../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**(사이드바·앱 셸 회귀). 원격 `git push` 막힘 — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 🔴 뭘 할 수 없을 정도로 바로 종료될 때
