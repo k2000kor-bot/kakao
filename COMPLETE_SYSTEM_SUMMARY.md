@@ -208,7 +208,7 @@ curl -X POST http://localhost:5002/api/chat \
 ### 상태 문서
 - [FINAL_STATUS.md](./FINAL_STATUS.md) - 최종 개발 상태
 - [FINAL_LLM_STATUS.md](./FINAL_LLM_STATUS.md) - LLM 최종 상태
-- [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md) - 최종 체크리스트
+- [docs/FINAL_CHECKLIST.md](./docs/FINAL_CHECKLIST.md) - 배포 직전 풀 검증 (루트 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)는 이 문서로 안내하는 스텁)
 - [COMPLETE_SYSTEM_SUMMARY.md](./COMPLETE_SYSTEM_SUMMARY.md) - 완전한 시스템 요약 (이 문서)
 
 ---
