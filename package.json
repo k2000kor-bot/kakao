@@ -1,6 +1,7 @@
 {
   "name": "corbu-ai",
   "version": "0.1.0",
+  "description": "CORBU.AI — 검증 표·명령: TESTING_GUIDE.md · 사이드바·맥락 회귀 npm run test:sidebar-context · 원격 push: docs/PUSH_BLOCK_HANDOFF.md",
   "private": true,
   "proxy": "http://localhost:5002",
   "dependencies": {

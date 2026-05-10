@@ -1,4 +1,5 @@
 name: E2E Tests
+# 로컬 회귀·push: npm run test:sidebar-context — TESTING_GUIDE.md · docs/PUSH_BLOCK_HANDOFF.md
 
 on:
   push:
