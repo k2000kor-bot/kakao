@@ -301,3 +301,8 @@ CORBU.AI 고도화된 자동 통합 시스템이 성공적으로 구현되었습
 - 상세 모니터링을 통해 개별 프로세스의 진행 상황을 세밀하게 추적할 수 있습니다
 
 이제 사용자는 파일을 업로드하는 것만으로도 모든 시스템이 자동으로 연동되어 처리되는 고도화된 통합 시스템을 사용할 수 있습니다! 🚀
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

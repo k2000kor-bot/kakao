@@ -605,3 +605,8 @@ CORBU.AI 시스템의 딥러닝 기능을 고도화하면 **세계 최고 수준
 - **창의성**: 고품질 콘텐츠 생성
 
 이 고도화를 통해 CORBU.AI는 **차세대 AI 기술의 선두주자**가 될 것입니다! 🚀✨
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

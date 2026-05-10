@@ -240,3 +240,8 @@ curl -X GET "http://localhost:8001/api/v8/notifications/unread-count?user_id=use
 **알림 시스템 개발 완료! 🔔**
 
 CORBU.AI 시스템에 실시간 알림 기능이 성공적으로 추가되어, 사용자가 시스템의 모든 활동을 실시간으로 모니터링할 수 있습니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

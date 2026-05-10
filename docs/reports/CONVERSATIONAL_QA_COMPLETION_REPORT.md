@@ -239,3 +239,8 @@ src/
 - 📚 **지속적 학습**: 대화 기록과 지식 베이스 확장
 
 이제 샘플 재개발 프로젝트에 대한 완전한 대화형 AI 분석 시스템이 구축되었습니다! 사용자는 자연스러운 대화를 통해 원하는 정보를 쉽게 찾고, 시스템은 지속적으로 학습하며 개선됩니다. 🚀
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

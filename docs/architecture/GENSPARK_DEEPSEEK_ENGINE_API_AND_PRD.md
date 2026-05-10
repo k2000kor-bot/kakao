@@ -336,3 +336,8 @@ npx @redocly/cli preview-docs docs/api/openapi-unified-chat.yaml
 ---
 
 *변경 이력: 1.1 — OpenAPI YAML·Reasoner 내부 API 문서 링크(§9·§10). 1.0 — v2.0 API/PRD/시퀀스 초안.*
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

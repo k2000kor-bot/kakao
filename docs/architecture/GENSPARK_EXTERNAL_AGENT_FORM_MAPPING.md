@@ -43,4 +43,9 @@
 1. 브라우저에서 위 agents URL을 열고 **Instructions**(또는 동등 필드) 전체 복사  
 2. 배포 환경에 `REACT_APP_GENSPARK_REFERENCE_AGENT_INSTRUCTIONS` 설정 후 프론트 재빌드  
 3. (선택) 서버에만 둘 공통 지시가 있으면 `GENSPARK_REFERENCE_AGENT_INSTRUCTIONS` 추가  
-4. `npm run test:frontend:chat-pipeline`으로 프론트 계약 회귀 확인  
+4. `npm run test:frontend:chat-pipeline`으로 프론트 계약 회귀 확인
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

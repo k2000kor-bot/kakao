@@ -374,3 +374,8 @@ ChatGPT 스타일로 자연스럽게 대화하며 복잡한 분석 수행
 *📅 최종 완성일: 2025년 8월 7일*  
 *🏆 전체 개발 기간: 완성*  
 *✅ 상태: 프로덕션 배포 준비 완료*
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

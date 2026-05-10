@@ -372,4 +372,9 @@ CORBU.AI 고급 기능 개발이 성공적으로 완료되었습니다. 실시�
 
 **개발팀**: CORBU.AI Development Team  
 **문의**: 시스템 관련 문의사항은 개발팀에 연락해주세요.  
-**상태**: ✅ **고급 기능 개발 완료 및 배포 준비 완료** 
+**상태**: ✅ **고급 기능 개발 완료 및 배포 준비 완료**
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

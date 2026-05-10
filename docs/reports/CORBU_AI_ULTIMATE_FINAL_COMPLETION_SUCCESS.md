@@ -797,3 +797,8 @@ NLP 분석: ${nlpAnalysis ? '완료' : '미완료'}
 **📊 응답 품질 지표**는 실시간으로 응답의 품질을 측정하고 분석하여 지속적인 개선을 지원합니다.
 
 **🚀 시스템이 완전히 준비되었습니다!** `http://localhost:3002`에서 모든 기능을 테스트해보세요.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

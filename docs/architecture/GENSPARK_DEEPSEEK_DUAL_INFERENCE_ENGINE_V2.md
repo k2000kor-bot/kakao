@@ -467,3 +467,8 @@ DeepSeek API는 **OpenAI 호환** 포맷, Base `https://api.deepseek.com`, `/v1`
 ---
 
 *본 문서는 Genspark형 문제 해결 UX와 DeepSeek 이중 추론·검수 구조를 **하나의 v2.0 통합 설계**로 정리한 것이다. 구현 시 `llm_service`·`question_answer_pipeline`·`unified_chat_api`·환경 변수(`DEEPSEEK_*`, `PIPELINE_DEEPSEEK_REFINE` 등) 및 프론트 `buildUnifiedChatContext` 플래그와 함께 검토한다.*
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

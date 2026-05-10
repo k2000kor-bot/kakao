@@ -283,3 +283,8 @@ CORBU.AI의 프론트엔드 대화 답변 품질 향상 시스템이 **완전히
 응답 스타일, 톤, 상세도를 조정하여 맞춤형 AI 경험을 즐기세요.
 
 **시스템이 성공적으로 완성되어 실제 사용 준비가 완료되었습니다!** 🎉
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
