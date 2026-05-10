@@ -3,7 +3,7 @@
 # chatInputUtils.ts만: npm run sync:frontend-chat-input-utils 또는 make sync-frontend-chat-input
 # 통합 대화(UI) 등 부분 미러: npm run sync:frontend-unified-chat 또는 make sync-frontend-unified-chat(전체·패리티는 sync-frontend·check-frontend-parity)
 # 패리티만: npm run check:src-frontend-parity 또는 make check-frontend-parity
-# 사이드바 컨텍스트 회귀: npm run test:sidebar-context 또는 make test-sidebar-context
+# 사이드바·앱 셸·맥락 회귀: npm run test:sidebar-context 또는 make test-sidebar-context (TESTING_GUIDE.md)
 # 원격 push 막힘 시 로컬 점검: npm run maintain:push-block 또는 make maintain-push-block (docs/PUSH_BLOCK_HANDOFF.md)
 
 .PHONY: setup start stop check plugins status help sync-frontend sync-frontend-chat-input sync-frontend-unified-chat check-frontend-parity test-sidebar-context maintain-push-block
@@ -56,5 +56,5 @@ help:
 	@echo "  make sync-frontend-chat-input - chatInputUtils.ts만 미러(npm run sync:frontend-chat-input-utils)"
 	@echo "  make sync-frontend-unified-chat - 통합 대화(UI) 등 부분 미러(npm run sync:frontend-unified-chat; 전체는 sync-frontend)"
 	@echo "  make check-frontend-parity - src ↔ frontend/src 핵심 파일 바이트 검사(npm run check:src-frontend-parity)"
-	@echo "  make test-sidebar-context - 사이드바 컨텍스트 관련 Jest 회귀(npm run test:sidebar-context)"
-	@echo "  make maintain-push-block - 원격 push 막힘 시 아티팩트·회귀·진단·리포트 한 번에(npm run maintain:push-block)"
+	@echo "  make test-sidebar-context - 사이드바·앱 셸·맥락 Jest 회귀(npm run test:sidebar-context, TESTING_GUIDE.md)"
+	@echo "  make maintain-push-block - 원격 push 막힘 시 아티팩트·회귀·진단·리포트 한 번에(npm run maintain:push-block, docs/PUSH_BLOCK_HANDOFF.md)"

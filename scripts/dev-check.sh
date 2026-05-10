@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 커밋 전 권장 점검: 백엔드 핵심 테스트 + 프론트 타입 검사 + ESLint
+# 커밋 전 권장 점검: 백엔드 핵심 테스트(project_session·main_server·main_api·intent·unified_chat·response_enhancer) + 프론트 타입 검사 + ESLint
+# (프론트) src/ ↔ frontend/src/ 미러: npm run sync:frontend-src 또는 make sync-frontend; chatInputUtils만 npm run sync:frontend-chat-input-utils 또는 make sync-frontend-chat-input; 통합 대화(UI) 등 부분 npm run sync:frontend-unified-chat 또는 make sync-frontend-unified-chat; pretest: npm run check:src-frontend-parity 또는 make check-frontend-parity — QUICK_REFERENCE.md · AGENTS.md · scripts/README.md
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -13,7 +14,7 @@ if [ -n "$DEV_CHECK_SKIP_BACKEND" ]; then
 else
   if backend_python_resolve "$ROOT" "import pytest"; then
     echo "Python: $BACKEND_PYTHON_CMD"
-    (cd "$ROOT/backend" && "$BACKEND_PYTHON_CMD" -m pytest tests/test_project_session_api.py tests/test_main_server.py tests/test_main_api.py tests/test_intent_analysis.py tests/test_unified_chat_api.py -v --tb=short -q) || {
+    (cd "$ROOT/backend" && "$BACKEND_PYTHON_CMD" -m pytest tests/test_project_session_api.py tests/test_main_server.py tests/test_main_api.py tests/test_intent_analysis.py tests/test_unified_chat_api.py tests/test_response_enhancer.py -v --tb=short -q) || {
       echo "백엔드 테스트 실패. 위 로그 확인."
       exit 1
     }
@@ -77,3 +78,4 @@ fi
 
 echo ""
 echo "=== dev:check 완료 ==="
+echo "권장(별도): npm run test:sidebar-context — TESTING_GUIDE.md · 원격 push: docs/PUSH_BLOCK_HANDOFF.md"
