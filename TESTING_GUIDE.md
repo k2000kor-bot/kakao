@@ -10,6 +10,8 @@
 
 ## 테스트 실행
 
+원격 **`git push`가 막힌 경우** 절차·bundle·진단 스크립트: [docs/PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md) — `npm run maintain:push-block`(동일 `make maintain-push-block`) · `scripts/run-push-block-*.sh` · 아래 표의 **`test:sidebar-context`** 행.
+
 ### 모든 테스트 실행
 ```bash
 npm test
