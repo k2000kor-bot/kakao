@@ -81,7 +81,7 @@ describe('DevStatusView', () => {
       screen.getByText(/LazyProps\(하단 export type.*satisfies·패널 props useMemo·콜백 useCallback\)/),
     ).toBeInTheDocument();
     expect(screen.getByText(/LazyChunk·\(Lazy\) 래퍼·LazyProps\(하단 export type.*displayName 규칙/)).toBeInTheDocument();
-    expect(screen.getByText(/test:views 수치 등 13 tests/)).toBeInTheDocument();
+    expect(screen.getByText(/test:views·sidebar-context 수치 등 15 tests/)).toBeInTheDocument();
     expect(screen.getAllByText(/LazyComponentsSuspenseWrapper/).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/LazyComponentsSuspenseWrapper 2곳/)).toBeInTheDocument();
     expect(screen.getByText(/동기 자식 렌더 스모크/)).toBeInTheDocument();
@@ -104,6 +104,15 @@ describe('DevStatusView', () => {
       </MemoryRouter>,
     );
     expect(screen.getAllByText(/22 suites, 142 tests/).length).toBeGreaterThan(0);
+  });
+
+  it('검증·배포에 test:sidebar-context 명령이 표시된다', () => {
+    render(
+      <MemoryRouter>
+        <DevStatusView />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/npm run test:sidebar-context/)).toBeInTheDocument();
   });
 
   it('문서·배포 목록에 대화 흐름 검증 문서가 포함된다', () => {

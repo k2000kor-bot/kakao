@@ -131,8 +131,8 @@ const CHANGES: { category: string; items: { file: string; desc: string }[] }[] =
       { file: 'docs/DEEPSEEK_SETUP.md', desc: '딥시크 설치형/API·동작 체크리스트' },
       { file: 'docs/DEEPSEEK_INSTALL_RUN_DEVELOP_LEARN.md', desc: '딥시크 설치→구동→개발→학습 한 흐름' },
       { file: 'package.json', desc: 'deploy:server 스크립트 (deploy:check + deploy:dev)' },
-      { file: 'src/views/DevStatusView.tsx', desc: '/dev-status 검증·배포 섹션 data-testid(dev-status-verify-section)·verify:final·FINAL_CHECKLIST·SKIP/FAIL 안내, test:views 22·142' },
-      { file: 'src/views/DevStatusView.test.tsx', desc: 'verify:final·SKIP 안내·검증 section within(restart:backend·§8)·CHANGES 단언(LazyChunk·LazyProps satisfies·useMemo·useCallback·글쓰기onGenerate·ModernChat·displayName·LazyComponentsSuspenseWrapper 2곳)·LazyComponents.test·ChatGPTInterface.test·Lazy Chat 데모, test:views 수치 등 13 tests' },
+      { file: 'src/views/DevStatusView.tsx', desc: '/dev-status 검증·배포 섹션 data-testid(dev-status-verify-section)·verify:final·FINAL_CHECKLIST·SKIP/FAIL 안내, test:views 22·142·test:sidebar-context' },
+      { file: 'src/views/DevStatusView.test.tsx', desc: 'verify:final·SKIP 안내·검증 section within(restart:backend·§8)·CHANGES 단언(LazyChunk·LazyProps satisfies·useMemo·useCallback·글쓰기onGenerate·ModernChat·displayName·LazyComponentsSuspenseWrapper 2곳)·LazyComponents.test·ChatGPTInterface.test·Lazy Chat 데모, test:views·sidebar-context 수치 등 15 tests' },
     ],
   },
   {
@@ -821,6 +821,7 @@ function DevStatusView() {
             <ul className="bw-features-card-desc">
               <li><code>npm run verify:completion</code> — 타입·린트·P4 170 tests</li>
               <li><code>npm run test:views</code> — 뷰·라우트 22 suites, 142 tests</li>
+              <li><code>npm run test:sidebar-context</code> — 사이드바·대화 맥락 회귀 (<code>TESTING_GUIDE.md</code>)</li>
               <li><code>npm run deploy:check</code> — 검증 + 빌드 → build/ 생성</li>
               <li>
                 <code>npm run verify:final</code> — 최종 검증(<code>docs/FINAL_CHECKLIST.md</code>). 프론트·백엔드 미기동이면 접속·API·통합은 SKIP/FAIL 로그만 남기고, import·빌드·대화 Jest·UI 스모크가 통과하면 exit 0.

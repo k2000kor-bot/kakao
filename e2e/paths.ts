@@ -1,6 +1,7 @@
 /**
  * E2E 테스트용 경로 상수
  * src/config/routes allAppPaths·VOICE_GENERATION_PATH와 동기화 유지
+ * 검증 가이드: `e2e/README.md` · `../TESTING_GUIDE.md`(`routes.test`·`npm run test:sidebar-context`)
  */
 export const PATHS = {
   /** 브라우저 루트 — 젠스파이크 우선 빌드에서는 /agents 로 리다이렉트될 수 있음 */

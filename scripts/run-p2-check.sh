@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# P2 검증 1·2단계 실행 (verify:completion + test:views)
-# PERFORMANCE.md §2.6, COMPLETION_CHECKLIST §6 참고
-# 3~5단계(빌드·Lighthouse·PWA E2E)는 안내만 출력
+# P2 검증: verify:completion + test:views + test:views:services (자동 3단계)
+# PERFORMANCE.md §2.6, COMPLETION_CHECKLIST §6 참고. 사이드바·대화 맥락은 `npm run test:sidebar-context`(TESTING_GUIDE.md) — 동 문서 §2.6에서 p2:check와 별도 권장.
+# 빌드·Lighthouse·PWA E2E는 안내만 출력
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -33,6 +33,7 @@ echo ""
 echo "=== P2 1·2·3단계 완료 ==="
 echo ""
 echo "다음 단계 (수동):"
+echo "  (권장) npm run test:sidebar-context  # 사이드바·대화 맥락 — TESTING_GUIDE.md · push 차단: docs/PUSH_BLOCK_HANDOFF.md"
 echo "  4. npm run build"
 echo "  5. npx serve -s build -l 3000 (백그라운드) 후 npm run lighthouse"
 echo "  6. E2E_SERVER_READY=1 npx playwright test e2e/pwa.spec.ts --project=chromium"
