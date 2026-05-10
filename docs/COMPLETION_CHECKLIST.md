@@ -4,6 +4,8 @@
 
 **사이드바·push(권장)**: `npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
 
+**문서 허브 단락(선택, 가벼움)**: `npm run check:doc-verification-hub` — [TESTING_GUIDE.md](../TESTING_GUIDE.md) · CI와 동일하게 보려면 `DOC_HUB_STRICT=1`(누락 시 exit 1).
+
 **마무리 완료 조건**: ① `npm run verify:completion` 통과 ② (선택) `npm run test:tts:all` ③ (선택) E2E·커버리지. **배포 직전**(`check:test-imports`·빌드·접속·API·통합·대화 Jest·UI 스모크): `npm run verify:final` ([FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)). UI 스모크만 순차 Jest: `npm run verify:final:sequential-smoke`.
 
 **목적**: 미진한 부분을 메워 "완성"에 도달하기 위한 항목 정리. 완료 시 체크하고, 남은 항목은 우선순위대로 진행합니다.
@@ -139,6 +141,7 @@
 | **라우트 설정만 (`routes.test`, 27 tests)** | `npm run test:routes` (`pretest` 포함) · 표 행과 교차 |
 | **통합 앱 셸만 (`AppUnified.test`, 115 tests)** | `npm run test:app-unified` (`pretest` 포함) · 표 행과 교차 |
 | **사이드바 컨텍스트 회귀** | `npm run test:sidebar-context` (`pretest`·`sync:frontend-src` 포함; 동일 `make test-sidebar-context`) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
+| **활성 경로 md 허브 단락** | `npm run check:doc-verification-hub` (동일 `make check-doc-verification-hub`; Jest 없음) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[scripts/README.md](../scripts/README.md) · 표 행과 교차 |
 | **원격 `git push` 막힘 (로컬)** | `npm run maintain:push-block` (동일 `make maintain-push-block`) — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
 | **도구 뷰 서비스 (10 suites, 45 tests)** | `npm test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services` · 표 행과 교차 |
 | TTS만 | `npm run test:tts:all` · 표 행과 교차 |
@@ -168,6 +171,7 @@
 
 | 3 | (선택) 확장 뷰·라우트 | `npm run test:views` | 22 suites, 142 tests — 뷰 유닛 + routes.test (도구 메뉴 12개 검증) · 표 행과 교차 |
 | — | (권장) 사이드바·대화 맥락 | `npm run test:sidebar-context` | [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) · 표 행과 교차 |
+| — | (선택) 활성 경로 md 허브 단락 | `npm run check:doc-verification-hub` | [TESTING_GUIDE.md](../TESTING_GUIDE.md) · PR·CI와 맞출 때 `DOC_HUB_STRICT=1` 권장 · 표 행과 교차 |
 | — | (선택) P2 1·2·3단계 한 번에 | `npm run p2:check` | verify:completion + test:views + test:views:services. 4~6단계: PERFORMANCE.md §2.6 · 표 행과 교차 |
 | — | (선택) 프로덕션 빌드 | `npm run deploy:check` 또는 `npm run build` | deploy:check = verify:completion + build. 통과 시 build/ 배포 가능. 실제 적용은 [FRONTEND_DEPLOYMENT.md](./FRONTEND_DEPLOYMENT.md) 참고. · 표 행과 교차 |
 | 4 | (선택) 핵심 스위트 | §5 표 "핵심 스위트" 행 참고 | 6 suites, 110 tests · 표 행과 교차 |

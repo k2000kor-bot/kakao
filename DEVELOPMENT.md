@@ -51,7 +51,7 @@ cd backend && pip install -r requirements.txt && cd ..
 npm run dev:check
 ```
 
-**마무리·배포 전**: `npm run verify:completion` (COMPLETION_CHECKLIST §6 — 타입·린트·P4 148 tests). **P2 검증(선택)**: `npm run p2:check` (verify + test:views 20 suites·105 tests + test:views:services), 4~6단계는 [docs/PERFORMANCE.md](docs/PERFORMANCE.md) §2.6 참고.
+**마무리·배포 전**: `npm run verify:completion` (COMPLETION_CHECKLIST §6 — 타입·린트·P4 148 tests). **문서 허브(선택, 가벼움)**: `npm run check:doc-verification-hub` — [TESTING_GUIDE.md](./TESTING_GUIDE.md) · CI와 동일하게 보려면 `DOC_HUB_STRICT=1`. **P2 검증(선택)**: `npm run p2:check` (verify + test:views 20 suites·105 tests + test:views:services), 4~6단계는 [docs/PERFORMANCE.md](docs/PERFORMANCE.md) §2.6 참고.
 
 - 백엔드 핵심 API 테스트 실행
 - 프론트 TypeScript 타입 검사 (`npx tsc --noEmit`)
@@ -109,6 +109,7 @@ npm run dev:check
 | **P4 서비스 (8 suites, 148 tests)** | `npm run test:p4:services` |
 | **확장 뷰·라우트 (뷰 유닛 + routes.test)** | `npm run test:views` |
 | **사이드바 컨텍스트·설정·대화 이력 회귀** | `npm run test:sidebar-context` (동일 `make test-sidebar-context`; `AppUnified`·`SettingsView`·`ChatGPTInterface`·`sidebarContextFilterEvent`) — [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md) |
+| **활성 경로 md 허브 단락** | `npm run check:doc-verification-hub` (동일 `make check-doc-verification-hub`; 노드·`git ls-files`, Jest 없음) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
 | **원격 `git push` 막힘 시 로컬 점검** | `npm run maintain:push-block` (동일 `make maintain-push-block`) — 동 문서 |
 | **도구 뷰 서비스 (10 suites, 45 tests)** | `npm test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services` |
 | **P2 1·2·3단계 (verify + test:views + test:views:services)** | `npm run p2:check` (4~6: PERFORMANCE.md §2.6) |
@@ -151,6 +152,7 @@ npm run dev:check
 | 스크립트 | 설명 |
 |----------|------|
 | `npm run verify:completion` | **마무리 검증** (타입·린트·P4 148 tests. COMPLETION_CHECKLIST §6) |
+| `npm run check:doc-verification-hub` | 활성 추적 `*.md`에 **저장소 루트 검증 허브** 문단 포함 여부(가벼움; `DOC_HUB_STRICT=1`이면 누락 시 exit 1). [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
 | `npm start` | 프론트 개발 서버 (PORT 3000) |
 | `npm run build` | 프론트 프로덕션 빌드 |
 | `npm test` | 프론트 Jest 테스트 |
@@ -219,5 +221,5 @@ AI/에이전트가 코드 수정 시 참고할 내용은 **[AGENTS.md](./AGENTS.
 
 ## 개발자 검증
 
-저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · (선택) `npm run check:doc-verification-hub` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
 
