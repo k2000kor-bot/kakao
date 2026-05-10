@@ -26,6 +26,8 @@
 
 **백엔드 없이 진행하기**: 백엔드 서버가 꺼져 있어도 앱은 동작합니다. 프로젝트·대화은 로컬 스토리지에 저장되고, 콘솔에 "백엔드 서버에 연결할 수 없습니다"가 한 번만 뜨면 정상입니다. 백엔드를 켜려면 터미널에서 `npm run restart:backend` 실행.
 
+**검증·push(개발자)**: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:sidebar-context` · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
 ---
 
 ## 앱에서 확인하기
