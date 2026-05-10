@@ -2,6 +2,8 @@
 
 **한 페이지에서 핵심만 확인합니다. 상세 절차는 [USAGE_GUIDE.md](../../USAGE_GUIDE.md)를 참고하세요.**
 
+**개발·검증**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes`·`test:app-unified`·**`test:sidebar-context`**. 원격 `git push` 막힘 — [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 화면 구조 (텍스트)

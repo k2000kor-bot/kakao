@@ -2,6 +2,8 @@
 
 **CORBU.AI 화면·메뉴·프로젝트·대화·파일·지침·기능 확인을 위한 가이드입니다.**
 
+**개발·검증**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes`·`test:app-unified`·**`test:sidebar-context`**. 원격 `git push` 막힘 — [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 시작하기

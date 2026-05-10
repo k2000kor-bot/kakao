@@ -131,6 +131,7 @@
 - [NOTEBOOKLM_SERVICE_AS_GOOGLE.md](./NOTEBOOKLM_SERVICE_AS_GOOGLE.md) – 구글 노트북 LLM과 동일 서비스 구현 명세·체계적 학습 흐름  
 - [PROJECT_NOTEBOOK_LLM_DEV_PLAN.md](./PROJECT_NOTEBOOK_LLM_DEV_PLAN.md) – 기존 노트북 LLM 계획·완료 내역  
 - [PROJECT_NOTEBOOK_LLM_USER_GUIDE.md](./PROJECT_NOTEBOOK_LLM_USER_GUIDE.md) – 사용자 가이드  
+- [TESTING_GUIDE.md](../TESTING_GUIDE.md) – `test:routes`·`test:app-unified`·**`test:sidebar-context`** · 원격 push [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)
 
 **작성일**: 2026-01-28  
 **최종 업데이트**: 2026-02-15 (부동산 API, Drive 스텁, Cursor 최적화, 테스트 수정)  

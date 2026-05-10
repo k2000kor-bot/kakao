@@ -5,6 +5,8 @@
 **이전**: 2026-02-14 7차 확장 — 윤리·엣지 AI·업종별·지속가능성·커뮤니티·멀티에이전트  
 **목적**: 개발 범위·단계·검증 기준을 한곳에서 완벽하게 관리하는 기준 문서
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `test:routes`·`test:app-unified`·**`test:sidebar-context`**. 원격 `git push` 막힘 — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ### 개발 범위 3배 확장 (2026-03-03)
 
 - **정의**: [SCOPE_3X.md](./SCOPE_3X.md) — 단기 21개·중기 18개·확장 110+ 항목, 검증 목표(E2E 120+, 커버리지 60% 등) 3배 확대.
