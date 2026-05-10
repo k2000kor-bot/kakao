@@ -5,6 +5,8 @@
 **참고**: [DEVELOPMENT_SCOPE_MASTER.md](./DEVELOPMENT_SCOPE_MASTER.md), [BACKLOG.md](./BACKLOG.md), [REMAINING_WORK_ESTIMATE.md](./REMAINING_WORK_ESTIMATE.md)  
 **개발 제외**: **구독**(결제·플랜·사용량·PRO·Billing 기능 확장) — 아래 항목에서 제외. 기존 /billing 뷰·라우트는 유지.
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 3배 확장의 정의

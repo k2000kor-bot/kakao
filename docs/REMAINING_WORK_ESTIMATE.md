@@ -4,6 +4,8 @@
 **참고**: [BACKLOG.md](./BACKLOG.md), [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md), [DEVELOPMENT_SCOPE_MASTER.md](./DEVELOPMENT_SCOPE_MASTER.md)  
 **개발 범위 3배 확장**: [SCOPE_3X.md](./SCOPE_3X.md) — 단기 21·중기 18·확장 110+ 항목, 검증 목표 3배. **장기 로드맵**: 동일 문서 §7·§8 — 2차 3배(단기 63·중기 54·확장 495 수준), 12~24개월 타임라인으로 개발 길게 진행.
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 현재 완성도
@@ -12,6 +14,7 @@
 |------|------|------|
 | **완성도 검증** | ✅ 통과 | `npm run verify:completion` — 타입·린트·P4 148 tests |
 | **뷰·라우트 테스트** | ✅ 105 tests | `npm run test:views` — 20 suites |
+| **사이드바·대화 맥락 회귀** | ✅ 권장 | `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) |
 | **배포 전 검증** | ✅ 가능 | `npm run deploy:check` (verify + build) 통과 시 build/ 배포 가능 |
 | **테스트 커버리지** | ✅ 50%+ | Stmts 61%, Lines 62% (P4 목표 충족) |
 | **E2E (chromium)** | ✅ 69 pass 6 skip | `E2E_SERVER_READY=1 npx playwright test --project=chromium` |

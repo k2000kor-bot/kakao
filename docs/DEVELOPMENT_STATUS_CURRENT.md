@@ -3,6 +3,8 @@
 **작성일**: 2026-02-10  
 **프로젝트**: kakao-frontend (CORBU.AI)
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 이 문서는 지금까지 완료된 개발 범위와 완료 수준을 **상세히** 정리한 보고서입니다.
 
 ---
@@ -193,6 +195,7 @@ index.tsx
 | **TTS만** | `npm run test:tts:all` (프론트 252 + 백엔드 11) |
 | **P4 서비스만** | `npm run test:p4:services` (8 suites, 148 tests) |
 | **확장 뷰·라우트** | `npm run test:views` (20 suites, 105 tests) |
+| **사이드바·대화 맥락** | `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) |
 | **배포 전 한 번에** | `npm run deploy:check` (verify:completion + build) |
 | **백엔드만** | `cd backend && python3 -m pytest tests/test_project_session_api.py tests/test_main_server.py tests/test_main_api.py tests/test_intent_analysis.py -v` |
 | **린트** | `npm run lint` 또는 `npm run lint:strict` (경고도 실패) |
@@ -213,4 +216,4 @@ index.tsx
 
 ---
 
-*이 문서는 BACKLOG, DEVELOPMENT.md, BRAINWAVE-UI.md, TTS 가이드, dev-check.sh 및 최근 작업(2026-02-11)을 반영해 작성되었습니다. 검증 명령에 test:views·deploy:check 반영(2026-03-04).*
+*이 문서는 BACKLOG, DEVELOPMENT.md, BRAINWAVE-UI.md, TTS 가이드, dev-check.sh 및 최근 작업(2026-02-11)을 반영해 작성되었습니다. 검증 명령에 test:views·test:sidebar-context·deploy:check 반영(2026-03-04).*

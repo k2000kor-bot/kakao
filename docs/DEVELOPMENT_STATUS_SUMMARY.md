@@ -3,6 +3,8 @@
 **기준일**: 2026-03-05  
 **참고**: [BACKLOG.md](./BACKLOG.md), [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md), [DEVELOPMENT_SCOPE_MASTER.md](./DEVELOPMENT_SCOPE_MASTER.md), [SCOPE_3X.md](./SCOPE_3X.md), [REMAINING_WORK_ESTIMATE.md](./REMAINING_WORK_ESTIMATE.md)
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 한 줄 요약

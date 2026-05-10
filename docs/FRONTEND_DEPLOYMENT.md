@@ -11,6 +11,8 @@
 3. **서버**: `build/`를 문서 루트로 서빙, SPA 폴백(`try_files … /index.html`) 설정
 4. **검증**: 배포 URL 접속 후 대화·프로젝트 동작 및 API 요청 주소 확인
 
+**프론트 회귀·원격 push**: 저장소 루트에서 `npm run test:sidebar-context` — [../TESTING_GUIDE.md](../TESTING_GUIDE.md) · 원격 push는 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
+
 **실제 동작**: 개발 시 `package.json`의 `proxy`로 백엔드(기본 5002)에 연결됩니다. 백엔드가 꺼져 있으면 대화 화면 상단에 "백엔드에 연결할 수 없습니다" 배너가 표시되며, 메시지 전송 시 오류 내용이 대화에 출력됩니다.
 
 ---
