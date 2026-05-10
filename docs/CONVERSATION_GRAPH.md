@@ -43,3 +43,7 @@
 - 백엔드: `backend/api/conversation_graph.py`, `backend/api/main.py` (라우트)
 - 프론트: `src/views/ConversationGraphView.tsx`, `src/services/conversationGraphService.ts`
 - 라우트: `src/config/routes.ts` (`CONVERSATION_GRAPH_PATH`), `src/AppUnified.tsx`
+
+## 개발자 검증
+
+라우트·이 뷰를 수정한 뒤에는 [TESTING_GUIDE.md](../TESTING_GUIDE.md)를 참고해 `npm run test:routes` 및 필요 시 `npm run test:sidebar-context` 실행을 권장합니다. 배포 직전 풀 검증은 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)와 `npm run verify:final`을 참고합니다. 원격 `git push`가 막힌 경우 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`)를 따릅니다.

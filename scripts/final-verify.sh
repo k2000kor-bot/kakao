@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # 최종 검증: 빌드·접속·API·통합 테스트·대화 파이프라인 Jest
+# 절차·표: docs/FINAL_CHECKLIST.md · 권장(별도): npm run test:sidebar-context — TESTING_GUIDE.md · 원격 push: docs/PUSH_BLOCK_HANDOFF.md
 # 사용: ./scripts/final-verify.sh [BACKEND_URL]
 # 백엔드가 이미 실행 중이면 통합 테스트까지 수행. 대화 파이프라인 Jest는 백엔드 없이 실행(실패 시 exit 1).
 
