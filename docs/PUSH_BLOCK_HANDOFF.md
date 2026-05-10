@@ -2,6 +2,8 @@
 
 원격 권한/경로 문제로 `git push`가 막힌 상태에서, 동일 변경을 다른 환경으로 안전하게 이관하기 위한 문서입니다.
 
+**검증·회귀 허브**: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — 마무리 `npm run verify:completion`, 뷰·라우트 `npm run test:views`, 사이드바·대화 맥락 **`npm run test:sidebar-context`**(`scripts/test-sidebar-context.sh`). 아래 `bash scripts/...` 절차는 각 스크립트 파일 상단 주석과 교차합니다.
+
 ### 현재 로컬 상태
 
 고정 문자열 대신 아래로 최신 브랜치·커밋·아티팩트를 갱신합니다.
