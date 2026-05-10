@@ -10,6 +10,8 @@
 
 **로컬 UI 스모크 체크리스트**: [docs/LOCAL_UI_SMOKE_CHECKLIST.md](./docs/LOCAL_UI_SMOKE_CHECKLIST.md)
 
+**원격 `git push` 막힘·사이드바 회귀(개발자)**: [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md) — `npm run maintain:push-block` / `npm run test:sidebar-context` (동일 `make maintain-push-block` / `make test-sidebar-context`)
+
 **개발·`/projects/:id` 진입**: [일상 개발 가이드](./DEVELOPMENT.md) §2.5 · [개발 연속성](./docs/DEVELOPMENT_CONTINUITY.md) §2 · [라우트별 뷰 README](./src/views/README.md)·[config README(`routes.ts`)](./src/config/README.md)(**`name`·`getPageTitle` → 프로젝트 대화**·[USAGE_GUIDE §1.2](./USAGE_GUIDE.md#12-사이드바-상단-메뉴)) · [빠른 참조](./QUICK_REFERENCE.md)·[에이전트 / AI 개발 가이드](./AGENTS.md)(라우트·`name`/`getPageTitle`) · [실행 가이드](./RUN_GUIDE.md)(앱 메뉴·경로) · [시스템 준비](./SYSTEM_READY.md) §빠른 참조 · [컴포넌트 아키텍처](./docs/COMPONENT_ARCHITECTURE.md) §1.1 · [docs/README.md](./docs/README.md)(§NotebookLM·§개발 **통합·로컬**) · [INTEGRATION_TEST_GUIDE.md](./INTEGRATION_TEST_GUIDE.md)·[docs/LOCAL_ACCESS_GUIDE.md](./docs/LOCAL_ACCESS_GUIDE.md)·[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md)·표 행과 교차
 
 ---
