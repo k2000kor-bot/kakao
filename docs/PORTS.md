@@ -177,3 +177,7 @@ npm start
 - `npm start` 후 브라우저에서 http://localhost:3000 접속
 - 대화·분석 등 기능이 http://localhost:5002 API와 정상 연동되는지 확인
 - 백엔드 테스트: `cd backend && python3 -m pytest tests/test_main_api.py -q`
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

@@ -117,3 +117,7 @@ npm test -- --testPathPattern="webResearchService|WebResearchModal|DeepResearchM
 - [NOTEBOOKLM_FEATURE_ROADMAP.md](./NOTEBOOKLM_FEATURE_ROADMAP.md) — Deep Research, 웹/Fast Research Phase 3
 - [DEVELOPMENT_SCOPE_MASTER.md](./DEVELOPMENT_SCOPE_MASTER.md) — 실시간 웹 검색 확장 범위
 - [BACKLOG.md](./BACKLOG.md) — 웹 검색 P2 작업
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

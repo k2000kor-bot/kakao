@@ -211,3 +211,7 @@ Flask 기반 통합 API 서버의 주요 엔드포인트 및 검증 규칙입니
 - `POST /api/chat/title` — 대화 제목 자동 생성
 
 OpenAPI 문서: `http://localhost:5002/api/docs` (백엔드 실행 후)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
