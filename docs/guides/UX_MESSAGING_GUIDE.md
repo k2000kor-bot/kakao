@@ -2,6 +2,8 @@
 
 프론트엔드에서 로딩·에러·토스트 문구를 일관되게 사용하기 위한 참고 문서입니다.
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ## 1. 로딩 상태
 
 | 위치 | 문구 | 비고 |

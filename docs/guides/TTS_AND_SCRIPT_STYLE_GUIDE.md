@@ -1,5 +1,7 @@
 # TTS 및 샘플 대본 스타일 가이드
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**(앱 셸·사이드바와 함께 점검). [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 > **요약**: TTS 전체/구간별 속도(0.25~4x), docx·txt 샘플 대본 추출 → 스타일 분석 → 동일 스타일 대본 생성, 톤다운·기업보도 문서 유형 힌트. **Typecast 벤치마크 반영**: 감정 제어 **Smart Emotion(자동)** / **Preset(7종 수동)** 및 추가 지시(선택).  
 > **검증**: `npm run test:tts:all` (프론트 AdvancedFeaturesPanel·scriptStyleAPI·qwenTtsService + 백엔드 test_tts_api 11). `npm run dev:check` (백엔드 125 + 타입체크 + ESLint). 벤치마크: [TYPECAST_BENCHMARK.md](TYPECAST_BENCHMARK.md).
 

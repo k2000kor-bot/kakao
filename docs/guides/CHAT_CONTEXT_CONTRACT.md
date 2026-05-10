@@ -4,6 +4,8 @@
 **일괄성**: 모든 대화 진입점(메인 대화·재생성·편집·SimpleChatView·UltimateChatGPTInterface·FileAnalysisChatSystem 등)은 이 계약에 맞춰 context를 구성합니다.  
 **확장성**: 새 키를 추가할 때는 이 문서와 백엔드 정규화 로직을 함께 갱신합니다.
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes`·`test:app-unified`·**`test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. Context 키 일람 (프론트 → 백엔드)

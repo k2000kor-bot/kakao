@@ -1,5 +1,7 @@
 # 대화 입력 → 질문 표시 → 답변 생성·표시 흐름 검증
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes`·`test:app-unified`·**`test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ## 개요
 
 입력창 텍스트 전송 후, 대화창에 **질문**이 나오고 이어서 **생성 답변**이 나오는지 코드 기준으로 검증한 문서입니다.

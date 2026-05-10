@@ -2,6 +2,8 @@
 
 전체 자동 셋업은 **`scripts/setup/setup_macos_dev.sh`** 실행 후 이 파일이 갱신될 수 있습니다. 일상 개발은 저장소 루트 **[DEVELOPMENT.md](../../DEVELOPMENT.md)** 를 기준으로 하세요.
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ## 백엔드 (통합 API)
 
 - **권장**: `npm run restart:backend` (포트 **5002**)

@@ -2,6 +2,8 @@
 
 프로젝트 스크립트·문서는 아래 **우선순위**를 기준으로 맞춰 두었습니다.
 
+**프론트 회귀·원격 push**(백엔드와 병행 시): [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ## 활성화 순서 (`source …/bin/activate`)
 
 1. **`backend/venv`** (`./setup.sh`가 생성하는 기본 경로)

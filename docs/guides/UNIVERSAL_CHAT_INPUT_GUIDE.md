@@ -1,5 +1,7 @@
 # 🚀 UniversalChatInput 컴포넌트 사용 가이드
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 **버전**: 1.0.0  
 **생성일**: 2025년 8월 5일  
 **상태**: ✅ **완전 준비 완료**

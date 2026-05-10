@@ -2,6 +2,8 @@
 
 이 문서는 **어디를 어떻게 개발하면** 대화 답변이 ChatGPT·Gemini처럼 자연스럽고 요청에 맞게 나오는지, **로직을 어떻게 갖추고 움직이면** 유연하게 판단하고 AI 능력을 키울 수 있는지 정리합니다.
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 전체 흐름 요약

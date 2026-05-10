@@ -2,6 +2,8 @@
 
 대화 화면 레이아웃·호버·질문/답변 정렬 변경 후, 기대대로 동작하는지 확인하기 위한 테스트 시나리오입니다.
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — **`npm run test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 레이아웃·정렬

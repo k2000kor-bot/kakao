@@ -2,6 +2,8 @@
 
 부족한 지식을 검색하거나 관련 자료를 활용해 답변 품질을 높이기 위한 동작 정리입니다.
 
+**프론트 회귀·원격 push**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes`·`test:app-unified`·**`test:sidebar-context`**. [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md).
+
 ---
 
 ## 1. 흐름 요약
