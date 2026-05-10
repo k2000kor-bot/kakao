@@ -7,6 +7,7 @@ alwaysApply: true
 
 ## 구조
 - **프론트**: `src/` (React, TS/TSX). API 호출은 `src/services/`.
+- **보조 CRA `frontend/`**: `frontend/tsconfig.json`은 **`frontend/src`만** 포함합니다. 코드 미러는 `npm run sync:frontend-src`(`make sync-frontend`와 동일)로 루트 `src/` → `frontend/src/`; `pretest`에는 `npm run check:src-frontend-parity`(`make check-frontend-parity`와 동일)가 포함됩니다. `chatInputUtils.ts`만 고칠 때는 `npm run sync:frontend-chat-input-utils`(`make sync-frontend-chat-input`와 동일). 통합 대화(UI) 등 부분은 `npm run sync:frontend-unified-chat`(`make sync-frontend-unified-chat`와 동일). **`frontend/` 루트의 `src` 바깥 폴더는 빌드에 쓰이지 않음**(복제 금지) — [QUICK_REFERENCE.md](../../QUICK_REFERENCE.md) · [AGENTS.md](../../AGENTS.md) · [scripts/README.md](../../scripts/README.md).
 - **백엔드**: `backend/`. 진입점은 `main_server.py`, API 라우터는 `backend/api/` (예: `project_session_api.py`).
 - **백엔드 테스트**: `backend/tests/`. pytest 사용. 실행: **`npm run test:backend`** (`scripts/run-backend-pytest.sh`, `lib-backend-python.sh`로 venv 우선). 부분만: `npm run test:backend -- tests/test_foo.py -q`.
 - **Python venv 우선순위·스크립트**: `docs/setup/PYTHON_VENV.md` (`lib-activate-backend-venv.sh`, `restart:backend`).
@@ -15,11 +16,14 @@ alwaysApply: true
 ## 개발 흐름
 - 코드 변경 후 커밋 전에는 `npm run dev:check` 또는 최소한 해당 영역 테스트 실행 권장.
 - **마무리·배포 전**: `npm run verify:completion` (docs/COMPLETION_CHECKLIST.md §6).
+- **배포 직전 풀 스택(선택)**: `npm run verify:final` · UI 스모크 순차 `npm run verify:final:sequential-smoke` (docs/FINAL_CHECKLIST.md).
+- **프론트 사이드바·대화 맥락 회귀**: `npm run test:sidebar-context` — [TESTING_GUIDE.md](../../TESTING_GUIDE.md) · 원격 `git push`는 [docs/PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md).
 - 백엔드 API 추가/수정 시 `backend/tests/`에 해당 테스트 추가 (예: `test_project_session_api.py`).
 - 공통 개발 가이드: 루트의 **DEVELOPMENT.md** 참고.
 
 ## 네이밍
 - API 경로: 소문자, 하이픈 (예: `/api/projects/{id}/notebook-context`, `/api/projects/{id}/files`).
 - React 컴포넌트: PascalCase. 서비스/유틸: camelCase.
-- **프론트 라우트·메뉴**: `src/config/routes.ts` — 첫 메뉴 "CORBU.AI"(프로젝트·대화 분리), VOICE_GENERATION_PATH, allAppPaths. BACKLOG 102~117차.
+- **프론트 라우트·메뉴**: `src/config/routes.ts`·`AppUnified` — 에이전트(`/agents`)·대화(`/`·`/chat` 등 `getStandaloneChatPath()`)·프로젝트(`/projects`)·프로젝트 대화(**`/projects/:id`** — `defaultRoutes[].name`·`getPageTitle(/projects/…)` → 동일 문자열·NotebookLM)·목소리 생성(`/voice-generation`, `VOICE_GENERATION_PATH`). 구 URL(`/simple`·`/features`·`/notebook` 등)은 리다이렉트 — 루트 `USAGE_GUIDE.md` §1.2 · `src/config/README.md`. `allAppPaths`·`e2e/paths.ts` 동기화. BACKLOG 102~117차(이력).
 - **컴포넌트·뷰 매핑**: `docs/COMPONENT_ARCHITECTURE.md`, `src/views/README.md`, `src/components/ProjectManagement/README.md`, `src/components/Chat/README.md`. 경로 변경 시 `routes.ts`·`e2e/paths.ts` 동기화.
+- **`LazyComponents.test.tsx` ↔ `/dev-status` CHANGES**: `it` 개수를 바꾸면 `src/views/DevStatusView.tsx` CHANGES(`·N tests`)·`src/views/DevStatusView.test.tsx`(`realTimeSync mock·N tests`)를 함께 갱신 — [AGENTS.md](../../AGENTS.md) 규칙 **6** · [TESTING_GUIDE.md](../../TESTING_GUIDE.md).

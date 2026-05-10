@@ -11,6 +11,8 @@ alwaysApply: true
 - **개발**: `npm run dev`, `vite`, `next dev` 등 로컬 서버
 - **테스트·타입체크**: `jest`, `npx jest`, `vitest`, `npm test`, `npm run test:*`, `tsc`, `eslint`
 - **의존성**: `npm install`, `npm ci`
-- **검증·배포**: `npm run verify:completion`, `npm run test:views`, `npm run deploy:check`, `npm run deploy:static`, `npm run deploy:dev`
+- **검증·배포**: `npm run verify:completion`, `npm run verify:final`, `npm run verify:final:sequential-smoke`, `npm run test:views`, `npm run test:sidebar-context`, `npm run deploy:check`, `npm run deploy:static`, `npm run deploy:dev`
 
-실행 위치는 **package.json이 있는 디렉터리**(예: `kakao-frontend/kakao-frontend` 또는 `kakao-frontend/kakao-frontend/frontend`)입니다.
+실행 위치는 **package.json이 있는 디렉터리**(예: `kakao-frontend/kakao-frontend` 또는 `kakao-frontend/kakao-frontend/frontend`)입니다. **테스트 구조·push 차단**: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) · [docs/PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md).
+
+**프론트 소스 미러(루트 패키지)**: 캐논은 **`src/`**. `npm test`·`pretest`·CRA 보조 패키지와 맞출 때 루트에서 **`npm run sync:frontend-src`**(**`make sync-frontend`**와 동일; **`npm run check:src-frontend-parity`**는 **`make check-frontend-parity`**와 동일). **`chatInputUtils.ts`만** **`npm run sync:frontend-chat-input-utils`**(**`make sync-frontend-chat-input`**와 동일). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(**`make sync-frontend-unified-chat`**와 동일) — [QUICK_REFERENCE.md](../../QUICK_REFERENCE.md) · [AGENTS.md](../../AGENTS.md) · [scripts/README.md](../../scripts/README.md).
