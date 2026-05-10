@@ -85,3 +85,7 @@ Response Generation (LLM이 결과를 자연어로 정리 또는 직접 반환)
 - [AI_WORKSPACE_MINIMAL_UI.md](./AI_WORKSPACE_MINIMAL_UI.md) — 4개 영역 및 요청 시 생성 기능 정리
 - [QUESTION_ANSWER_PIPELINE_ARCHITECTURE.md](./QUESTION_ANSWER_PIPELINE_ARCHITECTURE.md) — 파이프라인·라우팅
 - [BASIC_FLOW_PRIORITY.md](./BASIC_FLOW_PRIORITY.md) — 기본 플로우·우선순위
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

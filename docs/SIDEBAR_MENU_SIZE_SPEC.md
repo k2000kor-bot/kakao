@@ -99,3 +99,7 @@
 - **Figma**: [Brainwave AI UI Kit node 7-3](https://www.figma.com/design/9ZrEa3dcS8zb0O6Nr5lT8m/Brainwave-AI-UI-Kit?node-id=7-3&m=dev)
 - **구현**: `src/components/ChatGPTInterface.tsx` (사이드바), `src/components/ChatGPTInterface.css` (`.sidebar`, `.projects-section`, `.chats-section`, `.conversations-list`)
 - **레이아웃 토큰**: `src/styles/theme.css` (`--layout-sidebar-width`)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

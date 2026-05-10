@@ -193,3 +193,7 @@ REACT_APP_PIPELINE_DEEPSEEK_REASONER=true
 - [노트북LLM vs 딥시크LLM 비교](./NOTEBOOK_LLM_VS_DEEPSEEK_LLM.md)
 - [도메인 전문 지식·작가 기능](./DOMAIN_KNOWLEDGE_AND_WRITER.md) — 도시정비·부동산·조합 지식 주입 및 조합원 정보·여론 통합
 - [DeepSeek API 문서](https://api-docs.deepseek.com/)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

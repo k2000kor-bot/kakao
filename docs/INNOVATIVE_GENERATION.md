@@ -83,3 +83,7 @@
 
 - 모든 혁신적 생성은 **이미 검증된 내용(claim_graph/evidence)** 기준. 새 사실 추가 금지.
 - 대안·확장 질문은 **선택 옵션**이라 기본 응답 경로는 그대로 두고, 플래그 있을 때만 비용/지연 증가.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

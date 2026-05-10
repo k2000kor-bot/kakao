@@ -123,3 +123,7 @@ pip install youtube-transcript-api yt-dlp
 - 또는 **「주제/이름으로 YouTube 검색」** 필드에 검색어 입력 후 `POST .../notebook-sources/from-youtube-search` 호출.
 
 추가된 소스는 기존 노트북 소스 목록(`GET .../notebook-sources`)에 `type: "youtube"`로 표시되며, 다른 소스와 동일하게 삭제·활성/비활성 제어가 가능합니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

@@ -232,3 +232,7 @@ Memory Gate: 민감/위험/단기성/근거 없는 추측 저장 금지. memory_
 **프론트에서 파이프라인 사용**: `chatContextWithHistory`에 `use_pipeline_v2: true` 포함해 전달하면 됨. (선택: 설정 토글이나 특정 프로젝트에서만 켜기)
 
 참고: [BASIC_FLOW_PRIORITY.md](./BASIC_FLOW_PRIORITY.md) — 입력폼→답변 표시 우선.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

@@ -86,3 +86,7 @@
 - [DEEPSEEK_SETUP.md](./DEEPSEEK_SETUP.md) — DeepSeek 설치형/API 설정 및 프로젝트·운영 출력 연동.
 - [NOTEBOOKLM_FEATURE_AND_KNOWLEDGE_CHECKLIST.md](./NOTEBOOKLM_FEATURE_AND_KNOWLEDGE_CHECKLIST.md) — 노트북 LLM 도메인 지식·기능 체크리스트.
 - [BACKLOG.md](./BACKLOG.md) — 전문 분야 지식·작가 기능 관련 완료/예정 작업.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
