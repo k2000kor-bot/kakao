@@ -187,7 +187,7 @@ python3 -m pytest tests/ -v
 npm test
 ```
 
-**빠른 일부 스위트** (백엔드 없이): `npm run test:routes`(**27**) · `npm run test:app-unified`(**115**, 수 초대) · `npm run test:chatgpt-interface:quick` / `npm run test:chatgpt-interface:genspark` — [TESTING_GUIDE.md](./TESTING_GUIDE.md) 주요 검증 표.
+**빠른 일부 스위트** (백엔드 없이): `npm run test:routes`(**27**) · `npm run test:app-unified`(**115**, 수 초대) · `npm run test:sidebar-context` · `npm run test:chatgpt-interface:quick` / `npm run test:chatgpt-interface:genspark` — [TESTING_GUIDE.md](./TESTING_GUIDE.md) 주요 검증 표. 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md)(`maintain:push-block`).
 
 **보조 CRA `frontend/src/`** (루트 `src/`와 바이트 동기): **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**) — 루트 `npm test`의 `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`) 전제. `chatInputUtils.ts`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md).
 
@@ -216,7 +216,7 @@ npm run test:e2e:no-server
 
 `E2E_SERVER_READY=1`이면 webServer를 띄우지 않고 `baseURL`(localhost:3000)만 사용합니다.
 
-**경로 동기**: [e2e/paths.ts](./e2e/paths.ts)는 [src/config/routes.ts](./src/config/routes.ts)와 맞춥니다. **`name`·`getPageTitle` → 프로젝트 대화**는 [src/config/README.md](./src/config/README.md) 표·[USAGE_GUIDE.md](./USAGE_GUIDE.md) §1.2와 동일 문자열로 유지하고, Jest는 [TESTING_GUIDE.md](./TESTING_GUIDE.md) `routes.test`·`npm run test:routes`·`npm run test:app-unified`·가이드는 [e2e/README.md](./e2e/README.md)를 참고하세요.
+**경로 동기**: [e2e/paths.ts](./e2e/paths.ts)는 [src/config/routes.ts](./src/config/routes.ts)와 맞춥니다. **`name`·`getPageTitle` → 프로젝트 대화**는 [src/config/README.md](./src/config/README.md) 표·[USAGE_GUIDE.md](./USAGE_GUIDE.md) §1.2와 동일 문자열로 유지하고, Jest는 [TESTING_GUIDE.md](./TESTING_GUIDE.md) `routes.test`·`npm run test:routes`·`npm run test:app-unified`·`npm run test:sidebar-context`·가이드는 [e2e/README.md](./e2e/README.md)를 참고하세요. 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md).
 
 ## 📚 상세 가이드
 

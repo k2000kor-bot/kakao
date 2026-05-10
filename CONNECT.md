@@ -153,6 +153,8 @@ npm start
 - **대화 파이프라인만 (Jest)**: `npm run test:frontend:chat-pipeline` — 백엔드 없이 `chatInputUtils`·스트리밍·프롬프트·Genspark 패널. [guides/RESPONSE_CLEANING.md](docs/guides/RESPONSE_CLEANING.md). 루트 `npm test` 전 보조 트리 패리티: **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**; `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`)); 또는 `chatInputUtils`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**); 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**)) — [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)·[AGENTS.md](./AGENTS.md)·[scripts/README.md](./scripts/README.md).
 - **라우트만 (Jest)**: `npm run test:routes` — **27** tests (`pretest` 포함). [TESTING_GUIDE.md](./TESTING_GUIDE.md) 주요 검증 표.
 - **통합 앱 셸만 (Jest)**: `npm run test:app-unified` — **115** tests (수 초대). [TESTING_GUIDE.md](./TESTING_GUIDE.md).
+- **사이드바 컨텍스트 회귀 (Jest)**: `npm run test:sidebar-context` — [TESTING_GUIDE.md](./TESTING_GUIDE.md)·[docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md).
+- **원격 `git push` 막힘 (로컬 이관·점검)**: `npm run maintain:push-block` — [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md).
 - **뷰·라우트**: `npm run test:views` — 22 suites, 142 tests (배포 전 권장).
 - **백엔드 API 테스트**: `cd backend && python3 -m pytest tests/test_main_api.py -v`  
   통과 시 **약 60개 이상** 테스트가 실행됩니다 (루트·health·status·api·docs·projects·TTS·script-style 등).

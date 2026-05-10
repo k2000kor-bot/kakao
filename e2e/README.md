@@ -6,6 +6,8 @@
 
 **대화 입력 로직(유닛)**: E2E와 별도로 `npm run test:frontend:chat-pipeline` — `chatInputUtils`·스트리밍 등. 유틸 수정 후 `npm run sync:frontend-chat-input-utils` — [guides/RESPONSE_CLEANING.md](../docs/guides/RESPONSE_CLEANING.md).
 
+**라우트·앱 셸·사이드바(유닛, E2E 전 점검)**: `npm run test:routes` · `npm run test:app-unified` · `npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md). 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md).
+
 ## 사전 준비
 
 **최초 1회**: Playwright 브라우저 설치

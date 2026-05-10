@@ -6,7 +6,7 @@
 
 프론트 **메뉴·경로**를 바꿀 때는 [src/config/README.md](src/config/README.md)의 `name`·`getPageTitle`(**`/projects/:id` → 프로젝트 대화** 등)·[TESTING_GUIDE.md](TESTING_GUIDE.md) `routes.test`·[e2e/README.md](e2e/README.md)·[AGENTS.md](AGENTS.md)와 동기하는 것이 좋습니다.
 
-**프론트 유닛(백엔드 없이, 통합 전 점검)**: `npm run test:routes`(**27**)·`npm run test:app-unified`(**115**, 수 초대) — [TESTING_GUIDE.md](TESTING_GUIDE.md) 주요 검증 표.
+**프론트 유닛(백엔드 없이, 통합 전 점검)**: `npm run test:routes`(**27**)·`npm run test:app-unified`(**115**, 수 초대)·`npm run test:sidebar-context` — [TESTING_GUIDE.md](TESTING_GUIDE.md) 주요 검증 표. 원격 `git push` 막힘: [docs/PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
 
 **보조 CRA `frontend/src/`**: 루트 `src/`와 바이트 맞춤은 **`npm run sync:frontend-src`**(동일 **`make sync-frontend`**; `pretest`·`check:src-frontend-parity`(동일: `make check-frontend-parity`)). `chatInputUtils.ts`만 **`npm run sync:frontend-chat-input-utils`**(동일 **`make sync-frontend-chat-input`**). 통합 대화(UI) 등 부분 **`npm run sync:frontend-unified-chat`**(동일 **`make sync-frontend-unified-chat`**) — [QUICK_REFERENCE.md](QUICK_REFERENCE.md)·[AGENTS.md](AGENTS.md)·[scripts/README.md](scripts/README.md).
 

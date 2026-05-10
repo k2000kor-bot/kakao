@@ -37,7 +37,7 @@ AppUnified 라우트에 매핑되는 페이지 컴포넌트.
 - **도구 뷰 데이터 연동**: **AnalyticsView**·**IntegrationsView**·**AutomationView**·**SearchView**·**TemplatesView**·**TeamView**·**LearnView**·**WorkspaceView**·**CommunityView**·**BillingView** 모두 실 API(GET /api/*/summary). 백엔드 extended_views_api 목데이터 반환, 실패 시 프론트 폴백. (Settings·Docs는 실사용/가이드.)
 - **도구 뷰 서비스 테스트**: analyticsViewService·automationViewService·integrationsViewService·billingViewService·communityViewService·workspaceViewService·teamViewService·learnViewService·searchViewService·templatesViewService — 10 suites, 45 tests (success·data 없음 엣지 케이스 포함). `npm run test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services`(해당 스크립트 있을 때).
 
-**검증 명령**: `npm run test:views` (20 suites, 105 tests — 뷰 유닛 + 라우트) · `npm test -- --testPathPattern=ViewService --watchAll=false` (10 suites, 45 tests) · `npm run test -- src/views` (뷰만) · `E2E_SERVER_READY=1 npx playwright test e2e/example.spec.ts` (E2E, 서버 선실행 시).
+**검증 명령**: `npm run test:routes` (**27** — 라우트만) · `npm run test:app-unified` (**115** — `AppUnified` 셸·리다이렉트, 수 초대) · `npm run test:sidebar-context` (사이드바·설정·대화 이력 묶음) · `npm run test:views` (20 suites, 105 tests — 뷰 유닛 + 라우트) · `npm test -- --testPathPattern=ViewService --watchAll=false` (10 suites, 45 tests) · `npm run test -- src/views` (뷰만) · `E2E_SERVER_READY=1 npx playwright test e2e/example.spec.ts` (E2E, 서버 선실행 시). 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md).
 
 ## 도구 뷰 API (구현 완료)
 

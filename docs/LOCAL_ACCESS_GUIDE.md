@@ -41,7 +41,7 @@
 
 **프론트 포트: 3000** · **백엔드 포트: 5002** (proxy·config/api·restart:backend 모두 5002)
 
-앱 **메뉴 URL·브라우저 제목**은 [src/config/README.md](../src/config/README.md)·[TESTING_GUIDE.md](../TESTING_GUIDE.md) (`npm run test:routes`·`routes.test`)·[e2e/README.md](../e2e/README.md)·[AGENTS.md](../AGENTS.md)와 맞춥니다(**`name`·`getPageTitle` → `/projects/:id` 프로젝트 대화** 등). 앱 셸(선택): **`npm run test:app-unified`** — 동일 [TESTING_GUIDE.md](../TESTING_GUIDE.md).
+앱 **메뉴 URL·브라우저 제목**은 [src/config/README.md](../src/config/README.md)·[TESTING_GUIDE.md](../TESTING_GUIDE.md) (`npm run test:routes`·`routes.test`)·[e2e/README.md](../e2e/README.md)·[AGENTS.md](../AGENTS.md)와 맞춥니다(**`name`·`getPageTitle` → `/projects/:id` 프로젝트 대화** 등). 앱 셸·사이드바(선택): **`npm run test:app-unified`**·**`npm run test:sidebar-context`** — 동일 [TESTING_GUIDE.md](../TESTING_GUIDE.md). 원격 push 막힘: [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
 
 ## 프론트엔드 (http://localhost:3000)
 
@@ -129,7 +129,7 @@ python3 -m uvicorn main_server:app --host 0.0.0.0 --port 5002 --reload
 | 한번에 확인 | `bash scripts/check-access.sh` 또는 `npm run check:access` → 프론트(3000)·백(5002) 응답 코드 출력 · 표 행과 교차 |
 | API 검증 | `npm run verify:api` → /api/health, /api/status, /api/docs · 표 행과 교차 |
 | 통합 테스트 | `npm run test:integration` → 대화 API·에러 시나리오(400/422)·스트리밍 검증 (백엔드 실행 중 필요) · 표 행과 교차 |
-| 프론트 Jest(선택) | `npm run test:routes`·`npm run test:app-unified` → 라우트·제목 계약·AppUnified 셸 (백엔드 불필요). [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
+| 프론트 Jest(선택) | `npm run test:routes`·`npm run test:app-unified`·`npm run test:sidebar-context` → 라우트·제목 계약·AppUnified 셸·사이드바 컨텍스트 (백엔드 불필요). [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)·표 행과 교차 |
 | 빌드 성공 | `npm run build` → "Compiled successfully" · 표 행과 교차 |
 | 프론트 접속 | 브라우저에서 http://localhost:3000 또는 http://localhost:3000/test.html · 표 행과 교차 |
 | 백엔드 상태 | `curl http://localhost:5002/api/health` → JSON 응답 확인 · 표 행과 교차 |

@@ -29,6 +29,8 @@
 | Jest 테스트 import | `npm run check:test-imports` | 깨진 import 없음 (`verify:final` 0단계와 동일) · 표 행과 교차 |
 | 라우트 설정 (Jest) | `npm run test:routes` | **27** tests (`pretest` 포함). `routes.test`·`paths.ts` 계약 점검 — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
 | 통합 앱 셸 (Jest) | `npm run test:app-unified` | **115** tests (`pretest` 포함, 수 초대). `AppUnified` 라우팅·리다이렉트 — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·표 행과 교차 |
+| 사이드바 컨텍스트 (Jest) | `npm run test:sidebar-context` | 사이드바·설정·대화 이력 묶음 (`pretest`·`sync:frontend-src` 포함; 동일 `make test-sidebar-context`) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
+| 원격 push 막힘 (로컬) | `npm run maintain:push-block` | 아티팩트·회귀·진단·문서 갱신 (동일 `make maintain-push-block`) — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
 | 접속 확인 | `npm run check:access` | 프론트(3000)·백(5002) 200 또는 안내 메시지 · 표 행과 교차 |
 | API 검증 | `npm run verify:api` | /api/health, /api/status, /api/docs → 200 · 표 행과 교차 |
 | 통합 테스트 | `npm run test:integration` | 대화·에러 시나리오·스트리밍 모두 OK (백엔드 실행 중 필요). 수동·스크립트 흐름: [INTEGRATION_TEST_GUIDE.md](../INTEGRATION_TEST_GUIDE.md)·표 행과 교차 |

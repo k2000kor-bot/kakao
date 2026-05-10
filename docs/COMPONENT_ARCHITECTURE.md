@@ -28,6 +28,8 @@
 
 경로 상수: `src/config/routes.ts` (VOICE_GENERATION_PATH, allAppPaths), `e2e/paths.ts` (PATHS). 뷰 상세: `src/views/README.md`.
 
+**빠른 Jest(선택·백엔드 불필요)**: `npm run test:routes` · `npm run test:app-unified` · `npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md). 원격 `git push` 막힘: [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
 ## 2. 메시지 UI (대화 메시지 렌더링)
 
 두 가지 스택이 공존합니다.

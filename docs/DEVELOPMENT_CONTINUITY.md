@@ -20,7 +20,7 @@
 | E2E testid | `src/constants/testIds.ts` | TEST_IDS (단일 소스). `e2e/testIds.ts`가 re-export·byTestId·byTestIdPrefix |
 | API 경로 | `src/config/api.ts` | API_ENDPOINTS, API_BASE_URL |
 
-**경로 변경 시**: `routes.ts`와 `e2e/paths.ts` 동기화. getPageTitle 갱신.
+**경로 변경 시**: `routes.ts`와 `e2e/paths.ts` 동기화. getPageTitle 갱신. Jest 회귀: `npm run test:routes` · `npm run test:app-unified` · `npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md). 원격 push 막힘: [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md).
 
 ## 2. 컴포넌트·뷰 매핑
 

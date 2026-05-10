@@ -56,6 +56,9 @@ npm start
 
 ### 프론트엔드 테스트
 
+0. **Jest(선택·백엔드 불필요)**  
+   `npm run test:routes` · `npm run test:app-unified` · `npm run test:sidebar-context` — [TESTING_GUIDE.md](./TESTING_GUIDE.md). 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
 1. **브라우저 접속**
    - http://localhost:3000
 
