@@ -242,3 +242,8 @@ curl -X POST http://localhost:5002/api/integrated/analyze \
 - `FRONTEND_READY.md` - 프론트엔드 준비 완료 가이드
 
 **전체 시스템이 준비되었습니다! 🎉**
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

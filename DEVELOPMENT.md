@@ -216,3 +216,8 @@ Qwen3-TTS 기반 목소리 생성은 다음 경로에서 사용할 수 있습니
 AI/에이전트가 코드 수정 시 참고할 내용은 **[AGENTS.md](./AGENTS.md)** 를 사용합니다.
 
 이 가이드를 기준으로 개발을 진행하면, 팀과 AI 어시스턴트가 동일한 흐름을 따를 수 있습니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

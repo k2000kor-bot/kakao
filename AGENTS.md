@@ -56,3 +56,8 @@
 **보조 트리 `frontend/src`**: CRA 빌드는 루트 `src/`만 사용합니다. `chatInputUtils`를 메인과 맞출 때는 **`npm run sync:frontend-chat-input-utils`**(루트 `src/utils/chatInputUtils.ts` → `frontend/src/utils/chatInputUtils.ts` 복사). 대량 치환·import 삽입은 `scripts/frontend_coerce_trim.py` 참고(import는 **각 `import … from` 블록이 끝난 뒤**에 넣도록 스크립트 처리).
 
 이 파일과 DEVELOPMENT.md, BACKLOG.md를 함께 사용하면 체계적으로 개발을 이어갈 수 있습니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

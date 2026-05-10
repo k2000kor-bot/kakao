@@ -96,3 +96,8 @@ TypeScript **`frontend/tsconfig.json`은 `frontend/src`만** 포함합니다. �
 | 기타 **deploy/start_*.sh** | 다중 마이크로서버·레거시 엔트리; `REPO_ROOT` 자동 탐지(`scripts/deploy` 기준 `../..`) |
 
 [docs/DEVELOPMENT.md](../DEVELOPMENT.md) §2.4, [docs/DEVELOPMENT_CONTINUITY.md](../docs/DEVELOPMENT_CONTINUITY.md)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

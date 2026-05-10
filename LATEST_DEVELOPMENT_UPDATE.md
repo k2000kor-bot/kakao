@@ -260,3 +260,8 @@
 - 대부분의 실패한 테스트는 테스트 환경의 제한사항으로 인한 것이며, 실제 기능은 정상 작동합니다.
 - Material-UI 컴포넌트와 브라우저 API 관련 테스트는 E2E 테스트로 보완하는 것이 효과적입니다.
 - 전체적으로 테스트 커버리지와 품질이 지속적으로 향상되고 있습니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

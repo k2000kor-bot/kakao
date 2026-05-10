@@ -217,3 +217,7 @@ ChatGPT 스타일의 프로젝트 생성, 대화 생성, 그리고 기본/프로
 3. 성능 최적화 및 캐싱
 4. 사용자 피드백 수집 및 개선
 
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

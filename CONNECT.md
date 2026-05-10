@@ -215,3 +215,8 @@ npm start
 - **메모리 부족**: TensorFlow.js·대형 번들 등으로 Node/브라우저 힙 초과 → `NODE_OPTIONS=--max-old-space-size=8192` 적용 완료 (start·start:safe·build·restart-frontend)
 - **Service Worker 충돌**: 개발 시 localhost에서 SW 비활성화 (index.html 참고)
 - **GPU/렌더러**: Chrome에서 `chrome://settings/system` → 하드웨어 가속 사용 중지 후 재시도
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

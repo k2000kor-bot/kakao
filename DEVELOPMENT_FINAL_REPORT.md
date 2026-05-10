@@ -291,3 +291,7 @@ navigator.serviceWorker.controller?.postMessage({
 4. **커버리지**: `npm run test:coverage -- --watchAll=false` (소요 시간 있음) 후 미커버 구간 테스트 추가
 5. **E2E 전체**: 서버 실행 후 `E2E_SERVER_READY=1 npx playwright test --project=chromium` (62 tests)
 
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

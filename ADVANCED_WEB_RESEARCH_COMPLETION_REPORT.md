@@ -401,3 +401,8 @@ curl -X POST http://localhost:8080/api/advanced-web-research \
 - **성능 최적화**: ✅ 완료 (100%)
 
 **다음 단계**: 실제 검색 API 연동, 웹 스크래핑 고도화, AI 기반 결과 분석을 통한 지속적인 혁신
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

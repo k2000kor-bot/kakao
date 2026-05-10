@@ -346,3 +346,8 @@ CORBU.AI에 **멀티모달 지식 시스템**을 성공적으로 통합하여, �
 ---
 
 *이 보고서는 2025년 9월 23일에 작성되었으며, CORBU.AI 멀티모달 지식 시스템의 완성을 기록합니다.*
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

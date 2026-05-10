@@ -122,3 +122,8 @@ curl -X POST http://localhost:5002/api/integrated/analyze \
 1. CORS는 이미 설정되어 있어 프론트엔드에서 바로 사용 가능합니다.
 2. 서버는 포트 8000에서 실행됩니다.
 3. 모든 엔드포인트는 `/api/integrated` prefix를 사용합니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+

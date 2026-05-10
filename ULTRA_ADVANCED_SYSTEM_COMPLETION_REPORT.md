@@ -258,3 +258,8 @@ const response = await fetch('/api/advanced-chat', {
 *보고서 생성 일시: 2025년 9월 23일 오전 10시 00분*  
 *시스템 버전: CORBU.AI v3.0 Ultra Advanced*  
 *상태: 🎉 ChatGPT 초월 완료*
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+
