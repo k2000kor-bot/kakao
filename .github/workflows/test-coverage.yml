@@ -1,5 +1,5 @@
 name: Test Coverage Report
-# 로컬 회귀·push: npm run test:sidebar-context — TESTING_GUIDE.md · docs/PUSH_BLOCK_HANDOFF.md
+# 로컬 회귀·push: npm run test:sidebar-context — TESTING_GUIDE.md · docs/PUSH_BLOCK_HANDOFF.md · 활성 경로 md: npm run check:doc-verification-hub (DOC_HUB_STRICT=1)
 
 on:
   push:
@@ -25,6 +25,9 @@ jobs:
 
     - name: Jest 테스트 import 패턴 검사
       run: npm run check:test-imports
+
+    - name: 문서 검증 허브 단락 점검 (strict)
+      run: DOC_HUB_STRICT=1 npm run check:doc-verification-hub
 
     - name: 적응형 학습 테스트 타입 검사 (src·frontend)
       run: npm run typecheck:adaptive-learning-tests:all

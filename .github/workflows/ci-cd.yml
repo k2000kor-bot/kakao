@@ -1,5 +1,5 @@
 name: CORBU.AI CI/CD Pipeline
-# 로컬 회귀·push: npm run test:sidebar-context — TESTING_GUIDE.md · docs/PUSH_BLOCK_HANDOFF.md · 마무리/풀 검증 표는 TESTING_GUIDE / verify:final → docs/FINAL_CHECKLIST.md
+# 로컬 회귀·push: npm run test:sidebar-context — TESTING_GUIDE.md · docs/PUSH_BLOCK_HANDOFF.md · 활성 경로 md 허브: npm run check:doc-verification-hub (DOC_HUB_STRICT=1) · 마무리/풀 검증 표는 TESTING_GUIDE / verify:final → docs/FINAL_CHECKLIST.md
 
 on:
   push:
@@ -34,6 +34,9 @@ jobs:
 
     - name: Jest 테스트 import 패턴 검사
       run: npm run check:test-imports
+
+    - name: 문서 검증 허브 단락 점검 (strict)
+      run: DOC_HUB_STRICT=1 npm run check:doc-verification-hub
       
     - name: TypeScript 타입 검사
       run: npx tsc --noEmit
