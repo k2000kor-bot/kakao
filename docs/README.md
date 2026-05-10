@@ -2,7 +2,7 @@
 
 ## 빠른 프론트 Jest (루트, 선택)
 
-경로·브라우저 탭 제목·네비를 바꾼 뒤 **백엔드 없이** 회귀 확인: **`npm run test:routes`** (`config/__tests__/routes.test`) · **`npm run test:app-unified`** (`AppUnified.test`). 수치·다른 스위트: [TESTING_GUIDE.md](../TESTING_GUIDE.md)·한 페이지 요약: [DEV_GUIDE.md](./DEV_GUIDE.md) **검증·테스트** 표.
+경로·브라우저 탭 제목·네비·사이드바 컨텍스트를 바꾼 뒤 **백엔드 없이** 회귀 확인: **`npm run test:routes`** (`config/__tests__/routes.test`) · **`npm run test:app-unified`** (`AppUnified.test`) · **`npm run test:sidebar-context`** (동일 `make test-sidebar-context`). 원격 `git push`가 막혔을 때 로컬 이관·점검: [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`, 동일 `make maintain-push-block`). 수치·다른 스위트: [TESTING_GUIDE.md](../TESTING_GUIDE.md)·한 페이지 요약: [DEV_GUIDE.md](./DEV_GUIDE.md) **검증·테스트** 표.
 
 ## 로컬 UI 스모크 체크리스트
 
@@ -16,6 +16,7 @@
 | [FRONTEND_CHANGES.md](./FRONTEND_CHANGES.md) | **프론트엔드 변경 사항** — 최근 수정·추가된 파일·내용 요약 |
 | [CURRENT_DEVELOPMENT_STATUS.md](./CURRENT_DEVELOPMENT_STATUS.md) | **지금까지 반영된 기능 요약** — AppUnified·사이드바·아이콘·반응형·ErrorBoundary |
 | [DEPLOY_SERVER_CHECKLIST.md](./DEPLOY_SERVER_CHECKLIST.md) | **서버 반영 체크리스트** — deploy:check → .env 설정 → deploy:dev/deploy:server · (선택) `verify:final` |
+| [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) | **원격 `git push` 막힘** — 로컬 이관·아티팩트 검증·`npm run test:sidebar-context` / `npm run maintain:push-block` (동일 `make …`) · [scripts/README.md](../scripts/README.md) |
 
 ## 개발·개발 연속성
 
