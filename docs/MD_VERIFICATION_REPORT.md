@@ -86,3 +86,7 @@
 
 - **기능·답변 생성**: 문서와 구현이 일치하며, 대화·긴 글 생성·프로젝트 맥락·스트리밍·TTS·노트북 LLM이 모두 문서화되어 있음.
 - **수정 권장**: API Base URL 및 포트(5001 vs 5002) 안내를 실제 구성에 맞게 통일.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

@@ -148,3 +148,7 @@
 - **재건축·재개발 기본 지식**: **도시정비법, 재건축·재개발, 대법원 판례, 변호사·법무사·세무사·회계사·감정평가사·부동산중개사**는 15개 도메인(도시정비, 세무, 법무, 금융, 국토부, 부동산정책, 대법원판례, 부동산중개, 건축법, 서울시행정, 형사, 계약, 회계, 감정평가)에 걸쳐 **갖출 수 있도록** 구축되어 있으며, 전문가 관점 선택(변호사·세무사 등) 프롬프트 강화가 적용됩니다. **분야별 필수 지식**은 `notebookLLMService.ts`의 `DOMAIN_KNOWLEDGE_BASE`에 재건축·재개발 중심으로 보강되어 있음(도시정비: 정비구역·조합·관리처분·분담금·시공사 선정·정관; 세무: 조합원 양도·취득세 감면·이주비; 법무: 조합·시공사 계약·입찰 분쟁; 건축법: 정비사업 건축심의·준공; 감정평가: 분담금·청산금 산정용 평가; 부동산정책·대법원판례·국토부·서울시행정에 재건축·재개발 관련 개념·판례 반영).
 
 추가로 **우리만의 특성**을 살리려면: 프로젝트별 가이드라인·소스에 재건축/재개발 전문 자료를 넣고, 노트북 LLM 도메인 선택에서 도시정비·세무·법무·대법원판례·부동산중개 등을 선택해 두면 해당 기본 지식이 우선 반영됩니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

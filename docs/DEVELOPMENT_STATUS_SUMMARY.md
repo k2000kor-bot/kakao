@@ -113,3 +113,7 @@ BACKLOG §확장 범위 테이블 기준 **55개 행** 중, **구독(1개) 제�
 3. **확장**: BACKLOG·SCOPE_3X·DEVELOPMENT_SCOPE_MASTER 우선순위에 따라 P4→P5 순으로 진행.
 
 이 문서는 BACKLOG·COMPLETION_CHECKLIST·REMAINING_WORK_ESTIMATE·SCOPE_3X를 종합한 요약입니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

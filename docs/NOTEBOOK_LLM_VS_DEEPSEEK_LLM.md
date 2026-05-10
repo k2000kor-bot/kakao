@@ -113,3 +113,7 @@
 - **통합 대화**: `backend/api/unified_chat_api.py` (temperature 0.8, max_tokens 4096)
 - **LLM provider 우선순위**: `backend/llm_service.py` — `LLM_PROVIDER`, `NOTEBOOK_LLM_AVAILABLE`, OpenAI/Anthropic 순
 - **DeepSeek**: [DeepSeek API Docs](https://api-docs.deepseek.com/), 외부 벤치/파인튜닝 자료(예: Fireworks AI 블로그 등)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

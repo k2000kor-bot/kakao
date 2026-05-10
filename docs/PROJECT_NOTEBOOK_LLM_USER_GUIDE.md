@@ -61,3 +61,7 @@
 - 딥시크 설치→구동→개발→학습 한 흐름: [DEEPSEEK_INSTALL_RUN_DEVELOP_LEARN.md](./DEEPSEEK_INSTALL_RUN_DEVELOP_LEARN.md)
 - 개발 계획 및 구현 내역: `docs/PROJECT_NOTEBOOK_LLM_DEV_PLAN.md`
 - 구글 노트북 LLM과 동일 서비스·체계적 학습: `docs/NOTEBOOKLM_SERVICE_AS_GOOGLE.md`
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

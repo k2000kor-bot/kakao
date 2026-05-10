@@ -173,3 +173,7 @@
 
 - **새 라우트 추가 시**: 해당 화면 컴포넌트·CSS에서 `theme.css` 변수와 `.bw-*`만 사용하면 Figma Kit 범위 유지.
 - **기존 미사용 컴포넌트를 라우트에 넣을 때**: 해당 파일에서 `text-gray-*`, `bg-blue-*` 등 Tailwind 색상을 `.bw-text-primary`, `.bw-btn-primary`, `var(--accent-info)` 등으로 교체 후 배포.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

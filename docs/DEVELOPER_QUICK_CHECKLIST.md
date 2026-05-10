@@ -123,3 +123,7 @@ OpenAPI 문서: http://localhost:5002/api/docs
 - [START_HERE.md](../START_HERE.md) - 빠른 시작
 - [CONNECT.md](../CONNECT.md) - 접속·테스트
 - [docs/DEV_GUIDE.md](./DEV_GUIDE.md) - 상세 개발 가이드 (다른 백엔드 포트 포함)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

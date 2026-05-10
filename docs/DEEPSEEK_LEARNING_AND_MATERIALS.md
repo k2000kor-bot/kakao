@@ -114,3 +114,7 @@
 - **학습** = 프로젝트에 넣은 **지침 + 소스(파일/텍스트/웹)** 가 매 요청 시 `projectKnowledge`로 로드되어 DeepSeek 컨텍스트로 들어가는 것.  
 - **논리** = 파이프라인 3단계에서 **질문→요구→출처** 순의 구조를 지시하는 것.  
 - **자료 넣는 곳** = **프로젝트 설정(지침 + 소스 추가)** 이고, **그 프로젝트를 선택한 대화**에서만 해당 자료가 사용됩니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

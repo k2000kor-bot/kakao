@@ -72,3 +72,7 @@ python3 -m pytest tests/test_unified_chat_api.py::TestDeepSeekLLMPathMock -v
 - [DEEPSEEK_DEVELOPMENT_ORDER.md](./DEEPSEEK_DEVELOPMENT_ORDER.md) — 전체 개발 순서·5.1a 딥시크 우선 시도
 - [DEEPSEEK_LEARNING_AND_MATERIALS.md](./DEEPSEEK_LEARNING_AND_MATERIALS.md) — 학습·논리·자료 넣는 방법
 - [NOTEBOOK_LLM_VS_DEEPSEEK_LLM.md](./NOTEBOOK_LLM_VS_DEEPSEEK_LLM.md) — 노트북 LLM vs 딥시크 비교
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

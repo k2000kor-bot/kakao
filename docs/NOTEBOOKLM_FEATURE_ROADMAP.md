@@ -136,3 +136,7 @@
 **작성일**: 2026-01-28  
 **최종 업데이트**: 2026-02-15 (부동산 API, Drive 스텁, Cursor 최적화, 테스트 수정)  
 **목적**: 화면에 보이는 모든 기능 정리 및 순차 개발 계획
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

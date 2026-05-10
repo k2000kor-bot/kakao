@@ -93,3 +93,7 @@
 - **소스 추가**: `POST /api/projects/{project_id}/notebook-sources` (body: `{ "title": "...", "content": "...", "type": "text"|"url" }`) 로 학습 소스 추가. 추가 시 `context_text`를 프로젝트 개요 + 모든 활성 소스로 재구성하여 대화/스튜디오에 반영. `projectService.addNotebookSource(projectId, { title, content, type })` 로 호출 가능.
 - **소스 삭제**: `DELETE /api/projects/{project_id}/notebook-sources/{source_id}` 로 추가 소스 삭제 (프로젝트 개요는 삭제 불가). `projectService.deleteNotebookSource(projectId, sourceId)` 로 호출. 소스 추가 모달에서 「현재 소스」 목록과 삭제 버튼 제공.
 - **스튜디오 출력**: `POST /api/projects/{project_id}/notebook-studio/generate` (body: `{ "type": "report"|"study_guide"|"quiz"|"summary"|"flashcards" }`) 로 학습된 소스 기반 보고서·학습 가이드·퀴즈·요약·플래시카드 생성. 프론트엔드 대화 화면에 "스튜디오" 버튼 및 결과 모달 연동.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

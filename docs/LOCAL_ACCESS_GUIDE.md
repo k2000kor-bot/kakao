@@ -140,3 +140,7 @@ python3 -m uvicorn main_server:app --host 0.0.0.0 --port 5002 --reload
 ## 배포 직전 풀 검증 (선택)
 
 접속·빌드가 된 뒤 **import 검사·빌드·접속·API·통합·대화 Jest·UI 스모크**까지 한 번에 보려면 프로젝트 루트에서 **`npm run verify:final`** (`scripts/final-verify.sh`). UI 스모크만 순차 Jest: **`npm run verify:final:sequential-smoke`**. 상세는 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md) 참고.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

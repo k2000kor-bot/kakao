@@ -112,3 +112,7 @@
 - **문서**: [API.md](./API.md) POST /api/chat, [BASIC_FLOW_PRIORITY.md](./BASIC_FLOW_PRIORITY.md), [AI_WORKSPACE_MINIMAL_UI.md](./AI_WORKSPACE_MINIMAL_UI.md) 참고.
 
 이 문서는 위 기능들의 **마무리 개발 완료 시점** 기준 정리입니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

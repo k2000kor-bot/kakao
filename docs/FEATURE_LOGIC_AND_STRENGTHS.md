@@ -177,3 +177,7 @@
 ---
 
 **정리**: 기능 로직을 **그대로** 쓰려면 **`main_server`(8000) + `unified_chat` 파이프라인**을 사용하고, 스트리밍·프로젝트·컨텍스트가 그 경로로 가도록 맞추는 것이 중요합니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

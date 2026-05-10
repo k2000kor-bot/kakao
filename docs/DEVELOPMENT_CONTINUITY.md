@@ -100,3 +100,7 @@
 - **공통 context 빌더**: SimpleChatView·UltimateChatGPTInterface·FileAnalysisChatSystem은 `buildUnifiedChatContext(rawInput, { conversationHistory?, project? })` 사용 → `parsed_input`, `adapt_answer_to_request`, `conversation_history`, `consistency_instruction` 등 일괄 적용.
 - **입력 문자열 정규화**: 전송·context 구성 전 사용자 텍스트는 **`chatInputUtils.coerceTrimmedString`**(필요 시 `coerceTrimmedEnd`). [CHAT_CONTEXT_CONTRACT.md](./guides/CHAT_CONTEXT_CONTRACT.md) §3.5, [RESPONSE_CLEANING.md](./guides/RESPONSE_CLEANING.md).
 - **context 키 추가 시**: CHAT_CONTEXT_CONTRACT §1·§3 갱신, buildUnifiedChatContext 또는 ChatGPTInterface 해당 경로 반영, 백엔드 정규화·파이프라인 반영.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

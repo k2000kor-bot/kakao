@@ -74,3 +74,7 @@ ChatGPTInterface는 자체 메시지 렌더링 사용(MessageItem·ChatMessage �
 - [ ] `e2e/paths.ts`에 경로 추가 (공개 페이지인 경우)
 - [ ] BACKLOG·COMPLETION_CHECKLIST·AGENTS.md 해당 항목 추가/체크
 - [ ] E2E data-testid 추가 시 src/constants/testIds.ts·e2e/README.md 테이블 갱신
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

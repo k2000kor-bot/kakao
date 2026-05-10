@@ -100,3 +100,7 @@ BACKLOG §확장 범위 테이블에 있는 항목들(P2~P5)입니다.
 상세: [SCOPE_3X.md](./SCOPE_3X.md).
 
 **장기(개발 길게 진행)**: SCOPE_3X §7·§8 — 2차 3배 목표(단기 63, 중기 54, 확장 495, E2E 360+, test:views 540+, 커버리지 70%). 0~3개월(1차 3배) → 3~6개월(확장·품질) → 6~12개월(2차 1부) → 12~24개월(2차 2부).
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

@@ -129,3 +129,7 @@
 - [NOTEBOOK_LLM_VS_DEEPSEEK_LLM.md](./NOTEBOOK_LLM_VS_DEEPSEEK_LLM.md) — 비교·권장 방향
 - [ANSWER_QUALITY_AND_SEARCH.md](./guides/ANSWER_QUALITY_AND_SEARCH.md) — 답변 품질·검색·자료 활용·품질 상향
 - [DeepSeek API 문서](https://api-docs.deepseek.com/)
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

@@ -52,3 +52,7 @@ bash scripts/prepare-deploy-package.sh
 
 - 상세: [FRONTEND_DEPLOYMENT.md §4.6](./FRONTEND_DEPLOYMENT.md#46-개발-서버에-배포-rsyncscp)
 - `env.example`에 `DEPLOY_DEV_HOST`, `DEPLOY_DEV_PATH` 예시 있음.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

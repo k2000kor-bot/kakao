@@ -116,3 +116,7 @@
 ---
 
 **요약**: 이 프로젝트는 **노트북 = 프로젝트, 소스 = notebook-sources, 대화·스튜디오 = 소스 기반**으로 구글 노트북 LLM과 **동일한 서비스**로 동작합니다. “체계적으로 학습시킨다”는 것은 **노트북(프로젝트) 단위로 소스를 넣고, 같은 노트북에서만 대화·스튜디오를 쓰는** 위 §4 흐름을 따르면 됩니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

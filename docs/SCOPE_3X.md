@@ -226,3 +226,7 @@
 | **12~24개월** | 장기 2차 3배 2부 | 확장 495 수준·검증 360+ E2E, 540+ test:views, 커버리지 70% 목표 |
 
 실제 스프린트·마일스톤은 BACKLOG·DEVELOPMENT_SCOPE_MASTER 우선순위에 따라 조정합니다. **구독** 관련 개발은 전 기간 제외.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

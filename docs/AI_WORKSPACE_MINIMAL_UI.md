@@ -186,3 +186,7 @@ Response Generation
 **의도 감지·도구 실행·프론트 반영**까지 포함한 마무리 개발 현황은 [DEVELOPMENT_COMPLETION_STATUS.md](./DEVELOPMENT_COMPLETION_STATUS.md) 참고.
 
 이 문서는 **서비스 설계 기준**으로, 확장 시 AI OS 메뉴 구조·LLM 기반 생성형 메뉴 아키텍처와 일치시키면 됩니다.
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

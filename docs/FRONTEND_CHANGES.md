@@ -82,3 +82,7 @@
 | `docs/guides/CHAT_ANSWER_FLOW_VERIFICATION.md` | §5.6 대화 이력·재진입·재생성·편집. §8 수동 확인에 7번(재진입·이력), 8번(유연한 생성) 추가. |
 | `docs/guides/ANSWER_QUALITY_AND_SEARCH.md` | §2.5 adapt_answer_to_request(단일 소스·전달·백엔드). |
 | `docs/DEVELOPMENT_CONTINUITY.md` | §11 대화 컨텍스트 일관성·확장성, CHAT_CONTEXT_CONTRACT 링크. |
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

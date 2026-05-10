@@ -53,3 +53,7 @@
 - [COMPLETION_CHECKLIST.md](COMPLETION_CHECKLIST.md) §2 — 라우트·메뉴, 프로젝트 파일 업로드
 - [DEVELOPMENT_CONTINUITY.md](DEVELOPMENT_CONTINUITY.md) §1·§2 — `routes.ts`·`e2e/paths.ts` 동기 · [**`name`·`getPageTitle` → 프로젝트 대화**](../src/config/README.md)·[USAGE_GUIDE §1.2](../USAGE_GUIDE.md#12-사이드바-상단-메뉴)·[AGENTS.md](../AGENTS.md)·[TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes`·`routes.test` · **`npm run test:app-unified`** · **`npm run test:sidebar-context`** · 원격 push [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) · [e2e/README.md](../e2e/README.md)
 - [API.md](API.md) — POST /api/projects/{id}/files
+
+## 개발자 검증
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
