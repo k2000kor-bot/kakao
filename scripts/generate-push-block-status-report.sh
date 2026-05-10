@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 상태 리포트. 절차: docs/PUSH_BLOCK_HANDOFF.md · 검증·회귀: TESTING_GUIDE.md · npm run test:sidebar-context
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

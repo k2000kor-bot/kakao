@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 아티팩트 무결성 점검. 절차·인수인계: docs/PUSH_BLOCK_HANDOFF.md · 회귀·검증: TESTING_GUIDE.md · npm run test:sidebar-context
 set -euo pipefail
 
 BUNDLE_PATH="/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-01-20.bundle"

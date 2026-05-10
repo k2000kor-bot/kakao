@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 인수인계·절차: docs/PUSH_BLOCK_HANDOFF.md · 검증 표: TESTING_GUIDE.md · 회귀: scripts/test-sidebar-context.sh (npm run test:sidebar-context)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

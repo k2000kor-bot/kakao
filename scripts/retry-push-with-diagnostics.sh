@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 원격 push 진단: docs/PUSH_BLOCK_HANDOFF.md · 마무리 검증 표: TESTING_GUIDE.md · 회귀: npm run test:sidebar-context
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
