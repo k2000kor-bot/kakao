@@ -56,6 +56,7 @@
 - **문서 연결**: CHAT_ANSWER_FLOW_VERIFICATION 끝에 참고 섹션 추가(ANSWER_QUALITY_AND_SEARCH·CHAT_UI_TEST_SCENARIOS 링크). DEVELOPMENT_CONTINUITY §5 관련 문서에 대화 흐름·답변 품질 가이드 링크 추가.
 - **개발 현황·테스트**: DevStatusView 검증·배포 20 suites·105 tests(test:views). DevStatusView.test에 문서·배포 목록에 대화 흐름 검증 문서 포함 여부 검증 추가.
 - **문서 수치 통일**: DEVELOPMENT.md §2.3·scripts/README·CONNECT.md §7·docs/README 가이드·PERFORMANCE.md §1·§2.6에 test:views 18·97·verify:completion·대화 흐름·답변 품질 가이드 링크 반영.
+- **문서·테스트 연결 (2026-05-10)**: 라우트·앱 셸·사이드바 회귀는 **`npm run test:routes`**·**`npm run test:app-unified`**·**`npm run test:sidebar-context`** — [TESTING_GUIDE.md](../TESTING_GUIDE.md). 원격 `git push` 막힘은 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`maintain:push-block` 등).
 - **딥시크(DeepSeek) 동작**: 백엔드 unified_chat_api 문법 수정(5002 기동). provider가 deepseek/deepseek-local일 때 대화에서 딥시크 우선 호출. llm_service가 context.conversation_history 우선 사용. DEEPSEEK_SETUP §4.1·DEEPSEEK_DEVELOPMENT_ORDER 5.1a·DEEPSEEK_INSTALL_RUN_DEVELOP_LEARN(한 흐름) 참고.
 
 ## 검증·배포
@@ -64,6 +65,7 @@
 |------|------|
 | `npm run verify:completion` | 타입·린트·P4 서비스 148 tests. 통과 시 배포 가능. |
 | `npm run test:views` | 뷰·라우트 20 suites, 105 tests. (갱신: 2026-03) |
+| `npm run test:sidebar-context` | 사이드바·앱 셸 컨텍스트 회귀 — [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
 | `npm run deploy:check` | verify:completion + build → `build/` 생성. |
 | `npm run deploy:server` | deploy:check 후 개발 서버 동기화. `.env`에 `DEPLOY_DEV_HOST`, `DEPLOY_DEV_PATH` 필요. [DEPLOY_SERVER_CHECKLIST](./DEPLOY_SERVER_CHECKLIST.md) |
 
@@ -74,6 +76,8 @@
 - [COMPONENT_ARCHITECTURE §0](./COMPONENT_ARCHITECTURE.md#0-통합-레이아웃-appunified) — AppUnified·사이드바·아이콘·반응형·ErrorBoundary 매핑
 - [DEVELOPMENT_CONTINUITY §0](./DEVELOPMENT_CONTINUITY.md#0-앱-진입레이아웃) — 진입점·레이아웃 참조
 - [views/README](../../src/views/README.md) — 라우트별 뷰
+- [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `test:routes`·`test:app-unified`·**`test:sidebar-context`**
+- [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) — 원격 `git push` 막힘 시 절차(`maintain:push-block` 등)
 - [DEPLOY_SERVER_CHECKLIST](./DEPLOY_SERVER_CHECKLIST.md) — 서버 반영 체크리스트
 - [guides/CHAT_ANSWER_FLOW_VERIFICATION](./guides/CHAT_ANSWER_FLOW_VERIFICATION.md) — 대화 입력 → 질문 표시 → 답변 생성·표시·품질·컨텍스트 흐름 검증
 - [guides/CHAT_UI_TEST_SCENARIOS](./guides/CHAT_UI_TEST_SCENARIOS.md) — 대화 UI·접근성·품질 수동 확인 시나리오
