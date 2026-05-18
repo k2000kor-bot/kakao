@@ -13,21 +13,22 @@ bash scripts/generate-push-block-manifest.sh
 cat docs/PUSH_BLOCK_MANIFEST.md
 ```
 
-### 생성된 이관 아티팩트
+### 생성된 이관 아티팩트 (최신: 컴포저·관계도 파이프라인)
 
-- Bundle: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-01-20.bundle`
-- Patch: `/Users/a0/kakao-frontend/0001-test-harden-sidebar-context-filter-sync-contracts.patch`
+- Bundle: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle` (~1.1GB, 브랜치 `dev-continue-2026-01-20` 전체)
+- Patch 1: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
+- Patch 2: `/Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch`
 
-### SHA256 검증값
-
-- `27e1411a1d9462fbcfc04f7dfe4614c38eb593d9e9ae104be7328e215e2767e2`  (`kakao-frontend-dev-continue-2026-01-20.bundle`)
-- `ed0abc7ea4ce04271371f1734a2863a5f332277d6c828178a448705a79960f38`  (`0001-test-harden-sidebar-context-filter-sync-contracts.patch`)
+**최신 SHA·크기**: `bash scripts/generate-push-block-manifest.sh` 후 `docs/PUSH_BLOCK_MANIFEST.md` 참고.
 
 검증 명령:
 
 ```bash
-shasum -a 256 /Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-01-20.bundle
-shasum -a 256 /Users/a0/kakao-frontend/0001-test-harden-sidebar-context-filter-sync-contracts.patch
+bash scripts/verify-push-block-artifacts.sh
+# 또는
+shasum -a 256 /Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle
+shasum -a 256 /Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch
+shasum -a 256 /Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch
 ```
 
 자동 검증 스크립트:
@@ -88,14 +89,16 @@ bash scripts/run-push-block-maintenance.sh
 ### 반영 방법 A: bundle 사용 (권장)
 
 ```bash
-git fetch /Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-01-20.bundle dev-continue-2026-01-20
+git fetch /Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle dev-continue-2026-01-20
 git checkout -b dev-continue-2026-01-20 FETCH_HEAD
+git push -u origin dev-continue-2026-01-20
 ```
 
-### 반영 방법 B: patch 사용
+### 반영 방법 B: patch 사용 (2커밋)
 
 ```bash
-git am /Users/a0/kakao-frontend/0001-test-harden-sidebar-context-filter-sync-contracts.patch
+git am /Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch
+git am /Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch
 ```
 
 ### 로컬 회귀 검증
