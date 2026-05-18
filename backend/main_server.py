@@ -61,6 +61,8 @@ from api.v7_api import router as v7_router
 from api.analysis_api import router as analysis_router
 from api.extended_views_api import router as extended_views_router
 from api.pipeline_tuning_api import router as pipeline_tuning_router
+from api.google_drive_auth_api import router as google_drive_auth_router
+from api.conversation_graph_api import router as conversation_graph_router
 from cors_config import get_main_server_cors_allow_origins
 
 # 로깅 설정
@@ -217,6 +219,8 @@ app.include_router(v7_router)
 app.include_router(analysis_router)
 app.include_router(extended_views_router)
 app.include_router(pipeline_tuning_router)
+app.include_router(google_drive_auth_router)
+app.include_router(conversation_graph_router)
 
 # 고도화 대화형 API (/api/v2/enhanced/*, ws://.../ws/v2/enhanced/...) — 별도 8003 프로세스 없이 통합 포트에서 제공
 try:
