@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-19 08:39:10 KST
+- generated_at: 2026-05-19 08:46:30 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `fc8a4292b chore: refresh push-block manifest for composer/graph handoff`
+- latest_commit: `4a7d9992d docs: update push-block handoff for 2026-05-19 bundle and PR draft`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1156842673
-- bundle_sha256: `bb225fe04dfedaf4af464824e2bc5b19584f681a8b585fc4b7019af74af99b7c`
+- bundle_size_bytes: 1156842348
+- bundle_sha256: `1fee390fb6dd9f10e88c1cf9385b1c7eaec763c130ed824d948a172e2d146f83`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -24,9 +24,9 @@
 ### Recent Commits
 
 ```
-fc8a4292b chore: refresh push-block manifest for composer/graph handoff
+4a7d9992d docs: update push-block handoff for 2026-05-19 bundle and PR draft
+f273d7f04 chore: refresh push-block manifest for composer/graph handoff
 b79b4342b feat(backend): conversation graph API and pytest for CI
 49c650ea9 feat(chat): composer multi-request pipeline and conversation graph
 bc4451251 docs: link check:doc-verification-hub in completion and entry docs
-cce05684e docs: doc verification hub in Makefile, rules, quick refs
 ```
