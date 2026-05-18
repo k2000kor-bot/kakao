@@ -1,27 +1,32 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-10 08:30:25 KST
+- generated_at: 2026-05-19 08:39:10 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `f76ec98b4 chore: harden push-block maintenance runner`
+- latest_commit: `fc8a4292b chore: refresh push-block manifest for composer/graph handoff`
 
 ### Artifacts
 
-- bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-01-20.bundle`
+- bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1156325713
-- bundle_sha256: `27e1411a1d9462fbcfc04f7dfe4614c38eb593d9e9ae104be7328e215e2767e2`
+- bundle_size_bytes: 1156842673
+- bundle_sha256: `bb225fe04dfedaf4af464824e2bc5b19584f681a8b585fc4b7019af74af99b7c`
 
-- patch_path: `/Users/a0/kakao-frontend/0001-test-harden-sidebar-context-filter-sync-contracts.patch`
+- patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
-- patch_size_bytes: 395094
-- patch_sha256: `ed0abc7ea4ce04271371f1734a2863a5f332277d6c828178a448705a79960f38`
+- patch_size_bytes: 1875263
+- patch_sha256: `cf79c715adf51acea9a3774e98e2557eeaf0cc6295ad68a0e413f61b5e40a9e9`
+
+- patch_path_2: `/Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch`
+- patch_2_exists: yes
+- patch_2_size_bytes: 53015
+- patch_2_sha256: `f466b3a60f81558e2c5f6e3f0ea78b007acdedeb3e55918d956d460a35734870`
 
 ### Recent Commits
 
 ```
-f76ec98b4 chore: harden push-block maintenance runner
-32115494e chore: add push-block manifest snapshot generator
-dbb76f16f chore: add push-block status report generator
-b45413b1a chore: add push diagnostics helper for blocked remotes
-14bf03550 chore: automate local push-block verification workflow
+fc8a4292b chore: refresh push-block manifest for composer/graph handoff
+b79b4342b feat(backend): conversation graph API and pytest for CI
+49c650ea9 feat(chat): composer multi-request pipeline and conversation graph
+bc4451251 docs: link check:doc-verification-hub in completion and entry docs
+cce05684e docs: doc verification hub in Makefile, rules, quick refs
 ```
